@@ -1,0 +1,73 @@
+package db
+
+import (
+	"fmt"
+	"log/slog"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+// Initialize opens the SQLite database and runs auto-migrations.
+func Initialize(dbPath string) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("opening database: %w", err)
+	}
+
+	slog.Info("running database migrations")
+	err = db.AutoMigrate(
+		&User{},
+		&Console{},
+		&Game{},
+		&SaveState{},
+		&Favorite{},
+		&PlayHistory{},
+		&RefreshToken{},
+		&ServerSetting{},
+		&Core{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("running migrations: %w", err)
+	}
+
+	return db, nil
+}
+
+// SeedConsoles inserts the default console definitions if they don't exist.
+func SeedConsoles(db *gorm.DB) error {
+	consoles := []Console{
+		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", ColorTheme: "#e60012"},
+		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", ColorTheme: "#7b7db5"},
+		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", ColorTheme: "#8bac0f"},
+		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", ColorTheme: "#6638a8"},
+		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", ColorTheme: "#2e17a3"},
+		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", ColorTheme: "#009e60"},
+		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", ColorTheme: "#b0b0b0"},
+		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", ColorTheme: "#0060a8"},
+		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", ColorTheme: "#171717"},
+		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin/.cue", DefaultCore: "beetle_saturn", ColorTheme: "#0a4da2"},
+		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin/.cue,.iso,.pbp", DefaultCore: "beetle_psx_hw", ColorTheme: "#003087"},
+		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso", DefaultCore: "ppsspp", ColorTheme: "#000000"},
+		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", ColorTheme: "#ffcc00"},
+		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", ColorTheme: "#ff4444"},
+		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "beetle_pce", ColorTheme: "#ff6600"},
+		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", ColorTheme: "#8b4513"},
+	}
+
+	for _, c := range consoles {
+		var existing Console
+		result := db.Where("abbreviation = ?", c.Abbreviation).First(&existing)
+		if result.Error == gorm.ErrRecordNotFound {
+			if err := db.Create(&c).Error; err != nil {
+				return fmt.Errorf("seeding console %s: %w", c.Name, err)
+			}
+			slog.Info("seeded console", "name", c.Name)
+		}
+	}
+
+	return nil
+}
