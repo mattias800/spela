@@ -12,25 +12,25 @@ import (
 // ConsoleResponse is the API response for a console, with extensions as an array
 // and coverAspectRatio as a number.
 type ConsoleResponse struct {
-	ID               string   `json:"id"`
+	ID               uint      `json:"id"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
-	Name             string   `json:"name"`
-	Abbreviation     string   `json:"abbreviation"`
-	Extensions       []string `json:"extensions"`
-	DefaultCore      string   `json:"defaultCore"`
-	CoverAspectRatio float64  `json:"coverAspectRatio"`
-	ColorTheme       string   `json:"colorTheme"`
-	IconURL          string   `json:"iconUrl"`
-	GameCount        int      `json:"gameCount"`
+	Name             string    `json:"name"`
+	Abbreviation     string    `json:"abbreviation"`
+	Extensions       []string  `json:"extensions"`
+	DefaultCore      string    `json:"defaultCore"`
+	CoverAspectRatio float64   `json:"coverAspectRatio"`
+	ColorTheme       string    `json:"colorTheme"`
+	IconURL          string    `json:"iconUrl"`
+	GameCount        int       `json:"gameCount"`
 }
 
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID             string   `json:"id"`
+	ID             uint     `json:"id"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
-	ConsoleID      string   `json:"consoleId"`
+	ConsoleID      uint     `json:"consoleId"`
 	ConsoleName    string   `json:"consoleName"`
 	Title          string   `json:"title"`
 	FileName       string   `json:"fileName"`
@@ -69,7 +69,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 	ratio := parseAspectRatio(c.CoverAspect)
 
 	return ConsoleResponse{
-		ID:               strconv.FormatUint(uint64(c.ID), 10),
+		ID:               c.ID,
 		CreatedAt:        c.CreatedAt,
 		UpdatedAt:        c.UpdatedAt,
 		Name:             c.Name,
@@ -102,10 +102,10 @@ func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
 	}
 
 	resp := GameResponse{
-		ID:             strconv.FormatUint(uint64(g.ID), 10),
+		ID:             g.ID,
 		CreatedAt:      g.CreatedAt,
 		UpdatedAt:      g.UpdatedAt,
-		ConsoleID:      strconv.FormatUint(uint64(g.ConsoleID), 10),
+		ConsoleID:      g.ConsoleID,
 		ConsoleName:    consoleName,
 		Title:          g.Title,
 		FileName:       g.FileName,
