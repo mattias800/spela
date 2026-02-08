@@ -96,6 +96,34 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }
 
+// MetadataMatches returns games with potential metadata mismatches for admin review.
+// Games are considered mismatched if they have a scraper ID but the scraped title
+// differs significantly from the filename-derived title.
+func (h *AdminHandler) MetadataMatches(c *gin.Context) {
+	var games []db.Game
+	// Find games that have been scraped (have a scraper ID)
+	if err := h.DB.Where("scraper_id != '' AND scraper_id IS NOT NULL").
+		Preload("Console").
+		Find(&games).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
+		return
+	}
+
+	// Also include games that have never been scraped
+	var unscraped []db.Game
+	if err := h.DB.Where("scraper_id = '' OR scraper_id IS NULL").
+		Preload("Console").
+		Find(&unscraped).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unscraped games"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"scraped":   games,
+		"unscraped": unscraped,
+	})
+}
+
 // TriggerScrape starts a metadata scraping operation (admin only).
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if !h.Scraper.IsConfigured() {

@@ -133,6 +133,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/settings", adminHandler.GetSettings)
 			admin.PUT("/settings", adminHandler.UpdateSettings)
 			admin.POST("/scrape", adminHandler.TriggerScrape)
+			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
 		}
 
 		// WebSocket
