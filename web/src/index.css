@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface-50: #f8f9fa;
+  --color-surface-100: #f1f3f5;
+  --color-surface-200: #e9ecef;
+  --color-surface-300: #dee2e6;
+  --color-surface-400: #ced4da;
+  --color-surface-500: #adb5bd;
+  --color-surface-600: #868e96;
+  --color-surface-700: #495057;
+  --color-surface-800: #343a40;
+  --color-surface-900: #212529;
+  --color-surface-950: #16191d;
+
+  --color-brand-50: #e0f7ff;
+  --color-brand-100: #b3ecff;
+  --color-brand-200: #80dfff;
+  --color-brand-300: #4dd2ff;
+  --color-brand-400: #26c8ff;
+  --color-brand-500: #00bfff;
+  --color-brand-600: #00a3e0;
+  --color-brand-700: #0081b3;
+  --color-brand-800: #006080;
+  --color-brand-900: #004060;
+  --color-brand-950: #002640;
+
+  --color-success-500: #22c55e;
+  --color-warning-500: #f59e0b;
+  --color-danger-500: #ef4444;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-surface-950 text-surface-100 font-sans antialiased;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .light {
+    color-scheme: light;
+  }
+
+  .light body,
+  .light {
+    @apply bg-surface-50 text-surface-900;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-surface-900/60 backdrop-blur-xl border border-surface-800/50;
+  }
+
+  .light .glass {
+    @apply bg-white/60 border-surface-200/50;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-700);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-600);
+}
