@@ -45,6 +45,9 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpGradientCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -64,6 +67,7 @@ fun HomeScreen(
         viewModel.onIntent(GameListIntent.LoadDashboard)
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -159,6 +163,21 @@ fun HomeScreen(
             }
         }
     }
+
+    // Error snackbar
+    SpSnackbar(
+        data = state.error?.let {
+            SpSnackbarData(
+                message = it,
+                type = SpSnackbarType.Error,
+                actionLabel = "Dismiss",
+                onAction = { viewModel.onIntent(GameListIntent.DismissError) },
+            )
+        },
+        onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
+    } // outer Box
 }
 
 @Composable
@@ -391,7 +410,23 @@ private fun ConsoleCard(
 }
 
 internal fun getConsoleColor(colorTheme: String?): Color {
-    return when (colorTheme?.lowercase()) {
+    if (colorTheme == null) return SpColor.Primary
+    // Try parsing as hex color first (backend sends "#e53e3e" format)
+    if (colorTheme.startsWith("#")) {
+        return try {
+            val hex = colorTheme.removePrefix("#")
+            val colorLong = when (hex.length) {
+                6 -> (0xFF000000 or hex.toLong(16))
+                8 -> hex.toLong(16)
+                else -> null
+            }
+            if (colorLong != null) Color(colorLong.toInt()) else SpColor.Primary
+        } catch (_: NumberFormatException) {
+            SpColor.Primary
+        }
+    }
+    // Fallback to name matching for backwards compatibility
+    return when (colorTheme.lowercase()) {
         "nes" -> SpColor.ConsoleNes
         "snes" -> SpColor.ConsoleSnes
         "gameboy", "gb", "gbc" -> SpColor.ConsoleGameBoy

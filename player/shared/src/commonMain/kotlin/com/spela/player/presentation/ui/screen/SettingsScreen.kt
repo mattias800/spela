@@ -275,7 +275,7 @@ private fun SettingsToggle(
         Spacer(Modifier.width(SpSpacing.Medium))
         Switch(
             checked = isChecked,
-            onCheckedChange = { onToggle() },
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = SpColor.OnPrimary,
                 checkedTrackColor = SpColor.Primary,

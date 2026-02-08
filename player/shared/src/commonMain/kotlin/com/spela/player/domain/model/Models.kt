@@ -95,6 +95,7 @@ enum class DownloadState {
 
 data class DownloadProgress(
     val gameId: String,
+    val gameTitle: String = "",
     val state: DownloadState,
     val bytesDownloaded: Long = 0,
     val totalBytes: Long = 0,

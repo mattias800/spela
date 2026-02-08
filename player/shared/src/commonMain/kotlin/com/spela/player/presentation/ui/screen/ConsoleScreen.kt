@@ -34,6 +34,9 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSearchField
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -57,6 +60,7 @@ fun ConsoleScreen(
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -123,6 +127,21 @@ fun ConsoleScreen(
             }
         }
     }
+
+    // Error snackbar
+    SpSnackbar(
+        data = state.error?.let {
+            SpSnackbarData(
+                message = it,
+                type = SpSnackbarType.Error,
+                actionLabel = "Dismiss",
+                onAction = { viewModel.onIntent(GameListIntent.DismissError) },
+            )
+        },
+        onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
+    } // outer Box
 }
 
 @Composable

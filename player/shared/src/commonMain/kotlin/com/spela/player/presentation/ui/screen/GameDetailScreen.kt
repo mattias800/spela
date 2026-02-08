@@ -49,6 +49,9 @@ import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpProgressBar
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -83,6 +86,7 @@ fun GameDetailScreen(
     val detail = state.gameDetail ?: return
     val game = detail.game
 
+    Box(modifier = Modifier.fillMaxSize()) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -204,6 +208,21 @@ fun GameDetailScreen(
             }
         }
     }
+
+    // Error snackbar
+    SpSnackbar(
+        data = state.error?.let {
+            SpSnackbarData(
+                message = it,
+                type = SpSnackbarType.Error,
+                actionLabel = "Dismiss",
+                onAction = { viewModel.onIntent(GameDetailIntent.DismissError) },
+            )
+        },
+        onDismiss = { viewModel.onIntent(GameDetailIntent.DismissError) },
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
+    } // outer Box
 }
 
 @Composable
@@ -233,7 +252,7 @@ private fun GameInfoContent(
             consoleColor = getConsoleColor(game.consoleName),
         )
         game.genre?.let { SpChip(text = it) }
-        game.releaseYear?.let { SpChip(text = it.toString()) }
+        game.releaseDate?.let { SpChip(text = it) }
     }
 
     Spacer(Modifier.height(SpSpacing.XLarge))
@@ -268,11 +287,11 @@ private fun GameInfoContent(
         }
 
         SpButton(
-            text = if (detail.game.isFavorite) "\u2665" else "\u2661",
+            text = if (game.isFavorite) "\u2665" else "\u2661",
             onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
-            style = if (detail.game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
+            style = if (game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
-                contentDescription = if (detail.game.isFavorite) "Remove from favorites" else "Add to favorites"
+                contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites"
                 role = Role.Button
             },
         )
@@ -414,7 +433,7 @@ private fun SaveStateItem(
                 .fillMaxWidth()
                 .padding(SpSpacing.Medium)
                 .semantics {
-                    contentDescription = "${saveState.name}, ${if (saveState.isAutoSave) "auto save" else "manual save"}"
+                    contentDescription = "${saveState.name}, ${if (saveState.isAuto) "auto save" else "manual save"}"
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -425,20 +444,11 @@ private fun SaveStateItem(
                     .background(SpColor.SurfaceBright),
                 contentAlignment = Alignment.Center,
             ) {
-                if (saveState.screenshotUrl != null) {
-                    coil3.compose.AsyncImage(
-                        model = saveState.screenshotUrl,
-                        contentDescription = "Save state screenshot for ${saveState.name}",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text = if (saveState.isAutoSave) "A" else "S",
-                        style = SpTypography.LabelLarge,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
+                Text(
+                    text = if (saveState.isAuto) "A" else "S",
+                    style = SpTypography.LabelLarge,
+                    color = SpColor.OnBackgroundTertiary,
+                )
             }
 
             Spacer(Modifier.width(SpSpacing.Medium))
@@ -450,7 +460,7 @@ private fun SaveStateItem(
                     color = SpColor.OnCard,
                 )
                 Text(
-                    text = if (saveState.isAutoSave) "Auto Save" else "Manual Save",
+                    text = if (saveState.isAuto) "Auto Save" else "Manual Save",
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )

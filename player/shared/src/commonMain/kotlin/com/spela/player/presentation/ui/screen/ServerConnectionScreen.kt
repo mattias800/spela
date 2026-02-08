@@ -36,6 +36,9 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -225,19 +228,21 @@ fun ServerConnectionScreen(
                 }
             }
 
-            // Error message
-            state.error?.let { error ->
-                Spacer(Modifier.height(SpSpacing.Default))
-                Text(
-                    text = error,
-                    style = SpTypography.BodySmall,
-                    color = SpColor.Error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.onIntent(ServerConnectionIntent.DismissError) },
-                )
-            }
         }
+
+        // Error snackbar with auto-dismiss
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(ServerConnectionIntent.DismissError) },
+                    durationMs = 5000L,
+                )
+            },
+            onDismiss = { viewModel.onIntent(ServerConnectionIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }

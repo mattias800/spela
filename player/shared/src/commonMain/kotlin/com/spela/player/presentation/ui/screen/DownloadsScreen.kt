@@ -137,6 +137,7 @@ private fun DownloadItem(
     onCancel: () -> Unit,
 ) {
     val statusText = download.state.name.lowercase().replaceFirstChar { it.uppercase() }
+    val displayTitle = download.gameTitle.ifEmpty { "Game ${download.gameId}" }
 
     SpCard {
         Column(
@@ -144,7 +145,7 @@ private fun DownloadItem(
                 .fillMaxWidth()
                 .padding(SpSpacing.Default)
                 .semantics {
-                    contentDescription = "Game ${download.gameId}, $statusText" +
+                    contentDescription = "$displayTitle, $statusText" +
                             if (download.state == DownloadState.DOWNLOADING)
                                 ", ${(download.progress * 100).toInt()} percent" else ""
                 },
@@ -174,7 +175,7 @@ private fun DownloadItem(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Game ${download.gameId}",
+                        text = displayTitle,
                         style = SpTypography.TitleMedium,
                         color = SpColor.OnCard,
                     )
