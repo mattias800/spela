@@ -16,7 +16,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Instant
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,6 +56,7 @@ class LoginViewModelTest {
         val state = vm.state.value
         assertEquals("", state.serverUrl)
         assertEquals("", state.username)
+        assertEquals("", state.email)
         assertEquals("", state.password)
         assertFalse(state.isLoading)
         assertFalse(state.isLoggedIn)
@@ -68,11 +68,13 @@ class LoginViewModelTest {
         val vm = createViewModel()
         vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
         vm.onIntent(LoginIntent.SetUsername("testuser"))
+        vm.onIntent(LoginIntent.SetEmail("test@example.com"))
         vm.onIntent(LoginIntent.SetPassword("pass123"))
 
         val state = vm.state.value
         assertEquals("http://localhost:8080", state.serverUrl)
         assertEquals("testuser", state.username)
+        assertEquals("test@example.com", state.email)
         assertEquals("pass123", state.password)
     }
 
@@ -84,6 +86,18 @@ class LoginViewModelTest {
         val state = vm.state.value
         assertEquals("All fields are required", state.error)
         assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun registerWithoutEmailShowsError() {
+        val vm = createViewModel()
+        vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
+        vm.onIntent(LoginIntent.SetUsername("testuser"))
+        vm.onIntent(LoginIntent.SetPassword("pass123"))
+        vm.onIntent(LoginIntent.ToggleRegisterMode)
+        vm.onIntent(LoginIntent.Submit)
+
+        assertEquals("Email is required for registration", vm.state.value.error)
     }
 
     @Test
@@ -123,6 +137,23 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun successfulRegisterSetsLoggedIn() = runTest(testDispatcher) {
+        fakeAuthRepository.shouldSucceed = true
+        val vm = createViewModel()
+
+        vm.onIntent(LoginIntent.ToggleRegisterMode)
+        vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
+        vm.onIntent(LoginIntent.SetUsername("newuser"))
+        vm.onIntent(LoginIntent.SetEmail("new@example.com"))
+        vm.onIntent(LoginIntent.SetPassword("pass123"))
+        vm.onIntent(LoginIntent.Submit)
+
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.isLoggedIn)
+    }
+
+    @Test
     fun toggleRegisterMode() {
         val vm = createViewModel()
         assertFalse(vm.state.value.isRegisterMode)
@@ -152,7 +183,6 @@ class FakeAuthRepository : AuthRepository {
     private val successTokens = AuthTokens(
         accessToken = "test-access-token",
         refreshToken = "test-refresh-token",
-        expiresAt = Instant.fromEpochSeconds(9999999999L),
     )
 
     private var stored: AuthTokens? = null
@@ -167,7 +197,7 @@ class FakeAuthRepository : AuthRepository {
         }
     }
 
-    override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> {
+    override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
         return if (shouldSucceed) {
             loggedIn = true
             Result.success(successTokens)
@@ -181,7 +211,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun getCurrentUser(): Result<User> {
-        return Result.success(User("1", "testuser", "user"))
+        return Result.success(User(1, "testuser", "test@example.com", "user"))
     }
 
     override suspend fun getStoredTokens(): AuthTokens? = stored

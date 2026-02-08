@@ -25,6 +25,7 @@ class LoginViewModel(
         when (intent) {
             is LoginIntent.SetServerUrl -> _state.update { it.copy(serverUrl = intent.url) }
             is LoginIntent.SetUsername -> _state.update { it.copy(username = intent.username) }
+            is LoginIntent.SetEmail -> _state.update { it.copy(email = intent.email) }
             is LoginIntent.SetPassword -> _state.update { it.copy(password = intent.password) }
             LoginIntent.ToggleRegisterMode -> _state.update { it.copy(isRegisterMode = !it.isRegisterMode) }
             LoginIntent.DismissError -> _state.update { it.copy(error = null) }
@@ -38,12 +39,16 @@ class LoginViewModel(
             _state.update { it.copy(error = "All fields are required") }
             return
         }
+        if (current.isRegisterMode && current.email.isBlank()) {
+            _state.update { it.copy(error = "Email is required for registration") }
+            return
+        }
 
         _state.update { it.copy(isLoading = true, error = null) }
 
         scope.launch(dispatchers.io) {
             val result = if (current.isRegisterMode) {
-                registerUseCase(current.serverUrl, current.username, current.password)
+                registerUseCase(current.serverUrl, current.username, current.email, current.password)
             } else {
                 loginUseCase(current.serverUrl, current.username, current.password)
             }

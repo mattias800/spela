@@ -9,6 +9,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -81,29 +82,35 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/consoles").body()
     }
 
-    suspend fun getGamesForConsole(consoleId: String): List<GameDto> {
+    /** Returns {console, games} wrapper */
+    suspend fun getGamesForConsole(consoleId: String): ConsoleGamesResponse {
         return client.get("$baseUrl/api/consoles/$consoleId/games").body()
     }
 
-    suspend fun getAllGames(): List<GameDto> {
+    /** Returns {games, total, page, perPage} wrapper */
+    suspend fun getAllGames(): GameListResponse {
         return client.get("$baseUrl/api/games").body()
     }
 
-    suspend fun searchGames(query: String): List<GameDto> {
+    /** Returns {games, total, page, perPage} wrapper with search filter */
+    suspend fun searchGames(query: String): GameListResponse {
         return client.get("$baseUrl/api/games") {
-            parameter("q", query)
+            parameter("search", query)
         }.body()
     }
 
-    suspend fun getGameDetail(gameId: String): GameDetailDto {
+    /** Returns a flat Game object (not wrapped) */
+    suspend fun getGameDetail(gameId: String): GameDto {
         return client.get("$baseUrl/api/games/$gameId").body()
     }
 
-    suspend fun getRecentGames(): List<GameDto> {
+    /** Returns PlayHistory[] with embedded game objects */
+    suspend fun getRecentGames(): List<PlayHistoryDto> {
         return client.get("$baseUrl/api/user/recent").body()
     }
 
-    suspend fun getFavoriteGames(): List<GameDto> {
+    /** Returns Favorite[] with embedded game objects */
+    suspend fun getFavoriteGames(): List<FavoriteDto> {
         return client.get("$baseUrl/api/user/favorites").body()
     }
 
@@ -131,12 +138,18 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/saves").body()
     }
 
+    /** Backend expects multipart form upload with "save" file and "name" field */
     suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): SaveStateDto {
-        return client.post("$baseUrl/api/games/$gameId/saves") {
-            parameter("name", name)
-            contentType(ContentType.Application.OctetStream)
-            setBody(data)
-        }.body()
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves",
+            formData = formData {
+                append("name", name)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
     }
 
     suspend fun downloadSaveState(gameId: String, saveId: String): ByteArray {
@@ -147,13 +160,20 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/games/$gameId/saves/$saveId")
     }
 
+    /** Backend expects multipart form upload with "save" file */
     suspend fun uploadAutoSave(gameId: String, data: ByteArray): SaveStateDto {
-        return client.post("$baseUrl/api/games/$gameId/saves/auto") {
-            contentType(ContentType.Application.OctetStream)
-            setBody(data)
-        }.body()
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves/auto",
+            formData = formData {
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
     }
 
+    /** Returns the auto-save file as raw bytes */
     suspend fun downloadAutoSave(gameId: String): ByteArray {
         return client.get("$baseUrl/api/games/$gameId/saves/auto").body()
     }
@@ -164,12 +184,14 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/cores").body()
     }
 
+    /** May return either a full Core object or just {coreName: "..."} */
     suspend fun getRecommendedCore(gameId: String): LibretroCoreDto {
         return client.get("$baseUrl/api/games/$gameId/core").body()
     }
 
-    suspend fun downloadCore(coreId: String, onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {
+    suspend fun downloadCore(coreId: String, platform: String = "linux", onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {
         return client.get("$baseUrl/api/cores/$coreId/download") {
+            parameter("platform", platform)
             onDownload { bytesSentTotal, contentLength ->
                 onProgress(bytesSentTotal, contentLength)
             }

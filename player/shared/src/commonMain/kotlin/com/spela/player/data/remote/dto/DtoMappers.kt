@@ -6,13 +6,16 @@ import kotlinx.datetime.Instant
 fun AuthResponse.toDomain(): AuthTokens = AuthTokens(
     accessToken = accessToken,
     refreshToken = refreshToken,
-    expiresAt = Instant.parse(expiresAt),
 )
+
+fun AuthResponse.extractUser(): User = user.toDomain()
 
 fun UserDto.toDomain(): User = User(
     id = id,
     username = username,
+    email = email,
     role = role,
+    avatarUrl = avatarUrl,
 )
 
 fun ConsoleDto.toDomain(): Console = Console(
@@ -20,48 +23,55 @@ fun ConsoleDto.toDomain(): Console = Console(
     name = name,
     abbreviation = abbreviation,
     gameCount = gameCount,
-    coverUrl = coverUrl,
     colorTheme = colorTheme,
+    coverAspect = coverAspect,
+    defaultCore = defaultCore,
 )
 
 fun GameDto.toDomain(): Game = Game(
     id = id,
     title = title,
     consoleId = consoleId,
-    consoleName = consoleName,
+    consoleName = console?.name ?: "",
     coverUrl = coverUrl,
     description = description,
     developer = developer,
     publisher = publisher,
-    releaseYear = releaseYear,
+    releaseDate = releaseDate,
     genre = genre,
     fileSize = fileSize,
     fileName = fileName,
-    coreName = coreName,
+    coreOverride = coreOverride,
+    players = players,
+    rating = rating,
 )
 
-fun GameDetailDto.toDomain(): GameDetail = GameDetail(
-    game = game.toDomain(),
-    screenshots = screenshots,
-    lastPlayed = lastPlayed?.let { Instant.parse(it) },
-    playTime = playTime,
-    isFavorite = isFavorite,
+/**
+ * The backend's GET /api/games/:id returns a flat Game object, not a wrapped GameDetail.
+ * We construct GameDetail client-side from the flat Game + separate API calls.
+ */
+fun GameDto.toGameDetail(): GameDetail = GameDetail(
+    game = toDomain(),
+    screenshots = screenshotUrl?.let { listOf(it) } ?: emptyList(),
 )
 
 fun SaveStateDto.toDomain(): SaveState = SaveState(
     id = id,
     gameId = gameId,
     name = name,
-    createdAt = Instant.parse(createdAt),
-    size = size,
-    isAutoSave = isAutoSave,
-    screenshotUrl = screenshotUrl,
+    createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+    fileSize = fileSize,
+    isAuto = isAuto,
 )
 
 fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     id = id,
     name = name,
-    systemName = systemName,
+    displayName = displayName,
     version = version,
-    fileSize = fileSize,
+    platforms = platforms,
 )
+
+fun PlayHistoryDto.extractGame(): Game? = game?.toDomain()
+
+fun FavoriteDto.extractGame(): Game? = game?.toDomain()

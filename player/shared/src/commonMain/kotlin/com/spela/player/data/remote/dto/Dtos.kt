@@ -1,6 +1,5 @@
 package com.spela.player.data.remote.dto
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,80 +11,135 @@ data class LoginRequest(
 @Serializable
 data class RegisterRequest(
     val username: String,
+    val email: String,
     val password: String,
 )
 
 @Serializable
 data class AuthResponse(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String,
-    @SerialName("expires_at") val expiresAt: String,
+    val accessToken: String,
+    val refreshToken: String,
+    val user: UserDto,
 )
 
 @Serializable
 data class RefreshRequest(
-    @SerialName("refresh_token") val refreshToken: String,
+    val refreshToken: String,
 )
 
 @Serializable
 data class UserDto(
-    val id: String,
+    val id: Long,
     val username: String,
+    val email: String = "",
     val role: String,
+    val avatarUrl: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
 data class ConsoleDto(
-    val id: String,
+    val id: Long,
     val name: String,
     val abbreviation: String,
-    @SerialName("game_count") val gameCount: Int,
-    @SerialName("cover_url") val coverUrl: String? = null,
-    @SerialName("color_theme") val colorTheme: String? = null,
+    val extensions: String = "",
+    val defaultCore: String = "",
+    val coverAspect: String = "3:4",
+    val colorTheme: String = "#6366f1",
+    val gameCount: Int = 0,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
 data class GameDto(
-    val id: String,
+    val id: Long,
     val title: String,
-    @SerialName("console_id") val consoleId: String,
-    @SerialName("console_name") val consoleName: String,
-    @SerialName("cover_url") val coverUrl: String? = null,
+    val consoleId: Long,
+    val console: ConsoleDto? = null,
+    val fileName: String = "",
+    val fileSize: Long = 0,
+    val coverUrl: String? = null,
+    val screenshotUrl: String? = null,
     val description: String? = null,
     val developer: String? = null,
     val publisher: String? = null,
-    @SerialName("release_year") val releaseYear: Int? = null,
+    val releaseDate: String? = null,
     val genre: String? = null,
-    @SerialName("file_size") val fileSize: Long = 0,
-    @SerialName("file_name") val fileName: String = "",
-    @SerialName("core_name") val coreName: String? = null,
+    val players: Int = 0,
+    val rating: Double = 0.0,
+    val coreOverride: String? = null,
+    val scraperId: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
+/** Wrapper for GET /api/games which returns paginated results */
 @Serializable
-data class GameDetailDto(
-    val game: GameDto,
-    val screenshots: List<String> = emptyList(),
-    @SerialName("last_played") val lastPlayed: String? = null,
-    @SerialName("play_time") val playTime: Long = 0,
-    @SerialName("is_favorite") val isFavorite: Boolean = false,
+data class GameListResponse(
+    val games: List<GameDto>,
+    val total: Long,
+    val page: Int,
+    val perPage: Int,
+)
+
+/** Wrapper for GET /api/consoles/:id/games */
+@Serializable
+data class ConsoleGamesResponse(
+    val console: ConsoleDto,
+    val games: List<GameDto>,
 )
 
 @Serializable
 data class SaveStateDto(
-    val id: String,
-    @SerialName("game_id") val gameId: String,
+    val id: Long,
+    val userId: Long = 0,
+    val gameId: Long,
     val name: String,
-    @SerialName("created_at") val createdAt: String,
-    val size: Long,
-    @SerialName("is_auto_save") val isAutoSave: Boolean = false,
-    @SerialName("screenshot_url") val screenshotUrl: String? = null,
+    val fileSize: Long = 0,
+    val isAuto: Boolean = false,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
 data class LibretroCoreDto(
-    val id: String,
+    val id: Long,
     val name: String,
-    @SerialName("system_name") val systemName: String,
-    val version: String,
-    @SerialName("file_size") val fileSize: Long,
+    val displayName: String = "",
+    val description: String? = null,
+    val version: String? = null,
+    val platforms: String = "",
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+/** Wrapper for GET /api/games/:id/core when core is not in DB */
+@Serializable
+data class CoreNameResponse(
+    val coreName: String,
+)
+
+/** Play history entry returned by GET /api/user/recent */
+@Serializable
+data class PlayHistoryDto(
+    val id: Long,
+    val userId: Long = 0,
+    val gameId: Long = 0,
+    val game: GameDto? = null,
+    val lastPlayed: String? = null,
+    val playTime: Long = 0,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+/** Favorite entry returned by GET /api/user/favorites */
+@Serializable
+data class FavoriteDto(
+    val id: Long,
+    val userId: Long = 0,
+    val gameId: Long = 0,
+    val game: GameDto? = null,
+    val createdAt: String? = null,
 )

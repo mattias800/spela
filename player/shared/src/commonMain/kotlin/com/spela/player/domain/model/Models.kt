@@ -15,41 +15,45 @@ data class ServerConnection(
 data class AuthTokens(
     val accessToken: String,
     val refreshToken: String,
-    val expiresAt: Instant,
 )
 
 @Serializable
 data class User(
-    val id: String,
+    val id: Long,
     val username: String,
+    val email: String = "",
     val role: String,
+    val avatarUrl: String? = null,
 )
 
 @Serializable
 data class Console(
-    val id: String,
+    val id: Long,
     val name: String,
     val abbreviation: String,
     val gameCount: Int,
-    val coverUrl: String? = null,
-    val colorTheme: String? = null,
+    val colorTheme: String = "#6366f1",
+    val coverAspect: String = "3:4",
+    val defaultCore: String = "",
 )
 
 @Serializable
 data class Game(
-    val id: String,
+    val id: Long,
     val title: String,
-    val consoleId: String,
-    val consoleName: String,
+    val consoleId: Long,
+    val consoleName: String = "",
     val coverUrl: String? = null,
     val description: String? = null,
     val developer: String? = null,
     val publisher: String? = null,
-    val releaseYear: Int? = null,
+    val releaseDate: String? = null,
     val genre: String? = null,
     val fileSize: Long = 0,
     val fileName: String = "",
-    val coreName: String? = null,
+    val coreOverride: String? = null,
+    val players: Int = 0,
+    val rating: Double = 0.0,
 )
 
 @Serializable
@@ -63,22 +67,21 @@ data class GameDetail(
 
 @Serializable
 data class SaveState(
-    val id: String,
-    val gameId: String,
+    val id: Long,
+    val gameId: Long,
     val name: String,
-    val createdAt: Instant,
-    val size: Long,
-    val isAutoSave: Boolean = false,
-    val screenshotUrl: String? = null,
+    val createdAt: Instant? = null,
+    val fileSize: Long = 0,
+    val isAuto: Boolean = false,
 )
 
 @Serializable
 data class LibretroCore(
-    val id: String,
+    val id: Long,
     val name: String,
-    val systemName: String,
-    val version: String,
-    val fileSize: Long,
+    val displayName: String = "",
+    val version: String? = null,
+    val platforms: String = "",
 )
 
 enum class DownloadState {

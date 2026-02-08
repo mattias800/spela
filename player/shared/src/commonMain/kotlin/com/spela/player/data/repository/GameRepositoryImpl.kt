@@ -1,7 +1,9 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.extractGame
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.data.remote.dto.toGameDetail
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
@@ -16,27 +18,27 @@ class GameRepositoryImpl(
     }
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> = runCatching {
-        apiClient.getGamesForConsole(consoleId).map { it.toDomain() }
+        apiClient.getGamesForConsole(consoleId).games.map { it.toDomain() }
     }
 
     override suspend fun getAllGames(): Result<List<Game>> = runCatching {
-        apiClient.getAllGames().map { it.toDomain() }
+        apiClient.getAllGames().games.map { it.toDomain() }
     }
 
     override suspend fun searchGames(query: String): Result<List<Game>> = runCatching {
-        apiClient.searchGames(query).map { it.toDomain() }
+        apiClient.searchGames(query).games.map { it.toDomain() }
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> = runCatching {
-        apiClient.getGameDetail(gameId).toDomain()
+        apiClient.getGameDetail(gameId).toGameDetail()
     }
 
     override suspend fun getRecentGames(): Result<List<Game>> = runCatching {
-        apiClient.getRecentGames().map { it.toDomain() }
+        apiClient.getRecentGames().mapNotNull { it.extractGame() }
     }
 
     override suspend fun getFavoriteGames(): Result<List<Game>> = runCatching {
-        apiClient.getFavoriteGames().map { it.toDomain() }
+        apiClient.getFavoriteGames().mapNotNull { it.extractGame() }
     }
 
     override suspend fun addFavorite(gameId: String): Result<Unit> = runCatching {

@@ -13,8 +13,8 @@ class LoginUseCase(private val authRepository: AuthRepository) {
 }
 
 class RegisterUseCase(private val authRepository: AuthRepository) {
-    suspend operator fun invoke(serverUrl: String, username: String, password: String): Result<AuthTokens> {
-        return authRepository.register(serverUrl, username, password).onSuccess {
+    suspend operator fun invoke(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
+        return authRepository.register(serverUrl, username, email, password).onSuccess {
             authRepository.storeTokens(it)
         }
     }

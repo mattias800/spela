@@ -90,11 +90,11 @@ class GameListViewModelTest {
     @Test
     fun selectConsoleLoadsGames() = runTest(testDispatcher) {
         val vm = createViewModel()
-        vm.onIntent(GameListIntent.SelectConsole("nes"))
+        vm.onIntent(GameListIntent.SelectConsole("1"))
         advanceUntilIdle()
 
         val state = vm.state.value
-        assertEquals("nes", state.selectedConsoleId)
+        assertEquals("1", state.selectedConsoleId)
         assertEquals(2, state.games.size)
     }
 
@@ -139,14 +139,14 @@ class FakeGameRepository : GameRepository {
     var shouldFail = false
 
     private val consoles = listOf(
-        Console("nes", "NES", "NES", 10),
-        Console("snes", "SNES", "SNES", 5),
+        Console(1, "NES", "NES", 10),
+        Console(2, "SNES", "SNES", 5),
     )
 
     private val games = listOf(
-        Game("1", "Super Mario Bros.", "nes", "NES", fileSize = 40960, fileName = "smb.nes"),
-        Game("2", "The Legend of Zelda", "nes", "NES", fileSize = 131072, fileName = "zelda.nes"),
-        Game("3", "Chrono Trigger", "snes", "SNES", fileSize = 4194304, fileName = "ct.sfc"),
+        Game(1, "Super Mario Bros.", 1, "NES", fileSize = 40960, fileName = "smb.nes"),
+        Game(2, "The Legend of Zelda", 1, "NES", fileSize = 131072, fileName = "zelda.nes"),
+        Game(3, "Chrono Trigger", 2, "SNES", fileSize = 4194304, fileName = "ct.sfc"),
     )
 
     override suspend fun getConsoles(): Result<List<Console>> {
@@ -155,7 +155,7 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
-        else Result.success(games.filter { it.consoleId == consoleId })
+        else Result.success(games.filter { it.consoleId == consoleId.toLongOrNull() })
     }
 
     override suspend fun getAllGames(): Result<List<Game>> {
@@ -168,7 +168,7 @@ class FakeGameRepository : GameRepository {
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> {
-        val game = games.find { it.id == gameId }
+        val game = games.find { it.id == gameId.toLongOrNull() }
             ?: return Result.failure(Exception("Not found"))
         return Result.success(GameDetail(game))
     }
