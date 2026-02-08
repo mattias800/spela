@@ -24,15 +24,17 @@ fun ConsoleDto.toDomain(): Console = Console(
     abbreviation = abbreviation,
     gameCount = gameCount,
     colorTheme = colorTheme,
-    coverAspect = coverAspect,
+    coverAspectRatio = coverAspectRatio,
     defaultCore = defaultCore,
+    iconUrl = iconUrl,
 )
 
+/** Maps the enriched GameResponse DTO to domain Game. */
 fun GameDto.toDomain(): Game = Game(
     id = id,
     title = title,
     consoleId = consoleId,
-    consoleName = console?.name ?: "",
+    consoleName = consoleName,
     coverUrl = coverUrl,
     description = description,
     developer = developer,
@@ -44,15 +46,18 @@ fun GameDto.toDomain(): Game = Game(
     coreOverride = coreOverride,
     players = players,
     rating = rating,
+    isFavorite = isFavorite,
+    lastPlayedAt = lastPlayedAt,
+    totalPlayTime = totalPlayTime,
 )
 
 /**
- * The backend's GET /api/games/:id returns a flat Game object, not a wrapped GameDetail.
- * We construct GameDetail client-side from the flat Game + separate API calls.
+ * Constructs GameDetail from the enriched GameResponse.
+ * screenshotUrls comes directly from the response.
  */
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
-    screenshots = screenshotUrl?.let { listOf(it) } ?: emptyList(),
+    screenshots = screenshotUrls,
 )
 
 fun SaveStateDto.toDomain(): SaveState = SaveState(
@@ -71,7 +76,3 @@ fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     version = version,
     platforms = platforms,
 )
-
-fun PlayHistoryDto.extractGame(): Game? = game?.toDomain()
-
-fun FavoriteDto.extractGame(): Game? = game?.toDomain()

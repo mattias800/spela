@@ -93,12 +93,14 @@ class GameDetailViewModel(
 
     private fun toggleFavorite() {
         val detail = _state.value.gameDetail ?: return
+        val currentlyFavorite = detail.game.isFavorite
         scope.launch(dispatchers.io) {
-            toggleFavoriteUseCase(detail.game.id, detail.isFavorite).fold(
+            toggleFavoriteUseCase(detail.game.id, currentlyFavorite).fold(
                 onSuccess = {
                     _state.update {
+                        val updatedGame = it.gameDetail?.game?.copy(isFavorite = !currentlyFavorite)
                         it.copy(
-                            gameDetail = it.gameDetail?.copy(isFavorite = !detail.isFavorite)
+                            gameDetail = updatedGame?.let { g -> it.gameDetail?.copy(game = g) }
                         )
                     }
                 },

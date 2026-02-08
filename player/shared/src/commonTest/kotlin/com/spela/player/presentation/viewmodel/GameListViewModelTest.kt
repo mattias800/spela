@@ -139,14 +139,14 @@ class FakeGameRepository : GameRepository {
     var shouldFail = false
 
     private val consoles = listOf(
-        Console(1, "NES", "NES", 10),
-        Console(2, "SNES", "SNES", 5),
+        Console("1", "NES", "NES", 10),
+        Console("2", "SNES", "SNES", 5),
     )
 
     private val games = listOf(
-        Game(1, "Super Mario Bros.", 1, "NES", fileSize = 40960, fileName = "smb.nes"),
-        Game(2, "The Legend of Zelda", 1, "NES", fileSize = 131072, fileName = "zelda.nes"),
-        Game(3, "Chrono Trigger", 2, "SNES", fileSize = 4194304, fileName = "ct.sfc"),
+        Game("1", "Super Mario Bros.", "1", "NES", fileSize = 40960, fileName = "smb.nes"),
+        Game("2", "The Legend of Zelda", "1", "NES", fileSize = 131072, fileName = "zelda.nes"),
+        Game("3", "Chrono Trigger", "2", "SNES", fileSize = 4194304, fileName = "ct.sfc"),
     )
 
     override suspend fun getConsoles(): Result<List<Console>> {
@@ -155,7 +155,7 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
-        else Result.success(games.filter { it.consoleId == consoleId.toLongOrNull() })
+        else Result.success(games.filter { it.consoleId == consoleId })
     }
 
     override suspend fun getAllGames(): Result<List<Game>> {
@@ -168,7 +168,7 @@ class FakeGameRepository : GameRepository {
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> {
-        val game = games.find { it.id == gameId.toLongOrNull() }
+        val game = games.find { it.id == gameId }
             ?: return Result.failure(Exception("Not found"))
         return Result.success(GameDetail(game))
     }

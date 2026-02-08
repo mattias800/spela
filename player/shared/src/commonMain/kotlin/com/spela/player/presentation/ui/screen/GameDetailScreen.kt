@@ -268,11 +268,11 @@ private fun GameInfoContent(
         }
 
         SpButton(
-            text = if (detail.isFavorite) "\u2665" else "\u2661",
+            text = if (detail.game.isFavorite) "\u2665" else "\u2661",
             onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
-            style = if (detail.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
+            style = if (detail.game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
-                contentDescription = if (detail.isFavorite) "Remove from favorites" else "Add to favorites"
+                contentDescription = if (detail.game.isFavorite) "Remove from favorites" else "Add to favorites"
                 role = Role.Button
             },
         )

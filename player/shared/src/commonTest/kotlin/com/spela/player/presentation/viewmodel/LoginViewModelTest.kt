@@ -211,7 +211,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun getCurrentUser(): Result<User> {
-        return Result.success(User(1, "testuser", "test@example.com", "user"))
+        return Result.success(User("1", "testuser", "test@example.com", "user"))
     }
 
     override suspend fun getStoredTokens(): AuthTokens? = stored

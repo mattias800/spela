@@ -82,35 +82,35 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/consoles").body()
     }
 
-    /** Returns {console, games} wrapper */
-    suspend fun getGamesForConsole(consoleId: String): ConsoleGamesResponse {
+    /** Returns flat GameResponse[] for a console */
+    suspend fun getGamesForConsole(consoleId: String): List<GameDto> {
         return client.get("$baseUrl/api/consoles/$consoleId/games").body()
     }
 
-    /** Returns {games, total, page, perPage} wrapper */
+    /** Returns {data, total, page, pageSize} paginated wrapper */
     suspend fun getAllGames(): GameListResponse {
         return client.get("$baseUrl/api/games").body()
     }
 
-    /** Returns {games, total, page, perPage} wrapper with search filter */
+    /** Returns {data, total, page, pageSize} paginated wrapper with search filter */
     suspend fun searchGames(query: String): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("search", query)
         }.body()
     }
 
-    /** Returns a flat Game object (not wrapped) */
+    /** Returns a single enriched GameResponse */
     suspend fun getGameDetail(gameId: String): GameDto {
         return client.get("$baseUrl/api/games/$gameId").body()
     }
 
-    /** Returns PlayHistory[] with embedded game objects */
-    suspend fun getRecentGames(): List<PlayHistoryDto> {
+    /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
+    suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()
     }
 
-    /** Returns Favorite[] with embedded game objects */
-    suspend fun getFavoriteGames(): List<FavoriteDto> {
+    /** Returns flat GameResponse[] with isFavorite=true */
+    suspend fun getFavoriteGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/favorites").body()
     }
 

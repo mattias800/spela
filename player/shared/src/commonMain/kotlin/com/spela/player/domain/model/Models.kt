@@ -19,7 +19,7 @@ data class AuthTokens(
 
 @Serializable
 data class User(
-    val id: Long,
+    val id: String,
     val username: String,
     val email: String = "",
     val role: String,
@@ -28,20 +28,21 @@ data class User(
 
 @Serializable
 data class Console(
-    val id: Long,
+    val id: String,
     val name: String,
     val abbreviation: String,
     val gameCount: Int,
     val colorTheme: String = "#6366f1",
-    val coverAspect: String = "3:4",
+    val coverAspectRatio: Double = 0.75,
     val defaultCore: String = "",
+    val iconUrl: String = "",
 )
 
 @Serializable
 data class Game(
-    val id: Long,
+    val id: String,
     val title: String,
-    val consoleId: Long,
+    val consoleId: String,
     val consoleName: String = "",
     val coverUrl: String? = null,
     val description: String? = null,
@@ -54,15 +55,15 @@ data class Game(
     val coreOverride: String? = null,
     val players: Int = 0,
     val rating: Double = 0.0,
+    val isFavorite: Boolean = false,
+    val lastPlayedAt: String? = null,
+    val totalPlayTime: Long = 0,
 )
 
 @Serializable
 data class GameDetail(
     val game: Game,
     val screenshots: List<String> = emptyList(),
-    val lastPlayed: Instant? = null,
-    val playTime: Long = 0,
-    val isFavorite: Boolean = false,
 )
 
 @Serializable

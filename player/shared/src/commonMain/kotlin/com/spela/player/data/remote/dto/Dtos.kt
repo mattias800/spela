@@ -29,7 +29,7 @@ data class RefreshRequest(
 
 @Serializable
 data class UserDto(
-    val id: Long,
+    val id: String,
     val username: String,
     val email: String = "",
     val role: String,
@@ -38,30 +38,33 @@ data class UserDto(
     val updatedAt: String? = null,
 )
 
+/** Matches ConsoleResponse in responses.go */
 @Serializable
 data class ConsoleDto(
-    val id: Long,
+    val id: String,
     val name: String,
     val abbreviation: String,
-    val extensions: String = "",
+    val extensions: List<String> = emptyList(),
     val defaultCore: String = "",
-    val coverAspect: String = "3:4",
+    val coverAspectRatio: Double = 0.75,
     val colorTheme: String = "#6366f1",
+    val iconUrl: String = "",
     val gameCount: Int = 0,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )
 
+/** Matches GameResponse in responses.go - enriched with consoleName, isFavorite, etc. */
 @Serializable
 data class GameDto(
-    val id: Long,
+    val id: String,
     val title: String,
-    val consoleId: Long,
-    val console: ConsoleDto? = null,
+    val consoleId: String,
+    val consoleName: String = "",
     val fileName: String = "",
     val fileSize: Long = 0,
     val coverUrl: String? = null,
-    val screenshotUrl: String? = null,
+    val screenshotUrls: List<String> = emptyList(),
     val description: String? = null,
     val developer: String? = null,
     val publisher: String? = null,
@@ -71,24 +74,20 @@ data class GameDto(
     val rating: Double = 0.0,
     val coreOverride: String? = null,
     val scraperId: String? = null,
+    val isFavorite: Boolean = false,
+    val lastPlayedAt: String? = null,
+    val totalPlayTime: Long = 0,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )
 
-/** Wrapper for GET /api/games which returns paginated results */
+/** Wrapper for GET /api/games which returns {data, total, page, pageSize} */
 @Serializable
 data class GameListResponse(
-    val games: List<GameDto>,
+    val data: List<GameDto>,
     val total: Long,
     val page: Int,
-    val perPage: Int,
-)
-
-/** Wrapper for GET /api/consoles/:id/games */
-@Serializable
-data class ConsoleGamesResponse(
-    val console: ConsoleDto,
-    val games: List<GameDto>,
+    val pageSize: Int,
 )
 
 @Serializable
@@ -119,27 +118,4 @@ data class LibretroCoreDto(
 @Serializable
 data class CoreNameResponse(
     val coreName: String,
-)
-
-/** Play history entry returned by GET /api/user/recent */
-@Serializable
-data class PlayHistoryDto(
-    val id: Long,
-    val userId: Long = 0,
-    val gameId: Long = 0,
-    val game: GameDto? = null,
-    val lastPlayed: String? = null,
-    val playTime: Long = 0,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
-
-/** Favorite entry returned by GET /api/user/favorites */
-@Serializable
-data class FavoriteDto(
-    val id: Long,
-    val userId: Long = 0,
-    val gameId: Long = 0,
-    val game: GameDto? = null,
-    val createdAt: String? = null,
 )
