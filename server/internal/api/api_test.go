@@ -208,10 +208,10 @@ func TestListConsoles(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, len(consoles) > 0, "should have seeded consoles")
 
-	// Verify API contract: numeric ID, extensions as array, coverAspectRatio as number
+	// Verify API contract: string ID, extensions as array, coverAspectRatio as number
 	first := consoles[0]
-	_, idIsNumber := first["id"].(float64)
-	assert.True(t, idIsNumber, "id should be a number")
+	_, idIsString := first["id"].(string)
+	assert.True(t, idIsString, "id should be a string")
 	_, extsIsArray := first["extensions"].([]interface{})
 	assert.True(t, extsIsArray, "extensions should be an array")
 	_, ratioIsFloat := first["coverAspectRatio"].(float64)

@@ -12,7 +12,7 @@ import (
 // ConsoleResponse is the API response for a console, with extensions as an array
 // and coverAspectRatio as a number.
 type ConsoleResponse struct {
-	ID               uint      `json:"id"`
+	ID               string    `json:"id"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 	Name             string    `json:"name"`
@@ -27,10 +27,10 @@ type ConsoleResponse struct {
 
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID             uint     `json:"id"`
+	ID             string   `json:"id"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
-	ConsoleID      uint     `json:"consoleId"`
+	ConsoleID      string   `json:"consoleId"`
 	ConsoleName    string   `json:"consoleName"`
 	Title          string   `json:"title"`
 	FileName       string   `json:"fileName"`
@@ -69,7 +69,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 	ratio := parseAspectRatio(c.CoverAspect)
 
 	return ConsoleResponse{
-		ID:               c.ID,
+		ID:               strconv.FormatUint(uint64(c.ID), 10),
 		CreatedAt:        c.CreatedAt,
 		UpdatedAt:        c.UpdatedAt,
 		Name:             c.Name,
@@ -135,10 +135,10 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	}
 
 	resp := GameResponse{
-		ID:             g.ID,
+		ID:             strconv.FormatUint(uint64(g.ID), 10),
 		CreatedAt:      g.CreatedAt,
 		UpdatedAt:      g.UpdatedAt,
-		ConsoleID:      g.ConsoleID,
+		ConsoleID:      strconv.FormatUint(uint64(g.ConsoleID), 10),
 		ConsoleName:    consoleName,
 		Title:          g.Title,
 		FileName:       g.FileName,

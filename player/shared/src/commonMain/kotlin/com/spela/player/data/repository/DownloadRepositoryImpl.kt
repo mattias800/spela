@@ -22,19 +22,19 @@ class DownloadRepositoryImpl(
 
     override fun observeDownload(gameId: String): Flow<DownloadProgress> =
         downloads.map { map ->
-            map[gameId] ?: DownloadProgress(gameId, DownloadState.IDLE)
+            map[gameId] ?: DownloadProgress(gameId = gameId, state = DownloadState.IDLE)
         }
 
-    override suspend fun downloadGame(gameId: String): Result<String> = runCatching {
-        downloads.update { it + (gameId to DownloadProgress(gameId, DownloadState.QUEUED)) }
+    override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> = runCatching {
+        downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
 
         downloads.update {
-            it + (gameId to DownloadProgress(gameId, DownloadState.DOWNLOADING))
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING))
         }
 
         val data = apiClient.downloadGame(gameId) { downloaded, total ->
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, DownloadState.DOWNLOADING, downloaded, total))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total))
             }
         }
 
@@ -42,13 +42,13 @@ class DownloadRepositoryImpl(
         fileStorage.writeFile(path, data)
 
         downloads.update {
-            it + (gameId to DownloadProgress(gameId, DownloadState.COMPLETED, data.size.toLong(), data.size.toLong()))
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, data.size.toLong(), data.size.toLong()))
         }
 
         path
     }.onFailure {
         downloads.update {
-            it + (gameId to DownloadProgress(gameId, DownloadState.FAILED))
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
         }
     }
 
