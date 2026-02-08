@@ -14,28 +14,31 @@ export interface AuthTokens {
   user: User;
 }
 
+// ConsoleResponse from backend responses.go DTO layer
 export interface Console {
-  id: number;
+  id: string;
   name: string;
   abbreviation: string;
-  extensions: string; // comma-separated
+  extensions: string[]; // backend splits comma-separated into array
   defaultCore: string;
-  coverAspect: string; // e.g. "3:4"
+  coverAspectRatio: number; // backend parses "3:4" into 0.75
   colorTheme: string;
-  gameCount?: number;
+  iconUrl: string;
+  gameCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
+// GameResponse from backend responses.go DTO layer
 export interface Game {
-  id: number;
+  id: string;
   title: string;
-  consoleId: number;
-  console?: Console;
+  consoleId: string;
+  consoleName: string;
   fileName: string;
   fileSize: number;
   coverUrl?: string;
-  screenshotUrl?: string;
+  screenshotUrls: string[];
   description?: string;
   developer?: string;
   publisher?: string;
@@ -44,6 +47,10 @@ export interface Game {
   players?: number;
   rating?: number;
   coreOverride?: string;
+  scraperId?: string;
+  isFavorite: boolean;
+  lastPlayedAt?: string | null;
+  totalPlayTime: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,38 +66,15 @@ export interface SaveState {
   updatedAt: string;
 }
 
-export interface PlayHistory {
-  id: number;
-  userId: number;
-  gameId: number;
-  game?: Game;
-  lastPlayed: string;
-  playTime: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Favorite {
-  id: number;
-  userId: number;
-  gameId: number;
-  game?: Game;
-  createdAt: string;
-}
-
 // Backend stores settings as flat key-value pairs
 export type ServerSettingsMap = Record<string, string>;
 
+// PaginatedResponse from backend responses.go
 export interface GamesResponse {
-  games: Game[];
+  data: Game[];
   total: number;
   page: number;
-  perPage: number;
-}
-
-export interface ConsoleGamesResponse {
-  console: Console;
-  games: Game[];
+  pageSize: number;
 }
 
 export interface GameFilters {
@@ -104,7 +88,7 @@ export interface GameFilters {
 }
 
 export interface MetadataMatch {
-  gameId: number;
+  gameId: string;
   currentTitle: string;
   currentCoverUrl?: string;
   suggestions: MetadataSuggestion[];

@@ -6,13 +6,10 @@ import type { Game } from "@/types/api";
 
 interface GameCardProps {
   game: Game;
-  isFavorite?: boolean;
   onToggleFavorite?: (game: Game) => void;
 }
 
-export function GameCard({ game, isFavorite, onToggleFavorite }: GameCardProps) {
-  const consoleName = game.console?.name ?? "";
-
+export function GameCard({ game, onToggleFavorite }: GameCardProps) {
   return (
     <Link
       to={`/games/${game.id}`}
@@ -48,21 +45,21 @@ export function GameCard({ game, isFavorite, onToggleFavorite }: GameCardProps) 
             className={cn(
               "absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-200",
               "opacity-0 group-hover:opacity-100",
-              isFavorite
+              game.isFavorite
                 ? "bg-danger-500/20 text-danger-500 opacity-100"
                 : "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
             )}
           >
             <Heart
-              className={cn("h-4 w-4", isFavorite && "fill-current")}
+              className={cn("h-4 w-4", game.isFavorite && "fill-current")}
             />
           </button>
         )}
 
         {/* Console badge */}
-        {consoleName && (
+        {game.consoleName && (
           <div className="absolute bottom-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Badge variant="brand">{consoleName}</Badge>
+            <Badge variant="brand">{game.consoleName}</Badge>
           </div>
         )}
       </div>
@@ -71,8 +68,8 @@ export function GameCard({ game, isFavorite, onToggleFavorite }: GameCardProps) 
         <h3 className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </h3>
-        {consoleName && (
-          <p className="text-xs text-surface-500">{consoleName}</p>
+        {game.consoleName && (
+          <p className="text-xs text-surface-500">{game.consoleName}</p>
         )}
       </div>
     </Link>

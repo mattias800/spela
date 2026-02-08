@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Game, GamesResponse, GameFilters, SaveState, PlayHistory, Favorite } from "@/types/api";
+import type { Game, GamesResponse, GameFilters, SaveState } from "@/types/api";
 
 export function useGames(filters?: GameFilters) {
   const params = new URLSearchParams();
@@ -31,20 +31,14 @@ export function useGame(id: string) {
 export function useRecentGames() {
   return useQuery({
     queryKey: ["games", "recent"],
-    queryFn: async () => {
-      const history = await api.get<PlayHistory[]>("/user/recent");
-      return history.map((h) => h.game).filter((g): g is Game => !!g);
-    },
+    queryFn: () => api.get<Game[]>("/user/recent"),
   });
 }
 
 export function useFavoriteGames() {
   return useQuery({
     queryKey: ["games", "favorites"],
-    queryFn: async () => {
-      const favorites = await api.get<Favorite[]>("/user/favorites");
-      return favorites.map((f) => f.game).filter((g): g is Game => !!g);
-    },
+    queryFn: () => api.get<Game[]>("/user/favorites"),
   });
 }
 
@@ -52,7 +46,7 @@ export function useToggleFavorite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, isFavorite }: { gameId: number; isFavorite: boolean }) => {
+    mutationFn: async ({ gameId, isFavorite }: { gameId: string; isFavorite: boolean }) => {
       if (isFavorite) {
         await api.delete(`/user/favorites/${gameId}`);
       } else {
@@ -78,11 +72,11 @@ export function useDeleteSave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, saveId }: { gameId: number; saveId: number }) => {
+    mutationFn: async ({ gameId, saveId }: { gameId: string; saveId: number }) => {
       await api.delete(`/games/${gameId}/saves/${saveId}`);
     },
     onSuccess: (_, { gameId }) => {
-      queryClient.invalidateQueries({ queryKey: ["saves", String(gameId)] });
+      queryClient.invalidateQueries({ queryKey: ["saves", gameId] });
     },
   });
 }

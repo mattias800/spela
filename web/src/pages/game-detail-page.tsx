@@ -11,7 +11,7 @@ import {
   Download,
 } from "lucide-react";
 import { Button, Badge, Card, CardContent, GameDetailSkeleton, Modal } from "@/components/ui";
-import { useGame, useGameSaves, useToggleFavorite, useDeleteSave, useFavoriteGames } from "@/hooks/use-games";
+import { useGame, useGameSaves, useToggleFavorite, useDeleteSave } from "@/hooks/use-games";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useState } from "react";
@@ -21,13 +21,11 @@ export function GameDetailPage() {
   const navigate = useNavigate();
   const { data: game, isLoading } = useGame(id ?? "");
   const { data: saves } = useGameSaves(id ?? "");
-  const { data: favoriteGamesData } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
   const deleteSave = useDeleteSave();
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
-  const favoriteIds = new Set(favoriteGamesData?.map((g) => g.id) ?? []);
-  const isFavorite = game ? favoriteIds.has(game.id) : false;
+  const isFavorite = game?.isFavorite ?? false;
 
   if (isLoading) {
     return (
@@ -48,7 +46,7 @@ export function GameDetailPage() {
     );
   }
 
-  const consoleName = game.console?.name ?? "";
+  const consoleName = game.consoleName ?? "";
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -145,17 +143,23 @@ export function GameDetailPage() {
         </div>
       </div>
 
-      {/* Screenshot */}
-      {game.screenshotUrl && (
+      {/* Screenshots */}
+      {game.screenshotUrls && game.screenshotUrls.length > 0 && (
         <section>
-          <h2 className="text-xl font-bold text-surface-100 mb-4">Screenshot</h2>
-          <div className="rounded-xl overflow-hidden border border-surface-800 bg-surface-900 max-w-2xl">
-            <img
-              src={game.screenshotUrl}
-              alt={`${game.title} screenshot`}
-              className="w-full aspect-video object-cover hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
+          <h2 className="text-xl font-bold text-surface-100 mb-4">
+            {game.screenshotUrls.length === 1 ? "Screenshot" : "Screenshots"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+            {game.screenshotUrls.map((url, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-surface-800 bg-surface-900">
+                <img
+                  src={url}
+                  alt={`${game.title} screenshot ${i + 1}`}
+                  className="w-full aspect-video object-cover hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+            ))}
           </div>
         </section>
       )}

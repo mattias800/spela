@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Library, Grid3X3, List, ArrowUpDown } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, SearchInput, Select, EmptyState, Badge } from "@/components/ui";
-import { useGames, useToggleFavorite, useFavoriteGames } from "@/hooks/use-games";
+import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useConsoles } from "@/hooks/use-consoles";
 import { cn } from "@/lib/cn";
 import { formatFileSize } from "@/lib/format";
@@ -21,16 +21,13 @@ export function GamesPage() {
 
   const { data, isLoading } = useGames(filters);
   const { data: consoles } = useConsoles();
-  const { data: favoriteGamesData } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
 
-  const favoriteIds = new Set(favoriteGamesData?.map((g) => g.id) ?? []);
-
   function handleToggleFavorite(game: Game) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: favoriteIds.has(game.id) });
+    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
   }
 
-  const games = data?.games ?? [];
+  const games = data?.data ?? [];
 
   const consoleOptions = [
     { value: "", label: "All Consoles" },
@@ -161,7 +158,6 @@ export function GamesPage() {
             <GameCard
               key={game.id}
               game={game}
-              isFavorite={favoriteIds.has(game.id)}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
@@ -169,7 +165,7 @@ export function GamesPage() {
       ) : (
         <div className="space-y-1">
           {games.map((game) => {
-            const consoleName = game.console?.name ?? "";
+            const consoleName = game.consoleName ?? "";
             return (
               <Link
                 key={game.id}

@@ -39,7 +39,6 @@ export function FavoritesPage() {
             <GameCard
               key={game.id}
               game={game}
-              isFavorite
               onToggleFavorite={handleToggleFavorite}
             />
           ))}

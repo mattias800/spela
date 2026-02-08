@@ -65,7 +65,7 @@ export function useUpdateGameMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, metadata }: { gameId: number; metadata: Record<string, unknown> }) => {
+    mutationFn: async ({ gameId, metadata }: { gameId: string; metadata: Record<string, unknown> }) => {
       await api.post(`/games/${gameId}/metadata`, metadata);
     },
     onSuccess: () => {
