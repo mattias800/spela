@@ -375,6 +375,23 @@ func TestListCores(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
+func TestHealthEndpoint(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/health", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp["status"])
+	assert.Equal(t, "ok", resp["database"])
+	assert.Equal(t, "0.1.0", resp["version"])
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
@@ -37,6 +38,29 @@ func NewRouter(cfg Config) *gin.Engine {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	// Health check (public, no auth required)
+	r.GET("/api/health", func(c *gin.Context) {
+		sqlDB, err := cfg.DB.DB()
+		dbStatus := "ok"
+		if err != nil {
+			dbStatus = "error: " + err.Error()
+		} else if err := sqlDB.Ping(); err != nil {
+			dbStatus = "error: " + err.Error()
+		}
+
+		var gameCount, userCount int64
+		cfg.DB.Model(&db.Game{}).Count(&gameCount)
+		cfg.DB.Model(&db.User{}).Count(&userCount)
+
+		c.JSON(200, gin.H{
+			"status":   "ok",
+			"version":  "0.1.0",
+			"database": dbStatus,
+			"games":    gameCount,
+			"users":    userCount,
+		})
+	})
 
 	// Rate limiter for auth endpoints
 	authLimiter := NewRateLimiter(10, time.Minute)
