@@ -1,8 +1,10 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,13 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,8 +30,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
@@ -38,6 +42,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpGradientCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -46,6 +51,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: GameListViewModel,
@@ -65,7 +71,7 @@ fun HomeScreen(
     ) {
         SpTopBar(title = "Spela")
 
-        if (state.isLoading && state.recentGames.isEmpty()) {
+        if (state.isLoading && state.recentGames.isEmpty() && state.consoles.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -73,54 +79,81 @@ fun HomeScreen(
                 SpLoadingIndicator(message = "Loading your library...")
             }
         } else {
-            LazyColumn(
+            PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = { viewModel.onIntent(GameListIntent.LoadDashboard) },
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = SpSpacing.Default),
             ) {
-                // Continue Playing section
-                if (state.recentGames.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = "Continue Playing",
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        )
-                        Spacer(Modifier.height(SpSpacing.Medium))
-                        ContinuePlayingRow(
-                            games = state.recentGames.take(10),
-                            onGameSelected = onGameSelected,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XLarge))
-                    }
-                }
+                val isEmpty = state.recentGames.isEmpty() &&
+                        state.favoriteGames.isEmpty() &&
+                        state.consoles.isEmpty()
 
-                // Recently Added (using favorites as proxy)
-                if (state.favoriteGames.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = "Favorites",
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        )
-                        Spacer(Modifier.height(SpSpacing.Medium))
-                        GameCarouselRow(
-                            games = state.favoriteGames.take(10),
-                            onGameSelected = onGameSelected,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XLarge))
+                if (isEmpty && !state.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SpEmptyStates.EmptyLibrary()
                     }
-                }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                    ) {
+                        // Continue Playing section
+                        if (state.recentGames.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Continue Playing",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                ContinuePlayingRow(
+                                    games = state.recentGames.take(10),
+                                    onGameSelected = onGameSelected,
+                                )
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
 
-                // Consoles Grid
-                if (state.consoles.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = "Consoles",
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        )
-                        Spacer(Modifier.height(SpSpacing.Medium))
-                        ConsolesGrid(
-                            consoles = state.consoles,
-                            onConsoleSelected = onConsoleSelected,
-                        )
+                        // Favorites section
+                        if (state.favoriteGames.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Favorites",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                GameCarouselRow(
+                                    games = state.favoriteGames.take(10),
+                                    onGameSelected = onGameSelected,
+                                )
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Consoles Grid
+                        if (state.consoles.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Consoles",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                BoxWithConstraints(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                                ) {
+                                    val columnsPerRow = if (maxWidth > 600.dp) 3 else 2
+                                    ConsolesGrid(
+                                        consoles = state.consoles,
+                                        onConsoleSelected = onConsoleSelected,
+                                        columnsPerRow = columnsPerRow,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -137,7 +170,7 @@ private fun SectionHeader(
         text = title,
         style = SpTypography.HeadlineLarge,
         color = SpColor.OnBackground,
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = "$title section" },
     )
 }
 
@@ -150,7 +183,7 @@ private fun ContinuePlayingRow(
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(games) { game ->
+        items(games, key = { it.id }) { game ->
             ContinuePlayingCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },
@@ -165,7 +198,12 @@ private fun ContinuePlayingCard(
     onClick: () -> Unit,
 ) {
     SpCard(
-        modifier = Modifier.width(280.dp),
+        modifier = Modifier
+            .width(280.dp)
+            .semantics {
+                contentDescription = "Continue playing ${game.title} on ${game.consoleName}"
+                role = Role.Button
+            },
         onClick = onClick,
     ) {
         Row(
@@ -176,7 +214,7 @@ private fun ContinuePlayingCard(
         ) {
             SpCoverArt(
                 imageUrl = game.coverUrl,
-                contentDescription = game.title,
+                contentDescription = "${game.title} cover art",
                 modifier = Modifier.size(width = 60.dp, height = 84.dp),
                 cornerRadius = 8.dp,
             )
@@ -197,12 +235,16 @@ private fun ContinuePlayingCard(
                 )
             }
             Spacer(Modifier.width(SpSpacing.Small))
-            // Play indicator
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(SpColor.Primary),
+                    .background(SpColor.Primary)
+                    .focusable()
+                    .semantics {
+                        contentDescription = "Play ${game.title}"
+                        role = Role.Button
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -224,7 +266,7 @@ private fun GameCarouselRow(
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(games) { game ->
+        items(games, key = { it.id }) { game ->
             GameCoverCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },
@@ -239,13 +281,18 @@ private fun GameCoverCard(
     onClick: () -> Unit,
 ) {
     SpCard(
-        modifier = Modifier.width(SpSpacing.CoverMediumWidth),
+        modifier = Modifier
+            .width(SpSpacing.CoverMediumWidth)
+            .semantics {
+                contentDescription = "${game.title}, ${game.consoleName}"
+                role = Role.Button
+            },
         onClick = onClick,
     ) {
         Column {
             SpCoverArt(
                 imageUrl = game.coverUrl,
-                contentDescription = game.title,
+                contentDescription = "${game.title} cover art",
                 modifier = Modifier.fillMaxWidth(),
             )
             Column(
@@ -276,14 +323,13 @@ private fun GameCoverCard(
 private fun ConsolesGrid(
     consoles: List<Console>,
     onConsoleSelected: (String) -> Unit,
+    columnsPerRow: Int = 2,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        consoles.chunked(2).forEach { rowConsoles ->
+        consoles.chunked(columnsPerRow).forEach { rowConsoles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -295,8 +341,7 @@ private fun ConsolesGrid(
                         modifier = Modifier.weight(1f),
                     )
                 }
-                // Fill remaining space if odd number
-                if (rowConsoles.size == 1) {
+                repeat(columnsPerRow - rowConsoles.size) {
                     Spacer(Modifier.weight(1f))
                 }
             }
@@ -313,7 +358,12 @@ private fun ConsoleCard(
     val consoleColor = getConsoleColor(console.colorTheme)
 
     SpGradientCard(
-        modifier = modifier.height(100.dp),
+        modifier = modifier
+            .height(100.dp)
+            .semantics {
+                contentDescription = "${console.name}, ${console.gameCount} games"
+                role = Role.Button
+            },
         onClick = onClick,
         gradientColors = listOf(
             consoleColor.copy(alpha = 0.3f),

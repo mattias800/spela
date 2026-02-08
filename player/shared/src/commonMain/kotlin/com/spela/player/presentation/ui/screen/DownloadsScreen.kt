@@ -25,10 +25,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
+import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
@@ -68,7 +74,10 @@ fun DownloadsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(SpSpacing.Default),
+                            .padding(SpSpacing.Default)
+                            .semantics {
+                                contentDescription = "Local cache, ${formatCacheSize(state.cacheSize)}"
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -100,10 +109,11 @@ fun DownloadsScreen(
                         text = "Active Downloads",
                         style = SpTypography.HeadlineSmall,
                         color = SpColor.OnBackground,
+                        modifier = Modifier.semantics { heading() },
                     )
                 }
 
-                items(state.activeDownloads) { download ->
+                items(state.activeDownloads, key = { it.gameId }) { download ->
                     DownloadItem(
                         download = download,
                         onCancel = { viewModel.onIntent(DownloadsIntent.CancelDownload(download.gameId)) },
@@ -114,26 +124,7 @@ fun DownloadsScreen(
             // Empty state
             if (state.activeDownloads.isEmpty() && !state.isLoading) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No active downloads",
-                                style = SpTypography.HeadlineMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                            Spacer(Modifier.height(SpSpacing.Small))
-                            Text(
-                                text = "Games you download will appear here",
-                                style = SpTypography.BodyMedium,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                    }
+                    SpEmptyStates.NoActiveDownloads(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -145,11 +136,18 @@ private fun DownloadItem(
     download: DownloadProgress,
     onCancel: () -> Unit,
 ) {
+    val statusText = download.state.name.lowercase().replaceFirstChar { it.uppercase() }
+
     SpCard {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Default),
+                .padding(SpSpacing.Default)
+                .semantics {
+                    contentDescription = "Game ${download.gameId}, $statusText" +
+                            if (download.state == DownloadState.DOWNLOADING)
+                                ", ${(download.progress * 100).toInt()} percent" else ""
+                },
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -181,7 +179,7 @@ private fun DownloadItem(
                         color = SpColor.OnCard,
                     )
                     Text(
-                        text = download.state.name.lowercase().replaceFirstChar { it.uppercase() },
+                        text = statusText,
                         style = SpTypography.BodySmall,
                         color = SpColor.OnBackgroundTertiary,
                     )

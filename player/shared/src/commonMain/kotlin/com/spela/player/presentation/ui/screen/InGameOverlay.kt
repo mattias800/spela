@@ -7,9 +7,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.components.SpButton
@@ -58,108 +65,176 @@ fun InGameOverlay(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
-                ),
+                )
+                .semantics { contentDescription = "Game overlay, tap to dismiss" },
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SpColor.SurfaceElevated)
-                    .padding(SpSpacing.XLarge)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}, // Prevent click-through
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Game title
-                Text(
-                    text = state.gameTitle,
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                )
+            BoxWithConstraints {
+                val isLandscape = maxWidth > maxHeight
+                val panelWidth = if (isLandscape) 0.65f else 0.85f
 
-                Spacer(Modifier.height(SpSpacing.Small))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(panelWidth)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(SpColor.SurfaceElevated)
+                        .padding(SpSpacing.XLarge)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}, // Prevent click-through
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Game title
+                    Text(
+                        text = state.gameTitle,
+                        style = SpTypography.HeadlineMedium,
+                        color = SpColor.OnBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
 
-                // Performance stats
-                if (state.isRunning) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        PerformanceBadge(
-                            label = "FPS",
-                            value = "%.0f".format(state.fps),
-                            color = when {
-                                state.fps >= 55f -> SpColor.Success
-                                state.fps >= 30f -> SpColor.Warning
-                                else -> SpColor.Error
+                    Spacer(Modifier.height(SpSpacing.Small))
+
+                    // Performance stats
+                    if (state.isRunning) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Performance: %.0f FPS, %.1f ms frame time".format(
+                                    state.fps, state.frameTime
+                                )
                             },
-                        )
-                        PerformanceBadge(
-                            label = "Frame",
-                            value = "%.1fms".format(state.frameTime),
-                            color = SpColor.OnBackgroundSecondary,
-                        )
+                        ) {
+                            PerformanceBadge(
+                                label = "FPS",
+                                value = "%.0f".format(state.fps),
+                                color = when {
+                                    state.fps >= 55f -> SpColor.Success
+                                    state.fps >= 30f -> SpColor.Warning
+                                    else -> SpColor.Error
+                                },
+                            )
+                            PerformanceBadge(
+                                label = "Frame",
+                                value = "%.1fms".format(state.frameTime),
+                                color = SpColor.OnBackgroundSecondary,
+                            )
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(SpSpacing.XLarge))
+                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
 
-                // Action buttons - grid of overlay actions
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    OverlayAction(
-                        label = "Save",
-                        icon = "\uD83D\uDCBE",
-                        onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
-                    )
-                    OverlayAction(
-                        label = "Load",
-                        icon = "\uD83D\uDCC2",
-                        onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
-                    )
-                    OverlayAction(
-                        label = "Screenshot",
-                        icon = "\uD83D\uDCF7",
-                        onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                    )
-                    OverlayAction(
-                        label = if (state.isFastForward) "Normal" else "Fast",
-                        icon = if (state.isFastForward) "\u25B6" else "\u23E9",
-                        onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                        isActive = state.isFastForward,
-                    )
-                }
+                    // Action buttons - responsive layout
+                    if (isLandscape) {
+                        // Landscape: horizontal row with resume/exit alongside actions
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OverlayAction(
+                                label = "Save",
+                                icon = "\uD83D\uDCBE",
+                                onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
+                            )
+                            OverlayAction(
+                                label = "Load",
+                                icon = "\uD83D\uDCC2",
+                                onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
+                            )
+                            OverlayAction(
+                                label = "Screenshot",
+                                icon = "\uD83D\uDCF7",
+                                onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                            )
+                            OverlayAction(
+                                label = if (state.isFastForward) "Normal" else "Fast",
+                                icon = if (state.isFastForward) "\u25B6" else "\u23E9",
+                                onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                isActive = state.isFastForward,
+                            )
+                        }
 
-                Spacer(Modifier.height(SpSpacing.XLarge))
+                        Spacer(Modifier.height(SpSpacing.Medium))
 
-                // Resume / Exit buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                ) {
-                    SpButton(
-                        text = "Exit Game",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.StopGame)
-                            onExit()
-                        },
-                        style = SpButtonStyle.Outlined,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SpButton(
-                        text = "Resume",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                            viewModel.onIntent(EmulationIntent.ResumeGame)
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        ) {
+                            SpButton(
+                                text = "Exit Game",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.StopGame)
+                                    onExit()
+                                },
+                                style = SpButtonStyle.Outlined,
+                                modifier = Modifier.weight(1f),
+                            )
+                            SpButton(
+                                text = "Resume",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                    viewModel.onIntent(EmulationIntent.ResumeGame)
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    } else {
+                        // Portrait: stacked layout
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            OverlayAction(
+                                label = "Save",
+                                icon = "\uD83D\uDCBE",
+                                onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
+                            )
+                            OverlayAction(
+                                label = "Load",
+                                icon = "\uD83D\uDCC2",
+                                onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
+                            )
+                            OverlayAction(
+                                label = "Screenshot",
+                                icon = "\uD83D\uDCF7",
+                                onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                            )
+                            OverlayAction(
+                                label = if (state.isFastForward) "Normal" else "Fast",
+                                icon = if (state.isFastForward) "\u25B6" else "\u23E9",
+                                onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                isActive = state.isFastForward,
+                            )
+                        }
+
+                        Spacer(Modifier.height(SpSpacing.XLarge))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        ) {
+                            SpButton(
+                                text = "Exit Game",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.StopGame)
+                                    onExit()
+                                },
+                                style = SpButtonStyle.Outlined,
+                                modifier = Modifier.weight(1f),
+                            )
+                            SpButton(
+                                text = "Resume",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                    viewModel.onIntent(EmulationIntent.ResumeGame)
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -173,12 +248,16 @@ fun InGameOverlay(
                 .padding(SpSpacing.Default),
             contentAlignment = Alignment.TopEnd,
         ) {
-            // Tiny FPS counter
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(SpColor.Scrim)
                     .clickable { viewModel.onIntent(EmulationIntent.ToggleOverlay) }
+                    .focusable()
+                    .semantics {
+                        contentDescription = "%.0f FPS, tap to open game menu".format(state.fps)
+                        role = Role.Button
+                    }
                     .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
             ) {
                 Text(
@@ -224,7 +303,13 @@ private fun OverlayAction(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .focusable()
+            .semantics {
+                contentDescription = label
+                role = Role.Button
+            },
     ) {
         Box(
             modifier = Modifier

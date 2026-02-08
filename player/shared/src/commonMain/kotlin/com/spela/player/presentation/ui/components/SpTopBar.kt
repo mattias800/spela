@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -41,10 +47,15 @@ fun SpTopBar(
         if (showBack) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(SpColor.SurfaceVariant)
-                    .clickable(onClick = onBack),
+                    .clickable(onClick = onBack)
+                    .focusable()
+                    .semantics {
+                        contentDescription = "Go back"
+                        role = Role.Button
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -60,7 +71,9 @@ fun SpTopBar(
             text = title,
             style = SpTypography.HeadlineMedium,
             color = SpColor.OnBackground,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
         )
 
         Row(

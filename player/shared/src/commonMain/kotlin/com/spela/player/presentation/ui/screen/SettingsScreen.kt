@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -227,7 +234,9 @@ private fun SettingsSectionHeader(title: String) {
         text = title,
         style = SpTypography.HeadlineSmall,
         color = SpColor.OnBackground,
-        modifier = Modifier.padding(top = SpSpacing.Small),
+        modifier = Modifier
+            .padding(top = SpSpacing.Small)
+            .semantics { heading() },
     )
 }
 
@@ -242,6 +251,12 @@ private fun SettingsToggle(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
+            .focusable()
+            .semantics {
+                contentDescription = "$title, $subtitle"
+                role = Role.Switch
+                stateDescription = if (isChecked) "On" else "Off"
+            }
             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {

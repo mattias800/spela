@@ -4,13 +4,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.SaveState
@@ -41,6 +45,7 @@ import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
+import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpProgressBar
@@ -78,22 +83,27 @@ fun GameDetailScreen(
     val detail = state.gameDetail ?: return
     val game = detail.game
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            // Hero cover art
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(360.dp)) {
+        val isLandscape = maxWidth > maxHeight
+
+        if (isLandscape) {
+            // Landscape: side-by-side layout
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Left: Cover art
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(maxWidth * 0.4f),
+                ) {
                     SpHeroCover(
                         imageUrl = game.coverUrl,
-                        contentDescription = game.title,
+                        contentDescription = "${game.title} cover art",
                         modifier = Modifier.fillMaxSize(),
                     )
-
-                    // Back button overlay
                     SpTopBar(
                         title = "",
                         showBack = true,
@@ -108,187 +118,270 @@ fun GameDetailScreen(
                         ),
                     )
                 }
-            }
-
-            // Game info section
-            item {
-                Column(
+                // Right: Info
+                LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    contentPadding = PaddingValues(SpSpacing.XLarge),
                 ) {
-                    // Title
-                    Text(
-                        text = game.title,
-                        style = SpTypography.DisplaySmall,
-                        color = SpColor.OnBackground,
-                    )
-
-                    Spacer(Modifier.height(SpSpacing.Small))
-
-                    // Metadata chips
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SpConsoleChip(
-                            consoleName = game.consoleName,
-                            consoleColor = getConsoleColor(game.consoleName),
-                        )
-                        game.genre?.let { genre ->
-                            SpChip(text = genre)
-                        }
-                        game.releaseYear?.let { year ->
-                            SpChip(text = year.toString())
-                        }
-                    }
-
-                    Spacer(Modifier.height(SpSpacing.XLarge))
-
-                    // Action buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        if (state.isGameCached) {
-                            SpButton(
-                                text = "Play",
-                                onClick = { onPlay(gameId) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        } else {
-                            val isDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
-                            SpButton(
-                                text = if (isDownloading) "Downloading..." else "Download",
-                                onClick = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
-                                modifier = Modifier.weight(1f),
-                                isLoading = isDownloading,
-                                enabled = !isDownloading,
-                            )
-                        }
-
-                        // Favorite button
-                        SpButton(
-                            text = if (detail.isFavorite) "\u2665" else "\u2661",
-                            onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
-                            style = if (detail.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
+                    item {
+                        GameInfoContent(
+                            gameId = gameId,
+                            game = game,
+                            detail = detail,
+                            state = state,
+                            viewModel = viewModel,
+                            onPlay = onPlay,
                         )
                     }
-
-                    // Download progress
-                    AnimatedVisibility(
-                        visible = state.downloadProgress?.state == DownloadState.DOWNLOADING,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                    ) {
-                        state.downloadProgress?.let { progress ->
-                            Column(modifier = Modifier.padding(top = SpSpacing.Medium)) {
-                                SpProgressBar(
-                                    progress = progress.progress,
-                                    showPercentage = true,
-                                    label = "Downloading...",
-                                )
-                            }
-                        }
+                    item {
+                        ScreenshotsSection(detail.screenshots)
                     }
-
-                    Spacer(Modifier.height(SpSpacing.XLarge))
-
-                    // Game info
-                    game.description?.let { description ->
-                        Text(
-                            text = "About",
-                            style = SpTypography.HeadlineSmall,
-                            color = SpColor.OnBackground,
-                        )
-                        Spacer(Modifier.height(SpSpacing.Small))
-                        Text(
-                            text = description,
-                            style = SpTypography.BodyMedium,
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XLarge))
-                    }
-
-                    // Developer / Publisher info
-                    if (game.developer != null || game.publisher != null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXLarge),
-                        ) {
-                            game.developer?.let { dev ->
-                                InfoColumn(label = "Developer", value = dev)
-                            }
-                            game.publisher?.let { pub ->
-                                InfoColumn(label = "Publisher", value = pub)
-                            }
-                        }
-                        Spacer(Modifier.height(SpSpacing.XLarge))
+                    item {
+                        SaveStatesSection(state.saveStates)
                     }
                 }
             }
-
-            // Screenshots
-            if (detail.screenshots.isNotEmpty()) {
+        } else {
+            // Portrait: stacked layout
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
-                    Text(
-                        text = "Screenshots",
-                        style = SpTypography.HeadlineSmall,
-                        color = SpColor.OnBackground,
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    )
-                    Spacer(Modifier.height(SpSpacing.Medium))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        items(detail.screenshots) { screenshotUrl ->
-                            SpCard(
-                                modifier = Modifier
-                                    .width(240.dp)
-                                    .height(160.dp),
-                            ) {
-                                coil3.compose.AsyncImage(
-                                    model = screenshotUrl,
-                                    contentDescription = "Screenshot",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    Box(modifier = Modifier.fillMaxWidth().height(360.dp)) {
+                        SpHeroCover(
+                            imageUrl = game.coverUrl,
+                            contentDescription = "${game.title} cover art",
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        SpTopBar(
+                            title = "",
+                            showBack = true,
+                            onBack = onBack,
+                            modifier = Modifier.background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        SpColor.Background.copy(alpha = 0.7f),
+                                        SpColor.Background.copy(alpha = 0f),
+                                    ),
                                 )
-                            }
-                        }
+                            ),
+                        )
                     }
-                    Spacer(Modifier.height(SpSpacing.XLarge))
                 }
-            }
 
-            // Save States
-            if (state.saveStates.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Save States",
-                        style = SpTypography.HeadlineSmall,
-                        color = SpColor.OnBackground,
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    )
-                    Spacer(Modifier.height(SpSpacing.Medium))
-                }
-
-                items(state.saveStates) { save ->
-                    SaveStateItem(
-                        saveState = save,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(
-                                horizontal = SpSpacing.ScreenHorizontal,
-                                vertical = SpSpacing.XSmall,
-                            ),
-                    )
+                            .padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameInfoContent(
+                            gameId = gameId,
+                            game = game,
+                            detail = detail,
+                            state = state,
+                            viewModel = viewModel,
+                            onPlay = onPlay,
+                        )
+                    }
+                }
+
+                item {
+                    ScreenshotsSection(detail.screenshots)
+                }
+
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        SaveStatesSection(state.saveStates)
+                    }
                 }
 
                 item {
                     Spacer(Modifier.height(SpSpacing.XXXLarge))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GameInfoContent(
+    gameId: String,
+    game: com.spela.player.domain.model.Game,
+    detail: com.spela.player.domain.model.GameDetail,
+    state: com.spela.player.presentation.state.GameDetailState,
+    viewModel: GameDetailViewModel,
+    onPlay: (String) -> Unit,
+) {
+    Text(
+        text = game.title,
+        style = SpTypography.DisplaySmall,
+        color = SpColor.OnBackground,
+        modifier = Modifier.semantics { heading() },
+    )
+
+    Spacer(Modifier.height(SpSpacing.Small))
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SpConsoleChip(
+            consoleName = game.consoleName,
+            consoleColor = getConsoleColor(game.consoleName),
+        )
+        game.genre?.let { SpChip(text = it) }
+        game.releaseYear?.let { SpChip(text = it.toString()) }
+    }
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
+
+    // Action buttons
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        if (state.isGameCached) {
+            SpButton(
+                text = "Play",
+                onClick = { onPlay(gameId) },
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = "Play ${game.title}" },
+            )
+        } else {
+            val isDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+            SpButton(
+                text = if (isDownloading) "Downloading..." else "Download",
+                onClick = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = if (isDownloading) "Downloading ${game.title}"
+                        else "Download ${game.title}"
+                    },
+                isLoading = isDownloading,
+                enabled = !isDownloading,
+            )
+        }
+
+        SpButton(
+            text = if (detail.isFavorite) "\u2665" else "\u2661",
+            onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
+            style = if (detail.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
+            modifier = Modifier.semantics {
+                contentDescription = if (detail.isFavorite) "Remove from favorites" else "Add to favorites"
+                role = Role.Button
+            },
+        )
+    }
+
+    // Download progress
+    AnimatedVisibility(
+        visible = state.downloadProgress?.state == DownloadState.DOWNLOADING,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        state.downloadProgress?.let { progress ->
+            Column(modifier = Modifier.padding(top = SpSpacing.Medium)) {
+                SpProgressBar(
+                    progress = progress.progress,
+                    showPercentage = true,
+                    label = "Downloading...",
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
+
+    // Description
+    game.description?.let { description ->
+        Text(
+            text = "About",
+            style = SpTypography.HeadlineSmall,
+            color = SpColor.OnBackground,
+            modifier = Modifier.semantics { heading() },
+        )
+        Spacer(Modifier.height(SpSpacing.Small))
+        Text(
+            text = description,
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundSecondary,
+        )
+        Spacer(Modifier.height(SpSpacing.XLarge))
+    }
+
+    // Developer / Publisher
+    if (game.developer != null || game.publisher != null) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXLarge),
+        ) {
+            game.developer?.let { InfoColumn(label = "Developer", value = it) }
+            game.publisher?.let { InfoColumn(label = "Publisher", value = it) }
+        }
+        Spacer(Modifier.height(SpSpacing.XLarge))
+    }
+}
+
+@Composable
+private fun ScreenshotsSection(screenshots: List<String>) {
+    if (screenshots.isEmpty()) return
+
+    Text(
+        text = "Screenshots",
+        style = SpTypography.HeadlineSmall,
+        color = SpColor.OnBackground,
+        modifier = Modifier
+            .padding(horizontal = SpSpacing.ScreenHorizontal)
+            .semantics { heading() },
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        items(screenshots) { screenshotUrl ->
+            SpCard(
+                modifier = Modifier
+                    .width(240.dp)
+                    .height(160.dp),
+            ) {
+                coil3.compose.AsyncImage(
+                    model = screenshotUrl,
+                    contentDescription = "Game screenshot",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                )
+            }
+        }
+    }
+    Spacer(Modifier.height(SpSpacing.XLarge))
+}
+
+@Composable
+private fun SaveStatesSection(saveStates: List<SaveState>) {
+    Text(
+        text = "Save States",
+        style = SpTypography.HeadlineSmall,
+        color = SpColor.OnBackground,
+        modifier = Modifier.semantics { heading() },
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+
+    if (saveStates.isEmpty()) {
+        SpEmptyStates.NoSaveStates(modifier = Modifier.fillMaxWidth())
+    } else {
+        saveStates.forEach { save ->
+            SaveStateItem(
+                saveState = save,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = SpSpacing.XSmall),
+            )
         }
     }
 }
@@ -319,10 +412,12 @@ private fun SaveStateItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Medium),
+                .padding(SpSpacing.Medium)
+                .semantics {
+                    contentDescription = "${saveState.name}, ${if (saveState.isAutoSave) "auto save" else "manual save"}"
+                },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Save screenshot or placeholder
             Box(
                 modifier = Modifier
                     .size(width = 64.dp, height = 48.dp)
@@ -333,7 +428,7 @@ private fun SaveStateItem(
                 if (saveState.screenshotUrl != null) {
                     coil3.compose.AsyncImage(
                         model = saveState.screenshotUrl,
-                        contentDescription = "Save screenshot",
+                        contentDescription = "Save state screenshot for ${saveState.name}",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
