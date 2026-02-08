@@ -266,6 +266,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	defer file.Close()
 
 	name := c.DefaultPostForm("name", header.Filename)
+	screenshotURL := c.PostForm("screenshotUrl")
 
 	size, err := h.Storage.WriteSave(uid, uint(gid), header.Filename, file)
 	if err != nil {
@@ -275,12 +276,13 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 
 	savePath := h.Storage.SaveStatePath(uid, uint(gid), header.Filename)
 	save := db.SaveState{
-		UserID:   uid,
-		GameID:   uint(gid),
-		Name:     name,
-		FilePath: savePath,
-		FileSize: size,
-		IsAuto:   false,
+		UserID:        uid,
+		GameID:        uint(gid),
+		Name:          name,
+		FilePath:      savePath,
+		FileSize:      size,
+		ScreenshotURL: screenshotURL,
+		IsAuto:        false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
@@ -345,6 +347,8 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	defer file.Close()
 
 	filename := "autosave.sav"
+	screenshotURL := c.PostForm("screenshotUrl")
+
 	size, err := h.Storage.WriteSave(uid, uint(gid), filename, file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
@@ -358,17 +362,19 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	result := h.DB.Where("user_id = ? AND game_id = ? AND is_auto = ?", uid, gid, true).First(&save)
 	if result.Error == gorm.ErrRecordNotFound {
 		save = db.SaveState{
-			UserID:   uid,
-			GameID:   uint(gid),
-			Name:     "Auto Save",
-			FilePath: savePath,
-			FileSize: size,
-			IsAuto:   true,
+			UserID:        uid,
+			GameID:        uint(gid),
+			Name:          "Auto Save",
+			FilePath:      savePath,
+			FileSize:      size,
+			ScreenshotURL: screenshotURL,
+			IsAuto:        true,
 		}
 		h.DB.Create(&save)
 	} else {
 		save.FilePath = savePath
 		save.FileSize = size
+		save.ScreenshotURL = screenshotURL
 		h.DB.Save(&save)
 	}
 

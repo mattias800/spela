@@ -62,18 +62,19 @@ type Game struct {
 
 // SaveState represents a user's save state for a game.
 type SaveState struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID    uint           `gorm:"index;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
-	GameID    uint           `gorm:"index;not null" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
-	Name      string         `gorm:"size:255;not null" json:"name"`
-	FilePath  string         `gorm:"size:1024;not null" json:"-"`
-	FileSize  int64          `json:"fileSize"`
-	IsAuto    bool           `gorm:"default:false" json:"isAuto"`
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID        uint           `gorm:"index;not null" json:"userId"`
+	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	GameID        uint           `gorm:"index;not null" json:"gameId"`
+	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name          string         `gorm:"size:255;not null" json:"name"`
+	FilePath      string         `gorm:"size:1024;not null" json:"-"`
+	FileSize      int64          `json:"fileSize"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
 }
 
 // Favorite represents a user's favorited game.
