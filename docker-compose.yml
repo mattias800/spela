@@ -1,0 +1,26 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - spela-data:/app/data
+      - ./games:/app/games:ro
+      - spela-saves:/app/saves
+      - spela-cores:/app/cores
+    environment:
+      - SPELA_PORT=8080
+      - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:-change-me-in-production}
+      - SPELA_GAME_DIRS=/app/games
+      - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
+      - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
+      - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
+      - SPELA_SCRAPER_USER_PASS=${SPELA_SCRAPER_USER_PASS:-}
+    restart: unless-stopped
+
+volumes:
+  spela-data:
+  spela-saves:
+  spela-cores:

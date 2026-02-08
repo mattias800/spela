@@ -1,0 +1,5 @@
+*.db
+saves/
+cores/
+games/
+tmp/
