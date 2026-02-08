@@ -4,9 +4,10 @@ import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 
 interface ScanResult {
-  totalFiles?: number;
-  processedFiles?: number;
-  newGamesFound?: number;
+  newGames?: number;
+  updatedGames?: number;
+  removedGames?: number;
+  totalGames?: number;
 }
 
 export function AdminScanPage() {
@@ -46,19 +47,35 @@ export function AdminScanPage() {
                   <span className="text-surface-200">Scan complete</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  {scanResult.processedFiles !== undefined && (
+                  {scanResult.totalGames !== undefined && (
                     <div>
-                      <p className="text-surface-500">Files processed</p>
+                      <p className="text-surface-500">Total games</p>
                       <p className="text-surface-100 font-semibold">
-                        {scanResult.processedFiles}{scanResult.totalFiles !== undefined && ` / ${scanResult.totalFiles}`}
+                        {scanResult.totalGames}
                       </p>
                     </div>
                   )}
-                  {scanResult.newGamesFound !== undefined && (
+                  {scanResult.newGames !== undefined && (
                     <div>
-                      <p className="text-surface-500">New games found</p>
+                      <p className="text-surface-500">New games</p>
                       <p className="text-surface-100 font-semibold">
-                        {scanResult.newGamesFound}
+                        {scanResult.newGames}
+                      </p>
+                    </div>
+                  )}
+                  {scanResult.updatedGames !== undefined && (
+                    <div>
+                      <p className="text-surface-500">Updated</p>
+                      <p className="text-surface-100 font-semibold">
+                        {scanResult.updatedGames}
+                      </p>
+                    </div>
+                  )}
+                  {scanResult.removedGames !== undefined && (
+                    <div>
+                      <p className="text-surface-500">Removed</p>
+                      <p className="text-surface-100 font-semibold">
+                        {scanResult.removedGames}
                       </p>
                     </div>
                   )}
