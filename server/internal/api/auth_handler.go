@@ -32,9 +32,9 @@ type refreshRequest struct {
 }
 
 type authResponse struct {
-	AccessToken  string  `json:"accessToken"`
-	RefreshToken string  `json:"refreshToken"`
-	User         db.User `json:"user"`
+	AccessToken  string       `json:"accessToken"`
+	RefreshToken string       `json:"refreshToken"`
+	User         UserResponse `json:"user"`
 }
 
 // Login authenticates a user and returns tokens.
@@ -79,7 +79,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, authResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         user,
+		User:         ToUserResponse(user),
 	})
 }
 
@@ -147,7 +147,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, authResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         user,
+		User:         ToUserResponse(user),
 	})
 }
 
@@ -203,6 +203,6 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, authResponse{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
-		User:         user,
+		User:         ToUserResponse(user),
 	})
 }

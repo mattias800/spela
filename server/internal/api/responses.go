@@ -191,6 +191,30 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 	return result
 }
 
+// UserResponse is the API response for a user, with string ID for consistency.
+type UserResponse struct {
+	ID        string    `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	AvatarURL string    `json:"avatarUrl,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// ToUserResponse converts a db.User to its API response.
+func ToUserResponse(u db.User) UserResponse {
+	return UserResponse{
+		ID:        strconv.FormatUint(uint64(u.ID), 10),
+		Username:  u.Username,
+		Email:     u.Email,
+		Role:      u.Role,
+		AvatarURL: u.AvatarURL,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}
+
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
 func parseAspectRatio(aspect string) float64 {
 	parts := strings.SplitN(aspect, ":", 2)
