@@ -9,7 +9,7 @@ export function AdminUsersPage() {
   const { data: users, isLoading } = useAdminUsers();
   const updateUser = useUpdateUser();
   const { toast } = useToast();
-  const [editingUser, setEditingUser] = useState<number | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<"admin" | "user">("user");
 
   function handleSaveRole() {
