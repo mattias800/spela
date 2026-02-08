@@ -23,8 +23,16 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// HashPassword hashes a password using bcrypt.
+// MaxBcryptPasswordLen is the maximum password length bcrypt supports.
+// Passwords longer than this are silently truncated by bcrypt.
+const MaxBcryptPasswordLen = 72
+
+// HashPassword hashes a password using bcrypt. Returns an error if the
+// password exceeds bcrypt's 72-byte limit.
 func HashPassword(password string) (string, error) {
+	if len(password) > MaxBcryptPasswordLen {
+		return "", fmt.Errorf("password exceeds maximum length of %d bytes", MaxBcryptPasswordLen)
+	}
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", fmt.Errorf("hashing password: %w", err)

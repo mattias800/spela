@@ -40,7 +40,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores")
 	require.NoError(t, err)
 
-	hub := ws.NewHub()
+	hub := ws.NewHub(nil)
 	go hub.Run()
 
 	cfg := &Config{
@@ -224,6 +224,27 @@ func TestListGames_Empty(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	games := resp["games"].([]interface{})
 	assert.Len(t, games, 0)
+}
+
+func TestListGames_SQLInjectionOrder(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Attempt SQL injection via order parameter
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games?order=asc;DROP+TABLE+games--", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	// Should not crash, should default to "asc"
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Attempt SQL injection via sort parameter
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games?sort=title;DROP+TABLE+games--", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestGetGame_NotFound(t *testing.T) {

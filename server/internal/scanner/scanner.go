@@ -123,7 +123,6 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 		}
 	}
 
-	s.DB.Model(&db.Game{}).Count(new(int64))
 	var count int64
 	s.DB.Model(&db.Game{}).Count(&count)
 	result.TotalGames = int(count)

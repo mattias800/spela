@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,16 @@ func TestCheckPassword(t *testing.T) {
 			assert.Equal(t, tt.want, result)
 		})
 	}
+}
+
+func TestHashPassword_TooLong(t *testing.T) {
+	longPass := strings.Repeat("a", 73)
+	_, err := HashPassword(longPass)
+	assert.Error(t, err, "passwords exceeding 72 bytes should be rejected")
+
+	exactPass := strings.Repeat("a", 72)
+	_, err = HashPassword(exactPass)
+	assert.NoError(t, err, "72-byte password should be accepted")
 }
 
 func TestGenerateAndValidateAccessToken(t *testing.T) {

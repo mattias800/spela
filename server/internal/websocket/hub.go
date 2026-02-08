@@ -22,7 +22,8 @@ type Hub struct {
 	broadcast  chan Event
 	register   chan *Client
 	unregister chan *Client
-	mu         sync.RWMutex
+	mu         sync.Mutex
+	upgrader   websocket.Upgrader
 }
 
 // Client represents a single WebSocket connection.
@@ -33,22 +34,32 @@ type Client struct {
 	UserID uint
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins in development; restrict in production via CORS
-	},
-}
-
-// NewHub creates a new WebSocket hub.
-func NewHub() *Hub {
-	return &Hub{
+// NewHub creates a new WebSocket hub. allowedOrigins controls which
+// origins are accepted for WebSocket upgrades. An empty slice allows all.
+func NewHub(allowedOrigins []string) *Hub {
+	h := &Hub{
 		clients:    make(map[*Client]bool),
 		broadcast:  make(chan Event, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
+	h.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			if len(allowedOrigins) == 0 {
+				return true
+			}
+			origin := r.Header.Get("Origin")
+			for _, allowed := range allowedOrigins {
+				if allowed == "*" || allowed == origin {
+					return true
+				}
+			}
+			return false
+		},
+	}
+	return h
 }
 
 // Run starts the hub event loop. Call this in a goroutine.
@@ -76,7 +87,7 @@ func (h *Hub) Run() {
 				slog.Error("failed to marshal websocket event", "error", err)
 				continue
 			}
-			h.mu.RLock()
+			h.mu.Lock()
 			for client := range h.clients {
 				select {
 				case client.Send <- data:
@@ -85,7 +96,7 @@ func (h *Hub) Run() {
 					delete(h.clients, client)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 		}
 	}
 }
@@ -97,7 +108,7 @@ func (h *Hub) Broadcast(event Event) {
 
 // HandleWebSocket upgrades an HTTP request to a WebSocket connection.
 func (h *Hub) HandleWebSocket(c *gin.Context) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Error("websocket upgrade failed", "error", err)
 		return

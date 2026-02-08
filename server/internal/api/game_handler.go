@@ -39,19 +39,30 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		query = query.Where("genre = ?", genre)
 	}
 
-	// Sorting
+	// Sorting - whitelist both column and direction to prevent SQL injection
 	sort := c.DefaultQuery("sort", "title")
-	order := c.DefaultQuery("order", "asc")
-	switch sort {
-	case "title", "created_at", "file_size", "rating":
-		query = query.Order(fmt.Sprintf("%s %s", sort, order))
-	default:
-		query = query.Order("title asc")
+	if s := c.Query("sortBy"); s != "" {
+		sort = s
 	}
+	order := c.DefaultQuery("order", "asc")
+	if o := c.Query("sortOrder"); o != "" {
+		order = o
+	}
+	allowedSorts := map[string]bool{"title": true, "created_at": true, "file_size": true, "rating": true}
+	if !allowedSorts[sort] {
+		sort = "title"
+	}
+	if order != "asc" && order != "desc" {
+		order = "asc"
+	}
+	query = query.Order(sort + " " + order)
 
-	// Pagination
+	// Pagination - accept both perPage and pageSize
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("perPage", "50"))
+	if ps := c.Query("pageSize"); ps != "" {
+		perPage, _ = strconv.Atoi(ps)
+	}
 	if page < 1 {
 		page = 1
 	}
@@ -59,8 +70,19 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		perPage = 50
 	}
 
+	// Count with the same filters applied
 	var total int64
-	h.DB.Model(&db.Game{}).Where(query.Statement.Clauses).Count(&total)
+	countQuery := h.DB.Model(&db.Game{})
+	if consoleID := c.Query("consoleId"); consoleID != "" {
+		countQuery = countQuery.Where("console_id = ?", consoleID)
+	}
+	if search := c.Query("search"); search != "" {
+		countQuery = countQuery.Where("title LIKE ?", "%"+search+"%")
+	}
+	if genre := c.Query("genre"); genre != "" {
+		countQuery = countQuery.Where("genre = ?", genre)
+	}
+	countQuery.Count(&total)
 
 	offset := (page - 1) * perPage
 	if err := query.Offset(offset).Limit(perPage).Find(&games).Error; err != nil {

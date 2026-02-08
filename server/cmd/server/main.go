@@ -25,8 +25,13 @@ func main() {
 	scraperDevPass := getEnv("SPELA_SCRAPER_DEV_PASS", "")
 	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
+	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
+	var wsOrigins []string
+	if wsOriginsRaw != "" {
+		wsOrigins = strings.Split(wsOriginsRaw, ",")
+	}
 
 	// Initialize structured logging
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -64,7 +69,7 @@ func main() {
 	}
 
 	// Initialize WebSocket hub
-	hub := websocket.NewHub()
+	hub := websocket.NewHub(wsOrigins)
 	go hub.Run()
 
 	// Create router
