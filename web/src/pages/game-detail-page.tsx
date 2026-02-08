@@ -9,9 +9,12 @@ import {
   HardDrive,
   Trash2,
   Download,
+  RefreshCw,
 } from "lucide-react";
 import { Button, Badge, Card, CardContent, GameDetailSkeleton, Modal } from "@/components/ui";
 import { useGame, useGameSaves, useToggleFavorite, useDeleteSave } from "@/hooks/use-games";
+import { useAuth } from "@/hooks/use-auth";
+import { useScrapeGame } from "@/hooks/use-admin";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useState } from "react";
@@ -23,6 +26,9 @@ export function GameDetailPage() {
   const { data: saves } = useGameSaves(id ?? "");
   const toggleFavorite = useToggleFavorite();
   const deleteSave = useDeleteSave();
+  const { user: currentUser } = useAuth();
+  const scrapeGame = useScrapeGame();
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const isFavorite = game?.isFavorite ?? false;
@@ -87,24 +93,37 @@ export function GameDetailPage() {
               <h1 className="text-3xl font-bold text-surface-100">
                 {game.title}
               </h1>
-              <Button
-                variant={isFavorite ? "danger" : "secondary"}
-                size="sm"
-                onClick={() =>
-                  toggleFavorite.mutate({
-                    gameId: game.id,
-                    isFavorite,
-                  })
-                }
-              >
-                <Heart
-                  className={cn(
-                    "h-4 w-4",
-                    isFavorite && "fill-current",
-                  )}
-                />
-                {isFavorite ? "Unfavorite" : "Favorite"}
-              </Button>
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => scrapeGame.mutate(game.id)}
+                    loading={scrapeGame.isPending}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Scrape Metadata
+                  </Button>
+                )}
+                <Button
+                  variant={isFavorite ? "danger" : "secondary"}
+                  size="sm"
+                  onClick={() =>
+                    toggleFavorite.mutate({
+                      gameId: game.id,
+                      isFavorite,
+                    })
+                  }
+                >
+                  <Heart
+                    className={cn(
+                      "h-4 w-4",
+                      isFavorite && "fill-current",
+                    )}
+                  />
+                  {isFavorite ? "Unfavorite" : "Favorite"}
+                </Button>
+              </div>
             </div>
             {consoleName && (
               <Badge variant="brand" className="mt-2">{consoleName}</Badge>

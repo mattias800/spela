@@ -6,8 +6,11 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  needsSetup: boolean | null;
+  registrationEnabled: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  setup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,20 +25,40 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
 
   useEffect(() => {
-    const token = api.getAccessToken();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    api
-      .get<User>("/user/profile")
-      .then(setUser)
-      .catch(() => {
-        api.clearTokens();
+    // Check setup status first
+    fetch("/api/auth/setup-status")
+      .then((res) => res.json())
+      .then((data: { needsSetup: boolean; registrationEnabled: boolean }) => {
+        setNeedsSetup(data.needsSetup);
+        setRegistrationEnabled(data.registrationEnabled);
+
+        if (data.needsSetup) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Only check token if setup is complete
+        const token = api.getAccessToken();
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        api
+          .get<User>("/user/profile")
+          .then(setUser)
+          .catch(() => {
+            api.clearTokens();
+          })
+          .finally(() => setIsLoading(false));
       })
-      .finally(() => setIsLoading(false));
+      .catch(() => {
+        setNeedsSetup(false);
+        setIsLoading(false);
+      });
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -50,6 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   }, []);
 
+  const setup = useCallback(async (username: string, email: string, password: string) => {
+    const data = await api.post<AuthTokens>("/auth/setup", { username, email, password });
+    api.setTokens(data.accessToken, data.refreshToken);
+    setUser(data.user);
+    setNeedsSetup(false);
+  }, []);
+
   const logout = useCallback(() => {
     api.clearTokens();
     setUser(null);
@@ -61,8 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        needsSetup,
+        registrationEnabled,
         login,
         register,
+        setup,
         logout,
       }}
     >

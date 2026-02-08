@@ -6,6 +6,18 @@ import (
 	"gorm.io/gorm"
 )
 
+// Role constants for the role hierarchy: owner > admin > user.
+const (
+	RoleOwner = "owner"
+	RoleAdmin = "admin"
+	RoleUser  = "user"
+)
+
+// IsAdminOrOwner returns true if the role is admin or owner.
+func IsAdminOrOwner(role string) bool {
+	return role == RoleAdmin || role == RoleOwner
+}
+
 // User represents an application user.
 type User struct {
 	ID           uint           `gorm:"primarykey" json:"id"`
@@ -15,8 +27,9 @@ type User struct {
 	Username     string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
 	Email        string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	PasswordHash string         `gorm:"not null" json:"-"`
-	Role         string         `gorm:"size:16;default:user" json:"role"` // "admin" or "user"
+	Role         string         `gorm:"size:16;default:user" json:"role"` // "owner", "admin", or "user"
 	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
+	Disabled     bool           `gorm:"default:false" json:"disabled"`
 }
 
 // Console represents a detected game console/platform.

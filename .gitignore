@@ -28,6 +28,10 @@ web/build/
 .env.local
 .env.*.local
 
+# Gradle
+player/.gradle/
+player/build/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -34,6 +34,19 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 
+	// Promote the first user to owner if no owner exists (handles upgrades).
+	var ownerCount int64
+	db.Model(&User{}).Where("role = ?", RoleOwner).Count(&ownerCount)
+	if ownerCount == 0 {
+		var firstUser User
+		if err := db.Order("id ASC").First(&firstUser).Error; err == nil {
+			if firstUser.Role == RoleAdmin {
+				db.Model(&firstUser).Update("role", RoleOwner)
+				slog.Info("promoted first user to owner", "username", firstUser.Username)
+			}
+		}
+	}
+
 	return db, nil
 }
 

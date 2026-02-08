@@ -1,8 +1,8 @@
-import { Play, Heart, Clock, ChevronRight } from "lucide-react";
+import { Play, Heart, Clock, ChevronRight, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
-import { useRecentGames, useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
+import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import type { Game } from "@/types/api";
 
@@ -72,6 +72,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
+  const allGames = useGames({ pageSize: 12, sortBy: "title", sortOrder: "asc" });
   const toggleFavorite = useToggleFavorite();
 
   function handleToggleFavorite(game: Game) {
@@ -80,11 +81,9 @@ export function DashboardPage() {
 
   const hasRecent = recentGames.data && recentGames.data.length > 0;
   const hasFavorites = favoriteGames.data && favoriteGames.data.length > 0;
-  const showEmptyState =
-    !recentGames.isLoading &&
-    !favoriteGames.isLoading &&
-    !hasRecent &&
-    !hasFavorites;
+  const hasGames = allGames.data && allGames.data.data && allGames.data.data.length > 0;
+  const isLoading = recentGames.isLoading || favoriteGames.isLoading || allGames.isLoading;
+  const showEmptyState = !isLoading && !hasRecent && !hasFavorites && !hasGames;
 
   return (
     <div className="space-y-10">
@@ -122,6 +121,17 @@ export function DashboardPage() {
           <GameRow
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        </section>
+      )}
+
+      {!hasRecent && !hasFavorites && (allGames.isLoading || hasGames) && (
+        <section>
+          <SectionHeader title="Discover" icon={Gamepad2} linkTo="/games" />
+          <GameRow
+            games={allGames.data?.data}
+            isLoading={allGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
           />
         </section>

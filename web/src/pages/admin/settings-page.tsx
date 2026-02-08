@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Plus, X } from "lucide-react";
+import { Settings, Plus, X, Key } from "lucide-react";
 import { Button, Card, CardHeader, CardContent, Input, Select } from "@/components/ui";
 import { useServerSettings, useUpdateSettings } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
@@ -15,6 +15,8 @@ export function AdminSettingsPage() {
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
   const [scraperSource, setScraperSource] = useState("igdb");
+  const [ssUsername, setSsUsername] = useState("");
+  const [ssPassword, setSsPassword] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -23,6 +25,8 @@ export function AdminSettingsPage() {
       setAllowRegistration(settings["allowRegistration"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
       setScraperSource(settings["defaultScraperSource"] ?? "igdb");
+      setSsUsername(settings["screenscraper_username"] ?? "");
+      setSsPassword(settings["screenscraper_password"] ?? "");
     }
   }, [settings]);
 
@@ -45,6 +49,8 @@ export function AdminSettingsPage() {
         allowRegistration: String(allowRegistration),
         scrapeOnScan: String(scrapeOnScan),
         defaultScraperSource: scraperSource,
+        screenscraper_username: ssUsername,
+        screenscraper_password: ssPassword,
       },
       {
         onSuccess: () => toast("success", "Settings saved"),
@@ -166,6 +172,35 @@ export function AdminSettingsPage() {
             value={scraperSource}
             onChange={(e) => setScraperSource(e.target.value)}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+            <Key className="h-5 w-5 text-brand-400" />
+            ScreenScraper Credentials
+          </h2>
+          <p className="text-xs text-surface-500 mt-1">
+            Required for metadata scraping. Get credentials at screenscraper.fr
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Username"
+              placeholder="ScreenScraper username"
+              value={ssUsername}
+              onChange={(e) => setSsUsername(e.target.value)}
+            />
+            <Input
+              label="Password"
+              type="password"
+              placeholder="ScreenScraper password"
+              value={ssPassword}
+              onChange={(e) => setSsPassword(e.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
 

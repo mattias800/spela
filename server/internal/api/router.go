@@ -88,7 +88,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB}
 	userHandler := &UserHandler{DB: cfg.DB}
-	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
+	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
 
 	// Public auth routes with rate limiting
@@ -98,6 +98,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.POST("/login", authHandler.Login)
 		authGroup.POST("/register", authHandler.Register)
 		authGroup.POST("/refresh", authHandler.Refresh)
+		authGroup.GET("/setup-status", authHandler.SetupStatus)
+		authGroup.POST("/setup", authHandler.Setup)
 	}
 
 	// Protected routes
@@ -141,11 +143,15 @@ func NewRouter(cfg Config) *gin.Engine {
 		admin.Use(AdminMiddleware())
 		{
 			admin.GET("/users", adminHandler.ListUsers)
+			admin.POST("/users", adminHandler.CreateUser)
 			admin.PUT("/users/:id", adminHandler.UpdateUser)
+			admin.DELETE("/users/:id", adminHandler.DeleteUser)
 			admin.GET("/settings", adminHandler.GetSettings)
 			admin.PUT("/settings", adminHandler.UpdateSettings)
 			admin.POST("/scrape", adminHandler.TriggerScrape)
+			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
+			admin.GET("/stats", adminHandler.GetStats)
 		}
 
 		// WebSocket

@@ -198,6 +198,7 @@ type UserResponse struct {
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	AvatarURL string    `json:"avatarUrl,omitempty"`
+	Disabled  bool      `json:"disabled"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -210,6 +211,7 @@ func ToUserResponse(u db.User) UserResponse {
 		Email:     u.Email,
 		Role:      u.Role,
 		AvatarURL: u.AvatarURL,
+		Disabled:  u.Disabled,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}

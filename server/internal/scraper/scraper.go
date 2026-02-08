@@ -26,27 +26,28 @@ type Scraper struct {
 }
 
 // NewScraper creates a new metadata scraper instance.
+// DevID and DevPass identify the software to ScreenScraper's API.
 func NewScraper(database *gorm.DB) *Scraper {
 	return &Scraper{
 		DB:       database,
 		SoftName: "spela",
+		DevID:    "spela",
+		DevPass:  "spela",
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}
 }
 
-// Configure sets the ScreenScraper API credentials.
-func (s *Scraper) Configure(devID, devPass, userName, userPass string) {
-	s.DevID = devID
-	s.DevPass = devPass
+// Configure sets the ScreenScraper user credentials.
+func (s *Scraper) Configure(userName, userPass string) {
 	s.UserName = userName
 	s.UserPass = userPass
 }
 
-// IsConfigured returns whether scraper credentials are set.
+// IsConfigured returns whether user credentials are set.
 func (s *Scraper) IsConfigured() bool {
-	return s.DevID != "" && s.DevPass != ""
+	return s.UserName != "" && s.UserPass != ""
 }
 
 // screenScraperAPIBase is the API base URL.

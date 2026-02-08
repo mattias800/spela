@@ -16,6 +16,7 @@ import { AdminUsersPage } from "@/pages/admin/users-page";
 import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
+import { SetupPage } from "@/pages/setup-page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,7 @@ export function App() {
           <ToastProvider>
             <Routes>
               {/* Auth routes */}
+              <Route path="/setup" element={<SetupPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 

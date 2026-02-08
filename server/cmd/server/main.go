@@ -21,8 +21,6 @@ func main() {
 	gameDirsRaw := getEnv("SPELA_GAME_DIRS", "./games")
 	saveDir := getEnv("SPELA_SAVE_DIR", "./saves")
 	coreDir := getEnv("SPELA_CORE_DIR", "./cores")
-	scraperDevID := getEnv("SPELA_SCRAPER_DEV_ID", "")
-	scraperDevPass := getEnv("SPELA_SCRAPER_DEV_PASS", "")
 	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
@@ -77,8 +75,8 @@ func main() {
 
 	// Initialize scraper
 	metaScraper := scraper.NewScraper(database)
-	if scraperDevID != "" {
-		metaScraper.Configure(scraperDevID, scraperDevPass, scraperUser, scraperUserPass)
+	if scraperUser != "" {
+		metaScraper.Configure(scraperUser, scraperUserPass)
 		slog.Info("ScreenScraper integration configured")
 	}
 

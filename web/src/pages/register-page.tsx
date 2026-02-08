@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { Gamepad2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,8 +11,10 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, needsSetup } = useAuth();
   const navigate = useNavigate();
+
+  if (needsSetup) return <Navigate to="/setup" replace />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

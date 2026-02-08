@@ -1,28 +1,42 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Gamepad2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 
-export function LoginPage() {
+export function SetupPage() {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, needsSetup, registrationEnabled } = useAuth();
+  const { setup, needsSetup, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  if (needsSetup) return <Navigate to="/setup" replace />;
+  if (isLoading) return null;
+  if (needsSetup === false) return <Navigate to="/login" replace />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(username, password);
+      await setup(username, email, password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Setup failed");
     } finally {
       setLoading(false);
     }
@@ -30,26 +44,23 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-to-br from-brand-950/40 via-surface-950 to-surface-950" />
 
       <div className="relative w-full max-w-md space-y-8">
-        {/* Logo */}
         <div className="flex flex-col items-center gap-4">
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-xl shadow-brand-600/30">
             <Gamepad2 className="h-8 w-8 text-white" />
           </div>
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight text-surface-100">
-              Welcome back
+              Welcome to Spela
             </h1>
             <p className="mt-2 text-surface-400">
-              Sign in to your Spela account
+              Create your owner account to get started
             </p>
           </div>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="rounded-2xl bg-surface-900/50 border border-surface-800/50 p-8 space-y-5 backdrop-blur-xl"
@@ -63,7 +74,7 @@ export function LoginPage() {
           <Input
             id="username"
             label="Username"
-            placeholder="Enter your username"
+            placeholder="Choose a username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
@@ -71,13 +82,35 @@ export function LoginPage() {
           />
 
           <Input
+            id="email"
+            label="Email"
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
+
+          <Input
             id="password"
             label="Password"
             type="password"
-            placeholder="Enter your password"
+            placeholder="Create a password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
+            autoComplete="new-password"
+            required
+          />
+
+          <Input
+            id="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
             required
           />
 
@@ -87,20 +120,8 @@ export function LoginPage() {
             loading={loading}
             className="w-full"
           >
-            Sign in
+            Create Owner Account
           </Button>
-
-          {registrationEnabled && (
-            <p className="text-center text-sm text-surface-400">
-              Don&apos;t have an account?{" "}
-              <Link
-                to="/register"
-                className="text-brand-400 hover:text-brand-300 font-medium transition-colors"
-              >
-                Create one
-              </Link>
-            </p>
-          )}
         </form>
       </div>
     </div>
