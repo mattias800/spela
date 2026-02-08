@@ -26,17 +26,31 @@ func main() {
 	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
+	corsOriginsRaw := getEnv("SPELA_CORS_ORIGINS", "")
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
 	var wsOrigins []string
 	if wsOriginsRaw != "" {
 		wsOrigins = strings.Split(wsOriginsRaw, ",")
 	}
+	var corsOrigins []string
+	if corsOriginsRaw != "" {
+		corsOrigins = strings.Split(corsOriginsRaw, ",")
+	}
 
 	// Initialize structured logging
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})))
+
+	// Warn about insecure default JWT secret
+	if jwtSecret == "change-me-in-production" {
+		if os.Getenv("GIN_MODE") == "release" {
+			slog.Error("FATAL: using default JWT secret in release mode; set SPELA_JWT_SECRET")
+			os.Exit(1)
+		}
+		slog.Warn("using default JWT secret - set SPELA_JWT_SECRET for production")
+	}
 
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)
 
@@ -74,14 +88,15 @@ func main() {
 
 	// Create router
 	router := api.NewRouter(api.Config{
-		DB:        database,
-		JWTSecret: jwtSecret,
-		GameDirs:  gameDirs,
-		Storage:   store,
-		Scanner:   gameScanner,
-		Scraper:   metaScraper,
-		Hub:       hub,
-		CoreDir:   coreDir,
+		DB:          database,
+		JWTSecret:   jwtSecret,
+		GameDirs:    gameDirs,
+		Storage:     store,
+		Scanner:     gameScanner,
+		Scraper:     metaScraper,
+		Hub:         hub,
+		CoreDir:     coreDir,
+		CORSOrigins: corsOrigins,
 	})
 
 	slog.Info("server listening", "port", port)

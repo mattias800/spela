@@ -15,27 +15,39 @@ import (
 
 // Config holds configuration for the API router.
 type Config struct {
-	DB        *gorm.DB
-	JWTSecret string
-	GameDirs  []string
-	Storage   *storage.Storage
-	Scanner   *scanner.Scanner
-	Scraper   *scraper.Scraper
-	Hub       *ws.Hub
-	CoreDir   string
+	DB          *gorm.DB
+	JWTSecret   string
+	GameDirs    []string
+	Storage     *storage.Storage
+	Scanner     *scanner.Scanner
+	Scraper     *scraper.Scraper
+	Hub         *ws.Hub
+	CoreDir     string
+	CORSOrigins []string
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
 func NewRouter(cfg Config) *gin.Engine {
 	r := gin.Default()
 
-	// CORS
+	// CORS - configurable origins; AllowCredentials only when origins are explicit
+	corsOrigins := cfg.CORSOrigins
+	if len(corsOrigins) == 0 {
+		corsOrigins = []string{"*"}
+	}
+	allowCreds := true
+	for _, o := range corsOrigins {
+		if o == "*" {
+			allowCreds = false
+			break
+		}
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
+		AllowCredentials: allowCreds,
 		MaxAge:           12 * time.Hour,
 	}))
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
@@ -15,6 +16,9 @@ type AdminHandler struct {
 	DB      *gorm.DB
 	Scraper *scraper.Scraper
 	Hub     *ws.Hub
+
+	scrapeMu sync.Mutex
+	scraping bool
 }
 
 // ListUsers returns all users (admin only).
@@ -125,15 +129,31 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 }
 
 // TriggerScrape starts a metadata scraping operation (admin only).
+// Only one scrape can run at a time; concurrent requests are rejected.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if !h.Scraper.IsConfigured() {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "scraper not configured; set ScreenScraper credentials in settings"})
 		return
 	}
 
+	h.scrapeMu.Lock()
+	if h.scraping {
+		h.scrapeMu.Unlock()
+		c.JSON(http.StatusConflict, gin.H{"error": "a scrape operation is already in progress"})
+		return
+	}
+	h.scraping = true
+	h.scrapeMu.Unlock()
+
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
 
 	go func() {
+		defer func() {
+			h.scrapeMu.Lock()
+			h.scraping = false
+			h.scrapeMu.Unlock()
+		}()
+
 		count, err := h.Scraper.ScrapeAll()
 		if err != nil {
 			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": err.Error()}})

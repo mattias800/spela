@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
@@ -38,6 +39,12 @@ func (h *CoreHandler) DownloadCore(c *gin.Context) {
 
 	if core.FilePath == "" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "core binary not available"})
+		return
+	}
+
+	// Security: validate the file path is within the allowed core directory
+	if h.CoreDir == "" || !storage.ValidateROMPath(core.FilePath, []string{h.CoreDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "core file access denied"})
 		return
 	}
 
