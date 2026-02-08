@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
   role: "admin" | "user";
@@ -15,26 +15,27 @@ export interface AuthTokens {
 }
 
 export interface Console {
-  id: string;
+  id: number;
   name: string;
   abbreviation: string;
-  extensions: string[];
+  extensions: string; // comma-separated
   defaultCore: string;
-  coverAspectRatio: number;
+  coverAspect: string; // e.g. "3:4"
   colorTheme: string;
-  gameCount: number;
-  iconUrl?: string;
+  gameCount?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Game {
-  id: string;
+  id: number;
   title: string;
-  consoleId: string;
-  consoleName: string;
+  consoleId: number;
+  console?: Console;
   fileName: string;
   fileSize: number;
   coverUrl?: string;
-  screenshotUrls?: string[];
+  screenshotUrl?: string;
   description?: string;
   developer?: string;
   publisher?: string;
@@ -42,59 +43,68 @@ export interface Game {
   genre?: string;
   players?: number;
   rating?: number;
-  isFavorite: boolean;
-  lastPlayedAt?: string;
-  totalPlayTime: number;
+  coreOverride?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface SaveState {
-  id: string;
-  gameId: string;
-  userId: string;
+  id: number;
+  gameId: number;
+  userId: number;
   name: string;
-  screenshotUrl?: string;
   fileSize: number;
-  isAutoSave: boolean;
+  isAuto: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlayHistory {
+  id: number;
+  userId: number;
+  gameId: number;
+  game?: Game;
+  lastPlayed: string;
+  playTime: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Favorite {
+  id: number;
+  userId: number;
+  gameId: number;
+  game?: Game;
   createdAt: string;
 }
 
-export interface ServerSettings {
-  gameDirectories: string[];
-  scrapeOnScan: boolean;
-  allowRegistration: boolean;
-  maxUploadSize: number;
-  defaultScraperSource: string;
-}
+// Backend stores settings as flat key-value pairs
+export type ServerSettingsMap = Record<string, string>;
 
-export interface PaginatedResponse<T> {
-  data: T[];
+export interface GamesResponse {
+  games: Game[];
   total: number;
   page: number;
-  pageSize: number;
+  perPage: number;
+}
+
+export interface ConsoleGamesResponse {
+  console: Console;
+  games: Game[];
 }
 
 export interface GameFilters {
   search?: string;
   consoleId?: string;
   genre?: string;
-  sortBy?: "title" | "releaseDate" | "lastPlayed" | "rating" | "recentlyAdded";
+  sortBy?: "title" | "created_at" | "file_size" | "rating";
   sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
 
-export interface ScanStatus {
-  isScanning: boolean;
-  progress: number;
-  totalFiles: number;
-  processedFiles: number;
-  newGamesFound: number;
-}
-
 export interface MetadataMatch {
-  gameId: string;
+  gameId: number;
   currentTitle: string;
   currentCoverUrl?: string;
   suggestions: MetadataSuggestion[];

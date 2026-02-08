@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Library, Grid3X3, List, ArrowUpDown } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, SearchInput, Select, EmptyState, Badge } from "@/components/ui";
-import { useGames, useToggleFavorite } from "@/hooks/use-games";
+import { useGames, useToggleFavorite, useFavoriteGames } from "@/hooks/use-games";
 import { useConsoles } from "@/hooks/use-consoles";
 import { cn } from "@/lib/cn";
-import { formatFileSize, formatPlayTime } from "@/lib/format";
-import type { GameFilters } from "@/types/api";
+import { formatFileSize } from "@/lib/format";
+import type { Game, GameFilters } from "@/types/api";
 import { Link } from "react-router-dom";
 
 type ViewMode = "grid" | "list";
@@ -21,25 +21,27 @@ export function GamesPage() {
 
   const { data, isLoading } = useGames(filters);
   const { data: consoles } = useConsoles();
+  const { data: favoriteGamesData } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
 
-  function handleToggleFavorite(game: { id: string; isFavorite: boolean }) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+  const favoriteIds = new Set(favoriteGamesData?.map((g) => g.id) ?? []);
+
+  function handleToggleFavorite(game: Game) {
+    toggleFavorite.mutate({ gameId: game.id, isFavorite: favoriteIds.has(game.id) });
   }
 
-  const games = data?.data ?? [];
+  const games = data?.games ?? [];
 
   const consoleOptions = [
     { value: "", label: "All Consoles" },
-    ...(consoles?.map((c) => ({ value: c.id, label: c.name })) ?? []),
+    ...(consoles?.map((c) => ({ value: String(c.id), label: c.name })) ?? []),
   ];
 
   const sortOptions = [
     { value: "title", label: "Title" },
-    { value: "releaseDate", label: "Release Date" },
-    { value: "lastPlayed", label: "Last Played" },
+    { value: "created_at", label: "Recently Added" },
+    { value: "file_size", label: "File Size" },
     { value: "rating", label: "Rating" },
-    { value: "recentlyAdded", label: "Recently Added" },
   ];
 
   return (
@@ -159,48 +161,49 @@ export function GamesPage() {
             <GameCard
               key={game.id}
               game={game}
+              isFavorite={favoriteIds.has(game.id)}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
         </div>
       ) : (
         <div className="space-y-1">
-          {games.map((game) => (
-            <Link
-              key={game.id}
-              to={`/games/${game.id}`}
-              className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-surface-900/50 transition-colors group"
-            >
-              <div className="h-12 w-9 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-                {game.coverUrl ? (
-                  <img
-                    src={game.coverUrl}
-                    alt={game.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-xs font-bold text-surface-600">
-                    {game.title.charAt(0)}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-surface-100 truncate group-hover:text-brand-400 transition-colors">
-                  {game.title}
-                </p>
-                <p className="text-xs text-surface-500">{game.consoleName}</p>
-              </div>
-              <Badge>{game.consoleName}</Badge>
-              <span className="text-xs text-surface-500 w-16 text-right">
-                {formatFileSize(game.fileSize)}
-              </span>
-              {game.totalPlayTime > 0 && (
+          {games.map((game) => {
+            const consoleName = game.console?.name ?? "";
+            return (
+              <Link
+                key={game.id}
+                to={`/games/${game.id}`}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-surface-900/50 transition-colors group"
+              >
+                <div className="h-12 w-9 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
+                  {game.coverUrl ? (
+                    <img
+                      src={game.coverUrl}
+                      alt={game.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-xs font-bold text-surface-600">
+                      {game.title.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-surface-100 truncate group-hover:text-brand-400 transition-colors">
+                    {game.title}
+                  </p>
+                  {consoleName && (
+                    <p className="text-xs text-surface-500">{consoleName}</p>
+                  )}
+                </div>
+                {consoleName && <Badge>{consoleName}</Badge>}
                 <span className="text-xs text-surface-500 w-16 text-right">
-                  {formatPlayTime(game.totalPlayTime)}
+                  {formatFileSize(game.fileSize)}
                 </span>
-              )}
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
 

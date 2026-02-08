@@ -6,14 +6,13 @@ import {
   Users,
   Building2,
   Star,
-  Clock,
   HardDrive,
   Trash2,
   Download,
 } from "lucide-react";
 import { Button, Badge, Card, CardContent, GameDetailSkeleton, Modal } from "@/components/ui";
-import { useGame, useGameSaves, useToggleFavorite, useDeleteSave } from "@/hooks/use-games";
-import { formatFileSize, formatPlayTime, formatDate, formatRelativeTime } from "@/lib/format";
+import { useGame, useGameSaves, useToggleFavorite, useDeleteSave, useFavoriteGames } from "@/hooks/use-games";
+import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useState } from "react";
 
@@ -22,9 +21,13 @@ export function GameDetailPage() {
   const navigate = useNavigate();
   const { data: game, isLoading } = useGame(id ?? "");
   const { data: saves } = useGameSaves(id ?? "");
+  const { data: favoriteGamesData } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
   const deleteSave = useDeleteSave();
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+
+  const favoriteIds = new Set(favoriteGamesData?.map((g) => g.id) ?? []);
+  const isFavorite = game ? favoriteIds.has(game.id) : false;
 
   if (isLoading) {
     return (
@@ -44,6 +47,8 @@ export function GameDetailPage() {
       </div>
     );
   }
+
+  const consoleName = game.console?.name ?? "";
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -85,25 +90,27 @@ export function GameDetailPage() {
                 {game.title}
               </h1>
               <Button
-                variant={game.isFavorite ? "danger" : "secondary"}
+                variant={isFavorite ? "danger" : "secondary"}
                 size="sm"
                 onClick={() =>
                   toggleFavorite.mutate({
                     gameId: game.id,
-                    isFavorite: game.isFavorite,
+                    isFavorite,
                   })
                 }
               >
                 <Heart
                   className={cn(
                     "h-4 w-4",
-                    game.isFavorite && "fill-current",
+                    isFavorite && "fill-current",
                   )}
                 />
-                {game.isFavorite ? "Unfavorite" : "Favorite"}
+                {isFavorite ? "Unfavorite" : "Favorite"}
               </Button>
             </div>
-            <Badge variant="brand" className="mt-2">{game.consoleName}</Badge>
+            {consoleName && (
+              <Badge variant="brand" className="mt-2">{consoleName}</Badge>
+            )}
           </div>
 
           {/* Metadata grid */}
@@ -115,7 +122,7 @@ export function GameDetailPage() {
               <MetaItem icon={Building2} label="Publisher" value={game.publisher} />
             )}
             {game.releaseDate && (
-              <MetaItem icon={Calendar} label="Released" value={formatDate(game.releaseDate)} />
+              <MetaItem icon={Calendar} label="Released" value={game.releaseDate} />
             )}
             {game.genre && (
               <MetaItem icon={Star} label="Genre" value={game.genre} />
@@ -124,13 +131,6 @@ export function GameDetailPage() {
               <MetaItem icon={Users} label="Players" value={`${game.players}`} />
             )}
             <MetaItem icon={HardDrive} label="Size" value={formatFileSize(game.fileSize)} />
-            {game.totalPlayTime > 0 && (
-              <MetaItem
-                icon={Clock}
-                label="Play Time"
-                value={formatPlayTime(game.totalPlayTime)}
-              />
-            )}
             {game.rating !== undefined && game.rating > 0 && (
               <MetaItem icon={Star} label="Rating" value={`${game.rating}/10`} />
             )}
@@ -145,21 +145,17 @@ export function GameDetailPage() {
         </div>
       </div>
 
-      {/* Screenshots */}
-      {game.screenshotUrls && game.screenshotUrls.length > 0 && (
+      {/* Screenshot */}
+      {game.screenshotUrl && (
         <section>
-          <h2 className="text-xl font-bold text-surface-100 mb-4">Screenshots</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {game.screenshotUrls.map((url, i) => (
-              <div key={i} className="rounded-xl overflow-hidden border border-surface-800 bg-surface-900">
-                <img
-                  src={url}
-                  alt={`${game.title} screenshot ${i + 1}`}
-                  className="w-full aspect-video object-cover hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-              </div>
-            ))}
+          <h2 className="text-xl font-bold text-surface-100 mb-4">Screenshot</h2>
+          <div className="rounded-xl overflow-hidden border border-surface-800 bg-surface-900 max-w-2xl">
+            <img
+              src={game.screenshotUrl}
+              alt={`${game.title} screenshot`}
+              className="w-full aspect-video object-cover hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
           </div>
         </section>
       )}
@@ -178,19 +174,10 @@ export function GameDetailPage() {
             {saves.map((save) => (
               <Card key={save.id} hover>
                 <CardContent className="flex items-center gap-4 py-3">
-                  {save.screenshotUrl && (
-                    <div className="h-12 w-20 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-                      <img
-                        src={save.screenshotUrl}
-                        alt={save.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-surface-100">
                       {save.name}
-                      {save.isAutoSave && (
+                      {save.isAuto && (
                         <Badge variant="brand" className="ml-2">Auto</Badge>
                       )}
                     </p>
@@ -239,7 +226,7 @@ export function GameDetailPage() {
             variant="danger"
             loading={deleteSave.isPending}
             onClick={() => {
-              if (deleteTarget) {
+              if (deleteTarget !== null) {
                 deleteSave.mutate(
                   { gameId: game.id, saveId: deleteTarget },
                   { onSuccess: () => setDeleteTarget(null) },

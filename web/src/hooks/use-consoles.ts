@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Console, Game } from "@/types/api";
+import type { Console, ConsoleGamesResponse } from "@/types/api";
 
 export function useConsoles() {
   return useQuery({
@@ -12,7 +12,7 @@ export function useConsoles() {
 export function useConsoleGames(consoleId: string) {
   return useQuery({
     queryKey: ["consoles", consoleId, "games"],
-    queryFn: () => api.get<Game[]>(`/consoles/${consoleId}/games`),
+    queryFn: () => api.get<ConsoleGamesResponse>(`/consoles/${consoleId}/games`),
     enabled: !!consoleId,
   });
 }

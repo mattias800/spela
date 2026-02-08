@@ -2,14 +2,19 @@ import { ScanSearch, FolderSearch, CheckCircle } from "lucide-react";
 import { Button, Card, CardHeader, CardContent } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
-import type { ScanStatus } from "@/types/api";
+
+interface ScanResult {
+  totalFiles?: number;
+  processedFiles?: number;
+  newGamesFound?: number;
+}
 
 export function AdminScanPage() {
   const scanLibrary = useScanLibrary();
   const scrapeMetadata = useScrapeMetadata();
   const { toast } = useToast();
 
-  const scanResult = scanLibrary.data as ScanStatus | undefined;
+  const scanResult = scanLibrary.data as ScanResult | undefined;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -41,18 +46,22 @@ export function AdminScanPage() {
                   <span className="text-surface-200">Scan complete</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-surface-500">Files processed</p>
-                    <p className="text-surface-100 font-semibold">
-                      {scanResult.processedFiles} / {scanResult.totalFiles}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-surface-500">New games found</p>
-                    <p className="text-surface-100 font-semibold">
-                      {scanResult.newGamesFound}
-                    </p>
-                  </div>
+                  {scanResult.processedFiles !== undefined && (
+                    <div>
+                      <p className="text-surface-500">Files processed</p>
+                      <p className="text-surface-100 font-semibold">
+                        {scanResult.processedFiles}{scanResult.totalFiles !== undefined && ` / ${scanResult.totalFiles}`}
+                      </p>
+                    </div>
+                  )}
+                  {scanResult.newGamesFound !== undefined && (
+                    <div>
+                      <p className="text-surface-500">New games found</p>
+                      <p className="text-surface-100 font-semibold">
+                        {scanResult.newGamesFound}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -60,7 +69,7 @@ export function AdminScanPage() {
             <Button
               onClick={() =>
                 scanLibrary.mutate(undefined, {
-                  onError: (err) => toast("error", err.message),
+                  onError: (err) => toast("error", err instanceof Error ? err.message : "Scan failed"),
                 })
               }
               loading={scanLibrary.isPending}
@@ -89,7 +98,7 @@ export function AdminScanPage() {
               onClick={() =>
                 scrapeMetadata.mutate(undefined, {
                   onSuccess: () => toast("success", "Metadata scraping started"),
-                  onError: (err) => toast("error", err.message),
+                  onError: (err) => toast("error", err instanceof Error ? err.message : "Scrape failed"),
                 })
               }
               loading={scrapeMetadata.isPending}

@@ -18,10 +18,11 @@ export function AdminSettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      setGameDirectories(settings.gameDirectories);
-      setAllowRegistration(settings.allowRegistration);
-      setScrapeOnScan(settings.scrapeOnScan);
-      setScraperSource(settings.defaultScraperSource);
+      const dirs = settings["gameDirectories"] ?? "";
+      setGameDirectories(dirs ? dirs.split(",") : []);
+      setAllowRegistration(settings["allowRegistration"] !== "false");
+      setScrapeOnScan(settings["scrapeOnScan"] !== "false");
+      setScraperSource(settings["defaultScraperSource"] ?? "igdb");
     }
   }, [settings]);
 
@@ -40,14 +41,14 @@ export function AdminSettingsPage() {
   function handleSave() {
     updateSettings.mutate(
       {
-        gameDirectories,
-        allowRegistration,
-        scrapeOnScan,
+        gameDirectories: gameDirectories.join(","),
+        allowRegistration: String(allowRegistration),
+        scrapeOnScan: String(scrapeOnScan),
         defaultScraperSource: scraperSource,
       },
       {
         onSuccess: () => toast("success", "Settings saved"),
-        onError: (err) => toast("error", err.message),
+        onError: (err) => toast("error", err instanceof Error ? err.message : "Unknown error"),
       },
     );
   }

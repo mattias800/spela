@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
-import { Heart, Clock } from "lucide-react";
+import { Heart } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
-import { formatPlayTime } from "@/lib/format";
 import type { Game } from "@/types/api";
 
 interface GameCardProps {
   game: Game;
+  isFavorite?: boolean;
   onToggleFavorite?: (game: Game) => void;
 }
 
-export function GameCard({ game, onToggleFavorite }: GameCardProps) {
+export function GameCard({ game, isFavorite, onToggleFavorite }: GameCardProps) {
+  const consoleName = game.console?.name ?? "";
+
   return (
     <Link
       to={`/games/${game.id}`}
@@ -46,39 +48,32 @@ export function GameCard({ game, onToggleFavorite }: GameCardProps) {
             className={cn(
               "absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-200",
               "opacity-0 group-hover:opacity-100",
-              game.isFavorite
+              isFavorite
                 ? "bg-danger-500/20 text-danger-500 opacity-100"
                 : "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
             )}
           >
             <Heart
-              className={cn("h-4 w-4", game.isFavorite && "fill-current")}
+              className={cn("h-4 w-4", isFavorite && "fill-current")}
             />
           </button>
         )}
 
         {/* Console badge */}
-        <div className="absolute bottom-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Badge variant="brand">{game.consoleName}</Badge>
-        </div>
+        {consoleName && (
+          <div className="absolute bottom-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <Badge variant="brand">{consoleName}</Badge>
+          </div>
+        )}
       </div>
 
       <div className="px-1 space-y-1">
         <h3 className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </h3>
-        <div className="flex items-center gap-2 text-xs text-surface-500">
-          <span>{game.consoleName}</span>
-          {game.totalPlayTime > 0 && (
-            <>
-              <span className="text-surface-700">|</span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatPlayTime(game.totalPlayTime)}
-              </span>
-            </>
-          )}
-        </div>
+        {consoleName && (
+          <p className="text-xs text-surface-500">{consoleName}</p>
+        )}
       </div>
     </Link>
   );

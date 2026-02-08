@@ -4,6 +4,7 @@ import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useRecentGames, useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
+import type { Game } from "@/types/api";
 
 function SectionHeader({
   title,
@@ -36,11 +37,13 @@ function SectionHeader({
 function GameRow({
   games,
   isLoading,
+  favoriteIds,
   onToggleFavorite,
 }: {
-  games: ReturnType<typeof useRecentGames>["data"];
+  games: Game[] | undefined;
   isLoading: boolean;
-  onToggleFavorite: (game: Parameters<typeof GameCard>[0]["game"]) => void;
+  favoriteIds: Set<number>;
+  onToggleFavorite: (game: Game) => void;
 }) {
   if (isLoading) {
     return (
@@ -60,6 +63,7 @@ function GameRow({
         <GameCard
           key={game.id}
           game={game}
+          isFavorite={favoriteIds.has(game.id)}
           onToggleFavorite={onToggleFavorite}
         />
       ))}
@@ -73,8 +77,10 @@ export function DashboardPage() {
   const favoriteGames = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
 
-  function handleToggleFavorite(game: { id: string; isFavorite: boolean }) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+  const favoriteIds = new Set(favoriteGames.data?.map((g) => g.id) ?? []);
+
+  function handleToggleFavorite(game: Game) {
+    toggleFavorite.mutate({ gameId: game.id, isFavorite: favoriteIds.has(game.id) });
   }
 
   const hasRecent = recentGames.data && recentGames.data.length > 0;
@@ -87,7 +93,6 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-10">
-      {/* Welcome header */}
       <div>
         <h1 className="text-3xl font-bold text-surface-100">
           Welcome back, {user?.username}
@@ -105,25 +110,25 @@ export function DashboardPage() {
         />
       )}
 
-      {/* Continue Playing */}
       {(recentGames.isLoading || hasRecent) && (
         <section>
           <SectionHeader title="Continue Playing" icon={Clock} linkTo="/games" />
           <GameRow
             games={recentGames.data}
             isLoading={recentGames.isLoading}
+            favoriteIds={favoriteIds}
             onToggleFavorite={handleToggleFavorite}
           />
         </section>
       )}
 
-      {/* Favorites */}
       {(favoriteGames.isLoading || hasFavorites) && (
         <section>
           <SectionHeader title="Favorites" icon={Heart} linkTo="/favorites" />
           <GameRow
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
+            favoriteIds={favoriteIds}
             onToggleFavorite={handleToggleFavorite}
           />
         </section>

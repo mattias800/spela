@@ -2,13 +2,14 @@ import { Heart } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
+import type { Game } from "@/types/api";
 
 export function FavoritesPage() {
   const { data: games, isLoading } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
 
-  function handleToggleFavorite(game: { id: string; isFavorite: boolean }) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+  function handleToggleFavorite(game: Game) {
+    toggleFavorite.mutate({ gameId: game.id, isFavorite: true });
   }
 
   return (
@@ -38,6 +39,7 @@ export function FavoritesPage() {
             <GameCard
               key={game.id}
               game={game}
+              isFavorite
               onToggleFavorite={handleToggleFavorite}
             />
           ))}

@@ -3,22 +3,28 @@ import { ArrowLeft, Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useConsoleGames } from "@/hooks/use-consoles";
-import { useToggleFavorite } from "@/hooks/use-games";
+import { useToggleFavorite, useFavoriteGames } from "@/hooks/use-games";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
+import type { Game } from "@/types/api";
 
 export function ConsoleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: games, isLoading } = useConsoleGames(id ?? "");
+  const { data, isLoading } = useConsoleGames(id ?? "");
+  const { data: favoriteGamesData } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
 
-  function handleToggleFavorite(game: { id: string; isFavorite: boolean }) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+  const favoriteIds = new Set(favoriteGamesData?.map((g) => g.id) ?? []);
+
+  function handleToggleFavorite(game: Game) {
+    toggleFavorite.mutate({ gameId: game.id, isFavorite: favoriteIds.has(game.id) });
   }
 
-  const consoleName = games?.[0]?.consoleName ?? "Console";
-  const style = getConsoleStyle(id ?? "");
+  const consoleName = data?.console?.name ?? "Console";
+  const consoleAbbr = data?.console?.abbreviation ?? id ?? "";
+  const games = data?.games ?? [];
+  const style = getConsoleStyle(consoleAbbr);
   const Icon = style.icon;
 
   return (
@@ -45,7 +51,7 @@ export function ConsoleDetailPage() {
         <div>
           <h1 className="text-3xl font-bold text-surface-100">{consoleName}</h1>
           <p className="text-surface-400">
-            {games?.length ?? 0} {(games?.length ?? 0) === 1 ? "game" : "games"}
+            {games.length} {games.length === 1 ? "game" : "games"}
           </p>
         </div>
       </div>
@@ -57,7 +63,7 @@ export function ConsoleDetailPage() {
             <GameCardSkeleton key={i} />
           ))}
         </div>
-      ) : !games || games.length === 0 ? (
+      ) : games.length === 0 ? (
         <EmptyState
           icon={Library}
           title="No games found"
@@ -69,6 +75,7 @@ export function ConsoleDetailPage() {
             <GameCard
               key={game.id}
               game={game}
+              isFavorite={favoriteIds.has(game.id)}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}

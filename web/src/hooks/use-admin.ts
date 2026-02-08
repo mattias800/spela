@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { User, ServerSettings, ScanStatus, MetadataMatch } from "@/types/api";
+import type { User, ServerSettingsMap, MetadataMatch } from "@/types/api";
 
 export function useAdminUsers() {
   return useQuery({
@@ -13,7 +13,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
       await api.put(`/admin/users/${id}`, data);
     },
     onSuccess: () => {
@@ -25,7 +25,7 @@ export function useUpdateUser() {
 export function useServerSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
-    queryFn: () => api.get<ServerSettings>("/admin/settings"),
+    queryFn: () => api.get<ServerSettingsMap>("/admin/settings"),
   });
 }
 
@@ -33,7 +33,7 @@ export function useUpdateSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (settings: Partial<ServerSettings>) => {
+    mutationFn: async (settings: Record<string, string>) => {
       await api.put("/admin/settings", settings);
     },
     onSuccess: () => {
@@ -44,7 +44,7 @@ export function useUpdateSettings() {
 
 export function useScanLibrary() {
   return useMutation({
-    mutationFn: () => api.post<ScanStatus>("/games/scan"),
+    mutationFn: () => api.post<Record<string, unknown>>("/games/scan"),
   });
 }
 
@@ -65,7 +65,7 @@ export function useUpdateGameMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, metadata }: { gameId: string; metadata: Record<string, unknown> }) => {
+    mutationFn: async ({ gameId, metadata }: { gameId: number; metadata: Record<string, unknown> }) => {
       await api.post(`/games/${gameId}/metadata`, metadata);
     },
     onSuccess: () => {
