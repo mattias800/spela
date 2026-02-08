@@ -83,9 +83,42 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 	}
 }
 
-// ToGameResponse converts a db.Game to its enriched API response.
-// Pass the gorm.DB and userID to look up favorites and play history.
-func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
+// userGameData holds pre-loaded per-user enrichment data for games.
+type userGameData struct {
+	favorites   map[uint]bool
+	playHistory map[uint]*db.PlayHistory
+}
+
+// loadUserGameData batch-loads favorites and play history for a set of game IDs.
+// This runs 2 queries total regardless of the number of games.
+func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameData {
+	data := userGameData{
+		favorites:   make(map[uint]bool, len(gameIDs)),
+		playHistory: make(map[uint]*db.PlayHistory, len(gameIDs)),
+	}
+	if database == nil || userID == 0 || len(gameIDs) == 0 {
+		return data
+	}
+
+	// Batch-load favorites
+	var favs []db.Favorite
+	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&favs)
+	for _, f := range favs {
+		data.favorites[f.GameID] = true
+	}
+
+	// Batch-load play history
+	var histories []db.PlayHistory
+	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&histories)
+	for i := range histories {
+		data.playHistory[histories[i].GameID] = &histories[i]
+	}
+
+	return data
+}
+
+// toGameResponseWithData converts a db.Game using pre-loaded enrichment data.
+func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	var screenshots []string
 	if g.ScreenshotURL != "" {
 		screenshots = strings.Split(g.ScreenshotURL, ",")
@@ -123,15 +156,9 @@ func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
 		ScraperID:      g.ScraperID,
 	}
 
-	if database != nil && userID > 0 {
-		// Check favorite
-		var favCount int64
-		database.Model(&db.Favorite{}).Where("user_id = ? AND game_id = ?", userID, g.ID).Count(&favCount)
-		resp.IsFavorite = favCount > 0
-
-		// Get play history
-		var ph db.PlayHistory
-		if err := database.Where("user_id = ? AND game_id = ?", userID, g.ID).First(&ph).Error; err == nil {
+	if data != nil {
+		resp.IsFavorite = data.favorites[g.ID]
+		if ph, ok := data.playHistory[g.ID]; ok {
 			resp.LastPlayedAt = &ph.LastPlayed
 			resp.TotalPlayTime = ph.PlayTime
 		}
@@ -140,11 +167,26 @@ func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
 	return resp
 }
 
+// ToGameResponse converts a single db.Game to its enriched API response.
+// For single-game lookups this runs 2 queries. For batch conversions use ToGameResponses.
+func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
+	data := loadUserGameData(database, userID, []uint{g.ID})
+	return toGameResponseWithData(g, &data)
+}
+
 // ToGameResponses converts a slice of db.Game to API responses.
+// Batch-loads favorites and play history in 2 queries total.
 func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResponse {
+	gameIDs := make([]uint, len(games))
+	for i, g := range games {
+		gameIDs[i] = g.ID
+	}
+
+	data := loadUserGameData(database, userID, gameIDs)
+
 	result := make([]GameResponse, len(games))
 	for i, g := range games {
-		result[i] = ToGameResponse(g, database, userID)
+		result[i] = toGameResponseWithData(g, &data)
 	}
 	return result
 }

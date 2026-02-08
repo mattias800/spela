@@ -71,13 +71,22 @@ func (h *UserHandler) GetRecentGames(c *gin.Context) {
 		return
 	}
 
+	// Collect game IDs for batch enrichment
+	gameIDs := make([]uint, 0, len(history))
+	for _, ph := range history {
+		if ph.Game.ID != 0 {
+			gameIDs = append(gameIDs, ph.Game.ID)
+		}
+	}
+	data := loadUserGameData(h.DB, uid, gameIDs)
+
 	// Flatten: return Game[] with play history data merged in
 	games := make([]GameResponse, 0, len(history))
 	for _, ph := range history {
 		if ph.Game.ID == 0 {
 			continue
 		}
-		resp := ToGameResponse(ph.Game, h.DB, uid)
+		resp := toGameResponseWithData(ph.Game, &data)
 		resp.LastPlayedAt = &ph.LastPlayed
 		resp.TotalPlayTime = ph.PlayTime
 		games = append(games, resp)
@@ -98,13 +107,22 @@ func (h *UserHandler) GetFavorites(c *gin.Context) {
 		return
 	}
 
+	// Collect game IDs for batch enrichment
+	gameIDs := make([]uint, 0, len(favorites))
+	for _, fav := range favorites {
+		if fav.Game.ID != 0 {
+			gameIDs = append(gameIDs, fav.Game.ID)
+		}
+	}
+	data := loadUserGameData(h.DB, uid, gameIDs)
+
 	// Flatten: return Game[] with isFavorite=true
 	games := make([]GameResponse, 0, len(favorites))
 	for _, fav := range favorites {
 		if fav.Game.ID == 0 {
 			continue
 		}
-		resp := ToGameResponse(fav.Game, h.DB, uid)
+		resp := toGameResponseWithData(fav.Game, &data)
 		resp.IsFavorite = true
 		games = append(games, resp)
 	}
