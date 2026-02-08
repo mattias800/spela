@@ -57,12 +57,12 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// GetRecentGames returns the user's recently played games.
+// GetRecentGames returns the user's recently played games as a flat Game array.
 func (h *UserHandler) GetRecentGames(c *gin.Context) {
-	userID, _ := c.Get("userId")
+	uid := getUserID(c)
 
 	var history []db.PlayHistory
-	if err := h.DB.Where("user_id = ?", userID).
+	if err := h.DB.Where("user_id = ?", uid).
 		Preload("Game").Preload("Game.Console").
 		Order("last_played desc").
 		Limit(20).
@@ -71,28 +71,50 @@ func (h *UserHandler) GetRecentGames(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, history)
+	// Flatten: return Game[] with play history data merged in
+	games := make([]GameResponse, 0, len(history))
+	for _, ph := range history {
+		if ph.Game.ID == 0 {
+			continue
+		}
+		resp := ToGameResponse(ph.Game, h.DB, uid)
+		resp.LastPlayedAt = &ph.LastPlayed
+		resp.TotalPlayTime = ph.PlayTime
+		games = append(games, resp)
+	}
+
+	c.JSON(http.StatusOK, games)
 }
 
-// GetFavorites returns the user's favorite games.
+// GetFavorites returns the user's favorite games as a flat Game array.
 func (h *UserHandler) GetFavorites(c *gin.Context) {
-	userID, _ := c.Get("userId")
+	uid := getUserID(c)
 
 	var favorites []db.Favorite
-	if err := h.DB.Where("user_id = ?", userID).
+	if err := h.DB.Where("user_id = ?", uid).
 		Preload("Game").Preload("Game.Console").
 		Find(&favorites).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch favorites"})
 		return
 	}
 
-	c.JSON(http.StatusOK, favorites)
+	// Flatten: return Game[] with isFavorite=true
+	games := make([]GameResponse, 0, len(favorites))
+	for _, fav := range favorites {
+		if fav.Game.ID == 0 {
+			continue
+		}
+		resp := ToGameResponse(fav.Game, h.DB, uid)
+		resp.IsFavorite = true
+		games = append(games, resp)
+	}
+
+	c.JSON(http.StatusOK, games)
 }
 
 // AddFavorite adds a game to the user's favorites.
 func (h *UserHandler) AddFavorite(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	uid := userID.(uint)
+	uid := getUserID(c)
 	gameID := c.Param("gameId")
 
 	// Verify game exists
@@ -112,15 +134,15 @@ func (h *UserHandler) AddFavorite(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, fav)
+	c.JSON(http.StatusCreated, gin.H{"message": "favorite added"})
 }
 
 // RemoveFavorite removes a game from the user's favorites.
 func (h *UserHandler) RemoveFavorite(c *gin.Context) {
-	userID, _ := c.Get("userId")
+	uid := getUserID(c)
 	gameID := c.Param("gameId")
 
-	result := h.DB.Where("user_id = ? AND game_id = ?", userID, gameID).Delete(&db.Favorite{})
+	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.Favorite{})
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "favorite not found"})
 		return

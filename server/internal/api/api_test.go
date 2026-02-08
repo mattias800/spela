@@ -207,6 +207,16 @@ func TestListConsoles(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &consoles)
 	require.NoError(t, err)
 	assert.True(t, len(consoles) > 0, "should have seeded consoles")
+
+	// Verify API contract: string ID, extensions as array, coverAspectRatio as number
+	first := consoles[0]
+	_, idIsString := first["id"].(string)
+	assert.True(t, idIsString, "id should be a string")
+	_, extsIsArray := first["extensions"].([]interface{})
+	assert.True(t, extsIsArray, "extensions should be an array")
+	_, ratioIsFloat := first["coverAspectRatio"].(float64)
+	assert.True(t, ratioIsFloat, "coverAspectRatio should be a number")
+	assert.NotNil(t, first["iconUrl"], "should have iconUrl field")
 }
 
 func TestListGames_Empty(t *testing.T) {
@@ -222,8 +232,11 @@ func TestListGames_Empty(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	games := resp["games"].([]interface{})
+	// Pagination uses "data" key, not "games"
+	games := resp["data"].([]interface{})
 	assert.Len(t, games, 0)
+	assert.NotNil(t, resp["pageSize"], "should have pageSize key")
+	assert.NotNil(t, resp["total"], "should have total key")
 }
 
 func TestListGames_SQLInjectionOrder(t *testing.T) {
@@ -365,7 +378,7 @@ func TestFavorites(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	// List favorites
+	// List favorites - should return Game[] with isFavorite=true
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/api/user/favorites", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -375,6 +388,8 @@ func TestFavorites(t *testing.T) {
 	var favs []map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &favs)
 	assert.Len(t, favs, 1)
+	assert.Equal(t, true, favs[0]["isFavorite"])
+	assert.Equal(t, "Test Game", favs[0]["title"])
 
 	// Remove favorite
 	w = httptest.NewRecorder()

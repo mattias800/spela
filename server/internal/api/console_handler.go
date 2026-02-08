@@ -28,10 +28,16 @@ func (h *ConsoleHandler) ListConsoles(c *gin.Context) {
 		consoles[i].GameCount = int(count)
 	}
 
-	c.JSON(http.StatusOK, consoles)
+	// Convert to API response format
+	result := make([]ConsoleResponse, len(consoles))
+	for i, con := range consoles {
+		result[i] = ToConsoleResponse(con)
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
-// ListConsoleGames returns games for a specific console.
+// ListConsoleGames returns games for a specific console as a flat Game array.
 func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	consoleID := c.Param("id")
 
@@ -42,13 +48,21 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	}
 
 	var games []db.Game
-	if err := h.DB.Where("console_id = ?", consoleID).Order("title asc").Find(&games).Error; err != nil {
+	if err := h.DB.Where("console_id = ?", consoleID).
+		Preload("Console").
+		Order("title asc").
+		Find(&games).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"console": console,
-		"games":   games,
-	})
+	userID := getUserID(c)
+	c.JSON(http.StatusOK, ToGameResponses(games, h.DB, userID))
+}
+
+// getUserID extracts the authenticated user's ID from the context.
+func getUserID(c *gin.Context) uint {
+	userID, _ := c.Get("userId")
+	uid, _ := userID.(uint)
+	return uid
 }

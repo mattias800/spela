@@ -90,11 +90,12 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"games":   games,
-		"total":   total,
-		"page":    page,
-		"perPage": perPage,
+	userID := getUserID(c)
+	c.JSON(http.StatusOK, PaginatedResponse{
+		Data:     ToGameResponses(games, h.DB, userID),
+		Total:    total,
+		Page:     page,
+		PageSize: perPage,
 	})
 }
 
@@ -107,17 +108,8 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 		return
 	}
 
-	// Record play history view
-	userID, _ := c.Get("userId")
-	if uid, ok := userID.(uint); ok {
-		var ph db.PlayHistory
-		result := h.DB.Where("user_id = ? AND game_id = ?", uid, game.ID).First(&ph)
-		if result.Error == gorm.ErrRecordNotFound {
-			// Don't create history just from viewing; only from explicit play
-		}
-	}
-
-	c.JSON(http.StatusOK, game)
+	userID := getUserID(c)
+	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }
 
 // DownloadGame serves the ROM file for a game.
@@ -219,7 +211,9 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, game)
+	h.DB.Preload("Console").First(&game, game.ID)
+	userID := getUserID(c)
+	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }
 
 // ScanGames triggers a library scan.
