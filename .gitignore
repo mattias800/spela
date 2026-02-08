@@ -1,0 +1,33 @@
+# IDE
+.idea/
+.claude/
+.vscode/
+
+# Go
+server/go.sum
+server/.playwright-cli/
+
+# Database
+server/spela.db
+server/*.db
+
+# Screenshots/generated files
+server/*.png
+server/*.jpg
+server/*.jpeg
+
+# Dependencies (npm)
+web/node_modules/
+
+# Build outputs
+web/dist/
+web/build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
