@@ -1,0 +1,73 @@
+package com.spela.player.presentation.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
+
+@Composable
+fun SpTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    showBack: Boolean = false,
+    onBack: () -> Unit = {},
+    actions: @Composable () -> Unit = {},
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(SpSpacing.TopBarHeight)
+            .background(SpColor.Surface.copy(alpha = 0.95f))
+            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (showBack) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SpColor.SurfaceVariant)
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "\u2190",
+                    style = SpTypography.TitleLarge,
+                    color = SpColor.OnSurface,
+                )
+            }
+            Spacer(Modifier.width(SpSpacing.Medium))
+        }
+
+        Text(
+            text = title,
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier.weight(1f),
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            actions()
+        }
+    }
+}

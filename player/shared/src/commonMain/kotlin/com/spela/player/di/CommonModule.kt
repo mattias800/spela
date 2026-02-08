@@ -4,6 +4,7 @@ import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.*
+import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.*
 import com.spela.player.util.DefaultDispatcherProvider
 import com.spela.player.util.DispatcherProvider
@@ -82,6 +83,31 @@ val commonModule = module {
             loadGameStateUseCase = get(),
             getGameDetailUseCase = get(),
             libretroController = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    /* Navigation & UI ViewModels */
+    single { NavigationViewModel() }
+    factory {
+        ServerConnectionViewModel(
+            serverRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
+        DownloadsViewModel(
+            downloadRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
+        SettingsViewModel(
+            authRepository = get(),
+            downloadRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
