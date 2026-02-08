@@ -1,0 +1,126 @@
+-- Server connections
+CREATE TABLE ServerConnectionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 0
+);
+
+insertServer:
+INSERT INTO ServerConnectionEntity(id, name, url, is_active)
+VALUES (?, ?, ?, ?);
+
+getAllServers:
+SELECT * FROM ServerConnectionEntity;
+
+getActiveServer:
+SELECT * FROM ServerConnectionEntity WHERE is_active = 1 LIMIT 1;
+
+setActiveServer:
+UPDATE ServerConnectionEntity SET is_active = CASE WHEN id = ? THEN 1 ELSE 0 END;
+
+deleteServer:
+DELETE FROM ServerConnectionEntity WHERE id = ?;
+
+-- Cached games
+CREATE TABLE CachedGameEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    console_id TEXT NOT NULL,
+    console_name TEXT NOT NULL,
+    cover_url TEXT,
+    description TEXT,
+    developer TEXT,
+    publisher TEXT,
+    release_year INTEGER,
+    genre TEXT,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    file_name TEXT NOT NULL DEFAULT '',
+    core_name TEXT,
+    cached_at INTEGER NOT NULL
+);
+
+insertCachedGame:
+INSERT OR REPLACE INTO CachedGameEntity(
+    id, title, console_id, console_name, cover_url, description,
+    developer, publisher, release_year, genre, file_size, file_name,
+    core_name, cached_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllCachedGames:
+SELECT * FROM CachedGameEntity ORDER BY title;
+
+getCachedGamesByConsole:
+SELECT * FROM CachedGameEntity WHERE console_id = ? ORDER BY title;
+
+getCachedGameById:
+SELECT * FROM CachedGameEntity WHERE id = ?;
+
+searchCachedGames:
+SELECT * FROM CachedGameEntity WHERE title LIKE '%' || ? || '%' ORDER BY title;
+
+deleteCachedGame:
+DELETE FROM CachedGameEntity WHERE id = ?;
+
+deleteAllCachedGames:
+DELETE FROM CachedGameEntity;
+
+-- Download tracking
+CREATE TABLE DownloadEntity (
+    game_id TEXT NOT NULL PRIMARY KEY,
+    local_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    downloaded_at INTEGER NOT NULL
+);
+
+insertDownload:
+INSERT OR REPLACE INTO DownloadEntity(game_id, local_path, file_size, downloaded_at)
+VALUES (?, ?, ?, ?);
+
+getDownload:
+SELECT * FROM DownloadEntity WHERE game_id = ?;
+
+getAllDownloads:
+SELECT * FROM DownloadEntity;
+
+deleteDownload:
+DELETE FROM DownloadEntity WHERE game_id = ?;
+
+deleteAllDownloads:
+DELETE FROM DownloadEntity;
+
+-- Auth tokens
+CREATE TABLE AuthTokenEntity (
+    id INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
+insertTokens:
+INSERT OR REPLACE INTO AuthTokenEntity(id, access_token, refresh_token, expires_at)
+VALUES (1, ?, ?, ?);
+
+getTokens:
+SELECT * FROM AuthTokenEntity WHERE id = 1;
+
+deleteTokens:
+DELETE FROM AuthTokenEntity WHERE id = 1;
+
+-- Play history
+CREATE TABLE PlayHistoryEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    duration_seconds INTEGER NOT NULL DEFAULT 0
+);
+
+insertPlayHistory:
+INSERT INTO PlayHistoryEntity(id, game_id, started_at, duration_seconds)
+VALUES (?, ?, ?, ?);
+
+getPlayHistoryForGame:
+SELECT * FROM PlayHistoryEntity WHERE game_id = ? ORDER BY started_at DESC;
+
+getRecentPlayHistory:
+SELECT * FROM PlayHistoryEntity ORDER BY started_at DESC LIMIT ?;

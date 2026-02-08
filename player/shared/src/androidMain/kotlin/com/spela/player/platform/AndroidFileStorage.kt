@@ -1,0 +1,45 @@
+package com.spela.player.platform
+
+import android.content.Context
+import com.spela.player.util.FileStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+
+class AndroidFileStorage(private val context: Context) : FileStorage {
+
+    private val baseDir: File
+        get() = context.filesDir
+
+    override fun getGamesDir(): String = File(baseDir, "games").apply { mkdirs() }.absolutePath
+    override fun getCoresDir(): String = File(baseDir, "cores").apply { mkdirs() }.absolutePath
+    override fun getSavesDir(): String = File(baseDir, "saves").apply { mkdirs() }.absolutePath
+
+    override suspend fun writeFile(path: String, data: ByteArray) = withContext(Dispatchers.IO) {
+        val file = File(path)
+        file.parentFile?.mkdirs()
+        file.writeBytes(data)
+    }
+
+    override suspend fun readFile(path: String): ByteArray = withContext(Dispatchers.IO) {
+        File(path).readBytes()
+    }
+
+    override suspend fun fileExists(path: String): Boolean = File(path).exists()
+
+    override suspend fun deleteFile(path: String) = withContext(Dispatchers.IO) {
+        File(path).delete()
+        Unit
+    }
+
+    override suspend fun deleteDirectory(path: String) = withContext(Dispatchers.IO) {
+        File(path).deleteRecursively()
+        Unit
+    }
+
+    override suspend fun getDirectorySize(path: String): Long = withContext(Dispatchers.IO) {
+        val dir = File(path)
+        if (!dir.exists()) return@withContext 0L
+        dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    }
+}
