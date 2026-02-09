@@ -13,11 +13,7 @@ import kotlinx.coroutines.flow.flow
  */
 class DesktopLibretroController : LibretroController {
 
-    companion object {
-        init {
-            System.loadLibrary("spela-libretro")
-        }
-    }
+    private val jni = LibretroJni()
 
     @Volatile
     private var running = false
@@ -37,39 +33,18 @@ class DesktopLibretroController : LibretroController {
     @Volatile
     private var currentFrameTime = 0f
 
-    /* JNI native declarations (same symbols as Android) */
-    private external fun nativeLoadCore(corePath: String): Boolean
-    private external fun nativeInit()
-    private external fun nativeLoadGame(gamePath: String): Boolean
-    private external fun nativeRun()
-    private external fun nativeUnloadGame()
-    private external fun nativeDeinit()
-    private external fun nativeSerialize(): ByteArray?
-    private external fun nativeUnserialize(data: ByteArray): Boolean
-    private external fun nativeGetVideoFrame(): ByteArray?
-    private external fun nativeGetVideoWidth(): Int
-    private external fun nativeGetVideoHeight(): Int
-    private external fun nativeGetPixelFormat(): Int
-    private external fun nativeGetAudioBuffer(): ShortArray?
-    private external fun nativeSetInputButton(port: Int, id: Int, pressed: Boolean)
-    private external fun nativeSetInputAnalog(port: Int, index: Int, id: Int, value: Short)
-    private external fun nativeGetTargetFps(): Double
-    private external fun nativeGetSampleRate(): Double
-    private external fun nativeSetSystemDir(dir: String)
-    private external fun nativeSetSaveDir(dir: String)
-
     override fun loadCore(corePath: String) {
-        if (!nativeLoadCore(corePath)) {
+        if (!jni.nativeLoadCore(corePath)) {
             throw RuntimeException("Failed to load core: $corePath")
         }
-        nativeInit()
+        jni.nativeInit()
     }
 
     override fun loadGame(gamePath: String) {
-        if (!nativeLoadGame(gamePath)) {
+        if (!jni.nativeLoadGame(gamePath)) {
             throw RuntimeException("Failed to load game: $gamePath")
         }
-        targetFps = nativeGetTargetFps()
+        targetFps = jni.nativeGetTargetFps()
         if (targetFps <= 0) targetFps = 60.0
     }
 
@@ -96,13 +71,13 @@ class DesktopLibretroController : LibretroController {
         running = false
         emulationThread?.join(2000)
         emulationThread = null
-        nativeUnloadGame()
-        nativeDeinit()
+        jni.nativeUnloadGame()
+        jni.nativeDeinit()
     }
 
-    override fun serialize(): ByteArray? = nativeSerialize()
+    override fun serialize(): ByteArray? = jni.nativeSerialize()
 
-    override fun unserialize(data: ByteArray): Boolean = nativeUnserialize(data)
+    override fun unserialize(data: ByteArray): Boolean = jni.nativeUnserialize(data)
 
     override fun setFastForward(enabled: Boolean) {
         fastForward = enabled
@@ -115,19 +90,19 @@ class DesktopLibretroController : LibretroController {
         }
     }
 
-    fun getVideoFrame(): ByteArray? = nativeGetVideoFrame()
-    fun getVideoWidth(): Int = nativeGetVideoWidth()
-    fun getVideoHeight(): Int = nativeGetVideoHeight()
-    fun getPixelFormat(): Int = nativeGetPixelFormat()
-    fun getAudioBuffer(): ShortArray? = nativeGetAudioBuffer()
-    fun getSampleRate(): Double = nativeGetSampleRate()
+    fun getVideoFrame(): ByteArray? = jni.nativeGetVideoFrame()
+    fun getVideoWidth(): Int = jni.nativeGetVideoWidth()
+    fun getVideoHeight(): Int = jni.nativeGetVideoHeight()
+    fun getPixelFormat(): Int = jni.nativeGetPixelFormat()
+    fun getAudioBuffer(): ShortArray? = jni.nativeGetAudioBuffer()
+    fun getSampleRate(): Double = jni.nativeGetSampleRate()
 
     fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
-        nativeSetInputButton(port, buttonId, pressed)
+        jni.nativeSetInputButton(port, buttonId, pressed)
     }
 
     fun setAnalog(port: Int, stickIndex: Int, axisId: Int, value: Short) {
-        nativeSetInputAnalog(port, stickIndex, axisId, value)
+        jni.nativeSetInputAnalog(port, stickIndex, axisId, value)
     }
 
     private fun runEmulationLoop() {
@@ -143,7 +118,7 @@ class DesktopLibretroController : LibretroController {
 
             val frameStart = System.nanoTime()
 
-            nativeRun()
+            jni.nativeRun()
 
             fpsCounter++
             val now = System.nanoTime()
