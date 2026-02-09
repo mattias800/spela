@@ -79,9 +79,9 @@ func TestRegisterAndLogin(t *testing.T) {
 	assert.NotEmpty(t, registerResp["accessToken"])
 	assert.NotEmpty(t, registerResp["refreshToken"])
 
-	// First user should be admin
+	// First user should be owner
 	user := registerResp["user"].(map[string]interface{})
-	assert.Equal(t, "admin", user["role"])
+	assert.Equal(t, "owner", user["role"])
 
 	// Login
 	body, _ = json.Marshal(map[string]string{
