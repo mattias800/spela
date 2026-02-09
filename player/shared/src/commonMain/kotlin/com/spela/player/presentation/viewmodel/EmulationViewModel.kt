@@ -46,7 +46,7 @@ class EmulationViewModel(
     }
 
     private fun startGame(gameId: String) {
-        _state.update { it.copy(gameId = gameId, isLoading = true, showOverlay = true) }
+        _state.update { it.copy(gameId = gameId, isLoading = true) }
 
         scope.launch(dispatchers.io) {
             // Get game title

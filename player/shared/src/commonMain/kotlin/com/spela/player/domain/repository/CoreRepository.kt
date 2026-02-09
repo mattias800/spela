@@ -5,7 +5,7 @@ import com.spela.player.domain.model.LibretroCore
 interface CoreRepository {
     suspend fun getAvailableCores(): Result<List<LibretroCore>>
     suspend fun getRecommendedCore(gameId: String): Result<LibretroCore>
-    suspend fun downloadCore(coreId: String, onProgress: (Float) -> Unit = {}): Result<String>
-    suspend fun getLocalCorePath(coreId: String): String?
-    suspend fun isCoreCached(coreId: String): Boolean
+    suspend fun downloadCore(coreName: String, onProgress: (Float) -> Unit = {}): Result<String>
+    suspend fun getLocalCorePath(coreName: String): String?
+    suspend fun isCoreCached(coreName: String): Boolean
 }

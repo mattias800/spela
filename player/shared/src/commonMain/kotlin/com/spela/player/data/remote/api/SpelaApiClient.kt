@@ -130,11 +130,15 @@ class SpelaApiClient(
     // Game Download
 
     suspend fun downloadGame(gameId: String, onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/download") {
+        val response = client.get("$baseUrl/api/games/$gameId/download") {
             onDownload { bytesSentTotal, contentLength ->
                 onProgress(bytesSentTotal, contentLength)
             }
-        }.body()
+        }
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Game download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     // Saves
@@ -194,13 +198,17 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/core").body()
     }
 
-    suspend fun downloadCore(coreId: String, platform: String = "linux", onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {
-        return client.get("$baseUrl/api/cores/$coreId/download") {
+    suspend fun downloadCore(coreId: String, platform: String = "android", onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {
+        val response = client.get("$baseUrl/api/cores/$coreId/download") {
             parameter("platform", platform)
             onDownload { bytesSentTotal, contentLength ->
                 onProgress(bytesSentTotal, contentLength)
             }
-        }.body()
+        }
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Core download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     fun close() {

@@ -5,10 +5,20 @@ import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.LibretroCore
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.util.FileStorage
+import com.spela.player.util.buildbotCoreUrl
+import com.spela.player.util.coreFileName
+import com.spela.player.util.extractFirstZipEntry
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 
 class CoreRepositoryImpl(
     private val apiClient: SpelaApiClient,
     private val fileStorage: FileStorage,
+    private val httpClient: HttpClient,
 ) : CoreRepository {
 
     override suspend fun getAvailableCores(): Result<List<LibretroCore>> = runCatching {
@@ -19,21 +29,32 @@ class CoreRepositoryImpl(
         apiClient.getRecommendedCore(gameId).toDomain()
     }
 
-    override suspend fun downloadCore(coreId: String, onProgress: (Float) -> Unit): Result<String> = runCatching {
-        val data = apiClient.downloadCore(coreId) { downloaded, total ->
-            if (total > 0) onProgress(downloaded.toFloat() / total)
+    override suspend fun downloadCore(coreName: String, onProgress: (Float) -> Unit): Result<String> = runCatching {
+        val fileName = coreFileName(coreName)
+        val destPath = fileStorage.getCoresDir() + "/$fileName"
+        val url = buildbotCoreUrl(coreName)
+
+        val response: HttpResponse = httpClient.get(url) {
+            onDownload { bytesSentTotal, contentLength ->
+                if (contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
+            }
         }
-        val path = fileStorage.getCoresDir() + "/$coreId"
-        fileStorage.writeFile(path, data)
-        path
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Core download failed: HTTP ${response.status.value} from $url")
+        }
+        val zipData: ByteArray = response.body()
+        val coreData = extractFirstZipEntry(zipData)
+        fileStorage.writeFile(destPath, coreData)
+        destPath
     }
 
-    override suspend fun getLocalCorePath(coreId: String): String? {
-        val path = fileStorage.getCoresDir() + "/$coreId"
+    override suspend fun getLocalCorePath(coreName: String): String? {
+        val fileName = coreFileName(coreName)
+        val path = fileStorage.getCoresDir() + "/$fileName"
         return if (fileStorage.fileExists(path)) path else null
     }
 
-    override suspend fun isCoreCached(coreId: String): Boolean {
-        return getLocalCorePath(coreId) != null
+    override suspend fun isCoreCached(coreName: String): Boolean {
+        return getLocalCorePath(coreName) != null
     }
 }

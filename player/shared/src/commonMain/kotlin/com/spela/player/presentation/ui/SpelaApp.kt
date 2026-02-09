@@ -10,16 +10,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpBottomBar
 import com.spela.player.presentation.ui.components.SpBottomBarItem
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -29,6 +32,7 @@ import com.spela.player.presentation.ui.screen.GameDetailScreen
 import com.spela.player.presentation.ui.screen.HomeScreen
 import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.screen.LoginScreen
+import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -37,6 +41,7 @@ import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
+import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
@@ -55,6 +60,7 @@ fun SpelaApp(
     gameListViewModel: GameListViewModel,
     gameDetailViewModel: GameDetailViewModel,
     emulationViewModel: EmulationViewModel,
+    libretroController: LibretroController,
     downloadsViewModel: DownloadsViewModel,
     settingsViewModel: SettingsViewModel,
 ) {
@@ -167,7 +173,7 @@ fun SpelaApp(
                         }
                     }
 
-                    // In-game overlay
+                    // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
                         LaunchedEffect(navState.overlayGameId) {
                             navState.overlayGameId?.let { gameId ->
@@ -176,6 +182,28 @@ fun SpelaApp(
                                 )
                             }
                         }
+
+                        // Intercept back button during emulation: toggle overlay
+                        PlatformBackHandler {
+                            emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+                        }
+
+                        // Emulation video surface (renders behind the overlay)
+                        PlatformEmulationSurface(
+                            controller = libretroController,
+                        )
+
+                        // Loading spinner over black background while preparing game
+                        val emulationState by emulationViewModel.state.collectAsState()
+                        if (emulationState.isLoading) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(Color.Black),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
+                            }
+                        }
+
                         InGameOverlay(
                             viewModel = emulationViewModel,
                             onExit = {

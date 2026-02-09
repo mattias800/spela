@@ -1,0 +1,143 @@
+appId: com.spela.player
+---
+
+# Test: Save and Load state flow
+#
+# Verifies that the user can save the current emulation state and then
+# load it back. After saving, closing the overlay, reopening, and
+# loading should restore the state without error.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES > Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# ── Wait for game to start with overlay visible ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# ── Save the game state ──
+
+- tapOn: "Save"
+
+# Wait briefly for save to complete
+- extendedWaitUntil:
+    visible:
+      text: "Resume"
+    timeout: 5000
+
+# ── Dismiss overlay by tapping Resume ──
+
+- tapOn: "Resume"
+
+# ── Let the game run for a moment, then reopen overlay ──
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# ── Load the saved state ──
+
+- tapOn: "Load"
+
+# Wait briefly for load to complete
+- extendedWaitUntil:
+    visible:
+      text: "Resume"
+    timeout: 5000
+
+# ── Verify overlay is still showing (no crash after load) ──
+
+- assertVisible: "Exit Game"
+- assertVisible: "Resume"
+- assertVisible: "Save"
+
+# ── Exit game to clean up ──
+
+- tapOn: "Exit Game"

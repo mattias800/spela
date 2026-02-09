@@ -1,0 +1,149 @@
+appId: com.spela.player
+---
+
+# Test: Exit game with auto-save, then resume with auto-load
+#
+# Verifies the full exit/resume cycle: play a game, exit (which triggers
+# auto-save), return to the game detail screen, then play again (which
+# should auto-load the saved state).
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES > Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+# ── Download the game ──
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+# ── First play session ──
+
+- tapOn: "Play"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# Let the game run briefly (dismiss overlay, wait, reopen)
+- tapOn: "Resume"
+
+# Reopen overlay using back button
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# ── Exit the game (triggers auto-save) ──
+
+- tapOn: "Exit Game"
+
+# ── Verify we return to game detail screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 10000
+
+# The Play button should be visible again (game is cached)
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 5000
+
+# ── Second play session (should auto-load) ──
+
+- tapOn: "Play"
+
+# ── Verify game starts again ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# Verify the overlay is functional
+- assertVisible: "Resume"
+- assertVisible: "Save"
+
+# ── Clean up ──
+
+- tapOn: "Exit Game"

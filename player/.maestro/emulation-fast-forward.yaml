@@ -1,0 +1,130 @@
+appId: com.spela.player
+---
+
+# Test: Fast forward toggle
+#
+# Verifies that the fast forward button toggles between "Fast" and "Normal"
+# labels, indicating the fast forward state change.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES > Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# ── Wait for overlay ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# ── Verify initial state shows "Fast" button ──
+
+- assertVisible:
+    text: "Fast"
+
+# ── Tap Fast to enable fast forward ──
+
+- tapOn: "Fast"
+
+# ── Verify the button now shows "Normal" (fast forward is ON) ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Normal"
+    timeout: 3000
+
+# ── Tap Normal to disable fast forward ──
+
+- tapOn: "Normal"
+
+# ── Verify it reverts back to "Fast" ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Fast"
+    timeout: 3000
+
+# ── Exit game to clean up ──
+
+- tapOn: "Exit Game"

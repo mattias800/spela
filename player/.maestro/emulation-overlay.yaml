@@ -1,0 +1,144 @@
+appId: com.spela.player
+---
+
+# Test: In-game overlay shows all action buttons
+#
+# Verifies that after starting a game, the overlay panel displays
+# the game title, performance stats, and all action buttons
+# (Save, Load, Screenshot, Fast, Exit Game, Resume).
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES console ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+# ── Find and tap Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+# ── Wait for game detail screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+# ── Download the game if needed ──
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+# ── Tap Play ──
+
+- tapOn: "Play"
+
+# ── Assert the overlay appears with all controls ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+- assertVisible: "Resume"
+
+- assertVisible:
+    text: "Save"
+
+- assertVisible:
+    text: "Load"
+
+- assertVisible:
+    text: "Screenshot"
+
+- assertVisible:
+    text: "Fast"
+
+# ── Assert game title is shown in overlay ──
+
+- assertVisible:
+    text: ".*Castlevania.*"
+
+# ── Assert performance stats are visible (proves emulation is actually running) ──
+# The performance row only renders when state.isRunning is true.
+# If the native library fails to load or the core fails to start,
+# isRunning stays false and no FPS/frame time badge appears.
+# The PerformanceBadge shows "FPS" as a label and the "Frame" badge
+# shows the frame time. We look for "Frame" as it is unique to
+# the performance section (no other UI element has that text).
+
+- extendedWaitUntil:
+    visible:
+      text: "Frame"
+    timeout: 15000
+
+# ── Exit game to clean up ──
+
+- tapOn: "Exit Game"

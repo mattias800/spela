@@ -23,7 +23,7 @@ val commonModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<GameRepository> { GameRepositoryImpl(get()) }
     single<SaveRepository> { SaveRepositoryImpl(get()) }
-    single<CoreRepository> { CoreRepositoryImpl(get(), get()) }
+    single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl() }
 
