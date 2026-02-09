@@ -1,0 +1,104 @@
+appId: com.spela.player
+---
+
+# Test: Tapping "Play" on Castlevania should start the game
+#
+# This test exposes a bug where tapping the Play button on the
+# GameDetailScreen does not start the game / show the in-game overlay.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES console ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+# ── Find and tap Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+# ── Wait for game detail screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+# ── Download the game ──
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+# ── Tap Play ──
+
+- tapOn: "Play"
+
+# ── Assert the game starts ──
+# The in-game overlay should appear with game controls.
+# This assertion will FAIL due to the current bug.
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
