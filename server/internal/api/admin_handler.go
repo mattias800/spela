@@ -224,27 +224,10 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 
 // TriggerScrape starts a metadata scraping operation (admin only).
 // Only one scrape can run at a time; concurrent requests are rejected.
+// Images are always fetched from LibRetro Thumbnails (no credentials needed).
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
-	// Try loading credentials from DB settings if not already configured
-	if !h.Scraper.IsConfigured() {
-		var settings []db.ServerSetting
-		h.DB.Where("key IN ?", []string{
-			"screenscraper_username", "screenscraper_password",
-		}).Find(&settings)
-
-		sm := make(map[string]string)
-		for _, s := range settings {
-			sm[s.Key] = s.Value
-		}
-		if sm["screenscraper_username"] != "" && sm["screenscraper_password"] != "" {
-			h.Scraper.Configure(sm["screenscraper_username"], sm["screenscraper_password"])
-		}
-	}
-
-	if !h.Scraper.IsConfigured() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "scraper not configured; set ScreenScraper credentials in Server Settings"})
-		return
-	}
+	// Try loading ScreenScraper credentials for optional text metadata enrichment
+	h.tryConfigureScreenScraper()
 
 	h.scrapeMu.Lock()
 	if h.scraping {
@@ -273,6 +256,25 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background"})
+}
+
+// tryConfigureScreenScraper loads ScreenScraper credentials from DB settings if not already configured.
+func (h *AdminHandler) tryConfigureScreenScraper() {
+	if h.Scraper.IsConfigured() {
+		return
+	}
+	var settings []db.ServerSetting
+	h.DB.Where("key IN ?", []string{
+		"screenscraper_username", "screenscraper_password",
+	}).Find(&settings)
+
+	sm := make(map[string]string)
+	for _, s := range settings {
+		sm[s.Key] = s.Value
+	}
+	if sm["screenscraper_username"] != "" && sm["screenscraper_password"] != "" {
+		h.Scraper.Configure(sm["screenscraper_username"], sm["screenscraper_password"])
+	}
 }
 
 // DeleteUser permanently deletes a user and all their data (admin only).
@@ -321,6 +323,8 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 }
 
 // ScrapeGame scrapes metadata for a single game (admin only).
+// Images are always fetched from LibRetro Thumbnails (no credentials needed).
+// If ScreenScraper credentials are configured, text metadata is also enriched.
 func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
@@ -329,25 +333,8 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 		return
 	}
 
-	if !h.Scraper.IsConfigured() {
-		var settings []db.ServerSetting
-		h.DB.Where("key IN ?", []string{
-			"screenscraper_username", "screenscraper_password",
-		}).Find(&settings)
-
-		sm := make(map[string]string)
-		for _, s := range settings {
-			sm[s.Key] = s.Value
-		}
-		if sm["screenscraper_username"] != "" && sm["screenscraper_password"] != "" {
-			h.Scraper.Configure(sm["screenscraper_username"], sm["screenscraper_password"])
-		}
-	}
-
-	if !h.Scraper.IsConfigured() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "scraper not configured; set ScreenScraper credentials in Server Settings"})
-		return
-	}
+	// Try loading ScreenScraper credentials for optional text metadata enrichment
+	h.tryConfigureScreenScraper()
 
 	if err := h.Scraper.ScrapeGame(&game); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "scrape failed: " + err.Error()})

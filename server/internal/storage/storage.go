@@ -8,23 +8,65 @@ import (
 	"strings"
 )
 
-// Storage manages file operations for ROMs, saves, and cores.
+// Storage manages file operations for ROMs, saves, cores, and images.
 type Storage struct {
-	SaveDir string
-	CoreDir string
+	SaveDir  string
+	CoreDir  string
+	ImageDir string
 }
 
 // NewStorage creates a new storage instance, creating directories as needed.
-func NewStorage(saveDir, coreDir string) (*Storage, error) {
-	for _, dir := range []string{saveDir, coreDir} {
+func NewStorage(saveDir, coreDir, imageDir string) (*Storage, error) {
+	for _, dir := range []string{saveDir, coreDir, imageDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, fmt.Errorf("creating directory %s: %w", dir, err)
 		}
 	}
 	return &Storage{
-		SaveDir: saveDir,
-		CoreDir: coreDir,
+		SaveDir:  saveDir,
+		CoreDir:  coreDir,
+		ImageDir: imageDir,
 	}, nil
+}
+
+// WriteImage writes image data to {ImageDir}/{subpath}, creating subdirectories as needed.
+// Returns the relative subpath for storage in the database.
+func (s *Storage) WriteImage(subpath string, data io.Reader) (string, error) {
+	fullPath := filepath.Join(s.ImageDir, subpath)
+
+	// Verify the resolved path is inside the image directory
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("resolving image path: %w", err)
+	}
+	absImageDir, err := filepath.Abs(s.ImageDir)
+	if err != nil {
+		return "", fmt.Errorf("resolving image dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid image path: outside image directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return "", fmt.Errorf("creating image directory: %w", err)
+	}
+
+	f, err := os.Create(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("creating image file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, data); err != nil {
+		return "", fmt.Errorf("writing image file: %w", err)
+	}
+
+	return subpath, nil
+}
+
+// ImagePath returns the full filesystem path for a stored image subpath.
+func (s *Storage) ImagePath(subpath string) string {
+	return filepath.Join(s.ImageDir, subpath)
 }
 
 // sanitizeFilename strips path separators and traversal sequences from a filename,

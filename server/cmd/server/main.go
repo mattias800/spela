@@ -21,6 +21,7 @@ func main() {
 	gameDirsRaw := getEnv("SPELA_GAME_DIRS", "./games")
 	saveDir := getEnv("SPELA_SAVE_DIR", "./saves")
 	coreDir := getEnv("SPELA_CORE_DIR", "./cores")
+	imageDir := getEnv("SPELA_IMAGE_DIR", "./images")
 	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
@@ -64,7 +65,7 @@ func main() {
 	}
 
 	// Initialize storage
-	store, err := storage.NewStorage(saveDir, coreDir)
+	store, err := storage.NewStorage(saveDir, coreDir, imageDir)
 	if err != nil {
 		slog.Error("failed to initialize storage", "error", err)
 		os.Exit(1)
@@ -74,7 +75,7 @@ func main() {
 	gameScanner := scanner.NewScanner(database, gameDirs)
 
 	// Initialize scraper
-	metaScraper := scraper.NewScraper(database)
+	metaScraper := scraper.NewScraper(database, store)
 	if scraperUser != "" {
 		metaScraper.Configure(scraperUser, scraperUserPass)
 		slog.Info("ScreenScraper integration configured")

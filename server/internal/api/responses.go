@@ -134,6 +134,17 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		consoleName = g.Console.Name
 	}
 
+	coverURL := g.CoverURL
+	if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+		coverURL = "/api/images/" + coverURL
+	}
+
+	for i, s := range screenshots {
+		if s != "" && !strings.HasPrefix(s, "http") {
+			screenshots[i] = "/api/images/" + s
+		}
+	}
+
 	resp := GameResponse{
 		ID:             strconv.FormatUint(uint64(g.ID), 10),
 		CreatedAt:      g.CreatedAt,
@@ -144,7 +155,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		FileName:       g.FileName,
 		FileSize:       g.FileSize,
 		Description:    g.Description,
-		CoverURL:       g.CoverURL,
+		CoverURL:       coverURL,
 		ScreenshotURLs: screenshots,
 		Developer:      g.Developer,
 		Publisher:       g.Publisher,

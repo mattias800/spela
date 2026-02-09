@@ -37,7 +37,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	require.NoError(t, err)
 
 	tmpDir := t.TempDir()
-	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores")
+	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images")
 	require.NoError(t, err)
 
 	hub := ws.NewHub(nil)
@@ -49,7 +49,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		GameDirs:  []string{tmpDir},
 		Storage:   store,
 		Scanner:   scanner.NewScanner(database, []string{tmpDir}),
-		Scraper:   scraper.NewScraper(database),
+		Scraper:   scraper.NewScraper(database, store),
 		Hub:       hub,
 		CoreDir:   tmpDir + "/cores",
 	}

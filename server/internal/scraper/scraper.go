@@ -7,51 +7,74 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
-// Scraper fetches metadata from ScreenScraper.
+// Scraper fetches game images from LibRetro Thumbnails and optionally
+// enriches text metadata from ScreenScraper.
 type Scraper struct {
 	DB         *gorm.DB
-	DevID      string
-	DevPass    string
-	SoftName   string
-	UserName   string
-	UserPass   string
+	Storage    *storage.Storage
 	HTTPClient *http.Client
+	// ScreenScraper credentials (optional)
+	SSDevID    string
+	SSDevPass  string
+	SSSoftName string
+	SSUserName string
+	SSUserPass string
 }
 
 // NewScraper creates a new metadata scraper instance.
-// DevID and DevPass identify the software to ScreenScraper's API.
-func NewScraper(database *gorm.DB) *Scraper {
+func NewScraper(database *gorm.DB, store *storage.Storage) *Scraper {
 	return &Scraper{
-		DB:       database,
-		SoftName: "spela",
-		DevID:    "spela",
-		DevPass:  "spela",
+		DB:         database,
+		Storage:    store,
+		SSSoftName: "spela",
+		SSDevID:    "spela",
+		SSDevPass:  "spela",
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}
 }
 
-// Configure sets the ScreenScraper user credentials.
+// Configure sets the ScreenScraper user credentials for optional text metadata enrichment.
 func (s *Scraper) Configure(userName, userPass string) {
-	s.UserName = userName
-	s.UserPass = userPass
+	s.SSUserName = userName
+	s.SSUserPass = userPass
 }
 
-// IsConfigured returns whether user credentials are set.
+// IsConfigured returns whether ScreenScraper user credentials are set.
 func (s *Scraper) IsConfigured() bool {
-	return s.UserName != "" && s.UserPass != ""
+	return s.SSUserName != "" && s.SSUserPass != ""
 }
 
-// screenScraperAPIBase is the API base URL.
-const screenScraperAPIBase = "https://api.screenscraper.fr/api2"
+// abbreviationToLibRetro maps console abbreviations to LibRetro system names.
+var abbreviationToLibRetro = map[string]string{
+	"NES":    "Nintendo - Nintendo Entertainment System",
+	"SNES":   "Nintendo - Super Nintendo Entertainment System",
+	"GB":     "Nintendo - Game Boy",
+	"GBC":    "Nintendo - Game Boy Color",
+	"GBA":    "Nintendo - Game Boy Advance",
+	"N64":    "Nintendo - Nintendo 64",
+	"NDS":    "Nintendo - Nintendo DS",
+	"SMS":    "Sega - Master System - Mark III",
+	"GEN":    "Sega - Mega Drive - Genesis",
+	"SAT":    "Sega - Saturn",
+	"PSX":    "Sony - PlayStation",
+	"PSP":    "Sony - PlayStation Portable",
+	"NEOGEO": "SNK - Neo Geo",
+	"ARCADE": "MAME",
+	"PCE":    "NEC - PC Engine - TurboGrafx 16",
+	"A26":    "Atari - 2600",
+}
 
 // abbreviationToSystemID maps console abbreviations to ScreenScraper system IDs.
 var abbreviationToSystemID = map[string]string{
@@ -71,6 +94,100 @@ var abbreviationToSystemID = map[string]string{
 	"ARCADE": "75",
 	"PCE":    "31",
 	"A26":    "26",
+}
+
+const libRetroThumbnailBase = "https://thumbnails.libretro.com"
+
+// screenScraperAPIBase is the API base URL.
+const screenScraperAPIBase = "https://api.screenscraper.fr/api2"
+
+// gameNameFromFileName strips the file extension to derive the game name.
+func gameNameFromFileName(fileName string) string {
+	ext := filepath.Ext(fileName)
+	return strings.TrimSuffix(fileName, ext)
+}
+
+// downloadLibRetroImage downloads an image from LibRetro Thumbnails and saves it locally.
+// Returns the relative storage path on success, or empty string if the image was not found.
+func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath string) string {
+	imageURL := fmt.Sprintf("%s/%s/%s/%s.png",
+		libRetroThumbnailBase,
+		url.PathEscape(system),
+		imageType,
+		url.PathEscape(gameName),
+	)
+
+	resp, err := s.HTTPClient.Get(imageURL)
+	if err != nil {
+		slog.Debug("failed to fetch LibRetro image", "url", imageURL, "error", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Debug("LibRetro image not found", "url", imageURL, "status", resp.StatusCode)
+		return ""
+	}
+
+	savedPath, err := s.Storage.WriteImage(subpath, resp.Body)
+	if err != nil {
+		slog.Warn("failed to save LibRetro image", "subpath", subpath, "error", err)
+		return ""
+	}
+
+	return savedPath
+}
+
+// ScrapeGame fetches images from LibRetro Thumbnails and optionally enriches
+// text metadata from ScreenScraper.
+func (s *Scraper) ScrapeGame(game *db.Game) error {
+	// Load console if not preloaded
+	var console db.Console
+	if game.Console.ID != 0 {
+		console = game.Console
+	} else {
+		if err := s.DB.First(&console, game.ConsoleID).Error; err != nil {
+			return fmt.Errorf("loading console for game: %w", err)
+		}
+	}
+
+	gameName := gameNameFromFileName(game.FileName)
+	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
+
+	// --- LibRetro Thumbnails (always available, no credentials needed) ---
+	libRetroSystem, hasLibRetro := abbreviationToLibRetro[console.Abbreviation]
+	if hasLibRetro {
+		// Box art (primary)
+		boxartSubpath := fmt.Sprintf("%s/%s/boxart.png", console.Abbreviation, gameIDStr)
+		if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath); path != "" {
+			game.CoverURL = path
+		}
+
+		// Screenshot
+		snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
+		if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
+			game.ScreenshotURL = path
+		}
+	}
+
+	// --- ScreenScraper (optional, for text metadata only) ---
+	if s.IsConfigured() {
+		if err := s.scrapeScreenScraperMetadata(game, console); err != nil {
+			slog.Warn("ScreenScraper metadata enrichment failed", "game", game.Title, "error", err)
+		}
+	}
+
+	// Set scraper ID
+	if game.ScraperID == "" {
+		game.ScraperID = "libretro"
+	}
+
+	if err := s.DB.Save(game).Error; err != nil {
+		return fmt.Errorf("saving scraped metadata: %w", err)
+	}
+
+	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID)
+	return nil
 }
 
 // ssResponse represents a ScreenScraper API game info response (simplified).
@@ -118,34 +235,25 @@ type ssResponse struct {
 	} `json:"response"`
 }
 
-// ScrapeGame fetches metadata for a single game from ScreenScraper.
-func (s *Scraper) ScrapeGame(game *db.Game) error {
-	if !s.IsConfigured() {
-		return fmt.Errorf("scraper not configured: set ScreenScraper credentials")
-	}
-
-	// Look up console for system ID
-	var console db.Console
-	if err := s.DB.First(&console, game.ConsoleID).Error; err != nil {
-		return fmt.Errorf("loading console for game: %w", err)
-	}
-
+// scrapeScreenScraperMetadata fetches text metadata (description, developer, etc.) from ScreenScraper.
+// It does not fetch images — those come from LibRetro.
+func (s *Scraper) scrapeScreenScraperMetadata(game *db.Game, console db.Console) error {
 	systemID, ok := abbreviationToSystemID[console.Abbreviation]
 	if !ok {
 		return fmt.Errorf("no ScreenScraper system ID for console %s", console.Abbreviation)
 	}
 
 	params := url.Values{
-		"devid":      {s.DevID},
-		"devpassword": {s.DevPass},
-		"softname":   {s.SoftName},
-		"output":     {"json"},
-		"systemeid":  {systemID},
-		"romnom":     {game.FileName},
+		"devid":       {s.SSDevID},
+		"devpassword": {s.SSDevPass},
+		"softname":    {s.SSSoftName},
+		"output":      {"json"},
+		"systemeid":   {systemID},
+		"romnom":      {game.FileName},
 	}
-	if s.UserName != "" {
-		params.Set("ssid", s.UserName)
-		params.Set("sspassword", s.UserPass)
+	if s.SSUserName != "" {
+		params.Set("ssid", s.SSUserName)
+		params.Set("sspassword", s.SSUserPass)
 	}
 
 	apiURL := fmt.Sprintf("%s/jeuInfos.php?%s", screenScraperAPIBase, params.Encode())
@@ -168,7 +276,6 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 
 	jeu := ssResp.Response.Jeu
 
-	// Update game metadata
 	game.ScraperID = jeu.ID
 
 	// Title: prefer world/us region
@@ -213,30 +320,11 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		fmt.Sscanf(jeu.Joueurs.Text, "%d", &game.Players)
 	}
 
-	// Cover art and screenshot
-	for _, media := range jeu.Medias {
-		switch {
-		case strings.Contains(media.Type, "box-2D") && game.CoverURL == "":
-			game.CoverURL = media.URL
-		case strings.Contains(media.Type, "ss") && game.ScreenshotURL == "":
-			game.ScreenshotURL = media.URL
-		}
-	}
-
-	if err := s.DB.Save(game).Error; err != nil {
-		return fmt.Errorf("saving scraped metadata: %w", err)
-	}
-
-	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID)
 	return nil
 }
 
 // ScrapeAll fetches metadata for all games that don't have scraper IDs.
 func (s *Scraper) ScrapeAll() (int, error) {
-	if !s.IsConfigured() {
-		return 0, fmt.Errorf("scraper not configured")
-	}
-
 	var games []db.Game
 	if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
 		return 0, fmt.Errorf("loading unscraped games: %w", err)
@@ -249,8 +337,8 @@ func (s *Scraper) ScrapeAll() (int, error) {
 			continue
 		}
 		scraped++
-		// Rate limit: ScreenScraper requires 1 request per second for non-registered devs
-		time.Sleep(1100 * time.Millisecond)
+		// Small delay to avoid hammering the thumbnail server
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	return scraped, nil

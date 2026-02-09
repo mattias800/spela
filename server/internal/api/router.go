@@ -51,6 +51,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// Serve downloaded images (public, no auth required — just box art)
+	r.Static("/api/images", cfg.Storage.ImageDir)
+
 	// Health check (public, no auth required)
 	r.GET("/api/health", func(c *gin.Context) {
 		sqlDB, err := cfg.DB.DB()
