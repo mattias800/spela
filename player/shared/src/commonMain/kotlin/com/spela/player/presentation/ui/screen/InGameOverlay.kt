@@ -26,9 +26,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -167,8 +170,7 @@ fun InGameOverlay(
                             SpButton(
                                 text = "Exit Game",
                                 onClick = {
-                                    viewModel.onIntent(EmulationIntent.StopGame)
-                                    onExit()
+                                    viewModel.onIntent(EmulationIntent.ShowExitConfirm)
                                 },
                                 style = SpButtonStyle.Outlined,
                                 modifier = Modifier.weight(1f),
@@ -220,8 +222,7 @@ fun InGameOverlay(
                             SpButton(
                                 text = "Exit Game",
                                 onClick = {
-                                    viewModel.onIntent(EmulationIntent.StopGame)
-                                    onExit()
+                                    viewModel.onIntent(EmulationIntent.ShowExitConfirm)
                                 },
                                 style = SpButtonStyle.Outlined,
                                 modifier = Modifier.weight(1f),
@@ -269,6 +270,95 @@ fun InGameOverlay(
                         state.fps >= 30f -> SpColor.Warning
                         else -> SpColor.Error
                     },
+                )
+            }
+        }
+    }
+
+    // Exit confirmation dialog
+    if (state.showExitConfirm) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SpColor.SurfaceElevated)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    )
+                    .padding(SpSpacing.XLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Exit game?",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "Your progress will be saved automatically.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                ) {
+                    SpButton(
+                        text = "Cancel",
+                        onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
+                        style = SpButtonStyle.Outlined,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SpButton(
+                        text = "Exit",
+                        onClick = {
+                            viewModel.onIntent(EmulationIntent.ConfirmExit)
+                            onExit()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+
+    // Status message toast (auto-dismisses after 2 seconds)
+    state.statusMessage?.let { message ->
+        LaunchedEffect(message) {
+            delay(2000)
+            viewModel.onIntent(EmulationIntent.DismissStatus)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = SpSpacing.XXXLarge),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SpColor.SuccessContainer)
+                    .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
+            ) {
+                Text(
+                    text = message,
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.Success,
                 )
             }
         }

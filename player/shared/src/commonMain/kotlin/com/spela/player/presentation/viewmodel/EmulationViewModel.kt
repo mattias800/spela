@@ -43,6 +43,13 @@ class EmulationViewModel(
             EmulationIntent.ToggleFastForward -> toggleFastForward()
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
             EmulationIntent.DismissControlHint -> _state.update { it.copy(showControlHint = false) }
+            EmulationIntent.ShowExitConfirm -> _state.update { it.copy(showExitConfirm = true) }
+            EmulationIntent.DismissExitConfirm -> _state.update { it.copy(showExitConfirm = false) }
+            EmulationIntent.ConfirmExit -> {
+                _state.update { it.copy(showExitConfirm = false) }
+                stopGame()
+            }
+            EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
         }
     }
 
@@ -121,9 +128,14 @@ class EmulationViewModel(
         scope.launch(dispatchers.io) {
             val gameId = _state.value.gameId
             val saveData = libretroController.serialize() ?: return@launch
-            saveGameStateUseCase(gameId, saveData).onFailure { error ->
-                _state.update { it.copy(error = "Failed to save: ${error.message}") }
-            }
+            saveGameStateUseCase(gameId, saveData).fold(
+                onSuccess = {
+                    _state.update { it.copy(statusMessage = "State saved") }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                },
+            )
         }
     }
 
@@ -133,6 +145,7 @@ class EmulationViewModel(
             loadGameStateUseCase(gameId).fold(
                 onSuccess = { saveData ->
                     libretroController.unserialize(saveData)
+                    _state.update { it.copy(statusMessage = "State loaded") }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = "Failed to load save: ${error.message}") }
