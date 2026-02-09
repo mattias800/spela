@@ -42,6 +42,7 @@ class EmulationViewModel(
             EmulationIntent.ToggleOverlay -> _state.update { it.copy(showOverlay = !it.showOverlay) }
             EmulationIntent.ToggleFastForward -> toggleFastForward()
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
+            EmulationIntent.DismissControlHint -> _state.update { it.copy(showControlHint = false) }
         }
     }
 

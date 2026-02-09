@@ -7,6 +7,7 @@ data class EmulationState(
     val isPaused: Boolean = false,
     val isLoading: Boolean = false,
     val showOverlay: Boolean = false,
+    val showControlHint: Boolean = true,
     val fps: Float = 0f,
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,

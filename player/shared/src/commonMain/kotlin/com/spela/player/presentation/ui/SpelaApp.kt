@@ -7,12 +7,19 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +46,7 @@ import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.screen.LoginScreen
 import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
 import com.spela.player.presentation.ui.screen.PlatformTouchControls
+import com.spela.player.presentation.ui.screen.platformControlHintText
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -248,6 +256,45 @@ fun SpelaApp(
                             PlatformTouchControls(
                                 controller = libretroController,
                             )
+                        }
+
+                        // First-time control hint overlay
+                        if (emulationState.isRunning && !emulationState.showOverlay && emulationState.showControlHint) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(SpColor.Scrim)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {
+                                            emulationViewModel.onIntent(EmulationIntent.DismissControlHint)
+                                        },
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .padding(SpSpacing.XLarge)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(SpColor.SurfaceElevated)
+                                        .padding(SpSpacing.XLarge),
+                                ) {
+                                    Text(
+                                        text = platformControlHintText(),
+                                        style = SpTypography.BodyMedium,
+                                        color = SpColor.OnBackground,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(Modifier.height(SpSpacing.Large))
+                                    Text(
+                                        text = "Tap anywhere to start playing",
+                                        style = SpTypography.LabelSmall,
+                                        color = SpColor.OnBackgroundTertiary,
+                                    )
+                                }
+                            }
                         }
 
                         InGameOverlay(
