@@ -61,4 +61,12 @@ class AudioOutput(private val sampleRate: Int) {
     fun writeSamples(samples: ShortArray) {
         audioTrack?.write(samples, 0, samples.size)
     }
+
+    /**
+     * Write a specific number of stereo interleaved int16 samples to the AudioTrack.
+     * Used with pre-allocated buffers where only part of the array contains valid data.
+     */
+    fun writeSamples(samples: ShortArray, count: Int) {
+        audioTrack?.write(samples, 0, count)
+    }
 }

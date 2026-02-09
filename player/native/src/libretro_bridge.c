@@ -359,6 +359,17 @@ JNI_FUNC(jbyteArray, nativeGetVideoFrame)(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+JNI_FUNC(jint, nativeFillVideoFrame)(JNIEnv *env, jobject thiz, jbyteArray out) {
+    const void *buffer = video_get_frame_buffer();
+    size_t size = video_get_frame_buffer_size();
+    if (!buffer || size == 0) return 0;
+
+    jsize arrayLen = (*env)->GetArrayLength(env, out);
+    jsize copyLen = (jsize)size < arrayLen ? (jsize)size : arrayLen;
+    (*env)->SetByteArrayRegion(env, out, 0, copyLen, (const jbyte *)buffer);
+    return (jint)copyLen;
+}
+
 JNI_FUNC(jint, nativeGetVideoWidth)(JNIEnv *env, jobject thiz) {
     return (jint)video_get_width();
 }
@@ -383,6 +394,19 @@ JNI_FUNC(jshortArray, nativeGetAudioBuffer)(JNIEnv *env, jobject thiz) {
     }
     audio_clear_buffer();
     return result;
+}
+
+JNI_FUNC(jint, nativeFillAudioBuffer)(JNIEnv *env, jobject thiz, jshortArray out) {
+    const int16_t *buffer = audio_get_buffer();
+    size_t frames = audio_get_buffer_frames();
+    if (!buffer || frames == 0) return 0;
+
+    size_t samples = frames * 2; /* stereo */
+    jsize arrayLen = (*env)->GetArrayLength(env, out);
+    jsize copyLen = (jsize)samples < arrayLen ? (jsize)samples : arrayLen;
+    (*env)->SetShortArrayRegion(env, out, 0, copyLen, buffer);
+    audio_clear_buffer();
+    return (jint)copyLen;
 }
 
 JNI_FUNC(void, nativeSetInputButton)(JNIEnv *env, jobject thiz,

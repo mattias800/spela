@@ -53,6 +53,17 @@ class AndroidLibretroController(
     /* Reusable IntArray buffer for pixel conversion (avoids allocation per frame) */
     private var pixelBuffer = IntArray(0)
 
+    /* Reusable Bitmap to avoid per-frame allocation and GC pressure */
+    private var reusableBitmap: Bitmap? = null
+    private var lastFrameWidth = 0
+    private var lastFrameHeight = 0
+
+    /* Reusable byte buffer for video frame data from JNI (avoids NewByteArray per frame) */
+    private var videoFrameBuffer = ByteArray(0)
+
+    /* Reusable short buffer for audio samples from JNI (avoids NewShortArray per frame) */
+    private var audioSampleBuffer = ShortArray(0)
+
     /* Libretro pixel format constants (match libretro.h) */
     companion object {
         private const val TAG = "LibretroController"
@@ -111,6 +122,10 @@ class AndroidLibretroController(
         jni.nativeUnloadGame()
         jni.nativeDeinit()
         _frameBitmap.value = null
+        reusableBitmap?.recycle()
+        reusableBitmap = null
+        lastFrameWidth = 0
+        lastFrameHeight = 0
     }
 
     override fun serialize(): ByteArray? = jni.nativeSerialize()
@@ -210,22 +225,40 @@ class AndroidLibretroController(
      * ambiguity regardless of CPU endianness.
      */
     private fun updateVideoFrame() {
-        val data = jni.nativeGetVideoFrame() ?: return
         val width = jni.nativeGetVideoWidth()
         val height = jni.nativeGetVideoHeight()
         if (width <= 0 || height <= 0) return
 
         val format = jni.nativeGetPixelFormat()
         val pixelCount = width * height
+        val bytesPerPixel = if (format == RETRO_PIXEL_FORMAT_XRGB8888) 4 else 2
+        val requiredBytes = pixelCount * bytesPerPixel
+
+        // Resize video frame buffer if needed
+        if (videoFrameBuffer.size < requiredBytes) {
+            videoFrameBuffer = ByteArray(requiredBytes)
+        }
+
+        // Fill pre-allocated buffer instead of allocating a new ByteArray per frame
+        val copied = jni.nativeFillVideoFrame(videoFrameBuffer)
+        if (copied <= 0) return
 
         // Resize pixel buffer if needed
         if (pixelBuffer.size < pixelCount) {
             pixelBuffer = IntArray(pixelCount)
         }
 
-        convertToPackedArgb(data, pixelCount, format, pixelBuffer)
+        convertToPackedArgb(videoFrameBuffer, pixelCount, format, pixelBuffer)
 
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        // Reuse bitmap if dimensions haven't changed to avoid per-frame allocation
+        if (width != lastFrameWidth || height != lastFrameHeight) {
+            reusableBitmap?.recycle()
+            reusableBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            lastFrameWidth = width
+            lastFrameHeight = height
+        }
+
+        val bitmap = reusableBitmap ?: return
         bitmap.setPixels(pixelBuffer, 0, width, 0, 0, width, height)
         _frameBitmap.value = bitmap
     }
@@ -280,11 +313,17 @@ class AndroidLibretroController(
 
     /**
      * Reads buffered audio samples from the native layer and writes to AudioTrack.
+     * Uses a pre-allocated buffer to avoid per-frame ShortArray allocation.
      */
     private fun pushAudio() {
-        val samples = jni.nativeGetAudioBuffer() ?: return
-        if (samples.isNotEmpty()) {
-            audioOutput?.writeSamples(samples)
+        // Ensure audio buffer is large enough (stereo, ~2048 frames is typical max per tick)
+        if (audioSampleBuffer.size < 4096) {
+            audioSampleBuffer = ShortArray(4096)
+        }
+
+        val count = jni.nativeFillAudioBuffer(audioSampleBuffer)
+        if (count > 0) {
+            audioOutput?.writeSamples(audioSampleBuffer, count)
         }
     }
 }

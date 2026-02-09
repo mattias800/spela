@@ -27,12 +27,14 @@ class LibretroJni {
 
     /* Video */
     external fun nativeGetVideoFrame(): ByteArray?
+    external fun nativeFillVideoFrame(out: ByteArray): Int
     external fun nativeGetVideoWidth(): Int
     external fun nativeGetVideoHeight(): Int
     external fun nativeGetPixelFormat(): Int
 
     /* Audio */
     external fun nativeGetAudioBuffer(): ShortArray?
+    external fun nativeFillAudioBuffer(out: ShortArray): Int
 
     /* Input */
     external fun nativeSetInputButton(port: Int, id: Int, pressed: Boolean)
