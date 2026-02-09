@@ -16,6 +16,9 @@ server/*.png
 server/*.jpg
 server/*.jpeg
 
+# Scraped images (runtime data)
+server/images/
+
 # Dependencies (npm)
 web/node_modules/
 
@@ -31,6 +34,9 @@ web/build/
 # Gradle
 player/.gradle/
 player/build/
+player/*/build/
+player/*/.cxx/
+player/local.properties
 
 # Test ROMs (not for distribution)
 testdata/
