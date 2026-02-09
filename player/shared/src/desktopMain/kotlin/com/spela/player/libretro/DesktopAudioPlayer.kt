@@ -1,5 +1,6 @@
 package com.spela.player.libretro
 
+import java.util.logging.Logger
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.SourceDataLine
@@ -9,8 +10,12 @@ import javax.sound.sampled.SourceDataLine
  *
  * Runs a background thread that polls audio samples from the
  * [DesktopLibretroController] and writes them to the system audio device.
+ * The thread waits for a valid sample rate from the core before opening
+ * the audio line, so it is safe to start this before the game is loaded.
  */
 class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
+
+    private val logger = Logger.getLogger("SpelaAudio")
 
     private var audioThread: Thread? = null
 
@@ -19,12 +24,10 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
 
     private var sourceDataLine: SourceDataLine? = null
 
-    fun start(sampleRate: Double) {
-        if (sampleRate <= 0) return
-
+    fun start() {
         running = true
         audioThread = Thread({
-            runAudioLoop(sampleRate)
+            runAudioLoop()
         }, "SpelaAudio").apply {
             isDaemon = true
             start()
@@ -43,7 +46,19 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
         sourceDataLine = null
     }
 
-    private fun runAudioLoop(sampleRate: Double) {
+    private fun runAudioLoop() {
+        // Wait for the libretro core to report a valid sample rate.
+        // The core sets this after loadGame(), which may happen after
+        // this thread has already started.
+        var sampleRate = controller.getSampleRate()
+        while (running && sampleRate <= 0) {
+            Thread.sleep(50)
+            sampleRate = controller.getSampleRate()
+        }
+        if (!running) return
+
+        logger.info("Audio starting: sampleRate=$sampleRate")
+
         val format = AudioFormat(
             sampleRate.toFloat(),
             16,     // 16-bit samples
@@ -60,10 +75,11 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
                 it.start()
             }
         } catch (e: Exception) {
-            System.err.println("Failed to open audio device: ${e.message}")
+            logger.severe("Failed to open audio device: ${e.message}")
             return
         }
         sourceDataLine = line
+        logger.info("Audio device opened successfully")
 
         while (running) {
             val samples = controller.getAudioBuffer()

@@ -1,0 +1,172 @@
+appId: com.spela.player
+---
+
+# Test: Touch controls survive multiple overlay open/close cycles
+#
+# Verifies that the touch controls correctly appear and disappear
+# across multiple cycles of opening and closing the in-game overlay.
+# This catches state management bugs where the visibility condition
+# (isRunning && !showOverlay) might get out of sync.
+
+# -- Setup: fresh start --
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# -- Add server --
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# -- Login as player --
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# -- Home screen --
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# -- Navigate to NES > Castlevania --
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# -- Cycle 1: Overlay open -> touch controls hidden --
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+- assertNotVisible: "Touch controls"
+
+# -- Cycle 1: Dismiss overlay -> touch controls visible --
+
+- tapOn: "Resume"
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 1500
+
+- assertVisible: "Touch controls"
+- assertVisible: "D-pad Up"
+- assertVisible: "Button A"
+
+# -- Cycle 2: Reopen overlay via back button --
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+- assertNotVisible: "Touch controls"
+
+# -- Cycle 2: Dismiss overlay via backdrop tap --
+
+- tapOn:
+    point: "50%,10%"
+
+- extendedWaitUntil:
+    notVisible:
+      text: "Exit Game"
+    timeout: 5000
+
+- assertVisible: "Touch controls"
+- assertVisible: "D-pad Down"
+- assertVisible: "Button B"
+
+# -- Cycle 3: Reopen via back, dismiss via Resume --
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+- assertNotVisible: "Touch controls"
+
+- tapOn: "Resume"
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 1500
+
+- assertVisible: "Touch controls"
+
+# -- Clean up --
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+- tapOn: "Exit Game"

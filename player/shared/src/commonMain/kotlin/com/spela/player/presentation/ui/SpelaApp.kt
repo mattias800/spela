@@ -9,8 +9,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,6 +27,7 @@ import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpBottomBar
 import com.spela.player.presentation.ui.components.SpBottomBarItem
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -33,9 +38,12 @@ import com.spela.player.presentation.ui.screen.HomeScreen
 import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.screen.LoginScreen
 import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
+import com.spela.player.presentation.ui.screen.PlatformTouchControls
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.theme.SpelaTheme
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -191,17 +199,55 @@ fun SpelaApp(
                         // Emulation video surface (renders behind the overlay)
                         PlatformEmulationSurface(
                             controller = libretroController,
+                            onEscapePressed = {
+                                emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+                            },
                         )
 
-                        // Loading spinner over black background while preparing game
                         val emulationState by emulationViewModel.state.collectAsState()
-                        if (emulationState.isLoading) {
+
+                        // Error overlay: shown when emulation fails to start
+                        if (emulationState.error != null) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(Color.Black),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(SpSpacing.XLarge),
+                                ) {
+                                    Text(
+                                        text = emulationState.error ?: "",
+                                        style = SpTypography.BodyMedium,
+                                        color = SpColor.Error,
+                                    )
+                                    Spacer(Modifier.height(SpSpacing.Large))
+                                    SpButton(
+                                        text = "Exit",
+                                        onClick = {
+                                            emulationViewModel.onIntent(EmulationIntent.StopGame)
+                                            navigationViewModel.onIntent(NavigationIntent.HideOverlay)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        // Loading spinner over black background while preparing game
+                        if (emulationState.isLoading && emulationState.error == null) {
                             Box(
                                 modifier = Modifier.fillMaxSize().background(Color.Black),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(color = Color.White)
                             }
+                        }
+
+                        // Touch gamepad controls (Android only, no-op on desktop)
+                        if (emulationState.isRunning && !emulationState.showOverlay) {
+                            PlatformTouchControls(
+                                controller = libretroController,
+                            )
                         }
 
                         InGameOverlay(

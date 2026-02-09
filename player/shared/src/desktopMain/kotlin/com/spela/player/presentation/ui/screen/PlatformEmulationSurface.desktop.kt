@@ -13,6 +13,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 actual fun PlatformEmulationSurface(
     controller: LibretroController,
     modifier: Modifier,
+    onEscapePressed: (() -> Unit)?,
 ) {
     val desktopController = controller as? DesktopLibretroController ?: return
 
@@ -20,10 +21,11 @@ actual fun PlatformEmulationSurface(
         DesktopAudioPlayer(desktopController)
     }
 
-    // Start audio when the surface enters composition, stop when it leaves
+    // Start audio when the surface enters composition, stop when it leaves.
+    // The audio thread polls for a valid sample rate internally, so it is
+    // safe to start before the game has finished loading.
     DisposableEffect(desktopController) {
-        val sampleRate = desktopController.getSampleRate()
-        audioPlayer.start(sampleRate)
+        audioPlayer.start()
 
         onDispose {
             audioPlayer.stop()
@@ -33,5 +35,6 @@ actual fun PlatformEmulationSurface(
     DesktopEmulationSurface(
         controller = desktopController,
         modifier = modifier,
+        onEscapePressed = onEscapePressed,
     )
 }

@@ -1,0 +1,133 @@
+appId: com.spela.player
+---
+
+# Test: Action buttons (A/B, Start/Select) are tappable
+#
+# Verifies that all action buttons in the touch controls overlay can be
+# tapped without crashing the app or disrupting emulation.
+
+# -- Setup: fresh start --
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# -- Add server --
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# -- Login as player --
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# -- Home screen --
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# -- Navigate to NES > Castlevania --
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# -- Wait for overlay, then dismiss --
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+- tapOn: "Resume"
+
+# -- Wait for overlay dismiss --
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 1500
+
+# -- Tap face buttons --
+
+- tapOn: "Button A"
+- tapOn: "Button B"
+
+# -- Tap system buttons --
+
+- tapOn: "Button Start"
+- tapOn: "Button Select"
+
+# -- Verify game is still running by reopening overlay --
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+- assertVisible: "Resume"
+
+# -- Clean up --
+
+- tapOn: "Exit Game"

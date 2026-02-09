@@ -1,0 +1,142 @@
+appId: com.spela.player
+---
+
+# Test: Touch controls hidden when in-game overlay is showing
+#
+# Verifies that the touch gamepad overlay disappears when the in-game
+# overlay (pause menu) is open. This prevents accidental button presses
+# behind the overlay and avoids visual clutter.
+
+# -- Setup: fresh start --
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# -- Add server --
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# -- Login as player --
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# -- Home screen --
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# -- Navigate to NES > Castlevania --
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# -- Wait for overlay to appear (overlay is showing) --
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# -- Assert touch controls are NOT visible while overlay is showing --
+
+- assertNotVisible: "Touch controls"
+- assertNotVisible: "D-pad Up"
+- assertNotVisible: "Button A"
+- assertNotVisible: "Button Start"
+
+# -- Dismiss overlay to enter active gameplay --
+
+- tapOn: "Resume"
+
+# -- Wait for overlay dismiss animation --
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 1500
+
+# -- Assert touch controls ARE visible now --
+
+- assertVisible: "Touch controls"
+- assertVisible: "D-pad Up"
+- assertVisible: "Button A"
+- assertVisible: "Button Start"
+
+# -- Reopen overlay via back button --
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+# -- Assert touch controls are hidden again --
+
+- assertNotVisible: "Touch controls"
+
+# -- Clean up --
+
+- tapOn: "Exit Game"

@@ -1,0 +1,13 @@
+package com.spela.player.presentation.ui.screen
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.spela.player.presentation.viewmodel.LibretroController
+
+@Composable
+actual fun PlatformTouchControls(
+    controller: LibretroController,
+    modifier: Modifier,
+) {
+    // No-op on desktop: keyboard and physical controller input is used instead.
+}

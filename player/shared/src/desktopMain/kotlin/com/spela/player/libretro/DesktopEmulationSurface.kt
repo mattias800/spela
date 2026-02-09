@@ -1,9 +1,15 @@
 package com.spela.player.libretro
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,10 +17,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
@@ -27,8 +34,11 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroPixelFormat
+import kotlinx.coroutines.delay
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -45,6 +55,7 @@ import org.jetbrains.skia.ImageInfo
 fun DesktopEmulationSurface(
     controller: DesktopLibretroController,
     modifier: Modifier = Modifier,
+    onEscapePressed: (() -> Unit)? = null,
 ) {
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
@@ -69,25 +80,56 @@ fun DesktopEmulationSurface(
         focusRequester.requestFocus()
     }
 
-    Canvas(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .focusRequester(focusRequester)
-            .focusable()
-            .onKeyEvent { event ->
-                val buttonId = mapKeyToLibretro(event.key)
-                if (buttonId != null) {
-                    val pressed = event.type == KeyEventType.KeyDown
-                    controller.setButton(0, buttonId, pressed)
-                    true
-                } else {
-                    false
-                }
-            },
-    ) {
-        val bitmap = currentBitmap ?: return@Canvas
-        drawScaledBitmap(bitmap)
+    // Fading hint shown briefly after the surface appears
+    var showEscHint by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(3000)
+        showEscHint = false
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .focusRequester(focusRequester)
+                .focusable()
+                .onKeyEvent { event ->
+                    // Handle Escape key to toggle overlay
+                    if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
+                        onEscapePressed?.invoke()
+                        return@onKeyEvent true
+                    }
+                    val buttonId = mapKeyToLibretro(event.key)
+                    if (buttonId != null) {
+                        val pressed = event.type == KeyEventType.KeyDown
+                        controller.setButton(0, buttonId, pressed)
+                        true
+                    } else {
+                        false
+                    }
+                },
+        ) {
+            val bitmap = currentBitmap ?: return@Canvas
+            drawScaledBitmap(bitmap)
+        }
+
+        // "Press Esc to pause" hint that fades after a few seconds
+        AnimatedVisibility(
+            visible = showEscHint,
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = "Press Esc to pause",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 
