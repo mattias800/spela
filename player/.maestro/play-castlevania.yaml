@@ -22,6 +22,11 @@ appId: com.spela.player
 
 - tapOn: "Add Server"
 
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
 - tapOn: "Server Name"
 - inputText: "Local"
 

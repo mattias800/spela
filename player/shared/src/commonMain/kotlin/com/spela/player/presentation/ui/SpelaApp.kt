@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
@@ -167,6 +169,13 @@ fun SpelaApp(
 
                     // In-game overlay
                     if (navState.showInGameOverlay) {
+                        LaunchedEffect(navState.overlayGameId) {
+                            navState.overlayGameId?.let { gameId ->
+                                emulationViewModel.onIntent(
+                                    EmulationIntent.StartGame(gameId)
+                                )
+                            }
+                        }
                         InGameOverlay(
                             viewModel = emulationViewModel,
                             onExit = {
