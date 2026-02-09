@@ -23,6 +23,7 @@ type Scraper struct {
 	DB         *gorm.DB
 	Storage    *storage.Storage
 	HTTPClient *http.Client
+	cache      *nameCache
 	// ScreenScraper credentials (optional)
 	SSDevID    string
 	SSDevPass  string
@@ -42,6 +43,7 @@ func NewScraper(database *gorm.DB, store *storage.Storage) *Scraper {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		cache: &nameCache{entries: make(map[string][]nameEntry)},
 	}
 }
 
@@ -107,14 +109,14 @@ func gameNameFromFileName(fileName string) string {
 	return strings.TrimSuffix(fileName, ext)
 }
 
-// downloadLibRetroImage downloads an image from LibRetro Thumbnails and saves it locally.
-// Returns the relative storage path on success, or empty string if the image was not found.
-func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath string) string {
+// tryDownloadImage attempts to download a single image by exact name from LibRetro Thumbnails.
+// Returns the relative storage path on success, or empty string on failure.
+func (s *Scraper) tryDownloadImage(system, name, imageType, subpath string) string {
 	imageURL := fmt.Sprintf("%s/%s/%s/%s.png",
 		libRetroThumbnailBase,
 		url.PathEscape(system),
 		imageType,
-		url.PathEscape(gameName),
+		url.PathEscape(name),
 	)
 
 	resp, err := s.HTTPClient.Get(imageURL)
@@ -122,20 +124,50 @@ func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath str
 		slog.Debug("failed to fetch LibRetro image", "url", imageURL, "error", err)
 		return ""
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		slog.Debug("LibRetro image not found", "url", imageURL, "status", resp.StatusCode)
 		return ""
 	}
 
 	savedPath, err := s.Storage.WriteImage(subpath, resp.Body)
+	resp.Body.Close()
 	if err != nil {
 		slog.Warn("failed to save LibRetro image", "subpath", subpath, "error", err)
 		return ""
 	}
 
+	slog.Debug("downloaded LibRetro image", "name", name, "type", imageType)
 	return savedPath
+}
+
+// downloadLibRetroImage downloads an image from LibRetro Thumbnails and saves it locally.
+// Tries the exact game name first, then falls back to fuzzy matching against the
+// full LibRetro directory listing for the system.
+// Returns the relative storage path on success, or empty string if the image was not found.
+func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath string) string {
+	// Try exact name first (single HTTP request)
+	if path := s.tryDownloadImage(system, gameName, imageType, subpath); path != "" {
+		return path
+	}
+
+	// Fuzzy fallback: fetch the full name listing and find the best match
+	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	if err != nil {
+		slog.Warn("failed to load LibRetro name listing", "system", system, "error", err)
+		return ""
+	}
+
+	normalized := normalizeName(gameName)
+	match, score, found := findBestMatch(normalized, entries, 0.88)
+	if !found {
+		slog.Debug("no fuzzy match found", "game", gameName, "normalized", normalized)
+		return ""
+	}
+
+	slog.Info("fuzzy matched", "original", gameName, "matched", match.Raw, "score", score)
+	return s.tryDownloadImage(system, match.Raw, imageType, subpath)
 }
 
 // ScrapeGame fetches images from LibRetro Thumbnails and optionally enriches

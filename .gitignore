@@ -32,6 +32,9 @@ web/build/
 player/.gradle/
 player/build/
 
+# Test ROMs (not for distribution)
+testdata/
+
 # OS
 .DS_Store
 Thumbs.db

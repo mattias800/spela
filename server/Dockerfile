@@ -8,6 +8,7 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=1 go build -o spela-server ./cmd/server
+RUN CGO_ENABLED=1 go build -o spela-seed ./cmd/seed
 
 FROM alpine:3.20
 
@@ -18,6 +19,8 @@ USER spela
 WORKDIR /app
 
 COPY --from=builder /build/spela-server .
+COPY --from=builder /build/spela-seed .
+COPY --from=builder /build/entrypoint.sh .
 
 RUN mkdir -p /app/data /app/games /app/saves /app/cores
 
@@ -30,4 +33,4 @@ ENV GIN_MODE=release
 
 EXPOSE 8080
 
-ENTRYPOINT ["./spela-server"]
+ENTRYPOINT ["./entrypoint.sh"]
