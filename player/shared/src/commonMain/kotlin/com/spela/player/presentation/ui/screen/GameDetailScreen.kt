@@ -92,6 +92,7 @@ fun GameDetailScreen(
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
+        val constraintsMaxWidth = maxWidth
         val isLandscape = maxWidth > maxHeight
 
         if (isLandscape) {
@@ -101,7 +102,7 @@ fun GameDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .width(maxWidth * 0.4f),
+                        .width(constraintsMaxWidth * 0.4f),
                 ) {
                     SpHeroCover(
                         imageUrl = game.coverUrl,

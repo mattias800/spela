@@ -20,9 +20,9 @@ class PrepareGameUseCase(
             return Result.failure(it)
         }
 
-        val corePath = coreRepository.getLocalCorePath(core.id)
+        val corePath = coreRepository.getLocalCorePath(core.id.toString())
             ?: run {
-                coreRepository.downloadCore(core.id).getOrElse {
+                coreRepository.downloadCore(core.id.toString()).getOrElse {
                     return Result.failure(it)
                 }
             }

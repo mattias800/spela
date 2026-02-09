@@ -1,7 +1,5 @@
 package com.spela.player.data.remote.interceptor
 
-import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.RefreshRequest
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
@@ -42,14 +40,9 @@ class TokenManager {
  * and handles 401 responses with token refresh.
  */
 fun HttpClientConfig<*>.installAuth(tokenManager: TokenManager) {
-    install(HttpSend) {
-        intercept { request ->
-            tokenManager.accessToken?.let { token ->
-                request.headers {
-                    append(HttpHeaders.Authorization, "Bearer $token")
-                }
-            }
-            execute(request)
+    defaultRequest {
+        tokenManager.accessToken?.let { token ->
+            header(HttpHeaders.Authorization, "Bearer $token")
         }
     }
 }

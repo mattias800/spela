@@ -30,6 +30,10 @@ android {
     namespace = "com.spela.player.android"
     compileSdk = 34
 
+    sourceSets["main"].manifest.srcFile("src/main/AndroidManifest.xml")
+    sourceSets["main"].java.srcDirs("src/main/java")
+    sourceSets["main"].res.srcDirs("src/main/res")
+
     defaultConfig {
         applicationId = "com.spela.player"
         minSdk = 24
