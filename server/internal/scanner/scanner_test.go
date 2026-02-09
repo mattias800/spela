@@ -61,6 +61,9 @@ func TestIdentifyConsole(t *testing.T) {
 		{"SNES by directory", "/games/snes/file.bin", ".bin", "SNES"},
 		{"PSX by directory", "/games/psx/disc.bin", ".bin", "PSX"},
 		{"Unknown", "/games/unknown/file.xyz", ".xyz", ""},
+		{"txt in NES dir ignored", "/games/nes/readme.txt", ".txt", ""},
+		{"jpg in snes dir ignored", "/games/snes/cover.jpg", ".jpg", ""},
+		{"nfo in gba dir ignored", "/games/gba/game.nfo", ".nfo", ""},
 	}
 
 	for _, tt := range tests {
@@ -135,19 +138,18 @@ func TestScan_RescanDoesNotDuplicate(t *testing.T) {
 	assert.Equal(t, 1, result2.TotalGames)
 }
 
-// BUG: .bin files in a non-console-named directory default to Genesis (GEN)
-// via consoleExtMap. But .bin is valid for PSX and Saturn too.
+// .bin files in a non-console-named directory are ambiguous (could be Genesis,
+// PSX, Saturn, etc.) so they are correctly skipped — the user must place them
+// in a console-named directory for identification.
 func TestIdentifyConsole_BinAmbiguity(t *testing.T) {
 	s := &Scanner{}
 
-	// A PSX .bin file in a generic directory is misidentified as Genesis
 	result := s.identifyConsole("/games/final-fantasy-vii/disc1.bin", ".bin")
-	// Documenting the bug: this returns "GEN" (Genesis) instead of "PSX"
-	assert.Equal(t, "GEN", result, ".bin in unknown dir maps to GEN - known ambiguity")
+	assert.Equal(t, "", result, ".bin in unknown dir is ambiguous and skipped")
 }
 
-// BUG: .cue files map to PSX but companion .bin files map to GEN.
-// A PSX game with disc1.cue and disc1.bin creates two separate game entries.
+// .cue files map to PSX. Companion .bin files in a non-console directory are
+// ambiguous and skipped, which avoids the old bug of misidentifying them as Genesis.
 func TestIdentifyConsole_CueBinMismatch(t *testing.T) {
 	s := &Scanner{}
 
@@ -155,8 +157,7 @@ func TestIdentifyConsole_CueBinMismatch(t *testing.T) {
 	assert.Equal(t, "PSX", cueResult)
 
 	binResult := s.identifyConsole("/games/ff7/disc1.bin", ".bin")
-	// BUG: companion .bin maps to Genesis, not PSX
-	assert.Equal(t, "GEN", binResult, ".bin companion to .cue maps to GEN, not PSX")
+	assert.Equal(t, "", binResult, ".bin companion in unknown dir is skipped (ambiguous)")
 }
 
 // BUG: .iso files are not in consoleExtMap, so games in generic directories
@@ -172,6 +173,24 @@ func TestIdentifyConsole_ZipNotDetected(t *testing.T) {
 	s := &Scanner{}
 	result := s.identifyConsole("/games/roms/game.zip", ".zip")
 	assert.Equal(t, "", result, ".zip not in consoleExtMap - Neo Geo/Arcade need directory hint")
+}
+
+func TestScan_IgnoresNonROMFiles(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "Mario.nes"), []byte("rom"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "readme.txt"), []byte("not a rom"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "cover.jpg"), []byte("image"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "game.nfo"), []byte("info"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+	assert.Equal(t, 1, result.TotalGames)
 }
 
 func TestScan_RemovesMissingGames(t *testing.T) {

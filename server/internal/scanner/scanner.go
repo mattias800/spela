@@ -48,6 +48,24 @@ var consoleExtMap = map[string]string{
 	".cue": "PSX", // .cue files indicate PSX disc images
 }
 
+// romExtensions is the set of file extensions recognized as ROM/disc files.
+// Files with other extensions (e.g. .txt, .jpg, .nfo) are never scanned,
+// even when placed inside a console-named directory.
+var romExtensions = map[string]bool{
+	".nes": true, ".fds": true,
+	".sfc": true, ".smc": true,
+	".gb": true, ".gbc": true, ".gba": true,
+	".n64": true, ".z64": true, ".v64": true,
+	".nds": true,
+	".sms": true, ".gg": true,
+	".md": true, ".gen": true, ".bin": true,
+	".pce": true,
+	".a26": true,
+	".cso": true, ".iso": true,
+	".pbp": true, ".cue": true,
+	".zip": true, ".7z": true,
+}
+
 // directoryConsoleMap maps directory names to console abbreviations.
 var directoryConsoleMap = map[string]string{
 	"nes":     "NES",
@@ -197,7 +215,12 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 }
 
 // identifyConsole determines the console for a file by its extension and parent directory.
+// Only files with known ROM extensions are considered; other files (.txt, .jpg, etc.) are skipped.
 func (s *Scanner) identifyConsole(path, ext string) string {
+	if !romExtensions[ext] {
+		return ""
+	}
+
 	// First try parent directory name
 	parentDir := strings.ToLower(filepath.Base(filepath.Dir(path)))
 	if abbrev, ok := directoryConsoleMap[parentDir]; ok {
