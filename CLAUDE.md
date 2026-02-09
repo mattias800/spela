@@ -11,6 +11,7 @@ Spela is a self-hosted game emulation service with three components:
 2. **Web UI uses React + TypeScript** - Vite build, Tailwind CSS, TanStack Query.
 3. **Automated tests whenever reasonable** - For bugs: write failing test first, then fix.
 4. **libretro only** - No custom emulation code. All emulation via libretro cores.
+5. **E2E tests are mandatory for player app changes** - Any change to the player app that affects user-facing behavior must have a corresponding Maestro E2E test. Run the E2E suite after making changes to verify nothing is broken.
 
 ## Code Style
 
@@ -33,7 +34,8 @@ Spela is a self-hosted game emulation service with three components:
 - Follow Kotlin coding conventions
 - Compose Multiplatform for all UI
 - Clean Architecture: data → domain → presentation
-- Tests with kotlin.test + JUnit5
+- Unit tests with kotlin.test + JUnit5
+- E2E tests with Maestro (see player/README.md for details)
 
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture

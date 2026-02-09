@@ -104,11 +104,103 @@ This produces `libspela-libretro.so` (Linux), `libspela-libretro.dylib` (macOS),
 
 On Android, the native library is built automatically via the `externalNativeBuild` CMake integration in the Android Gradle plugin.
 
-### Running Tests
+### Running Unit Tests
 
 ```sh
 ./gradlew :shared:allTests
 ```
+
+### Running E2E Tests (Maestro)
+
+The player app uses [Maestro](https://maestro.dev/) for end-to-end UI testing. E2E tests are the primary regression prevention tool for the player app. **Any change that affects user-facing behavior must have a corresponding E2E test.**
+
+#### Prerequisites
+
+- **Maestro CLI** (2.1.0+): `curl -Ls "https://get.maestro.mobile.dev" | bash`
+- **adb** on PATH: `brew install android-platform-tools` (macOS)
+- **A connected Android device or emulator** with the app installed
+- **The Spela backend server running** with seeded data (users and scanned games)
+
+#### Starting the backend for E2E tests
+
+From the `server/` directory:
+
+```sh
+# Seed the database with users (player/player123, admin/admin123)
+go run cmd/seed/main.go
+
+# Start the server (scans game directories on startup)
+SPELA_GAME_DIRS=./games go run cmd/server/main.go
+```
+
+The server must have ROM files in its game directories for games to appear in the app.
+
+#### Running the tests
+
+From the repo root:
+
+```sh
+# Run all E2E tests
+maestro test player/.maestro/
+
+# Run a single test
+maestro test player/.maestro/play-castlevania.yaml
+```
+
+#### Test structure
+
+```
+player/.maestro/
+├── config.yaml                # Suite configuration (initFlow, etc.)
+├── play-castlevania.yaml      # Test: navigate to Castlevania and play it
+└── setup/
+    ├── login-player.yaml      # Setup flow: login as player/player123
+    └── login-admin.yaml       # Setup flow: login as admin/admin123
+```
+
+- **Test flows** live in `player/.maestro/` and are auto-discovered by `maestro test`.
+- **Setup flows** live in `player/.maestro/setup/` and are NOT auto-discovered. They are referenced by `config.yaml` or by test flows directly.
+- Each test flow is **self-contained** — it clears app state, launches the app, connects to the server, logs in, and then performs the test. This ensures tests are idempotent and can run in any order.
+
+#### Writing new E2E tests
+
+1. Create a new `.yaml` file in `player/.maestro/`.
+2. Start with `appId: com.spela.player` and `---` separator.
+3. Include the full setup (clearState, launchApp, add server, login) or reference a setup flow.
+4. Use `contentDescription` semantics for element selection where possible — the app has accessibility labels on all interactive elements (e.g., `"Play Castlevania"`, `"Nintendo Entertainment System, 12 games"`).
+5. Use `extendedWaitUntil` with reasonable timeouts for assertions after navigation or network operations.
+6. Use `scrollUntilVisible` to find elements in scrollable lists.
+7. Add `hideKeyboard` before tapping buttons that may be covered by the on-screen keyboard.
+
+#### Key accessibility labels in the app
+
+| Screen | Element | contentDescription |
+|--------|---------|-------------------|
+| Home | Console card | `"{consoleName}, {gameCount} games"` |
+| Home | Game card | `"{gameTitle}, {consoleName}"` |
+| Home | Continue playing card | `"Continue playing {gameTitle} on {consoleName}"` |
+| Game Detail | Play button | `"Play {gameTitle}"` |
+| Game Detail | Download button | `"Download {gameTitle}"` |
+| Game Detail | Favorite button | `"Add to favorites"` / `"Remove from favorites"` |
+| In-Game Overlay | Overlay backdrop | `"Game overlay, tap to dismiss"` |
+| In-Game Overlay | FPS HUD | `"{fps} FPS, tap to open game menu"` |
+| In-Game Overlay | Action buttons | `"Save"`, `"Load"`, `"Screenshot"`, `"Fast"` |
+
+#### Debugging failed tests
+
+Maestro writes debug output (screenshots, logs) to `~/.maestro/tests/<timestamp>/`. After a failure:
+
+```sh
+# View the failure screenshot
+open ~/.maestro/tests/$(ls ~/.maestro/tests/ | sort | tail -1)/*.png
+
+# View Android logcat for the app
+adb logcat -d --pid=$(adb shell pidof com.spela.player) | tail -50
+```
+
+#### Server URL configuration
+
+The E2E tests currently hardcode the server URL as `http://192.168.11.143:8080`. If your machine has a different IP, update the `inputText` step in the test flows. The Android device must be able to reach this URL over the network.
 
 ## Architecture
 
