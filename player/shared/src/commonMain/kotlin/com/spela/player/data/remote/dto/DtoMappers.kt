@@ -44,6 +44,7 @@ fun GameDto.toDomain(): Game = Game(
     fileSize = fileSize,
     fileName = fileName,
     coreOverride = coreOverride,
+    scrapeAttempts = scrapeAttempts,
     players = players,
     rating = rating,
     isFavorite = isFavorite,

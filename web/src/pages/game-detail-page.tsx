@@ -12,12 +12,14 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button, Badge, Card, CardContent, GameDetailSkeleton, Modal } from "@/components/ui";
-import { useGame, useGameSaves, useToggleFavorite, useDeleteSave } from "@/hooks/use-games";
+import { useGame, useGameSaves, useToggleFavorite, useDeleteSave, useScrapeIfNeeded } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +30,22 @@ export function GameDetailPage() {
   const deleteSave = useDeleteSave();
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
+  const scrapeIfNeeded = useScrapeIfNeeded();
+  const queryClient = useQueryClient();
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (game && game.scrapeAttempts === 0) {
+      scrapeIfNeeded.mutate(game.id);
+    }
+  }, [game?.id, game?.scrapeAttempts]);
+
+  useWebSocketEvent("game_scraped", (payload: { id?: string }) => {
+    if (payload.id === id) {
+      queryClient.invalidateQueries({ queryKey: ["game", id] });
+    }
+  });
 
   const isFavorite = game?.isFavorite ?? false;
 

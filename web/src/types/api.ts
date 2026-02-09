@@ -49,6 +49,7 @@ export interface Game {
   rating?: number;
   coreOverride?: string;
   scraperId?: string;
+  scrapeAttempts: number;
   isFavorite: boolean;
   lastPlayedAt?: string | null;
   totalPlayTime: number;

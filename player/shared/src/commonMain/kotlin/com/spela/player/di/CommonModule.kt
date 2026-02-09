@@ -72,6 +72,7 @@ val commonModule = module {
             toggleFavoriteUseCase = get(),
             downloadRepository = get(),
             saveRepository = get(),
+            apiClient = get(),
             dispatchers = get(),
             scope = get(),
         )

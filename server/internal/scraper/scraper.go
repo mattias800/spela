@@ -214,6 +214,8 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScraperID = "libretro"
 	}
 
+	game.ScrapeAttempts++
+
 	if err := s.DB.Save(game).Error; err != nil {
 		return fmt.Errorf("saving scraped metadata: %w", err)
 	}

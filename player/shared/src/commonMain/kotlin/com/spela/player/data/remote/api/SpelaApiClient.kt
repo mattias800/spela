@@ -104,6 +104,11 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId").body()
     }
 
+    /** Triggers a scrape if the game has never been scraped. Returns immediately. */
+    suspend fun scrapeIfNeeded(gameId: String) {
+        client.post("$baseUrl/api/games/$gameId/scrape-if-needed")
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

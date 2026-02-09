@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.repository.DownloadRepository
@@ -8,6 +9,7 @@ import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,7 @@ class GameDetailViewModel(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val downloadRepository: DownloadRepository,
     private val saveRepository: SaveRepository,
+    private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -55,6 +58,9 @@ class GameDetailViewModel(
                             isLoading = false,
                         )
                     }
+                    if (detail.game.scrapeAttempts == 0) {
+                        scrapeAndRefresh(gameId)
+                    }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isLoading = false) }
@@ -66,6 +72,21 @@ class GameDetailViewModel(
             downloadRepository.observeDownload(gameId).collect { progress ->
                 _state.update { it.copy(downloadProgress = progress) }
             }
+        }
+    }
+
+    private fun scrapeAndRefresh(gameId: String) {
+        scope.launch(dispatchers.io) {
+            try {
+                apiClient.scrapeIfNeeded(gameId)
+                delay(3000)
+                getGameDetailUseCase(gameId).fold(
+                    onSuccess = { refreshed ->
+                        _state.update { it.copy(gameDetail = refreshed) }
+                    },
+                    onFailure = { /* ignore refresh failure */ },
+                )
+            } catch (_: Exception) { /* ignore scrape failure */ }
         }
     }
 

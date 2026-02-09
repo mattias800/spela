@@ -53,6 +53,7 @@ data class Game(
     val fileSize: Long = 0,
     val fileName: String = "",
     val coreOverride: String? = null,
+    val scrapeAttempts: Int = 0,
     val players: Int = 0,
     val rating: Double = 0.0,
     val isFavorite: Boolean = false,

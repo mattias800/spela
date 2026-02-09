@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
+	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
@@ -22,6 +24,7 @@ type GameHandler struct {
 	Storage  *storage.Storage
 	Hub      *ws.Hub
 	GameDirs []string
+	Scraper  *scraper.Scraper
 }
 
 // ListGames returns all games with optional filtering.
@@ -395,6 +398,40 @@ func (h *GameHandler) GetAutoSave(c *gin.Context) {
 
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
 	c.File(save.FilePath)
+}
+
+// ScrapeIfNeeded triggers an async scrape for a game that has never been scraped.
+// Returns 202 if scraping was started, 200 if the game was already scraped.
+func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	if game.ScrapeAttempts > 0 {
+		c.JSON(http.StatusOK, gin.H{"status": "already_scraped"})
+		return
+	}
+
+	go func() {
+		var g db.Game
+		if err := h.DB.Preload("Console").First(&g, id).Error; err != nil {
+			slog.Warn("auto-scrape: failed to load game", "id", id, "error", err)
+			return
+		}
+		if err := h.Scraper.ScrapeGame(&g); err != nil {
+			slog.Warn("auto-scrape failed", "game", g.Title, "error", err)
+			return
+		}
+		h.Hub.Broadcast(ws.Event{
+			Type:    "game_scraped",
+			Payload: ToGameResponse(g, h.DB, 0),
+		})
+	}()
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "scraping"})
 }
 
 // GetRecommendedCore returns the recommended libretro core for a game.

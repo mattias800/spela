@@ -74,6 +74,7 @@ data class GameDto(
     val rating: Double = 0.0,
     val coreOverride: String? = null,
     val scraperId: String? = null,
+    val scrapeAttempts: Int = 0,
     val isFavorite: Boolean = false,
     val lastPlayedAt: String? = null,
     val totalPlayTime: Long = 0,

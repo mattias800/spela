@@ -88,6 +88,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		Storage:  cfg.Storage,
 		Hub:      cfg.Hub,
 		GameDirs: cfg.GameDirs,
+		Scraper:  cfg.Scraper,
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB}
 	userHandler := &UserHandler{DB: cfg.DB}
@@ -118,6 +119,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id", gameHandler.GetGame)
 		api.GET("/games/:id/download", gameHandler.DownloadGame)
 		api.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
+		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/scan", gameHandler.ScanGames)
 
 		// Save states

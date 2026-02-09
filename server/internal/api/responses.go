@@ -46,6 +46,7 @@ type GameResponse struct {
 	Rating         float64  `json:"rating"`
 	CoreOverride   string   `json:"coreOverride,omitempty"`
 	ScraperID      string   `json:"scraperId,omitempty"`
+	ScrapeAttempts int      `json:"scrapeAttempts"`
 	IsFavorite     bool     `json:"isFavorite"`
 	LastPlayedAt   *time.Time `json:"lastPlayedAt"`
 	TotalPlayTime  int64    `json:"totalPlayTime"`
@@ -165,6 +166,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Rating:         g.Rating,
 		CoreOverride:   g.CoreOverride,
 		ScraperID:      g.ScraperID,
+		ScrapeAttempts: g.ScrapeAttempts,
 	}
 
 	if data != nil {

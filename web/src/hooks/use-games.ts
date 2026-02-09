@@ -68,6 +68,13 @@ export function useGameSaves(gameId: string) {
   });
 }
 
+export function useScrapeIfNeeded() {
+  return useMutation({
+    mutationFn: (gameId: string) =>
+      api.post(`/games/${gameId}/scrape-if-needed`),
+  });
+}
+
 export function useDeleteSave() {
   const queryClient = useQueryClient();
 
