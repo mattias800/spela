@@ -138,6 +138,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		// User
 		api.GET("/user/profile", userHandler.GetProfile)
 		api.PUT("/user/profile", userHandler.UpdateProfile)
+		api.GET("/user/preferences", userHandler.GetPreferences)
+		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)

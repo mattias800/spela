@@ -57,6 +57,69 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// preferencesResponse is the JSON shape for the preferences endpoints.
+type preferencesResponse struct {
+	ShowPerformanceOverlay bool `json:"showPerformanceOverlay"`
+	AutoSaveEnabled        bool `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled    bool `json:"autoLoadSaveEnabled"`
+}
+
+// GetPreferences returns the current user's emulation preferences.
+func (h *UserHandler) GetPreferences(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	var user db.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, preferencesResponse{
+		ShowPerformanceOverlay: user.ShowPerfOverlay,
+		AutoSaveEnabled:        user.AutoSaveEnabled,
+		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
+	})
+}
+
+// UpdatePreferences partially updates the current user's emulation preferences.
+func (h *UserHandler) UpdatePreferences(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	var user db.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	var req struct {
+		ShowPerformanceOverlay *bool `json:"showPerformanceOverlay"`
+		AutoSaveEnabled        *bool `json:"autoSaveEnabled"`
+		AutoLoadSaveEnabled    *bool `json:"autoLoadSaveEnabled"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		return
+	}
+
+	if req.ShowPerformanceOverlay != nil {
+		user.ShowPerfOverlay = *req.ShowPerformanceOverlay
+	}
+	if req.AutoSaveEnabled != nil {
+		user.AutoSaveEnabled = *req.AutoSaveEnabled
+	}
+	if req.AutoLoadSaveEnabled != nil {
+		user.AutoLoadSaveEnabled = *req.AutoLoadSaveEnabled
+	}
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update preferences"})
+		return
+	}
+
+	c.JSON(http.StatusOK, preferencesResponse{
+		ShowPerformanceOverlay: user.ShowPerfOverlay,
+		AutoSaveEnabled:        user.AutoSaveEnabled,
+		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
+	})
+}
+
 // GetRecentGames returns the user's recently played games as a flat Game array.
 func (h *UserHandler) GetRecentGames(c *gin.Context) {
 	uid := getUserID(c)

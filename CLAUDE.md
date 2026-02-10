@@ -37,6 +37,54 @@ Spela is a self-hosted game emulation service with three components:
 - Unit tests with kotlin.test + JUnit5
 - E2E tests with Maestro (see player/README.md for details)
 
+## Data Persistence & User Preferences
+
+### Server (Go)
+All server-side data uses GORM with SQLite, auto-migrated on startup (`server/internal/db/database.go`).
+
+**Per-user global data** (synced across all devices):
+- `User` — profile (email, avatar) + emulation preferences (overlay, auto-save, auto-load)
+- `Favorite` — favorited games
+- `PlayHistory` — last played timestamps and total play time per game
+- `SaveState` — game save files (stored on filesystem, metadata in DB)
+
+**Server-wide settings** (admin-only):
+- `ServerSetting` — key-value table for `registration_enabled`, scraper credentials, etc.
+- Endpoints: `GET/PUT /api/admin/settings`
+
+**No per-device preference system on the server.** There is no device registration, device IDs in JWTs, or device-scoped settings table. All user data is global to the user account.
+
+### Player App (Kotlin Multiplatform)
+Local persistence uses **SQLDelight** (`player/shared/src/commonMain/sqldelight/com/spela/player/SpelaDatabase.sq`).
+
+**SQLDelight tables:**
+- `ServerConnectionEntity` — server URL, name, active flag
+- `AuthTokenEntity` — JWT access/refresh tokens and expiration
+- `CachedGameEntity` — game metadata cache (covers, descriptions)
+- `DownloadEntity` — downloaded game tracking (local paths, sizes, timestamps)
+- `PlayHistoryEntity` — local play history
+
+**File-based storage** (`FileStorage` interface, platform implementations):
+- `games/` — downloaded ROM files
+- `cores/` — libretro core binaries
+- `saves/` — game save states
+- Android: `context.filesDir`; Desktop: OS-appropriate app data dir (macOS `~/Library/Application Support/Spela`, Linux `~/.local/share/spela`, Windows `%APPDATA%/Spela`)
+
+**Emulation preferences** (per-user, synced via server):
+- `showPerformanceOverlay`, `autoSaveEnabled`, `autoLoadSaveEnabled`
+- Stored as fields on the `User` model on the server, fetched via `GET/PUT /api/user/preferences`
+- Player app uses `PreferencesRepository` to read/write; `SettingsViewModel` does optimistic updates with server sync
+
+### Scope Summary
+| Data | Scope | Storage |
+|------|-------|---------|
+| Profile, favorites, play history | Per-user, all devices | Server DB |
+| Save states | Per-user, per-game | Server filesystem + DB |
+| Auth tokens, game cache, downloads | Per-device | Player SQLDelight DB |
+| Server connections | Per-device | Player SQLDelight DB |
+| Emulation toggles (overlay, auto-save) | Per-user, all devices | Server DB (`User` fields) |
+| Server admin settings | Global | Server DB (`ServerSetting`) |
+
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture
 - SQLite as default database (self-hosted friendly)

@@ -29,7 +29,10 @@ type User struct {
 	PasswordHash string         `gorm:"not null" json:"-"`
 	Role         string         `gorm:"size:16;default:user" json:"role"` // "owner", "admin", or "user"
 	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
-	Disabled     bool           `gorm:"default:false" json:"disabled"`
+	Disabled            bool           `gorm:"default:false" json:"disabled"`
+	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
+	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
 }
 
 // Console represents a detected game console/platform.

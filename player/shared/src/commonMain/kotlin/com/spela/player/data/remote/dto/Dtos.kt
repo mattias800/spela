@@ -115,6 +115,20 @@ data class LibretroCoreDto(
     val updatedAt: String? = null,
 )
 
+@Serializable
+data class UserPreferencesDto(
+    val showPerformanceOverlay: Boolean = false,
+    val autoSaveEnabled: Boolean = true,
+    val autoLoadSaveEnabled: Boolean = true,
+)
+
+@Serializable
+data class UpdatePreferencesRequest(
+    val showPerformanceOverlay: Boolean? = null,
+    val autoSaveEnabled: Boolean? = null,
+    val autoLoadSaveEnabled: Boolean? = null,
+)
+
 /** Wrapper for GET /api/games/:id/core when core is not in DB */
 @Serializable
 data class CoreNameResponse(

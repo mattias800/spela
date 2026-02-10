@@ -70,6 +70,12 @@ fun SaveStateDto.toDomain(): SaveState = SaveState(
     isAuto = isAuto,
 )
 
+fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
+    showPerformanceOverlay = showPerformanceOverlay,
+    autoSaveEnabled = autoSaveEnabled,
+    autoLoadSaveEnabled = autoLoadSaveEnabled,
+)
+
 fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     id = id,
     name = name,

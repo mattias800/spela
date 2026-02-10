@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
@@ -24,12 +26,15 @@ class EmulationViewModel(
     private val saveGameStateUseCase: SaveGameStateUseCase,
     private val loadGameStateUseCase: LoadGameStateUseCase,
     private val getGameDetailUseCase: GetGameDetailUseCase,
+    private val preferencesRepository: PreferencesRepository,
     private val libretroController: LibretroController,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(EmulationState())
     val state: StateFlow<EmulationState> = _state.asStateFlow()
+
+    private var currentPreferences = UserPreferences()
 
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
@@ -57,6 +62,11 @@ class EmulationViewModel(
         _state.update { it.copy(gameId = gameId, isLoading = true) }
 
         scope.launch(dispatchers.io) {
+            // Fetch user preferences (fallback to defaults on error)
+            currentPreferences = preferencesRepository.getPreferences()
+                .getOrDefault(UserPreferences())
+            _state.update { it.copy(showPerformanceOverlay = currentPreferences.showPerformanceOverlay) }
+
             // Get game title
             getGameDetailUseCase(gameId).onSuccess { detail ->
                 _state.update { it.copy(gameTitle = detail.game.title) }
@@ -69,9 +79,11 @@ class EmulationViewModel(
                         libretroController.loadCore(corePath)
                         libretroController.loadGame(gamePath)
 
-                        // Try to load auto-save
-                        loadGameStateUseCase(gameId).onSuccess { saveData ->
-                            libretroController.unserialize(saveData)
+                        // Try to load auto-save if enabled
+                        if (currentPreferences.autoLoadSaveEnabled) {
+                            loadGameStateUseCase(gameId).onSuccess { saveData ->
+                                libretroController.unserialize(saveData)
+                            }
                         }
 
                         libretroController.start()
@@ -106,15 +118,17 @@ class EmulationViewModel(
 
     private fun stopGame() {
         scope.launch(dispatchers.io) {
-            // Auto-save before stopping
-            val gameId = _state.value.gameId
-            try {
-                val saveData = libretroController.serialize()
-                if (saveData != null) {
-                    saveGameStateUseCase(gameId, saveData)
+            // Auto-save before stopping if enabled
+            if (currentPreferences.autoSaveEnabled) {
+                val gameId = _state.value.gameId
+                try {
+                    val saveData = libretroController.serialize()
+                    if (saveData != null) {
+                        saveGameStateUseCase(gameId, saveData)
+                    }
+                } catch (_: Exception) {
+                    // Best effort auto-save
                 }
-            } catch (_: Exception) {
-                // Best effort auto-save
             }
 
             libretroController.stop()

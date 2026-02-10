@@ -7,6 +7,7 @@ data class EmulationState(
     val isPaused: Boolean = false,
     val isLoading: Boolean = false,
     val showOverlay: Boolean = false,
+    val showPerformanceOverlay: Boolean = false,
     val showControlHint: Boolean = true,
     val showExitConfirm: Boolean = false,
     val statusMessage: String? = null,

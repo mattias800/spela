@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,7 @@ sealed interface SettingsIntent {
 class SettingsViewModel(
     private val authRepository: AuthRepository,
     private val downloadRepository: DownloadRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -46,12 +48,21 @@ class SettingsViewModel(
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
             SettingsIntent.LoadSettings -> loadSettings()
-            SettingsIntent.TogglePerformanceOverlay ->
-                _state.update { it.copy(showPerformanceOverlay = !it.showPerformanceOverlay) }
-            SettingsIntent.ToggleAutoSave ->
-                _state.update { it.copy(autoSaveEnabled = !it.autoSaveEnabled) }
-            SettingsIntent.ToggleAutoLoadSave ->
-                _state.update { it.copy(autoLoadSaveEnabled = !it.autoLoadSaveEnabled) }
+            SettingsIntent.TogglePerformanceOverlay -> togglePreference(
+                currentValue = { it.showPerformanceOverlay },
+                optimisticUpdate = { s, v -> s.copy(showPerformanceOverlay = v) },
+                apiCall = { preferencesRepository.updatePreferences(showPerformanceOverlay = it) },
+            )
+            SettingsIntent.ToggleAutoSave -> togglePreference(
+                currentValue = { it.autoSaveEnabled },
+                optimisticUpdate = { s, v -> s.copy(autoSaveEnabled = v) },
+                apiCall = { preferencesRepository.updatePreferences(autoSaveEnabled = it) },
+            )
+            SettingsIntent.ToggleAutoLoadSave -> togglePreference(
+                currentValue = { it.autoLoadSaveEnabled },
+                optimisticUpdate = { s, v -> s.copy(autoLoadSaveEnabled = v) },
+                apiCall = { preferencesRepository.updatePreferences(autoLoadSaveEnabled = it) },
+            )
             SettingsIntent.ShowLogoutConfirm ->
                 _state.update { it.copy(showLogoutConfirm = true) }
             SettingsIntent.DismissLogoutConfirm ->
@@ -65,6 +76,21 @@ class SettingsViewModel(
         }
     }
 
+    private fun togglePreference(
+        currentValue: (SettingsState) -> Boolean,
+        optimisticUpdate: (SettingsState, Boolean) -> SettingsState,
+        apiCall: suspend (Boolean) -> Result<*>,
+    ) {
+        val newValue = !currentValue(_state.value)
+        _state.update { optimisticUpdate(it, newValue) }
+        scope.launch(dispatchers.io) {
+            apiCall(newValue).onFailure {
+                // Revert on failure
+                _state.update { optimisticUpdate(it, !newValue) }
+            }
+        }
+    }
+
     private fun loadSettings() {
         scope.launch(dispatchers.io) {
             val user = authRepository.getCurrentUser().getOrNull()
@@ -74,6 +100,16 @@ class SettingsViewModel(
                     username = user?.username ?: "",
                     cacheSize = cacheSize,
                 )
+            }
+
+            preferencesRepository.getPreferences().onSuccess { prefs ->
+                _state.update {
+                    it.copy(
+                        showPerformanceOverlay = prefs.showPerformanceOverlay,
+                        autoSaveEnabled = prefs.autoSaveEnabled,
+                        autoLoadSaveEnabled = prefs.autoLoadSaveEnabled,
+                    )
+                }
             }
         }
     }

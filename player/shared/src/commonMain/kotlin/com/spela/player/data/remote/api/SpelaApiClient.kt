@@ -127,6 +127,18 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/user/favorites/$gameId")
     }
 
+    // User Preferences
+
+    suspend fun getPreferences(): UserPreferencesDto {
+        return client.get("$baseUrl/api/user/preferences").body()
+    }
+
+    suspend fun updatePreferences(request: UpdatePreferencesRequest): UserPreferencesDto {
+        return client.put("$baseUrl/api/user/preferences") {
+            setBody(request)
+        }.body()
+    }
+
     // Game Download
 
     suspend fun downloadGame(gameId: String, onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {

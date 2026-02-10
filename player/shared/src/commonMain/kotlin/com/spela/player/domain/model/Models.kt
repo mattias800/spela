@@ -86,6 +86,12 @@ data class LibretroCore(
     val platforms: String = "",
 )
 
+data class UserPreferences(
+    val showPerformanceOverlay: Boolean = false,
+    val autoSaveEnabled: Boolean = true,
+    val autoLoadSaveEnabled: Boolean = true,
+)
+
 enum class DownloadState {
     IDLE,
     QUEUED,

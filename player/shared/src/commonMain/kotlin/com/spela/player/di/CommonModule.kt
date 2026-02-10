@@ -26,6 +26,7 @@ val commonModule = module {
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl() }
+    single<PreferencesRepository> { PreferencesRepositoryImpl(get()) }
 
     /* Use Cases */
     factory { LoginUseCase(get()) }
@@ -83,6 +84,7 @@ val commonModule = module {
             saveGameStateUseCase = get(),
             loadGameStateUseCase = get(),
             getGameDetailUseCase = get(),
+            preferencesRepository = get(),
             libretroController = get(),
             dispatchers = get(),
             scope = get(),
@@ -109,6 +111,7 @@ val commonModule = module {
         SettingsViewModel(
             authRepository = get(),
             downloadRepository = get(),
+            preferencesRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

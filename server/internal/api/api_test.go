@@ -428,6 +428,87 @@ func TestHealthEndpoint(t *testing.T) {
 	assert.Equal(t, "0.1.0", resp["version"])
 }
 
+func TestGetPreferences_Defaults(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &prefs)
+	require.NoError(t, err)
+	assert.Equal(t, false, prefs["showPerformanceOverlay"])
+	assert.Equal(t, true, prefs["autoSaveEnabled"])
+	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+}
+
+func TestUpdatePreferences(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Update all preferences
+	body, _ := json.Marshal(map[string]interface{}{
+		"showPerformanceOverlay": true,
+		"autoSaveEnabled":        false,
+		"autoLoadSaveEnabled":    false,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &prefs)
+	require.NoError(t, err)
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+	assert.Equal(t, false, prefs["autoSaveEnabled"])
+	assert.Equal(t, false, prefs["autoLoadSaveEnabled"])
+
+	// GET again to verify persistence
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+	assert.Equal(t, false, prefs["autoSaveEnabled"])
+	assert.Equal(t, false, prefs["autoLoadSaveEnabled"])
+}
+
+func TestUpdatePreferences_PartialUpdate(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Only update one field
+	body, _ := json.Marshal(map[string]interface{}{
+		"showPerformanceOverlay": true,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+	// Others should remain at defaults
+	assert.Equal(t, true, prefs["autoSaveEnabled"])
+	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()
