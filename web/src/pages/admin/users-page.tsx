@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Users, Shield, ShieldCheck, Crown, Plus, Trash2, UserX, BarChart3, Gamepad2, Save, Monitor, Smartphone, Laptop } from "lucide-react";
+import { Users, Shield, ShieldCheck, Crown, Plus, Trash2, UserX, BarChart3, Gamepad2, Save } from "lucide-react";
 import { Button, Badge, Card, CardContent, Modal, Input, Select, EmptyState, TableRowSkeleton } from "@/components/ui";
 import { useAdminUsers, useUpdateUser, useCreateUser, useDeleteUser, useAdminStats } from "@/hooks/use-admin";
 import { useAdminUserDevices } from "@/hooks/use-devices";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatRelativeTime } from "@/lib/format";
+import { getPlatformIcon } from "@/lib/platform-icons";
 import { useToast } from "@/components/ui";
 import type { User } from "@/types/api";
 
@@ -427,19 +428,6 @@ export function AdminUsersPage() {
 
 function AdminDevicesModal({ user, onClose }: { user: User; onClose: () => void }) {
   const { data: devices, isLoading } = useAdminUserDevices(user.id);
-
-  function getPlatformIcon(platform: string) {
-    switch (platform.toLowerCase()) {
-      case "android":
-        return Smartphone;
-      case "macos":
-      case "linux":
-      case "windows":
-        return Laptop;
-      default:
-        return Monitor;
-    }
-  }
 
   return (
     <Modal

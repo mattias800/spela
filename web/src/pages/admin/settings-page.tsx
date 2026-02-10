@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Settings, Plus, X, Key } from "lucide-react";
-import { Button, Card, CardHeader, CardContent, Input, Select } from "@/components/ui";
+import { Button, Card, CardHeader, CardContent, Input, Select, Switch } from "@/components/ui";
 import { useServerSettings, useUpdateSettings } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
@@ -129,18 +129,10 @@ export function AdminSettingsPage() {
               <p className="text-sm font-medium text-surface-200">Allow Registration</p>
               <p className="text-xs text-surface-500">Allow new users to create accounts</p>
             </div>
-            <button
-              onClick={() => setAllowRegistration(!allowRegistration)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                allowRegistration ? "bg-brand-600" : "bg-surface-700"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  allowRegistration ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
+            <Switch
+              checked={allowRegistration}
+              onChange={setAllowRegistration}
+            />
           </div>
 
           <div className="flex items-center justify-between">
@@ -148,18 +140,10 @@ export function AdminSettingsPage() {
               <p className="text-sm font-medium text-surface-200">Auto-scrape on Scan</p>
               <p className="text-xs text-surface-500">Automatically fetch metadata when scanning</p>
             </div>
-            <button
-              onClick={() => setScrapeOnScan(!scrapeOnScan)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                scrapeOnScan ? "bg-brand-600" : "bg-surface-700"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  scrapeOnScan ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
+            <Switch
+              checked={scrapeOnScan}
+              onChange={setScrapeOnScan}
+            />
           </div>
 
           <Select

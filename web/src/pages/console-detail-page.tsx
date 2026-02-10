@@ -1,25 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
+import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
-import type { Game } from "@/types/api";
 
 export function ConsoleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: games, isLoading } = useConsoleGames(id ?? "");
   const { data: consoles } = useConsoles();
-  const toggleFavorite = useToggleFavorite();
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
 
   // Find console info from the consoles list
   const console = consoles?.find((c) => c.id === id);
-  function handleToggleFavorite(game: Game) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
-  }
 
   const consoleName = console?.name ?? "Console";
   const consoleAbbr = console?.abbreviation ?? id ?? "";
@@ -58,11 +55,11 @@ export function ConsoleDetailPage() {
 
       {/* Games grid */}
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+        <GameGrid>
           {Array.from({ length: 12 }, (_, i) => (
             <GameCardSkeleton key={i} />
           ))}
-        </div>
+        </GameGrid>
       ) : gameList.length === 0 ? (
         <EmptyState
           icon={Library}
@@ -70,7 +67,7 @@ export function ConsoleDetailPage() {
           description="No games have been detected for this console yet."
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+        <GameGrid>
           {gameList.map((game) => (
             <GameCard
               key={game.id}
@@ -78,7 +75,7 @@ export function ConsoleDetailPage() {
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
-        </div>
+        </GameGrid>
       )}
     </div>
   );

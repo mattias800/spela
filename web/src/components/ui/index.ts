@@ -9,3 +9,4 @@ export { Sidebar } from "./sidebar";
 export { SearchInput } from "./search-input";
 export { Select } from "./select";
 export { EmptyState } from "./empty-state";
+export { Switch } from "./switch";

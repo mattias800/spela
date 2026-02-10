@@ -45,7 +45,7 @@ export function useFavoriteGames() {
 export function useToggleFavorite() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async ({ gameId, isFavorite }: { gameId: string; isFavorite: boolean }) => {
       if (isFavorite) {
         await api.delete(`/user/favorites/${gameId}`);
@@ -58,6 +58,10 @@ export function useToggleFavorite() {
       queryClient.invalidateQueries({ queryKey: ["game"] });
     },
   });
+
+  const toggle = (game: Game) => mutation.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+
+  return { ...mutation, toggle };
 }
 
 export function useGameSaves(gameId: string) {

@@ -1,16 +1,12 @@
 import { Heart } from "lucide-react";
 import { GameCard } from "@/components/game-card";
+import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
-import type { Game } from "@/types/api";
 
 export function FavoritesPage() {
   const { data: games, isLoading } = useFavoriteGames();
-  const toggleFavorite = useToggleFavorite();
-
-  function handleToggleFavorite(game: Game) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: true });
-  }
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
 
   return (
     <div className="space-y-6">
@@ -22,11 +18,11 @@ export function FavoritesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+        <GameGrid>
           {Array.from({ length: 12 }, (_, i) => (
             <GameCardSkeleton key={i} />
           ))}
-        </div>
+        </GameGrid>
       ) : !games || games.length === 0 ? (
         <EmptyState
           icon={Heart}
@@ -34,7 +30,7 @@ export function FavoritesPage() {
           description="Click the heart icon on any game to add it to your favorites."
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+        <GameGrid>
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -42,7 +38,7 @@ export function FavoritesPage() {
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
-        </div>
+        </GameGrid>
       )}
     </div>
   );

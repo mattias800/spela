@@ -28,8 +28,10 @@ function connect() {
       if (set) {
         set.forEach((fn) => fn(event.payload));
       }
-    } catch {
-      // ignore malformed messages
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("[WebSocket] Failed to parse message:", ev.data, err);
+      }
     }
   };
 

@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user, needsSetup } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, needsSetup } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,7 +30,7 @@ export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && user?.role !== "admin" && user?.role !== "owner") {
+  if (requireAdmin && !isAdmin) {
     return <Navigate to="/" replace />;
   }
 

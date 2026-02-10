@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect } from "react";
 import { ShaderPreview } from "./shader-preview";
 
 interface ShaderPreviewModalProps {
@@ -9,22 +9,6 @@ interface ShaderPreviewModalProps {
 }
 
 export function ShaderPreviewModal({ open, onClose, imageUrl, shader }: ShaderPreviewModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  const fadeIn = useCallback(() => {
-    requestAnimationFrame(() => {
-      if (overlayRef.current) {
-        overlayRef.current.style.opacity = "1";
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      fadeIn();
-    }
-  }, [open, fadeIn]);
-
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -49,9 +33,7 @@ export function ShaderPreviewModal({ open, onClose, imageUrl, shader }: ShaderPr
 
   return (
     <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-300"
-      style={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/90" />

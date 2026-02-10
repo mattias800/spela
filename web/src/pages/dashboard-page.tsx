@@ -1,6 +1,7 @@
 import { Play, Heart, Clock, ChevronRight, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
+import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
@@ -45,18 +46,18 @@ function GameRow({
 }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+      <GameGrid>
         {Array.from({ length: 6 }, (_, i) => (
           <GameCardSkeleton key={i} />
         ))}
-      </div>
+      </GameGrid>
     );
   }
 
   if (!games || games.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+    <GameGrid>
       {games.slice(0, 6).map((game) => (
         <GameCard
           key={game.id}
@@ -64,7 +65,7 @@ function GameRow({
           onToggleFavorite={onToggleFavorite}
         />
       ))}
-    </div>
+    </GameGrid>
   );
 }
 
@@ -73,11 +74,7 @@ export function DashboardPage() {
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
   const allGames = useGames({ pageSize: 12, sortBy: "title", sortOrder: "asc" });
-  const toggleFavorite = useToggleFavorite();
-
-  function handleToggleFavorite(game: Game) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
-  }
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
 
   const hasRecent = recentGames.data && recentGames.data.length > 0;
   const hasFavorites = favoriteGames.data && favoriteGames.data.length > 0;

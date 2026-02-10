@@ -15,10 +15,8 @@ import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 
 export function AppLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
-
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
 
   const links = [
     {

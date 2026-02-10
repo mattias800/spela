@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
+import { uint8ArrayToBase64 } from "@/lib/encoding";
 import type { SaveState, UserPreferences } from "@/types/api";
 import type { EmulatorStatus } from "./use-emulator-iframe";
 
@@ -38,6 +39,7 @@ export function useEmulatorSaves({
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingSaveTypeRef = useRef<"auto" | "manual">("auto");
+  const pendingSaveNameRef = useRef<string | undefined>(undefined);
   const latestStateCacheRef = useRef<string | null>(null);
   const exitSaveResolveRef = useRef<(() => void) | null>(null);
 
@@ -136,7 +138,9 @@ export function useEmulatorSaves({
       }
 
       const isAuto = pendingSaveTypeRef.current === "auto";
-      enqueueSave(data, isAuto, isAuto ? undefined : undefined);
+      const name = isAuto ? undefined : pendingSaveNameRef.current;
+      pendingSaveNameRef.current = undefined;
+      enqueueSave(data, isAuto, name);
     },
     [enqueueSave, gameId],
   );
@@ -145,18 +149,10 @@ export function useEmulatorSaves({
   const requestManualSave = useCallback(
     (name?: string) => {
       pendingSaveTypeRef.current = "manual";
-      // Store the name for when we get the data back
-      if (name) {
-        const originalHandler = handleSaveStateData;
-        const wrappedHandler = (data: string, screenshot?: string) => {
-          enqueueSave(data, false, name);
-          // Avoid calling original since we handled it
-        };
-        // We can't easily intercept, so just use the name tracking approach
-      }
+      pendingSaveNameRef.current = name;
       requestSaveState();
     },
-    [requestSaveState, enqueueSave],
+    [requestSaveState],
   );
 
   // Request auto-save
@@ -191,12 +187,7 @@ export function useEmulatorSaves({
       if (!res.ok) return undefined;
 
       const buf = await res.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
+      return uint8ArrayToBase64(new Uint8Array(buf));
     } catch {
       return undefined;
     } finally {
@@ -217,12 +208,7 @@ export function useEmulatorSaves({
         if (!res.ok) throw new Error("Failed to download save");
 
         const buf = await res.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        let binary = "";
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
+        return uint8ArrayToBase64(new Uint8Array(buf));
       } catch {
         return undefined;
       }

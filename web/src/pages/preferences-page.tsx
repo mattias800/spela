@@ -1,9 +1,6 @@
 import { useState } from "react";
 import {
   SlidersHorizontal,
-  Monitor,
-  Smartphone,
-  Laptop,
   Trash2,
   Pencil,
   Check,
@@ -14,12 +11,13 @@ import {
 } from "lucide-react";
 import { ShaderPreview } from "@/components/shader-preview";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
-import { Card, CardHeader, CardContent, Button, Select, Modal, Badge, EmptyState, Skeleton } from "@/components/ui";
+import { Card, CardHeader, CardContent, Button, Select, Modal, Badge, EmptyState, Skeleton, Switch } from "@/components/ui";
 import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
 import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "@/hooks/use-devices";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useToast } from "@/components/ui";
 import { formatRelativeTime } from "@/lib/format";
+import { getPlatformIcon } from "@/lib/platform-icons";
 import type { Device } from "@/types/api";
 
 const SHADER_OPTIONS: Array<{ value: string; label: string }> = [
@@ -30,19 +28,6 @@ const SHADER_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "lcd-grid", label: "LCD Grid" },
   { value: "scanlines", label: "Scanlines" },
 ];
-
-function getPlatformIcon(platform: string) {
-  switch (platform.toLowerCase()) {
-    case "android":
-      return Smartphone;
-    case "macos":
-    case "linux":
-    case "windows":
-      return Laptop;
-    default:
-      return Monitor;
-  }
-}
 
 export function PreferencesPage() {
   const { data: preferences, isLoading: prefsLoading } = useUserPreferences();
@@ -163,20 +148,10 @@ export function PreferencesPage() {
                     <p className="text-sm font-medium text-surface-200 group-hover:text-surface-100 transition-colors">{label}</p>
                     <p className="text-xs text-surface-500">{description}</p>
                   </div>
-                  <button
-                    role="switch"
-                    aria-checked={preferences?.[key] ?? false}
-                    onClick={() => handleToggle(key)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      preferences?.[key] ? "bg-brand-500" : "bg-surface-700"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transform transition-transform duration-200 ${
-                        preferences?.[key] ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
+                  <Switch
+                    checked={preferences?.[key] ?? false}
+                    onChange={() => handleToggle(key)}
+                  />
                 </label>
               ))}
             </div>

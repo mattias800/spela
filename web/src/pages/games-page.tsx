@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Library, Grid3X3, List, ArrowUpDown } from "lucide-react";
 import { GameCard } from "@/components/game-card";
+import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, SearchInput, Select, EmptyState, Badge } from "@/components/ui";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useConsoles } from "@/hooks/use-consoles";
 import { cn } from "@/lib/cn";
 import { formatFileSize } from "@/lib/format";
-import type { Game, GameFilters } from "@/types/api";
+import type { GameFilters } from "@/types/api";
 import { Link } from "react-router-dom";
 
 type ViewMode = "grid" | "list";
@@ -21,11 +22,7 @@ export function GamesPage() {
 
   const { data, isLoading } = useGames(filters);
   const { data: consoles } = useConsoles();
-  const toggleFavorite = useToggleFavorite();
-
-  function handleToggleFavorite(game: Game) {
-    toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
-  }
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
 
   const games = data?.data ?? [];
 
@@ -130,11 +127,11 @@ export function GamesPage() {
       {/* Content */}
       {isLoading ? (
         viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+          <GameGrid>
             {Array.from({ length: 18 }, (_, i) => (
               <GameCardSkeleton key={i} />
             ))}
-          </div>
+          </GameGrid>
         ) : (
           <div className="space-y-2">
             {Array.from({ length: 10 }, (_, i) => (
@@ -153,7 +150,7 @@ export function GamesPage() {
           }
         />
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+        <GameGrid>
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -161,7 +158,7 @@ export function GamesPage() {
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
-        </div>
+        </GameGrid>
       ) : (
         <div className="space-y-1">
           {games.map((game) => {

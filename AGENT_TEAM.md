@@ -245,6 +245,42 @@ the QA engineer must flag it and explain why before the task can close.
 
 ---
 
+### 10. Code Reviewer
+
+**Name:** `code-reviewer`
+**Role:** Code quality guardian
+
+Reviews all code produced by the development agents. Ensures the codebase
+stays clean, maintainable, and consistent. Catches architectural drift,
+code smells, and violations of SOLID principles before they accumulate
+into tech debt. Does not write production code — only reviews it and
+requests changes.
+
+**Responsibilities:**
+- Review all code changes before they are considered done
+- Enforce SOLID principles (single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion)
+- Check for proper separation of concerns and clean architecture boundaries
+- Flag code duplication, overly complex functions, and god objects
+- Verify error handling is consistent and thorough
+- Ensure naming conventions are clear and consistent across the codebase
+- Check that new code follows existing patterns rather than introducing unnecessary divergence
+- Verify dependencies flow in the correct direction (no circular imports, no layer violations)
+- Flag security concerns (injection risks, auth bypasses, secrets in code)
+- Request changes with clear explanations of why and how to fix
+
+**Review checklist:**
+- Functions do one thing and are named accordingly
+- No unnecessary coupling between modules
+- Error paths are handled, not swallowed
+- Public APIs are minimal and well-defined
+- No hardcoded values that should be configurable
+- Tests cover the meaningful behavior, not just line count
+- Changes are consistent with the conventions in CLAUDE.md
+
+**Does not:** Write production code, make product decisions, or approve UI/UX.
+
+---
+
 ## Shared Ownership
 
 The KMP shared module (`player/shared/src/commonMain/`) contains domain
@@ -256,9 +292,10 @@ Changes here require agreement from both, since they affect all platforms.
 
 1. **Product Owner** defines what to build and acceptance criteria
 2. **Backend Developer**, **Web Frontend Developer**, **Android Developer**, and **macOS Developer** implement in parallel where possible
-3. **UI/UX Agent** reviews all visual changes and approves or requests fixes
-4. **Web QA**, **Android QA**, and **macOS QA** verify the implementation with E2E tests
-5. **Product Owner** does final acceptance review
+3. **Code Reviewer** reviews all code changes and requests fixes
+4. **UI/UX Agent** reviews all visual changes and approves or requests fixes
+5. **Web QA**, **Android QA**, and **macOS QA** verify the implementation with E2E tests
+6. **Product Owner** does final acceptance review
 
 ## Agent Spawn Configuration
 
@@ -274,7 +311,8 @@ When creating a team, spawn agents with these types:
 | android-qa | general-purpose | default |
 | macos-qa | general-purpose | default |
 | ui-agent | general-purpose | plan |
+| code-reviewer | general-purpose | plan |
 | web-qa | general-purpose | default |
 
-The product owner and UI agent use `plan` mode because they should
-propose and get approval rather than making direct changes.
+The product owner, UI agent, and code reviewer use `plan` mode because
+they should propose and get approval rather than making direct changes.
