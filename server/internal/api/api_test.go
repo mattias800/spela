@@ -445,6 +445,7 @@ func TestGetPreferences_Defaults(t *testing.T) {
 	assert.Equal(t, false, prefs["showPerformanceOverlay"])
 	assert.Equal(t, true, prefs["autoSaveEnabled"])
 	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+	assert.Equal(t, "none", prefs["selectedShader"])
 }
 
 func TestUpdatePreferences(t *testing.T) {
@@ -471,6 +472,7 @@ func TestUpdatePreferences(t *testing.T) {
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 	assert.Equal(t, false, prefs["autoSaveEnabled"])
 	assert.Equal(t, false, prefs["autoLoadSaveEnabled"])
+	assert.Equal(t, "none", prefs["selectedShader"])
 
 	// GET again to verify persistence
 	w = httptest.NewRecorder()
@@ -483,6 +485,7 @@ func TestUpdatePreferences(t *testing.T) {
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 	assert.Equal(t, false, prefs["autoSaveEnabled"])
 	assert.Equal(t, false, prefs["autoLoadSaveEnabled"])
+	assert.Equal(t, "none", prefs["selectedShader"])
 }
 
 func TestUpdatePreferences_PartialUpdate(t *testing.T) {
@@ -507,6 +510,57 @@ func TestUpdatePreferences_PartialUpdate(t *testing.T) {
 	// Others should remain at defaults
 	assert.Equal(t, true, prefs["autoSaveEnabled"])
 	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+	assert.Equal(t, "none", prefs["selectedShader"])
+}
+
+func TestUpdatePreferences_ShaderSelection(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Set shader
+	body, _ := json.Marshal(map[string]interface{}{
+		"selectedShader": "crt-simple",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "crt-simple", prefs["selectedShader"])
+	// Other prefs should remain at defaults
+	assert.Equal(t, false, prefs["showPerformanceOverlay"])
+	assert.Equal(t, true, prefs["autoSaveEnabled"])
+	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+
+	// GET to verify persistence
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "crt-simple", prefs["selectedShader"])
+
+	// Partial update of another field should not clear shader
+	body, _ = json.Marshal(map[string]interface{}{
+		"showPerformanceOverlay": true,
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "crt-simple", prefs["selectedShader"])
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 }
 
 // registerAndGetToken registers a user and returns an access token.

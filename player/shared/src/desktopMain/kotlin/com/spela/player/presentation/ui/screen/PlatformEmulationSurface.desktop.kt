@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.libretro.DesktopAudioPlayer
 import com.spela.player.libretro.DesktopEmulationSurface
 import com.spela.player.libretro.DesktopLibretroController
@@ -12,6 +13,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 @Composable
 actual fun PlatformEmulationSurface(
     controller: LibretroController,
+    selectedShader: ShaderPreset,
     modifier: Modifier,
     onEscapePressed: (() -> Unit)?,
 ) {
@@ -34,6 +36,7 @@ actual fun PlatformEmulationSurface(
 
     DesktopEmulationSurface(
         controller = desktopController,
+        selectedShader = selectedShader,
         modifier = modifier,
         onEscapePressed = onEscapePressed,
     )

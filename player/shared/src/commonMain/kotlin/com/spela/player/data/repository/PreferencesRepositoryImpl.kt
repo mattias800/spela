@@ -18,12 +18,14 @@ class PreferencesRepositoryImpl(
         showPerformanceOverlay: Boolean?,
         autoSaveEnabled: Boolean?,
         autoLoadSaveEnabled: Boolean?,
+        selectedShader: String?,
     ): Result<UserPreferences> = runCatching {
         apiClient.updatePreferences(
             UpdatePreferencesRequest(
                 showPerformanceOverlay = showPerformanceOverlay,
                 autoSaveEnabled = autoSaveEnabled,
                 autoLoadSaveEnabled = autoLoadSaveEnabled,
+                selectedShader = selectedShader,
             )
         ).toDomain()
     }

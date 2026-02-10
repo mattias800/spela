@@ -203,15 +203,16 @@ fun SpelaApp(
                             emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                         }
 
+                        val emulationState by emulationViewModel.state.collectAsState()
+
                         // Emulation video surface (renders behind the overlay)
                         PlatformEmulationSurface(
                             controller = libretroController,
+                            selectedShader = emulationState.selectedShader,
                             onEscapePressed = {
                                 emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                             },
                         )
-
-                        val emulationState by emulationViewModel.state.collectAsState()
 
                         // Error overlay: shown when emulation fails to start
                         if (emulationState.error != null) {

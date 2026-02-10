@@ -65,7 +65,12 @@ class EmulationViewModel(
             // Fetch user preferences (fallback to defaults on error)
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
-            _state.update { it.copy(showPerformanceOverlay = currentPreferences.showPerformanceOverlay) }
+            _state.update {
+                it.copy(
+                    showPerformanceOverlay = currentPreferences.showPerformanceOverlay,
+                    selectedShader = currentPreferences.selectedShader,
+                )
+            }
 
             // Get game title
             getGameDetailUseCase(gameId).onSuccess { detail ->

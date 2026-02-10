@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -18,6 +19,7 @@ data class SettingsState(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
+    val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val showLogoutConfirm: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
 )
@@ -27,6 +29,7 @@ sealed interface SettingsIntent {
     data object TogglePerformanceOverlay : SettingsIntent
     data object ToggleAutoSave : SettingsIntent
     data object ToggleAutoLoadSave : SettingsIntent
+    data class SelectShader(val shader: ShaderPreset) : SettingsIntent
     data object ShowLogoutConfirm : SettingsIntent
     data object DismissLogoutConfirm : SettingsIntent
     data object Logout : SettingsIntent
@@ -63,6 +66,7 @@ class SettingsViewModel(
                 optimisticUpdate = { s, v -> s.copy(autoLoadSaveEnabled = v) },
                 apiCall = { preferencesRepository.updatePreferences(autoLoadSaveEnabled = it) },
             )
+            is SettingsIntent.SelectShader -> selectShader(intent.shader)
             SettingsIntent.ShowLogoutConfirm ->
                 _state.update { it.copy(showLogoutConfirm = true) }
             SettingsIntent.DismissLogoutConfirm ->
@@ -108,6 +112,7 @@ class SettingsViewModel(
                         showPerformanceOverlay = prefs.showPerformanceOverlay,
                         autoSaveEnabled = prefs.autoSaveEnabled,
                         autoLoadSaveEnabled = prefs.autoLoadSaveEnabled,
+                        selectedShader = prefs.selectedShader,
                     )
                 }
             }
@@ -118,6 +123,16 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             authRepository.clearTokens()
             _state.update { it.copy(showLogoutConfirm = false) }
+        }
+    }
+
+    private fun selectShader(shader: ShaderPreset) {
+        val previous = _state.value.selectedShader
+        _state.update { it.copy(selectedShader = shader) }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(selectedShader = shader.apiId).onFailure {
+                _state.update { it.copy(selectedShader = previous) }
+            }
         }
     }
 

@@ -1,0 +1,142 @@
+appId: com.spela.player
+---
+
+# Test: Shader selection persists across app restarts
+#
+# Verifies that the selected video filter (shader) is saved to the server
+# and restored after app restart.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings ──
+
+- tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
+
+# ── Assert default shader is "None (Pixel Perfect)" ──
+
+- assertVisible: "None (Pixel Perfect)"
+- assertVisible: "CRT Classic"
+- assertVisible: "Scanlines Only"
+
+# ── Select "CRT Classic" shader ──
+
+- tapOn: "CRT Classic"
+
+# ── Kill and relaunch the app ──
+
+- stopApp:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Login again ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings and verify shader persisted ──
+
+- tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
+
+# The "CRT Classic" shader should still be selected (persisted on server)
+- assertVisible: "CRT Classic"

@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -36,6 +38,7 @@ import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -162,6 +165,32 @@ fun SettingsScreen(
                             isChecked = state.autoLoadSaveEnabled,
                             onToggle = { viewModel.onIntent(SettingsIntent.ToggleAutoLoadSave) },
                         )
+                    }
+                }
+            }
+
+            // Shader section
+            item {
+                SettingsSectionHeader(title = "Video Filter")
+            }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SpSpacing.Small),
+                    ) {
+                        ShaderPreset.entries.forEachIndexed { index, shader ->
+                            ShaderOption(
+                                shader = shader,
+                                isSelected = state.selectedShader == shader,
+                                onClick = { viewModel.onIntent(SettingsIntent.SelectShader(shader)) },
+                            )
+                            if (index < ShaderPreset.entries.size - 1) {
+                                SettingsDivider()
+                            }
+                        }
                     }
                 }
             }
@@ -312,6 +341,49 @@ private fun SettingsInfoRow(label: String, value: String) {
             text = value,
             style = SpTypography.BodyMedium,
             color = SpColor.OnCard,
+        )
+    }
+}
+
+@Composable
+private fun ShaderOption(
+    shader: ShaderPreset,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .focusable()
+            .semantics {
+                contentDescription = "${shader.displayName}, ${shader.description}"
+                role = Role.RadioButton
+                stateDescription = if (isSelected) "Selected" else "Not selected"
+            }
+            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = shader.displayName,
+                style = SpTypography.TitleMedium,
+                color = SpColor.OnCard,
+            )
+            Text(
+                text = shader.description,
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
+        }
+        Spacer(Modifier.width(SpSpacing.Medium))
+        RadioButton(
+            selected = isSelected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = SpColor.Primary,
+                unselectedColor = SpColor.OnBackgroundTertiary,
+            ),
         )
     }
 }

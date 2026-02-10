@@ -86,10 +86,25 @@ data class LibretroCore(
     val platforms: String = "",
 )
 
+enum class ShaderPreset(val apiId: String, val displayName: String, val description: String) {
+    NONE("none", "None (Pixel Perfect)", "Raw pixels, nearest-neighbor scaling"),
+    BILINEAR("bilinear", "Smooth (Bilinear)", "Softens hard pixel edges"),
+    SHARP_BILINEAR("sharp-bilinear", "Sharp Bilinear", "Smooth edges, preserves pixel grid"),
+    CRT_SIMPLE("crt-simple", "CRT Classic", "Scanlines, curvature, and phosphor glow"),
+    LCD_GRID("lcd-grid", "LCD Grid", "Simulates handheld LCD pixel grid"),
+    SCANLINES("scanlines", "Scanlines Only", "Horizontal scanline darkening");
+
+    companion object {
+        fun fromApiId(id: String): ShaderPreset =
+            entries.find { it.apiId == id } ?: NONE
+    }
+}
+
 data class UserPreferences(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
+    val selectedShader: ShaderPreset = ShaderPreset.NONE,
 )
 
 enum class DownloadState {

@@ -33,6 +33,7 @@ type User struct {
 	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
+	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
 }
 
 // Console represents a detected game console/platform.

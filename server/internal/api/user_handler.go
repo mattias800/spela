@@ -59,9 +59,10 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 // preferencesResponse is the JSON shape for the preferences endpoints.
 type preferencesResponse struct {
-	ShowPerformanceOverlay bool `json:"showPerformanceOverlay"`
-	AutoSaveEnabled        bool `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled    bool `json:"autoLoadSaveEnabled"`
+	ShowPerformanceOverlay bool   `json:"showPerformanceOverlay"`
+	AutoSaveEnabled        bool   `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled    bool   `json:"autoLoadSaveEnabled"`
+	SelectedShader         string `json:"selectedShader"`
 }
 
 // GetPreferences returns the current user's emulation preferences.
@@ -76,6 +77,7 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
+		SelectedShader:         user.SelectedShader,
 	})
 }
 
@@ -89,9 +91,10 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 
 	var req struct {
-		ShowPerformanceOverlay *bool `json:"showPerformanceOverlay"`
-		AutoSaveEnabled        *bool `json:"autoSaveEnabled"`
-		AutoLoadSaveEnabled    *bool `json:"autoLoadSaveEnabled"`
+		ShowPerformanceOverlay *bool   `json:"showPerformanceOverlay"`
+		AutoSaveEnabled        *bool   `json:"autoSaveEnabled"`
+		AutoLoadSaveEnabled    *bool   `json:"autoLoadSaveEnabled"`
+		SelectedShader         *string `json:"selectedShader"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
@@ -107,6 +110,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	if req.AutoLoadSaveEnabled != nil {
 		user.AutoLoadSaveEnabled = *req.AutoLoadSaveEnabled
 	}
+	if req.SelectedShader != nil {
+		user.SelectedShader = *req.SelectedShader
+	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update preferences"})
@@ -117,6 +123,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
+		SelectedShader:         user.SelectedShader,
 	})
 }
 

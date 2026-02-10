@@ -8,5 +8,6 @@ interface PreferencesRepository {
         showPerformanceOverlay: Boolean? = null,
         autoSaveEnabled: Boolean? = null,
         autoLoadSaveEnabled: Boolean? = null,
+        selectedShader: String? = null,
     ): Result<UserPreferences>
 }

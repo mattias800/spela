@@ -74,6 +74,7 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     showPerformanceOverlay = showPerformanceOverlay,
     autoSaveEnabled = autoSaveEnabled,
     autoLoadSaveEnabled = autoLoadSaveEnabled,
+    selectedShader = ShaderPreset.fromApiId(selectedShader),
 )
 
 fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(

@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -36,6 +35,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.presentation.ui.screen.drawShaderOverlay
+import com.spela.player.presentation.ui.screen.filterQuality
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroPixelFormat
 import kotlinx.coroutines.delay
@@ -54,6 +56,7 @@ import org.jetbrains.skia.ImageInfo
 @Composable
 fun DesktopEmulationSurface(
     controller: DesktopLibretroController,
+    selectedShader: ShaderPreset = ShaderPreset.NONE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
 ) {
@@ -120,7 +123,7 @@ fun DesktopEmulationSurface(
                 },
         ) {
             val bitmap = currentBitmap ?: return@Canvas
-            drawScaledBitmap(bitmap)
+            drawScaledBitmap(bitmap, selectedShader)
         }
 
         // "Press Esc to pause" hint that fades after a few seconds
@@ -142,7 +145,7 @@ fun DesktopEmulationSurface(
     }
 }
 
-private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap) {
+private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap, shader: ShaderPreset) {
     val canvasWidth = size.width
     val canvasHeight = size.height
     val imgWidth = bitmap.width.toFloat()
@@ -158,14 +161,20 @@ private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap) {
     val offsetX = ((canvasWidth - dstWidth) / 2).toInt()
     val offsetY = ((canvasHeight - dstHeight) / 2).toInt()
 
+    val dstOffset = IntOffset(offsetX, offsetY)
+    val dstSize = IntSize(dstWidth, dstHeight)
+    val srcSize = IntSize(bitmap.width, bitmap.height)
+
     drawImage(
         image = bitmap,
         srcOffset = IntOffset.Zero,
-        srcSize = IntSize(bitmap.width, bitmap.height),
-        dstOffset = IntOffset(offsetX, offsetY),
-        dstSize = IntSize(dstWidth, dstHeight),
-        filterQuality = FilterQuality.Low, // Nearest-neighbor for pixel art
+        srcSize = srcSize,
+        dstOffset = dstOffset,
+        dstSize = dstSize,
+        filterQuality = shader.filterQuality(),
     )
+
+    drawShaderOverlay(shader, dstOffset, dstSize, srcSize)
 }
 
 /**
