@@ -196,6 +196,76 @@ test.describe("EmulatorJS Real Integration", () => {
     monitor.assertClean();
   });
 
+  test("auto-save triggers when clicking Back button during gameplay", async ({
+    page,
+  }) => {
+    const monitor = monitorPageErrors(page);
+
+    // Navigate to a playable game
+    await page.goto("/games");
+    await page.getByPlaceholder(/search/i).fill("Castlevania");
+    await page.keyboard.press("Enter");
+
+    await page.getByText("Castlevania", { exact: false }).first().click();
+    await expect(page).toHaveURL(/\/games\/\d+$/);
+
+    const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
+    expect(gameId).toBeTruthy();
+
+    // Click Play in Browser
+    await page.getByTestId("play-in-browser-btn").click();
+    await expect(page).toHaveURL(`/games/${gameId}/play`);
+
+    // Wait for the iframe to appear
+    await expect(
+      page.locator('iframe[src="/emulator.html"]'),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Wait for the game-started postMessage from the iframe
+    const gameStarted = await page.evaluate(() => {
+      return new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => resolve(false), 90_000);
+        window.addEventListener("message", (event) => {
+          if (
+            event.data &&
+            typeof event.data === "object" &&
+            event.data.type === "game-started"
+          ) {
+            clearTimeout(timeout);
+            resolve(true);
+          }
+        });
+      });
+    });
+    expect(gameStarted).toBe(true);
+
+    // Let the game run briefly so emulator has state to save
+    await page.waitForTimeout(2_000);
+
+    // Set up listener for auto-save POST before clicking Back
+    const autoSavePromise = page.waitForResponse(
+      (res) =>
+        res.request().method() === "POST" &&
+        res.url().includes("/saves/auto"),
+      { timeout: 10_000 },
+    );
+
+    // Click the Back button — this should trigger an exit auto-save
+    await page.getByTestId("back-btn").click();
+
+    // Verify the auto-save POST request was made and succeeded
+    const autoSaveResponse = await autoSavePromise;
+    expect(autoSaveResponse.ok()).toBe(true);
+
+    // Should navigate back to game detail page
+    await expect(page).toHaveURL(new RegExp(`/games/${gameId}$`), {
+      timeout: 10_000,
+    });
+
+    // Verify no unexpected errors
+    monitor.assertClean();
+  });
+
   test("save and load buttons become enabled after game starts", async ({
     page,
   }) => {

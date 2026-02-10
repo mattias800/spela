@@ -26,6 +26,7 @@ export function PlayPage() {
 
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [isExitSaving, setIsExitSaving] = useState(false);
   const sessionStartRef = useRef<number>(Date.now());
 
   // Resolve the EmulatorJS core identifier for this game's console
@@ -146,6 +147,19 @@ export function PlayPage() {
     saveManager.requestManualSave();
   }
 
+  async function handleBack() {
+    if (isExitSaving) return;
+    if (emulator.status === "playing" && preferences?.autoSaveEnabled) {
+      setIsExitSaving(true);
+      const EXIT_SAVE_TIMEOUT_MS = 3_000;
+      await Promise.race([
+        saveManager.requestExitSave(),
+        new Promise<void>((resolve) => setTimeout(resolve, EXIT_SAVE_TIMEOUT_MS)),
+      ]);
+    }
+    navigate(`/games/${id}`);
+  }
+
   function handleFullscreen() {
     const iframe = emulator.iframeRef.current;
     if (iframe) {
@@ -223,16 +237,18 @@ export function PlayPage() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/games/${id}`)}
+            onClick={handleBack}
+            data-testid="back-btn"
             className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-100 transition-colors"
+            disabled={isExitSaving}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {isExitSaving ? "Saving..." : "Back"}
           </button>
           <span className="text-sm font-medium text-surface-200 truncate max-w-xs">
             {game.title}
           </span>
-          {saveManager.isSaving && (
+          {(saveManager.isSaving || isExitSaving) && (
             <span className="flex items-center gap-1 text-xs text-brand-400">
               <Loader2 className="h-3 w-3 animate-spin" />
               Saving...
