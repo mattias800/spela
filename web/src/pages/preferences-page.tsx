@@ -10,7 +10,10 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Eye,
 } from "lucide-react";
+import { ShaderPreview } from "@/components/shader-preview";
+import { ShaderPreviewModal } from "@/components/shader-preview-modal";
 import { Card, CardHeader, CardContent, Button, Select, Modal, Badge, EmptyState, Skeleton } from "@/components/ui";
 import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
 import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "@/hooks/use-devices";
@@ -55,6 +58,7 @@ export function PreferencesPage() {
   const [editingDeviceId, setEditingDeviceId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ consoleId: string; shader: string } | null>(null);
 
   function handleToggle(key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled") {
     if (!preferences) return;
@@ -198,6 +202,21 @@ export function PreferencesPage() {
               />
 
               {consoles && consoles.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-surface-300 mb-2">Preview</p>
+                  <ShaderPreview
+                    imageUrl={`/api/consoles/${consoles[0].id}/preview-screenshot`}
+                    shader={preferences?.selectedShader ?? "none"}
+                    onClick={() => consoles[0] && setPreviewModal({
+                      consoleId: consoles[0].id,
+                      shader: preferences?.selectedShader ?? "none",
+                    })}
+                    className="max-w-sm"
+                  />
+                </div>
+              )}
+
+              {consoles && consoles.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-surface-300 mb-3">Per-Console Overrides</p>
                   <div className="overflow-x-auto">
@@ -206,6 +225,7 @@ export function PreferencesPage() {
                         <tr className="border-b border-surface-800">
                           <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Console</th>
                           <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Shader</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Preview</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -223,6 +243,18 @@ export function PreferencesPage() {
                                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                               </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <button
+                                onClick={() => setPreviewModal({
+                                  consoleId: console.id,
+                                  shader: preferences?.consoleShaders[console.id] || preferences?.selectedShader || "none",
+                                })}
+                                className="p-1.5 rounded-lg text-surface-400 hover:text-brand-400 hover:bg-surface-800 transition-colors"
+                                title="Preview shader"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -377,6 +409,13 @@ export function PreferencesPage() {
           </Button>
         </div>
       </Modal>
+
+      <ShaderPreviewModal
+        open={!!previewModal}
+        onClose={() => setPreviewModal(null)}
+        imageUrl={previewModal ? `/api/consoles/${previewModal.consoleId}/preview-screenshot` : ""}
+        shader={previewModal?.shader ?? "none"}
+      />
     </div>
   );
 }

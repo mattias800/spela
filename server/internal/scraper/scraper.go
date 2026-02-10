@@ -58,8 +58,8 @@ func (s *Scraper) IsConfigured() bool {
 	return s.SSUserName != "" && s.SSUserPass != ""
 }
 
-// abbreviationToLibRetro maps console abbreviations to LibRetro system names.
-var abbreviationToLibRetro = map[string]string{
+// AbbreviationToLibRetro maps console abbreviations to LibRetro system names.
+var AbbreviationToLibRetro = map[string]string{
 	"NES":    "Nintendo - Nintendo Entertainment System",
 	"SNES":   "Nintendo - Super Nintendo Entertainment System",
 	"GB":     "Nintendo - Game Boy",
@@ -187,7 +187,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
 	// --- LibRetro Thumbnails (always available, no credentials needed) ---
-	libRetroSystem, hasLibRetro := abbreviationToLibRetro[console.Abbreviation]
+	libRetroSystem, hasLibRetro := AbbreviationToLibRetro[console.Abbreviation]
 	if hasLibRetro {
 		// Box art (primary)
 		boxartSubpath := fmt.Sprintf("%s/%s/boxart.png", console.Abbreviation, gameIDStr)

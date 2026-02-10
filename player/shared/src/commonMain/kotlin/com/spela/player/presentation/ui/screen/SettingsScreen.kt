@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.presentation.ui.components.ShaderPreview
+import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -92,6 +94,19 @@ fun SettingsScreen(
             isDestructive = true,
         )
     }
+
+    ShaderPreviewDialog(
+        visible = state.fullscreenPreviewConsoleId != null,
+        imageUrl = state.fullscreenPreviewConsoleId?.let { consoleId ->
+            "${state.serverUrl}/api/consoles/${consoleId}/preview-screenshot"
+        },
+        shader = state.fullscreenPreviewConsoleId?.let { consoleId ->
+            state.deviceShaderOverrides[consoleId]
+                ?: state.consoleShaders[consoleId]
+                ?: state.selectedShader
+        } ?: state.selectedShader,
+        onDismiss = { viewModel.onIntent(SettingsIntent.DismissShaderPreviewFullscreen) },
+    )
 
     Column(
         modifier = Modifier
@@ -222,6 +237,17 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    item {
+                        val previewConsoleId = state.consoles.firstOrNull()?.id
+                        if (previewConsoleId != null) {
+                            ShaderPreview(
+                                imageUrl = "${state.serverUrl}/api/consoles/${previewConsoleId}/preview-screenshot",
+                                shader = state.selectedShader,
+                                onClick = { viewModel.onIntent(SettingsIntent.ShowShaderPreviewFullscreen(previewConsoleId)) },
+                            )
+                        }
+                    }
                 }
                 ShaderScope.PER_CONSOLE -> {
                     if (state.consoles.isEmpty()) {
@@ -248,6 +274,7 @@ fun SettingsScreen(
                                 hasDeviceOverride = state.deviceShaderOverrides.containsKey(console.id),
                                 deviceOverrideShader = state.deviceShaderOverrides[console.id],
                                 globalDefault = state.selectedShader,
+                                previewUrl = "${state.serverUrl}/api/consoles/${console.id}/preview-screenshot",
                                 onExpand = { viewModel.onIntent(SettingsIntent.ExpandConsole(console.id)) },
                                 onSelectShader = { shader ->
                                     viewModel.onIntent(SettingsIntent.SelectConsoleShader(console.id, shader))
@@ -264,6 +291,7 @@ fun SettingsScreen(
                                 onSelectDeviceShader = { shader ->
                                     viewModel.onIntent(SettingsIntent.SetDeviceOverride(console.id, shader))
                                 },
+                                onPreviewClick = { viewModel.onIntent(SettingsIntent.ShowShaderPreviewFullscreen(console.id)) },
                             )
                         }
                     }
@@ -380,10 +408,12 @@ private fun ConsoleShaderCard(
     hasDeviceOverride: Boolean,
     deviceOverrideShader: ShaderPreset?,
     globalDefault: ShaderPreset,
+    previewUrl: String?,
     onExpand: () -> Unit,
     onSelectShader: (ShaderPreset) -> Unit,
     onToggleDeviceOverride: (Boolean) -> Unit,
     onSelectDeviceShader: (ShaderPreset) -> Unit,
+    onPreviewClick: () -> Unit,
 ) {
     val effectiveShader = deviceOverrideShader ?: currentShader
 
@@ -475,6 +505,18 @@ private fun ConsoleShaderCard(
                         if (index < ShaderPreset.entries.size - 1) {
                             SettingsDivider()
                         }
+                    }
+
+                    // Shader preview
+                    if (previewUrl != null) {
+                        Spacer(Modifier.height(SpSpacing.Small))
+                        ShaderPreview(
+                            imageUrl = previewUrl,
+                            shader = effectiveShader,
+                            onClick = onPreviewClick,
+                            modifier = Modifier.padding(horizontal = SpSpacing.Default),
+                        )
+                        Spacer(Modifier.height(SpSpacing.Small))
                     }
 
                     SettingsDivider()

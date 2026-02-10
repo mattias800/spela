@@ -36,6 +36,7 @@ data class SettingsState(
     val expandedConsoleId: String? = null,
     val showLogoutConfirm: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
+    val fullscreenPreviewConsoleId: String? = null,
 )
 
 sealed interface SettingsIntent {
@@ -55,6 +56,8 @@ sealed interface SettingsIntent {
     data object ShowClearCacheConfirm : SettingsIntent
     data object DismissClearCacheConfirm : SettingsIntent
     data object ClearCache : SettingsIntent
+    data class ShowShaderPreviewFullscreen(val consoleId: String) : SettingsIntent
+    data object DismissShaderPreviewFullscreen : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -111,6 +114,10 @@ class SettingsViewModel(
             SettingsIntent.DismissClearCacheConfirm ->
                 _state.update { it.copy(showClearCacheConfirm = false) }
             SettingsIntent.ClearCache -> clearCache()
+            is SettingsIntent.ShowShaderPreviewFullscreen ->
+                _state.update { it.copy(fullscreenPreviewConsoleId = intent.consoleId) }
+            SettingsIntent.DismissShaderPreviewFullscreen ->
+                _state.update { it.copy(fullscreenPreviewConsoleId = null) }
         }
     }
 
