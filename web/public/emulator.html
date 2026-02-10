@@ -172,6 +172,9 @@
           }
         };
 
+        // Tell EmulatorJS where to find its runtime assets (cores, shaders, etc.)
+        window.EJS_pathtodata = "/emulatorjs/data/";
+
         // Load EmulatorJS script
         var script = document.createElement("script");
         script.src = "/emulatorjs/data/loader.js";

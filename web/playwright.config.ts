@@ -23,6 +23,9 @@ export default defineConfig({
       use: {
         browserName: "chromium",
         storageState: "./e2e/.auth/storage-state.json",
+        launchOptions: {
+          args: ["--use-angle=swiftshader"],
+        },
       },
     },
   ],
