@@ -22,9 +22,8 @@ import { SetupPage } from "@/pages/setup-page";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      staleTime: 0,
       retry: 1,
-      refetchOnWindowFocus: false,
     },
   },
 });

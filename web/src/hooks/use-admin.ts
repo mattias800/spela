@@ -56,14 +56,27 @@ export function useUpdateSettings() {
 }
 
 export function useScanLibrary() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: () => api.post<Record<string, unknown>>("/games/scan"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["consoles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
   });
 }
 
 export function useScrapeMetadata() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: () => api.post<void>("/admin/scrape"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["game"] });
+    },
   });
 }
 

@@ -20,20 +20,20 @@ import (
 var previewFallbackGames = map[string]string{
 	"NES":    "Super Mario Bros. (World)",
 	"SNES":   "Super Mario World (USA)",
-	"GB":     "Pokemon Red Version (USA, Europe) (SGB Enhanced)",
-	"GBC":    "Pokemon Crystal Version (USA, Europe)",
-	"GBA":    "Pokemon - Fire Red Version (USA, Europe)",
+	"GB":     "Super Mario Land (World)",
+	"GBC":    "Pokemon - Crystal Version (USA)",
+	"GBA":    "Pokemon - Emerald Version (USA, Europe)",
 	"N64":    "Super Mario 64 (USA)",
-	"NDS":    "New Super Mario Bros. (USA, Europe)",
-	"SMS":    "Sonic the Hedgehog (USA, Europe)",
+	"NDS":    "New Super Mario Bros. (USA)",
+	"SMS":    "Alex Kidd in Miracle World (USA, Europe)",
 	"GEN":    "Sonic The Hedgehog (USA, Europe)",
 	"SAT":    "Nights Into Dreams... (USA)",
 	"PSX":    "Crash Bandicoot (USA)",
 	"PSP":    "God of War - Chains of Olympus (USA)",
-	"NEOGEO": "Metal Slug - Super Vehicle-001 (NGM-006)(NGH-006)",
+	"NEOGEO": "Metal Slug - Super Vehicle-001",
 	"ARCADE": "Street Fighter II - The World Warrior (World 910522)",
 	"PCE":    "Bonk's Adventure (USA)",
-	"A26":    "Pitfall! (USA)",
+	"A26":    "Pitfall! - Pitfall Harry's Jungle Adventure (USA)",
 }
 
 // ConsoleHandler handles console-related endpoints.
@@ -90,8 +90,8 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 }
 
 // GetPreviewScreenshot returns a representative screenshot for a console.
-// It tries: (1) a local game with a scraped screenshot, (2) a cached CDN preview,
-// (3) downloading from the LibRetro CDN and caching it.
+// It serves a canonical screenshot from the LibRetro thumbnails CDN,
+// cached locally after the first download.
 func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 	consoleID := c.Param("id")
 
@@ -101,17 +101,7 @@ func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 		return
 	}
 
-	// Strategy 1: Find a local game with a scraped screenshot
-	var game db.Game
-	err := h.DB.Where("console_id = ? AND screenshot_url != ''", console.ID).
-		First(&game).Error
-	if err == nil && game.ScreenshotURL != "" {
-		c.Header("Cache-Control", "public, max-age=86400")
-		c.Redirect(http.StatusFound, "/api/images/"+game.ScreenshotURL)
-		return
-	}
-
-	// Strategy 2: Check for cached preview
+	// Check for cached preview
 	cachedPath := filepath.Join("previews", console.Abbreviation, "preview.png")
 	fullCachedPath := h.Storage.ImagePath(cachedPath)
 	if _, err := os.Stat(fullCachedPath); err == nil {
@@ -120,7 +110,7 @@ func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 		return
 	}
 
-	// Strategy 3: Download from LibRetro CDN
+	// Download from LibRetro CDN
 	libRetroSystem, ok := scraper.AbbreviationToLibRetro[console.Abbreviation]
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no preview available for this console"})

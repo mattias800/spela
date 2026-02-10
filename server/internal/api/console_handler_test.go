@@ -69,45 +69,14 @@ func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
 	assert.Equal(t, "console not found", resp["error"])
 }
 
-func TestGetPreviewScreenshot_LocalScreenshot(t *testing.T) {
-	database, _, router := setupConsoleTestEnv(t)
-
-	// Find a seeded console to attach a game to.
-	var console db.Console
-	err := database.First(&console).Error
-	require.NoError(t, err)
-
-	// Create a game with a scraped screenshot URL.
-	game := db.Game{
-		ConsoleID:     console.ID,
-		Title:         "Test Game With Screenshot",
-		FileName:      "test.nes",
-		FilePath:      "/tmp/test.nes",
-		FileSize:      1024,
-		ScreenshotURL: "NES/1/screenshot.png",
-	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusFound, w.Code)
-	assert.Equal(t, "/api/images/NES/1/screenshot.png", w.Header().Get("Location"))
-	assert.Equal(t, "public, max-age=86400", w.Header().Get("Cache-Control"))
-}
-
 func TestGetPreviewScreenshot_CachedPreview(t *testing.T) {
 	database, store, router := setupConsoleTestEnv(t)
 
-	// Find the NES console (seeded).
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error
 	require.NoError(t, err)
 
-	// Create the cached preview file on disk. No game with a screenshot exists,
-	// so strategy 1 is skipped and strategy 2 should find this file.
+	// Create the cached preview file on disk.
 	previewDir := filepath.Join(store.ImageDir, "previews", console.Abbreviation)
 	err = os.MkdirAll(previewDir, 0755)
 	require.NoError(t, err)
@@ -130,8 +99,7 @@ func TestGetPreviewScreenshot_NoPreviewAvailable(t *testing.T) {
 	database, _, router := setupConsoleTestEnv(t)
 
 	// Create a console with an abbreviation that is NOT in either
-	// scraper.AbbreviationToLibRetro or previewFallbackGames, so all
-	// three strategies fail.
+	// scraper.AbbreviationToLibRetro or previewFallbackGames.
 	unknownConsole := db.Console{
 		Name:         "Unknown Console",
 		Abbreviation: "ZZZUNKNOWN",
@@ -152,15 +120,14 @@ func TestGetPreviewScreenshot_NoPreviewAvailable(t *testing.T) {
 	assert.Equal(t, "no preview available for this console", resp["error"])
 }
 
-func TestGetPreviewScreenshot_PrefersLocalOverCached(t *testing.T) {
+func TestGetPreviewScreenshot_IgnoresLocalGames(t *testing.T) {
 	database, store, router := setupConsoleTestEnv(t)
 
-	// Find the NES console.
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error
 	require.NoError(t, err)
 
-	// Create a game with a scraped screenshot (strategy 1).
+	// Create a game with a scraped screenshot — should be ignored.
 	game := db.Game{
 		ConsoleID:     console.ID,
 		Title:         "Game With Screenshot",
@@ -172,43 +139,31 @@ func TestGetPreviewScreenshot_PrefersLocalOverCached(t *testing.T) {
 	err = database.Create(&game).Error
 	require.NoError(t, err)
 
-	// Also create a cached preview file (strategy 2).
+	// Create a cached CDN preview.
 	previewDir := filepath.Join(store.ImageDir, "previews", console.Abbreviation)
 	err = os.MkdirAll(previewDir, 0755)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(previewDir, "preview.png"), []byte("cached"), 0644)
+	err = os.WriteFile(filepath.Join(previewDir, "preview.png"), []byte("cdn-preview"), 0644)
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
 	router.ServeHTTP(w, req)
 
-	// Strategy 1 (local game screenshot) should take precedence.
+	// Should serve the CDN preview, NOT the local game screenshot.
 	assert.Equal(t, http.StatusFound, w.Code)
-	assert.Equal(t, "/api/images/NES/42/screenshot.png", w.Header().Get("Location"))
+	expectedLocation := fmt.Sprintf("/api/images/previews/%s/preview.png", console.Abbreviation)
+	assert.Equal(t, expectedLocation, w.Header().Get("Location"))
 }
 
-func TestGetPreviewScreenshot_SkipsGameWithEmptyScreenshot(t *testing.T) {
+func TestGetPreviewScreenshot_WorksWithNoLocalGames(t *testing.T) {
 	database, store, router := setupConsoleTestEnv(t)
 
-	// Find the NES console.
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error
 	require.NoError(t, err)
 
-	// Create a game WITHOUT a screenshot (empty string).
-	game := db.Game{
-		ConsoleID:     console.ID,
-		Title:         "Game Without Screenshot",
-		FileName:      "noscreen.nes",
-		FilePath:      "/tmp/noscreen.nes",
-		FileSize:      512,
-		ScreenshotURL: "",
-	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
-
-	// Create a cached preview so strategy 2 succeeds.
+	// No games exist at all — verify we still serve the cached CDN preview.
 	previewDir := filepath.Join(store.ImageDir, "previews", console.Abbreviation)
 	err = os.MkdirAll(previewDir, 0755)
 	require.NoError(t, err)
@@ -219,7 +174,6 @@ func TestGetPreviewScreenshot_SkipsGameWithEmptyScreenshot(t *testing.T) {
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
 	router.ServeHTTP(w, req)
 
-	// Should fall through to strategy 2 (cached file) because the game has no screenshot.
 	assert.Equal(t, http.StatusFound, w.Code)
 	expectedLocation := fmt.Sprintf("/api/images/previews/%s/preview.png", console.Abbreviation)
 	assert.Equal(t, expectedLocation, w.Header().Get("Location"))

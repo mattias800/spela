@@ -78,7 +78,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	})
 
 	// Rate limiter for auth endpoints
-	authLimiter := NewRateLimiter(10, time.Minute)
+	authLimiter := NewRateLimiter(120, time.Minute)
 
 	// Handlers
 	authHandler := &AuthHandler{DB: cfg.DB, JWTSecret: cfg.JWTSecret}
@@ -107,6 +107,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.POST("/setup", authHandler.Setup)
 	}
 
+	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
+	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(AuthMiddleware(cfg.JWTSecret))
@@ -114,7 +117,6 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)
 		api.GET("/consoles/:id/games", consoleHandler.ListConsoleGames)
-		api.GET("/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
 
 		// Games
 		api.GET("/games", gameHandler.ListGames)

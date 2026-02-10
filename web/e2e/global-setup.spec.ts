@@ -13,3 +13,11 @@ setup("authenticate", async ({ page }) => {
 
   await page.context().storageState({ path: "./e2e/.auth/storage-state.json" });
 });
+
+setup("login by pressing Enter after typing credentials", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("admin");
+  await page.getByLabel("Password").fill("admin123");
+  await page.getByLabel("Password").press("Enter");
+  await expect(page).toHaveURL("/", { timeout: 15_000 });
+});

@@ -2,7 +2,29 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ShaderPreview } from "./shader-preview";
 
-// Mock canvas context
+// Mock the WebGL renderer module
+const mockSetImage = vi.fn();
+const mockSetShader = vi.fn();
+const mockResize = vi.fn();
+const mockDraw = vi.fn();
+const mockDestroy = vi.fn();
+
+let webglAvailable = true;
+
+vi.mock("../lib/webgl-renderer", () => ({
+  createWebGLRenderer: vi.fn(() => {
+    if (!webglAvailable) return null;
+    return {
+      setImage: mockSetImage,
+      setShader: mockSetShader,
+      resize: mockResize,
+      draw: mockDraw,
+      destroy: mockDestroy,
+    };
+  }),
+}));
+
+// Mock canvas context for the 2D fallback path
 function createMockContext(): Record<string, unknown> {
   return {
     scale: vi.fn(),
@@ -25,9 +47,21 @@ function createMockContext(): Record<string, unknown> {
 }
 
 beforeEach(() => {
+  webglAvailable = true;
+  mockSetImage.mockReset();
+  mockSetShader.mockReset();
+  mockResize.mockReset();
+  mockDraw.mockReset();
+  mockDestroy.mockReset();
+
   const mockCtx = createMockContext();
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-    mockCtx as unknown as CanvasRenderingContext2D,
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+    (contextId: string) => {
+      if (contextId === "2d") {
+        return mockCtx as unknown as CanvasRenderingContext2D;
+      }
+      return null;
+    },
   );
 });
 
@@ -89,5 +123,41 @@ describe("ShaderPreview", () => {
       );
       unmount();
     }
+  });
+
+  it("calls destroy on WebGL renderer when unmounting", () => {
+    const { unmount } = render(
+      <ShaderPreview imageUrl="/test.png" shader="none" />,
+    );
+    unmount();
+    expect(mockDestroy).toHaveBeenCalled();
+  });
+
+  it("falls back to Canvas 2D when WebGL2 is unavailable", () => {
+    webglAvailable = false;
+
+    const mockCtx = createMockContext();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      (contextId: string) => {
+        if (contextId === "2d") {
+          return mockCtx as unknown as CanvasRenderingContext2D;
+        }
+        return null;
+      },
+    );
+
+    const { container } = render(
+      <ShaderPreview imageUrl="/test.png" shader="none" />,
+    );
+
+    // Simulate image load to trigger draw
+    const img = new Image();
+    Object.defineProperty(img, "naturalWidth", { value: 256 });
+    Object.defineProperty(img, "naturalHeight", { value: 224 });
+    Object.defineProperty(img, "complete", { value: true });
+
+    expect(container.querySelector("canvas")).toBeInTheDocument();
+    // WebGL draw should NOT have been called
+    expect(mockDraw).not.toHaveBeenCalled();
   });
 });

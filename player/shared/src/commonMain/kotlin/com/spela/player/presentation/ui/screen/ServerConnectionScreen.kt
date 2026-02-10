@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
@@ -194,6 +195,8 @@ fun ServerConnectionScreen(
                                         },
                                         label = "Server URL",
                                         placeholder = "https://spela.example.com",
+                                        imeAction = ImeAction.Done,
+                                        onImeAction = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
                                     )
                                     Spacer(Modifier.height(SpSpacing.Default))
                                     Row(

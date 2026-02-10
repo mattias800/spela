@@ -22,7 +22,7 @@ COPY --from=builder /build/spela-server .
 COPY --from=builder /build/spela-seed .
 COPY --from=builder /build/entrypoint.sh .
 
-RUN mkdir -p /app/data /app/games /app/saves /app/cores
+RUN mkdir -p /app/data /app/games /app/saves /app/cores /app/images
 
 ENV SPELA_PORT=8080
 ENV SPELA_DB_PATH=/app/data/spela.db

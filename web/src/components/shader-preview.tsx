@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { createWebGLRenderer, type WebGLRenderer } from "../lib/webgl-renderer";
 
 interface ShaderPreviewProps {
   imageUrl: string;
@@ -6,9 +7,6 @@ interface ShaderPreviewProps {
   onClick?: () => void;
   className?: string;
 }
-
-const SOURCE_WIDTH = 256;
-const SOURCE_HEIGHT = 224;
 
 function applyShaderOverlay(
   ctx: CanvasRenderingContext2D,
@@ -93,6 +91,11 @@ function configureSmoothing(ctx: CanvasRenderingContext2D, shader: string) {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "medium";
       break;
+    case "scanlines":
+    case "crt-simple":
+    case "lcd-grid":
+      ctx.imageSmoothingEnabled = false;
+      break;
     default:
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
@@ -106,6 +109,7 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
   const [loaded, setLoaded] = useState(false);
   const [hovering, setHovering] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const rendererRef = useRef<WebGLRenderer | null>(null);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -116,10 +120,20 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
     const displayWidth = rect.width;
     const displayHeight = rect.width * (3 / 4);
 
+    const renderer = rendererRef.current;
+    if (renderer) {
+      renderer.setImage(img);
+      renderer.setShader(shader);
+      renderer.resize(displayWidth, displayHeight);
+      renderer.draw();
+      return;
+    }
+
+    // Canvas 2D fallback
+    const dpr = window.devicePixelRatio || 1;
     canvas.width = displayWidth * dpr;
     canvas.height = displayHeight * dpr;
     canvas.style.width = `${displayWidth}px`;
@@ -156,7 +170,7 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
 
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-    applyShaderOverlay(ctx, shader, drawX, drawY, drawW, drawH, SOURCE_WIDTH, SOURCE_HEIGHT);
+    applyShaderOverlay(ctx, shader, drawX, drawY, drawW, drawH, img.naturalWidth, img.naturalHeight);
   }, [shader]);
 
   useEffect(() => {
@@ -194,12 +208,23 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
     return () => observer.disconnect();
   }, [loaded, draw]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      rendererRef.current = createWebGLRenderer(canvas);
+    }
+    return () => {
+      rendererRef.current?.destroy();
+      rendererRef.current = null;
+    };
+  }, []);
+
   return (
     <div
       ref={containerRef}
-      className={`relative cursor-pointer ${className ?? ""}`}
+      className={`relative ${onClick ? "cursor-pointer" : ""} ${className ?? ""}`}
       onClick={onClick}
-      onMouseEnter={() => setHovering(true)}
+      onMouseEnter={() => onClick && setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
       {!loaded && (

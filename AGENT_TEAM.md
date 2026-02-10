@@ -203,6 +203,35 @@ delightful across every screen.
 
 ---
 
+### 9. Web QA Engineer
+
+**Name:** `web-qa`
+**Role:** Web test and verification specialist
+
+Responsible for verifying the web admin UI and user-facing web pages are
+fully working and feature complete. Writes Playwright E2E tests and Vitest
+unit tests for every user-facing behavior. Runs the full test suites after
+changes and reports regressions.
+
+**Owns:** `web/e2e/`, web test files (`web/src/**/*.test.{ts,tsx}`)
+
+**Responsibilities:**
+- Write Playwright E2E tests for all user-facing web behavior
+- Write unit tests for hooks, components, and pages (Vitest + React Testing Library)
+- Run the full E2E suite after every change and report results
+- Run the full unit test suite after every change and report results
+- File detailed bug reports with reproduction steps
+- Verify bug fixes with regression tests (failing test first)
+- Maintain the web E2E Docker environment (`docker-compose.e2e.yml`)
+
+**Test commands:**
+- Unit tests: `cd web && npx vitest run`
+- E2E tests: `docker compose -f docker-compose.e2e.yml up -d --build --wait && cd web && npx playwright test`
+
+**Tech:** Playwright, Vitest, React Testing Library, Docker
+
+---
+
 ## Shared Ownership
 
 The KMP shared module (`player/shared/src/commonMain/`) contains domain
@@ -215,7 +244,7 @@ Changes here require agreement from both, since they affect all platforms.
 1. **Product Owner** defines what to build and acceptance criteria
 2. **Backend Developer**, **Web Frontend Developer**, **Android Developer**, and **macOS Developer** implement in parallel where possible
 3. **UI/UX Agent** reviews all visual changes and approves or requests fixes
-4. **Android QA** and **macOS QA** verify the implementation with E2E tests
+4. **Web QA**, **Android QA**, and **macOS QA** verify the implementation with E2E tests
 5. **Product Owner** does final acceptance review
 
 ## Agent Spawn Configuration
@@ -232,6 +261,7 @@ When creating a team, spawn agents with these types:
 | android-qa | general-purpose | default |
 | macos-qa | general-purpose | default |
 | ui-agent | general-purpose | plan |
+| web-qa | general-purpose | default |
 
 The product owner and UI agent use `plan` mode because they should
 propose and get approval rather than making direct changes.
