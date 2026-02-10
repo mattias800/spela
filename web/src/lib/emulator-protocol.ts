@@ -99,6 +99,8 @@ export interface EmulatorPreferences {
   shader: string;
   showPerformanceOverlay: boolean;
   volume?: number;
+  keyMapping?: string;
+  customKeyMapping?: Record<string, string>;
 }
 
 /** Discriminated union of all messages for type-safe handling. */

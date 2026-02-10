@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
 import { EmulationSettingsCard } from "@/components/preferences/emulation-settings-card";
 import { VideoFiltersCard } from "@/components/preferences/video-filters-card";
+import { KeyMappingCard } from "@/components/preferences/key-mapping-card";
 import { DevicesCard } from "@/components/preferences/devices-card";
 import { DeleteDeviceModal } from "@/components/preferences/delete-device-modal";
 import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
@@ -66,6 +67,27 @@ export function PreferencesPage() {
     });
   }
 
+  function handleKeyMappingChange(mapping: string) {
+    updatePreferences.mutate(
+      { selectedKeyMapping: mapping },
+      { onError: (err) => toast("error", err.message) },
+    );
+  }
+
+  function handleCustomKeyMappingChange(customMapping: Record<string, string>) {
+    updatePreferences.mutate(
+      { selectedKeyMapping: "custom", customKeyMapping: customMapping },
+      { onError: (err) => toast("error", err.message) },
+    );
+  }
+
+  function handleConsoleKeyMappingChange(consoleId: string, mapping: string) {
+    updatePreferences.mutate(
+      { consoleKeyMappings: { [consoleId]: { selectedMapping: mapping } } },
+      { onError: (err) => toast("error", err.message) },
+    );
+  }
+
   function handleDeviceShaderChange(deviceId: number, consoleId: string, shader: string) {
     updateDevicePrefs.mutate(
       { id: deviceId, consoleShaders: { [consoleId]: shader } },
@@ -95,6 +117,15 @@ export function PreferencesPage() {
         onShaderChange={handleShaderChange}
         onConsoleShaderChange={handleConsoleShaderChange}
         onPreview={(consoleId, shader) => setPreviewModal({ consoleId, shader })}
+      />
+
+      <KeyMappingCard
+        preferences={preferences}
+        consoles={consoles}
+        isLoading={prefsLoading}
+        onKeyMappingChange={handleKeyMappingChange}
+        onCustomKeyMappingChange={handleCustomKeyMappingChange}
+        onConsoleKeyMappingChange={handleConsoleKeyMappingChange}
       />
 
       <DevicesCard

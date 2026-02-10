@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -60,11 +61,19 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 // preferencesResponse is the JSON shape for the preferences endpoints.
 type preferencesResponse struct {
-	ShowPerformanceOverlay bool              `json:"showPerformanceOverlay"`
-	AutoSaveEnabled        bool              `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled    bool              `json:"autoLoadSaveEnabled"`
-	SelectedShader         string            `json:"selectedShader"`
-	ConsoleShaders         map[string]string `json:"consoleShaders"`
+	ShowPerformanceOverlay bool                           `json:"showPerformanceOverlay"`
+	AutoSaveEnabled        bool                           `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled    bool                           `json:"autoLoadSaveEnabled"`
+	SelectedShader         string                         `json:"selectedShader"`
+	ConsoleShaders         map[string]string              `json:"consoleShaders"`
+	SelectedKeyMapping     string                         `json:"selectedKeyMapping"`
+	CustomKeyMapping       map[string]string              `json:"customKeyMapping"`
+	ConsoleKeyMappings     map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
+}
+
+type consoleKeyMappingDTO struct {
+	SelectedMapping string            `json:"selectedMapping"`
+	CustomMapping   map[string]string `json:"customMapping,omitempty"`
 }
 
 // GetPreferences returns the current user's emulation preferences.
@@ -76,7 +85,15 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		return
 	}
 
-	consoleShaders := h.buildConsoleShaderMap(userID.(uint))
+	uid := userID.(uint)
+	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
+	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
+
+	selectedKeyMapping := user.SelectedKeyMapping
+	if selectedKeyMapping == "" {
+		selectedKeyMapping = "arrows-left"
+	}
 
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
@@ -84,6 +101,9 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
 		ConsoleShaders:         consoleShaders,
+		SelectedKeyMapping:     selectedKeyMapping,
+		CustomKeyMapping:       customKeyMapping,
+		ConsoleKeyMappings:     consoleKeyMappings,
 	})
 }
 
@@ -98,11 +118,14 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 
 	var req struct {
-		ShowPerformanceOverlay *bool              `json:"showPerformanceOverlay"`
-		AutoSaveEnabled        *bool              `json:"autoSaveEnabled"`
-		AutoLoadSaveEnabled    *bool              `json:"autoLoadSaveEnabled"`
-		SelectedShader         *string            `json:"selectedShader"`
-		ConsoleShaders         map[string]string  `json:"consoleShaders"`
+		ShowPerformanceOverlay *bool                            `json:"showPerformanceOverlay"`
+		AutoSaveEnabled        *bool                            `json:"autoSaveEnabled"`
+		AutoLoadSaveEnabled    *bool                            `json:"autoLoadSaveEnabled"`
+		SelectedShader         *string                          `json:"selectedShader"`
+		ConsoleShaders         map[string]string                `json:"consoleShaders"`
+		SelectedKeyMapping     *string                          `json:"selectedKeyMapping"`
+		CustomKeyMapping       map[string]string                `json:"customKeyMapping"`
+		ConsoleKeyMappings     map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
@@ -120,6 +143,13 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 	if req.SelectedShader != nil {
 		user.SelectedShader = *req.SelectedShader
+	}
+	if req.SelectedKeyMapping != nil {
+		user.SelectedKeyMapping = *req.SelectedKeyMapping
+	}
+	if req.CustomKeyMapping != nil {
+		b, _ := json.Marshal(req.CustomKeyMapping)
+		user.CustomKeyMapping = string(b)
 	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
@@ -155,7 +185,51 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		}
 	}
 
+	// Process per-console key mapping updates
+	if req.ConsoleKeyMappings != nil {
+		for consoleIDStr, km := range req.ConsoleKeyMappings {
+			var consoleID uint
+			if _, err := fmt.Sscanf(consoleIDStr, "%d", &consoleID); err != nil {
+				continue
+			}
+			if km.SelectedMapping == "" {
+				// Delete the row to revert to global default
+				h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).
+					Delete(&db.ConsoleKeyMappingPreference{})
+			} else {
+				customJSON := ""
+				if km.CustomMapping != nil {
+					b, _ := json.Marshal(km.CustomMapping)
+					customJSON = string(b)
+				}
+				// Upsert: update if exists, create if not
+				var existing db.ConsoleKeyMappingPreference
+				result := h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
+				if result.Error == nil {
+					h.DB.Model(&existing).Updates(map[string]interface{}{
+						"selected_mapping": km.SelectedMapping,
+						"custom_mapping":   customJSON,
+					})
+				} else {
+					h.DB.Create(&db.ConsoleKeyMappingPreference{
+						UserID:          uid,
+						ConsoleID:       consoleID,
+						SelectedMapping: km.SelectedMapping,
+						CustomMapping:   customJSON,
+					})
+				}
+			}
+		}
+	}
+
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
+	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
+
+	selectedKeyMapping := user.SelectedKeyMapping
+	if selectedKeyMapping == "" {
+		selectedKeyMapping = "arrows-left"
+	}
 
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
@@ -163,6 +237,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
 		ConsoleShaders:         consoleShaders,
+		SelectedKeyMapping:     selectedKeyMapping,
+		CustomKeyMapping:       customKeyMapping,
+		ConsoleKeyMappings:     consoleKeyMappings,
 	})
 }
 
@@ -174,6 +251,33 @@ func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 	m := make(map[string]string, len(prefs))
 	for _, p := range prefs {
 		m[fmt.Sprintf("%d", p.ConsoleID)] = p.Shader
+	}
+	return m
+}
+
+// buildConsoleKeyMappingMap queries all ConsoleKeyMappingPreference rows for the user
+// and returns a map keyed by console ID string.
+func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]consoleKeyMappingDTO {
+	var prefs []db.ConsoleKeyMappingPreference
+	h.DB.Where("user_id = ?", userID).Find(&prefs)
+	m := make(map[string]consoleKeyMappingDTO, len(prefs))
+	for _, p := range prefs {
+		m[fmt.Sprintf("%d", p.ConsoleID)] = consoleKeyMappingDTO{
+			SelectedMapping: p.SelectedMapping,
+			CustomMapping:   parseJSONMap(p.CustomMapping),
+		}
+	}
+	return m
+}
+
+// parseJSONMap parses a JSON string into a map[string]string, returning an empty map on error.
+func parseJSONMap(s string) map[string]string {
+	if s == "" {
+		return map[string]string{}
+	}
+	var m map[string]string
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return map[string]string{}
 	}
 	return m
 }

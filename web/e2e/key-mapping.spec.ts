@@ -1,0 +1,334 @@
+import { test, expect } from "./fixtures";
+
+test.describe("Key Mapping Card", () => {
+  test("displays Key Mapping heading on preferences page", async ({ page }) => {
+    await page.goto("/preferences");
+
+    await expect(page.getByRole("heading", { name: "Key Mapping" })).toBeVisible();
+  });
+
+  test("renders all three mode buttons", async ({ page }) => {
+    await page.goto("/preferences");
+
+    await expect(page.getByRole("button", { name: "Arrows + Left" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Custom" })).toBeVisible();
+  });
+
+  test("Arrows + Left is selected by default", async ({ page }) => {
+    await page.goto("/preferences");
+
+    const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
+    await expect(arrowsBtn).toBeVisible();
+
+    // The active button gets ring-2 class for the highlight ring
+    await expect(arrowsBtn).toHaveClass(/ring-2/);
+  });
+
+  test("clicking a mode button updates the active visual state", async ({ page }) => {
+    await page.goto("/preferences");
+
+    const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
+    const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
+    const customBtn = page.getByRole("button", { name: "Custom" });
+
+    // Initially arrows-left is active
+    await expect(arrowsBtn).toHaveClass(/ring-2/);
+    await expect(wasdBtn).not.toHaveClass(/ring-2/);
+
+    // Click WASD + Arrows
+    await wasdBtn.click();
+    await expect(wasdBtn).toHaveClass(/ring-2/);
+    await expect(arrowsBtn).not.toHaveClass(/ring-2/);
+
+    // Click Custom
+    await customBtn.click();
+    await expect(customBtn).toHaveClass(/ring-2/);
+    await expect(wasdBtn).not.toHaveClass(/ring-2/);
+
+    // Click back to Arrows + Left
+    await arrowsBtn.click();
+    await expect(arrowsBtn).toHaveClass(/ring-2/);
+    await expect(customBtn).not.toHaveClass(/ring-2/);
+  });
+});
+
+test.describe("Controller Visual", () => {
+  test("shows correct key badges for arrows-left preset", async ({ page }) => {
+    await page.goto("/preferences");
+
+    // Ensure arrows-left is active (default)
+    await expect(page.getByRole("button", { name: "Arrows + Left" })).toHaveClass(/ring-2/);
+
+    // D-pad uses arrow keys: Up=↑, Down=↓, Left=←, Right=→
+    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    await expect(visual).toBeVisible();
+
+    // Check arrow key symbols for D-pad
+    await expect(visual.getByText("↑").first()).toBeVisible();
+    await expect(visual.getByText("↓").first()).toBeVisible();
+    await expect(visual.getByText("←").first()).toBeVisible();
+    await expect(visual.getByText("→").first()).toBeVisible();
+
+    // Face buttons: Z, X, A, S
+    await expect(visual.getByText("Z")).toBeVisible();
+    await expect(visual.getByText("X")).toBeVisible();
+    await expect(visual.getByText("A")).toBeVisible();
+    await expect(visual.getByText("S")).toBeVisible();
+  });
+
+  test("shows correct key badges for wasd-arrows preset", async ({ page }) => {
+    await page.goto("/preferences");
+
+    // Switch to WASD + Arrows mode
+    await page.getByRole("button", { name: "WASD + Arrows" }).click();
+    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toHaveClass(/ring-2/);
+
+    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    await expect(visual).toBeVisible();
+
+    // D-pad uses WASD: W=up, S=down, A=left, D=right
+    await expect(visual.getByText("W")).toBeVisible();
+    await expect(visual.getByText("D")).toBeVisible();
+
+    // Face buttons use arrow keys
+    // Face bottom=ArrowDown(↓), Face right=ArrowRight(→),
+    // Face left=ArrowLeft(←), Face top=ArrowUp(↑)
+    // Arrows are already present from d-pad in arrows-left mode, but here
+    // they appear in the face button section
+    await expect(visual.getByText("↑")).toBeVisible();
+    await expect(visual.getByText("↓")).toBeVisible();
+    await expect(visual.getByText("←")).toBeVisible();
+    await expect(visual.getByText("→")).toBeVisible();
+  });
+});
+
+test.describe("Custom Key Mapping Editor", () => {
+  test("switching to custom mode shows the key capture editor", async ({ page }) => {
+    await page.goto("/preferences");
+
+    // The controller visual should be visible initially
+    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    await expect(visual).toBeVisible();
+
+    // Switch to custom mode
+    await page.getByRole("button", { name: "Custom" }).click();
+
+    // Controller visual should be gone, editor groups should appear
+    await expect(visual).not.toBeVisible();
+    await expect(page.getByText("D-Pad", { exact: false })).toBeVisible();
+    await expect(page.getByText("Face Buttons")).toBeVisible();
+  });
+
+  test("editor has all four button groups", async ({ page }) => {
+    await page.goto("/preferences");
+    await page.getByRole("button", { name: "Custom" }).click();
+
+    await expect(page.getByText("D-Pad", { exact: false })).toBeVisible();
+    await expect(page.getByText("Face Buttons")).toBeVisible();
+    await expect(page.getByText("Shoulders & Triggers")).toBeVisible();
+    await expect(page.getByText("Meta")).toBeVisible();
+  });
+
+  test("editor has all 14 assignable buttons", async ({ page }) => {
+    await page.goto("/preferences");
+    await page.getByRole("button", { name: "Custom" }).click();
+
+    // D-Pad (4)
+    await expect(page.getByText("D-pad Up")).toBeVisible();
+    await expect(page.getByText("D-pad Down")).toBeVisible();
+    await expect(page.getByText("D-pad Left")).toBeVisible();
+    await expect(page.getByText("D-pad Right")).toBeVisible();
+
+    // Face Buttons (4)
+    await expect(page.getByText("Face Bottom")).toBeVisible();
+    await expect(page.getByText("Face Right")).toBeVisible();
+    await expect(page.getByText("Face Left")).toBeVisible();
+    await expect(page.getByText("Face Top")).toBeVisible();
+
+    // Shoulders & Triggers (4)
+    await expect(page.getByText("L1")).toBeVisible();
+    await expect(page.getByText("R1")).toBeVisible();
+    await expect(page.getByText("L2")).toBeVisible();
+    await expect(page.getByText("R2")).toBeVisible();
+
+    // Meta (2)
+    await expect(page.getByText("Select", { exact: true })).toBeVisible();
+    await expect(page.getByText("Start", { exact: true })).toBeVisible();
+  });
+
+  test("key capture: click button shows listening state, press key captures it", async ({ page }) => {
+    await page.goto("/preferences");
+    await page.getByRole("button", { name: "Custom" }).click();
+
+    // Find the first key capture button (next to a label like "D-pad Up")
+    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const captureBtn = dpadUpRow.locator("button");
+    await expect(captureBtn).toBeVisible();
+
+    // Before clicking, button shows a formatted key name (not "...")
+    await expect(captureBtn).not.toHaveText("...");
+
+    // Click to enter listening mode
+    await captureBtn.click();
+    await expect(captureBtn).toHaveText("...");
+
+    // Press a key to capture it
+    await page.keyboard.press("p");
+
+    // Button should now show "P" (formatted via formatKeyName)
+    await expect(captureBtn).toHaveText("P");
+    await expect(captureBtn).not.toHaveText("...");
+  });
+
+  test("key capture: pressing Escape cancels without changing the key", async ({ page }) => {
+    await page.goto("/preferences");
+    await page.getByRole("button", { name: "Custom" }).click();
+
+    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const captureBtn = dpadUpRow.locator("button");
+    await expect(captureBtn).toBeVisible();
+
+    // Note the current value
+    const valueBefore = await captureBtn.textContent();
+
+    // Enter listening mode
+    await captureBtn.click();
+    await expect(captureBtn).toHaveText("...");
+
+    // Press Escape to cancel
+    await page.keyboard.press("Escape");
+
+    // Should revert to the original value
+    await expect(captureBtn).not.toHaveText("...");
+    await expect(captureBtn).toHaveText(valueBefore!);
+  });
+});
+
+test.describe("Per-Console Key Mapping Overrides", () => {
+  test("override table renders with console names and dropdowns", async ({ page }) => {
+    await page.goto("/preferences");
+
+    await expect(page.getByText("Per-Console Overrides")).toBeVisible();
+
+    // The table should have header columns
+    const table = page.locator("table").last();
+    await expect(table).toBeVisible();
+    await expect(table.getByText("Console")).toBeVisible();
+    await expect(table.getByText("Key Mapping")).toBeVisible();
+
+    // At least one console row should appear
+    const rows = table.locator("tbody tr");
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+
+    // Each row has a console name and a select dropdown
+    const firstRow = rows.first();
+    const consoleName = await firstRow.locator("td").first().textContent();
+    expect(consoleName).toBeTruthy();
+    await expect(firstRow.locator("select")).toBeVisible();
+  });
+
+  test("per-console dropdown has correct options", async ({ page }) => {
+    await page.goto("/preferences");
+
+    const table = page.locator("table").last();
+    const firstSelect = table.locator("select").first();
+    await expect(firstSelect).toBeVisible();
+
+    const options = await firstSelect.locator("option").allTextContents();
+    expect(options).toContain("Use global default");
+    expect(options).toContain("Arrows + Left");
+    expect(options).toContain("WASD + Arrows");
+    expect(options).toContain("Custom");
+  });
+
+  test("per-console override persists after page reload", async ({ page }) => {
+    await page.goto("/preferences");
+
+    const table = page.locator("table").last();
+    const firstSelect = table.locator("select").first();
+    await expect(firstSelect).toBeVisible();
+
+    // Change to "WASD + Arrows"
+    await firstSelect.selectOption("wasd-arrows");
+    await expect(firstSelect).toHaveValue("wasd-arrows");
+
+    // Wait for the API call to complete
+    await page.waitForTimeout(500);
+
+    // Reload the page
+    await page.reload();
+
+    // Verify the value persisted
+    const reloadedSelect = page.locator("table").last().locator("select").first();
+    await expect(reloadedSelect).toBeVisible();
+    await expect(reloadedSelect).toHaveValue("wasd-arrows");
+
+    // Reset back to global default to avoid test pollution
+    await reloadedSelect.selectOption("");
+    await page.waitForTimeout(500);
+  });
+});
+
+test.describe("Key Mapping Persistence", () => {
+  test("global mode change persists after page reload", async ({ page }) => {
+    await page.goto("/preferences");
+
+    // Switch to WASD + Arrows
+    const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
+    await wasdBtn.click();
+    await expect(wasdBtn).toHaveClass(/ring-2/);
+
+    // Wait for the API call
+    await page.waitForTimeout(500);
+
+    // Reload
+    await page.reload();
+
+    // Verify WASD + Arrows is still selected
+    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toHaveClass(/ring-2/);
+    await expect(page.getByRole("button", { name: "Arrows + Left" })).not.toHaveClass(/ring-2/);
+
+    // Reset to arrows-left to avoid test pollution
+    await page.getByRole("button", { name: "Arrows + Left" }).click();
+    await page.waitForTimeout(500);
+  });
+
+  test("custom key assignment persists after page reload", async ({ page }) => {
+    await page.goto("/preferences");
+
+    // Switch to custom mode
+    await page.getByRole("button", { name: "Custom" }).click();
+    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(/ring-2/);
+
+    // Find and click the D-pad Up capture button
+    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const captureBtn = dpadUpRow.locator("button");
+    await expect(captureBtn).toBeVisible();
+
+    // Assign "m" to D-pad Up
+    await captureBtn.click();
+    await expect(captureBtn).toHaveText("...");
+    await page.keyboard.press("m");
+    await expect(captureBtn).toHaveText("M");
+
+    // Wait for the API call
+    await page.waitForTimeout(500);
+
+    // Reload
+    await page.reload();
+
+    // Should still be in custom mode
+    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(/ring-2/);
+
+    // Verify the custom key assignment persisted
+    const reloadedRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const reloadedBtn = reloadedRow.locator("button");
+    await expect(reloadedBtn).toHaveText("M");
+
+    // Reset to arrows-left to avoid test pollution
+    await page.getByRole("button", { name: "Arrows + Left" }).click();
+    await page.waitForTimeout(500);
+  });
+});

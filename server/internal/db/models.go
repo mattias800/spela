@@ -34,6 +34,8 @@ type User struct {
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
 	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
+	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
+	CustomKeyMapping    string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
 }
 
 // Console represents a detected game console/platform.
@@ -147,6 +149,18 @@ type ConsoleShaderPreference struct {
 	UserID    uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"userId"`
 	ConsoleID uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"consoleId"`
 	Shader    string         `gorm:"size:64;not null" json:"shader"`
+}
+
+// ConsoleKeyMappingPreference stores a user's per-console key mapping override.
+type ConsoleKeyMappingPreference struct {
+	ID              uint           `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID          uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"userId"`
+	ConsoleID       uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"consoleId"`
+	SelectedMapping string         `gorm:"size:64;not null" json:"selectedMapping"`
+	CustomMapping   string         `gorm:"type:text" json:"customMapping,omitempty"` // JSON
 }
 
 // Device represents a registered user device.

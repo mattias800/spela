@@ -46,9 +46,20 @@ export function PlayPage() {
     : "none";
   const resolvedShader = toEmulatorJsShader(spelaShader) || spelaShader;
 
+  // Resolve key mapping: per-console override -> global default -> arrows-left
+  const consoleKeyMapping = preferences?.consoleKeyMappings[game?.consoleId ?? ""];
+  const resolvedKeyMapping = consoleKeyMapping?.selectedMapping
+    ?? preferences?.selectedKeyMapping
+    ?? "arrows-left";
+  const resolvedCustomMapping = resolvedKeyMapping === "custom"
+    ? (consoleKeyMapping?.customMapping ?? preferences?.customKeyMapping ?? {})
+    : undefined;
+
   const emulatorPrefs: EmulatorPreferences = {
     shader: resolvedShader,
     showPerformanceOverlay: preferences?.showPerformanceOverlay ?? false,
+    keyMapping: resolvedKeyMapping,
+    customKeyMapping: resolvedCustomMapping,
   };
 
   const emulator = useEmulatorIframe({

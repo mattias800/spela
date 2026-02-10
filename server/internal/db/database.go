@@ -30,6 +30,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&ServerSetting{},
 		&Core{},
 		&ConsoleShaderPreference{},
+		&ConsoleKeyMappingPreference{},
 		&Device{},
 		&DeviceShaderPreference{},
 	)

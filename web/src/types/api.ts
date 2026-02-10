@@ -121,10 +121,18 @@ export interface Device {
   consoleShaders: Record<string, string>;
 }
 
+export interface ConsoleKeyMapping {
+  selectedMapping: string;
+  customMapping?: Record<string, string>;
+}
+
 export interface UserPreferences {
   showPerformanceOverlay: boolean;
   autoSaveEnabled: boolean;
   autoLoadSaveEnabled: boolean;
   selectedShader: string;
   consoleShaders: Record<string, string>;
+  selectedKeyMapping: string;
+  customKeyMapping: Record<string, string>;
+  consoleKeyMappings: Record<string, ConsoleKeyMapping>;
 }
