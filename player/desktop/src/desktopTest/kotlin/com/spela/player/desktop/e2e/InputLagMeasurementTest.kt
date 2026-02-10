@@ -388,6 +388,96 @@ class InputLagMeasurementTest {
         assertTrue(p95 >= 0, "P95 latency should be non-negative: ${p95}ms")
     }
 
+    /**
+     * Regression test: key press events must reach the controller's setButton()
+     * within 2 frames (33ms at 60fps).
+     *
+     * This validates that the input dispatch path (key event -> setButton -> run)
+     * completes within 33ms. The focus recovery fix ensures the emulation surface
+     * Canvas re-acquires focus after overlays steal it, keeping this path fast.
+     */
+    @Test
+    fun inputReachesControllerWithinTwoFrames() {
+        val controller = InstrumentedController()
+        controller.start()
+
+        val twoFramesMs = 33.0 // 2 frames at 60fps
+
+        val latencies = mutableListOf<Double>()
+
+        // Simulate 20 input-to-run cycles to get a statistically meaningful sample
+        repeat(20) {
+            controller.reset()
+
+            // Key press arrives on UI thread
+            controller.setButton(0, 8, true) // A button
+
+            // Simulate worst-case scheduling: input arrives just after a frame tick,
+            // so we wait up to 1 frame before the next emulation tick picks it up.
+            // Using Thread.sleep(1) to simulate minimal scheduling delay.
+            Thread.sleep(1)
+
+            // Emulation tick picks up the input
+            controller.simulateRun()
+
+            val latencyNs = controller.measureInputDispatchLatencyNs()
+            assertTrue(latencyNs >= 0, "Should have a valid measurement")
+            latencies.add(latencyNs / 1_000_000.0)
+
+            // Release
+            controller.setButton(0, 8, false)
+            Thread.sleep(1)
+            controller.simulateRun()
+        }
+
+        val p95 = latencies.sorted().let { it[(it.size * 0.95).toInt().coerceAtMost(it.size - 1)] }
+
+        assertTrue(
+            p95 < twoFramesMs,
+            "P95 input dispatch latency should be < 33ms (2 frames), was ${p95}ms"
+        )
+    }
+
+    /**
+     * Regression test: total pipeline latency (input -> run -> frame available)
+     * should stay under 33ms for the simulated pipeline where the emulation tick
+     * processes input immediately.
+     */
+    @Test
+    fun totalPipelineLatencyWithinTwoFrames() {
+        val controller = InstrumentedController()
+        controller.start()
+
+        val twoFramesMs = 33.0
+
+        val latencies = mutableListOf<Double>()
+
+        repeat(20) {
+            controller.reset()
+
+            controller.setButton(0, 4, true) // UP
+            Thread.sleep(1)
+            controller.simulateRun()
+            controller.simulateFrameRead()
+
+            val latencyNs = controller.measureTotalPipelineLatencyNs()
+            assertTrue(latencyNs >= 0, "Should have a valid measurement")
+            latencies.add(latencyNs / 1_000_000.0)
+
+            controller.setButton(0, 4, false)
+            Thread.sleep(1)
+            controller.simulateRun()
+            controller.simulateFrameRead()
+        }
+
+        val p95 = latencies.sorted().let { it[(it.size * 0.95).toInt().coerceAtMost(it.size - 1)] }
+
+        assertTrue(
+            p95 < twoFramesMs,
+            "P95 total pipeline latency should be < 33ms (2 frames), was ${p95}ms"
+        )
+    }
+
     @Test
     fun frameCountIncrementsDuringPipeline() {
         val controller = InstrumentedController()

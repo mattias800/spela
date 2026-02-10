@@ -60,6 +60,9 @@ fun DesktopEmulationSurface(
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
 
+    // Reusable frame buffers -- only reallocated when dimensions or format change
+    val frameBuffers = remember { FrameBuffers() }
+
     // Frame polling loop -- runs each Compose frame
     LaunchedEffect(controller) {
         while (true) {
@@ -69,15 +72,21 @@ fun DesktopEmulationSurface(
             val height = controller.getVideoHeight()
             if (width <= 0 || height <= 0) continue
 
-            currentBitmap = convertFrameToBitmap(
-                frameData, width, height, controller.getPixelFormat()
-            )
+            val pixelFormat = controller.getPixelFormat()
+            frameBuffers.ensureCapacity(width, height, pixelFormat)
+            convertFrameInPlace(frameData, width, height, pixelFormat, frameBuffers.pixelBuffer)
+            frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frameBuffers.pixelBuffer, width * 4)
+            currentBitmap = frameBuffers.bitmap.asComposeImageBitmap()
         }
     }
 
-    // Request focus so we receive key events
+    // Request focus so we receive key events, and periodically re-request
+    // to recover from any focus-stealing UI elements (e.g. overlays).
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        while (true) {
+            focusRequester.requestFocus()
+            delay(500)
+        }
     }
 
     // Fading hint shown briefly after the surface appears
@@ -160,55 +169,71 @@ private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap) {
 }
 
 /**
- * Convert raw libretro frame data to an [ImageBitmap] via Skia.
+ * Holds reusable buffers for frame conversion, avoiding per-frame allocation.
+ * Only reallocates when frame dimensions or pixel format change.
  */
-private fun convertFrameToBitmap(
+private class FrameBuffers {
+    var bitmap = Bitmap()
+        private set
+    var imageInfo = ImageInfo(0, 0, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
+        private set
+    var pixelBuffer = ByteArray(0)
+        private set
+
+    private var lastWidth = 0
+    private var lastHeight = 0
+    private var lastFormat = -1
+
+    fun ensureCapacity(width: Int, height: Int, pixelFormat: Int) {
+        if (width == lastWidth && height == lastHeight && pixelFormat == lastFormat) return
+        lastWidth = width
+        lastHeight = height
+        lastFormat = pixelFormat
+        imageInfo = ImageInfo(width, height, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
+        bitmap = Bitmap().apply { allocPixels(imageInfo) }
+        pixelBuffer = ByteArray(width * height * 4)
+    }
+}
+
+/**
+ * Convert raw libretro frame data into a pre-allocated BGRA byte buffer (in-place).
+ */
+private fun convertFrameInPlace(
     data: ByteArray,
     width: Int,
     height: Int,
     pixelFormat: Int,
-): ImageBitmap {
-    // Convert to BGRA8888 which Skia expects
-    val pixels = when (pixelFormat) {
-        LibretroPixelFormat.XRGB8888 -> convertXRGB8888toBGRA(data, width, height)
-        LibretroPixelFormat.RGB565 -> convertRGB565toBGRA(data, width, height)
-        else -> convertRGB1555toBGRA(data, width, height) // 0RGB1555
+    out: ByteArray,
+) {
+    when (pixelFormat) {
+        LibretroPixelFormat.XRGB8888 -> convertXRGB8888toBGRA(data, out)
+        LibretroPixelFormat.RGB565 -> convertRGB565toBGRA(data, width * height, out)
+        else -> convertRGB1555toBGRA(data, width * height, out) // 0RGB1555
     }
-
-    val bitmap = Bitmap()
-    val imageInfo = ImageInfo(width, height, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
-    bitmap.allocPixels(imageInfo)
-    bitmap.installPixels(imageInfo, pixels, width * 4)
-    return bitmap.asComposeImageBitmap()
 }
 
 /**
- * XRGB8888 -> BGRA8888 for Skia.
+ * XRGB8888 -> BGRA8888 in-place for Skia.
  *
  * libretro XRGB8888 stores 32-bit values as 0x00RRGGBB. On little-endian (all
  * supported platforms), the JNI byte array layout is [BB, GG, RR, XX] per pixel.
  * Skia BGRA_8888 expects bytes [BB, GG, RR, AA]. So we just copy and set alpha.
  */
-private fun convertXRGB8888toBGRA(data: ByteArray, width: Int, height: Int): ByteArray {
-    val out = ByteArray(width * height * 4)
+private fun convertXRGB8888toBGRA(data: ByteArray, out: ByteArray) {
     var i = 0
     while (i < data.size - 3) {
-        // LE bytes: [BB, GG, RR, XX] -> Skia BGRA: [BB, GG, RR, AA]
         out[i] = data[i]           // B
         out[i + 1] = data[i + 1]   // G
         out[i + 2] = data[i + 2]   // R
         out[i + 3] = 0xFF.toByte() // A (replace X)
         i += 4
     }
-    return out
 }
 
-/** RGB565 -> BGRA8888 */
-private fun convertRGB565toBGRA(data: ByteArray, width: Int, height: Int): ByteArray {
-    val out = ByteArray(width * height * 4)
+/** RGB565 -> BGRA8888 in-place */
+private fun convertRGB565toBGRA(data: ByteArray, totalPixels: Int, out: ByteArray) {
     var srcIdx = 0
     var dstIdx = 0
-    val totalPixels = width * height
     for (p in 0 until totalPixels) {
         if (srcIdx + 1 >= data.size) break
         val lo = data[srcIdx].toInt() and 0xFF
@@ -227,15 +252,12 @@ private fun convertRGB565toBGRA(data: ByteArray, width: Int, height: Int): ByteA
         srcIdx += 2
         dstIdx += 4
     }
-    return out
 }
 
-/** 0RGB1555 -> BGRA8888 */
-private fun convertRGB1555toBGRA(data: ByteArray, width: Int, height: Int): ByteArray {
-    val out = ByteArray(width * height * 4)
+/** 0RGB1555 -> BGRA8888 in-place */
+private fun convertRGB1555toBGRA(data: ByteArray, totalPixels: Int, out: ByteArray) {
     var srcIdx = 0
     var dstIdx = 0
-    val totalPixels = width * height
     for (p in 0 until totalPixels) {
         if (srcIdx + 1 >= data.size) break
         val lo = data[srcIdx].toInt() and 0xFF
@@ -254,7 +276,6 @@ private fun convertRGB1555toBGRA(data: ByteArray, width: Int, height: Int): Byte
         srcIdx += 2
         dstIdx += 4
     }
-    return out
 }
 
 /**

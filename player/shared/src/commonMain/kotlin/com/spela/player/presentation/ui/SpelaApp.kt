@@ -7,8 +7,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.remember
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -264,13 +263,11 @@ fun SpelaApp(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(SpColor.Scrim)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        onClick = {
+                                    .pointerInput(Unit) {
+                                        detectTapGestures {
                                             emulationViewModel.onIntent(EmulationIntent.DismissControlHint)
-                                        },
-                                    ),
+                                        }
+                                    },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Column(
