@@ -130,13 +130,17 @@ KMP module when changes affect desktop behavior.
 
 Responsible for verifying the Android app is fully working and feature
 complete. Writes Maestro E2E tests for every user-facing behavior. Runs
-the full E2E suite after changes and reports regressions. If a feature
-can't be E2E tested, flags it.
+the full E2E suite after changes and reports regressions.
+
+**A task is not done until it has a passing E2E test that covers the
+changed behavior.** No exceptions. If a feature cannot be E2E tested,
+the QA engineer must flag it and explain why before the task can close.
 
 **Owns:** `player/.maestro/`
 
 **Responsibilities:**
 - Write Maestro E2E tests for all user-facing Android behavior
+- Reject any task that lacks E2E test coverage
 - Maintain the E2E test suite and CI configuration
 - Run the full suite after every change and report results
 - File detailed bug reports with reproduction steps
@@ -154,18 +158,22 @@ can't be E2E tested, flags it.
 
 Responsible for verifying the macOS/desktop app is fully working and
 feature complete. There is no E2E test framework set up for desktop yet
-— evaluating and adding one is a key early task. Until then, defines
-manual test plans and verification checklists.
+— evaluating and adding one is a key early task.
+
+**A task is not done until it has a passing E2E test that covers the
+changed behavior.** No exceptions. If the E2E framework is not yet set
+up, setting it up becomes the blocking first task before anything else
+can be marked complete.
 
 **Owns:** Desktop E2E test directory (to be created)
 
 **Responsibilities:**
 - Evaluate and set up an E2E test framework for desktop (e.g., Compose UI testing, or a desktop automation tool)
 - Write E2E tests for all user-facing desktop behavior
+- Reject any task that lacks E2E test coverage
 - Run the full suite after every change and report results
 - File detailed bug reports with reproduction steps
-- Verify bug fixes with regression tests
-- Define manual test checklists for features that can't yet be automated
+- Verify bug fixes with regression tests (failing test first)
 
 **Tech:** Kotlin test, Compose UI testing, desktop automation tools
 
@@ -213,11 +221,16 @@ fully working and feature complete. Writes Playwright E2E tests and Vitest
 unit tests for every user-facing behavior. Runs the full test suites after
 changes and reports regressions.
 
+**A task is not done until it has a passing E2E test that covers the
+changed behavior.** No exceptions. If a feature cannot be E2E tested,
+the QA engineer must flag it and explain why before the task can close.
+
 **Owns:** `web/e2e/`, web test files (`web/src/**/*.test.{ts,tsx}`)
 
 **Responsibilities:**
 - Write Playwright E2E tests for all user-facing web behavior
 - Write unit tests for hooks, components, and pages (Vitest + React Testing Library)
+- Reject any task that lacks E2E test coverage
 - Run the full E2E suite after every change and report results
 - Run the full unit test suite after every change and report results
 - File detailed bug reports with reproduction steps
