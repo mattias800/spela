@@ -96,15 +96,15 @@ func NewRouter(cfg Config) *gin.Engine {
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
 
-	// Public auth routes with rate limiting
+	// Public auth routes — rate limit login/register/setup to prevent brute force,
+	// but leave refresh and setup-status unrestricted (called frequently during normal use).
 	authGroup := r.Group("/api/auth")
-	authGroup.Use(authLimiter.RateLimit())
 	{
-		authGroup.POST("/login", authHandler.Login)
-		authGroup.POST("/register", authHandler.Register)
+		authGroup.POST("/login", authLimiter.RateLimit(), authHandler.Login)
+		authGroup.POST("/register", authLimiter.RateLimit(), authHandler.Register)
+		authGroup.POST("/setup", authLimiter.RateLimit(), authHandler.Setup)
 		authGroup.POST("/refresh", authHandler.Refresh)
 		authGroup.GET("/setup-status", authHandler.SetupStatus)
-		authGroup.POST("/setup", authHandler.Setup)
 	}
 
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
