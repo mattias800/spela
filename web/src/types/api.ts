@@ -22,6 +22,7 @@ export interface Console {
   abbreviation: string;
   extensions: string[]; // backend splits comma-separated into array
   defaultCore: string;
+  emulatorJsCore?: string; // EmulatorJS system identifier for browser play
   coverAspectRatio: number; // backend parses "3:4" into 0.75
   colorTheme: string;
   iconUrl: string;

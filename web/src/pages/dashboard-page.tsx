@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
+import { useConsoles } from "@/hooks/use-consoles";
 import { useAuth } from "@/hooks/use-auth";
 import type { Game } from "@/types/api";
 
@@ -38,10 +39,12 @@ function GameRow({
   games,
   isLoading,
   onToggleFavorite,
+  browserPlayableConsoles,
 }: {
   games: Game[] | undefined;
   isLoading: boolean;
   onToggleFavorite: (game: Game) => void;
+  browserPlayableConsoles?: Set<string>;
 }) {
   if (isLoading) {
     return (
@@ -61,6 +64,7 @@ function GameRow({
         <GameCard
           key={game.id}
           game={game}
+          canPlayInBrowser={browserPlayableConsoles?.has(game.consoleId)}
           onToggleFavorite={onToggleFavorite}
         />
       ))}
@@ -74,6 +78,11 @@ export function DashboardPage() {
   const favoriteGames = useFavoriteGames();
   const allGames = useGames({ pageSize: 12, sortBy: "title", sortOrder: "asc" });
   const toggleFavorite = useToggleFavorite();
+  const { data: consoles } = useConsoles();
+
+  const browserPlayableConsoles = new Set(
+    consoles?.filter((c) => !!c.emulatorJsCore).map((c) => c.id) ?? [],
+  );
 
   function handleToggleFavorite(game: Game) {
     toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
@@ -111,6 +120,7 @@ export function DashboardPage() {
             games={recentGames.data}
             isLoading={recentGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
+            browserPlayableConsoles={browserPlayableConsoles}
           />
         </section>
       )}
@@ -122,6 +132,7 @@ export function DashboardPage() {
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
+            browserPlayableConsoles={browserPlayableConsoles}
           />
         </section>
       )}
@@ -133,6 +144,7 @@ export function DashboardPage() {
             games={allGames.data?.data}
             isLoading={allGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
+            browserPlayableConsoles={browserPlayableConsoles}
           />
         </section>
       )}

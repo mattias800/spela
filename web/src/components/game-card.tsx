@@ -1,15 +1,18 @@
-import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
 import type { Game } from "@/types/api";
 
 interface GameCardProps {
   game: Game;
+  canPlayInBrowser?: boolean;
   onToggleFavorite?: (game: Game) => void;
 }
 
-export function GameCard({ game, onToggleFavorite }: GameCardProps) {
+export function GameCard({ game, canPlayInBrowser, onToggleFavorite }: GameCardProps) {
+  const navigate = useNavigate();
+
   return (
     <Link
       to={`/games/${game.id}`}
@@ -34,6 +37,23 @@ export function GameCard({ game, onToggleFavorite }: GameCardProps) {
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
+        {/* Play button (center, on hover) */}
+        {canPlayInBrowser && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/games/${game.id}/play`);
+            }}
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+            title="Play in Browser"
+          >
+            <div className="h-12 w-12 rounded-full bg-brand-600/90 flex items-center justify-center shadow-lg shadow-brand-600/30 hover:bg-brand-500 transition-colors">
+              <Play className="h-5 w-5 text-white ml-0.5" />
+            </div>
+          </button>
+        )}
+
         {/* Favorite button */}
         {onToggleFavorite && (
           <button
@@ -43,7 +63,7 @@ export function GameCard({ game, onToggleFavorite }: GameCardProps) {
               onToggleFavorite(game);
             }}
             className={cn(
-              "absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-200",
+              "absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-200 z-20",
               "opacity-0 group-hover:opacity-100",
               game.isFavorite
                 ? "bg-danger-500/20 text-danger-500 opacity-100"

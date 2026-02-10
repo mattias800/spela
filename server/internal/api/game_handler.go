@@ -144,7 +144,7 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		}
 	}
 
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName))
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
 	c.File(game.FilePath)
 }
 
@@ -432,6 +432,66 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "scraping"})
+}
+
+// UpdatePlayTime increments the play time for a game.
+// POST /api/games/:id/play-time with {"seconds": number}.
+func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
+	gameID := c.Param("id")
+	userID, _ := c.Get("userId")
+	uid, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+
+	// Verify game exists
+	var game db.Game
+	if err := h.DB.First(&game, gid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	var req struct {
+		Seconds int64 `json:"seconds" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be a positive integer"})
+		return
+	}
+
+	var ph db.PlayHistory
+	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gid).First(&ph)
+	if result.Error == gorm.ErrRecordNotFound {
+		ph = db.PlayHistory{
+			UserID:     uid,
+			GameID:     uint(gid),
+			LastPlayed: time.Now(),
+			PlayTime:   req.Seconds,
+		}
+		if err := h.DB.Create(&ph).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create play history"})
+			return
+		}
+	} else {
+		ph.PlayTime += req.Seconds
+		ph.LastPlayed = time.Now()
+		if err := h.DB.Save(&ph).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update play time"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"playTime":   ph.PlayTime,
+		"lastPlayed": ph.LastPlayed,
+	})
 }
 
 // GetRecommendedCore returns the recommended libretro core for a game.

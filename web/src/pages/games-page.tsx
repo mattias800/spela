@@ -23,6 +23,10 @@ export function GamesPage() {
   const { data: consoles } = useConsoles();
   const toggleFavorite = useToggleFavorite();
 
+  const browserPlayableConsoles = new Set(
+    consoles?.filter((c) => !!c.emulatorJsCore).map((c) => c.id) ?? [],
+  );
+
   function handleToggleFavorite(game: Game) {
     toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
   }
@@ -158,6 +162,7 @@ export function GamesPage() {
             <GameCard
               key={game.id}
               game={game}
+              canPlayInBrowser={browserPlayableConsoles.has(game.consoleId)}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}

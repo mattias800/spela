@@ -38,18 +38,19 @@ type User struct {
 
 // Console represents a detected game console/platform.
 type Console struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	UpdatedAt     time.Time      `json:"updatedAt"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
-	Name          string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
-	Abbreviation  string         `gorm:"size:16;not null" json:"abbreviation"`
-	Extensions    string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
-	DefaultCore   string         `gorm:"size:128" json:"defaultCore"`
-	CoverAspect   string         `gorm:"size:16;default:3:4" json:"coverAspect"`
-	ColorTheme    string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
-	Games         []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
-	GameCount     int            `gorm:"-" json:"gameCount,omitempty"`
+	ID             uint           `gorm:"primarykey" json:"id"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	Name           string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
+	Abbreviation   string         `gorm:"size:16;not null" json:"abbreviation"`
+	Extensions     string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
+	DefaultCore    string         `gorm:"size:128" json:"defaultCore"`
+	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
+	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
+	ColorTheme     string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	Games          []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
+	GameCount      int            `gorm:"-" json:"gameCount,omitempty"`
 }
 
 // Game represents a detected ROM/game file.

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spela Emulator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #16191d; }
+    #game { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    /**
+     * Spela EmulatorJS iframe host.
+     *
+     * Receives commands from parent via postMessage, configures EmulatorJS
+     * globals, loads the emulator, and relays lifecycle events back.
+     */
+    (function () {
+      "use strict";
+
+      var parentOrigin = window.location.origin;
+
+      /** Send a typed message to the parent window. */
+      function sendToParent(msg) {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(msg, parentOrigin);
+        }
+      }
+
+      /** Convert a base64 string to a Uint8Array. */
+      function base64ToUint8Array(b64) {
+        var binary = atob(b64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      }
+
+      /** Convert a Uint8Array to a base64 string. */
+      function uint8ArrayToBase64(bytes) {
+        var binary = "";
+        for (var i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      }
+
+      var initialized = false;
+
+      window.addEventListener("message", function (event) {
+        if (event.origin !== parentOrigin) return;
+        var msg = event.data;
+        if (!msg || typeof msg.type !== "string") return;
+
+        switch (msg.type) {
+          case "init":
+            if (!initialized) {
+              initialized = true;
+              initEmulator(msg);
+            }
+            break;
+
+          case "request-save-state":
+            handleRequestSaveState();
+            break;
+
+          case "load-save-state":
+            handleLoadSaveState(msg.data, msg.name);
+            break;
+
+          case "pause":
+            if (window.EJS_emulator) {
+              window.EJS_emulator.pause();
+            }
+            break;
+
+          case "resume":
+            if (window.EJS_emulator) {
+              window.EJS_emulator.play();
+            }
+            break;
+
+          case "update-preferences":
+            // Preferences are applied at init time via EJS options.
+            // Runtime preference changes would require reloading.
+            break;
+        }
+      });
+
+      function initEmulator(config) {
+        // Set EmulatorJS configuration globals
+        window.EJS_player = "#game";
+        window.EJS_core = config.core;
+        window.EJS_gameUrl = config.romUrl;
+        window.EJS_gameName = config.gameName;
+        window.EJS_color = "#00a3e0"; // brand-cyan
+        window.EJS_startOnLoaded = true;
+        window.EJS_backgroundBlur = true;
+        window.EJS_backgroundColor = "#16191d";
+
+        // Auto-load save state if provided
+        if (config.saveStateData) {
+          var saveBytes = base64ToUint8Array(config.saveStateData);
+          var saveBlob = new Blob([saveBytes]);
+          window.EJS_loadStateURL = URL.createObjectURL(saveBlob);
+        }
+
+        // Apply preferences
+        var prefs = config.preferences || {};
+        window.EJS_defaultOptions = window.EJS_defaultOptions || {};
+
+        // Shader
+        if (prefs.shader && prefs.shader !== "none" && prefs.shader !== "") {
+          window.EJS_defaultOptions["shader"] = prefs.shader;
+        }
+
+        // Performance overlay (FPS counter)
+        if (prefs.showPerformanceOverlay) {
+          window.EJS_defaultOptions["fpsCounter"] = "enabled";
+        }
+
+        // Volume
+        if (typeof prefs.volume === "number") {
+          window.EJS_volume = prefs.volume;
+        }
+
+        // Hide buttons we don't need in embedded context
+        window.EJS_Buttons = {
+          exitEmulation: false,
+        };
+
+        // Callbacks
+        window.EJS_ready = function () {
+          sendToParent({ type: "emulator-ready" });
+        };
+
+        window.EJS_onGameStart = function () {
+          sendToParent({ type: "game-started" });
+        };
+
+        window.EJS_onSaveState = function () {
+          // Triggered when user clicks save in EmulatorJS UI
+          handleRequestSaveState();
+        };
+
+        window.EJS_onLoadState = function () {
+          // Triggered when user clicks load in EmulatorJS UI
+          // Parent will handle showing the save picker
+          sendToParent({ type: "save-state-response", data: "", screenshot: "" });
+        };
+
+        window.EJS_onSaveUpdate = function () {
+          // SRAM/battery save data changed
+          try {
+            var emu = window.EJS_emulator;
+            if (!emu || !emu.gameManager) return;
+            var saveFile = emu.gameManager.getSaveFile();
+            if (saveFile && saveFile.length > 0) {
+              sendToParent({
+                type: "sram-update",
+                data: uint8ArrayToBase64(saveFile),
+              });
+            }
+          } catch (_) {
+            // Ignore SRAM capture errors
+          }
+        };
+
+        // Load EmulatorJS script
+        var script = document.createElement("script");
+        script.src = "/emulatorjs/data/loader.js";
+        script.onerror = function () {
+          sendToParent({
+            type: "emulator-error",
+            error: "Failed to load EmulatorJS. Check that emulator assets are installed.",
+          });
+        };
+        document.body.appendChild(script);
+      }
+
+      function handleRequestSaveState() {
+        try {
+          var emu = window.EJS_emulator;
+          if (!emu || !emu.gameManager) {
+            sendToParent({
+              type: "save-state-error",
+              error: "Emulator not ready",
+            });
+            return;
+          }
+
+          var stateData = emu.gameManager.getState();
+          if (!stateData || stateData.length === 0) {
+            sendToParent({
+              type: "save-state-error",
+              error: "Failed to capture save state",
+            });
+            return;
+          }
+
+          var b64 = uint8ArrayToBase64(stateData);
+
+          // Try to capture a screenshot
+          var screenshot = "";
+          try {
+            var canvas = document.querySelector("#game canvas");
+            if (canvas) {
+              screenshot = canvas.toDataURL("image/png");
+            }
+          } catch (_) {
+            // Screenshot capture may fail due to tainted canvas
+          }
+
+          sendToParent({
+            type: "save-state-response",
+            data: b64,
+            screenshot: screenshot,
+          });
+        } catch (err) {
+          sendToParent({
+            type: "save-state-error",
+            error: err.message || "Unknown save error",
+          });
+        }
+      }
+
+      function handleLoadSaveState(b64Data, name) {
+        try {
+          var emu = window.EJS_emulator;
+          if (!emu || !emu.gameManager) return;
+
+          var bytes = base64ToUint8Array(b64Data);
+          emu.gameManager.loadState(bytes);
+        } catch (err) {
+          sendToParent({
+            type: "save-state-error",
+            error: "Failed to load save state: " + (err.message || "Unknown error"),
+          });
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

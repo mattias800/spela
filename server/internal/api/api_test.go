@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -724,6 +725,152 @@ func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
 	assert.Equal(t, "lcd-grid", consoleShaders["2"], "console shader should be preserved after partial update")
+}
+
+func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/consoles", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var consoles []map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &consoles)
+	require.NoError(t, err)
+
+	// Build a map of abbreviation -> emulatorJsCore for verification
+	coreMap := make(map[string]string)
+	for _, c := range consoles {
+		abbr := c["abbreviation"].(string)
+		core, _ := c["emulatorJsCore"].(string)
+		coreMap[abbr] = core
+	}
+
+	// Verify the EmulatorJS core mapping
+	tests := []struct {
+		abbreviation   string
+		emulatorJsCore string
+	}{
+		{"NES", "nestopia"},
+		{"SNES", "snes9x"},
+		{"GB", "gambatte"},
+		{"GBC", "gambatte"},
+		{"GBA", "mgba"},
+		{"N64", "mupen64plus_next"},
+		{"NDS", "melonds"},
+		{"SMS", "genesis_plus_gx"},
+		{"GEN", "genesis_plus_gx"},
+		{"SAT", "yabause"},
+		{"PSX", "pcsx_rearmed"},
+		{"PSP", "ppsspp"},
+		{"NEOGEO", "fbneo"},
+		{"ARCADE", "fbneo"},
+		{"PCE", "mednafen_pce_fast"},
+		{"A26", "stella2014"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.abbreviation, func(t *testing.T) {
+			assert.Equal(t, tt.emulatorJsCore, coreMap[tt.abbreviation],
+				"EmulatorJS core mismatch for %s", tt.abbreviation)
+		})
+	}
+}
+
+func TestUpdatePlayTime(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Play Time Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// First play-time update should create a new PlayHistory
+	body, _ := json.Marshal(map[string]interface{}{"seconds": 120})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(120), resp["playTime"])
+	assert.NotNil(t, resp["lastPlayed"])
+
+	// Second update should increment
+	body, _ = json.Marshal(map[string]interface{}{"seconds": 60})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(180), resp["playTime"])
+
+	// Verify persistence in DB
+	var ph db.PlayHistory
+	database.Where("game_id = ?", game.ID).First(&ph)
+	assert.Equal(t, int64(180), ph.PlayTime)
+}
+
+func TestUpdatePlayTime_InvalidInput(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Invalid Input Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	tests := []struct {
+		name string
+		body string
+		code int
+	}{
+		{"missing seconds", `{}`, http.StatusBadRequest},
+		{"zero seconds", `{"seconds": 0}`, http.StatusBadRequest},
+		{"negative seconds", `{"seconds": -5}`, http.StatusBadRequest},
+		{"invalid JSON", `not json`, http.StatusBadRequest},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader([]byte(tt.body)))
+			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Content-Type", "application/json")
+			router.ServeHTTP(w, req)
+			assert.Equal(t, tt.code, w.Code)
+		})
+	}
+}
+
+func TestUpdatePlayTime_GameNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{"seconds": 60})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/99999/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // registerAndGetToken registers a user and returns an access token.

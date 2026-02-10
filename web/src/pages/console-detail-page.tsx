@@ -17,6 +17,7 @@ export function ConsoleDetailPage() {
 
   // Find console info from the consoles list
   const console = consoles?.find((c) => c.id === id);
+  const canPlayInBrowser = !!console?.emulatorJsCore;
 
   function handleToggleFavorite(game: Game) {
     toggleFavorite.mutate({ gameId: game.id, isFavorite: game.isFavorite });
@@ -76,6 +77,7 @@ export function ConsoleDetailPage() {
             <GameCard
               key={game.id}
               game={game}
+              canPlayInBrowser={canPlayInBrowser}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}

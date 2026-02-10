@@ -16,8 +16,10 @@ setup("authenticate", async ({ page }) => {
 
 setup("login by pressing Enter after typing credentials", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Username").fill("admin");
-  await page.getByLabel("Password").fill("admin123");
-  await page.getByLabel("Password").press("Enter");
+  await page.getByLabel("Username").click();
+  await page.keyboard.type("admin");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("admin123");
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL("/", { timeout: 15_000 });
 });

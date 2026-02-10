@@ -10,11 +10,13 @@ import {
   Trash2,
   Download,
   RefreshCw,
+  Play,
 } from "lucide-react";
 import { Button, Badge, Card, CardContent, GameDetailSkeleton, Modal } from "@/components/ui";
 import { useGame, useGameSaves, useToggleFavorite, useDeleteSave, useScrapeIfNeeded } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
+import { useConsoles } from "@/hooks/use-consoles";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -32,8 +34,12 @@ export function GameDetailPage() {
   const scrapeGame = useScrapeGame();
   const scrapeIfNeeded = useScrapeIfNeeded();
   const queryClient = useQueryClient();
+  const { data: consoles } = useConsoles();
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+
+  const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
+  const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -110,6 +116,16 @@ export function GameDetailPage() {
                 {game.title}
               </h1>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate(`/games/${game.id}/play`)}
+                  disabled={!canPlayInBrowser}
+                  title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
+                >
+                  <Play className="h-4 w-4" />
+                  Play in Browser
+                </Button>
                 {isAdmin && (
                   <Button
                     variant="secondary"

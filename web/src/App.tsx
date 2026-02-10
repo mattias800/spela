@@ -17,6 +17,7 @@ import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
 import { PreferencesPage } from "@/pages/preferences-page";
+import { PlayPage } from "@/pages/play-page";
 import { SetupPage } from "@/pages/setup-page";
 
 const queryClient = new QueryClient({
@@ -39,6 +40,16 @@ export function App() {
               <Route path="/setup" element={<SetupPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+
+              {/* Emulator route (protected, no sidebar) */}
+              <Route
+                path="games/:id/play"
+                element={
+                  <ProtectedRoute>
+                    <PlayPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* App routes (protected) */}
               <Route

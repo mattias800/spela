@@ -19,6 +19,7 @@ type ConsoleResponse struct {
 	Abbreviation     string    `json:"abbreviation"`
 	Extensions       []string  `json:"extensions"`
 	DefaultCore      string    `json:"defaultCore"`
+	EmulatorJSCore   string    `json:"emulatorJsCore"`
 	CoverAspectRatio float64   `json:"coverAspectRatio"`
 	ColorTheme       string    `json:"colorTheme"`
 	IconURL          string    `json:"iconUrl"`
@@ -77,6 +78,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		Abbreviation:     c.Abbreviation,
 		Extensions:       exts,
 		DefaultCore:      c.DefaultCore,
+		EmulatorJSCore:   c.EmulatorJSCore,
 		CoverAspectRatio: ratio,
 		ColorTheme:       c.ColorTheme,
 		IconURL:          "/api/consoles/" + strconv.FormatUint(uint64(c.ID), 10) + "/icon",

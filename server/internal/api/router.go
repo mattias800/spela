@@ -124,6 +124,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/download", gameHandler.DownloadGame)
 		api.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
+		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.POST("/games/scan", gameHandler.ScanGames)
 
 		// Save states
