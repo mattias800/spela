@@ -157,7 +157,7 @@ export function PlayPage() {
         new Promise<void>((resolve) => setTimeout(resolve, EXIT_SAVE_TIMEOUT_MS)),
       ]);
     }
-    navigate(`/games/${id}`);
+    navigate(-1);
   }
 
   function handleFullscreen() {

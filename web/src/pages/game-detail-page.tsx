@@ -43,7 +43,14 @@ export function GameDetailPage() {
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
-      scrapeIfNeeded.mutate(game.id);
+      scrapeIfNeeded.mutate(game.id, {
+        onSuccess: () => {
+          // Fallback: refetch after a delay in case WebSocket doesn't deliver the event
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["game", game.id] });
+          }, 4000);
+        },
+      });
     }
   }, [game?.id, game?.scrapeAttempts]);
 

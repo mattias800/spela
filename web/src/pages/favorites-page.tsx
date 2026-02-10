@@ -2,17 +2,11 @@ import { Heart } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
-import { useConsoles } from "@/hooks/use-consoles";
 import type { Game } from "@/types/api";
 
 export function FavoritesPage() {
   const { data: games, isLoading } = useFavoriteGames();
   const toggleFavorite = useToggleFavorite();
-  const { data: consoles } = useConsoles();
-
-  const browserPlayableConsoles = new Set(
-    consoles?.filter((c) => !!c.emulatorJsCore).map((c) => c.id) ?? [],
-  );
 
   function handleToggleFavorite(game: Game) {
     toggleFavorite.mutate({ gameId: game.id, isFavorite: true });
@@ -45,7 +39,6 @@ export function FavoritesPage() {
             <GameCard
               key={game.id}
               game={game}
-              canPlayInBrowser={browserPlayableConsoles.has(game.consoleId)}
               onToggleFavorite={handleToggleFavorite}
             />
           ))}
