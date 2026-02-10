@@ -276,6 +276,7 @@ requests changes.
 - No hardcoded values that should be configurable
 - Tests cover the meaningful behavior, not just line count
 - Changes are consistent with the conventions in CLAUDE.md
+- File size: flag files that are getting large and suggest splitting when it makes sense — large files aren't forbidden, but smaller focused files are preferred. React components are especially prone to bloat: extract sub-components, custom hooks, and helper functions into separate files when a component grows beyond ~200 lines
 
 **Does not:** Write production code, make product decisions, or approve UI/UX.
 
