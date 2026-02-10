@@ -1,20 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 import { uint8ArrayToBase64 } from "@/lib/encoding";
+import { useSaveQueue } from "./use-save-queue";
+import { useAutoSave } from "./use-auto-save";
+import { useBeforeUnloadSave } from "./use-before-unload-save";
 import type { SaveState, UserPreferences } from "@/types/api";
 import type { EmulatorStatus } from "./use-emulator-iframe";
-
-interface SaveQueueItem {
-  gameId: string;
-  data: string; // base64
-  isAuto: boolean;
-  name?: string;
-  retries: number;
-}
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 5_000;
-const AUTO_SAVE_INTERVAL_MS = 60_000;
 
 interface UseEmulatorSavesOptions {
   gameId: string | undefined;
@@ -33,95 +24,33 @@ export function useEmulatorSaves({
   onSaveError,
   requestSaveState,
 }: UseEmulatorSavesOptions) {
-  const [isSaving, setIsSaving] = useState(false);
   const [isLoadingInitialSave, setIsLoadingInitialSave] = useState(false);
-  const saveQueueRef = useRef<SaveQueueItem[]>([]);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingSaveTypeRef = useRef<"auto" | "manual">("auto");
   const pendingSaveNameRef = useRef<string | undefined>(undefined);
   const latestStateCacheRef = useRef<string | null>(null);
   const exitSaveResolveRef = useRef<(() => void) | null>(null);
 
-  // Process the save queue
-  const processQueue = useCallback(async () => {
-    if (saveQueueRef.current.length === 0) {
-      setIsSaving(false);
-      return;
-    }
+  const { isSaving, enqueueSave: queueEnqueue, queueRef } = useSaveQueue({
+    onSaveSuccess,
+    onSaveError,
+  });
 
-    setIsSaving(true);
-    const item = saveQueueRef.current[0];
-
-    try {
-      const bytes = Uint8Array.from(atob(item.data), (c) => c.charCodeAt(0));
-      const blob = new Blob([bytes]);
-      const formData = new FormData();
-      formData.append("save", blob, item.isAuto ? "auto-save.state" : `${item.name ?? "save"}.state`);
-      if (item.name) {
-        formData.append("name", item.name);
-      }
-
-      const endpoint = item.isAuto
-        ? `/games/${item.gameId}/saves/auto`
-        : `/games/${item.gameId}/saves`;
-
-      await api.upload(endpoint, formData);
-
-      // Remove from queue on success
-      saveQueueRef.current.shift();
-      onSaveSuccess?.(item.isAuto);
-
-      // Process next item
-      processQueue();
-    } catch {
-      item.retries++;
-      if (item.retries >= MAX_RETRIES) {
-        // Give up on this save
-        saveQueueRef.current.shift();
-        onSaveError?.(`Save failed after ${MAX_RETRIES} attempts`, item.isAuto);
-        processQueue();
-      } else {
-        // Retry after delay
-        retryTimerRef.current = setTimeout(() => {
-          processQueue();
-        }, RETRY_DELAY_MS);
-      }
-    }
-  }, [onSaveSuccess, onSaveError]);
-
-  // Enqueue a save state for upload
+  // Wrap enqueueSave to bind gameId
   const enqueueSave = useCallback(
     (data: string, isAuto: boolean, name?: string) => {
-      if (!gameId || !data) return;
-
-      // For auto-saves, replace any existing queued auto-save
-      if (isAuto) {
-        saveQueueRef.current = saveQueueRef.current.filter((s) => !s.isAuto);
-      }
-
-      saveQueueRef.current.push({
-        gameId,
-        data,
-        isAuto,
-        name,
-        retries: 0,
-      });
-
-      processQueue();
+      if (!gameId) return;
+      queueEnqueue(gameId, data, isAuto, name);
     },
-    [gameId, processQueue],
+    [gameId, queueEnqueue],
   );
 
   // Handle incoming save state data from the iframe
   const handleSaveStateData = useCallback(
     (data: string, _screenshot?: string) => {
-      // Always update cache for beforeunload fallback
       latestStateCacheRef.current = data;
 
       const exitResolve = exitSaveResolveRef.current;
       if (exitResolve) {
-        // Exit save — upload directly and resolve the promise
         exitSaveResolveRef.current = null;
         if (gameId) {
           const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
@@ -145,7 +74,6 @@ export function useEmulatorSaves({
     [enqueueSave, gameId],
   );
 
-  // Request a manual save (will prompt for name after data is received)
   const requestManualSave = useCallback(
     (name?: string) => {
       pendingSaveTypeRef.current = "manual";
@@ -155,13 +83,11 @@ export function useEmulatorSaves({
     [requestSaveState],
   );
 
-  // Request auto-save
   const requestAutoSave = useCallback(() => {
     pendingSaveTypeRef.current = "auto";
     requestSaveState();
   }, [requestSaveState]);
 
-  // Request exit save — returns a promise that resolves when upload completes
   const requestExitSave = useCallback((): Promise<void> => {
     return new Promise<void>((resolve) => {
       if (!gameId || !preferences?.autoSaveEnabled) {
@@ -174,7 +100,6 @@ export function useEmulatorSaves({
     });
   }, [gameId, preferences?.autoSaveEnabled, requestSaveState]);
 
-  // Load initial auto-save from server
   const loadInitialSave = useCallback(async (): Promise<string | undefined> => {
     if (!gameId || !preferences?.autoLoadSaveEnabled) return undefined;
 
@@ -195,7 +120,6 @@ export function useEmulatorSaves({
     }
   }, [gameId, preferences?.autoLoadSaveEnabled]);
 
-  // Load a specific save state from server
   const loadSave = useCallback(
     async (save: SaveState): Promise<string | undefined> => {
       if (!gameId) return undefined;
@@ -216,79 +140,19 @@ export function useEmulatorSaves({
     [gameId],
   );
 
-  // Auto-save interval
-  useEffect(() => {
-    if (emulatorStatus !== "playing" || !preferences?.autoSaveEnabled) return;
+  useAutoSave({
+    emulatorStatus,
+    autoSaveEnabled: preferences?.autoSaveEnabled ?? false,
+    requestAutoSave,
+  });
 
-    autoSaveIntervalRef.current = setInterval(() => {
-      requestAutoSave();
-    }, AUTO_SAVE_INTERVAL_MS);
-
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
-    };
-  }, [emulatorStatus, preferences?.autoSaveEnabled, requestAutoSave]);
-
-  // Save on page exit (tab close / navigation away)
-  useEffect(() => {
-    if (emulatorStatus !== "playing" || !preferences?.autoSaveEnabled || !gameId)
-      return;
-
-    function handleBeforeUnload() {
-      // Flush any pending saves via sendBeacon
-      for (const item of saveQueueRef.current) {
-        try {
-          const bytes = Uint8Array.from(atob(item.data), (c) =>
-            c.charCodeAt(0),
-          );
-          const formData = new FormData();
-          formData.append("save", new Blob([bytes]), "auto-save.state");
-          navigator.sendBeacon(
-            `/api/games/${item.gameId}/saves/auto`,
-            formData,
-          );
-        } catch {
-          // Best effort
-        }
-      }
-
-      // Send cached state via sendBeacon (at most 60s stale)
-      const cached = latestStateCacheRef.current;
-      if (cached) {
-        try {
-          const bytes = Uint8Array.from(atob(cached), (c) =>
-            c.charCodeAt(0),
-          );
-          const formData = new FormData();
-          formData.append("save", new Blob([bytes]), "auto-save.state");
-          navigator.sendBeacon(
-            `/api/games/${gameId}/saves/auto`,
-            formData,
-          );
-        } catch {
-          // Best effort
-        }
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [emulatorStatus, preferences?.autoSaveEnabled, gameId]);
-
-  // Cleanup retry timer on unmount
-  useEffect(() => {
-    return () => {
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-      }
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, []);
+  useBeforeUnloadSave({
+    emulatorStatus,
+    autoSaveEnabled: preferences?.autoSaveEnabled ?? false,
+    gameId,
+    queueRef,
+    latestStateCacheRef,
+  });
 
   return {
     isSaving,
@@ -300,6 +164,6 @@ export function useEmulatorSaves({
     loadInitialSave,
     loadSave,
     enqueueSave,
-    pendingCount: saveQueueRef.current.length,
+    pendingCount: queueRef.current.length,
   };
 }
