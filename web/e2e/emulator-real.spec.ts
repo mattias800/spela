@@ -1,11 +1,81 @@
 import { test, expect } from "./fixtures";
 
+/**
+ * Sets up monitoring for console errors, page errors, and failed network
+ * requests.  Call at the beginning of each test, then call the returned
+ * `assertClean()` at the end to verify no unexpected errors occurred.
+ */
+function monitorPageErrors(page: import("@playwright/test").Page) {
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  const failedRequests: string[] = [];
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      consoleErrors.push(msg.text());
+    }
+  });
+
+  page.on("pageerror", (err) => {
+    pageErrors.push(err.message);
+  });
+
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      const url = response.url();
+      // Auto-save 404 is expected when no save exists yet
+      if (response.status() === 404 && url.includes("/saves/auto")) return;
+      failedRequests.push(`${response.status()} ${url}`);
+    }
+  });
+
+  return {
+    consoleErrors,
+    pageErrors,
+    failedRequests,
+    assertClean() {
+      // Filter out non-fatal / expected console messages:
+      // - "Translation not found" from EmulatorJS locale handling
+      // - "Missing language" from EmulatorJS when locale JSON isn't available
+      // - "Loading language" informational log that sometimes arrives as error
+      const fatalConsoleErrors = consoleErrors.filter(
+        (e) =>
+          !e.includes("Translation not found") &&
+          !e.includes("Missing language") &&
+          !e.includes("Loading language"),
+      );
+
+      // Filter out expected page errors:
+      // - "Wake Lock" — EmulatorJS requests wake lock to prevent screen sleep;
+      //   this is denied in headless Chromium and is non-fatal
+      const fatalPageErrors = pageErrors.filter(
+        (e) => !e.includes("Wake Lock"),
+      );
+
+      expect(
+        failedRequests,
+        `Unexpected failed requests:\n${failedRequests.join("\n")}`,
+      ).toHaveLength(0);
+      expect(
+        fatalPageErrors,
+        `Uncaught page errors:\n${fatalPageErrors.join("\n")}`,
+      ).toHaveLength(0);
+      expect(
+        fatalConsoleErrors,
+        `Unexpected console errors:\n${fatalConsoleErrors.join("\n")}`,
+      ).toHaveLength(0);
+    },
+  };
+}
+
 test.describe("EmulatorJS Real Integration", () => {
   test.setTimeout(120_000);
 
   test("EmulatorJS loads and starts a game inside the iframe", async ({
     page,
   }) => {
+    const monitor = monitorPageErrors(page);
+
     // Navigate to the games list and find a playable game
     await page.goto("/games");
     await page.getByPlaceholder(/search/i).fill("Castlevania");
@@ -82,11 +152,16 @@ test.describe("EmulatorJS Real Integration", () => {
     expect(canvasBox).toBeTruthy();
     expect(canvasBox!.width).toBeGreaterThan(0);
     expect(canvasBox!.height).toBeGreaterThan(0);
+
+    // Verify no unexpected errors occurred during the entire loading flow
+    monitor.assertClean();
   });
 
   test("EmulatorJS assets are served at the correct path", async ({
     page,
   }) => {
+    const monitor = monitorPageErrors(page);
+
     // Verify the critical EmulatorJS endpoints are available
     const loaderResponse = await page.request.get(
       "http://localhost:5173/emulatorjs/data/loader.js",
@@ -106,11 +181,26 @@ test.describe("EmulatorJS Real Integration", () => {
       "http://localhost:5173/emulatorjs/data/emulator.css",
     );
     expect(cssResponse.ok()).toBe(true);
+
+    // Verify the non-minified source files are accessible (used in debug mode)
+    const emulatorJsResponse = await page.request.get(
+      "http://localhost:5173/emulatorjs/data/src/emulator.js",
+    );
+    expect(emulatorJsResponse.ok()).toBe(true);
+
+    const shadersResponse = await page.request.get(
+      "http://localhost:5173/emulatorjs/data/src/shaders.js",
+    );
+    expect(shadersResponse.ok()).toBe(true);
+
+    monitor.assertClean();
   });
 
   test("save and load buttons become enabled after game starts", async ({
     page,
   }) => {
+    const monitor = monitorPageErrors(page);
+
     await page.goto("/games");
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
@@ -137,5 +227,8 @@ test.describe("EmulatorJS Real Integration", () => {
     // The game-started postMessage triggers status="playing" in React
     await expect(saveButton).toBeEnabled({ timeout: 90_000 });
     await expect(loadButton).toBeEnabled({ timeout: 5_000 });
+
+    // Verify no unexpected errors occurred
+    monitor.assertClean();
   });
 });
