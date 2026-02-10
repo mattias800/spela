@@ -270,6 +270,9 @@ fun InGameOverlay(
                         state.fps >= 30f -> SpColor.Warning
                         else -> SpColor.Error
                     },
+                    modifier = Modifier.semantics {
+                        contentDescription = "FPS counter %.0f".format(state.fps)
+                    },
                 )
             }
         }

@@ -29,6 +29,7 @@ class NavigationViewModel(
                     current.copy(
                         currentScreen = intent.screen,
                         backStack = current.backStack + current.currentScreen,
+                        isGoingBack = false,
                     )
                 }
             }
@@ -39,6 +40,7 @@ class NavigationViewModel(
                         current.copy(
                             currentScreen = current.backStack.last(),
                             backStack = current.backStack.dropLast(1),
+                            isGoingBack = true,
                         )
                     } else {
                         current
@@ -48,13 +50,32 @@ class NavigationViewModel(
 
             is NavigationIntent.ShowOverlay -> {
                 _state.update {
-                    it.copy(showInGameOverlay = true, overlayGameId = intent.gameId)
+                    it.copy(
+                        showInGameOverlay = true,
+                        overlayGameId = intent.gameId,
+                        screenBehindOverlay = it.currentScreen,
+                        backStackBehindOverlay = it.backStack,
+                    )
                 }
             }
 
             NavigationIntent.HideOverlay -> {
                 _state.update {
-                    it.copy(showInGameOverlay = false, overlayGameId = null)
+                    if (it.screenBehindOverlay != null) {
+                        it.copy(
+                            showInGameOverlay = false,
+                            overlayGameId = null,
+                            currentScreen = it.screenBehindOverlay,
+                            backStack = it.backStackBehindOverlay,
+                            screenBehindOverlay = null,
+                            backStackBehindOverlay = emptyList(),
+                        )
+                    } else {
+                        it.copy(
+                            showInGameOverlay = false,
+                            overlayGameId = null,
+                        )
+                    }
                 }
             }
 
@@ -69,6 +90,7 @@ class NavigationViewModel(
                     it.copy(
                         currentScreen = screen,
                         backStack = emptyList(),
+                        isGoingBack = false,
                     )
                 }
             }

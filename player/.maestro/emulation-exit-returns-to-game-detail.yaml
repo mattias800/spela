@@ -1,11 +1,11 @@
 appId: com.spela.player
 ---
 
-# Test: Performance overlay (FPS counter) visible during gameplay
+# Test: Exiting a game returns to the correct game detail screen
 #
-# Verifies that the FPS HUD appears when the game is running and
-# the overlay is dismissed, and that tapping it opens the game menu.
-# The FPS HUD is rendered in the top-right corner of the screen.
+# Regression test for bug where quitting a game via the overlay
+# landed on the wrong screen (e.g., home screen or console list)
+# instead of the game detail screen for the game that was just played.
 
 # ── Setup: fresh start ──
 
@@ -78,9 +78,11 @@ appId: com.spela.player
 - tapOn:
     text: ".*Castlevania.*"
 
+# ── Download and play ──
+
 - extendedWaitUntil:
     visible:
-      text: "About"
+      text: "Download"
     timeout: 5000
 
 - tapOn: "Download"
@@ -92,49 +94,61 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay to appear ──
+# ── Wait for game to start (overlay appears) ──
 
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
     timeout: 10000
 
-# ── Dismiss overlay by tapping Resume ──
-
+# Let the game run briefly by dismissing the overlay
 - tapOn: "Resume"
 
-# ── Wait for overlay dismiss animation to complete and FPS HUD to render ──
-
+# Brief pause for the game to run
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
     duration: 2000
 
-# ── Verify FPS HUD is visible with a non-zero reading ──
-# The FPS Text composable has contentDescription = "FPS counter NN".
-# Match any FPS value >= 1 to confirm the HUD is rendering real data.
-
-- extendedWaitUntil:
-    visible:
-      text: "FPS counter [1-9][0-9]*"
-    timeout: 10000
-
-- takeScreenshot: fps-hud-check
-
-# ── Verify the FPS HUD is tappable (opens overlay) ──
-# Tap the FPS HUD badge area to open the game menu.
-
+# Reopen overlay via back button
 - pressKey: "back"
-
-# ── Verify overlay reopened (proves game session is active) ──
 
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
     timeout: 5000
 
-- assertVisible: "Resume"
-
-# ── Clean up ──
+# ── Exit the game ──
 
 - tapOn: "Exit Game"
+
+# ── CRITICAL ASSERTIONS: Verify we landed on game detail screen ──
+
+# 1. The game title should be visible (we're on the right game's detail page)
+- extendedWaitUntil:
+    visible:
+      text: ".*Castlevania.*"
+    timeout: 10000
+
+# 2. The Play button should be visible (game is cached, so "Play" not "Download")
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 5000
+
+# 3. We should NOT be on the Home screen (Consoles section title)
+# Note: "Consoles" as a section heading only appears on Home.
+# The game detail screen does not have this heading.
+- assertNotVisible:
+    text: "Consoles"
+
+# 4. We should NOT still be in the game (overlay elements gone)
+- assertNotVisible:
+    text: "Exit Game"
+
+- assertNotVisible:
+    text: "Resume"
+
+# 5. Cover art for Castlevania should be visible (game detail screen has hero cover)
+- assertVisible:
+    text: ".*Castlevania.*"

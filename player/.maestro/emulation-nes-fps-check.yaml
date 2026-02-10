@@ -1,11 +1,16 @@
 appId: com.spela.player
 ---
 
-# Test: Performance overlay (FPS counter) visible during gameplay
+# Test: NES emulation runs at acceptable frame rate (>= 30 FPS)
 #
-# Verifies that the FPS HUD appears when the game is running and
-# the overlay is dismissed, and that tapping it opens the game menu.
-# The FPS HUD is rendered in the top-right corner of the screen.
+# Regression test for bug where NES emulation ran at ~1 FPS with screen
+# tearing due to blocking audio callbacks starving the emulation loop.
+# After the fix (ring buffer audio, double-buffered video, hw accel),
+# NES games should run at 30+ FPS consistently.
+#
+# This test uses the FPS HUD's contentDescription ("FPS counter NN")
+# to assert the frame rate is above the minimum playable threshold.
+# The FPS Text composable has dedicated semantics so Maestro can find it.
 
 # ── Setup: fresh start ──
 
@@ -80,7 +85,7 @@ appId: com.spela.player
 
 - extendedWaitUntil:
     visible:
-      text: "About"
+      text: "Download"
     timeout: 5000
 
 - tapOn: "Download"
@@ -92,49 +97,54 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay to appear ──
+# ── Wait for overlay to appear (game started) ──
 
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
     timeout: 10000
 
-# ── Dismiss overlay by tapping Resume ──
+# ── Dismiss overlay to enter active gameplay ──
 
 - tapOn: "Resume"
 
-# ── Wait for overlay dismiss animation to complete and FPS HUD to render ──
+# ── Wait for FPS to stabilize ──
+# The emulation needs a few seconds after dismissing the overlay
+# for the frame rate to settle. Use a no-op swipe as a delay.
 
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
-    duration: 2000
+    duration: 3000
 
-# ── Verify FPS HUD is visible with a non-zero reading ──
-# The FPS Text composable has contentDescription = "FPS counter NN".
-# Match any FPS value >= 1 to confirm the HUD is rendering real data.
+# ── Assert FPS is above playable threshold (>= 30 FPS) ──
+# The FPS Text has contentDescription = "FPS counter NN".
+# Regex matches 30-99 ([3-9][0-9]) or 100+ ([1-9][0-9]{2,}).
+# If FPS is below 30 (e.g., "FPS counter 1"), this will FAIL.
 
 - extendedWaitUntil:
     visible:
-      text: "FPS counter [1-9][0-9]*"
+      text: "FPS counter ([3-9][0-9]|[1-9][0-9]{2,})"
     timeout: 10000
 
-- takeScreenshot: fps-hud-check
+# ── Take a screenshot for visual verification as well ──
 
-# ── Verify the FPS HUD is tappable (opens overlay) ──
-# Tap the FPS HUD badge area to open the game menu.
+- takeScreenshot: nes-fps-regression-check
+
+# ── Reopen overlay and exit cleanly ──
 
 - pressKey: "back"
-
-# ── Verify overlay reopened (proves game session is active) ──
 
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
     timeout: 5000
 
-- assertVisible: "Resume"
-
-# ── Clean up ──
-
 - tapOn: "Exit Game"
+
+# ── Verify we return to game detail (app didn't crash) ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 10000

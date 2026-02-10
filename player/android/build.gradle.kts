@@ -23,6 +23,11 @@ kotlin {
                 implementation(libs.koin.android)
             }
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
+        }
     }
 }
 

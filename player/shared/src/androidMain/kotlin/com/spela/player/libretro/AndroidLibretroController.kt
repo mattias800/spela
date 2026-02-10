@@ -43,7 +43,7 @@ class AndroidLibretroController(
     @Volatile
     private var currentFrameTime = 0f
 
-    /* Video: emulation thread writes Bitmaps, Compose UI collects */
+    /* Video: emulation thread writes to back buffer, then swaps to front for Compose */
     private val _frameBitmap = MutableStateFlow<Bitmap?>(null)
     val frameBitmap: StateFlow<Bitmap?> = _frameBitmap.asStateFlow()
 
@@ -53,8 +53,11 @@ class AndroidLibretroController(
     /* Reusable IntArray buffer for pixel conversion (avoids allocation per frame) */
     private var pixelBuffer = IntArray(0)
 
-    /* Reusable Bitmap to avoid per-frame allocation and GC pressure */
-    private var reusableBitmap: Bitmap? = null
+    /* Double-buffered bitmaps: emulation thread writes to backBitmap, then publishes it
+     * as the new front bitmap. This avoids the data race where Compose reads a bitmap
+     * while setPixels() is still writing to it. */
+    private var frontBitmap: Bitmap? = null
+    private var backBitmap: Bitmap? = null
     private var lastFrameWidth = 0
     private var lastFrameHeight = 0
 
@@ -122,8 +125,10 @@ class AndroidLibretroController(
         jni.nativeUnloadGame()
         jni.nativeDeinit()
         _frameBitmap.value = null
-        reusableBitmap?.recycle()
-        reusableBitmap = null
+        frontBitmap?.recycle()
+        frontBitmap = null
+        backBitmap?.recycle()
+        backBitmap = null
         lastFrameWidth = 0
         lastFrameHeight = 0
     }
@@ -250,17 +255,22 @@ class AndroidLibretroController(
 
         convertToPackedArgb(videoFrameBuffer, pixelCount, format, pixelBuffer)
 
-        // Reuse bitmap if dimensions haven't changed to avoid per-frame allocation
+        // Reallocate double buffers if dimensions changed
         if (width != lastFrameWidth || height != lastFrameHeight) {
-            reusableBitmap?.recycle()
-            reusableBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            frontBitmap?.recycle()
+            backBitmap?.recycle()
+            frontBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             lastFrameWidth = width
             lastFrameHeight = height
         }
 
-        val bitmap = reusableBitmap ?: return
-        bitmap.setPixels(pixelBuffer, 0, width, 0, 0, width, height)
-        _frameBitmap.value = bitmap
+        // Write to back buffer, then swap: Compose only ever reads the front bitmap
+        val back = backBitmap ?: return
+        back.setPixels(pixelBuffer, 0, width, 0, 0, width, height)
+        _frameBitmap.value = back
+        backBitmap = frontBitmap
+        frontBitmap = back
     }
 
     /**

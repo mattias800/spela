@@ -13,8 +13,11 @@ sealed class SpScreen(val route: String) {
 data class NavigationState(
     val currentScreen: SpScreen = SpScreen.ServerConnection,
     val backStack: List<SpScreen> = emptyList(),
+    val isGoingBack: Boolean = false,
     val showInGameOverlay: Boolean = false,
     val overlayGameId: String? = null,
+    val screenBehindOverlay: SpScreen? = null,
+    val backStackBehindOverlay: List<SpScreen> = emptyList(),
     val isRestoringSession: Boolean = true,
 )
 

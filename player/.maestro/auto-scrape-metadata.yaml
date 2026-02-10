@@ -100,5 +100,16 @@ appId: com.spela.player
     timeout: 30000
 
 # ── Verify the game detail screen is fully populated ──
+# Bug regression: metadata and boxart were not being displayed after scrape.
 
 - assertVisible: "Download"
+
+# Verify cover art is rendered. The SpHeroCover composable has
+# contentDescription = "{title} cover art" and only loads an image
+# when coverUrl is non-null (populated by the scraper).
+- assertVisible:
+    text: "Castlevania cover art"
+
+# Verify the game title is visible as a heading
+- assertVisible:
+    text: ".*Castlevania.*"

@@ -53,6 +53,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -65,6 +66,8 @@ fun GameDetailScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(gameId) {
@@ -254,6 +257,15 @@ private fun GameInfoContent(
         )
         game.genre?.let { SpChip(text = it) }
         game.releaseDate?.let { SpChip(text = it) }
+    }
+
+    if (state.isScraping) {
+        Spacer(Modifier.height(SpSpacing.Small))
+        Text(
+            text = "Fetching game info...",
+            style = SpTypography.BodySmall,
+            color = SpColor.OnBackgroundTertiary,
+        )
     }
 
     Spacer(Modifier.height(SpSpacing.XLarge))

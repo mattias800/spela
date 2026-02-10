@@ -78,15 +78,30 @@ class GameDetailViewModel(
     private fun scrapeAndRefresh(gameId: String) {
         scope.launch(dispatchers.io) {
             try {
+                _state.update { it.copy(isScraping = true) }
                 apiClient.scrapeIfNeeded(gameId)
-                delay(3000)
-                getGameDetailUseCase(gameId).fold(
-                    onSuccess = { refreshed ->
-                        _state.update { it.copy(gameDetail = refreshed) }
-                    },
-                    onFailure = { /* ignore refresh failure */ },
-                )
-            } catch (_: Exception) { /* ignore scrape failure */ }
+
+                var attempts = 0
+                val maxAttempts = 30
+                while (attempts < maxAttempts) {
+                    delay(1000)
+                    getGameDetailUseCase(gameId).fold(
+                        onSuccess = { refreshed ->
+                            if (refreshed.game.scrapeAttempts > 0) {
+                                _state.update { it.copy(gameDetail = refreshed, isScraping = false) }
+                                return@launch
+                            }
+                        },
+                        onFailure = { /* continue polling */ },
+                    )
+                    attempts++
+                }
+
+                _state.update { it.copy(isScraping = false) }
+            } catch (e: Exception) {
+                println("GameDetailViewModel: scrape failed for game $gameId: ${e.message}")
+                _state.update { it.copy(isScraping = false) }
+            }
         }
     }
 

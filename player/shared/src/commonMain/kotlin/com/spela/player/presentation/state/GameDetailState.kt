@@ -10,5 +10,6 @@ data class GameDetailState(
     val downloadProgress: DownloadProgress? = null,
     val isGameCached: Boolean = false,
     val isLoading: Boolean = false,
+    val isScraping: Boolean = false,
     val error: String? = null,
 )

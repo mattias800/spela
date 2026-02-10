@@ -95,8 +95,13 @@ fun SpelaApp(
                     AnimatedContent(
                         targetState = navState.currentScreen,
                         transitionSpec = {
-                            (slideInHorizontally { it / 3 } + fadeIn())
-                                .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
+                            if (navState.isGoingBack) {
+                                (slideInHorizontally { -it / 3 } + fadeIn())
+                                    .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
+                            } else {
+                                (slideInHorizontally { it / 3 } + fadeIn())
+                                    .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
+                            }
                         },
                     ) { screen ->
                         when (screen) {
