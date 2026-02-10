@@ -5,14 +5,19 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,18 +56,22 @@ fun LoginScreen(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
+        val isLandscape = maxWidth > maxHeight
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = SpSpacing.ScreenHorizontal),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 100.dp))
 
             // Branding
             Box(
@@ -94,86 +103,95 @@ fun LoginScreen(
                 color = SpColor.OnBackgroundSecondary,
             )
 
-            Spacer(Modifier.height(SpSpacing.XXXLarge))
+            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else SpSpacing.XXXLarge))
 
-            // Server URL indicator
-            Box(
+            // Constrain form width in landscape
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SpColor.SurfaceVariant)
-                    .padding(SpSpacing.Medium),
+                    .then(if (isLandscape) Modifier.widthIn(max = 450.dp) else Modifier.fillMaxWidth()),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = serverUrl,
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            Spacer(Modifier.height(SpSpacing.XLarge))
-
-            SpTextField(
-                value = state.username,
-                onValueChange = { viewModel.onIntent(LoginIntent.SetUsername(it)) },
-                label = "Username",
-                placeholder = "Enter your username",
-                enabled = !state.isLoading,
-            )
-
-            Spacer(Modifier.height(SpSpacing.Default))
-
-            SpTextField(
-                value = state.password,
-                onValueChange = { viewModel.onIntent(LoginIntent.SetPassword(it)) },
-                label = "Password",
-                placeholder = "Enter your password",
-                isPassword = true,
-                enabled = !state.isLoading,
-                imeAction = ImeAction.Done,
-                onImeAction = { viewModel.onIntent(LoginIntent.Submit) },
-            )
-
-            // Error display
-            AnimatedVisibility(
-                visible = state.error != null,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                state.error?.let { error ->
+                // Server URL indicator
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(SpColor.SurfaceVariant)
+                        .padding(SpSpacing.Medium),
+                ) {
                     Text(
-                        text = error,
+                        text = serverUrl,
                         style = SpTypography.BodySmall,
-                        color = SpColor.Error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = SpSpacing.Small),
+                        color = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                     )
                 }
+
+                Spacer(Modifier.height(SpSpacing.XLarge))
+
+                SpTextField(
+                    value = state.username,
+                    onValueChange = { viewModel.onIntent(LoginIntent.SetUsername(it)) },
+                    label = "Username",
+                    placeholder = "Enter your username",
+                    enabled = !state.isLoading,
+                )
+
+                Spacer(Modifier.height(SpSpacing.Default))
+
+                SpTextField(
+                    value = state.password,
+                    onValueChange = { viewModel.onIntent(LoginIntent.SetPassword(it)) },
+                    label = "Password",
+                    placeholder = "Enter your password",
+                    isPassword = true,
+                    enabled = !state.isLoading,
+                    imeAction = ImeAction.Done,
+                    onImeAction = { viewModel.onIntent(LoginIntent.Submit) },
+                )
+
+                // Error display
+                AnimatedVisibility(
+                    visible = state.error != null,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    state.error?.let { error ->
+                        Text(
+                            text = error,
+                            style = SpTypography.BodySmall,
+                            color = SpColor.Error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = SpSpacing.Small),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(SpSpacing.XLarge))
+
+                SpButton(
+                    text = if (state.isRegisterMode) "Create Account" else "Sign In",
+                    onClick = { viewModel.onIntent(LoginIntent.Submit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isLoading = state.isLoading,
+                    enabled = !state.isLoading,
+                )
+
+                Spacer(Modifier.height(SpSpacing.Medium))
+
+                SpButton(
+                    text = if (state.isRegisterMode) "Already have an account? Sign In"
+                    else "Don't have an account? Register",
+                    onClick = { viewModel.onIntent(LoginIntent.ToggleRegisterMode) },
+                    style = SpButtonStyle.Ghost,
+                    enabled = !state.isLoading,
+                )
+
+                Spacer(Modifier.height(SpSpacing.XLarge))
             }
-
-            Spacer(Modifier.height(SpSpacing.XLarge))
-
-            SpButton(
-                text = if (state.isRegisterMode) "Create Account" else "Sign In",
-                onClick = { viewModel.onIntent(LoginIntent.Submit) },
-                modifier = Modifier.fillMaxWidth(),
-                isLoading = state.isLoading,
-                enabled = !state.isLoading,
-            )
-
-            Spacer(Modifier.height(SpSpacing.Medium))
-
-            SpButton(
-                text = if (state.isRegisterMode) "Already have an account? Sign In"
-                else "Don't have an account? Register",
-                onClick = { viewModel.onIntent(LoginIntent.ToggleRegisterMode) },
-                style = SpButtonStyle.Ghost,
-                enabled = !state.isLoading,
-            )
         }
     }
 }

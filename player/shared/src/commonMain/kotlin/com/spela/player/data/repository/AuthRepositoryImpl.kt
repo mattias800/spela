@@ -1,5 +1,6 @@
 package com.spela.player.data.repository
 
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.LoginRequest
 import com.spela.player.data.remote.dto.RefreshRequest
@@ -13,8 +14,10 @@ import com.spela.player.domain.repository.AuthRepository
 class AuthRepositoryImpl(
     private val apiClient: SpelaApiClient,
     private val tokenManager: TokenManager,
+    private val database: SpelaDatabase,
 ) : AuthRepository {
 
+    private val queries = database.spelaDatabaseQueries
     private var cachedTokens: AuthTokens? = null
 
     override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> {
@@ -22,8 +25,7 @@ class AuthRepositoryImpl(
             apiClient.setBaseUrl(serverUrl)
             val response = apiClient.login(LoginRequest(username, password))
             val tokens = response.toDomain()
-            tokenManager.setTokens(tokens.accessToken, tokens.refreshToken)
-            cachedTokens = tokens
+            persistTokens(tokens)
             tokens
         }
     }
@@ -33,8 +35,7 @@ class AuthRepositoryImpl(
             apiClient.setBaseUrl(serverUrl)
             val response = apiClient.register(RegisterRequest(username, email, password))
             val tokens = response.toDomain()
-            tokenManager.setTokens(tokens.accessToken, tokens.refreshToken)
-            cachedTokens = tokens
+            persistTokens(tokens)
             tokens
         }
     }
@@ -44,8 +45,7 @@ class AuthRepositoryImpl(
             apiClient.setBaseUrl(serverUrl)
             val response = apiClient.refreshToken(RefreshRequest(refreshToken))
             val tokens = response.toDomain()
-            tokenManager.setTokens(tokens.accessToken, tokens.refreshToken)
-            cachedTokens = tokens
+            persistTokens(tokens)
             tokens
         }
     }
@@ -56,17 +56,37 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun getStoredTokens(): AuthTokens? = cachedTokens
-
-    override suspend fun storeTokens(tokens: AuthTokens) {
+    override suspend fun getStoredTokens(): AuthTokens? {
+        cachedTokens?.let { return it }
+        val entity = queries.getTokens().executeAsOneOrNull() ?: return null
+        val tokens = AuthTokens(
+            accessToken = entity.access_token,
+            refreshToken = entity.refresh_token,
+        )
         cachedTokens = tokens
         tokenManager.setTokens(tokens.accessToken, tokens.refreshToken)
+        return tokens
+    }
+
+    override suspend fun storeTokens(tokens: AuthTokens) {
+        persistTokens(tokens)
     }
 
     override suspend fun clearTokens() {
         cachedTokens = null
         tokenManager.clearTokens()
+        queries.deleteTokens()
     }
 
     override fun isLoggedIn(): Boolean = tokenManager.hasTokens()
+
+    private suspend fun persistTokens(tokens: AuthTokens) {
+        cachedTokens = tokens
+        tokenManager.setTokens(tokens.accessToken, tokens.refreshToken)
+        queries.insertTokens(
+            access_token = tokens.accessToken,
+            refresh_token = tokens.refreshToken,
+            expires_at = "",
+        )
+    }
 }

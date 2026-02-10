@@ -1,7 +1,7 @@
 package com.spela.player.di
 
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.spela.player.SpelaDatabase
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.platform.AndroidFileStorage

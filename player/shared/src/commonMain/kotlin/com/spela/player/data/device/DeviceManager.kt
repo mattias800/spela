@@ -1,6 +1,6 @@
 package com.spela.player.data.device
 
-import com.spela.player.SpelaDatabase
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.RegisterDeviceRequest
 import com.spela.player.util.currentPlatform

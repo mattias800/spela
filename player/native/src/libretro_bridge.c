@@ -58,12 +58,21 @@ static void core_log(enum retro_log_level level, const char *fmt, ...) {
  */
 static bool environment_callback(unsigned cmd, void *data) {
     switch (cmd) {
+        case RETRO_ENVIRONMENT_GET_CAN_DUPE: {
+            *(bool *)data = true;
+            return true;
+        }
+
         case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: {
             unsigned *fmt = (unsigned *)data;
             video_set_pixel_format(*fmt);
             LOGI("Core set pixel format: %u", *fmt);
             return true;
         }
+
+        case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+            /* Core declares its input layout — acknowledge */
+            return true;
 
         case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: {
             *(const char **)data = g_core.system_dir;
@@ -113,6 +122,14 @@ static bool environment_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
             return true;
 
+        case RETRO_ENVIRONMENT_SET_CONTROLLER_PORT_DEVICE_ENV:
+            /* Core is setting controller type per port — acknowledge */
+            return true;
+
+        case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
+            /* No rumble support — return false so core falls back gracefully */
+            return false;
+
         case RETRO_ENVIRONMENT_SET_GEOMETRY: {
             /* Core is informing us of a geometry change */
             struct retro_game_geometry *geom = (struct retro_game_geometry *)data;
@@ -123,8 +140,14 @@ static bool environment_callback(unsigned cmd, void *data) {
             return true;
         }
 
+        case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION: {
+            /* Report we support v0 core options (basic key/value) */
+            *(unsigned *)data = 0;
+            return true;
+        }
+
         default:
-            LOGI("Unhandled environment cmd: %u", cmd);
+            LOGW("Unhandled environment cmd: %u", cmd);
             return false;
     }
 }

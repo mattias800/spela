@@ -1,0 +1,126 @@
+appId: com.spela.player
+---
+
+# Test: NES emulation stability — app doesn't crash when launching NES game
+#
+# Regression test for the NES crash bug. Previously, launching a NES game
+# would crash the app because the emulation thread had no error handling.
+# With the fix, the emulation thread catches exceptions and reports errors
+# via a StateFlow instead of crashing.
+#
+# This test launches a NES game (Castlevania), waits for the emulation
+# overlay, then verifies the app remains responsive by interacting with
+# the in-game overlay.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES > Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+# ── Download and play ──
+# Wait for "Download" button (always visible on game detail, regardless of scrape state)
+
+- extendedWaitUntil:
+    visible:
+      text: "Download"
+    timeout: 5000
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+- tapOn: "Play"
+
+# ── Verify game starts without crashing ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 10000
+
+# ── Verify app is still responsive by using overlay controls ──
+
+- assertVisible: "Resume"
+- assertVisible:
+    text: "Save"
+
+# ── Exit game cleanly ──
+
+- tapOn: "Exit Game"
+
+# ── Verify we return to game detail screen (app didn't crash) ──
+# Game is cached so "Play" button is visible (not "Download")
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 10000

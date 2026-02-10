@@ -1,0 +1,75 @@
+appId: com.spela.player
+---
+
+# Test: Added servers persist across app restarts
+#
+# After adding a server (without logging in), closing and relaunching the app,
+# the server should still appear in the server list. This verifies that
+# ServerConnectionEntity is persisted to SQLDelight and restored on startup.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Verify we're on the server connection screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+# ── Add a server (but don't select it) ──
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- hideKeyboard
+- tapOn: "Add"
+
+# ── Verify server card appears in the list ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Local"
+    timeout: 5000
+
+# ── Close the app (without clearing state) and relaunch ──
+
+- stopApp:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Assert the server is still listed after restart ──
+# RestoreSessionUseCase finds the active server but no tokens,
+# so it navigates to Login. But we need to check the server persisted.
+# Since we added but didn't select the server, there may be no active server,
+# which means RestoreSessionUseCase returns NoSession → ServerConnection screen.
+# Either way, we verify the server name is visible.
+
+- extendedWaitUntil:
+    visible:
+      text: "Local"
+    timeout: 15000
+
+# ── Verify we can tap the server to reach login ──
+
+- tapOn: "Local"
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000

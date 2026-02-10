@@ -1,12 +1,18 @@
 package com.spela.player.presentation.viewmodel
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.AuthTokens
-import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.model.User
+import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.usecase.LoginUseCase
 import com.spela.player.domain.usecase.RegisterUseCase
 import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.test.NoOpMockEngineFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,10 +35,16 @@ class LoginViewModelTest {
     }
 
     private val fakeAuthRepository = FakeAuthRepository()
+    private lateinit var deviceManager: DeviceManager
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        SpelaDatabase.Schema.create(driver)
+        val database = SpelaDatabase(driver)
+        val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
+        deviceManager = DeviceManager(database, apiClient)
     }
 
     @AfterTest
@@ -43,8 +55,8 @@ class LoginViewModelTest {
     private fun createViewModel(): LoginViewModel {
         val scope = CoroutineScope(testDispatcher)
         return LoginViewModel(
-            loginUseCase = LoginUseCase(fakeAuthRepository),
-            registerUseCase = RegisterUseCase(fakeAuthRepository),
+            loginUseCase = LoginUseCase(fakeAuthRepository, deviceManager),
+            registerUseCase = RegisterUseCase(fakeAuthRepository, deviceManager),
             dispatchers = testDispatchers,
             scope = scope,
         )

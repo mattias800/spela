@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -58,30 +60,32 @@ fun ServerConnectionScreen(
         viewModel.onIntent(ServerConnectionIntent.LoadServers)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
+        val isLandscape = maxWidth > maxHeight
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = SpSpacing.ScreenHorizontal),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(80.dp))
+            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 80.dp))
 
             // App branding
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .size(if (isLandscape) 56.dp else 80.dp)
+                    .clip(RoundedCornerShape(if (isLandscape) 14.dp else 20.dp))
                     .background(SpColor.PrimaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "S",
-                    style = SpTypography.DisplayMedium,
+                    style = if (isLandscape) SpTypography.TitleLarge else SpTypography.DisplayMedium,
                     color = SpColor.Primary,
                 )
             }
@@ -100,13 +104,14 @@ fun ServerConnectionScreen(
                 color = SpColor.OnBackgroundSecondary,
             )
 
-            Spacer(Modifier.height(SpSpacing.XXXLarge))
+            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else SpSpacing.XXXLarge))
 
             if (state.isLoading) {
                 SpLoadingIndicator(message = "Loading servers...")
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .then(if (isLandscape) Modifier.widthIn(max = 550.dp) else Modifier.fillMaxWidth()),
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     items(state.servers) { server ->

@@ -24,12 +24,12 @@ val commonModule = module {
     single { DeviceManager(get(), get()) }
 
     /* Repositories */
-    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single<GameRepository> { GameRepositoryImpl(get()) }
     single<SaveRepository> { SaveRepositoryImpl(get()) }
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
-    single<ServerRepository> { ServerRepositoryImpl() }
+    single<ServerRepository> { ServerRepositoryImpl(get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
 
     /* Use Cases */
@@ -49,6 +49,7 @@ val commonModule = module {
     factory { PrepareGameUseCase(get(), get()) }
     factory { SaveGameStateUseCase(get()) }
     factory { LoadGameStateUseCase(get()) }
+    factory { RestoreSessionUseCase(get(), get(), get()) }
 
     /* ViewModels */
     factory {
@@ -96,7 +97,13 @@ val commonModule = module {
     }
 
     /* Navigation & UI ViewModels */
-    single { NavigationViewModel() }
+    single {
+        NavigationViewModel(
+            restoreSessionUseCase = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
     factory {
         ServerConnectionViewModel(
             serverRepository = get(),

@@ -74,6 +74,12 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
+
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.jvm.driver)
+            }
+        }
     }
 }
 

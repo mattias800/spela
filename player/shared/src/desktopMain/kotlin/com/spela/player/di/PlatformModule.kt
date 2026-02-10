@@ -1,7 +1,7 @@
 package com.spela.player.di
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.spela.player.SpelaDatabase
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.libretro.DesktopLibretroController
 import com.spela.player.platform.DesktopFileStorage

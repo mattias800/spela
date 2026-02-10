@@ -1,13 +1,26 @@
 package com.spela.player.presentation.navigation
 
+import com.spela.player.domain.usecase.RestoreSessionResult
+import com.spela.player.domain.usecase.RestoreSessionUseCase
+import com.spela.player.util.DispatcherProvider
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class NavigationViewModel {
+class NavigationViewModel(
+    private val restoreSessionUseCase: RestoreSessionUseCase,
+    private val dispatchers: DispatcherProvider,
+    private val scope: CoroutineScope,
+) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
+
+    init {
+        restoreSession()
+    }
 
     fun onIntent(intent: NavigationIntent) {
         when (intent) {
@@ -58,6 +71,23 @@ class NavigationViewModel {
                         backStack = emptyList(),
                     )
                 }
+            }
+        }
+    }
+
+    private fun restoreSession() {
+        scope.launch(dispatchers.io) {
+            val result = restoreSessionUseCase()
+            val screen = when (result) {
+                RestoreSessionResult.Success -> SpScreen.Home
+                is RestoreSessionResult.NeedsLogin -> SpScreen.Login
+                RestoreSessionResult.NoSession -> SpScreen.ServerConnection
+            }
+            _state.update {
+                it.copy(
+                    currentScreen = screen,
+                    isRestoringSession = false,
+                )
             }
         }
     }

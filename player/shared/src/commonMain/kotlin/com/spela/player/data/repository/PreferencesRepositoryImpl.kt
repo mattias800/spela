@@ -1,6 +1,6 @@
 package com.spela.player.data.repository
 
-import com.spela.player.SpelaDatabase
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.UpdateDevicePreferencesRequest
