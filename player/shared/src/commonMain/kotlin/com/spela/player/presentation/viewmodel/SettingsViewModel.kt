@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.repository.PreferencesRepositoryImpl
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.repository.AuthRepository
@@ -8,6 +10,8 @@ import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +23,7 @@ enum class ShaderScope { DEFAULT, PER_CONSOLE }
 data class SettingsState(
     val username: String = "",
     val serverUrl: String = "",
+    val deviceName: String = "",
     val cacheSize: Long = 0,
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
@@ -43,6 +48,7 @@ sealed interface SettingsIntent {
     data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
     data class SetDeviceOverride(val consoleId: String, val shader: ShaderPreset?) : SettingsIntent
     data class ExpandConsole(val consoleId: String?) : SettingsIntent
+    data class UpdateDeviceName(val name: String) : SettingsIntent
     data object ShowLogoutConfirm : SettingsIntent
     data object DismissLogoutConfirm : SettingsIntent
     data object Logout : SettingsIntent
@@ -56,11 +62,14 @@ class SettingsViewModel(
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
     private val gameRepository: GameRepository,
+    private val deviceManager: DeviceManager,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
+
+    private var deviceNameSyncJob: Job? = null
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
@@ -91,6 +100,7 @@ class SettingsViewModel(
                 _state.update {
                     it.copy(expandedConsoleId = if (it.expandedConsoleId == intent.consoleId) null else intent.consoleId)
                 }
+            is SettingsIntent.UpdateDeviceName -> updateDeviceName(intent.name)
             SettingsIntent.ShowLogoutConfirm ->
                 _state.update { it.copy(showLogoutConfirm = true) }
             SettingsIntent.DismissLogoutConfirm ->
@@ -123,10 +133,12 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             val user = authRepository.getCurrentUser().getOrNull()
             val cacheSize = downloadRepository.getCacheSize()
+            val deviceName = deviceManager.getDeviceName()
             _state.update {
                 it.copy(
                     username = user?.username ?: "",
                     cacheSize = cacheSize,
+                    deviceName = deviceName,
                 )
             }
 
@@ -146,6 +158,8 @@ class SettingsViewModel(
                 _state.update { it.copy(consoles = consoles) }
             }
 
+            // Sync device shader overrides from server, then load local
+            preferencesRepository.syncDeviceShaderOverrides()
             val deviceOverrides = preferencesRepository.getAllDeviceShaderOverrides()
             _state.update { it.copy(deviceShaderOverrides = deviceOverrides) }
         }
@@ -190,6 +204,21 @@ class SettingsViewModel(
             } else {
                 it.copy(deviceShaderOverrides = it.deviceShaderOverrides + (consoleId to shader))
             }
+        }
+        // Sync device overrides to server
+        scope.launch(dispatchers.io) {
+            (preferencesRepository as? PreferencesRepositoryImpl)?.pushDeviceShaderOverridesToServer()
+        }
+    }
+
+    private fun updateDeviceName(name: String) {
+        _state.update { it.copy(deviceName = name) }
+        deviceManager.setDeviceName(name)
+        // Debounce server sync to avoid firing on every keystroke
+        deviceNameSyncJob?.cancel()
+        deviceNameSyncJob = scope.launch(dispatchers.io) {
+            delay(500)
+            deviceManager.updateDeviceNameOnServer(name)
         }
     }
 

@@ -1,5 +1,7 @@
 package com.spela.player.di
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.spela.player.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.libretro.DesktopLibretroController
 import com.spela.player.platform.DesktopFileStorage
@@ -12,6 +14,12 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
+    single {
+        val driver = JdbcSqliteDriver("jdbc:sqlite:spela.db")
+        SpelaDatabase.Schema.create(driver)
+        driver
+    }
+    single { SpelaDatabase(get<JdbcSqliteDriver>()) }
     single { SpelaApiClient(CIO, get()) }
     single<FileStorage> { DesktopFileStorage() }
     single<LibretroController> { DesktopLibretroController() }

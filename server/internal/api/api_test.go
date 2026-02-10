@@ -32,6 +32,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},
 		&db.ServerSetting{}, &db.Core{},
 		&db.ConsoleShaderPreference{},
+		&db.Device{},
+		&db.DeviceShaderPreference{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

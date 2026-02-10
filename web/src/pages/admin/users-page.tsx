@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Users, Shield, ShieldCheck, Crown, Plus, Trash2, UserX, BarChart3, Gamepad2, Save } from "lucide-react";
+import { Users, Shield, ShieldCheck, Crown, Plus, Trash2, UserX, BarChart3, Gamepad2, Save, Monitor, Smartphone, Laptop } from "lucide-react";
 import { Button, Badge, Card, CardContent, Modal, Input, Select, EmptyState, TableRowSkeleton } from "@/components/ui";
 import { useAdminUsers, useUpdateUser, useCreateUser, useDeleteUser, useAdminStats } from "@/hooks/use-admin";
+import { useAdminUserDevices } from "@/hooks/use-devices";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatRelativeTime } from "@/lib/format";
 import { useToast } from "@/components/ui";
 import type { User } from "@/types/api";
 
@@ -23,6 +24,7 @@ export function AdminUsersPage() {
   const [editDisabled, setEditDisabled] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [devicesUser, setDevicesUser] = useState<User | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -264,6 +266,13 @@ export function AdminUsersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => setDevicesUser(user)}
+                        >
+                          Devices
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => openEditModal(user)}
                         >
                           Edit
@@ -407,6 +416,66 @@ export function AdminUsersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* User Devices Modal */}
+      {devicesUser && (
+        <AdminDevicesModal user={devicesUser} onClose={() => setDevicesUser(null)} />
+      )}
     </div>
+  );
+}
+
+function AdminDevicesModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const { data: devices, isLoading } = useAdminUserDevices(user.id);
+
+  function getPlatformIcon(platform: string) {
+    switch (platform.toLowerCase()) {
+      case "android":
+        return Smartphone;
+      case "macos":
+      case "linux":
+      case "windows":
+        return Laptop;
+      default:
+        return Monitor;
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`${user.username}'s Devices`}
+      size="md"
+    >
+      {isLoading ? (
+        <div className="space-y-3">
+          <div className="h-14 bg-surface-800/50 rounded-lg animate-pulse" />
+          <div className="h-14 bg-surface-800/50 rounded-lg animate-pulse" />
+        </div>
+      ) : !devices || devices.length === 0 ? (
+        <p className="text-sm text-surface-400 text-center py-8">No devices registered.</p>
+      ) : (
+        <div className="space-y-2">
+          {devices.map((device) => {
+            const PlatformIcon = getPlatformIcon(device.platform);
+            return (
+              <div key={device.id} className="flex items-center gap-3 rounded-xl border border-surface-800 bg-surface-900/50 px-4 py-3">
+                <div className="h-9 w-9 rounded-lg bg-surface-800 flex items-center justify-center">
+                  <PlatformIcon className="h-4 w-4 text-surface-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-surface-200 truncate">{device.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default">{device.platform}</Badge>
+                    <span className="text-xs text-surface-500">Last seen {formatRelativeTime(device.lastSeenAt)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Modal>
   );
 }

@@ -1,5 +1,7 @@
 package com.spela.player.di
 
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.spela.player.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.platform.AndroidFileStorage
@@ -12,6 +14,8 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
+    single { AndroidSqliteDriver(SpelaDatabase.Schema, get(), "spela.db") }
+    single { SpelaDatabase(get<AndroidSqliteDriver>()) }
     single { SpelaApiClient(OkHttp, get()) }
     single<FileStorage> { AndroidFileStorage(get()) }
     single<LibretroController> { AndroidLibretroController(get()) }

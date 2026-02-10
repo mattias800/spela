@@ -92,6 +92,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB}
 	userHandler := &UserHandler{DB: cfg.DB}
+	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
 
@@ -145,6 +146,14 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
 		api.DELETE("/user/favorites/:gameId", userHandler.RemoveFavorite)
 
+		// Devices
+		api.POST("/user/devices", deviceHandler.RegisterDevice)
+		api.GET("/user/devices", deviceHandler.GetDevices)
+		api.PUT("/user/devices/:id", deviceHandler.UpdateDevice)
+		api.DELETE("/user/devices/:id", deviceHandler.DeleteDevice)
+		api.GET("/user/devices/:id/preferences", deviceHandler.GetDevicePreferences)
+		api.PUT("/user/devices/:id/preferences", deviceHandler.UpdateDevicePreferences)
+
 		// Admin routes
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())
@@ -159,6 +168,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
 			admin.GET("/stats", adminHandler.GetStats)
+			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 		}
 
 		// WebSocket

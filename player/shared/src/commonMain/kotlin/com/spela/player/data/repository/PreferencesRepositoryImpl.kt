@@ -1,7 +1,9 @@
 package com.spela.player.data.repository
 
 import com.spela.player.SpelaDatabase
+import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.UpdateDevicePreferencesRequest
 import com.spela.player.data.remote.dto.UpdatePreferencesRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ShaderPreset
@@ -11,6 +13,7 @@ import com.spela.player.domain.repository.PreferencesRepository
 class PreferencesRepositoryImpl(
     private val apiClient: SpelaApiClient,
     private val database: SpelaDatabase,
+    private val deviceManager: DeviceManager,
 ) : PreferencesRepository {
 
     override suspend fun getPreferences(): Result<UserPreferences> = runCatching {
@@ -53,6 +56,33 @@ class PreferencesRepositoryImpl(
         return database.spelaDatabaseQueries.getAllShaderOverrides()
             .executeAsList()
             .associate { it.console_id to ShaderPreset.fromApiId(it.shader) }
+    }
+
+    override suspend fun syncDeviceShaderOverrides() {
+        val serverDeviceId = deviceManager.getServerDeviceId() ?: return
+        runCatching {
+            val serverDevice = apiClient.getDevices().find {
+                it.id == serverDeviceId
+            } ?: return
+
+            // Merge server device shader overrides into local cache
+            for ((consoleId, shader) in serverDevice.consoleShaders) {
+                val preset = ShaderPreset.fromApiId(shader)
+                if (preset != ShaderPreset.NONE) {
+                    database.spelaDatabaseQueries.insertShaderOverride(consoleId, preset.apiId)
+                }
+            }
+        }
+    }
+
+    /** Push all local device shader overrides to the server */
+    suspend fun pushDeviceShaderOverridesToServer() {
+        val serverDeviceId = deviceManager.getServerDeviceId() ?: return
+        val overrides = getAllDeviceShaderOverrides()
+        val shaderMap = overrides.mapValues { it.value.apiId }
+        runCatching {
+            apiClient.updateDevicePreferences(serverDeviceId, UpdateDevicePreferencesRequest(shaderMap))
+        }
     }
 
     override suspend fun resolveShader(consoleId: String): ShaderPreset {

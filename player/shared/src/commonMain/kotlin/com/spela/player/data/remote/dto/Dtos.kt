@@ -133,6 +133,30 @@ data class UpdatePreferencesRequest(
     val consoleShaders: Map<String, String>? = null,
 )
 
+// Devices
+
+@Serializable
+data class RegisterDeviceRequest(
+    val deviceUuid: String,
+    val name: String,
+    val platform: String,
+)
+
+@Serializable
+data class DeviceDto(
+    val id: Long,
+    val deviceUuid: String,
+    val name: String,
+    val platform: String,
+    val lastSeenAt: String = "",
+    val consoleShaders: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+data class UpdateDevicePreferencesRequest(
+    val consoleShaders: Map<String, String>,
+)
+
 /** Wrapper for GET /api/games/:id/core when core is not in DB */
 @Serializable
 data class CoreNameResponse(

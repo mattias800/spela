@@ -1,5 +1,6 @@
 package com.spela.player.di
 
+import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
@@ -19,6 +20,9 @@ val commonModule = module {
     single { CoroutineScope(SupervisorJob() + get<DispatcherProvider>().main) }
     single { TokenManager() }
 
+    /* Device */
+    single { DeviceManager(get(), get()) }
+
     /* Repositories */
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<GameRepository> { GameRepositoryImpl(get()) }
@@ -26,11 +30,11 @@ val commonModule = module {
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl() }
-    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get()) }
+    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
 
     /* Use Cases */
-    factory { LoginUseCase(get()) }
-    factory { RegisterUseCase(get()) }
+    factory { LoginUseCase(get(), get()) }
+    factory { RegisterUseCase(get(), get()) }
     factory { GetCurrentUserUseCase(get()) }
     factory { LogoutUseCase(get()) }
     factory { IsLoggedInUseCase(get()) }
@@ -113,6 +117,7 @@ val commonModule = module {
             downloadRepository = get(),
             preferencesRepository = get(),
             gameRepository = get(),
+            deviceManager = get(),
             dispatchers = get(),
             scope = get(),
         )

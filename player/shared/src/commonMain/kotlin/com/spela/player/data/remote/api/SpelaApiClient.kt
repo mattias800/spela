@@ -139,6 +139,30 @@ class SpelaApiClient(
         }.body()
     }
 
+    // Devices
+
+    suspend fun registerDevice(request: RegisterDeviceRequest): DeviceDto {
+        return client.post("$baseUrl/api/user/devices") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun getDevices(): List<DeviceDto> {
+        return client.get("$baseUrl/api/user/devices").body()
+    }
+
+    suspend fun updateDevice(deviceId: Long, name: String): DeviceDto {
+        return client.put("$baseUrl/api/user/devices/$deviceId") {
+            setBody(mapOf("name" to name))
+        }.body()
+    }
+
+    suspend fun updateDevicePreferences(deviceId: Long, request: UpdateDevicePreferencesRequest): DeviceDto {
+        return client.put("$baseUrl/api/user/devices/$deviceId/preferences") {
+            setBody(request)
+        }.body()
+    }
+
     // Game Download
 
     suspend fun downloadGame(gameId: String, onProgress: (Long, Long) -> Unit = { _, _ -> }): ByteArray {

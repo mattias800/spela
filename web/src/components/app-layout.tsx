@@ -4,6 +4,7 @@ import {
   Gamepad2,
   Library,
   Heart,
+  SlidersHorizontal,
   Settings,
   Users,
   ScanSearch,
@@ -27,6 +28,7 @@ export function AppLayout() {
         { to: "/consoles", icon: Gamepad2, label: "Consoles" },
         { to: "/games", icon: Library, label: "Games" },
         { to: "/favorites", icon: Heart, label: "Favorites" },
+        { to: "/preferences", icon: SlidersHorizontal, label: "Preferences" },
       ],
     },
     ...(isAdmin

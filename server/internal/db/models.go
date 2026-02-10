@@ -148,6 +148,30 @@ type ConsoleShaderPreference struct {
 	Shader    string         `gorm:"size:64;not null" json:"shader"`
 }
 
+// Device represents a registered user device.
+type Device struct {
+	ID         uint           `gorm:"primarykey" json:"id"`
+	CreatedAt  time.Time      `json:"createdAt"`
+	UpdatedAt  time.Time      `json:"updatedAt"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID     uint           `gorm:"index;not null" json:"userId"`
+	DeviceUUID string         `gorm:"uniqueIndex;size:64;not null" json:"deviceUuid"`
+	Name       string         `gorm:"size:128;not null" json:"name"`
+	Platform   string         `gorm:"size:32;not null" json:"platform"` // "android", "macos", "linux", "windows"
+	LastSeenAt time.Time      `json:"lastSeenAt"`
+}
+
+// DeviceShaderPreference stores a per-device per-console shader override.
+type DeviceShaderPreference struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	DeviceID  uint           `gorm:"uniqueIndex:idx_device_console_shader;not null" json:"deviceId"`
+	ConsoleID uint           `gorm:"uniqueIndex:idx_device_console_shader;not null" json:"consoleId"`
+	Shader    string         `gorm:"size:64;not null" json:"shader"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

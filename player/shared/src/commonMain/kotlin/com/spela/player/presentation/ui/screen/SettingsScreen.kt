@@ -46,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpConfirmDialog
+import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -132,6 +133,14 @@ fun SettingsScreen(
                                 color = SpColor.OnBackgroundTertiary,
                             )
                         }
+                        Spacer(Modifier.height(SpSpacing.Default))
+                        SpTextField(
+                            value = state.deviceName,
+                            onValueChange = { viewModel.onIntent(SettingsIntent.UpdateDeviceName(it)) },
+                            label = "Device Name",
+                            placeholder = "My device",
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                         Spacer(Modifier.height(SpSpacing.Default))
                         SpButton(
                             text = "Sign Out",

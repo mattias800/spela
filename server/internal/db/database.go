@@ -30,6 +30,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&ServerSetting{},
 		&Core{},
 		&ConsoleShaderPreference{},
+		&Device{},
+		&DeviceShaderPreference{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

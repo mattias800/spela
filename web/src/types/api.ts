@@ -107,3 +107,23 @@ export interface MetadataSuggestion {
   genre?: string;
   confidence: number;
 }
+
+export interface Device {
+  id: number;
+  userId: number;
+  deviceUuid: string;
+  name: string;
+  platform: string;
+  lastSeenAt: string;
+  createdAt: string;
+  updatedAt: string;
+  consoleShaders: Record<string, string>;
+}
+
+export interface UserPreferences {
+  showPerformanceOverlay: boolean;
+  autoSaveEnabled: boolean;
+  autoLoadSaveEnabled: boolean;
+  selectedShader: string;
+  consoleShaders: Record<string, string>;
+}

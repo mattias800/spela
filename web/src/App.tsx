@@ -16,6 +16,7 @@ import { AdminUsersPage } from "@/pages/admin/users-page";
 import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
+import { PreferencesPage } from "@/pages/preferences-page";
 import { SetupPage } from "@/pages/setup-page";
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ export function App() {
                 <Route path="games" element={<GamesPage />} />
                 <Route path="games/:id" element={<GameDetailPage />} />
                 <Route path="favorites" element={<FavoritesPage />} />
+                <Route path="preferences" element={<PreferencesPage />} />
 
                 {/* Admin routes */}
                 <Route
