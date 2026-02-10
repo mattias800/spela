@@ -77,8 +77,8 @@ test.describe("Emulator Save State Sync", () => {
       // Give the save queue time to process
       await page.waitForTimeout(1_000);
 
-      // Navigate away using the Back button
-      await page.getByText("Back").click();
+      // Navigate away using the Back button (exact match to avoid "Back to Game")
+      await page.getByRole("button", { name: "Back", exact: true }).click();
       await expect(page).toHaveURL(`/games/${gameId}`, { timeout: 10_000 });
 
       // The auto-save endpoint should have been called
@@ -183,11 +183,12 @@ test.describe("Emulator Save State Sync", () => {
     test("manual save button sends save request and shows saving indicator", async ({ page }) => {
       const gameId = await navigateToPlayPage(page);
 
-      // Intercept manual save uploads
+      // Intercept manual save uploads with a delay so "Saving..." indicator is visible
       let manualSaveUploaded = false;
-      await page.route(`**/api/games/${gameId}/saves`, (route) => {
+      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
         if (route.request().method() === "POST") {
           manualSaveUploaded = true;
+          await new Promise((r) => setTimeout(r, 1_500));
           route.fulfill({
             status: 201,
             json: {
@@ -217,10 +218,7 @@ test.describe("Emulator Save State Sync", () => {
       // Click Save State button
       await page.getByTitle("Save State").click();
 
-      // Should show "Saving state..." toast
-      await expect(page.getByText(/saving state/i)).toBeVisible({ timeout: 3_000 });
-
-      // Simulate the emulator responding with save data
+      // Simulate the emulator responding with save data (triggers the save queue)
       await page.evaluate(() => {
         window.postMessage(
           {
@@ -232,8 +230,11 @@ test.describe("Emulator Save State Sync", () => {
         );
       });
 
+      // Should show "Saving..." indicator in the top bar while upload is in progress
+      await expect(page.getByText("Saving...")).toBeVisible({ timeout: 3_000 });
+
       // Wait for the save queue to process
-      await page.waitForTimeout(2_000);
+      await page.waitForTimeout(3_000);
 
       expect(manualSaveUploaded).toBe(true);
     });

@@ -122,6 +122,7 @@ export function GameDetailPage() {
                   onClick={() => navigate(`/games/${game.id}/play`)}
                   disabled={!canPlayInBrowser}
                   title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
+                  data-testid="play-in-browser-btn"
                 >
                   <Play className="h-4 w-4" />
                   Play in Browser

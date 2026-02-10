@@ -30,8 +30,7 @@ export function PlayPage() {
 
   // Resolve the EmulatorJS core identifier for this game's console
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
-  const emulatorJsCore = consoleInfo?.emulatorJsCore
-    ?? (consoleInfo ? getEmulatorJsCore(consoleInfo.abbreviation) : null);
+  const emulatorJsCore = consoleInfo?.emulatorJsCore || null;
   const isSupported = !!emulatorJsCore;
 
   // Resolve shader: per-console override → global default → none, then map to EmulatorJS name
@@ -339,7 +338,7 @@ export function PlayPage() {
         {!saves || saves.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
-            title="No save states"
+            title="No save states available"
             description="Play the game and save your progress to see saves here."
           />
         ) : (
@@ -371,28 +370,3 @@ export function PlayPage() {
   );
 }
 
-/**
- * Map Spela console abbreviation to EmulatorJS EJS_core identifier.
- * This is a temporary mapping until Task #2 adds `emulatorJsCore` to the API.
- */
-function getEmulatorJsCore(abbreviation: string): string | null {
-  const map: Record<string, string> = {
-    NES: "nes",
-    SNES: "snes",
-    GB: "gb",
-    GBC: "gbc",
-    GBA: "gba",
-    N64: "n64",
-    NDS: "nds",
-    SMS: "segaMS",
-    GEN: "segaMD",
-    SAT: "segaSaturn",
-    PS1: "psx",
-    PSP: "psp",
-    NGP: "ngp",
-    ARC: "arcade",
-    PCE: "pce",
-    "2600": "atari2600",
-  };
-  return map[abbreviation] ?? null;
-}

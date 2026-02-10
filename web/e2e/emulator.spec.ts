@@ -13,7 +13,7 @@ test.describe("Emulator Page", () => {
       await expect(page).toHaveURL(/\/games\/\d+$/);
 
       // The "Play in Browser" button should be visible and enabled
-      const playButton = page.getByRole("button", { name: /play in browser/i });
+      const playButton = page.getByTestId("play-in-browser-btn");
       await expect(playButton).toBeVisible();
       await expect(playButton).toBeEnabled();
     });
@@ -31,7 +31,7 @@ test.describe("Emulator Page", () => {
       const gameId = url.match(/\/games\/(\d+)$/)?.[1];
       expect(gameId).toBeTruthy();
 
-      await page.getByRole("button", { name: /play in browser/i }).click();
+      await page.getByTestId("play-in-browser-btn").click();
       await expect(page).toHaveURL(`/games/${gameId}/play`);
     });
   });
@@ -57,8 +57,8 @@ test.describe("Emulator Page", () => {
         timeout: 15_000,
       });
 
-      // Back button should be visible
-      await expect(page.getByText("Back")).toBeVisible();
+      // Back button should be visible (use exact match to avoid matching "Back to Game")
+      await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
 
       // Toolbar buttons should be present (Save, Load, Fullscreen)
       await expect(page.getByTitle("Save State")).toBeVisible();
@@ -95,6 +95,13 @@ test.describe("Emulator Page", () => {
 
       await page.goto(`/games/${gameId}/play`);
 
+      // Wait for the page to finish loading game data first
+      await expect(
+        page.locator('iframe[src="/emulator.html"]').or(
+          page.getByText(/initializing emulator|loading rom|error|not available|failed/i),
+        ).first(),
+      ).toBeVisible({ timeout: 15_000 });
+
       // Loading indicator should appear (may be brief)
       // Check for the loading text or the spinner
       const loadingText = page.getByText(/initializing emulator|loading rom/i);
@@ -120,11 +127,11 @@ test.describe("Emulator Page", () => {
 
       await page.goto(`/games/${gameId}/play`);
 
-      // Wait for the page to be ready
-      await expect(page.getByText("Back")).toBeVisible({ timeout: 15_000 });
+      // Wait for the page to be ready (use exact match to avoid matching "Back to Game")
+      await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible({ timeout: 15_000 });
 
       // Click the Back button to return to game detail
-      await page.getByText("Back").click();
+      await page.getByRole("button", { name: "Back", exact: true }).click();
 
       await expect(page).toHaveURL(`/games/${gameId}`, { timeout: 10_000 });
     });
@@ -132,28 +139,30 @@ test.describe("Emulator Page", () => {
 
   test.describe("Unsupported Console Handling", () => {
     test("shows not available message for unsupported console", async ({ page }) => {
-      // Use the API to find a console without emulatorJsCore, or test the
-      // PlayPage's unsupported state by checking the consoles API response.
-      // Since all seeded consoles have emulatorJsCore, we test by intercepting
-      // the console API to simulate an unsupported one.
+      // Intercept the consoles API BEFORE any navigation so the cache
+      // is populated with modified data from the very first request.
+      await page.route("**/api/consoles", async (route) => {
+        try {
+          const response = await route.fetch();
+          const consoles = await response.json();
+          // Remove emulatorJsCore from all consoles to simulate unsupported
+          const modified = consoles.map((c: Record<string, unknown>) => ({
+            ...c,
+            emulatorJsCore: "",
+          }));
+          await route.fulfill({ json: modified });
+        } catch {
+          // Page may have closed during route handling
+        }
+      });
+
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
       await page.getByText("Castlevania", { exact: false }).first().click();
+      await expect(page).toHaveURL(/\/games\/\d+$/);
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
-
-      // Intercept the consoles API to remove emulatorJsCore for all consoles
-      await page.route("**/api/consoles", async (route) => {
-        const response = await route.fetch();
-        const consoles = await response.json();
-        // Remove emulatorJsCore from all consoles to simulate unsupported
-        const modified = consoles.map((c: Record<string, unknown>) => ({
-          ...c,
-          emulatorJsCore: "",
-        }));
-        await route.fulfill({ json: modified });
-      });
 
       await page.goto(`/games/${gameId}/play`);
 
@@ -170,13 +179,17 @@ test.describe("Emulator Page", () => {
     test("Play in Browser button is disabled for unsupported console", async ({ page }) => {
       // Intercept consoles API to remove emulatorJsCore
       await page.route("**/api/consoles", async (route) => {
-        const response = await route.fetch();
-        const consoles = await response.json();
-        const modified = consoles.map((c: Record<string, unknown>) => ({
-          ...c,
-          emulatorJsCore: "",
-        }));
-        await route.fulfill({ json: modified });
+        try {
+          const response = await route.fetch();
+          const consoles = await response.json();
+          const modified = consoles.map((c: Record<string, unknown>) => ({
+            ...c,
+            emulatorJsCore: "",
+          }));
+          await route.fulfill({ json: modified });
+        } catch {
+          // Page may have closed during route handling
+        }
       });
 
       await page.goto("/games");
@@ -186,7 +199,7 @@ test.describe("Emulator Page", () => {
       await page.getByText("Castlevania", { exact: false }).first().click();
       await expect(page).toHaveURL(/\/games\/\d+$/);
 
-      const playButton = page.getByRole("button", { name: /play in browser/i });
+      const playButton = page.getByTestId("play-in-browser-btn");
       await expect(playButton).toBeVisible();
       await expect(playButton).toBeDisabled();
     });
