@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -59,10 +60,11 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 // preferencesResponse is the JSON shape for the preferences endpoints.
 type preferencesResponse struct {
-	ShowPerformanceOverlay bool   `json:"showPerformanceOverlay"`
-	AutoSaveEnabled        bool   `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled    bool   `json:"autoLoadSaveEnabled"`
-	SelectedShader         string `json:"selectedShader"`
+	ShowPerformanceOverlay bool              `json:"showPerformanceOverlay"`
+	AutoSaveEnabled        bool              `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled    bool              `json:"autoLoadSaveEnabled"`
+	SelectedShader         string            `json:"selectedShader"`
+	ConsoleShaders         map[string]string `json:"consoleShaders"`
 }
 
 // GetPreferences returns the current user's emulation preferences.
@@ -73,28 +75,34 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
+
+	consoleShaders := h.buildConsoleShaderMap(userID.(uint))
+
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
+		ConsoleShaders:         consoleShaders,
 	})
 }
 
 // UpdatePreferences partially updates the current user's emulation preferences.
 func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	userID, _ := c.Get("userId")
+	uid := userID.(uint)
 	var user db.User
-	if err := h.DB.First(&user, userID).Error; err != nil {
+	if err := h.DB.First(&user, uid).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
 	var req struct {
-		ShowPerformanceOverlay *bool   `json:"showPerformanceOverlay"`
-		AutoSaveEnabled        *bool   `json:"autoSaveEnabled"`
-		AutoLoadSaveEnabled    *bool   `json:"autoLoadSaveEnabled"`
-		SelectedShader         *string `json:"selectedShader"`
+		ShowPerformanceOverlay *bool              `json:"showPerformanceOverlay"`
+		AutoSaveEnabled        *bool              `json:"autoSaveEnabled"`
+		AutoLoadSaveEnabled    *bool              `json:"autoLoadSaveEnabled"`
+		SelectedShader         *string            `json:"selectedShader"`
+		ConsoleShaders         map[string]string  `json:"consoleShaders"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
@@ -119,12 +127,55 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		return
 	}
 
+	// Process per-console shader updates
+	if req.ConsoleShaders != nil {
+		for consoleIDStr, shader := range req.ConsoleShaders {
+			var consoleID uint
+			if _, err := fmt.Sscanf(consoleIDStr, "%d", &consoleID); err != nil {
+				continue
+			}
+			if shader == "" || shader == "none" {
+				// Delete the row to revert to global default
+				h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).
+					Delete(&db.ConsoleShaderPreference{})
+			} else {
+				// Upsert: update if exists, create if not
+				var existing db.ConsoleShaderPreference
+				result := h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
+				if result.Error == nil {
+					h.DB.Model(&existing).Update("shader", shader)
+				} else {
+					h.DB.Create(&db.ConsoleShaderPreference{
+						UserID:    uid,
+						ConsoleID: consoleID,
+						Shader:    shader,
+					})
+				}
+			}
+		}
+	}
+
+	consoleShaders := h.buildConsoleShaderMap(uid)
+
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
+		ConsoleShaders:         consoleShaders,
 	})
+}
+
+// buildConsoleShaderMap queries all ConsoleShaderPreference rows for the user
+// and returns a map keyed by console ID string.
+func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
+	var prefs []db.ConsoleShaderPreference
+	h.DB.Where("user_id = ?", userID).Find(&prefs)
+	m := make(map[string]string, len(prefs))
+	for _, p := range prefs {
+		m[fmt.Sprintf("%d", p.ConsoleID)] = p.Shader
+	}
+	return m
 }
 
 // GetRecentGames returns the user's recently played games as a flat Game array.

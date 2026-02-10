@@ -1,0 +1,127 @@
+appId: com.spela.player
+---
+
+# Test: Per-console shader selection persists across navigation
+#
+# Verifies that selecting a shader for a specific console under the
+# "Per Console" tab saves correctly and is still shown after
+# navigating away and returning to Settings.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings ──
+
+- tapOn: "Settings"
+
+# ── Scroll to Video Filter section ──
+
+- scrollUntilVisible:
+    element:
+      text: "Video Filter"
+    direction: DOWN
+
+# ── Switch to Per Console tab ──
+
+- tapOn: "Per Console"
+
+# ── Expand Super Nintendo ──
+
+- scrollUntilVisible:
+    element:
+      text: "Super Nintendo"
+    direction: DOWN
+
+- tapOn: "Super Nintendo"
+
+# ── Select CRT Classic shader for SNES ──
+
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
+
+- tapOn: "CRT Classic"
+
+# ── Navigate away from Settings (back to Home tab) ──
+
+- tapOn: "Home"
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000
+
+# ── Return to Settings ──
+
+- tapOn: "Settings"
+
+- scrollUntilVisible:
+    element:
+      text: "Video Filter"
+    direction: DOWN
+
+# ── Switch to Per Console tab ──
+
+- tapOn: "Per Console"
+
+# ── Verify SNES still shows CRT Classic as its shader ──
+# The console card subtitle displays the effective shader name.
+# Since we selected CRT Classic for SNES, it should persist.
+
+- scrollUntilVisible:
+    element:
+      text: "Super Nintendo"
+    direction: DOWN
+
+- assertVisible: "CRT Classic"

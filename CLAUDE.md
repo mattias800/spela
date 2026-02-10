@@ -43,7 +43,8 @@ Spela is a self-hosted game emulation service with three components:
 All server-side data uses GORM with SQLite, auto-migrated on startup (`server/internal/db/database.go`).
 
 **Per-user global data** (synced across all devices):
-- `User` — profile (email, avatar) + emulation preferences (overlay, auto-save, auto-load)
+- `User` — profile (email, avatar) + emulation preferences (overlay, auto-save, auto-load, global default shader)
+- `ConsoleShaderPreference` — per-console shader overrides `(user_id, console_id, shader)` with unique constraint on `(user_id, console_id)`
 - `Favorite` — favorited games
 - `PlayHistory` — last played timestamps and total play time per game
 - `SaveState` — game save files (stored on filesystem, metadata in DB)
@@ -63,6 +64,7 @@ Local persistence uses **SQLDelight** (`player/shared/src/commonMain/sqldelight/
 - `CachedGameEntity` — game metadata cache (covers, descriptions)
 - `DownloadEntity` — downloaded game tracking (local paths, sizes, timestamps)
 - `PlayHistoryEntity` — local play history
+- `ShaderOverrideEntity` — device-local per-console shader overrides (never synced to server)
 
 **File-based storage** (`FileStorage` interface, platform implementations):
 - `games/` — downloaded ROM files
@@ -72,8 +74,11 @@ Local persistence uses **SQLDelight** (`player/shared/src/commonMain/sqldelight/
 
 **Emulation preferences** (per-user, synced via server):
 - `showPerformanceOverlay`, `autoSaveEnabled`, `autoLoadSaveEnabled`
-- Stored as fields on the `User` model on the server, fetched via `GET/PUT /api/user/preferences`
+- `selectedShader` — global default shader (fallback when no per-console preference is set)
+- `consoleShaders` — per-console shader preferences, synced across all devices
+- Stored as fields on the `User` model and `ConsoleShaderPreference` table on the server, fetched via `GET/PUT /api/user/preferences`
 - Player app uses `PreferencesRepository` to read/write; `SettingsViewModel` does optimistic updates with server sync
+- Shader resolution order: device override → server per-console → server global default → NONE
 
 ### Scope Summary
 | Data | Scope | Storage |
@@ -83,6 +88,9 @@ Local persistence uses **SQLDelight** (`player/shared/src/commonMain/sqldelight/
 | Auth tokens, game cache, downloads | Per-device | Player SQLDelight DB |
 | Server connections | Per-device | Player SQLDelight DB |
 | Emulation toggles (overlay, auto-save) | Per-user, all devices | Server DB (`User` fields) |
+| Shader global default | Per-user, all devices | Server DB (`User.SelectedShader`) |
+| Shader per-console preferences | Per-user, all devices | Server DB (`ConsoleShaderPreference`) |
+| Shader per-device overrides | Per-device | Player SQLDelight DB (`ShaderOverrideEntity`) |
 | Server admin settings | Global | Server DB (`ServerSetting`) |
 
 ## Architecture Decisions

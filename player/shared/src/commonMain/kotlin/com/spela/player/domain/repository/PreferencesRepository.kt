@@ -1,5 +1,6 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
 
 interface PreferencesRepository {
@@ -9,5 +10,10 @@ interface PreferencesRepository {
         autoSaveEnabled: Boolean? = null,
         autoLoadSaveEnabled: Boolean? = null,
         selectedShader: String? = null,
+        consoleShaders: Map<String, String>? = null,
     ): Result<UserPreferences>
+    fun getDeviceShaderOverride(consoleId: String): ShaderPreset?
+    fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?)
+    fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset>
+    suspend fun resolveShader(consoleId: String): ShaderPreset
 }

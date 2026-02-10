@@ -26,7 +26,7 @@ val commonModule = module {
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl() }
-    single<PreferencesRepository> { PreferencesRepositoryImpl(get()) }
+    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get()) }
 
     /* Use Cases */
     factory { LoginUseCase(get()) }
@@ -112,6 +112,7 @@ val commonModule = module {
             authRepository = get(),
             downloadRepository = get(),
             preferencesRepository = get(),
+            gameRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

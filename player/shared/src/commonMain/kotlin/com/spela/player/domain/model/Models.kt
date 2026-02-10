@@ -105,6 +105,7 @@ data class UserPreferences(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
+    val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
 )
 
 enum class DownloadState {

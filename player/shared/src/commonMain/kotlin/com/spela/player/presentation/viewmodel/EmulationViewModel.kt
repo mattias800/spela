@@ -65,16 +65,22 @@ class EmulationViewModel(
             // Fetch user preferences (fallback to defaults on error)
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
+
+            // Get game detail for consoleId
+            var consoleId = ""
+            getGameDetailUseCase(gameId).onSuccess { detail ->
+                _state.update { it.copy(gameTitle = detail.game.title) }
+                consoleId = detail.game.consoleId
+            }
+
+            // Resolve shader using two-layer system
+            val resolvedShader = preferencesRepository.resolveShader(consoleId)
+
             _state.update {
                 it.copy(
                     showPerformanceOverlay = currentPreferences.showPerformanceOverlay,
-                    selectedShader = currentPreferences.selectedShader,
+                    selectedShader = resolvedShader,
                 )
-            }
-
-            // Get game title
-            getGameDetailUseCase(gameId).onSuccess { detail ->
-                _state.update { it.copy(gameTitle = detail.game.title) }
             }
 
             // Prepare game and core files

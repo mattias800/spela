@@ -137,6 +137,17 @@ type ServerSetting struct {
 	Value string `gorm:"type:text" json:"value"`
 }
 
+// ConsoleShaderPreference stores a user's per-console shader override.
+type ConsoleShaderPreference struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"userId"`
+	ConsoleID uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"consoleId"`
+	Shader    string         `gorm:"size:64;not null" json:"shader"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

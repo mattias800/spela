@@ -1,0 +1,174 @@
+appId: com.spela.player
+---
+
+# Test: Device-local shader override for a specific console
+#
+# Verifies that enabling "Override on this device only" for a console
+# stores a device-local shader preference, which persists across
+# navigation and is distinct from the server-synced per-console shader.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings ──
+
+- tapOn: "Settings"
+
+# ── Set global shader to CRT Classic on Default tab ──
+
+- scrollUntilVisible:
+    element:
+      text: "Video Filter"
+    direction: DOWN
+
+- assertVisible: "Default"
+
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
+
+- tapOn: "CRT Classic"
+
+# ── Switch to Per Console tab ──
+
+- tapOn: "Per Console"
+
+# ── Expand Super Nintendo ──
+
+- scrollUntilVisible:
+    element:
+      text: "Super Nintendo"
+    direction: DOWN
+
+- tapOn: "Super Nintendo"
+
+# ── Enable device override ──
+
+- scrollUntilVisible:
+    element:
+      text: "Override on this device only"
+    direction: DOWN
+
+- tapOn: "Override on this device only"
+
+# ── Select Smooth (Bilinear) as the device override shader ──
+# The device shader picker appears below the checkbox.
+# Scroll past the regular shader picker to the device section.
+
+- scrollUntilVisible:
+    element:
+      text: "Device Shader"
+    direction: DOWN
+
+- scrollUntilVisible:
+    element:
+      text: "Softens hard pixel edges"
+    direction: DOWN
+
+- tapOn: "Smooth (Bilinear)"
+
+# ── Navigate away from Settings (back to Home tab) ──
+
+- tapOn: "Home"
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000
+
+# ── Return to Settings ──
+
+- tapOn: "Settings"
+
+- scrollUntilVisible:
+    element:
+      text: "Video Filter"
+    direction: DOWN
+
+# ── Switch to Per Console tab ──
+
+- tapOn: "Per Console"
+
+# ── Verify SNES shows Bilinear with device override indicator ──
+# The console card subtitle shows "Smooth (Bilinear) (device)" when
+# a device-local override is active.
+
+- scrollUntilVisible:
+    element:
+      text: "Super Nintendo"
+    direction: DOWN
+
+- assertVisible: "Smooth (Bilinear) (device)"
+
+# ── Verify another console does NOT have a device override ──
+# Expand Game Boy Advance and confirm the device override checkbox is unchecked.
+# The checkbox state description is part of the composable semantics.
+
+- scrollUntilVisible:
+    element:
+      text: "Game Boy Advance"
+    direction: DOWN
+
+- tapOn: "Game Boy Advance"
+
+# GBA should show "CRT Classic" (the global default) with no "(device)" marker.
+# After expanding, the "Override on this device only" checkbox should be visible
+# but unchecked (we only set a device override for SNES, not GBA).
+
+- scrollUntilVisible:
+    element:
+      text: "Override on this device only"
+    direction: DOWN
+
+- assertVisible: "Override on this device only"

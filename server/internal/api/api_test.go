@@ -31,6 +31,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.User{}, &db.Console{}, &db.Game{}, &db.SaveState{},
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},
 		&db.ServerSetting{}, &db.Core{},
+		&db.ConsoleShaderPreference{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
@@ -561,6 +562,166 @@ func TestUpdatePreferences_ShaderSelection(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	assert.Equal(t, "crt-simple", prefs["selectedShader"])
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+}
+
+func TestGetPreferences_IncludesConsoleShaders(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &prefs)
+	require.NoError(t, err)
+	consoleShaders, ok := prefs["consoleShaders"].(map[string]interface{})
+	require.True(t, ok, "consoleShaders should be an object")
+	assert.Empty(t, consoleShaders, "consoleShaders should be empty by default")
+}
+
+func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleShaders": map[string]string{"1": "crt-royale"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
+	assert.Equal(t, "crt-royale", consoleShaders["1"])
+
+	// GET to verify persistence
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	consoleShaders = prefs["consoleShaders"].(map[string]interface{})
+	assert.Equal(t, "crt-royale", consoleShaders["1"])
+}
+
+func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// First set a console shader
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleShaders": map[string]string{"1": "crt-royale"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Remove by setting to "none"
+	body, _ = json.Marshal(map[string]interface{}{
+		"consoleShaders": map[string]string{"1": "none"},
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
+	_, exists := consoleShaders["1"]
+	assert.False(t, exists, "console shader should be removed after setting to 'none'")
+}
+
+func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Set a per-console shader
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleShaders": map[string]string{"1": "crt-royale"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	// Global shader should still be the default
+	assert.Equal(t, "none", prefs["selectedShader"])
+	// Per-console should be set
+	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
+	assert.Equal(t, "crt-royale", consoleShaders["1"])
+
+	// Now set global shader — per-console should not change
+	body, _ = json.Marshal(map[string]interface{}{
+		"selectedShader": "crt-simple",
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "crt-simple", prefs["selectedShader"])
+	consoleShaders = prefs["consoleShaders"].(map[string]interface{})
+	assert.Equal(t, "crt-royale", consoleShaders["1"])
+}
+
+func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Set a per-console shader
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleShaders": map[string]string{"2": "lcd-grid"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Update a boolean pref only — console shaders should survive
+	body, _ = json.Marshal(map[string]interface{}{
+		"showPerformanceOverlay": true,
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
+	assert.Equal(t, "lcd-grid", consoleShaders["2"], "console shader should be preserved after partial update")
 }
 
 // registerAndGetToken registers a user and returns an access token.

@@ -124,3 +124,21 @@ SELECT * FROM PlayHistoryEntity WHERE game_id = ? ORDER BY started_at DESC;
 
 getRecentPlayHistory:
 SELECT * FROM PlayHistoryEntity ORDER BY started_at DESC LIMIT ?;
+
+-- Device-local shader overrides (never synced to server)
+CREATE TABLE ShaderOverrideEntity (
+    console_id TEXT NOT NULL PRIMARY KEY,
+    shader TEXT NOT NULL
+);
+
+insertShaderOverride:
+INSERT OR REPLACE INTO ShaderOverrideEntity(console_id, shader) VALUES (?, ?);
+
+getShaderOverride:
+SELECT shader FROM ShaderOverrideEntity WHERE console_id = ?;
+
+getAllShaderOverrides:
+SELECT * FROM ShaderOverrideEntity;
+
+deleteShaderOverride:
+DELETE FROM ShaderOverrideEntity WHERE console_id = ?;

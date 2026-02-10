@@ -1,8 +1,10 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
+import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class ShaderScope { DEFAULT, PER_CONSOLE }
+
 data class SettingsState(
     val username: String = "",
     val serverUrl: String = "",
@@ -20,6 +24,11 @@ data class SettingsState(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
+    val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
+    val deviceShaderOverrides: Map<String, ShaderPreset> = emptyMap(),
+    val consoles: List<Console> = emptyList(),
+    val shaderScope: ShaderScope = ShaderScope.DEFAULT,
+    val expandedConsoleId: String? = null,
     val showLogoutConfirm: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
 )
@@ -30,6 +39,10 @@ sealed interface SettingsIntent {
     data object ToggleAutoSave : SettingsIntent
     data object ToggleAutoLoadSave : SettingsIntent
     data class SelectShader(val shader: ShaderPreset) : SettingsIntent
+    data class SwitchShaderScope(val scope: ShaderScope) : SettingsIntent
+    data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
+    data class SetDeviceOverride(val consoleId: String, val shader: ShaderPreset?) : SettingsIntent
+    data class ExpandConsole(val consoleId: String?) : SettingsIntent
     data object ShowLogoutConfirm : SettingsIntent
     data object DismissLogoutConfirm : SettingsIntent
     data object Logout : SettingsIntent
@@ -42,6 +55,7 @@ class SettingsViewModel(
     private val authRepository: AuthRepository,
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val gameRepository: GameRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -67,6 +81,16 @@ class SettingsViewModel(
                 apiCall = { preferencesRepository.updatePreferences(autoLoadSaveEnabled = it) },
             )
             is SettingsIntent.SelectShader -> selectShader(intent.shader)
+            is SettingsIntent.SwitchShaderScope ->
+                _state.update { it.copy(shaderScope = intent.scope) }
+            is SettingsIntent.SelectConsoleShader ->
+                selectConsoleShader(intent.consoleId, intent.shader)
+            is SettingsIntent.SetDeviceOverride ->
+                setDeviceOverride(intent.consoleId, intent.shader)
+            is SettingsIntent.ExpandConsole ->
+                _state.update {
+                    it.copy(expandedConsoleId = if (it.expandedConsoleId == intent.consoleId) null else intent.consoleId)
+                }
             SettingsIntent.ShowLogoutConfirm ->
                 _state.update { it.copy(showLogoutConfirm = true) }
             SettingsIntent.DismissLogoutConfirm ->
@@ -113,9 +137,17 @@ class SettingsViewModel(
                         autoSaveEnabled = prefs.autoSaveEnabled,
                         autoLoadSaveEnabled = prefs.autoLoadSaveEnabled,
                         selectedShader = prefs.selectedShader,
+                        consoleShaders = prefs.consoleShaders,
                     )
                 }
             }
+
+            gameRepository.getConsoles().onSuccess { consoles ->
+                _state.update { it.copy(consoles = consoles) }
+            }
+
+            val deviceOverrides = preferencesRepository.getAllDeviceShaderOverrides()
+            _state.update { it.copy(deviceShaderOverrides = deviceOverrides) }
         }
     }
 
@@ -132,6 +164,31 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             preferencesRepository.updatePreferences(selectedShader = shader.apiId).onFailure {
                 _state.update { it.copy(selectedShader = previous) }
+            }
+        }
+    }
+
+    private fun selectConsoleShader(consoleId: String, shader: ShaderPreset) {
+        val previous = _state.value.consoleShaders
+        _state.update {
+            it.copy(consoleShaders = it.consoleShaders + (consoleId to shader))
+        }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(
+                consoleShaders = mapOf(consoleId to shader.apiId),
+            ).onFailure {
+                _state.update { it.copy(consoleShaders = previous) }
+            }
+        }
+    }
+
+    private fun setDeviceOverride(consoleId: String, shader: ShaderPreset?) {
+        preferencesRepository.setDeviceShaderOverride(consoleId, shader)
+        _state.update {
+            if (shader == null) {
+                it.copy(deviceShaderOverrides = it.deviceShaderOverrides - consoleId)
+            } else {
+                it.copy(deviceShaderOverrides = it.deviceShaderOverrides + (consoleId to shader))
             }
         }
     }

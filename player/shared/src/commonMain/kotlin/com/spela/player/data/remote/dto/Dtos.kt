@@ -121,6 +121,7 @@ data class UserPreferencesDto(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: String = "none",
+    val consoleShaders: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -129,6 +130,7 @@ data class UpdatePreferencesRequest(
     val autoSaveEnabled: Boolean? = null,
     val autoLoadSaveEnabled: Boolean? = null,
     val selectedShader: String? = null,
+    val consoleShaders: Map<String, String>? = null,
 )
 
 /** Wrapper for GET /api/games/:id/core when core is not in DB */
