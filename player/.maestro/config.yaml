@@ -1,2 +1,2 @@
-# Maestro test suite configuration
-# initFlow: setup/login-player.yaml  # TODO: re-enable once initFlow launch issue is resolved
+# Maestro test suite configuration for Spela Player
+appId: com.spela.player

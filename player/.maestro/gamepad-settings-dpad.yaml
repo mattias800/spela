@@ -10,61 +10,9 @@ appId: com.spela.player
 #
 # Uses Maestro's "Remote Dpad" keys.
 
-# ── Setup: fresh start ──
+# ── Setup: login as player ──
 
-- clearState:
-    appId: "com.spela.player"
-- launchApp:
-    appId: "com.spela.player"
-
-# ── Add server ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 5000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-- hideKeyboard
-
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-- hideKeyboard
-
-- tapOn: "Add"
-- tapOn: "Local"
-
-# ── Login as player ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 10000
-
-- tapOn: "Username"
-- inputText: "player"
-- hideKeyboard
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen loaded ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Consoles"
-    timeout: 15000
+- runFlow: setup/login-player.yaml
 
 # ── Navigate to Settings tab via touch ──
 
@@ -75,7 +23,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: ".*Emulation.*"
-    timeout: 5000
+    timeout: 3000
 
 # ── Use D-pad to navigate to the first toggle ──
 # The Settings screen has toggles like "Show Performance Overlay",
@@ -109,7 +57,7 @@ appId: com.spela.player
 # ── Verify we can still see settings content (didn't crash or navigate away) ──
 
 - assertVisible:
-    text: ".*Emulation.*|.*Shader.*|.*About.*"
+    text: ".*Emulation.*|.*Video Filter.*|.*About.*"
 
 # ── Navigate back to Home using D-pad to bottom bar ──
 # Press back doesn't switch tabs, so use D-pad to reach the bottom bar
@@ -134,4 +82,4 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 5000
+    timeout: 3000

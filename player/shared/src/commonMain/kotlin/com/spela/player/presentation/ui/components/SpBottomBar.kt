@@ -96,7 +96,7 @@ private fun SpBottomBarTab(
             )
             .focusable()
             .semantics {
-                contentDescription = "${item.label} tab"
+                contentDescription = item.label
                 role = Role.Tab
                 selected = isSelected
             }

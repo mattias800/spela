@@ -11,6 +11,8 @@ appId: com.spela.player
 
 - clearState:
     appId: "com.spela.player"
+- stopApp:
+    appId: "com.spela.player"
 - launchApp:
     appId: "com.spela.player"
 
@@ -19,7 +21,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Connect to your game server"
-    timeout: 15000
+    timeout: 8000
 
 # ── Add a server (but don't select it) ──
 
@@ -28,11 +30,12 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Server Name"
-    timeout: 5000
+    timeout: 3000
 
 - tapOn: "Server Name"
 - inputText: "Local"
 
+- hideKeyboard
 - tapOn: "Server URL"
 - inputText: "http://192.168.11.143:8080"
 
@@ -44,7 +47,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Local"
-    timeout: 5000
+    timeout: 3000
 
 # ── Close the app (without clearing state) and relaunch ──
 
@@ -63,7 +66,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Local"
-    timeout: 15000
+    timeout: 8000
 
 # ── Verify we can tap the server to reach login ──
 
@@ -72,4 +75,4 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Welcome Back"
-    timeout: 10000
+    timeout: 5000

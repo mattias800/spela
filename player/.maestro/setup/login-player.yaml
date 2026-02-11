@@ -2,7 +2,7 @@ appId: com.spela.player
 ---
 
 # Setup flow: Clear state, add server, and login as player.
-# Used as initFlow before player test suites.
+# Used via runFlow before player test suites.
 
 - clearState:
     appId: "com.spela.player"
@@ -16,15 +16,17 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Connect to your game server"
-    timeout: 15000
+    timeout: 8000
 
 - tapOn: "Add Server"
 
 - tapOn: "Server Name"
 - inputText: "Local"
+- hideKeyboard
 
 - tapOn: "Server URL"
 - inputText: "http://192.168.11.143:8080"
+- hideKeyboard
 
 - tapOn: "Add"
 
@@ -36,10 +38,11 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Welcome Back"
-    timeout: 10000
+    timeout: 5000
 
 - tapOn: "Username"
 - inputText: "player"
+- hideKeyboard
 
 - tapOn: "Password"
 - inputText: "player123"
@@ -52,4 +55,4 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 15000
+    timeout: 8000

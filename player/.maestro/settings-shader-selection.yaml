@@ -6,58 +6,9 @@ appId: com.spela.player
 # Verifies that the selected video filter (shader) is saved to the server
 # and restored after app restart.
 
-# ── Setup: fresh start ──
+# ── Setup: login as player ──
 
-- clearState:
-    appId: "com.spela.player"
-- launchApp:
-    appId: "com.spela.player"
-
-# ── Add server ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 5000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-
-- tapOn: "Add"
-- tapOn: "Local"
-
-# ── Login as player ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 10000
-
-- tapOn: "Username"
-- inputText: "player"
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Consoles"
-    timeout: 15000
+- runFlow: setup/login-player.yaml
 
 # ── Navigate to Settings ──
 
@@ -66,7 +17,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Video Filter"
-    timeout: 5000
+    timeout: 3000
 
 # ── Assert default shader is "None (Pixel Perfect)" ──
 
@@ -90,20 +41,22 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Connect to your game server"
-    timeout: 15000
+    timeout: 8000
 
 - tapOn: "Add Server"
 
 - extendedWaitUntil:
     visible:
       text: "Server Name"
-    timeout: 5000
+    timeout: 3000
 
 - tapOn: "Server Name"
 - inputText: "Local"
 
+- hideKeyboard
 - tapOn: "Server URL"
 - inputText: "http://192.168.11.143:8080"
+- hideKeyboard
 
 - tapOn: "Add"
 - tapOn: "Local"
@@ -111,10 +64,11 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Welcome Back"
-    timeout: 10000
+    timeout: 5000
 
 - tapOn: "Username"
 - inputText: "player"
+- hideKeyboard
 
 - tapOn: "Password"
 - inputText: "player123"
@@ -127,7 +81,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 15000
+    timeout: 8000
 
 # ── Navigate to Settings and verify shader persisted ──
 
@@ -136,7 +90,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Video Filter"
-    timeout: 5000
+    timeout: 3000
 
 # The "CRT Classic" shader should still be selected (persisted on server)
 - assertVisible: "CRT Classic"

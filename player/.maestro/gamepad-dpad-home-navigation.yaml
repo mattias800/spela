@@ -9,61 +9,9 @@ appId: com.spela.player
 #
 # Uses Maestro's "Remote Dpad" keys which send standard Android DPAD keycodes.
 
-# ── Setup: fresh start ──
+# ── Setup: login as player ──
 
-- clearState:
-    appId: "com.spela.player"
-- launchApp:
-    appId: "com.spela.player"
-
-# ── Add server ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 5000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-- hideKeyboard
-
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-- hideKeyboard
-
-- tapOn: "Add"
-- tapOn: "Local"
-
-# ── Login as player ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 10000
-
-- tapOn: "Username"
-- inputText: "player"
-- hideKeyboard
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen loaded ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Consoles"
-    timeout: 15000
+- runFlow: setup/login-player.yaml
 
 # ── Navigate with D-pad: move focus down to a console card ──
 # The Home screen layout (top to bottom):
@@ -91,7 +39,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Go back"
-    timeout: 5000
+    timeout: 3000
 
 # ── Navigate back with BACK key ──
 
@@ -102,7 +50,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 5000
+    timeout: 3000
 
 # ── Verify D-pad RIGHT also works for horizontal navigation ──
 
@@ -120,7 +68,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Go back"
-    timeout: 5000
+    timeout: 3000
 
 # ── Go back again ──
 
@@ -129,4 +77,4 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 5000
+    timeout: 3000

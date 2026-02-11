@@ -428,6 +428,7 @@ private fun ConsoleShaderCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onExpand)
+                    .semantics { contentDescription = console.name }
                     .padding(SpSpacing.Default),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -530,6 +531,7 @@ private fun ConsoleShaderCard(
                             .fillMaxWidth()
                             .spFocusRing(shape = RoundedCornerShape(0.dp))
                             .clickable { onToggleDeviceOverride(!hasDeviceOverride) }
+                            .semantics { contentDescription = "Override on this device only" }
                             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -622,7 +624,7 @@ private fun SettingsToggle(
             .clickable(onClick = onToggle)
             .focusable()
             .semantics {
-                contentDescription = "$title, $subtitle"
+                contentDescription = title
                 role = Role.Switch
                 stateDescription = if (isChecked) "On" else "Off"
             }
@@ -698,7 +700,7 @@ private fun ShaderOption(
             .clickable(onClick = onClick)
             .focusable()
             .semantics {
-                contentDescription = "${shader.displayName}, ${shader.description}"
+                contentDescription = shader.displayName
                 role = Role.RadioButton
                 stateDescription = if (isSelected) "Selected" else "Not selected"
             }

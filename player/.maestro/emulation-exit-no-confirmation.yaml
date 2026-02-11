@@ -12,58 +12,9 @@ appId: com.spela.player
 # Message: "This game doesn't support save states. Any unsaved progress will be lost."
 # Buttons: "Keep Playing" + "Exit Anyway"
 
-# ── Setup: fresh start ──
+# ── Setup: login as player ──
 
-- clearState:
-    appId: "com.spela.player"
-- launchApp:
-    appId: "com.spela.player"
-
-# ── Add server ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 5000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-
-- tapOn: "Add"
-- tapOn: "Local"
-
-# ── Login as player ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 10000
-
-- tapOn: "Username"
-- inputText: "player"
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Consoles"
-    timeout: 15000
+- runFlow: setup/login-player.yaml
 
 # ── Ensure auto-save is enabled in Settings ──
 
@@ -72,7 +23,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Emulation"
-    timeout: 5000
+    timeout: 3000
 
 # Verify "Auto Save on Exit" toggle is visible
 - assertVisible: "Auto Save on Exit"
@@ -83,7 +34,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 5000
+    timeout: 3000
 
 # ── Navigate to NES > Castlevania ──
 
@@ -106,25 +57,25 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "About"
-    timeout: 5000
+    timeout: 3000
 
 - tapOn: "Download"
 
 - extendedWaitUntil:
     visible:
       text: "Play"
-    timeout: 15000
+    timeout: 8000
 
 # ── Start the game ──
 
 - tapOn: "Play"
 
-# ── Wait for game to start ──
+# ── Wait for game to render ──
 
-- swipe:
-    start: "50%,50%"
-    end: "50%,50%"
-    duration: 3000
+- extendedWaitUntil:
+    visible:
+      text: "Touch controls"
+    timeout: 5000
 
 # ── Open overlay via back button ──
 
@@ -133,7 +84,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
-    timeout: 10000
+    timeout: 5000
 
 # ── Tap Exit Game ──
 # With auto-save enabled, this should immediately exit (no confirmation dialog)
@@ -147,7 +98,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Play"
-    timeout: 10000
+    timeout: 8000
 
 # Verify we're on the game detail screen (not a dialog)
 - assertNotVisible: "Exit without saving?"

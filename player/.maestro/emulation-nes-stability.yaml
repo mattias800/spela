@@ -12,58 +12,9 @@ appId: com.spela.player
 # overlay, then verifies the app remains responsive by interacting with
 # the in-game overlay.
 
-# ── Setup: fresh start ──
+# ── Setup: login as player ──
 
-- clearState:
-    appId: "com.spela.player"
-- launchApp:
-    appId: "com.spela.player"
-
-# ── Add server ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 5000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-
-- tapOn: "Add"
-- tapOn: "Local"
-
-# ── Login as player ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 10000
-
-- tapOn: "Username"
-- inputText: "player"
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Consoles"
-    timeout: 15000
+- runFlow: setup/login-player.yaml
 
 # ── Navigate to NES > Castlevania ──
 
@@ -89,23 +40,23 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Download"
-    timeout: 5000
+    timeout: 3000
 
 - tapOn: "Download"
 
 - extendedWaitUntil:
     visible:
       text: "Play"
-    timeout: 15000
+    timeout: 8000
 
 - tapOn: "Play"
 
-# ── Wait for game to start (overlay no longer auto-shows) ──
+# ── Wait for game to render ──
 
-- swipe:
-    start: "50%,50%"
-    end: "50%,50%"
-    duration: 3000
+- extendedWaitUntil:
+    visible:
+      text: "Touch controls"
+    timeout: 5000
 
 # ── Open overlay via back button ──
 
@@ -116,7 +67,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
-    timeout: 10000
+    timeout: 5000
 
 # ── Verify app is still responsive by using overlay controls ──
 
@@ -134,4 +85,4 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Play"
-    timeout: 10000
+    timeout: 8000
