@@ -24,6 +24,14 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,17 +48,24 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
+import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun InGameOverlay(
@@ -147,24 +162,29 @@ fun InGameOverlay(
                         ) {
                             OverlayAction(
                                 label = "Save",
-                                icon = "\uD83D\uDCBE",
+                                icon = Icons.Filled.Save,
                                 onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
                             )
                             OverlayAction(
                                 label = "Load",
-                                icon = "\uD83D\uDCC2",
+                                icon = Icons.Filled.FolderOpen,
                                 onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
                             )
                             OverlayAction(
                                 label = "Screenshot",
-                                icon = "\uD83D\uDCF7",
+                                icon = Icons.Filled.CameraAlt,
                                 onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                             )
                             OverlayAction(
                                 label = if (state.isFastForward) "Normal" else "Fast",
-                                icon = if (state.isFastForward) "\u25B6" else "\u23E9",
+                                icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
                                 onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                                 isActive = state.isFastForward,
+                            )
+                            OverlayAction(
+                                label = "Controls",
+                                icon = Icons.Filled.SportsEsports,
+                                onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
                             )
                         }
 
@@ -199,24 +219,29 @@ fun InGameOverlay(
                         ) {
                             OverlayAction(
                                 label = "Save",
-                                icon = "\uD83D\uDCBE",
+                                icon = Icons.Filled.Save,
                                 onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
                             )
                             OverlayAction(
                                 label = "Load",
-                                icon = "\uD83D\uDCC2",
+                                icon = Icons.Filled.FolderOpen,
                                 onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
                             )
                             OverlayAction(
                                 label = "Screenshot",
-                                icon = "\uD83D\uDCF7",
+                                icon = Icons.Filled.CameraAlt,
                                 onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                             )
                             OverlayAction(
                                 label = if (state.isFastForward) "Normal" else "Fast",
-                                icon = if (state.isFastForward) "\u25B6" else "\u23E9",
+                                icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
                                 onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                                 isActive = state.isFastForward,
+                            )
+                            OverlayAction(
+                                label = "Controls",
+                                icon = Icons.Filled.SportsEsports,
+                                onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
                             )
                         }
 
@@ -373,6 +398,37 @@ fun InGameOverlay(
             }
         }
     }
+
+    // Key mapping dialog
+    if (state.showKeyMapping) {
+        val keyMappingViewModel: KeyMappingViewModel = koinInject()
+        val keyMappingState by keyMappingViewModel.state.collectAsState()
+        val consoleId = state.consoleId
+        val layout = remember(consoleId) { DefaultKeyMappings.getLayoutForConsole(consoleId) }
+
+        LaunchedEffect(consoleId) {
+            keyMappingViewModel.onIntent(KeyMappingIntent.LoadMapping(consoleId))
+        }
+
+        KeyMappingDialog(
+            layout = layout,
+            state = keyMappingState,
+            onButtonClick = { retroButtonId ->
+                keyMappingViewModel.onIntent(KeyMappingIntent.StartSingleButtonMap(retroButtonId))
+            },
+            onStartWizard = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.StartWizard(consoleId))
+            },
+            onResetToDefaults = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
+            },
+            onDismiss = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.FinishMapping)
+                viewModel.onIntent(EmulationIntent.HideKeyMapping)
+            },
+            keyNameResolver = ::platformKeyName,
+        )
+    }
 }
 
 @Composable
@@ -398,7 +454,7 @@ private fun PerformanceBadge(
 @Composable
 private fun OverlayAction(
     label: String,
-    icon: String,
+    icon: ImageVector,
     onClick: () -> Unit,
     isActive: Boolean = false,
 ) {
@@ -423,9 +479,11 @@ private fun OverlayAction(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = icon,
-                style = SpTypography.HeadlineMedium,
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isActive) SpColor.Primary else SpColor.OnBackground,
+                modifier = Modifier.size(28.dp),
             )
         }
         Spacer(Modifier.height(SpSpacing.XSmall))

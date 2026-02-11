@@ -16,4 +16,7 @@ sealed interface EmulationIntent {
     data object ConfirmExit : EmulationIntent
     data object DismissStatus : EmulationIntent
     data object ClearExitRequest : EmulationIntent
+
+    data object ShowKeyMapping : EmulationIntent
+    data object HideKeyMapping : EmulationIntent
 }

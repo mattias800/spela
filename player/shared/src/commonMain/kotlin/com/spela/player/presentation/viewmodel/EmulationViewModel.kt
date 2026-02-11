@@ -67,6 +67,9 @@ class EmulationViewModel(
             }
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
             EmulationIntent.ClearExitRequest -> _state.update { it.copy(requestExit = false) }
+
+            EmulationIntent.ShowKeyMapping -> _state.update { it.copy(showKeyMapping = true, showOverlay = false) }
+            EmulationIntent.HideKeyMapping -> _state.update { it.copy(showKeyMapping = false, showOverlay = true) }
         }
     }
 
@@ -92,7 +95,7 @@ class EmulationViewModel(
             // Get game detail for consoleId
             var consoleId = ""
             getGameDetailUseCase(gameId).onSuccess { detail ->
-                _state.update { it.copy(gameTitle = detail.game.title) }
+                _state.update { it.copy(gameTitle = detail.game.title, consoleId = detail.game.consoleId) }
                 consoleId = detail.game.consoleId
             }
 
