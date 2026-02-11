@@ -19,11 +19,12 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: "CRT Classic"
+      text: ".*CRT Classic.*"
     direction: DOWN
     timeout: 5000
 
-- tapOn: "CRT Classic"
+- tapOn:
+    text: ".*CRT Classic.*"
 
 # ── Switch to Per Console tab ──
 

@@ -28,66 +28,19 @@ appId: com.spela.player
 
 - tapOn: "Auto Save on Exit"
 
-# ── Kill and relaunch the app ──
+# ── Kill and relaunch the app (session persists — no clearState) ──
 
 - stopApp:
     appId: "com.spela.player"
 - launchApp:
     appId: "com.spela.player"
 
-# ── Login again (state was cleared by stop) ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 8000
-
-- tapOn: "Add Server"
-
-- extendedWaitUntil:
-    visible:
-      text: "Server Name"
-    timeout: 3000
-
-- tapOn: "Server Name"
-- inputText: "Local"
-
-- hideKeyboard
-- tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
-- hideKeyboard
-
-- tapOn: "Add"
-
-- extendedWaitUntil:
-    visible:
-      text: ".*Local.*"
-    timeout: 5000
-
-- tapOn:
-    text: ".*Local.*"
-
-- extendedWaitUntil:
-    visible:
-      text: "Welcome Back"
-    timeout: 5000
-
-- tapOn: "Username"
-- inputText: "player"
-- hideKeyboard
-
-- tapOn: "Password"
-- inputText: "player123"
-
-- hideKeyboard
-- tapOn: "Sign In"
-
-# ── Home screen ──
+# ── Session is restored — expect Home screen ──
 
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 8000
+    timeout: 15000
 
 # ── Navigate to Settings and verify toggle persisted ──
 

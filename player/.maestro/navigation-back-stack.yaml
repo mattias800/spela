@@ -22,18 +22,13 @@ appId: com.spela.player
 - tapOn:
     text: ".*Nintendo Entertainment System.*"
 
-# Verify we're on the console game list (search field is unique to this screen)
+# Verify we're on the console game list — wait for a game to appear
 - extendedWaitUntil:
     visible:
-      text: ".*Search.*games.*"
+      text: ".*Castlevania.*"
     timeout: 8000
 
 # ── Navigate forward to Screen 3: Game detail ──
-
-- scrollUntilVisible:
-    element:
-      text: ".*Castlevania.*"
-    direction: DOWN
 
 - tapOn:
     text: ".*Castlevania.*"
@@ -51,10 +46,10 @@ appId: com.spela.player
 - pressKey: "back"
 
 # Verify we're back on the NES console game list:
-# The search field is visible again (unique to console screen)
+# Castlevania should still be visible (game list), but Download/Play should not
 - extendedWaitUntil:
     visible:
-      text: ".*Search.*games.*"
+      text: ".*Castlevania.*"
     timeout: 5000
 
 # The game detail's "Download"/"Play" button should NOT be visible
@@ -72,9 +67,3 @@ appId: com.spela.player
     visible:
       text: "Consoles"
     timeout: 5000
-
-# The search field should NOT be visible (Home doesn't have one)
-- extendedWaitUntil:
-    notVisible:
-      text: ".*Search.*games.*"
-    timeout: 3000

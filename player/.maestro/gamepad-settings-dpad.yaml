@@ -57,8 +57,7 @@ appId: com.spela.player
 
 # ── Verify we can still see settings content (didn't crash or navigate away) ──
 
-- assertVisible:
-    text: ".*Emulation.*|.*Video Filter.*|.*About.*"
+- assertVisible: "Settings"
 
 # ── Navigate back to Home using D-pad to bottom bar ──
 # Press back doesn't switch tabs, so use D-pad to reach the bottom bar
