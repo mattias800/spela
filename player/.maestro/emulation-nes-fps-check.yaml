@@ -97,16 +97,7 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay to appear (game started) ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-# ── Dismiss overlay to enter active gameplay ──
-
-- tapOn: "Resume"
+# ── Game starts directly into gameplay (overlay no longer auto-shows) ──
 
 # ── Wait for FPS to stabilize ──
 # The emulation needs a few seconds after dismissing the overlay

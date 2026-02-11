@@ -97,23 +97,12 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-# ── Dismiss overlay to get into active gameplay ──
-
-- tapOn: "Resume"
-
-# ── Wait briefly for overlay to fully dismiss ──
+# ── Wait for game to start (overlay no longer auto-shows) ──
 
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
-    duration: 1500
+    duration: 3000
 
 # ── Press the Android back button ──
 # Expected behavior: the overlay should open (not navigate away).
@@ -129,7 +118,25 @@ appId: com.spela.player
       text: "Exit Game"
     timeout: 5000
 
-- assertVisible: "Resume"
+- assertVisible: "Continue"
+
+# ── Dismiss overlay and verify it can be reopened ──
+
+- tapOn: "Continue"
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 1500
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Exit Game"
+    timeout: 5000
+
+- assertVisible: "Continue"
 
 # ── Exit the game cleanly ──
 

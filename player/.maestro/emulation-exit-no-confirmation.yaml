@@ -1,10 +1,16 @@
 appId: com.spela.player
 ---
 
-# Test: Screenshot capture
+# Test: Exit game without confirmation when auto-save is enabled
 #
-# Verifies that tapping the Screenshot button in the overlay does not
-# crash the app and the overlay remains functional afterward.
+# When auto-save is enabled (default), tapping "Exit Game" should
+# immediately exit without showing a confirmation dialog, because
+# progress is automatically saved.
+#
+# When auto-save is NOT enabled, a confirmation dialog should appear:
+# Title: "Exit without saving?"
+# Message: "This game doesn't support save states. Any unsaved progress will be lost."
+# Buttons: "Keep Playing" + "Exit Anyway"
 
 # ── Setup: fresh start ──
 
@@ -59,6 +65,26 @@ appId: com.spela.player
       text: "Consoles"
     timeout: 15000
 
+# ── Ensure auto-save is enabled in Settings ──
+
+- tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Emulation"
+    timeout: 5000
+
+# Verify "Auto Save on Exit" toggle is visible
+- assertVisible: "Auto Save on Exit"
+
+# Navigate back to home
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000
+
 # ── Navigate to NES > Castlevania ──
 
 - scrollUntilVisible:
@@ -89,9 +115,11 @@ appId: com.spela.player
       text: "Play"
     timeout: 15000
 
+# ── Start the game ──
+
 - tapOn: "Play"
 
-# ── Wait for game to start (overlay no longer auto-shows) ──
+# ── Wait for game to start ──
 
 - swipe:
     start: "50%,50%"
@@ -107,21 +135,26 @@ appId: com.spela.player
       text: "Exit Game"
     timeout: 10000
 
-# ── Tap Screenshot ──
+# ── Tap Exit Game ──
+# With auto-save enabled, this should immediately exit (no confirmation dialog)
 
-- tapOn: "Screenshot"
+- tapOn: "Exit Game"
 
-# ── Verify overlay is still functional (no crash) ──
+# ── CRITICAL ASSERTION: No confirmation dialog should appear ──
+# We should go directly to the game detail screen without seeing
+# the exit confirmation dialog.
 
 - extendedWaitUntil:
     visible:
-      text: "Exit Game"
-    timeout: 5000
+      text: "Play"
+    timeout: 10000
 
-- assertVisible: "Continue"
-- assertVisible: "Save"
-- assertVisible: "Load"
+# Verify we're on the game detail screen (not a dialog)
+- assertNotVisible: "Exit without saving?"
+- assertNotVisible: "Any unsaved progress will be lost"
+- assertNotVisible: "Keep Playing"
+- assertNotVisible: "Exit Anyway"
 
-# ── Exit game to clean up ──
-
-- tapOn: "Exit Game"
+# Verify the game detail screen elements are present
+- assertVisible:
+    text: ".*Castlevania.*"

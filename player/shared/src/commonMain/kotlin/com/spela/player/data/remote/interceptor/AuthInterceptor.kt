@@ -36,8 +36,7 @@ class TokenManager {
 }
 
 /**
- * Ktor plugin that adds the Authorization header to all requests
- * and handles 401 responses with token refresh.
+ * Ktor plugin that adds the Authorization header to all requests.
  */
 fun HttpClientConfig<*>.installAuth(tokenManager: TokenManager) {
     defaultRequest {

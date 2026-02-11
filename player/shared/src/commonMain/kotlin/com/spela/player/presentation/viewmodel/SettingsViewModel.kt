@@ -1,13 +1,13 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.device.DeviceManager
-import com.spela.player.data.repository.PreferencesRepositoryImpl
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.domain.repository.ServerRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -65,6 +65,7 @@ class SettingsViewModel(
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
     private val gameRepository: GameRepository,
+    private val serverRepository: ServerRepository,
     private val deviceManager: DeviceManager,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -141,9 +142,11 @@ class SettingsViewModel(
             val user = authRepository.getCurrentUser().getOrNull()
             val cacheSize = downloadRepository.getCacheSize()
             val deviceName = deviceManager.getDeviceName()
+            val activeServer = serverRepository.getActiveServer()
             _state.update {
                 it.copy(
                     username = user?.username ?: "",
+                    serverUrl = activeServer?.url?.trimEnd('/') ?: "",
                     cacheSize = cacheSize,
                     deviceName = deviceName,
                 )
@@ -214,7 +217,7 @@ class SettingsViewModel(
         }
         // Sync device overrides to server
         scope.launch(dispatchers.io) {
-            (preferencesRepository as? PreferencesRepositoryImpl)?.pushDeviceShaderOverridesToServer()
+            preferencesRepository.pushDeviceShaderOverridesToServer()
         }
     }
 

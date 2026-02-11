@@ -91,21 +91,13 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# -- Wait for overlay, then dismiss --
-
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-- tapOn: "Resume"
-
-# -- Wait for overlay dismiss --
+# -- Game starts directly into gameplay (overlay no longer auto-shows) --
+# -- Wait for game to start --
 
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
-    duration: 1500
+    duration: 3000
 
 # -- Tap face buttons --
 
@@ -126,7 +118,7 @@ appId: com.spela.player
       text: "Exit Game"
     timeout: 5000
 
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 
 # -- Clean up --
 

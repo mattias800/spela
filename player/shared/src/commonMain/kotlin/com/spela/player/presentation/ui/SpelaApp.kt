@@ -85,6 +85,19 @@ fun SpelaApp(
                 navState.currentScreen is SpScreen.Downloads ||
                 navState.currentScreen is SpScreen.Settings
 
+        // Show loading screen while session is being restored
+        if (navState.isRestoringSession) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SpColor.Background),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = SpColor.Primary)
+            }
+            return@SpelaTheme
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -209,6 +222,14 @@ fun SpelaApp(
                         }
 
                         val emulationState by emulationViewModel.state.collectAsState()
+
+                        // Handle auto-exit (when auto-save skips confirmation)
+                        LaunchedEffect(emulationState.requestExit) {
+                            if (emulationState.requestExit) {
+                                emulationViewModel.onIntent(EmulationIntent.ClearExitRequest)
+                                navigationViewModel.onIntent(NavigationIntent.HideOverlay)
+                            }
+                        }
 
                         // Emulation video surface (renders behind the overlay)
                         PlatformEmulationSurface(

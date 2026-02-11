@@ -48,18 +48,39 @@ class EmulationViewModel(
             EmulationIntent.ToggleFastForward -> toggleFastForward()
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
             EmulationIntent.DismissControlHint -> _state.update { it.copy(showControlHint = false) }
-            EmulationIntent.ShowExitConfirm -> _state.update { it.copy(showExitConfirm = true) }
+            EmulationIntent.ShowExitConfirm -> {
+                if (currentPreferences.autoSaveEnabled) {
+                    // Auto-save is enabled, so progress won't be lost — exit immediately
+                    _state.update { it.copy(showExitConfirm = false) }
+                    stopGame()
+                    _state.update { it.copy(requestExit = true) }
+                } else {
+                    _state.update { it.copy(showExitConfirm = true) }
+                }
+            }
             EmulationIntent.DismissExitConfirm -> _state.update { it.copy(showExitConfirm = false) }
             EmulationIntent.ConfirmExit -> {
                 _state.update { it.copy(showExitConfirm = false) }
                 stopGame()
             }
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
+            EmulationIntent.ClearExitRequest -> _state.update { it.copy(requestExit = false) }
         }
     }
 
     private fun startGame(gameId: String) {
-        _state.update { it.copy(gameId = gameId, isLoading = true) }
+        _state.update {
+            it.copy(
+                gameId = gameId,
+                isLoading = true,
+                showOverlay = false,
+                showExitConfirm = false,
+                showControlHint = true,
+                error = null,
+                statusMessage = null,
+                isFastForward = false,
+            )
+        }
 
         scope.launch(dispatchers.io) {
             // Fetch user preferences (fallback to defaults on error)

@@ -94,29 +94,20 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for game to start (overlay appears) ──
+# ── Wait for game to start (overlay no longer auto-shows) ──
 
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-# Let the game run briefly by dismissing the overlay
-- tapOn: "Resume"
-
-# Brief pause for the game to run
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
-    duration: 2000
+    duration: 3000
 
-# Reopen overlay via back button
+# Open overlay via back button
 - pressKey: "back"
 
 - extendedWaitUntil:
     visible:
       text: "Exit Game"
-    timeout: 5000
+    timeout: 10000
 
 # ── Exit the game ──
 
@@ -147,7 +138,7 @@ appId: com.spela.player
     text: "Exit Game"
 
 - assertNotVisible:
-    text: "Resume"
+    text: "Continue"
 
 # 5. Cover art for Castlevania should be visible (game detail screen has hero cover)
 - assertVisible:

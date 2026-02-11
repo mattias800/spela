@@ -67,14 +67,6 @@ class AndroidLibretroController(
     /* Reusable short buffer for audio samples from JNI (avoids NewShortArray per frame) */
     private var audioSampleBuffer = ShortArray(0)
 
-    /* Libretro pixel format constants (match libretro.h) */
-    companion object {
-        private const val TAG = "LibretroController"
-        private const val RETRO_PIXEL_FORMAT_0RGB1555 = 0
-        private const val RETRO_PIXEL_FORMAT_XRGB8888 = 1
-        private const val RETRO_PIXEL_FORMAT_RGB565 = 2
-    }
-
     override fun loadCore(corePath: String) {
         jni.nativeSetSystemDir(fileStorage.getCoresDir())
         jni.nativeSetSaveDir(fileStorage.getSavesDir())
@@ -96,6 +88,8 @@ class AndroidLibretroController(
     override fun start() {
         running = true
         paused = false
+        _physicalControllerActive.value = false
+        lastPhysicalInputNanos = 0L
 
         emulationThread = Thread({
             startAudio()
@@ -148,6 +142,22 @@ class AndroidLibretroController(
         }
     }
 
+    /* Physical controller detection: set when hardware gamepad input is received,
+     * reset after PHYSICAL_CONTROLLER_TIMEOUT_NS of inactivity. */
+    private val _physicalControllerActive = MutableStateFlow(false)
+    val physicalControllerActive: StateFlow<Boolean> = _physicalControllerActive.asStateFlow()
+
+    @Volatile
+    private var lastPhysicalInputNanos = 0L
+
+    companion object {
+        private const val TAG = "LibretroController"
+        private const val RETRO_PIXEL_FORMAT_0RGB1555 = 0
+        private const val RETRO_PIXEL_FORMAT_XRGB8888 = 1
+        private const val RETRO_PIXEL_FORMAT_RGB565 = 2
+        private const val PHYSICAL_CONTROLLER_TIMEOUT_NS = 10_000_000_000L // 10 seconds
+    }
+
     /**
      * Set button state from the platform input system.
      */
@@ -157,6 +167,19 @@ class AndroidLibretroController(
 
     fun setAnalog(port: Int, stickIndex: Int, axisId: Int, value: Short) {
         jni.nativeSetInputAnalog(port, stickIndex, axisId, value)
+    }
+
+    /**
+     * Notify that physical controller input was received.
+     * This triggers auto-hide of the touch overlay. If no physical input is
+     * received for 10 seconds, the controller is assumed disconnected and
+     * the touch overlay reappears.
+     */
+    fun notifyPhysicalControllerInput() {
+        lastPhysicalInputNanos = System.nanoTime()
+        if (!_physicalControllerActive.value) {
+            _physicalControllerActive.value = true
+        }
     }
 
     /**
@@ -213,6 +236,14 @@ class AndroidLibretroController(
 
             val frameEnd = System.nanoTime()
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
+
+            /* Reset physical controller flag if no input received for timeout period */
+            val lastInput = lastPhysicalInputNanos
+            if (_physicalControllerActive.value && lastInput > 0 &&
+                (frameEnd - lastInput) > PHYSICAL_CONTROLLER_TIMEOUT_NS
+            ) {
+                _physicalControllerActive.value = false
+            }
 
             /* Frame pacing: sleep until next frame (skip for fast-forward) */
             if (!fastForward) {

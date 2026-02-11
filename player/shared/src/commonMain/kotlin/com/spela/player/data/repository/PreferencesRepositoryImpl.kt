@@ -75,8 +75,7 @@ class PreferencesRepositoryImpl(
         }
     }
 
-    /** Push all local device shader overrides to the server */
-    suspend fun pushDeviceShaderOverridesToServer() {
+    override suspend fun pushDeviceShaderOverridesToServer() {
         val serverDeviceId = deviceManager.getServerDeviceId() ?: return
         val overrides = getAllDeviceShaderOverrides()
         val shaderMap = overrides.mapValues { it.value.apiId }

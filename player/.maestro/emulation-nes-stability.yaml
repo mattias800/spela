@@ -100,7 +100,18 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Verify game starts without crashing ──
+# ── Wait for game to start (overlay no longer auto-shows) ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
+
+# ── Verify game started without crashing ──
 
 - extendedWaitUntil:
     visible:
@@ -109,7 +120,7 @@ appId: com.spela.player
 
 # ── Verify app is still responsive by using overlay controls ──
 
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 - assertVisible:
     text: "Save"
 

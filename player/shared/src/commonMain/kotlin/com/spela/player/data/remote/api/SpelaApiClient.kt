@@ -52,6 +52,17 @@ class SpelaApiClient(
         baseUrl = url.trimEnd('/')
     }
 
+    /**
+     * Resolves a potentially relative URL against the server base URL.
+     * Absolute URLs (http/https) are returned as-is.
+     * Relative URLs (e.g. /api/images/...) are prepended with the base URL.
+     */
+    fun resolveUrl(path: String?): String? {
+        if (path.isNullOrBlank()) return null
+        if (path.startsWith("http://") || path.startsWith("https://")) return path
+        return "$baseUrl$path"
+    }
+
     // Auth
 
     suspend fun login(request: LoginRequest): AuthResponse {

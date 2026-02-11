@@ -4,6 +4,9 @@
 # Keep Ktor
 -keep class io.ktor.** { *; }
 
+# Keep Coil 3.x image loading
+-keep class coil3.** { *; }
+
 # Keep kotlinx.serialization
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt

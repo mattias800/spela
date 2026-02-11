@@ -1,0 +1,156 @@
+appId: com.spela.player
+---
+
+# Test: Shader preview image is visible in settings
+#
+# Verifies that the shader preview section in Settings shows a preview
+# image that can be tapped to open a fullscreen preview dialog.
+# The preview image comes from the libretro thumbnail archive via the
+# server's /api/consoles/{id}/preview-screenshot endpoint.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings ──
+
+- tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
+
+# ── Verify shader options are visible ──
+
+- assertVisible: "None (Pixel Perfect)"
+- assertVisible: "CRT Classic"
+
+# ── Select CRT Classic to verify preview updates ──
+
+- tapOn: "CRT Classic"
+
+# ── Scroll down to see the shader preview ──
+
+- scrollUntilVisible:
+    element:
+      text: "Storage"
+    direction: DOWN
+
+# ── Take a screenshot to visually verify shader preview is rendered ──
+# The ShaderPreview composable uses a Canvas so it doesn't have a
+# text-based contentDescription. We verify it visually via screenshot.
+
+- takeScreenshot: shader-preview-default
+
+# ── Test per-console shader preview ──
+# Switch to "Per Console" tab
+
+- scrollUntilVisible:
+    element:
+      text: "Per Console"
+    direction: UP
+
+- tapOn: "Per Console"
+
+# ── Expand a console (e.g., NES) to see its shader preview ──
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Nintendo Entertainment System.*"
+    timeout: 5000
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+# ── Scroll down to see shader options and preview for the console ──
+
+- scrollUntilVisible:
+    element:
+      text: "Override on this device only"
+    direction: DOWN
+
+# ── Take a screenshot to verify console-specific shader preview ──
+
+- takeScreenshot: shader-preview-nes-console
+
+# ── Test fullscreen preview dialog ──
+# The ShaderPreview has a clickable modifier that triggers fullscreen.
+# We look for "Tap to close" text that appears in the fullscreen dialog.
+# Since the preview is a Canvas, tap at a location where it should be.
+
+- scrollUntilVisible:
+    element:
+      text: "Override on this device only"
+    direction: DOWN
+
+# Tap the preview area (it's above "Override on this device only")
+- tapOn:
+    point: "50%,40%"
+
+# If fullscreen preview opened, "Tap to close" should be visible
+- extendedWaitUntil:
+    visible:
+      text: "Tap to close"
+    timeout: 5000
+
+# Take screenshot of fullscreen preview
+- takeScreenshot: shader-preview-fullscreen
+
+# Dismiss by tapping
+- tapOn: "Tap to close"
+
+# Verify we're back to settings
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000

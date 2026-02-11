@@ -96,15 +96,14 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
+# ── Wait for game to start (overlay no longer auto-shows) ──
 
-# Let the game run briefly (dismiss overlay, wait, reopen)
-- tapOn: "Resume"
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
 
-# Reopen overlay using back button
+# Open overlay using back button
 - pressKey: "back"
 
 - extendedWaitUntil:
@@ -133,7 +132,16 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Verify game starts again ──
+# ── Wait for game to start ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:
@@ -141,7 +149,7 @@ appId: com.spela.player
     timeout: 10000
 
 # Verify the overlay is functional
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 - assertVisible: "Save"
 
 # ── Clean up ──

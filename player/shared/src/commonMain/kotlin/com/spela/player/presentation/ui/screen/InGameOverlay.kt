@@ -176,7 +176,7 @@ fun InGameOverlay(
                                 modifier = Modifier.weight(1f),
                             )
                             SpButton(
-                                text = "Resume",
+                                text = "Continue",
                                 onClick = {
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
@@ -228,7 +228,7 @@ fun InGameOverlay(
                                 modifier = Modifier.weight(1f),
                             )
                             SpButton(
-                                text = "Resume",
+                                text = "Continue",
                                 onClick = {
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
@@ -305,13 +305,13 @@ fun InGameOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Exit game?",
+                    text = "Exit without saving?",
                     style = SpTypography.HeadlineMedium,
                     color = SpColor.OnBackground,
                 )
                 Spacer(Modifier.height(SpSpacing.Small))
                 Text(
-                    text = "Your progress will be saved automatically.",
+                    text = "This game doesn't support save states. Any unsaved progress will be lost.",
                     style = SpTypography.BodyMedium,
                     color = SpColor.OnBackgroundSecondary,
                     textAlign = TextAlign.Center,
@@ -322,13 +322,13 @@ fun InGameOverlay(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     SpButton(
-                        text = "Cancel",
+                        text = "Keep Playing",
                         onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
                         style = SpButtonStyle.Outlined,
                         modifier = Modifier.weight(1f),
                     )
                     SpButton(
-                        text = "Exit",
+                        text = "Exit Anyway",
                         onClick = {
                             viewModel.onIntent(EmulationIntent.ConfirmExit)
                             onExit()

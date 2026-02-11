@@ -93,7 +93,23 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# -- Cycle 1: Overlay open -> touch controls hidden --
+# -- Game starts directly into gameplay (overlay no longer auto-shows) --
+# -- Wait for game to start --
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# -- Cycle 1: Touch controls visible during gameplay --
+
+- assertVisible: "Touch controls"
+- assertVisible: "D-pad Up"
+- assertVisible: "Button A"
+
+# -- Cycle 1: Open overlay -> touch controls hidden --
+
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:
@@ -104,7 +120,7 @@ appId: com.spela.player
 
 # -- Cycle 1: Dismiss overlay -> touch controls visible --
 
-- tapOn: "Resume"
+- tapOn: "Continue"
 
 - swipe:
     start: "50%,50%"
@@ -140,7 +156,7 @@ appId: com.spela.player
 - assertVisible: "D-pad Down"
 - assertVisible: "Button B"
 
-# -- Cycle 3: Reopen via back, dismiss via Resume --
+# -- Cycle 3: Reopen via back, dismiss via Continue --
 
 - pressKey: "back"
 
@@ -151,7 +167,7 @@ appId: com.spela.player
 
 - assertNotVisible: "Touch controls"
 
-- tapOn: "Resume"
+- tapOn: "Continue"
 
 - swipe:
     start: "50%,50%"

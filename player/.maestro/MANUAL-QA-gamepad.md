@@ -1,10 +1,12 @@
-# Manual QA Checklist: Physical Gamepad/Controller Support (Bug #4)
+# Manual QA Checklist: Physical Gamepad/Controller Support (Tasks #6, #7)
 
-This bug cannot be tested via Maestro E2E because Maestro uses the Android
-accessibility service for input, which cannot simulate physical gamepad events.
-The Activity-level handlers (`onKeyDown`/`onKeyUp`/`onGenericMotionEvent`)
-require `InputDevice.SOURCE_GAMEPAD` source flag, which ADB key injection
-also cannot provide.
+This checklist covers both controller input (Task #6) and touch overlay
+auto-hide behavior (Task #7). These cannot be tested via Maestro E2E
+because Maestro uses the Android accessibility service for input, which
+cannot simulate physical gamepad events. The Activity-level handlers
+(`onKeyDown`/`onKeyUp`/`onGenericMotionEvent`) require
+`InputDevice.SOURCE_GAMEPAD` source flag, which ADB key injection also
+cannot provide.
 
 ## Prerequisites
 
@@ -53,9 +55,18 @@ also cannot provide.
 - [ ] Release the button — action stops immediately
 - [ ] Rapid press/release — no stuck inputs
 
-### 9. Verify No Interference with Touch Controls
-- [ ] While gamepad is connected, touch controls still work
-- [ ] Gamepad and touch can be used simultaneously without conflicts
+### 9. Verify Touch Overlay Auto-Hide (Task #7)
+- [ ] Start a game WITHOUT a controller connected — touch controls visible
+- [ ] Connect a physical controller (Bluetooth or built-in)
+- [ ] Verify touch overlay hides automatically when controller is detected
+- [ ] Press any controller button — verify touch overlay stays hidden
+- [ ] Disconnect the controller — verify touch overlay reappears
+- [ ] If a built-in controller (e.g., Odin 2): verify touch overlay is hidden on launch
+
+### 10. Verify No Interference Between Input Methods
+- [ ] While gamepad is connected, touch controls should be hidden
+- [ ] If user wants touch controls with controller: check if toggle exists in settings
+- [ ] Gamepad and touch (when visible) can be used without conflicts
 
 ## Expected Results
 
@@ -63,3 +74,7 @@ All gamepad buttons should map correctly to libretro input and produce
 the expected in-game actions. No button should be unresponsive or mapped
 to the wrong action. Analog sticks should have smooth response with
 proper dead zone filtering.
+
+Touch overlay should automatically hide when a physical controller is
+connected or when physical controller input is received. Touch overlay
+should reappear when the controller is disconnected.

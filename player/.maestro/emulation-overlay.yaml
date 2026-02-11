@@ -5,7 +5,7 @@ appId: com.spela.player
 #
 # Verifies that after starting a game, the overlay panel displays
 # the game title, performance stats, and all action buttons
-# (Save, Load, Screenshot, Fast, Exit Game, Resume).
+# (Save, Load, Screenshot, Fast, Exit Game, Continue).
 
 # ── Setup: fresh start ──
 
@@ -100,6 +100,17 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
+# ── Wait for game to start (overlay no longer auto-shows) ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
+
 # ── Assert the overlay appears with all controls ──
 
 - extendedWaitUntil:
@@ -107,7 +118,7 @@ appId: com.spela.player
       text: "Exit Game"
     timeout: 10000
 
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 
 - assertVisible:
     text: "Save"

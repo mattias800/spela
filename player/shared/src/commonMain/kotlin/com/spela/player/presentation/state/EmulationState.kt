@@ -13,6 +13,7 @@ data class EmulationState(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val showControlHint: Boolean = true,
     val showExitConfirm: Boolean = false,
+    val requestExit: Boolean = false,
     val statusMessage: String? = null,
     val fps: Float = 0f,
     val frameTime: Float = 0f,

@@ -17,27 +17,31 @@ class GameRepositoryImpl(
     }
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> = runCatching {
-        apiClient.getGamesForConsole(consoleId).map { it.toDomain() }
+        apiClient.getGamesForConsole(consoleId).map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getAllGames(): Result<List<Game>> = runCatching {
-        apiClient.getAllGames().data.map { it.toDomain() }
+        apiClient.getAllGames().data.map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun searchGames(query: String): Result<List<Game>> = runCatching {
-        apiClient.searchGames(query).data.map { it.toDomain() }
+        apiClient.searchGames(query).data.map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> = runCatching {
-        apiClient.getGameDetail(gameId).toGameDetail()
+        val detail = apiClient.getGameDetail(gameId).toGameDetail()
+        detail.copy(
+            game = detail.game.resolveImageUrls(),
+            screenshots = detail.screenshots.mapNotNull { apiClient.resolveUrl(it) },
+        )
     }
 
     override suspend fun getRecentGames(): Result<List<Game>> = runCatching {
-        apiClient.getRecentGames().map { it.toDomain() }
+        apiClient.getRecentGames().map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getFavoriteGames(): Result<List<Game>> = runCatching {
-        apiClient.getFavoriteGames().map { it.toDomain() }
+        apiClient.getFavoriteGames().map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun addFavorite(gameId: String): Result<Unit> = runCatching {
@@ -47,4 +51,9 @@ class GameRepositoryImpl(
     override suspend fun removeFavorite(gameId: String): Result<Unit> = runCatching {
         apiClient.removeFavorite(gameId)
     }
+
+    /** Resolve relative image URLs to absolute URLs using the server base URL. */
+    private fun Game.resolveImageUrls(): Game = copy(
+        coverUrl = apiClient.resolveUrl(coverUrl),
+    )
 }

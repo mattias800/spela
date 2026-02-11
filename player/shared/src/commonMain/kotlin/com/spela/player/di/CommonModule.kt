@@ -124,6 +124,7 @@ val commonModule = module {
             downloadRepository = get(),
             preferencesRepository = get(),
             gameRepository = get(),
+            serverRepository = get(),
             deviceManager = get(),
             dispatchers = get(),
             scope = get(),

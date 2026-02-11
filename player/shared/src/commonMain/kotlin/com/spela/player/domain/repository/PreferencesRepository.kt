@@ -17,4 +17,5 @@ interface PreferencesRepository {
     fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset>
     suspend fun syncDeviceShaderOverrides()
     suspend fun resolveShader(consoleId: String): ShaderPreset
+    suspend fun pushDeviceShaderOverridesToServer()
 }

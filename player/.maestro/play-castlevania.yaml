@@ -99,9 +99,17 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Assert the game starts ──
-# The in-game overlay should appear with game controls.
-# This assertion will FAIL due to the current bug.
+# ── Wait for game to start ──
+# The overlay no longer auto-shows; game starts directly into gameplay.
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:

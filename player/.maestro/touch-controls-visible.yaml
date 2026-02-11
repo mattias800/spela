@@ -92,23 +92,14 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# -- Wait for overlay to appear --
+# -- Game starts directly into gameplay (overlay no longer auto-shows) --
 
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-# -- Dismiss overlay to enter active gameplay --
-
-- tapOn: "Resume"
-
-# -- Wait for overlay dismiss animation --
+# -- Wait for game to start --
 
 - swipe:
     start: "50%,50%"
     end: "50%,50%"
-    duration: 1500
+    duration: 3000
 
 # -- Assert touch controls container is visible --
 

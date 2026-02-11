@@ -92,7 +92,16 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for game to start with overlay visible ──
+# ── Wait for game to start (overlay no longer auto-shows) ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:
@@ -106,12 +115,12 @@ appId: com.spela.player
 # Wait briefly for save to complete
 - extendedWaitUntil:
     visible:
-      text: "Resume"
+      text: "Continue"
     timeout: 5000
 
-# ── Dismiss overlay by tapping Resume ──
+# ── Dismiss overlay by tapping Continue ──
 
-- tapOn: "Resume"
+- tapOn: "Continue"
 
 # ── Let the game run for a moment, then reopen overlay ──
 
@@ -129,13 +138,13 @@ appId: com.spela.player
 # Wait briefly for load to complete
 - extendedWaitUntil:
     visible:
-      text: "Resume"
+      text: "Continue"
     timeout: 5000
 
 # ── Verify overlay is still showing (no crash after load) ──
 
 - assertVisible: "Exit Game"
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 - assertVisible: "Save"
 
 # ── Exit game to clean up ──

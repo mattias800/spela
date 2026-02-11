@@ -92,7 +92,16 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay to appear ──
+# ── Wait for game to start (overlay no longer auto-shows) ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:

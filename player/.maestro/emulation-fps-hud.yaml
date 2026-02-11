@@ -92,18 +92,9 @@ appId: com.spela.player
 
 - tapOn: "Play"
 
-# ── Wait for overlay to appear ──
+# ── Game starts directly into gameplay (overlay no longer auto-shows) ──
 
-- extendedWaitUntil:
-    visible:
-      text: "Exit Game"
-    timeout: 10000
-
-# ── Dismiss overlay by tapping Resume ──
-
-- tapOn: "Resume"
-
-# ── Wait for overlay dismiss animation to complete and FPS HUD to render ──
+# ── Wait for FPS HUD to render ──
 
 - swipe:
     start: "50%,50%"
@@ -133,7 +124,7 @@ appId: com.spela.player
       text: "Exit Game"
     timeout: 5000
 
-- assertVisible: "Resume"
+- assertVisible: "Continue"
 
 # ── Clean up ──
 
