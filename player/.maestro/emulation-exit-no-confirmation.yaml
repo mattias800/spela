@@ -20,13 +20,12 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
-      text: "Emulation"
-    timeout: 3000
-
-# Verify "Auto Save on Exit" toggle is visible
-- assertVisible: "Auto Save on Exit"
+# Scroll to Emulation section (may be below the fold on small screens)
+- scrollUntilVisible:
+    element:
+      text: "Auto Save on Exit"
+    direction: DOWN
+    timeout: 5000
 
 # Navigate back to home
 - pressKey: "back"

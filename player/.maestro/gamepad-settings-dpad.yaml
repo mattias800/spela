@@ -20,10 +20,11 @@ appId: com.spela.player
 
 # ── Verify Settings screen ──
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: ".*Emulation.*"
-    timeout: 3000
+    direction: DOWN
+    timeout: 5000
 
 # ── Use D-pad to navigate to the first toggle ──
 # The Settings screen has toggles like "Show Performance Overlay",

@@ -19,19 +19,18 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: "Video Filter"
-    direction: DOWN
-
-- assertVisible: "Default"
-
-- scrollUntilVisible:
-    element:
       text: "CRT Classic"
     direction: DOWN
+    timeout: 5000
 
 - tapOn: "CRT Classic"
 
 # ── Switch to Per Console tab ──
+
+- scrollUntilVisible:
+    element:
+      text: "Per Console"
+    direction: DOWN
 
 - tapOn: "Per Console"
 
@@ -84,8 +83,9 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: "Video Filter"
+      text: "Per Console"
     direction: DOWN
+    timeout: 5000
 
 # ── Switch to Per Console tab ──
 

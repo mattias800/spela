@@ -46,8 +46,8 @@ appId: com.spela.player
 
 - extendedWaitUntil:
     visible:
-      text: "Local"
-    timeout: 3000
+      text: ".*Local.*"
+    timeout: 5000
 
 # ── Close the app (without clearing state) and relaunch ──
 
@@ -65,12 +65,13 @@ appId: com.spela.player
 
 - extendedWaitUntil:
     visible:
-      text: "Local"
+      text: ".*Local.*"
     timeout: 8000
 
 # ── Verify we can tap the server to reach login ──
 
-- tapOn: "Local"
+- tapOn:
+    text: ".*Local.*"
 
 - extendedWaitUntil:
     visible:

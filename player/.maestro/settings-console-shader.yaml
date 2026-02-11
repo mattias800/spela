@@ -15,12 +15,13 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-# ── Scroll to Video Filter section ──
+# ── Scroll to Video Filter section and Per Console tab ──
 
 - scrollUntilVisible:
     element:
-      text: "Video Filter"
+      text: "Per Console"
     direction: DOWN
+    timeout: 5000
 
 # ── Switch to Per Console tab ──
 
@@ -59,8 +60,9 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: "Video Filter"
+      text: "Per Console"
     direction: DOWN
+    timeout: 5000
 
 # ── Switch to Per Console tab ──
 

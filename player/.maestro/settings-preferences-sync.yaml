@@ -14,14 +14,14 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Auto Save on Exit"
-    timeout: 3000
+    direction: DOWN
+    timeout: 5000
 
 # ── Assert defaults ──
 
-- assertVisible: "Auto Save on Exit"
 - assertVisible: "Auto Load Save"
 
 # ── Toggle "Auto Save on Exit" off ──
@@ -58,7 +58,14 @@ appId: com.spela.player
 - hideKeyboard
 
 - tapOn: "Add"
-- tapOn: "Local"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Local.*"
+    timeout: 5000
+
+- tapOn:
+    text: ".*Local.*"
 
 - extendedWaitUntil:
     visible:
@@ -86,10 +93,8 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Auto Save on Exit"
-    timeout: 3000
-
-# The "Auto Save on Exit" toggle should still be off (persisted on server)
-- assertVisible: "Auto Save on Exit"
+    direction: DOWN
+    timeout: 5000

@@ -14,15 +14,21 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Video Filter"
-    timeout: 3000
+    direction: DOWN
+    timeout: 5000
 
 # ── Assert default shader is "None (Pixel Perfect)" ──
+# Scroll further to ensure shader options are in viewport
+
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
 
 - assertVisible: "None (Pixel Perfect)"
-- assertVisible: "CRT Classic"
 - assertVisible: "Scanlines Only"
 
 # ── Select "CRT Classic" shader ──
@@ -59,7 +65,14 @@ appId: com.spela.player
 - hideKeyboard
 
 - tapOn: "Add"
-- tapOn: "Local"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Local.*"
+    timeout: 5000
+
+- tapOn:
+    text: ".*Local.*"
 
 - extendedWaitUntil:
     visible:
@@ -87,10 +100,8 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
-      text: "Video Filter"
-    timeout: 3000
-
-# The "CRT Classic" shader should still be selected (persisted on server)
-- assertVisible: "CRT Classic"
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
+    timeout: 5000

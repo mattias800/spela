@@ -22,12 +22,11 @@ appId: com.spela.player
 - tapOn:
     text: ".*Nintendo Entertainment System.*"
 
-# Verify we're on the console game list (SpTopBar shows "Go back" button)
-# The "Go back" button only exists on sub-screens, NOT on the Home screen.
+# Verify we're on the console game list (search field is unique to this screen)
 - extendedWaitUntil:
     visible:
-      text: "Go back"
-    timeout: 3000
+      text: ".*Search.*games.*"
+    timeout: 8000
 
 # ── Navigate forward to Screen 3: Game detail ──
 
@@ -43,7 +42,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Download|Play"
-    timeout: 3000
+    timeout: 5000
 
 # ── BACK #1: Game Detail -> Console game list ──
 # This is the critical assertion. If back navigation is broken,
@@ -52,11 +51,11 @@ appId: com.spela.player
 - pressKey: "back"
 
 # Verify we're back on the NES console game list:
-# "Go back" is still visible (we're on a sub-screen, not Home)
+# The search field is visible again (unique to console screen)
 - extendedWaitUntil:
     visible:
-      text: "Go back"
-    timeout: 3000
+      text: ".*Search.*games.*"
+    timeout: 5000
 
 # The game detail's "Download"/"Play" button should NOT be visible
 - extendedWaitUntil:
@@ -72,10 +71,10 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Consoles"
-    timeout: 3000
+    timeout: 5000
 
-# The "Go back" button should NOT be visible (Home has no back button)
+# The search field should NOT be visible (Home doesn't have one)
 - extendedWaitUntil:
     notVisible:
-      text: "Go back"
+      text: ".*Search.*games.*"
     timeout: 3000

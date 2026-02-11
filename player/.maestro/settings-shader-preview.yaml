@@ -16,15 +16,18 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Video Filter"
-    timeout: 3000
+    direction: DOWN
+    timeout: 5000
 
-# ── Verify shader options are visible ──
+# ── Verify shader options are visible (scroll to ensure they're in viewport) ──
 
-- assertVisible: "None (Pixel Perfect)"
-- assertVisible: "CRT Classic"
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
 
 # ── Select CRT Classic to verify preview updates ──
 
@@ -55,10 +58,11 @@ appId: com.spela.player
 
 # ── Expand a console (e.g., NES) to see its shader preview ──
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: ".*Nintendo Entertainment System.*"
-    timeout: 3000
+    direction: DOWN
+    timeout: 5000
 
 - tapOn:
     text: ".*Nintendo Entertainment System.*"
@@ -101,7 +105,8 @@ appId: com.spela.player
 - tapOn: "Tap to close"
 
 # Verify we're back to settings
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Video Filter"
-    timeout: 3000
+    direction: UP
+    timeout: 5000
