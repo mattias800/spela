@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,19 +96,6 @@ fun SettingsScreen(
             isDestructive = true,
         )
     }
-
-    ShaderPreviewDialog(
-        visible = state.fullscreenPreviewConsoleId != null,
-        imageUrl = state.fullscreenPreviewConsoleId?.let { consoleId ->
-            "${state.serverUrl}/api/consoles/${consoleId}/preview-screenshot"
-        },
-        shader = state.fullscreenPreviewConsoleId?.let { consoleId ->
-            state.deviceShaderOverrides[consoleId]
-                ?: state.consoleShaders[consoleId]
-                ?: state.selectedShader
-        } ?: state.selectedShader,
-        onDismiss = { viewModel.onIntent(SettingsIntent.DismissShaderPreviewFullscreen) },
-    )
 
     Column(
         modifier = Modifier
@@ -246,6 +234,9 @@ fun SettingsScreen(
                                 imageUrl = "${state.serverUrl}/api/consoles/${previewConsoleId}/preview-screenshot",
                                 shader = state.selectedShader,
                                 onClick = { viewModel.onIntent(SettingsIntent.ShowShaderPreviewFullscreen(previewConsoleId)) },
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.Default)
+                                    .widthIn(max = 360.dp),
                             )
                         }
                     }
@@ -359,6 +350,19 @@ fun SettingsScreen(
             }
         }
     }
+
+    ShaderPreviewDialog(
+        visible = state.fullscreenPreviewConsoleId != null,
+        imageUrl = state.fullscreenPreviewConsoleId?.let { consoleId ->
+            "${state.serverUrl}/api/consoles/${consoleId}/preview-screenshot"
+        },
+        shader = state.fullscreenPreviewConsoleId?.let { consoleId ->
+            state.deviceShaderOverrides[consoleId]
+                ?: state.consoleShaders[consoleId]
+                ?: state.selectedShader
+        } ?: state.selectedShader,
+        onDismiss = { viewModel.onIntent(SettingsIntent.DismissShaderPreviewFullscreen) },
+    )
 }
 
 @Composable
@@ -518,7 +522,9 @@ private fun ConsoleShaderCard(
                             imageUrl = previewUrl,
                             shader = effectiveShader,
                             onClick = onPreviewClick,
-                            modifier = Modifier.padding(horizontal = SpSpacing.Default),
+                            modifier = Modifier
+                                .padding(horizontal = SpSpacing.Default)
+                                .widthIn(max = 360.dp),
                         )
                         Spacer(Modifier.height(SpSpacing.Small))
                     }

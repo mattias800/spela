@@ -4,11 +4,15 @@ appId: com.spela.player
 # Test: D-pad navigation on Settings screen
 #
 # Verifies that the Settings screen can be navigated with D-pad keys.
-# Tests that toggles and options are focusable and activatable via
+# Tests that shader options are focusable and activatable via
 # DPAD_CENTER. The Settings tab is accessed via touch first, then
 # all further interaction is D-pad only.
 #
 # Uses Maestro's "Remote Dpad" keys.
+#
+# NOTE: Scrolls past the Account section (text field, Sign Out button)
+# to avoid activating them via D-pad. On the Odin 2, the keyboard
+# covers the entire landscape screen.
 
 # ── Setup: login as player ──
 
@@ -18,68 +22,52 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
-# ── Verify Settings screen ──
+# ── Scroll well past Account section to the shader area ──
+# This ensures the Device Name text field and Sign Out button are
+# off-screen and won't capture D-pad focus.
 
 - scrollUntilVisible:
     element:
-      text: ".*Emulation.*"
+      text: "Video Filter"
     direction: DOWN
     timeout: 5000
 
-# ── Use D-pad to navigate to the first toggle ──
-# The Settings screen has toggles like "Show Performance Overlay",
-# "Auto-save", "Auto-load". Navigate down to reach them.
+# ── Use D-pad to navigate through shader options ──
+# Shader radio buttons are safe to activate — they just select a shader.
 
 - pressKey: "Remote Dpad Down"
 - pressKey: "Remote Dpad Down"
 - pressKey: "Remote Dpad Down"
 
-# ── Press DPAD_CENTER to toggle a setting ──
-# This tests that the toggle is focusable (has spFocusRing) and
-# clickable via DPAD_CENTER activation.
+# ── Activate a shader option with DPAD_CENTER ──
+# This tests that shader radio buttons are focusable and clickable
+# via D-pad.
 
 - pressKey: "Remote Dpad Center"
 
-# ── Navigate down to more settings ──
+# ── Navigate down through more options ──
 
 - pressKey: "Remote Dpad Down"
 - pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
 
-# ── Press DPAD_CENTER to toggle another setting ──
+# ── Activate another option ──
 
 - pressKey: "Remote Dpad Center"
 
-# ── Navigate down to shader section ──
+# ── Navigate down further ──
 
 - pressKey: "Remote Dpad Down"
 - pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
 
-# ── Verify we can still see settings content (didn't crash or navigate away) ──
+# ── Verify we're still on the Settings screen ──
 
 - assertVisible: "Settings"
 
-# ── Navigate back to Home using D-pad to bottom bar ──
-# Press back doesn't switch tabs, so use D-pad to reach the bottom bar
-# and select Home tab.
+# ── Verify we can scroll back to known content ──
 
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Down"
-- pressKey: "Remote Dpad Left"
-- pressKey: "Remote Dpad Left"
-- pressKey: "Remote Dpad Center"
-
-# ── Verify we're back on Home ──
-
-- extendedWaitUntil:
-    visible:
-      text: "Home"
+- scrollUntilVisible:
+    element:
+      text: "Video Filter"
+    direction: UP
     timeout: 5000

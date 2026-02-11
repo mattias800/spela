@@ -13,16 +13,25 @@ appId: com.spela.player
 - runFlow: setup/start-logged-in.yaml
 
 # ── Navigate forward to Screen 2: NES console game list ──
+# Use a selector that matches the Console CARD (contentDescription
+# includes "games") — NOT the "Continue Playing" card which also
+# contains the console name as a subtitle.
 
 - scrollUntilVisible:
     element:
-      text: ".*Nintendo Entertainment System.*"
+      text: "Nintendo Entertainment System.*games"
     direction: DOWN
 
 - tapOn:
-    text: ".*Nintendo Entertainment System.*"
+    text: "Nintendo Entertainment System.*games"
 
-# Verify we're on the console game list — wait for a game to appear
+# Verify we're on the console game list — wait for a game to appear.
+# Also confirm "Spela" title is gone (we're not on Home anymore).
+- extendedWaitUntil:
+    notVisible:
+      text: "Spela"
+    timeout: 8000
+
 - extendedWaitUntil:
     visible:
       text: ".*Castlevania.*"
@@ -62,8 +71,11 @@ appId: com.spela.player
 
 - pressKey: "back"
 
-# Verify we're back on the Home screen
-- extendedWaitUntil:
-    visible:
-      text: ".*Nintendo Entertainment System.*"
+# Verify we're back on the Home screen by finding the NES console card.
+# After playing Castlevania, the "Continue Playing" section may push
+# the console card below the fold — scroll to find it.
+- scrollUntilVisible:
+    element:
+      text: "Nintendo Entertainment System.*games"
+    direction: DOWN
     timeout: 5000

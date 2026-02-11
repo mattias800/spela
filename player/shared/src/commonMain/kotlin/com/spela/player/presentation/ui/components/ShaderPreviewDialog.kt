@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -32,7 +35,7 @@ fun ShaderPreviewDialog(
         enter = fadeIn(),
         exit = fadeOut(),
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.9f))
@@ -40,14 +43,18 @@ fun ShaderPreviewDialog(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = onDismiss,
-                ),
+                )
+                .padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
+            // Constrain preview to fit within available space while maintaining 4:3 aspect ratio
+            val maxPreviewWidth = min(maxWidth, maxHeight * 4f / 3f)
+
             ShaderPreview(
                 imageUrl = imageUrl,
                 shader = shader,
                 onClick = onDismiss,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.widthIn(max = maxPreviewWidth),
             )
 
             Text(
@@ -56,7 +63,7 @@ fun ShaderPreviewDialog(
                 color = SpColor.OnBackgroundTertiary,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 48.dp),
+                    .padding(bottom = 24.dp),
             )
         }
     }

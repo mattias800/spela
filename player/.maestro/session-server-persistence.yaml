@@ -36,10 +36,24 @@ appId: com.spela.player
 - inputText: "Local"
 
 - hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: "Server URL"
+    direction: DOWN
+    timeout: 3000
+
 - tapOn: "Server URL"
 - inputText: "http://192.168.11.143:8080"
 
 - hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: "Add"
+    direction: DOWN
+    timeout: 3000
+
 - tapOn: "Add"
 
 # ── Verify server card appears in the list ──

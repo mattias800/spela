@@ -4,7 +4,7 @@ appId: com.spela.player
 # Test: Shader preview image is visible in settings
 #
 # Verifies that the shader preview section in Settings shows a preview
-# image that can be tapped to open a fullscreen preview dialog.
+# image for both the global default shader and per-console shader.
 # The preview image comes from the libretro thumbnail archive via the
 # server's /api/consoles/{id}/preview-screenshot endpoint.
 
@@ -33,16 +33,15 @@ appId: com.spela.player
 
 - tapOn: "CRT Classic"
 
-# ── Scroll down to see the shader preview ──
+# ── Scroll down to verify the shader preview canvas is present ──
+# The ShaderPreview composable has contentDescription "Shader preview".
 
 - scrollUntilVisible:
     element:
-      text: "Storage"
+      text: "Shader preview"
     direction: DOWN
 
-# ── Take a screenshot to visually verify shader preview is rendered ──
-# The ShaderPreview composable uses a Canvas so it doesn't have a
-# text-based contentDescription. We verify it visually via screenshot.
+- assertVisible: "Shader preview"
 
 - takeScreenshot: shader-preview-default
 
@@ -74,39 +73,31 @@ appId: com.spela.player
       text: "Override on this device only"
     direction: DOWN
 
-# ── Take a screenshot to verify console-specific shader preview ──
+# ── Verify console-specific shader preview is visible ──
+
+- scrollUntilVisible:
+    element:
+      text: "Shader preview"
+    direction: UP
+
+- assertVisible: "Shader preview"
 
 - takeScreenshot: shader-preview-nes-console
 
 # ── Test fullscreen preview dialog ──
-# The ShaderPreview has a clickable modifier that triggers fullscreen.
-# We look for "Tap to close" text that appears in the fullscreen dialog.
-# Since the preview is a Canvas, tap at a location where it should be.
-
-# Scroll to bring the shader preview canvas into view, then tap it.
-# The preview sits between the shader options and "Override on this device only".
-# After scrolling to Override, scroll back up to reveal the preview.
-- swipe:
-    start: "50%, 50%"
-    end: "50%, 80%"
+# Tapping the shader preview opens a fullscreen dialog with "Tap to close".
 
 - tapOn: "Shader preview"
 
-# If fullscreen preview opened, "Tap to close" should be visible
 - extendedWaitUntil:
     visible:
       text: "Tap to close"
     timeout: 3000
 
-# Take screenshot of fullscreen preview
 - takeScreenshot: shader-preview-fullscreen
 
-# Dismiss by tapping
+# Dismiss the dialog
 - tapOn: "Tap to close"
 
 # Verify we're back to settings
-- scrollUntilVisible:
-    element:
-      text: "Video Filter"
-    direction: UP
-    timeout: 5000
+- assertVisible: "Settings"
