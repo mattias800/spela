@@ -1,0 +1,132 @@
+appId: com.spela.player
+---
+
+# Test: D-pad navigation on Home screen
+#
+# Verifies that after logging in, the user can navigate the Home screen
+# using D-pad keys and select a console with DPAD_CENTER.
+# This tests the GamepadHandler focus system and SpCard focus indicators.
+#
+# Uses Maestro's "Remote Dpad" keys which send standard Android DPAD keycodes.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+- hideKeyboard
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+- hideKeyboard
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+- hideKeyboard
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen loaded ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate with D-pad: move focus down to a console card ──
+# The Home screen layout (top to bottom):
+#   - Continue Playing row (if recent games)
+#   - Favorites row (if favorites)
+#   - Consoles section header + grid
+#   - Bottom bar tabs
+# Use a modest number of D-pad DOWNs to reach the first console card
+# without overshooting to the bottom bar.
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+
+# ── Select the focused item with DPAD_CENTER ──
+
+- pressKey: "Remote Dpad Center"
+
+# ── Verify we navigated to a console screen ──
+# The console screen shows a SpTopBar with the console name and
+# a search field. Even with 0 games, these should be visible.
+# If focus happened to land on the bottom bar instead, the assertion
+# below will catch it since we'd still be on Home.
+
+- extendedWaitUntil:
+    visible:
+      text: "Go back"
+    timeout: 5000
+
+# ── Navigate back with BACK key ──
+
+- pressKey: "back"
+
+# ── Verify we're back on Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000
+
+# ── Verify D-pad RIGHT also works for horizontal navigation ──
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Right"
+
+# ── Select with DPAD_CENTER ──
+
+- pressKey: "Remote Dpad Center"
+
+# ── Verify navigation happened (back button visible = we're on a detail screen) ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Go back"
+    timeout: 5000
+
+# ── Go back again ──
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000

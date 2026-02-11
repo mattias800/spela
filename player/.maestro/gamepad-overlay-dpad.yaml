@@ -1,0 +1,170 @@
+appId: com.spela.player
+---
+
+# Test: D-pad keys don't interfere with in-game overlay
+#
+# Verifies that D-pad key events during the in-game overlay do not
+# crash, dismiss the overlay unexpectedly, or cause navigation issues.
+# Also tests that the back key correctly opens/closes the overlay.
+#
+# Note: Full overlay D-pad activation testing (pressing Continue/Exit
+# with DPAD_CENTER) requires a physical gamepad or Android TV remote.
+# Maestro's Remote Dpad keys are intercepted differently in overlay context.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+- hideKeyboard
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+- hideKeyboard
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+- hideKeyboard
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to NES console ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Nintendo Entertainment System.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Nintendo Entertainment System.*"
+
+# ── Find and tap Castlevania ──
+
+- scrollUntilVisible:
+    element:
+      text: ".*Castlevania.*"
+    direction: DOWN
+
+- tapOn:
+    text: ".*Castlevania.*"
+
+# ── Wait for game detail screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "About"
+    timeout: 5000
+
+# ── Download the game if needed ──
+
+- tapOn: "Download"
+
+- extendedWaitUntil:
+    visible:
+      text: "Play"
+    timeout: 15000
+
+# ── Tap Play ──
+
+- tapOn: "Play"
+
+# ── Wait for game to start ──
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,50%"
+    duration: 3000
+
+# ── Open overlay via back button ──
+
+- pressKey: "back"
+
+# ── Verify overlay is open ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Continue"
+    timeout: 10000
+
+- assertVisible: "Exit Game"
+
+# ── Send D-pad events while overlay is open ──
+# These should NOT crash or dismiss the overlay unexpectedly.
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Up"
+- pressKey: "Remote Dpad Left"
+- pressKey: "Remote Dpad Right"
+
+# ── Verify overlay is still showing (D-pad didn't dismiss it) ──
+
+- assertVisible: "Continue"
+- assertVisible: "Exit Game"
+
+# ── Dismiss overlay by tapping Continue ──
+
+- tapOn: "Continue"
+
+# ── Verify overlay dismissed and game resumed ──
+
+- extendedWaitUntil:
+    notVisible:
+      text: "Continue"
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*FPS.*"
+    timeout: 5000
+
+# ── Reopen overlay ──
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Continue"
+    timeout: 10000
+
+# ── Exit game to clean up ──
+
+- tapOn: "Exit Game"

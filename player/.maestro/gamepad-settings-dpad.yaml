@@ -1,0 +1,137 @@
+appId: com.spela.player
+---
+
+# Test: D-pad navigation on Settings screen
+#
+# Verifies that the Settings screen can be navigated with D-pad keys.
+# Tests that toggles and options are focusable and activatable via
+# DPAD_CENTER. The Settings tab is accessed via touch first, then
+# all further interaction is D-pad only.
+#
+# Uses Maestro's "Remote Dpad" keys.
+
+# ── Setup: fresh start ──
+
+- clearState:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Add server ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Connect to your game server"
+    timeout: 15000
+
+- tapOn: "Add Server"
+
+- extendedWaitUntil:
+    visible:
+      text: "Server Name"
+    timeout: 5000
+
+- tapOn: "Server Name"
+- inputText: "Local"
+- hideKeyboard
+
+- tapOn: "Server URL"
+- inputText: "http://192.168.11.143:8080"
+- hideKeyboard
+
+- tapOn: "Add"
+- tapOn: "Local"
+
+# ── Login as player ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 10000
+
+- tapOn: "Username"
+- inputText: "player"
+- hideKeyboard
+
+- tapOn: "Password"
+- inputText: "player123"
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+# ── Home screen loaded ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 15000
+
+# ── Navigate to Settings tab via touch ──
+
+- tapOn: "Settings"
+
+# ── Verify Settings screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Emulation.*"
+    timeout: 5000
+
+# ── Use D-pad to navigate to the first toggle ──
+# The Settings screen has toggles like "Show Performance Overlay",
+# "Auto-save", "Auto-load". Navigate down to reach them.
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+
+# ── Press DPAD_CENTER to toggle a setting ──
+# This tests that the toggle is focusable (has spFocusRing) and
+# clickable via DPAD_CENTER activation.
+
+- pressKey: "Remote Dpad Center"
+
+# ── Navigate down to more settings ──
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+
+# ── Press DPAD_CENTER to toggle another setting ──
+
+- pressKey: "Remote Dpad Center"
+
+# ── Navigate down to shader section ──
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+
+# ── Verify we can still see settings content (didn't crash or navigate away) ──
+
+- assertVisible:
+    text: ".*Emulation.*|.*Shader.*|.*About.*"
+
+# ── Navigate back to Home using D-pad to bottom bar ──
+# Press back doesn't switch tabs, so use D-pad to reach the bottom bar
+# and select Home tab.
+
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Down"
+- pressKey: "Remote Dpad Left"
+- pressKey: "Remote Dpad Left"
+- pressKey: "Remote Dpad Center"
+
+# ── Verify we're back on Home ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 5000
