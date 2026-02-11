@@ -73,9 +73,9 @@ appId: com.spela.player
 
 - tapOn: "Smooth (Bilinear)"
 
-# ── Navigate away from Settings (back to Home tab) ──
+# ── Navigate back to Home ──
 
-- tapOn: "Home"
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:

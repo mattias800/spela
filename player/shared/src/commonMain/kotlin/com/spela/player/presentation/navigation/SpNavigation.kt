@@ -8,6 +8,7 @@ sealed class SpScreen(val route: String) {
     data class GameDetail(val gameId: String) : SpScreen("game/$gameId")
     data object Downloads : SpScreen("downloads")
     data object Settings : SpScreen("settings")
+    data class ConsoleSettings(val consoleId: String) : SpScreen("console_settings/$consoleId")
 }
 
 data class NavigationState(
@@ -27,5 +28,4 @@ sealed interface NavigationIntent {
     data object GoBack : NavigationIntent
     data class ShowOverlay(val gameId: String) : NavigationIntent
     data object HideOverlay : NavigationIntent
-    data class SwitchTab(val route: String) : NavigationIntent
 }

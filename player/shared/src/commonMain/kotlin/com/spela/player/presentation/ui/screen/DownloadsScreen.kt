@@ -46,6 +46,7 @@ import com.spela.player.presentation.viewmodel.DownloadsViewModel
 @Composable
 fun DownloadsScreen(
     viewModel: DownloadsViewModel,
+    onBack: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -58,7 +59,7 @@ fun DownloadsScreen(
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
-        SpTopBar(title = "Downloads")
+        SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

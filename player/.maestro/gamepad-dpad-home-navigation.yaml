@@ -15,12 +15,11 @@ appId: com.spela.player
 
 # ── Navigate with D-pad: move focus down to a console card ──
 # The Home screen layout (top to bottom):
+#   - Top bar with Downloads and Settings icons
 #   - Continue Playing row (if recent games)
 #   - Favorites row (if favorites)
 #   - Consoles section header + grid
-#   - Bottom bar tabs
-# Use a modest number of D-pad DOWNs to reach the first console card
-# without overshooting to the bottom bar.
+# Use a modest number of D-pad DOWNs to reach the first console card.
 
 - pressKey: "Remote Dpad Down"
 - pressKey: "Remote Dpad Down"

@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,7 +21,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -48,6 +55,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -59,6 +67,9 @@ fun HomeScreen(
     viewModel: GameListViewModel,
     onGameSelected: (String) -> Unit,
     onConsoleSelected: (String) -> Unit,
+    onNavigateToDownloads: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    hasActiveDownloads: Boolean = false,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -72,7 +83,61 @@ fun HomeScreen(
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
-        SpTopBar(title = "Spela")
+        SpTopBar(title = "Spela") {
+            Box {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .spFocusRing(shape = CircleShape)
+                        .clip(CircleShape)
+                        .background(SpColor.SurfaceVariant)
+                        .clickable(onClick = onNavigateToDownloads)
+                        .focusable()
+                        .semantics {
+                            contentDescription = "Downloads"
+                            role = Role.Button
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Download,
+                        contentDescription = null,
+                        tint = SpColor.OnSurface,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                if (hasActiveDownloads) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .align(Alignment.TopEnd)
+                            .clip(CircleShape)
+                            .background(SpColor.Primary),
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .spFocusRing(shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(SpColor.SurfaceVariant)
+                    .clickable(onClick = onNavigateToSettings)
+                    .focusable()
+                    .semantics {
+                        contentDescription = "Settings"
+                        role = Role.Button
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = null,
+                    tint = SpColor.OnSurface,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
 
         if (state.isLoading && state.recentGames.isEmpty() && state.consoles.isEmpty()) {
             Box(
@@ -264,10 +329,11 @@ private fun ContinuePlayingCard(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "\u25B6",
-                    style = SpTypography.TitleMedium,
-                    color = SpColor.OnPrimary,
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = SpColor.OnPrimary,
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }

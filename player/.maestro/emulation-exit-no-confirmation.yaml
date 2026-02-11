@@ -27,8 +27,8 @@ appId: com.spela.player
     direction: DOWN
     timeout: 5000
 
-# Navigate back to home (tap Home tab — back key doesn't switch tabs)
-- tapOn: "Home"
+# Navigate back to Home
+- pressKey: "back"
 
 - extendedWaitUntil:
     visible:

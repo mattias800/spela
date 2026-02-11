@@ -97,19 +97,6 @@ class NavigationViewModelTest {
     }
 
     @Test
-    fun switchTabSetsIsGoingBackFalse() = runTest(testDispatcher) {
-        val vm = createViewModel()
-        advanceUntilIdle()
-
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        vm.onIntent(NavigationIntent.GoBack)
-        assertTrue(vm.state.value.isGoingBack)
-
-        vm.onIntent(NavigationIntent.SwitchTab("downloads"))
-        assertFalse(vm.state.value.isGoingBack)
-    }
-
-    @Test
     fun showOverlayPreservesNavigationState() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()

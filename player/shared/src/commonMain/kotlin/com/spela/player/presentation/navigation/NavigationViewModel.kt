@@ -87,21 +87,6 @@ class NavigationViewModel(
                 }
             }
 
-            is NavigationIntent.SwitchTab -> {
-                val screen = when (intent.route) {
-                    "home" -> SpScreen.Home
-                    "downloads" -> SpScreen.Downloads
-                    "settings" -> SpScreen.Settings
-                    else -> return
-                }
-                _state.update {
-                    it.copy(
-                        currentScreen = screen,
-                        backStack = emptyList(),
-                        isGoingBack = false,
-                    )
-                }
-            }
         }
     }
 

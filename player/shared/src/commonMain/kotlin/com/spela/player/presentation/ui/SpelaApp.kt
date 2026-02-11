@@ -30,10 +30,9 @@ import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpBottomBar
-import com.spela.player.presentation.ui.components.SpBottomBarItem
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.screen.ConsoleScreen
+import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
 import com.spela.player.presentation.ui.screen.DownloadsScreen
 import com.spela.player.presentation.ui.screen.GameDetailScreen
 import com.spela.player.presentation.ui.screen.HomeScreen
@@ -56,13 +55,8 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
-
-private val bottomBarItems = listOf(
-    SpBottomBarItem(label = "Home", icon = "\uD83C\uDFE0", route = "home"),
-    SpBottomBarItem(label = "Downloads", icon = "\u2B07", route = "downloads"),
-    SpBottomBarItem(label = "Settings", icon = "\u2699", route = "settings"),
-)
 
 @Composable
 fun SpelaApp(
@@ -75,12 +69,10 @@ fun SpelaApp(
     libretroController: LibretroController,
     downloadsViewModel: DownloadsViewModel,
     settingsViewModel: SettingsViewModel,
+    keyMappingViewModel: KeyMappingViewModel,
 ) {
     SpelaTheme {
         val navState by navigationViewModel.state.collectAsState()
-        val showBottomBar = navState.currentScreen is SpScreen.Home ||
-                navState.currentScreen is SpScreen.Downloads ||
-                navState.currentScreen is SpScreen.Settings
 
         // Show loading screen while session is being restored
         if (navState.isRestoringSession) {
@@ -97,25 +89,11 @@ fun SpelaApp(
 
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
                 navState.currentScreen !is SpScreen.Login
-        val tabRoutes = listOf("home", "downloads", "settings")
-        val currentTabIndex = when (navState.currentScreen) {
-            is SpScreen.Home -> 0
-            is SpScreen.Downloads -> 1
-            is SpScreen.Settings -> 2
-            else -> -1
-        }
-        val onTabSwitch: ((Int) -> Unit)? = if (currentTabIndex >= 0) { direction ->
-            val newIndex = (currentTabIndex + direction).coerceIn(0, tabRoutes.lastIndex)
-            if (newIndex != currentTabIndex) {
-                navigationViewModel.onIntent(NavigationIntent.SwitchTab(tabRoutes[newIndex]))
-            }
-        } else null
 
         GamepadHandler(
             onBack = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,
-            onTabSwitch = onTabSwitch,
         ) {
         Box(
             modifier = Modifier
@@ -171,6 +149,7 @@ fun SpelaApp(
                             }
 
                             is SpScreen.Home -> {
+                                val downloadsState by downloadsViewModel.state.collectAsState()
                                 HomeScreen(
                                     viewModel = gameListViewModel,
                                     onGameSelected = { gameId ->
@@ -183,6 +162,17 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
                                         )
                                     },
+                                    onNavigateToDownloads = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Downloads)
+                                        )
+                                    },
+                                    onNavigateToSettings = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Settings)
+                                        )
+                                    },
+                                    hasActiveDownloads = downloadsState.activeDownloads.isNotEmpty(),
                                 )
                             }
 
@@ -197,6 +187,11 @@ fun SpelaApp(
                                     },
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onNavigateToConsoleSettings = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ConsoleSettings(screen.consoleId))
+                                        )
                                     },
                                 )
                             }
@@ -217,16 +212,40 @@ fun SpelaApp(
                             }
 
                             is SpScreen.Downloads -> {
-                                DownloadsScreen(viewModel = downloadsViewModel)
+                                DownloadsScreen(
+                                    viewModel = downloadsViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
                             }
 
                             is SpScreen.Settings -> {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
                                     onLogout = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.ServerConnection)
                                         )
+                                    },
+                                    onNavigateToConsoleSettings = { consoleId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ConsoleSettings(consoleId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.ConsoleSettings -> {
+                                ConsoleSettingsScreen(
+                                    consoleId = screen.consoleId,
+                                    settingsViewModel = settingsViewModel,
+                                    keyMappingViewModel = keyMappingViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
                             }
@@ -320,21 +339,6 @@ fun SpelaApp(
                     }
                 }
 
-                // Bottom navigation bar
-                if (showBottomBar) {
-                    SpBottomBar(
-                        items = bottomBarItems,
-                        selectedRoute = when (navState.currentScreen) {
-                            is SpScreen.Home -> "home"
-                            is SpScreen.Downloads -> "downloads"
-                            is SpScreen.Settings -> "settings"
-                            else -> "home"
-                        },
-                        onItemSelected = { route ->
-                            navigationViewModel.onIntent(NavigationIntent.SwitchTab(route))
-                        },
-                    )
-                }
             }
         }
         }

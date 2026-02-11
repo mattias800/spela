@@ -35,15 +35,13 @@ import com.spela.player.presentation.ui.theme.SpColor
  * - D-pad / arrow keys: spatial focus navigation via FocusManager
  * - Escape: back navigation
  *
- * Platform-specific gamepad buttons (A, B, L1, R1) are handled at the platform layer:
- * - Android: MainActivity remaps BUTTON_A -> DPAD_CENTER, BUTTON_B -> BACK,
- *   and BUTTON_L1/R1 trigger tab switching via onTabSwitch callback.
+ * Platform-specific gamepad buttons (A, B) are handled at the platform layer:
+ * - Android: MainActivity remaps BUTTON_A -> DPAD_CENTER, BUTTON_B -> BACK.
  * - Desktop: Arrow keys + Enter/Space + Escape cover all navigation needs.
  */
 @Composable
 fun GamepadHandler(
     onBack: (() -> Unit)? = null,
-    onTabSwitch: ((direction: Int) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
