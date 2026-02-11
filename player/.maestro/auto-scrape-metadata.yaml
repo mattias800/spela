@@ -32,11 +32,10 @@ appId: com.spela.player
     text: ".*Castlevania.*"
 
 # ── Wait for game detail screen to load ──
-# "Download" button is always visible on game detail, regardless of scrape state.
 
 - extendedWaitUntil:
     visible:
-      text: "Download"
+      text: "Download|Play"
     timeout: 3000
 
 # ── Assert that metadata appears after auto-scrape ──
@@ -53,7 +52,8 @@ appId: com.spela.player
 # ── Verify the game detail screen is fully populated ──
 # Bug regression: metadata and boxart were not being displayed after scrape.
 
-- assertVisible: "Download"
+- assertVisible:
+    text: "Download|Play"
 
 # Verify cover art is rendered. The SpHeroCover composable has
 # contentDescription = "{title} cover art" and only loads an image

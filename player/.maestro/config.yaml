@@ -1,2 +1,50 @@
 # Maestro test suite configuration for Spela Player
 appId: com.spela.player
+
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    # ── Phase 1: Bootstrap session ──
+    - "00-establish-session"
+
+    # ── Phase 2: Tests using persisted session (no clearState) ──
+    # Play/download a game first so subsequent tests find it cached
+    - "play-castlevania"
+    - "auto-scrape-metadata"
+    - "navigation-back-stack"
+    # Emulation tests
+    - "emulation-back-button"
+    - "emulation-dismiss-overlay"
+    - "emulation-exit-no-confirmation"
+    - "emulation-exit-resume"
+    - "emulation-exit-returns-to-game-detail"
+    - "emulation-fast-forward"
+    - "emulation-fps-hud"
+    - "emulation-nes-fps-check"
+    - "emulation-nes-stability"
+    - "emulation-no-auto-overlay"
+    - "emulation-overlay"
+    - "emulation-save-load"
+    - "emulation-screenshot"
+    # Touch controls
+    - "touch-controls-action-buttons"
+    - "touch-controls-dpad"
+    - "touch-controls-hidden-during-overlay"
+    - "touch-controls-visible"
+    - "touch-controls-with-overlay-cycle"
+    # Gamepad navigation
+    - "gamepad-dpad-home-navigation"
+    - "gamepad-overlay-dpad"
+    - "gamepad-settings-dpad"
+    # Settings (no sync/restart)
+    - "settings-console-shader"
+    - "settings-device-shader-override"
+    - "settings-shader-preview"
+
+    # ── Phase 3: Tests that clear state (run last) ──
+    - "session-persistence"
+    - "settings-preferences-sync"
+    - "settings-shader-selection"
+    - "landscape-login-flow"
+    - "session-server-persistence"
+    - "session-logout-clears-tokens"

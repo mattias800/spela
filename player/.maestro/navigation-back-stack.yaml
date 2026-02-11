@@ -42,7 +42,7 @@ appId: com.spela.player
 # Verify we're on the game detail screen
 - extendedWaitUntil:
     visible:
-      text: "Download"
+      text: "Download|Play"
     timeout: 3000
 
 # ── BACK #1: Game Detail -> Console game list ──
@@ -58,10 +58,10 @@ appId: com.spela.player
       text: "Go back"
     timeout: 3000
 
-# The game detail's "Download" button should NOT be visible
+# The game detail's "Download"/"Play" button should NOT be visible
 - extendedWaitUntil:
     notVisible:
-      text: "Download"
+      text: "Download|Play"
     timeout: 3000
 
 # ── BACK #2: Console game list -> Home screen ──

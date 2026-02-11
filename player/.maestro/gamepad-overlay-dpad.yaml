@@ -44,14 +44,11 @@ appId: com.spela.player
 
 # ── Download the game if needed ──
 
-- tapOn: "Download"
-
-- extendedWaitUntil:
-    visible:
-      text: "Play"
-    timeout: 8000
-
-# ── Tap Play ──
+# Download the game if not already downloaded
+- runFlow:
+    when:
+      visible: "Download"
+    file: setup/download-game.yaml
 
 - tapOn: "Play"
 
