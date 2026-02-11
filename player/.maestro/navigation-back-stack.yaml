@@ -62,8 +62,9 @@ appId: com.spela.player
 
 - pressKey: "back"
 
-# Verify we're back on the Home screen
-- extendedWaitUntil:
-    visible:
+# Verify we're back on the Home screen (scroll up since position may be preserved)
+- scrollUntilVisible:
+    element:
       text: "Consoles"
+    direction: UP
     timeout: 5000

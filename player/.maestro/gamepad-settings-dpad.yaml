@@ -79,7 +79,8 @@ appId: com.spela.player
 
 # ── Verify we're back on Home ──
 
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "Consoles"
-    timeout: 3000
+    direction: UP
+    timeout: 5000

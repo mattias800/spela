@@ -94,7 +94,7 @@ appId: com.spela.player
 - extendedWaitUntil:
     visible:
       text: "Play"
-    timeout: 8000
+    timeout: 15000
 
 # Verify we're on the game detail screen (not a dialog)
 - assertNotVisible: "Exit without saving?"

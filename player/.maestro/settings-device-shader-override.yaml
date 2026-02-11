@@ -19,19 +19,23 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: ".*CRT Classic.*"
+      text: "Video Filter"
     direction: DOWN
     timeout: 5000
 
-- tapOn:
-    text: ".*CRT Classic.*"
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
 
-# ── Switch to Per Console tab ──
+- tapOn: "CRT Classic"
+
+# ── Switch to Per Console tab (scroll up — tabs are above shader options) ──
 
 - scrollUntilVisible:
     element:
       text: "Per Console"
-    direction: DOWN
+    direction: UP
 
 - tapOn: "Per Console"
 

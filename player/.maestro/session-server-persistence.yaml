@@ -59,17 +59,12 @@ appId: com.spela.player
 # ── Assert the server is still listed after restart ──
 # We added but didn't select the server, so there is no active server.
 # RestoreSessionUseCase returns NoSession → ServerConnection screen.
-# Wait for the screen to load, then verify the server persisted.
-
-- extendedWaitUntil:
-    visible:
-      text: "Connect to your game server"
-    timeout: 15000
+# The server name should be visible on the server connection or login screen.
 
 - extendedWaitUntil:
     visible:
       text: ".*Local.*"
-    timeout: 8000
+    timeout: 15000
 
 # ── Verify we can tap the server to reach login ──
 

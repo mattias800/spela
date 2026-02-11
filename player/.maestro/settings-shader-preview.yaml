@@ -26,13 +26,12 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: ".*CRT Classic.*"
+      text: "CRT Classic"
     direction: DOWN
 
 # ── Select CRT Classic to verify preview updates ──
 
-- tapOn:
-    text: ".*CRT Classic.*"
+- tapOn: "CRT Classic"
 
 # ── Scroll down to see the shader preview ──
 
@@ -84,13 +83,14 @@ appId: com.spela.player
 # We look for "Tap to close" text that appears in the fullscreen dialog.
 # Since the preview is a Canvas, tap at a location where it should be.
 
+# Scroll the shader preview canvas into view, then tap it
 - scrollUntilVisible:
     element:
-      text: "Override on this device only"
-    direction: DOWN
+      id: "shader-preview"
+    direction: UP
 
-# Tap the shader preview canvas to open fullscreen preview
-- tapOn: "Shader preview"
+- tapOn:
+    id: "shader-preview"
 
 # If fullscreen preview opened, "Tap to close" should be visible
 - extendedWaitUntil:

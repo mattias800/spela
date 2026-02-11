@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Size
@@ -36,7 +37,8 @@ fun ShaderPreview(
             .aspectRatio(4f / 3f)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .semantics { contentDescription = "Shader preview" },
+            .semantics { contentDescription = "Shader preview" }
+            .testTag("shader-preview"),
     ) {
         // Fill background
         drawRect(color = SpColor.SurfaceVariant)

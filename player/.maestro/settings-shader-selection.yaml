@@ -25,10 +25,10 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: ".*CRT Classic.*"
+      text: "CRT Classic"
     direction: DOWN
 
-- assertVisible: ".*Scanlines.*"
+- assertVisible: "Scanlines"
 
 # ── Select "CRT Classic" shader ──
 
@@ -54,6 +54,11 @@ appId: com.spela.player
 
 - scrollUntilVisible:
     element:
-      text: ".*CRT Classic.*"
+      text: "Video Filter"
     direction: DOWN
     timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "CRT Classic"
+    direction: DOWN
