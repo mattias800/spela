@@ -12,6 +12,7 @@ data class EmulationState(
     val showPerformanceOverlay: Boolean = false,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
 
+    val supportsSaveStates: Boolean = false,
     val showExitConfirm: Boolean = false,
     val requestExit: Boolean = false,
     val statusMessage: String? = null,

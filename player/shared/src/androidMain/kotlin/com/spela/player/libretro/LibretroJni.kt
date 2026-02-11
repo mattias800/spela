@@ -22,6 +22,7 @@ class LibretroJni {
     external fun nativeDeinit()
 
     /* Save state */
+    external fun nativeSerializeSize(): Long
     external fun nativeSerialize(): ByteArray?
     external fun nativeUnserialize(data: ByteArray): Boolean
 

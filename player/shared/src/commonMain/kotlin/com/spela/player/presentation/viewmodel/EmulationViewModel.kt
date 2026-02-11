@@ -49,13 +49,14 @@ class EmulationViewModel(
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
 
             EmulationIntent.ShowExitConfirm -> {
-                if (currentPreferences.autoSaveEnabled) {
-                    // Auto-save is enabled, so progress won't be lost — exit immediately.
-                    // Pause first to stop audio/video instantly, then save+stop async.
+                if (_state.value.supportsSaveStates) {
+                    // Game supports save states — exit immediately.
+                    // If auto-save is on, stopGame() will save. If off, user chose to skip saves.
                     pauseGame()
                     _state.update { it.copy(showExitConfirm = false, requestExit = true) }
                     stopGame()
                 } else {
+                    // Game doesn't support save states — warn the user.
                     _state.update { it.copy(showExitConfirm = true) }
                 }
             }
@@ -120,7 +121,8 @@ class EmulationViewModel(
                         }
 
                         libretroController.start()
-                        _state.update { it.copy(isRunning = true, isLoading = false) }
+                        val saveStatesSupported = libretroController.supportsSaveStates()
+                        _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported) }
 
                         // Start FPS tracking
                         trackPerformance()
@@ -227,6 +229,7 @@ interface LibretroController {
     fun pause()
     fun resume()
     fun stop()
+    fun supportsSaveStates(): Boolean
     fun serialize(): ByteArray?
     fun unserialize(data: ByteArray): Boolean
     fun setFastForward(enabled: Boolean)

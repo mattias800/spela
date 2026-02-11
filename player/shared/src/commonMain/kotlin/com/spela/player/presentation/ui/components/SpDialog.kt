@@ -56,21 +56,21 @@ fun SpDialog(
 
             Spacer(Modifier.height(SpSpacing.XLarge))
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                SpButton(
-                    text = dismissText,
-                    onClick = onDismiss,
-                    style = SpButtonStyle.Ghost,
-                )
-                Spacer(Modifier.width(SpSpacing.Small))
                 SpButton(
                     text = confirmText,
                     onClick = onConfirm,
                     style = if (isDestructive) SpButtonStyle.Secondary else SpButtonStyle.Primary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SpButton(
+                    text = dismissText,
+                    onClick = onDismiss,
+                    style = SpButtonStyle.Ghost,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

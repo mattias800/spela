@@ -324,15 +324,15 @@ fun InGameOverlay(
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(SpSpacing.XLarge))
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
                     SpButton(
                         text = "Keep Playing",
                         onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
                         style = SpButtonStyle.Outlined,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     SpButton(
                         text = "Exit Anyway",
@@ -340,7 +340,7 @@ fun InGameOverlay(
                             viewModel.onIntent(EmulationIntent.ConfirmExit)
                             onExit()
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

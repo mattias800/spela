@@ -336,6 +336,11 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     LOGI("Core deinitialized");
 }
 
+JNI_FUNC(jlong, nativeSerializeSize)(JNIEnv *env, jobject thiz) {
+    if (!g_core.game_loaded) return 0;
+    return (jlong)g_core.retro_serialize_size();
+}
+
 JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return NULL;
 

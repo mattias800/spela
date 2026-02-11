@@ -8,7 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,7 +57,7 @@ fun SpButton(
             )
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.height(48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -76,7 +76,7 @@ fun SpButton(
         SpButtonStyle.Secondary -> {
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.height(48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -95,7 +95,7 @@ fun SpButton(
         SpButtonStyle.Outlined -> {
             OutlinedButton(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.height(48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -113,7 +113,7 @@ fun SpButton(
         SpButtonStyle.Ghost -> {
             TextButton(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.height(48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,

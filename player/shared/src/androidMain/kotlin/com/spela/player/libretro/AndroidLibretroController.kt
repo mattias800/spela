@@ -127,6 +127,8 @@ class AndroidLibretroController(
         lastFrameHeight = 0
     }
 
+    override fun supportsSaveStates(): Boolean = jni.nativeSerializeSize() > 0
+
     override fun serialize(): ByteArray? = jni.nativeSerialize()
 
     override fun unserialize(data: ByteArray): Boolean = jni.nativeUnserialize(data)
