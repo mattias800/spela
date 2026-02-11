@@ -40,6 +40,10 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.GameDetailIntent
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -300,12 +304,19 @@ private fun GameInfoContent(
         }
 
         SpButton(
-            text = if (game.isFavorite) "\u2665" else "\u2661",
+            text = "",
             onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
             style = if (game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
                 contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites"
                 role = Role.Button
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (game.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
             },
         )
     }

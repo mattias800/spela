@@ -24,6 +24,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -173,11 +176,12 @@ fun ServerConnectionScreen(
                                     Spacer(Modifier.width(SpSpacing.Medium))
                                 }
                                 // Delete button
-                                Text(
-                                    text = "\u2715",
-                                    style = SpTypography.TitleLarge,
-                                    color = SpColor.OnBackgroundTertiary,
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Remove server",
+                                    tint = SpColor.OnBackgroundTertiary,
                                     modifier = Modifier
+                                        .size(24.dp)
                                         .clip(CircleShape)
                                         .clickable(onClick = {
                                             viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))

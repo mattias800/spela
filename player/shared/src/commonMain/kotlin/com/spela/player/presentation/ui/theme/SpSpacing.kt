@@ -33,9 +33,6 @@ object SpSpacing {
     val GridCellMinWidth = 140.dp
     val GridSpacing = 12.dp
 
-    // Bottom bar
-    val BottomBarHeight = 72.dp
-
     // Top bar
     val TopBarHeight = 64.dp
 }
