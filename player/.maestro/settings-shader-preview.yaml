@@ -83,14 +83,14 @@ appId: com.spela.player
 # We look for "Tap to close" text that appears in the fullscreen dialog.
 # Since the preview is a Canvas, tap at a location where it should be.
 
-# Scroll the shader preview canvas into view, then tap it
-- scrollUntilVisible:
-    element:
-      id: "shader-preview"
-    direction: UP
+# Scroll to bring the shader preview canvas into view, then tap it.
+# The preview sits between the shader options and "Override on this device only".
+# After scrolling to Override, scroll back up to reveal the preview.
+- swipe:
+    start: "50%, 50%"
+    end: "50%, 80%"
 
-- tapOn:
-    id: "shader-preview"
+- tapOn: "Shader preview"
 
 # If fullscreen preview opened, "Tap to close" should be visible
 - extendedWaitUntil:

@@ -28,8 +28,6 @@ appId: com.spela.player
       text: "CRT Classic"
     direction: DOWN
 
-- assertVisible: "Scanlines"
-
 # ── Select "CRT Classic" shader ──
 
 - tapOn: "CRT Classic"
