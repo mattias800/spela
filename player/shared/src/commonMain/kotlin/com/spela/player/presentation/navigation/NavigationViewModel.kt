@@ -105,10 +105,15 @@ class NavigationViewModel(
                 is RestoreSessionResult.NeedsLogin -> SpScreen.Login
                 RestoreSessionResult.NoSession -> SpScreen.ServerConnection
             }
+            val serverUrl = when (result) {
+                is RestoreSessionResult.NeedsLogin -> result.serverUrl
+                else -> null
+            }
             _state.update {
                 it.copy(
                     currentScreen = screen,
                     isRestoringSession = false,
+                    restoredServerUrl = serverUrl,
                 )
             }
         }

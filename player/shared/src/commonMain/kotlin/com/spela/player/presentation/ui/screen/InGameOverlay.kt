@@ -41,7 +41,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
@@ -55,12 +58,16 @@ fun InGameOverlay(
     onExit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    val continueFocusRequester = remember { FocusRequester() }
 
     AnimatedVisibility(
         visible = state.showOverlay,
         enter = fadeIn() + slideInVertically(),
         exit = fadeOut() + slideOutVertically(),
     ) {
+        LaunchedEffect(Unit) {
+            try { continueFocusRequester.requestFocus() } catch (_: Exception) {}
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -181,7 +188,7 @@ fun InGameOverlay(
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
                                 },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
                             )
                         }
                     } else {
@@ -233,7 +240,7 @@ fun InGameOverlay(
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
                                 },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
                             )
                         }
                     }
@@ -399,6 +406,7 @@ private fun OverlayAction(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .spFocusRing(shape = RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .focusable()
             .semantics {

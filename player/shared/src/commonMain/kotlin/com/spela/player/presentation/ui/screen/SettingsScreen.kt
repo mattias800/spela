@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
@@ -384,6 +385,7 @@ private fun ShaderScopeTabs(
 
             Box(
                 modifier = Modifier
+                    .spFocusRing(shape = RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .background(backgroundColor)
                     .clickable { onScopeChanged(scope) }
@@ -465,6 +467,7 @@ private fun ConsoleShaderCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .spFocusRing(shape = RoundedCornerShape(0.dp))
                             .clickable { onSelectShader(globalDefault) }
                             .focusable()
                             .semantics {
@@ -525,6 +528,7 @@ private fun ConsoleShaderCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .spFocusRing(shape = RoundedCornerShape(0.dp))
                             .clickable { onToggleDeviceOverride(!hasDeviceOverride) }
                             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
                         verticalAlignment = Alignment.CenterVertically,
@@ -614,6 +618,7 @@ private fun SettingsToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .spFocusRing(shape = RoundedCornerShape(12.dp))
             .clickable(onClick = onToggle)
             .focusable()
             .semantics {
@@ -689,6 +694,7 @@ private fun ShaderOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .spFocusRing(shape = RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .focusable()
             .semantics {

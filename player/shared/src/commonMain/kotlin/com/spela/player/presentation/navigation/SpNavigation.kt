@@ -19,6 +19,7 @@ data class NavigationState(
     val screenBehindOverlay: SpScreen? = null,
     val backStackBehindOverlay: List<SpScreen> = emptyList(),
     val isRestoringSession: Boolean = true,
+    val restoredServerUrl: String? = null,
 )
 
 sealed interface NavigationIntent {

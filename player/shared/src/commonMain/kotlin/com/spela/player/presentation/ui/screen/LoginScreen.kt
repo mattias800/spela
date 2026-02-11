@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     serverUrl: String,
     onLoginSuccess: () -> Unit,
+    onChangeServer: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -111,21 +113,32 @@ fun LoginScreen(
                     .then(if (isLandscape) Modifier.widthIn(max = 450.dp) else Modifier.fillMaxWidth()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Server URL indicator
+                // Server URL indicator (tappable to change server)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(SpColor.SurfaceVariant)
+                        .clickable { onChangeServer() }
                         .padding(SpSpacing.Medium),
                 ) {
-                    Text(
-                        text = serverUrl,
-                        style = SpTypography.BodySmall,
-                        color = SpColor.OnBackgroundTertiary,
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = serverUrl.ifEmpty { "No server configured" },
+                            style = SpTypography.BodySmall,
+                            color = SpColor.OnBackgroundTertiary,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = "Tap to change server",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.Primary,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(SpSpacing.XLarge))

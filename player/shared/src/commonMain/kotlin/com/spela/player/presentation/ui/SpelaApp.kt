@@ -51,6 +51,7 @@ import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.theme.SpelaTheme
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -98,6 +99,28 @@ fun SpelaApp(
             return@SpelaTheme
         }
 
+        val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
+                navState.currentScreen !is SpScreen.Login
+        val tabRoutes = listOf("home", "downloads", "settings")
+        val currentTabIndex = when (navState.currentScreen) {
+            is SpScreen.Home -> 0
+            is SpScreen.Downloads -> 1
+            is SpScreen.Settings -> 2
+            else -> -1
+        }
+        val onTabSwitch: ((Int) -> Unit)? = if (currentTabIndex >= 0) { direction ->
+            val newIndex = (currentTabIndex + direction).coerceIn(0, tabRoutes.lastIndex)
+            if (newIndex != currentTabIndex) {
+                navigationViewModel.onIntent(NavigationIntent.SwitchTab(tabRoutes[newIndex]))
+            }
+        } else null
+
+        GamepadHandler(
+            onBack = if (isGamepadScreen) {
+                { navigationViewModel.onIntent(NavigationIntent.GoBack) }
+            } else null,
+            onTabSwitch = onTabSwitch,
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -130,14 +153,22 @@ fun SpelaApp(
                             }
 
                             is SpScreen.Login -> {
+                                val serverUrl = serverConnectionViewModel.state.value
+                                    .servers.firstOrNull { it.id == serverConnectionViewModel.state.value.selectedServerId }
+                                    ?.url
+                                    ?: navState.restoredServerUrl
+                                    ?: ""
                                 LoginScreen(
                                     viewModel = loginViewModel,
-                                    serverUrl = serverConnectionViewModel.state.value
-                                        .servers.firstOrNull { it.id == serverConnectionViewModel.state.value.selectedServerId }
-                                        ?.url ?: "",
+                                    serverUrl = serverUrl,
                                     onLoginSuccess = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Home)
+                                        )
+                                    },
+                                    onChangeServer = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ServerConnection)
                                         )
                                     },
                                 )
@@ -346,6 +377,7 @@ fun SpelaApp(
                     )
                 }
             }
+        }
         }
     }
 }

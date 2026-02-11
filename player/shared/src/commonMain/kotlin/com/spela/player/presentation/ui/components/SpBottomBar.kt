@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -76,15 +78,17 @@ private fun SpBottomBarTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) SpColor.Primary else SpColor.OnBackgroundTertiary,
+        targetValue = if (isSelected || isFocused) SpColor.Primary else SpColor.OnBackgroundTertiary,
         animationSpec = tween(200),
     )
 
-    val interactionSource = remember { MutableInteractionSource() }
-
     Column(
         modifier = modifier
+            .spFocusRing(shape = RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

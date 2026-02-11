@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -259,7 +258,6 @@ private fun ContinuePlayingCard(
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(SpColor.Primary)
-                    .focusable()
                     .semantics {
                         contentDescription = "Play ${game.title}"
                         role = Role.Button

@@ -60,6 +60,13 @@ fun ServerConnectionScreen(
         viewModel.onIntent(ServerConnectionIntent.LoadServers)
     }
 
+    // Auto-expand Add Server form when server list is empty
+    LaunchedEffect(state.servers, state.isLoading) {
+        if (!state.isLoading && state.servers.isEmpty() && !state.isAddingServer) {
+            viewModel.onIntent(ServerConnectionIntent.ToggleAddServer)
+        }
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -160,7 +167,20 @@ fun ServerConnectionScreen(
                                             .clip(CircleShape)
                                             .background(SpColor.Success),
                                     )
+                                    Spacer(Modifier.width(SpSpacing.Medium))
                                 }
+                                // Delete button
+                                Text(
+                                    text = "\u2715",
+                                    style = SpTypography.TitleLarge,
+                                    color = SpColor.OnBackgroundTertiary,
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable(onClick = {
+                                            viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
+                                        })
+                                        .padding(SpSpacing.Small),
+                                )
                             }
                         }
                     }

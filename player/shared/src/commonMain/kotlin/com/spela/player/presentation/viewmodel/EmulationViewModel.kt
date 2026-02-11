@@ -50,10 +50,11 @@ class EmulationViewModel(
             EmulationIntent.DismissControlHint -> _state.update { it.copy(showControlHint = false) }
             EmulationIntent.ShowExitConfirm -> {
                 if (currentPreferences.autoSaveEnabled) {
-                    // Auto-save is enabled, so progress won't be lost — exit immediately
-                    _state.update { it.copy(showExitConfirm = false) }
+                    // Auto-save is enabled, so progress won't be lost — exit immediately.
+                    // Pause first to stop audio/video instantly, then save+stop async.
+                    pauseGame()
+                    _state.update { it.copy(showExitConfirm = false, requestExit = true) }
                     stopGame()
-                    _state.update { it.copy(requestExit = true) }
                 } else {
                     _state.update { it.copy(showExitConfirm = true) }
                 }

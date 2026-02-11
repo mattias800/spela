@@ -39,6 +39,10 @@ class ServerConnectionViewModel(
     private val _state = MutableStateFlow(ServerConnectionState())
     val state: StateFlow<ServerConnectionState> = _state.asStateFlow()
 
+    init {
+        loadServers()
+    }
+
     fun onIntent(intent: ServerConnectionIntent) {
         when (intent) {
             ServerConnectionIntent.LoadServers -> loadServers()

@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -37,27 +39,33 @@ fun SpCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val scale by animateFloatAsState(
         targetValue = when {
             isPressed -> 0.97f
-            isHovered -> 1.02f
+            isHovered || isFocused -> 1.02f
             else -> 1f
         },
         animationSpec = tween(150),
     )
 
     val shape = RoundedCornerShape(cornerRadius)
-    val resolvedBg = if (isHovered) SpColor.CardHovered else backgroundColor
+    val resolvedBg = if (isHovered || isFocused) SpColor.CardHovered else backgroundColor
 
     Box(
         modifier = modifier
             .scale(scale)
             .shadow(
-                elevation = if (isHovered) 12.dp else 4.dp,
+                elevation = if (isHovered || isFocused) 12.dp else 4.dp,
                 shape = shape,
                 ambientColor = SpColor.Primary.copy(alpha = 0.15f),
                 spotColor = SpColor.Primary.copy(alpha = 0.1f),
+            )
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+                shape = shape,
             )
             .clip(shape)
             .background(resolvedBg)
@@ -83,14 +91,25 @@ fun SpGradientCard(
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     Box(
         modifier = modifier
             .shadow(8.dp, shape)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+                shape = shape,
+            )
             .clip(shape)
             .background(Brush.linearGradient(gradientColors))
             .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+                if (onClick != null) Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ) else Modifier
             )
     ) {
         content()

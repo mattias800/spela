@@ -3,6 +3,7 @@ package com.spela.player.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -48,6 +49,7 @@ fun SpTopBar(
             Box(
                 modifier = Modifier
                     .size(48.dp)
+                    .spFocusRing(shape = CircleShape)
                     .clip(CircleShape)
                     .background(SpColor.SurfaceVariant)
                     .clickable(onClick = onBack)

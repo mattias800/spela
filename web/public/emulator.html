@@ -136,20 +136,31 @@
         }
 
         // Key mapping
+        // EmulatorJS uses its own key name format (e.g., "up arrow" not "arrowup").
+        // This map converts standard DOM KeyboardEvent.key names to EmulatorJS names.
+        var ejsKeyMap = {
+          "arrowup": "up arrow", "arrowdown": "down arrow",
+          "arrowleft": "left arrow", "arrowright": "right arrow",
+        };
+        function toEjsKey(key) {
+          var lower = (key || "").toLowerCase();
+          return ejsKeyMap[lower] || lower;
+        }
+
         var keyPrefs = prefs.keyMapping || "arrows-left";
         var keyPresets = {
           "arrows-left": { 0:{value:"z"}, 1:{value:"x"}, 2:{value:"v"}, 3:{value:"enter"},
-            4:{value:"arrowup"}, 5:{value:"arrowdown"}, 6:{value:"arrowleft"}, 7:{value:"arrowright"},
+            4:{value:"up arrow"}, 5:{value:"down arrow"}, 6:{value:"left arrow"}, 7:{value:"right arrow"},
             8:{value:"a"}, 9:{value:"s"}, 10:{value:"q"}, 11:{value:"e"}, 12:{value:"r"}, 13:{value:"f"} },
-          "wasd-arrows": { 0:{value:"arrowdown"}, 1:{value:"arrowright"}, 2:{value:"v"}, 3:{value:"enter"},
+          "wasd-arrows": { 0:{value:"down arrow"}, 1:{value:"right arrow"}, 2:{value:"v"}, 3:{value:"enter"},
             4:{value:"w"}, 5:{value:"s"}, 6:{value:"a"}, 7:{value:"d"},
-            8:{value:"arrowleft"}, 9:{value:"arrowup"}, 10:{value:"q"}, 11:{value:"]"}, 12:{value:"e"}, 13:{value:"["} },
+            8:{value:"left arrow"}, 9:{value:"up arrow"}, 10:{value:"q"}, 11:{value:"]"}, 12:{value:"e"}, 13:{value:"["} },
         };
 
         var controls = {};
         if (keyPrefs === "custom" && prefs.customKeyMapping) {
           for (var idx in prefs.customKeyMapping) {
-            controls[parseInt(idx)] = { value: prefs.customKeyMapping[idx], value2: "" };
+            controls[parseInt(idx)] = { value: toEjsKey(prefs.customKeyMapping[idx]), value2: "" };
           }
         } else {
           var preset = keyPresets[keyPrefs] || keyPresets["arrows-left"];
@@ -157,7 +168,7 @@
             controls[parseInt(idx)] = { value: preset[idx].value, value2: "" };
           }
         }
-        window.EJS_defaultControls = { 0: controls };
+        window.EJS_defaultControls = { 0: controls, 1: controls, 2: controls, 3: controls };
 
         // Hide buttons we don't need in embedded context
         window.EJS_Buttons = {
