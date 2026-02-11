@@ -10,7 +10,7 @@ appId: com.spela.player
 
 # -- Setup: login as player --
 
-- runFlow: setup/login-player.yaml
+- runFlow: setup/start-logged-in.yaml
 
 # -- Navigate to NES > Castlevania --
 

@@ -11,7 +11,7 @@ appId: com.spela.player
 
 # ── Setup: login as player ──
 
-- runFlow: setup/login-player.yaml
+- runFlow: setup/start-logged-in.yaml
 
 # ── Navigate with D-pad: move focus down to a console card ──
 # The Home screen layout (top to bottom):

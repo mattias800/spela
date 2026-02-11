@@ -1,0 +1,18 @@
+appId: com.spela.player
+---
+
+# Lightweight setup: restart app with persisted session.
+# Use this for tests that don't need a fresh login.
+# The app must already have a persisted session from a prior test run.
+
+- stopApp:
+    appId: "com.spela.player"
+- launchApp:
+    appId: "com.spela.player"
+
+# ── Verify we reach the home screen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Consoles"
+    timeout: 8000
