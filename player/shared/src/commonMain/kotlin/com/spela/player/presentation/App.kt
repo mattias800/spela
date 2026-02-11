@@ -10,6 +10,7 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import org.koin.compose.koinInject
 
@@ -28,6 +29,7 @@ fun App() {
     val libretroController: LibretroController = koinInject()
     val downloadsViewModel: DownloadsViewModel = koinInject()
     val settingsViewModel: SettingsViewModel = koinInject()
+    val keyMappingViewModel: KeyMappingViewModel = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -39,5 +41,6 @@ fun App() {
         libretroController = libretroController,
         downloadsViewModel = downloadsViewModel,
         settingsViewModel = settingsViewModel,
+        keyMappingViewModel = keyMappingViewModel,
     )
 }

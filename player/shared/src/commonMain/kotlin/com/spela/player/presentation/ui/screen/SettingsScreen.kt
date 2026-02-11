@@ -19,9 +19,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
@@ -63,7 +69,9 @@ import com.spela.player.presentation.viewmodel.ShaderScope
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    onBack: () -> Unit = {},
     onLogout: () -> Unit,
+    onNavigateToConsoleSettings: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -102,7 +110,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
-        SpTopBar(title = "Settings")
+        SpTopBar(title = "Settings", showBack = true, onBack = onBack)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -258,33 +266,43 @@ fun SettingsScreen(
                             items = state.consoles,
                             key = { it.id },
                         ) { console ->
-                            ConsoleShaderCard(
-                                console = console,
-                                currentShader = state.consoleShaders[console.id]
-                                    ?: state.selectedShader,
-                                isExpanded = state.expandedConsoleId == console.id,
-                                hasDeviceOverride = state.deviceShaderOverrides.containsKey(console.id),
-                                deviceOverrideShader = state.deviceShaderOverrides[console.id],
-                                globalDefault = state.selectedShader,
-                                previewUrl = "${state.serverUrl}/api/consoles/${console.id}/preview-screenshot",
-                                onExpand = { viewModel.onIntent(SettingsIntent.ExpandConsole(console.id)) },
-                                onSelectShader = { shader ->
-                                    viewModel.onIntent(SettingsIntent.SelectConsoleShader(console.id, shader))
-                                },
-                                onToggleDeviceOverride = { enabled ->
-                                    if (enabled) {
-                                        val current = state.consoleShaders[console.id]
-                                            ?: state.selectedShader
-                                        viewModel.onIntent(SettingsIntent.SetDeviceOverride(console.id, current))
-                                    } else {
-                                        viewModel.onIntent(SettingsIntent.SetDeviceOverride(console.id, null))
+                            val consoleShader = state.consoleShaders[console.id]
+                                ?: state.selectedShader
+                            val hasOverride = state.deviceShaderOverrides.containsKey(console.id)
+                            val effectiveShader = state.deviceShaderOverrides[console.id]
+                                ?: consoleShader
+
+                            SpCard(
+                                onClick = { onNavigateToConsoleSettings(console.id) },
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(SpSpacing.Default),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = console.name,
+                                            style = SpTypography.TitleMedium,
+                                            color = SpColor.OnCard,
+                                        )
+                                        Text(
+                                            text = effectiveShader.displayName +
+                                                if (hasOverride) " (device)" else "",
+                                            style = SpTypography.BodySmall,
+                                            color = SpColor.OnBackgroundTertiary,
+                                        )
                                     }
-                                },
-                                onSelectDeviceShader = { shader ->
-                                    viewModel.onIntent(SettingsIntent.SetDeviceOverride(console.id, shader))
-                                },
-                                onPreviewClick = { viewModel.onIntent(SettingsIntent.ShowShaderPreviewFullscreen(console.id)) },
-                            )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = "Open console settings",
+                                        tint = SpColor.OnBackgroundTertiary,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -450,10 +468,11 @@ private fun ConsoleShaderCard(
                         color = SpColor.OnBackgroundTertiary,
                     )
                 }
-                Text(
-                    text = if (isExpanded) "\u25B2" else "\u25BC",
-                    style = SpTypography.TitleMedium,
-                    color = SpColor.OnBackgroundTertiary,
+                Icon(
+                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = SpColor.OnBackgroundTertiary,
+                    modifier = Modifier.size(24.dp),
                 )
             }
 
@@ -605,7 +624,7 @@ private fun ConsoleShaderCard(
 }
 
 @Composable
-private fun SettingsSectionHeader(title: String) {
+internal fun SettingsSectionHeader(title: String) {
     Text(
         text = title,
         style = SpTypography.HeadlineSmall,
@@ -664,7 +683,7 @@ private fun SettingsToggle(
 }
 
 @Composable
-private fun SettingsDivider() {
+internal fun SettingsDivider() {
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
@@ -694,7 +713,7 @@ private fun SettingsInfoRow(label: String, value: String) {
 }
 
 @Composable
-private fun ShaderOption(
+internal fun ShaderOption(
     shader: ShaderPreset,
     isSelected: Boolean,
     onClick: () -> Unit,
