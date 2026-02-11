@@ -431,6 +431,8 @@ class FakeLibretroController : LibretroController {
         isFastForward = enabled
     }
 
+    override fun supportsSaveStates(): Boolean = true
+
     override fun performanceStats(): Flow<Pair<Float, Float>> = flow {
         while (true) {
             emit(59.9f to 16.5f)
@@ -449,6 +451,35 @@ class FakeFileStorage : FileStorage {
     override suspend fun deleteFile(path: String) {}
     override suspend fun deleteDirectory(path: String) {}
     override suspend fun getDirectorySize(path: String): Long = 0
+}
+
+class FakeKeyMappingRepository : KeyMappingRepository {
+    private val mappings = mutableMapOf<String, MutableMap<Int, Int>>()
+
+    private fun key(consoleId: String, port: Int) = "$consoleId:$port"
+
+    override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? {
+        val bindings = mappings[key(consoleId, port)] ?: return null
+        return KeyMappingProfile(
+            consoleId = consoleId,
+            port = port,
+            bindings = bindings.toMap(),
+        )
+    }
+
+    override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {
+        mappings.getOrPut(key(consoleId, port)) { mutableMapOf() }[retroButtonId] = platformKeyCode
+    }
+
+    override suspend fun resetToDefault(consoleId: String, port: Int) {
+        mappings.remove(key(consoleId, port))
+    }
+
+    override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {
+        return mappings[key(consoleId, port)] ?: emptyMap()
+    }
+
+    override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
 }
 
 private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineConfig> {

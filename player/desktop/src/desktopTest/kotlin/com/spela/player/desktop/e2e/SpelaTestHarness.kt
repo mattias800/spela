@@ -2,6 +2,8 @@ package com.spela.player.desktop.e2e
 
 import androidx.compose.runtime.Composable
 import com.spela.player.domain.usecase.*
+import com.spela.player.domain.model.KeyMappingProfile
+import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.presentation.viewmodel.*
@@ -86,6 +88,20 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val keyMappingRepo = object : KeyMappingRepository {
+        override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? = null
+        override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> = emptyMap()
+        override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {}
+        override suspend fun resetToDefault(consoleId: String, port: Int) {}
+        override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
+    }
+
+    val keyMappingViewModel = KeyMappingViewModel(
+        keyMappingRepository = keyMappingRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         SpelaApp(
@@ -98,6 +114,7 @@ class SpelaTestHarness(
             libretroController = libretroController,
             downloadsViewModel = downloadsViewModel,
             settingsViewModel = settingsViewModel,
+            keyMappingViewModel = keyMappingViewModel,
         )
     }
 }

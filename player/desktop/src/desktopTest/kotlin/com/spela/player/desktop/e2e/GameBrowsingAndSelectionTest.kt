@@ -128,31 +128,44 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun bottomBarNavigatesBetweenTabs() = runComposeUiTest {
+    fun topBarIconsNavigateToDownloadsAndSettings() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         harness.testDispatcher.scheduler.advanceUntilIdle()
         waitForIdle()
 
-        // Home tab is active by default
-        onNodeWithText("Home").assertIsDisplayed()
-        onNodeWithText("Downloads").assertIsDisplayed()
-        onNodeWithText("Settings").assertIsDisplayed()
+        // Home screen should show Downloads and Settings icons in top bar
+        onNodeWithContentDescription("Downloads").assertIsDisplayed()
+        onNodeWithContentDescription("Settings").assertIsDisplayed()
 
-        // Navigate to Downloads tab
-        onNodeWithText("Downloads").performClick()
+        // Navigate to Downloads via top bar icon
+        onNodeWithContentDescription("Downloads").performClick()
         harness.testDispatcher.scheduler.advanceUntilIdle()
         waitForIdle()
 
-        // Navigate to Settings tab
-        onNodeWithText("Settings").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        // Should show Downloads screen with back button
+        onNodeWithContentDescription("Go back").assertIsDisplayed()
 
         // Navigate back to Home
-        onNodeWithText("Home").performClick()
+        onNodeWithContentDescription("Go back").performClick()
         harness.testDispatcher.scheduler.advanceUntilIdle()
         waitForIdle()
+
+        // Navigate to Settings via top bar icon
+        onNodeWithContentDescription("Settings").performClick()
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        waitForIdle()
+
+        // Should show Settings screen with back button
+        onNodeWithContentDescription("Go back").assertIsDisplayed()
+
+        // Navigate back to Home
+        onNodeWithContentDescription("Go back").performClick()
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        waitForIdle()
+
+        // Should be back on Home
+        onNodeWithText("Consoles").assertIsDisplayed()
     }
 }

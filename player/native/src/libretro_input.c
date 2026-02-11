@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-#define MAX_PORTS 4
+#define MAX_PORTS 8
 #define MAX_BUTTONS 16
 
 static struct {
