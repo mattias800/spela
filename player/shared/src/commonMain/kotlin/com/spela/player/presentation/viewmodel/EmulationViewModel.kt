@@ -47,7 +47,7 @@ class EmulationViewModel(
             EmulationIntent.ToggleOverlay -> _state.update { it.copy(showOverlay = !it.showOverlay) }
             EmulationIntent.ToggleFastForward -> toggleFastForward()
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
-            EmulationIntent.DismissControlHint -> _state.update { it.copy(showControlHint = false) }
+
             EmulationIntent.ShowExitConfirm -> {
                 if (currentPreferences.autoSaveEnabled) {
                     // Auto-save is enabled, so progress won't be lost — exit immediately.
@@ -76,7 +76,7 @@ class EmulationViewModel(
                 isLoading = true,
                 showOverlay = false,
                 showExitConfirm = false,
-                showControlHint = true,
+
                 error = null,
                 statusMessage = null,
                 isFastForward = false,

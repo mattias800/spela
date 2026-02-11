@@ -11,7 +11,11 @@ Spela is a self-hosted game emulation service with three components:
 2. **Web UI uses React + TypeScript** - Vite build, Tailwind CSS, TanStack Query.
 3. **Automated tests whenever reasonable** - For bugs: write failing test first, then fix.
 4. **libretro only** - No custom emulation code. All emulation via libretro cores.
-5. **E2E tests are mandatory for player app changes** - Any change to the player app that affects user-facing behavior must have a corresponding Maestro E2E test. Run the E2E suite after making changes to verify nothing is broken.
+5. **A feature is not done until all tests pass** - Every change must have appropriate test coverage (E2E and/or unit tests), and the ENTIRE test suite must pass before a task is considered complete. No regressions allowed.
+   - **Player app**: Maestro E2E tests (`player/run-e2e.sh`) + unit tests. Any user-facing behavior change requires a corresponding Maestro test. See `E2E.md` for device setup and test execution instructions. Prefer a physical device if connected (`adb devices`), fall back to emulator.
+   - **Web frontend**: Playwright E2E tests + Vitest unit tests.
+   - **Backend**: Go unit tests (`go test ./...`).
+   - Run the full suite, not just the new tests. Catching regressions early is critical.
 
 ## Code Style
 

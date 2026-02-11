@@ -138,16 +138,17 @@ the QA engineer must flag it and explain why before the task can close.
 
 **Owns:** `player/.maestro/`
 
+**Running E2E tests:** See `E2E.md` for full instructions. Use `player/run-e2e.sh` to run the suite. Check if a physical Android device is connected via `adb devices` — if available, use it (it's faster and more reliable). If no device is connected, fall back to an Android emulator.
+
 **Responsibilities:**
 - Write Maestro E2E tests for all user-facing Android behavior
 - Reject any task that lacks E2E test coverage
 - Maintain the E2E test suite and CI configuration
-- Run the full suite after every change and report results
+- Run the FULL suite after every change and report results — zero regressions allowed
 - File detailed bug reports with reproduction steps
 - Verify bug fixes with regression tests (failing test first)
-- Maintain the E2E Docker environment (`docker-compose.e2e.yml`)
 
-**Tech:** Maestro, ADB, Docker, shell scripting
+**Tech:** Maestro, ADB, shell scripting
 
 ---
 
@@ -289,13 +290,23 @@ models, repositories, use cases, ViewModels, and shared Compose UI. This
 code is jointly owned by the **Android Developer** and **macOS Developer**.
 Changes here require agreement from both, since they affect all platforms.
 
+## Definition of Done
+
+A task is **not done** until:
+
+1. The change has appropriate test coverage (E2E and/or unit tests)
+2. **ALL** tests in the full suite pass — not just the new ones
+3. No regressions have been introduced
+
+Run the entire test suite after every change. A feature with passing new tests but broken existing tests is **not done**.
+
 ## Workflow
 
 1. **Product Owner** defines what to build and acceptance criteria
 2. **Backend Developer**, **Web Frontend Developer**, **Android Developer**, and **macOS Developer** implement in parallel where possible
 3. **Code Reviewer** reviews all code changes and requests fixes
 4. **UI/UX Agent** reviews all visual changes and approves or requests fixes
-5. **Web QA**, **Android QA**, and **macOS QA** verify the implementation with E2E tests
+5. **Web QA**, **Android QA**, and **macOS QA** run the FULL test suite and verify zero regressions
 6. **Product Owner** does final acceptance review
 
 ## Agent Spawn Configuration
