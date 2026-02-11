@@ -53,13 +53,21 @@ import org.jetbrains.skia.ImageInfo
  * converts the raw pixel data to an [ImageBitmap], and draws it scaled
  * to fill the canvas while maintaining aspect ratio.
  */
+/**
+ * @param keyMapping Maps platform key codes to libretro button IDs.
+ *   If null, the hardcoded default mapping is used.
+ */
 @Composable
 fun DesktopEmulationSurface(
     controller: DesktopLibretroController,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
+    keyMapping: Map<Int, Int>? = null,
 ) {
+    val effectiveMapping = remember(keyMapping) {
+        keyMapping ?: defaultKeyMapping
+    }
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
 
@@ -112,7 +120,8 @@ fun DesktopEmulationSurface(
                         onEscapePressed?.invoke()
                         return@onKeyEvent true
                     }
-                    val buttonId = mapKeyToLibretro(event.key)
+                    val keyCode = event.key.keyCode.toInt()
+                    val buttonId = effectiveMapping[keyCode]
                     if (buttonId != null) {
                         val pressed = event.type == KeyEventType.KeyDown
                         controller.setButton(0, buttonId, pressed)
@@ -288,24 +297,44 @@ private fun convertRGB1555toBGRA(data: ByteArray, totalPixels: Int, out: ByteArr
 }
 
 /**
- * Map Compose Desktop key codes to libretro joypad button IDs.
- * Returns null if the key is not mapped.
+ * The hardcoded default key mapping for Desktop.
+ * Maps platform key codes (Key.keyCode as Int) to libretro button IDs.
  */
-private fun mapKeyToLibretro(key: Key): Int? = when (key) {
-    Key.DirectionUp -> LibretroButtons.UP
-    Key.DirectionDown -> LibretroButtons.DOWN
-    Key.DirectionLeft -> LibretroButtons.LEFT
-    Key.DirectionRight -> LibretroButtons.RIGHT
-    Key.Z -> LibretroButtons.B
-    Key.X -> LibretroButtons.A
-    Key.A -> LibretroButtons.Y
-    Key.S -> LibretroButtons.X
-    Key.Enter -> LibretroButtons.START
-    Key.ShiftRight -> LibretroButtons.SELECT
-    Key.ShiftLeft -> LibretroButtons.SELECT
-    Key.Q -> LibretroButtons.L
-    Key.W -> LibretroButtons.R
-    Key.One -> LibretroButtons.L2
-    Key.Two -> LibretroButtons.R2
-    else -> null
-}
+private val defaultKeyMapping: Map<Int, Int> = mapOf(
+    Key.DirectionUp.keyCode.toInt() to LibretroButtons.UP,
+    Key.DirectionDown.keyCode.toInt() to LibretroButtons.DOWN,
+    Key.DirectionLeft.keyCode.toInt() to LibretroButtons.LEFT,
+    Key.DirectionRight.keyCode.toInt() to LibretroButtons.RIGHT,
+    Key.Z.keyCode.toInt() to LibretroButtons.B,
+    Key.X.keyCode.toInt() to LibretroButtons.A,
+    Key.A.keyCode.toInt() to LibretroButtons.Y,
+    Key.S.keyCode.toInt() to LibretroButtons.X,
+    Key.Enter.keyCode.toInt() to LibretroButtons.START,
+    Key.ShiftRight.keyCode.toInt() to LibretroButtons.SELECT,
+    Key.ShiftLeft.keyCode.toInt() to LibretroButtons.SELECT,
+    Key.Q.keyCode.toInt() to LibretroButtons.L,
+    Key.W.keyCode.toInt() to LibretroButtons.R,
+    Key.One.keyCode.toInt() to LibretroButtons.L2,
+    Key.Two.keyCode.toInt() to LibretroButtons.R2,
+)
+
+/**
+ * The hardcoded default key mapping as retroButtonId -> platformKeyCode.
+ * Used by [KeyMappingRepository] as the fallback default for Desktop.
+ */
+val desktopDefaultRetroMapping: Map<Int, Int> = mapOf(
+    LibretroButtons.UP to Key.DirectionUp.keyCode.toInt(),
+    LibretroButtons.DOWN to Key.DirectionDown.keyCode.toInt(),
+    LibretroButtons.LEFT to Key.DirectionLeft.keyCode.toInt(),
+    LibretroButtons.RIGHT to Key.DirectionRight.keyCode.toInt(),
+    LibretroButtons.B to Key.Z.keyCode.toInt(),
+    LibretroButtons.A to Key.X.keyCode.toInt(),
+    LibretroButtons.Y to Key.A.keyCode.toInt(),
+    LibretroButtons.X to Key.S.keyCode.toInt(),
+    LibretroButtons.START to Key.Enter.keyCode.toInt(),
+    LibretroButtons.SELECT to Key.ShiftRight.keyCode.toInt(),
+    LibretroButtons.L to Key.Q.keyCode.toInt(),
+    LibretroButtons.R to Key.W.keyCode.toInt(),
+    LibretroButtons.L2 to Key.One.keyCode.toInt(),
+    LibretroButtons.R2 to Key.Two.keyCode.toInt(),
+)

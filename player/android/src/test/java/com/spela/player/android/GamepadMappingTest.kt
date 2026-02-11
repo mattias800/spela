@@ -2,11 +2,18 @@ package com.spela.player.android
 
 import android.view.KeyEvent
 import com.spela.player.presentation.viewmodel.LibretroButtons
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class GamepadMappingTest {
+
+    @AfterTest
+    fun tearDown() {
+        // Ensure custom mappings don't leak between tests
+        GamepadMapping.clearCustomMapping()
+    }
 
     // D-pad mappings
 
@@ -182,5 +189,63 @@ class GamepadMappingTest {
             LibretroButtons.L3, LibretroButtons.R3,
         )
         assertEquals(expectedIds, mappedIds)
+    }
+
+    // Custom mapping tests
+
+    @Test
+    fun customMappingOverridesDefault() {
+        // Remap A button to SPACE (replaces the default BUTTON_B -> A mapping)
+        GamepadMapping.loadCustomMapping(mapOf(
+            LibretroButtons.A to KeyEvent.KEYCODE_SPACE,
+        ))
+
+        // Custom mapping should take effect for the new key
+        assertEquals(LibretroButtons.A, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_SPACE))
+        // BUTTON_B is no longer in the custom mapping, so it still resolves via defaults
+        assertEquals(LibretroButtons.A, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_BUTTON_B))
+    }
+
+    @Test
+    fun customMappingWithFullOverrideRemovesDefault() {
+        // Load a full custom mapping that remaps all buttons
+        // Only map UP to a completely different key
+        GamepadMapping.loadCustomMapping(mapOf(
+            LibretroButtons.UP to KeyEvent.KEYCODE_SPACE,
+        ))
+
+        // The custom key should work
+        assertEquals(LibretroButtons.UP, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_SPACE))
+        // The default UP key still works via fallback
+        assertEquals(LibretroButtons.UP, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_DPAD_UP))
+    }
+
+    @Test
+    fun customMappingFallsBackToDefaultForUnmappedKeys() {
+        // Only remap A button
+        GamepadMapping.loadCustomMapping(mapOf(
+            LibretroButtons.A to KeyEvent.KEYCODE_SPACE,
+        ))
+
+        // Keys not in custom mapping should fall back to default
+        assertEquals(LibretroButtons.UP, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_DPAD_UP))
+    }
+
+    @Test
+    fun clearCustomMappingRevertsToDefaults() {
+        GamepadMapping.loadCustomMapping(mapOf(
+            LibretroButtons.A to KeyEvent.KEYCODE_SPACE,
+        ))
+
+        GamepadMapping.clearCustomMapping()
+
+        // Should be back to default
+        assertEquals(LibretroButtons.A, GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_BUTTON_B))
+        assertNull(GamepadMapping.mapKeyToLibretro(KeyEvent.KEYCODE_SPACE))
+    }
+
+    @Test
+    fun hardcodedDefaultsMapContainsAll16Buttons() {
+        assertEquals(16, GamepadMapping.hardcodedDefaults.size)
     }
 }

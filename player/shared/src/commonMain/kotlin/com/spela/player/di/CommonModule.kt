@@ -5,8 +5,10 @@ import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.*
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.*
+import org.koin.core.qualifier.named
 import com.spela.player.util.DefaultDispatcherProvider
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +33,8 @@ val commonModule = module {
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
+    single<KeyMappingRepository> { KeyMappingRepositoryImpl(get(), get(named("platformDefaultMapping"))) }
+    single { GamepadPortManager(get()) }
 
     /* Use Cases */
     factory { LoginUseCase(get(), get()) }
@@ -114,6 +118,13 @@ val commonModule = module {
     factory {
         DownloadsViewModel(
             downloadRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
+        KeyMappingViewModel(
+            keyMappingRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

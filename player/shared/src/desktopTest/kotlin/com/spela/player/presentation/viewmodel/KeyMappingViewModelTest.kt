@@ -1,0 +1,272 @@
+package com.spela.player.presentation.viewmodel
+
+import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.DefaultKeyMappings
+import com.spela.player.domain.model.KeyMappingProfile
+import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.presentation.intent.KeyMappingIntent
+import com.spela.player.util.DispatcherProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class KeyMappingViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatchers = object : DispatcherProvider {
+        override val main: CoroutineDispatcher = testDispatcher
+        override val io: CoroutineDispatcher = testDispatcher
+        override val default: CoroutineDispatcher = testDispatcher
+    }
+
+    private lateinit var fakeRepo: FakeKeyMappingRepository
+
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        fakeRepo = FakeKeyMappingRepository()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun createViewModel(): KeyMappingViewModel {
+        val scope = CoroutineScope(testDispatcher)
+        return KeyMappingViewModel(
+            keyMappingRepository = fakeRepo,
+            dispatchers = testDispatchers,
+            scope = scope,
+        )
+    }
+
+    @Test
+    fun initialStateIsLoading() {
+        val vm = createViewModel()
+        assertTrue(vm.state.value.isLoading)
+    }
+
+    @Test
+    fun loadMappingSetsBindingsAndButtons() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertFalse(state.isLoading)
+        assertEquals("nes", state.consoleId)
+        // NES has 8 buttons (d-pad + A, B, Start, Select)
+        assertEquals(DefaultKeyMappings.NES.buttons.size, state.buttonsForConsole.size)
+        // Should have the default mapping
+        assertEquals(fakeRepo.getDefaultMapping(), state.currentBindings)
+    }
+
+    @Test
+    fun startWizardSetsFirstButton() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+
+        val state = vm.state.value
+        assertTrue(state.isWizardMode)
+        assertEquals(1, state.mappingStep)
+        assertEquals(DefaultKeyMappings.NES.buttons.size, state.totalSteps)
+        assertNotNull(state.currentMappingButton)
+        assertEquals(DefaultKeyMappings.NES.buttons.first().retroButtonId, state.currentMappingButton)
+    }
+
+    @Test
+    fun captureButtonInWizardAdvancesToNextStep() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+        val firstButton = vm.state.value.currentMappingButton!!
+
+        vm.onIntent(KeyMappingIntent.CaptureButton(999))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(2, state.mappingStep)
+        assertEquals(999, state.currentBindings[firstButton])
+        // Current button should have advanced
+        assertEquals(DefaultKeyMappings.NES.buttons[1].retroButtonId, state.currentMappingButton)
+    }
+
+    @Test
+    fun skipButtonAdvancesWithoutBinding() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        val defaultBindings = vm.state.value.currentBindings.toMap()
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+        vm.onIntent(KeyMappingIntent.SkipButton)
+
+        val state = vm.state.value
+        assertEquals(2, state.mappingStep)
+        // Bindings should not have changed
+        assertEquals(defaultBindings, state.currentBindings)
+    }
+
+    @Test
+    fun startSingleButtonMapEntersListeningMode() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+
+        val state = vm.state.value
+        assertFalse(state.isWizardMode)
+        assertEquals(LibretroButtons.A, state.currentMappingButton)
+    }
+
+    @Test
+    fun captureButtonInSingleModeExitsListening() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+        vm.onIntent(KeyMappingIntent.CaptureButton(777))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertNull(state.currentMappingButton)
+        assertEquals(777, state.currentBindings[LibretroButtons.A])
+    }
+
+    @Test
+    fun resetAllReloadsDefaults() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        // Set a custom binding
+        fakeRepo.setBinding("nes", 0, LibretroButtons.A, 999)
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+        assertEquals(999, vm.state.value.currentBindings[LibretroButtons.A])
+
+        // Reset
+        vm.onIntent(KeyMappingIntent.ResetAll)
+        advanceUntilIdle()
+
+        // Should be back to platform defaults
+        assertEquals(fakeRepo.getDefaultMapping(), vm.state.value.currentBindings)
+    }
+
+    @Test
+    fun cancelMappingInSingleModeExitsListening() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+        vm.onIntent(KeyMappingIntent.CancelMapping)
+
+        assertNull(vm.state.value.currentMappingButton)
+    }
+
+    @Test
+    fun cancelWizardReloadsFromStorage() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+        vm.onIntent(KeyMappingIntent.CaptureButton(999))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.CancelMapping)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertFalse(state.isWizardMode)
+        assertNull(state.currentMappingButton)
+    }
+
+    @Test
+    fun finishMappingExitsAllModes() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+        vm.onIntent(KeyMappingIntent.FinishMapping)
+
+        val state = vm.state.value
+        assertFalse(state.isWizardMode)
+        assertNull(state.currentMappingButton)
+        assertEquals(0, state.mappingStep)
+    }
+
+    @Test
+    fun loadMappingWithUnknownConsoleUsesFullLayout() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("unknown_console"))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(DefaultKeyMappings.FULL.buttons.size, state.buttonsForConsole.size)
+    }
+
+    // Fake repository for testing
+
+    private class FakeKeyMappingRepository : KeyMappingRepository {
+        private val storage = mutableMapOf<String, MutableMap<Int, Int>>() // "consoleId:port" -> bindings
+
+        private val defaults = mapOf(
+            LibretroButtons.UP to 100,
+            LibretroButtons.DOWN to 101,
+            LibretroButtons.A to 200,
+            LibretroButtons.B to 201,
+        )
+
+        private fun key(consoleId: String, port: Int) = "$consoleId:$port"
+
+        override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? {
+            val bindings = storage[key(consoleId, port)] ?: return null
+            return KeyMappingProfile(consoleId, port, bindings.toMap())
+        }
+
+        override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {
+            val k = key(consoleId, port)
+            storage.getOrPut(k) { mutableMapOf() }[retroButtonId] = platformKeyCode
+        }
+
+        override suspend fun resetToDefault(consoleId: String, port: Int) {
+            storage.remove(key(consoleId, port))
+        }
+
+        override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {
+            storage[key(consoleId, port)]?.let { return it.toMap() }
+            if (consoleId != DEFAULT_CONSOLE_ID) {
+                storage[key(DEFAULT_CONSOLE_ID, port)]?.let { return it.toMap() }
+            }
+            return defaults
+        }
+
+        override fun getDefaultMapping(): Map<Int, Int> = defaults
+    }
+}

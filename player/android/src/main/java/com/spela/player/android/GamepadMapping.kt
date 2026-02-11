@@ -6,33 +6,72 @@ import com.spela.player.presentation.viewmodel.LibretroButtons
 /**
  * Maps Android gamepad key codes to libretro joypad button IDs.
  *
+ * Supports both the hardcoded default mapping and custom mappings loaded
+ * from [KeyMappingRepository]. Call [loadCustomMapping] to apply a custom
+ * mapping; [mapKeyToLibretro] will use it if available, falling back to
+ * the hardcoded default.
+ *
  * Button layout follows the standard mapping where Android's physical A/B buttons
  * map to libretro's B/A respectively (Nintendo-style layout: right button = A action).
  */
 object GamepadMapping {
 
     /**
+     * The hardcoded default mapping: retroButtonId -> Android keyCode.
+     * Used as the platform default when no custom mapping is configured.
+     */
+    val hardcodedDefaults: Map<Int, Int> = mapOf(
+        LibretroButtons.UP to KeyEvent.KEYCODE_DPAD_UP,
+        LibretroButtons.DOWN to KeyEvent.KEYCODE_DPAD_DOWN,
+        LibretroButtons.LEFT to KeyEvent.KEYCODE_DPAD_LEFT,
+        LibretroButtons.RIGHT to KeyEvent.KEYCODE_DPAD_RIGHT,
+        LibretroButtons.B to KeyEvent.KEYCODE_BUTTON_A,
+        LibretroButtons.A to KeyEvent.KEYCODE_BUTTON_B,
+        LibretroButtons.Y to KeyEvent.KEYCODE_BUTTON_X,
+        LibretroButtons.X to KeyEvent.KEYCODE_BUTTON_Y,
+        LibretroButtons.START to KeyEvent.KEYCODE_BUTTON_START,
+        LibretroButtons.SELECT to KeyEvent.KEYCODE_BUTTON_SELECT,
+        LibretroButtons.L to KeyEvent.KEYCODE_BUTTON_L1,
+        LibretroButtons.R to KeyEvent.KEYCODE_BUTTON_R1,
+        LibretroButtons.L2 to KeyEvent.KEYCODE_BUTTON_L2,
+        LibretroButtons.R2 to KeyEvent.KEYCODE_BUTTON_R2,
+        LibretroButtons.L3 to KeyEvent.KEYCODE_BUTTON_THUMBL,
+        LibretroButtons.R3 to KeyEvent.KEYCODE_BUTTON_THUMBR,
+    )
+
+    /**
+     * Reverse lookup of [hardcodedDefaults]: Android keyCode -> retroButtonId.
+     */
+    private val defaultKeyToRetro: Map<Int, Int> = hardcodedDefaults.entries.associate { (retro, key) -> key to retro }
+
+    /**
+     * Custom reverse mapping (keyCode -> retroButtonId), loaded from the repository.
+     * Null means use hardcoded defaults.
+     */
+    private var customKeyToRetro: Map<Int, Int>? = null
+
+    /**
+     * Loads a custom mapping from the repository data.
+     * @param retroToKey Map of retroButtonId -> platformKeyCode from the repository
+     */
+    fun loadCustomMapping(retroToKey: Map<Int, Int>) {
+        customKeyToRetro = retroToKey.entries.associate { (retro, key) -> key to retro }
+    }
+
+    /**
+     * Clears any custom mapping, reverting to hardcoded defaults.
+     */
+    fun clearCustomMapping() {
+        customKeyToRetro = null
+    }
+
+    /**
      * Maps an Android [KeyEvent] key code to a libretro button ID.
+     * Uses the custom mapping if available, otherwise falls back to the hardcoded default.
      * Returns null if the key code is not a recognized gamepad button.
      */
-    fun mapKeyToLibretro(keyCode: Int): Int? = when (keyCode) {
-        KeyEvent.KEYCODE_DPAD_UP -> LibretroButtons.UP
-        KeyEvent.KEYCODE_DPAD_DOWN -> LibretroButtons.DOWN
-        KeyEvent.KEYCODE_DPAD_LEFT -> LibretroButtons.LEFT
-        KeyEvent.KEYCODE_DPAD_RIGHT -> LibretroButtons.RIGHT
-        KeyEvent.KEYCODE_BUTTON_A -> LibretroButtons.B
-        KeyEvent.KEYCODE_BUTTON_B -> LibretroButtons.A
-        KeyEvent.KEYCODE_BUTTON_X -> LibretroButtons.Y
-        KeyEvent.KEYCODE_BUTTON_Y -> LibretroButtons.X
-        KeyEvent.KEYCODE_BUTTON_START -> LibretroButtons.START
-        KeyEvent.KEYCODE_BUTTON_SELECT -> LibretroButtons.SELECT
-        KeyEvent.KEYCODE_BUTTON_L1 -> LibretroButtons.L
-        KeyEvent.KEYCODE_BUTTON_R1 -> LibretroButtons.R
-        KeyEvent.KEYCODE_BUTTON_L2 -> LibretroButtons.L2
-        KeyEvent.KEYCODE_BUTTON_R2 -> LibretroButtons.R2
-        KeyEvent.KEYCODE_BUTTON_THUMBL -> LibretroButtons.L3
-        KeyEvent.KEYCODE_BUTTON_THUMBR -> LibretroButtons.R3
-        else -> null
+    fun mapKeyToLibretro(keyCode: Int): Int? {
+        return customKeyToRetro?.get(keyCode) ?: defaultKeyToRetro[keyCode]
     }
 
     /**

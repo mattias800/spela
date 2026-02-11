@@ -143,6 +143,32 @@ SELECT * FROM ShaderOverrideEntity;
 deleteShaderOverride:
 DELETE FROM ShaderOverrideEntity WHERE console_id = ?;
 
+-- Key mappings (device-local, per-console controller button mappings)
+CREATE TABLE KeyMappingEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    console_id TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 0,
+    platform_key_code INTEGER NOT NULL,
+    libretro_button_id INTEGER NOT NULL,
+    UNIQUE(console_id, port, platform_key_code)
+);
+
+insertKeyMapping:
+INSERT OR REPLACE INTO KeyMappingEntity(id, console_id, port, platform_key_code, libretro_button_id)
+VALUES (?, ?, ?, ?, ?);
+
+getKeyMappingsForConsole:
+SELECT * FROM KeyMappingEntity WHERE console_id = ? AND port = ?;
+
+deleteKeyMappingsForConsole:
+DELETE FROM KeyMappingEntity WHERE console_id = ? AND port = ?;
+
+deleteKeyMapping:
+DELETE FROM KeyMappingEntity WHERE id = ?;
+
+getAllKeyMappings:
+SELECT * FROM KeyMappingEntity;
+
 -- Device info (singleton row for this device's identity)
 CREATE TABLE DeviceInfoEntity (
     id INTEGER PRIMARY KEY DEFAULT 1,
