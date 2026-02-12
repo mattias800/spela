@@ -15,6 +15,7 @@ import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -188,7 +189,7 @@ class EmulationViewModel(
     private fun startSessionTimer() {
         sessionTimerJob?.cancel()
         sessionTimerJob = scope.launch(dispatchers.default) {
-            while (true) {
+            while (isActive) {
                 delay(1000)
                 if (!_state.value.isPaused) {
                     _state.update { it.copy(sessionElapsedSeconds = it.sessionElapsedSeconds + 1) }
