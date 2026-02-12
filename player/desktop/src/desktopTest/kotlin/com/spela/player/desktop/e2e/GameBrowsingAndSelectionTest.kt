@@ -21,15 +21,19 @@ class GameBrowsingAndSelectionTest {
         return harness
     }
 
+    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        scope.waitForIdle()
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        scope.waitForIdle()
+    }
+
     @Test
     fun homeScreenShowsConsolesAfterLoad() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-
-        // HomeScreen has LaunchedEffect that loads dashboard
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should show consoles section
         onNodeWithText("Consoles").assertIsDisplayed()
@@ -42,9 +46,7 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Recent games should be displayed
         onNodeWithText("Continue Playing").assertIsDisplayed()
@@ -56,14 +58,11 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Tap on NES console
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should navigate to console screen and show NES games
         onNodeWithText("Castlevania").assertIsDisplayed()
@@ -82,14 +81,13 @@ class GameBrowsingAndSelectionTest {
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
         // GameDetailScreen has LaunchedEffect to load the game
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Game detail should show game info
         onNodeWithText("Castlevania").assertIsDisplayed()
         onNodeWithText("About").assertIsDisplayed()
         onNodeWithText("A classic action platformer.").assertIsDisplayed()
-        onNodeWithText("Konami").assertIsDisplayed()
+        onAllNodesWithText("Konami").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -101,8 +99,7 @@ class GameBrowsingAndSelectionTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Game is not cached, so Download should be shown
         onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
@@ -120,8 +117,7 @@ class GameBrowsingAndSelectionTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Game is cached, so Play should be shown
         onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
@@ -132,8 +128,7 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Home screen should show Downloads and Settings icons in top bar
         onNodeWithContentDescription("Downloads").assertIsDisplayed()
@@ -141,29 +136,25 @@ class GameBrowsingAndSelectionTest {
 
         // Navigate to Downloads via top bar icon
         onNodeWithContentDescription("Downloads").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should show Downloads screen with back button
         onNodeWithContentDescription("Go back").assertIsDisplayed()
 
         // Navigate back to Home
         onNodeWithContentDescription("Go back").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Navigate to Settings via top bar icon
         onNodeWithContentDescription("Settings").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should show Settings screen with back button
         onNodeWithContentDescription("Go back").assertIsDisplayed()
 
         // Navigate back to Home
         onNodeWithContentDescription("Go back").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should be back on Home
         onNodeWithText("Consoles").assertIsDisplayed()

@@ -13,13 +13,19 @@ import kotlin.test.Test
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class AppLaunchAndConnectionTest {
 
+    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        scope.waitForIdle()
+        harness.testDispatcher.scheduler.advanceUntilIdle()
+        scope.waitForIdle()
+    }
+
     @Test
     fun appLaunchShowsServerConnectionScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
         setContent { harness.App() }
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         onNodeWithText("Spela").assertIsDisplayed()
         onNodeWithText("Connect to your game server").assertIsDisplayed()
@@ -30,17 +36,20 @@ class AppLaunchAndConnectionTest {
     fun addServerShowsFormAndAddsServer() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
+        // Pre-add a server so the form doesn't auto-open (auto-opens when server list is empty)
+        runTest(harness.testDispatcher) {
+            harness.serverRepo.addServer("Existing", "http://existing:8080")
+        }
+
         setContent { harness.App() }
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Initially the add-server form is hidden
         onNodeWithText("Server Name").assertDoesNotExist()
 
         // Tap "Add Server" to reveal form
         onNodeWithText("Add Server").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         onNodeWithText("Server Name").assertIsDisplayed()
         onNodeWithText("Server URL").assertIsDisplayed()
@@ -56,15 +65,11 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Tap server name to select it and navigate to login
         onNodeWithText("Local Server").performClick()
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should now be on the login screen
         onNodeWithText("Welcome Back").assertIsDisplayed()
@@ -82,19 +87,15 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         onNodeWithText("Local").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Toggle to register mode
         onNodeWithText("Don't have an account? Register").assertIsDisplayed()
         onNodeWithText("Don't have an account? Register").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // "Create Account" appears as both heading and button - verify both exist
         onAllNodesWithText("Create Account").assertCountEquals(2)
@@ -110,14 +111,11 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Select server
         onNodeWithText("Local").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Enter credentials
         onNodeWithText("Username").performClick()
@@ -127,8 +125,7 @@ class AppLaunchAndConnectionTest {
 
         // Submit login
         onNodeWithText("Sign In").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness, this)
 
         // Should navigate to Home screen
         onNodeWithText("Spela").assertIsDisplayed()

@@ -114,7 +114,7 @@ class GameDownloadAndLaunchTest {
         onNodeWithContentDescription("Play Castlevania").performClick()
         advance(harness, this)
 
-        // The overlay should show the game title
-        onNodeWithText("Castlevania").assertIsDisplayed()
+        // The overlay should show the game title (multiple nodes may match due to merged semantics)
+        onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()
     }
 }

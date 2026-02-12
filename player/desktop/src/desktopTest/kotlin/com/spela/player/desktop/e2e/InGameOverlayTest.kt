@@ -75,8 +75,11 @@ class InGameOverlayTest {
     fun loadTriggersUnserialization() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
-        // Pre-set an auto-save so load succeeds
+        // Pre-set an auto-save so load succeeds (in both controller and save repository)
         harness.libretroController.serializedState = ByteArray(64) { 42 }
+        kotlinx.coroutines.test.runTest(harness.testDispatcher) {
+            harness.saveRepo.uploadAutoSave("1", ByteArray(64) { 42 })
+        }
 
         startGame(harness)
 

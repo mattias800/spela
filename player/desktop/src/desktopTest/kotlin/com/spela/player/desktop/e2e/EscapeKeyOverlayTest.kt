@@ -80,8 +80,8 @@ class EscapeKeyOverlayTest {
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advance(harness, this)
 
-        // Game title should be shown in overlay
-        onNodeWithText("Castlevania").assertIsDisplayed()
+        // Game title should be shown in overlay (multiple nodes may match due to merged semantics)
+        onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()
     }
 
     @Test

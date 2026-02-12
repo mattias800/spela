@@ -135,7 +135,7 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
-                        _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported) }
+                        _state.update { it.copy(isRunning = true, isLoading = false, showOverlay = true, supportsSaveStates = saveStatesSupported) }
 
                         // Initialize achievements if RA is linked
                         initAchievements(gameId)
