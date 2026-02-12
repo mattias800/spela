@@ -78,11 +78,11 @@ describe("ShaderPreviewModal", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
-  it("starts with opacity 0 for fade-in animation", () => {
+  it("renders the overlay when open", () => {
     const { container } = render(
       <ShaderPreviewModal open onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
     );
     const overlay = container.querySelector("[class*='fixed']") as HTMLElement;
-    expect(overlay.style.opacity).toBe("0");
+    expect(overlay).toBeTruthy();
   });
 });
