@@ -88,15 +88,25 @@ fun SecondaryScreenContent(
                 sessionElapsedSeconds = state.sessionElapsedSeconds,
             )
 
-            // Touch controls area (takes remaining space)
+            // Main content area (takes remaining space)
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
             ) {
-                PlatformTouchControls(
-                    controller = controller,
-                )
+                if (state.isDualScreenConsole) {
+                    // DS mode: render bottom screen with touch input
+                    PlatformDsTouchScreen(
+                        controller = controller,
+                        splitY = state.dualScreenSplitY,
+                        selectedShader = state.selectedShader,
+                    )
+                } else {
+                    // Normal mode: touch gamepad controls
+                    PlatformTouchControls(
+                        controller = controller,
+                    )
+                }
             }
 
             // Quick action bar + performance HUD

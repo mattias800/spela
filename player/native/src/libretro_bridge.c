@@ -31,6 +31,45 @@
 /* Global core instance */
 libretro_core_t g_core = {0};
 
+/* Core variable storage for RETRO_ENVIRONMENT_GET_VARIABLE */
+#define MAX_CORE_VARIABLES 32
+#define MAX_VAR_KEY_LEN 128
+#define MAX_VAR_VALUE_LEN 256
+
+static struct {
+    char key[MAX_VAR_KEY_LEN];
+    char value[MAX_VAR_VALUE_LEN];
+} core_variables[MAX_CORE_VARIABLES];
+
+static int core_variable_count = 0;
+static bool core_variables_dirty = false;
+
+void core_variables_set(const char *key, const char *value) {
+    /* Update existing variable if key matches */
+    for (int i = 0; i < core_variable_count; i++) {
+        if (strcmp(core_variables[i].key, key) == 0) {
+            strncpy(core_variables[i].value, value, MAX_VAR_VALUE_LEN - 1);
+            core_variables[i].value[MAX_VAR_VALUE_LEN - 1] = '\0';
+            core_variables_dirty = true;
+            return;
+        }
+    }
+    /* Add new variable */
+    if (core_variable_count < MAX_CORE_VARIABLES) {
+        strncpy(core_variables[core_variable_count].key, key, MAX_VAR_KEY_LEN - 1);
+        core_variables[core_variable_count].key[MAX_VAR_KEY_LEN - 1] = '\0';
+        strncpy(core_variables[core_variable_count].value, value, MAX_VAR_VALUE_LEN - 1);
+        core_variables[core_variable_count].value[MAX_VAR_VALUE_LEN - 1] = '\0';
+        core_variable_count++;
+        core_variables_dirty = true;
+    }
+}
+
+void core_variables_clear(void) {
+    core_variable_count = 0;
+    core_variables_dirty = false;
+}
+
 /* Helper to log from libretro core */
 static void core_log(enum retro_log_level level, const char *fmt, ...) {
     va_list args;
@@ -93,13 +132,21 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             struct retro_variable *var = (struct retro_variable *)data;
-            /* No variables set by default */
+            if (var->key) {
+                for (int i = 0; i < core_variable_count; i++) {
+                    if (strcmp(core_variables[i].key, var->key) == 0) {
+                        var->value = core_variables[i].value;
+                        return true;
+                    }
+                }
+            }
             var->value = NULL;
             return false;
         }
 
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE: {
-            *(bool *)data = false;
+            *(bool *)data = core_variables_dirty;
+            core_variables_dirty = false;
             return true;
         }
 
@@ -486,4 +533,17 @@ JNI_FUNC(jbyteArray, nativeGetSRAM)(JNIEnv *env, jobject thiz) {
         (*env)->SetByteArrayRegion(env, result, 0, (jsize)size, (const jbyte *)data);
     }
     return result;
+}
+
+JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, jstring value) {
+    const char *k = (*env)->GetStringUTFChars(env, key, NULL);
+    const char *v = (*env)->GetStringUTFChars(env, value, NULL);
+    core_variables_set(k, v);
+    (*env)->ReleaseStringUTFChars(env, key, k);
+    (*env)->ReleaseStringUTFChars(env, value, v);
+}
+
+JNI_FUNC(void, nativeSetInputPointer)(JNIEnv *env, jobject thiz,
+                                       jint port, jint x, jint y, jboolean pressed) {
+    input_set_pointer((unsigned)port, (int16_t)x, (int16_t)y, pressed == JNI_TRUE);
 }

@@ -19,6 +19,13 @@ static struct {
     /* Analog axis state per port, per stick (left/right), per axis (x/y) */
     int16_t analog[MAX_PORTS][2][2];
 
+    /* Pointer/touch state per port (for RETRO_DEVICE_POINTER) */
+    struct {
+        int16_t x;       /* -0x7FFF to 0x7FFF */
+        int16_t y;       /* -0x7FFF to 0x7FFF */
+        bool pressed;
+    } pointer[MAX_PORTS];
+
     bool initialized;
 } input_state = {0};
 
@@ -58,6 +65,17 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
             }
             break;
 
+        case RETRO_DEVICE_POINTER:
+            switch (id) {
+                case RETRO_DEVICE_ID_POINTER_X:
+                    return input_state.pointer[port].x;
+                case RETRO_DEVICE_ID_POINTER_Y:
+                    return input_state.pointer[port].y;
+                case RETRO_DEVICE_ID_POINTER_PRESSED:
+                    return input_state.pointer[port].pressed ? 1 : 0;
+            }
+            break;
+
         default:
             break;
     }
@@ -76,5 +94,14 @@ void input_set_button(unsigned port, unsigned id, bool pressed) {
 void input_set_analog(unsigned port, unsigned index, unsigned id, int16_t value) {
     if (port < MAX_PORTS && index < 2 && id < 2) {
         input_state.analog[port][index][id] = value;
+    }
+}
+
+/* Called from Kotlin/JNI to set pointer/touch state (for DS touch screen) */
+void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed) {
+    if (port < MAX_PORTS) {
+        input_state.pointer[port].x = x;
+        input_state.pointer[port].y = y;
+        input_state.pointer[port].pressed = pressed;
     }
 }

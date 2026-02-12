@@ -30,6 +30,12 @@ data class EmulationState(
     /** True when a secondary display is connected and showing content. */
     val secondaryDisplayActive: Boolean = false,
 
+    /** True when running a dual-screen console game (e.g. Nintendo DS). */
+    val isDualScreenConsole: Boolean = false,
+
+    /** Y pixel offset where the framebuffer splits (e.g. 192 for DS top/bottom). */
+    val dualScreenSplitY: Int = 0,
+
     /** Elapsed play session time in seconds, updated every second while running. */
     val sessionElapsedSeconds: Long = 0,
 )

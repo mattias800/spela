@@ -38,6 +38,8 @@ class EmulationStateTest {
         assertNull(state.achievementEvent)
         assertFalse(state.isHardcoreMode)
         assertFalse(state.secondaryDisplayActive)
+        assertFalse(state.isDualScreenConsole)
+        assertEquals(0, state.dualScreenSplitY)
     }
 
     @Test
@@ -52,5 +54,28 @@ class EmulationStateTest {
         val copied = state.copy(isRunning = true)
         assertEquals(true, copied.secondaryDisplayActive)
         assertEquals(true, copied.isRunning)
+    }
+
+    @Test
+    fun isDualScreenConsoleCanBeSet() {
+        val state = EmulationState(isDualScreenConsole = true, dualScreenSplitY = 192)
+        assertEquals(true, state.isDualScreenConsole)
+        assertEquals(192, state.dualScreenSplitY)
+    }
+
+    @Test
+    fun copyPreservesDualScreenState() {
+        val state = EmulationState(isDualScreenConsole = true, dualScreenSplitY = 192)
+        val copied = state.copy(isRunning = true)
+        assertEquals(true, copied.isDualScreenConsole)
+        assertEquals(192, copied.dualScreenSplitY)
+        assertEquals(true, copied.isRunning)
+    }
+
+    @Test
+    fun dualScreenDefaultsToFalse() {
+        val state = EmulationState()
+        assertFalse(state.isDualScreenConsole)
+        assertEquals(0, state.dualScreenSplitY)
     }
 }

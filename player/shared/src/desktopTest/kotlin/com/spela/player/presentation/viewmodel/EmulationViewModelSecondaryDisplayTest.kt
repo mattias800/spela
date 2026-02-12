@@ -29,10 +29,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -55,21 +57,23 @@ class EmulationViewModelSecondaryDisplayTest {
 
     private lateinit var fakeSecondaryDisplay: FakePlatformSecondaryDisplay
     private lateinit var fakeLibretroController: StubLibretroController
+    private lateinit var vmScope: CoroutineScope
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeSecondaryDisplay = FakePlatformSecondaryDisplay()
         fakeLibretroController = StubLibretroController()
+        vmScope = CoroutineScope(testDispatcher + Job())
     }
 
     @AfterTest
     fun tearDown() {
+        vmScope.cancel()
         Dispatchers.resetMain()
     }
 
     private fun createViewModel(): EmulationViewModel {
-        val scope = CoroutineScope(testDispatcher)
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
@@ -90,7 +94,7 @@ class EmulationViewModelSecondaryDisplayTest {
             libretroController = fakeLibretroController,
             secondaryDisplay = fakeSecondaryDisplay,
             dispatchers = testDispatchers,
-            scope = scope,
+            scope = vmScope,
         )
     }
 
@@ -100,52 +104,49 @@ class EmulationViewModelSecondaryDisplayTest {
     fun secondaryDisplayAvailableWhileRunningShowsDisplay() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        // Start a game so isRunning = true
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceUntilIdle()
+        advanceTimeBy(100)
 
         assertTrue(vm.state.value.isRunning)
 
-        // Secondary display becomes available
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertTrue(fakeSecondaryDisplay.isShowing)
         assertEquals(1, fakeSecondaryDisplay.showCallCount)
+        vmScope.cancel()
     }
 
     @Test
     fun secondaryDisplayAvailableWhileNotRunningDoesNotShow() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        // Not running, secondary display reports available
         assertFalse(vm.state.value.isRunning)
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
         assertFalse(vm.state.value.secondaryDisplayActive)
         assertFalse(fakeSecondaryDisplay.isShowing)
-        // Already inactive, so no dismiss call needed
         assertEquals(0, fakeSecondaryDisplay.showCallCount)
         assertEquals(0, fakeSecondaryDisplay.dismissCallCount)
+        vmScope.cancel()
     }
 
     @Test
     fun secondaryDisplayBecomesUnavailableDismissesDisplay() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        // Start game and activate secondary display
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceUntilIdle()
+        advanceTimeBy(100)
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertTrue(fakeSecondaryDisplay.isShowing)
 
-        // Secondary display disconnected
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(false))
 
         assertFalse(vm.state.value.secondaryDisplayActive)
         assertFalse(fakeSecondaryDisplay.isShowing)
+        vmScope.cancel()
     }
 
     @Test
@@ -158,42 +159,37 @@ class EmulationViewModelSecondaryDisplayTest {
     fun multipleAvailabilityChangesTrackCorrectly() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        // Start game
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceUntilIdle()
+        advanceTimeBy(100)
 
-        // Connect
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertEquals(1, fakeSecondaryDisplay.showCallCount)
 
-        // Disconnect
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(false))
         assertFalse(vm.state.value.secondaryDisplayActive)
 
-        // Reconnect
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertEquals(2, fakeSecondaryDisplay.showCallCount)
+        vmScope.cancel()
     }
 
     @Test
     fun stopGameDismissesSecondaryDisplay() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        // Start game, activate secondary display
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceUntilIdle()
+        advanceTimeBy(100)
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
 
-        // Stop game
         vm.onIntent(EmulationIntent.StopGame)
-        advanceUntilIdle()
+        advanceTimeBy(100)
 
-        // stopGame() should dismiss the secondary display and reset state
         assertFalse(vm.state.value.secondaryDisplayActive)
         assertFalse(fakeSecondaryDisplay.isShowing)
+        vmScope.cancel()
     }
 
     @Test
@@ -201,17 +197,149 @@ class EmulationViewModelSecondaryDisplayTest {
         val vm = createViewModel()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceUntilIdle()
+        advanceTimeBy(100)
 
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
-        // Dedup guard prevents double show — only one call goes through
         assertEquals(1, fakeSecondaryDisplay.showCallCount)
         assertTrue(vm.state.value.secondaryDisplayActive)
+        vmScope.cancel()
+    }
+
+    // -- DS dual-screen detection tests --
+
+    @Test
+    fun ndsConsoleIdTriggersIsDualScreenConsole() = runTest(testDispatcher) {
+        val vm = createViewModelWithConsoleId("nds")
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(100)
+
+        assertTrue(vm.state.value.isDualScreenConsole)
+        assertEquals(192, vm.state.value.dualScreenSplitY)
+        vmScope.cancel()
+    }
+
+    @Test
+    fun nonDsConsoleIdDoesNotTriggerDualScreen() = runTest(testDispatcher) {
+        val vm = createViewModel()
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(100)
+
+        assertFalse(vm.state.value.isDualScreenConsole)
+        assertEquals(0, vm.state.value.dualScreenSplitY)
+        vmScope.cancel()
+    }
+
+    @Test
+    fun ndsConsoleIdSetsCoreVariables() = runTest(testDispatcher) {
+        val controller = StubLibretroControllerWithVariableTracking()
+        val vm = createViewModelWithConsoleIdAndController("nds", controller)
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(100)
+
+        assertEquals("vertical", controller.coreVariables["desmume_screens_layout"])
+        assertEquals("0", controller.coreVariables["desmume_screens_gap"])
+        vmScope.cancel()
+    }
+
+    private fun createViewModelWithConsoleId(consoleId: String): EmulationViewModel {
+        return EmulationViewModel(
+            prepareGameUseCase = PrepareGameUseCase(
+                downloadRepository = StubDownloadRepository(),
+                coreRepository = StubCoreRepository(),
+            ),
+            saveGameStateUseCase = SaveGameStateUseCase(
+                saveRepository = StubSaveRepository(),
+            ),
+            loadGameStateUseCase = LoadGameStateUseCase(
+                saveRepository = StubSaveRepository(),
+            ),
+            getGameDetailUseCase = GetGameDetailUseCase(
+                gameRepository = StubGameRepositoryWithConsoleId(consoleId),
+            ),
+            preferencesRepository = StubPreferencesRepository(),
+            achievementsRepository = StubAchievementsRepository(),
+            achievementsController = StubAchievementsController(),
+            libretroController = fakeLibretroController,
+            secondaryDisplay = fakeSecondaryDisplay,
+            dispatchers = testDispatchers,
+            scope = vmScope,
+        )
+    }
+
+    private fun createViewModelWithConsoleIdAndController(consoleId: String, controller: LibretroController): EmulationViewModel {
+        return EmulationViewModel(
+            prepareGameUseCase = PrepareGameUseCase(
+                downloadRepository = StubDownloadRepository(),
+                coreRepository = StubCoreRepository(),
+            ),
+            saveGameStateUseCase = SaveGameStateUseCase(
+                saveRepository = StubSaveRepository(),
+            ),
+            loadGameStateUseCase = LoadGameStateUseCase(
+                saveRepository = StubSaveRepository(),
+            ),
+            getGameDetailUseCase = GetGameDetailUseCase(
+                gameRepository = StubGameRepositoryWithConsoleId(consoleId),
+            ),
+            preferencesRepository = StubPreferencesRepository(),
+            achievementsRepository = StubAchievementsRepository(),
+            achievementsController = StubAchievementsController(),
+            libretroController = controller,
+            secondaryDisplay = fakeSecondaryDisplay,
+            dispatchers = testDispatchers,
+            scope = vmScope,
+        )
     }
 
     // -- Stub implementations for EmulationViewModel dependencies --
+
+    private class StubLibretroControllerWithVariableTracking : LibretroController {
+        val coreVariables = mutableMapOf<String, String>()
+        override fun loadCore(corePath: String) {}
+        override fun loadGame(gamePath: String) {}
+        override fun start() {}
+        override fun pause() {}
+        override fun resume() {}
+        override fun stop() {}
+        override fun supportsSaveStates(): Boolean = true
+        override fun serialize(): ByteArray = byteArrayOf()
+        override fun unserialize(data: ByteArray): Boolean = true
+        override fun setFastForward(enabled: Boolean) {}
+        override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
+        override fun setCoreVariable(key: String, value: String) {
+            coreVariables[key] = value
+        }
+    }
+
+    private class StubGameRepositoryWithConsoleId(private val consoleId: String) : GameRepository {
+        override suspend fun getConsoles(): Result<List<com.spela.player.domain.model.Console>> =
+            Result.success(emptyList())
+        override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun getAllGames(): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun searchGames(query: String): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun getGameDetail(gameId: String): Result<GameDetail> =
+            Result.success(
+                GameDetail(
+                    game = Game(id = gameId, title = "Test DS Game", consoleId = this.consoleId),
+                )
+            )
+        override suspend fun getRecentGames(): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun getFavoriteGames(): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun addFavorite(gameId: String): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun removeFavorite(gameId: String): Result<Unit> =
+            Result.success(Unit)
+    }
 
     private class StubDownloadRepository : DownloadRepository {
         override fun observeDownloads(): Flow<List<DownloadProgress>> = emptyFlow()

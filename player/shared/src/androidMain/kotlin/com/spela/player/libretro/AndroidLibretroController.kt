@@ -170,6 +170,14 @@ class AndroidLibretroController(
         jni.nativeSetInputAnalog(port, stickIndex, axisId, value)
     }
 
+    override fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {
+        jni.nativeSetInputPointer(port, x, y, pressed)
+    }
+
+    override fun setCoreVariable(key: String, value: String) {
+        jni.nativeSetCoreVariable(key, value)
+    }
+
     /**
      * Notify that physical controller input was received.
      * This triggers auto-hide of the touch overlay. If no physical input is

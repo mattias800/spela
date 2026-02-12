@@ -107,6 +107,14 @@ class DesktopLibretroController(
         jni.nativeSetInputAnalog(port, stickIndex, axisId, value)
     }
 
+    override fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {
+        jni.nativeSetInputPointer(port, x, y, pressed)
+    }
+
+    override fun setCoreVariable(key: String, value: String) {
+        jni.nativeSetCoreVariable(key, value)
+    }
+
     private fun runEmulationLoop() {
         val frameTimeNs = (1_000_000_000.0 / targetFps).toLong()
         var fpsCounter = 0

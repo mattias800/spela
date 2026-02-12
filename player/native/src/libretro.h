@@ -73,6 +73,11 @@ extern "C" {
 #define RETRO_DEVICE_ID_ANALOG_X 0
 #define RETRO_DEVICE_ID_ANALOG_Y 1
 
+/* Pointer device IDs */
+#define RETRO_DEVICE_ID_POINTER_X       0
+#define RETRO_DEVICE_ID_POINTER_Y       1
+#define RETRO_DEVICE_ID_POINTER_PRESSED 2
+
 /* Memory regions */
 #define RETRO_MEMORY_SAVE_RAM  0
 #define RETRO_MEMORY_RTC       1
