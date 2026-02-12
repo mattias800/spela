@@ -7,7 +7,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.call.body
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +54,7 @@ class AndroidAchievementsController(
                     } else {
                         httpClient.get(url)
                     }
-                    val body = response.bodyAsBytes()
+                    val body: ByteArray = response.body()
                     jni.nativeAchievementsHttpComplete(requestId, response.status.value, body)
                 } catch (_: Exception) {
                     jni.nativeAchievementsHttpComplete(requestId, 0, ByteArray(0))

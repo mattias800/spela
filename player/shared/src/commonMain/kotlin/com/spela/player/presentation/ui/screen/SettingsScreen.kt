@@ -135,9 +135,10 @@ fun SettingsScreen(
                     isPassword = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (state.raLinkError != null) {
+                val raLinkError = state.raLinkError
+                if (raLinkError != null) {
                     Text(
-                        text = state.raLinkError,
+                        text = raLinkError,
                         style = SpTypography.BodySmall,
                         color = SpColor.Error,
                     )

@@ -31,7 +31,7 @@ appId: com.spela.player
     timeout: 3000
 
 - tapOn: "Server URL"
-- inputText: "http://192.168.11.143:8080"
+- inputText: "http://10.0.2.2:8080"
 - hideKeyboard
 
 - scrollUntilVisible:

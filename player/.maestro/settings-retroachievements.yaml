@@ -73,7 +73,7 @@ appId: com.spela.player
 # ── Assert privacy note in dialog ──
 
 - assertVisible:
-    text: "Your password is only used to obtain a token"
+    text: ".*credentials.*RetroAchievements.*"
 
 # ── Dismiss dialog ──
 
