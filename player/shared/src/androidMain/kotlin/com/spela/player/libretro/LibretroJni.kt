@@ -52,4 +52,26 @@ class LibretroJni {
 
     /* Memory */
     external fun nativeGetSRAM(): ByteArray?
+
+    /* Achievements */
+    external fun nativeAchievementsInit()
+    external fun nativeAchievementsDeinit()
+    external fun nativeAchievementsLogin(username: String, token: String)
+    external fun nativeAchievementsLoadGame(hash: String)
+    external fun nativeAchievementsDoFrame()
+    external fun nativeAchievementsSetHardcore(enabled: Boolean)
+    external fun nativeAchievementsHttpComplete(requestId: Int, responseCode: Int, responseBody: ByteArray)
+
+    var achievementEventListener: ((Int, String?, String?, Int) -> Unit)? = null
+    var httpRequestListener: ((Int, String, String?) -> Unit)? = null
+
+    // Called from native code when an achievement event occurs
+    fun onAchievementEvent(eventType: Int, title: String?, description: String?, points: Int) {
+        achievementEventListener?.invoke(eventType, title, description, points)
+    }
+
+    // Called from native code when rcheevos needs an HTTP request
+    fun onHttpRequest(requestId: Int, url: String, postData: String?) {
+        httpRequestListener?.invoke(requestId, url, postData)
+    }
 }

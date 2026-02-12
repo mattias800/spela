@@ -19,4 +19,6 @@ sealed interface EmulationIntent {
 
     data object ShowKeyMapping : EmulationIntent
     data object HideKeyMapping : EmulationIntent
+
+    data object DismissAchievement : EmulationIntent
 }

@@ -122,6 +122,9 @@ data class UserPreferencesDto(
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: String = "none",
     val consoleShaders: Map<String, String> = emptyMap(),
+    val raLinked: Boolean = false,
+    val raUsername: String = "",
+    val raHardcoreEnabled: Boolean = false,
 )
 
 @Serializable
@@ -161,4 +164,30 @@ data class UpdateDevicePreferencesRequest(
 @Serializable
 data class CoreNameResponse(
     val coreName: String,
+)
+
+// RetroAchievements
+
+@Serializable
+data class RAStatusDto(
+    val linked: Boolean = false,
+    val username: String = "",
+    val hardcoreEnabled: Boolean = false,
+)
+
+@Serializable
+data class RALinkRequestDto(
+    val username: String,
+    val password: String,
+)
+
+@Serializable
+data class RATokenResponseDto(
+    val username: String,
+    val token: String,
+)
+
+@Serializable
+data class RASettingsRequestDto(
+    val hardcoreEnabled: Boolean,
 )

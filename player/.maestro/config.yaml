@@ -40,6 +40,7 @@ executionOrder:
     - "settings-console-shader"
     - "settings-device-shader-override"
     - "settings-shader-preview"
+    - "settings-retroachievements"
 
     # ── Phase 3: Tests that clear state (run last) ──
     - "session-persistence"

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
@@ -24,6 +25,7 @@ type Config struct {
 	Hub         *ws.Hub
 	CoreDir     string
 	CORSOrigins []string
+	RAClient    *retroachievements.RAClient // optional; defaults to production RA client
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
@@ -95,6 +97,11 @@ func NewRouter(cfg Config) *gin.Engine {
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
+	raClient := cfg.RAClient
+	if raClient == nil {
+		raClient = retroachievements.NewRAClient()
+	}
+	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -157,6 +164,15 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/user/devices/:id", deviceHandler.DeleteDevice)
 		api.GET("/user/devices/:id/preferences", deviceHandler.GetDevicePreferences)
 		api.PUT("/user/devices/:id/preferences", deviceHandler.UpdateDevicePreferences)
+
+		// RetroAchievements
+		api.POST("/user/ra/link", raHandler.LinkAccount)
+		api.DELETE("/user/ra/link", raHandler.UnlinkAccount)
+		api.GET("/user/ra/status", raHandler.GetStatus)
+		api.PUT("/user/ra/settings", raHandler.UpdateSettings)
+		api.GET("/user/ra/token", raHandler.GetToken)
+		api.GET("/games/:id/achievements", raHandler.GetGameAchievements)
+		api.GET("/games/:id/achievements/progress", raHandler.GetAchievementProgress)
 
 		// Admin routes
 		admin := api.Group("/admin")

@@ -126,3 +126,39 @@ data class DownloadProgress(
     val progress: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
 }
+
+// RetroAchievements
+
+data class RAStatus(
+    val linked: Boolean = false,
+    val username: String = "",
+    val hardcoreEnabled: Boolean = false,
+)
+
+data class RACredentials(
+    val username: String,
+    val token: String,
+)
+
+enum class AchievementEventType(val nativeValue: Int) {
+    ACHIEVEMENT_TRIGGERED(1),
+    GAME_COMPLETED(2),
+    CHALLENGE_INDICATOR_SHOW(3),
+    CHALLENGE_INDICATOR_HIDE(4),
+    LEADERBOARD_STARTED(5),
+    LEADERBOARD_FAILED(6),
+    LEADERBOARD_SUBMITTED(7),
+    SERVER_ERROR(8);
+
+    companion object {
+        fun fromNativeValue(value: Int): AchievementEventType? =
+            entries.find { it.nativeValue == value }
+    }
+}
+
+data class AchievementEvent(
+    val type: AchievementEventType,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+)

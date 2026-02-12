@@ -11,6 +11,12 @@ const mockPreferences = {
   autoLoadSaveEnabled: true,
   selectedShader: "crt-simple",
   consoleShaders: { "1": "bilinear" },
+  selectedKeyMapping: "default",
+  customKeyMapping: {},
+  consoleKeyMappings: {},
+  raLinked: false,
+  raUsername: "",
+  raHardcoreEnabled: false,
 };
 
 const mockDevices = [
@@ -63,6 +69,13 @@ vi.mock("@/hooks/use-devices", () => ({
 
 vi.mock("@/hooks/use-consoles", () => ({
   useConsoles: vi.fn(),
+}));
+
+vi.mock("@/hooks/use-retroachievements", () => ({
+  useRAStatus: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+  useLinkRA: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useUnlinkRA: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useRASettings: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
 vi.mock("@/components/ui", async () => {
@@ -151,9 +164,10 @@ describe("PreferencesPage", () => {
 
   it("shows per-console shader table", () => {
     renderPage();
-    expect(screen.getByText("Per-Console Overrides")).toBeInTheDocument();
-    expect(screen.getByText("NES")).toBeInTheDocument();
-    expect(screen.getByText("SNES")).toBeInTheDocument();
+    const overrideLabels = screen.getAllByText("Per-Console Overrides");
+    expect(overrideLabels.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("NES").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("SNES").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows devices list", () => {

@@ -187,6 +187,46 @@ type DeviceShaderPreference struct {
 	Shader    string         `gorm:"size:64;not null" json:"shader"`
 }
 
+// RetroAchievementCredential stores a user's RA token (never the password).
+type RetroAchievementCredential struct {
+	ID              uint           `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID          uint           `gorm:"uniqueIndex;not null" json:"userId"`
+	RAUsername      string         `gorm:"size:128;not null" json:"raUsername"`
+	RAToken         string         `gorm:"size:512;not null" json:"-"`
+	HardcoreEnabled bool           `gorm:"default:false" json:"hardcoreEnabled"`
+}
+
+// GameAchievementCache caches RA achievement data per game (by RA game ID).
+type GameAchievementCache struct {
+	ID              uint           `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	RAGameID        uint           `gorm:"uniqueIndex;not null" json:"raGameId"`
+	GameID          uint           `gorm:"index" json:"gameId"`
+	Title           string         `gorm:"size:255" json:"title"`
+	AchievementJSON string         `gorm:"type:text" json:"-"`
+	TotalCount      int            `json:"totalCount"`
+	TotalPoints     int            `json:"totalPoints"`
+	CachedAt        time.Time      `json:"cachedAt"`
+}
+
+// UserAchievementProgress tracks per-user achievement unlocks.
+type UserAchievementProgress struct {
+	ID              uint           `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID          uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"userId"`
+	AchievementRAID uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"achievementRaId"`
+	RAGameID        uint           `gorm:"index;not null" json:"raGameId"`
+	UnlockedAt      time.Time      `json:"unlockedAt"`
+	IsHardcore      bool           `json:"isHardcore"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

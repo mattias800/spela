@@ -19,10 +19,9 @@ import kotlinx.coroutines.flow.flow
  * and routes audio samples to an AudioTrack.
  */
 class AndroidLibretroController(
+    private val jni: LibretroJni,
     private val fileStorage: FileStorage,
 ) : LibretroController {
-
-    private val jni = LibretroJni()
 
     @Volatile
     private var running = false

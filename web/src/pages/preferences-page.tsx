@@ -5,6 +5,7 @@ import { VideoFiltersCard } from "@/components/preferences/video-filters-card";
 import { KeyMappingCard } from "@/components/preferences/key-mapping-card";
 import { DevicesCard } from "@/components/preferences/devices-card";
 import { DeleteDeviceModal } from "@/components/preferences/delete-device-modal";
+import { RetroAchievementsCard } from "@/components/preferences/retroachievements-card";
 import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
 import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "@/hooks/use-devices";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -127,6 +128,8 @@ export function PreferencesPage() {
         onCustomKeyMappingChange={handleCustomKeyMappingChange}
         onConsoleKeyMappingChange={handleConsoleKeyMappingChange}
       />
+
+      <RetroAchievementsCard />
 
       <DevicesCard
         devices={devices}

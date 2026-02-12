@@ -7,6 +7,7 @@ import {
   HardDrive,
   RefreshCw,
   Play,
+  Trophy,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { MetaItem } from "@/components/meta-item";
@@ -20,6 +21,7 @@ interface GameHeroProps {
   isAdmin: boolean;
   isFavorite: boolean;
   isScraping: boolean;
+  hasAchievements?: boolean;
   onPlay: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
@@ -31,6 +33,7 @@ export function GameHero({
   isAdmin,
   isFavorite,
   isScraping,
+  hasAchievements,
   onPlay,
   onScrape,
   onToggleFavorite,
@@ -62,8 +65,14 @@ export function GameHero({
       <div className="flex-1 space-y-5 pt-2">
         <div>
           <div className="flex items-start justify-between gap-4">
-            <h1 className="text-3xl font-bold text-surface-100">
+            <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-2">
               {game.title}
+              {hasAchievements && (
+                <Trophy
+                  className="h-6 w-6 text-amber-400"
+                  data-testid="achievements-trophy"
+                />
+              )}
             </h1>
             <div className="flex items-center gap-2">
               <Button

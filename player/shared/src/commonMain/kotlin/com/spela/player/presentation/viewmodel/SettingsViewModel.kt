@@ -2,7 +2,9 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.RAStatus
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
@@ -37,6 +39,10 @@ data class SettingsState(
     val showLogoutConfirm: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
     val fullscreenPreviewConsoleId: String? = null,
+    val raStatus: RAStatus? = null,
+    val showRALinkDialog: Boolean = false,
+    val raLinkLoading: Boolean = false,
+    val raLinkError: String? = null,
 )
 
 sealed interface SettingsIntent {
@@ -58,6 +64,12 @@ sealed interface SettingsIntent {
     data object ClearCache : SettingsIntent
     data class ShowShaderPreviewFullscreen(val consoleId: String) : SettingsIntent
     data object DismissShaderPreviewFullscreen : SettingsIntent
+
+    data object ShowRALinkDialog : SettingsIntent
+    data object DismissRALinkDialog : SettingsIntent
+    data class LinkRA(val username: String, val password: String) : SettingsIntent
+    data object UnlinkRA : SettingsIntent
+    data object ToggleRAHardcore : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -66,6 +78,7 @@ class SettingsViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val gameRepository: GameRepository,
     private val serverRepository: ServerRepository,
+    private val achievementsRepository: AchievementsRepository,
     private val deviceManager: DeviceManager,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -119,6 +132,14 @@ class SettingsViewModel(
                 _state.update { it.copy(fullscreenPreviewConsoleId = intent.consoleId) }
             SettingsIntent.DismissShaderPreviewFullscreen ->
                 _state.update { it.copy(fullscreenPreviewConsoleId = null) }
+
+            SettingsIntent.ShowRALinkDialog ->
+                _state.update { it.copy(showRALinkDialog = true, raLinkError = null) }
+            SettingsIntent.DismissRALinkDialog ->
+                _state.update { it.copy(showRALinkDialog = false, raLinkError = null) }
+            is SettingsIntent.LinkRA -> linkRA(intent.username, intent.password)
+            SettingsIntent.UnlinkRA -> unlinkRA()
+            SettingsIntent.ToggleRAHardcore -> toggleRAHardcore()
         }
     }
 
@@ -172,6 +193,10 @@ class SettingsViewModel(
             preferencesRepository.syncDeviceShaderOverrides()
             val deviceOverrides = preferencesRepository.getAllDeviceShaderOverrides()
             _state.update { it.copy(deviceShaderOverrides = deviceOverrides) }
+
+            achievementsRepository.getRAStatus().onSuccess { status ->
+                _state.update { it.copy(raStatus = status) }
+            }
         }
     }
 
@@ -236,6 +261,51 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             downloadRepository.clearCache()
             _state.update { it.copy(cacheSize = 0, showClearCacheConfirm = false) }
+        }
+    }
+
+    private fun linkRA(username: String, password: String) {
+        _state.update { it.copy(raLinkLoading = true, raLinkError = null) }
+        scope.launch(dispatchers.io) {
+            achievementsRepository.linkRA(username, password).fold(
+                onSuccess = { status ->
+                    _state.update {
+                        it.copy(
+                            raStatus = status,
+                            showRALinkDialog = false,
+                            raLinkLoading = false,
+                            raLinkError = null,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            raLinkLoading = false,
+                            raLinkError = error.message ?: "Failed to link account",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun unlinkRA() {
+        scope.launch(dispatchers.io) {
+            achievementsRepository.unlinkRA().onSuccess {
+                _state.update { it.copy(raStatus = RAStatus()) }
+            }
+        }
+    }
+
+    private fun toggleRAHardcore() {
+        val current = _state.value.raStatus ?: return
+        val newValue = !current.hardcoreEnabled
+        _state.update { it.copy(raStatus = current.copy(hardcoreEnabled = newValue)) }
+        scope.launch(dispatchers.io) {
+            achievementsRepository.updateRASettings(newValue).onFailure {
+                _state.update { it.copy(raStatus = current) }
+            }
         }
     }
 }

@@ -37,6 +37,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +59,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpConfirmDialog
+import com.spela.player.presentation.ui.components.SpDialog
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
@@ -103,6 +107,48 @@ fun SettingsScreen(
             confirmText = "Clear",
             isDestructive = true,
         )
+    }
+
+    if (state.showRALinkDialog) {
+        var raUsername by remember { mutableStateOf("") }
+        var raPassword by remember { mutableStateOf("") }
+
+        SpDialog(
+            title = "Link RetroAchievements",
+            onDismiss = { viewModel.onIntent(SettingsIntent.DismissRALinkDialog) },
+            onConfirm = { viewModel.onIntent(SettingsIntent.LinkRA(raUsername, raPassword)) },
+            confirmText = if (state.raLinkLoading) "Linking..." else "Link",
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+                SpTextField(
+                    value = raUsername,
+                    onValueChange = { raUsername = it },
+                    label = "Username",
+                    placeholder = "RetroAchievements username",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SpTextField(
+                    value = raPassword,
+                    onValueChange = { raPassword = it },
+                    label = "Password",
+                    placeholder = "RetroAchievements password",
+                    isPassword = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (state.raLinkError != null) {
+                    Text(
+                        text = state.raLinkError,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.Error,
+                    )
+                }
+                Text(
+                    text = "Your credentials are sent to RetroAchievements to obtain an API token. Your password is not stored.",
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+            }
+        }
     }
 
     Column(
@@ -196,6 +242,57 @@ fun SettingsScreen(
                             isChecked = state.autoLoadSaveEnabled,
                             onToggle = { viewModel.onIntent(SettingsIntent.ToggleAutoLoadSave) },
                         )
+                    }
+                }
+            }
+
+            // RetroAchievements section
+            item {
+                SettingsSectionHeader(title = "RetroAchievements")
+            }
+
+            item {
+                val raStatus = state.raStatus
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpSpacing.Default),
+                    ) {
+                        if (raStatus != null && raStatus.linked) {
+                            Text(
+                                text = raStatus.username,
+                                style = SpTypography.TitleLarge,
+                                color = SpColor.OnCard,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Small))
+                            SettingsToggle(
+                                title = "Hardcore Mode",
+                                subtitle = "Disable save states and cheats for official leaderboards",
+                                isChecked = raStatus.hardcoreEnabled,
+                                onToggle = { viewModel.onIntent(SettingsIntent.ToggleRAHardcore) },
+                            )
+                            Spacer(Modifier.height(SpSpacing.Small))
+                            SpButton(
+                                text = "Unlink Account",
+                                onClick = { viewModel.onIntent(SettingsIntent.UnlinkRA) },
+                                style = SpButtonStyle.Outlined,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        } else {
+                            Text(
+                                text = "Link your RetroAchievements account to earn achievements while playing.",
+                                style = SpTypography.BodyMedium,
+                                color = SpColor.OnBackgroundSecondary,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Medium))
+                            SpButton(
+                                text = "Link Account",
+                                onClick = { viewModel.onIntent(SettingsIntent.ShowRALinkDialog) },
+                                style = SpButtonStyle.Primary,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }

@@ -258,6 +258,32 @@ class SpelaApiClient(
         return response.body()
     }
 
+    // RetroAchievements
+
+    suspend fun getRAStatus(): RAStatusDto {
+        return client.get("$baseUrl/api/user/ra/status").body()
+    }
+
+    suspend fun linkRA(request: RALinkRequestDto): RAStatusDto {
+        return client.post("$baseUrl/api/user/ra/link") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun unlinkRA() {
+        client.delete("$baseUrl/api/user/ra/link")
+    }
+
+    suspend fun getRAToken(): RATokenResponseDto {
+        return client.get("$baseUrl/api/user/ra/token").body()
+    }
+
+    suspend fun updateRASettings(request: RASettingsRequestDto): RAStatusDto {
+        return client.put("$baseUrl/api/user/ra/settings") {
+            setBody(request)
+        }.body()
+    }
+
     fun close() {
         client.close()
     }

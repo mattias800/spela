@@ -1,6 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
@@ -27,6 +29,8 @@ class EmulationViewModel(
     private val loadGameStateUseCase: LoadGameStateUseCase,
     private val getGameDetailUseCase: GetGameDetailUseCase,
     private val preferencesRepository: PreferencesRepository,
+    private val achievementsRepository: AchievementsRepository,
+    private val achievementsController: AchievementsController,
     private val libretroController: LibretroController,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -70,6 +74,8 @@ class EmulationViewModel(
 
             EmulationIntent.ShowKeyMapping -> _state.update { it.copy(showKeyMapping = true, showOverlay = false) }
             EmulationIntent.HideKeyMapping -> _state.update { it.copy(showKeyMapping = false, showOverlay = true) }
+
+            EmulationIntent.DismissAchievement -> _state.update { it.copy(achievementEvent = null) }
         }
     }
 
@@ -127,6 +133,9 @@ class EmulationViewModel(
                         val saveStatesSupported = libretroController.supportsSaveStates()
                         _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported) }
 
+                        // Initialize achievements if RA is linked
+                        initAchievements(gameId)
+
                         // Start FPS tracking
                         trackPerformance()
                     } catch (e: Exception) {
@@ -169,14 +178,24 @@ class EmulationViewModel(
                 }
             }
 
+            try {
+                achievementsController.deinit()
+            } catch (_: Exception) {
+                // Best effort
+            }
+
             libretroController.stop()
             _state.update {
-                it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f)
+                it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false)
             }
         }
     }
 
     private fun saveState() {
+        if (_state.value.isHardcoreMode) {
+            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
         scope.launch(dispatchers.io) {
             val gameId = _state.value.gameId
             val saveData = libretroController.serialize() ?: return@launch
@@ -192,6 +211,10 @@ class EmulationViewModel(
     }
 
     private fun loadState() {
+        if (_state.value.isHardcoreMode) {
+            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
         scope.launch(dispatchers.io) {
             val gameId = _state.value.gameId
             loadGameStateUseCase(gameId).fold(
@@ -210,6 +233,34 @@ class EmulationViewModel(
         val newState = !_state.value.isFastForward
         libretroController.setFastForward(newState)
         _state.update { it.copy(isFastForward = newState) }
+    }
+
+    private fun initAchievements(gameId: String) {
+        scope.launch(dispatchers.io) {
+            achievementsRepository.getRAToken().onSuccess { credentials ->
+                achievementsController.init()
+                achievementsController.login(credentials.username, credentials.token)
+
+                // Check if hardcore mode is enabled
+                achievementsRepository.getRAStatus().onSuccess { status ->
+                    if (status.hardcoreEnabled) {
+                        achievementsController.setHardcore(true)
+                        _state.update { it.copy(isHardcoreMode = true) }
+                    }
+                }
+
+                // Use gameId as hash for now (server can provide a proper hash later)
+                achievementsController.loadGame(gameId)
+
+                // Collect achievement events for UI
+                scope.launch(dispatchers.default) {
+                    achievementsController.events.collect { event ->
+                        _state.update { it.copy(achievementEvent = event) }
+                    }
+                }
+            }
+            // If getRAToken fails, RA is not linked — silently skip
+        }
     }
 
     private fun trackPerformance() {

@@ -135,4 +135,44 @@ export interface UserPreferences {
   selectedKeyMapping: string;
   customKeyMapping: Record<string, string>;
   consoleKeyMappings: Record<string, ConsoleKeyMapping>;
+  raLinked: boolean;
+  raUsername: string;
+  raHardcoreEnabled: boolean;
+}
+
+export interface RAStatus {
+  linked: boolean;
+  username: string;
+  hardcoreEnabled: boolean;
+}
+
+export interface RALinkRequest {
+  username: string;
+  password: string;
+}
+
+export interface RASettingsRequest {
+  hardcoreEnabled: boolean;
+}
+
+export interface Achievement {
+  id: number;
+  title: string;
+  description: string;
+  points: number;
+  badgeUrl: string;
+  type: string;
+}
+
+export interface GameAchievements {
+  raGameId: number;
+  totalCount: number;
+  totalPoints: number;
+  achievements: Achievement[];
+}
+
+export interface GameAchievementProgress {
+  achievementId: number;
+  unlockedAt: string;
+  isHardcore: boolean;
 }

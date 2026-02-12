@@ -35,6 +35,9 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.ConsoleShaderPreference{},
 		&db.Device{},
 		&db.DeviceShaderPreference{},
+		&db.RetroAchievementCredential{},
+		&db.GameAchievementCache{},
+		&db.UserAchievementProgress{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

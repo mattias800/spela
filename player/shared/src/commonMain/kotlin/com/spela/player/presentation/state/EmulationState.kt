@@ -1,5 +1,6 @@
 package com.spela.player.presentation.state
 
+import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.ShaderPreset
 
 data class EmulationState(
@@ -22,4 +23,7 @@ data class EmulationState(
     val isFastForward: Boolean = false,
     val showKeyMapping: Boolean = false,
     val error: String? = null,
+
+    val achievementEvent: AchievementEvent? = null,
+    val isHardcoreMode: Boolean = false,
 )

@@ -4,7 +4,10 @@ import android.view.KeyEvent
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.libretro.AndroidAchievementsController
 import com.spela.player.libretro.AndroidLibretroController
+import com.spela.player.libretro.LibretroJni
 import com.spela.player.platform.AndroidFileStorage
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
@@ -21,7 +24,9 @@ actual fun platformModule(): Module = module {
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
     single { SpelaApiClient(OkHttp, get()) }
     single<FileStorage> { AndroidFileStorage(get()) }
-    single<LibretroController> { AndroidLibretroController(get()) }
+    single { LibretroJni() }
+    single<LibretroController> { AndroidLibretroController(get(), get()) }
+    single<AchievementsController> { AndroidAchievementsController(get(), get(), get()) }
     single {
         HttpClient(OkHttp) {
             install(HttpTimeout) {

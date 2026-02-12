@@ -3,7 +3,10 @@ package com.spela.player.di
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.libretro.DesktopAchievementsController
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
 import com.spela.player.platform.DesktopFileStorage
 import com.spela.player.presentation.viewmodel.LibretroController
@@ -24,7 +27,9 @@ actual fun platformModule(): Module = module {
     single { SpelaDatabase(get<JdbcSqliteDriver>()) }
     single { SpelaApiClient(CIO, get()) }
     single<FileStorage> { DesktopFileStorage() }
-    single<LibretroController> { DesktopLibretroController() }
+    single { LibretroJni() }
+    single<LibretroController> { DesktopLibretroController(get()) }
+    single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
     single {
         HttpClient(CIO) {
             install(HttpTimeout) {

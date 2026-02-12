@@ -11,6 +11,7 @@ import com.spela.player.presentation.viewmodel.*
 import org.koin.core.qualifier.named
 import com.spela.player.util.DefaultDispatcherProvider
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.domain.controller.AchievementsController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.Module
@@ -34,6 +35,7 @@ val commonModule = module {
     single<ServerRepository> { ServerRepositoryImpl(get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
     single<KeyMappingRepository> { KeyMappingRepositoryImpl(get(), get(named("platformDefaultMapping"))) }
+    single<AchievementsRepository> { AchievementsRepositoryImpl(get()) }
     single { GamepadPortManager(get()) }
 
     /* Use Cases */
@@ -94,6 +96,8 @@ val commonModule = module {
             loadGameStateUseCase = get(),
             getGameDetailUseCase = get(),
             preferencesRepository = get(),
+            achievementsRepository = get(),
+            achievementsController = get(),
             libretroController = get(),
             dispatchers = get(),
             scope = get(),
@@ -136,6 +140,7 @@ val commonModule = module {
             preferencesRepository = get(),
             gameRepository = get(),
             serverRepository = get(),
+            achievementsRepository = get(),
             deviceManager = get(),
             dispatchers = get(),
             scope = get(),

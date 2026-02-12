@@ -8,6 +8,7 @@
  */
 
 #include "libretro_bridge.h"
+#include "libretro_achievements.h"
 
 #include <jni.h>
 #include <dlfcn.h>
@@ -302,6 +303,7 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
     g_core.retro_run();
+    achievements_do_frame();
 }
 
 JNI_FUNC(void, nativeReset)(JNIEnv *env, jobject thiz) {

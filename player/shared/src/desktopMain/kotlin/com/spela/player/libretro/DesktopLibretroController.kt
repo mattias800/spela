@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.flow
  * Uses the same JNI native library as Android, but loaded from
  * the system library path (.dll on Windows, .dylib on macOS, .so on Linux).
  */
-class DesktopLibretroController : LibretroController {
-
-    private val jni = LibretroJni()
+class DesktopLibretroController(
+    private val jni: LibretroJni,
+) : LibretroController {
 
     @Volatile
     private var running = false

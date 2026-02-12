@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GameHero } from "@/components/game-detail/game-hero";
 import { GameScreenshots } from "@/components/game-detail/game-screenshots";
 import { SaveStatesList } from "@/components/game-detail/save-states-list";
+import { GameAchievements } from "@/components/game-detail/game-achievements";
+import { useGameAchievements } from "@/hooks/use-retroachievements";
 
 export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,8 +27,10 @@ export function GameDetailPage() {
   const { data: consoles } = useConsoles();
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
+  const { data: gameAchievements } = useGameAchievements(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
+  const hasAchievements = (gameAchievements?.achievements.length ?? 0) > 0;
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -83,6 +87,7 @@ export function GameDetailPage() {
         isAdmin={isAdmin}
         isFavorite={isFavorite}
         isScraping={scrapeGame.isPending}
+        hasAchievements={hasAchievements}
         onPlay={() => navigate(`/games/${game.id}/play`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
@@ -94,6 +99,8 @@ export function GameDetailPage() {
         screenshotUrls={game.screenshotUrls}
         gameTitle={game.title}
       />
+
+      <GameAchievements gameId={game.id} />
 
       <SaveStatesList saves={saves} gameId={game.id} />
     </div>

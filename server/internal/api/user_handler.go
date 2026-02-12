@@ -69,6 +69,9 @@ type preferencesResponse struct {
 	SelectedKeyMapping     string                         `json:"selectedKeyMapping"`
 	CustomKeyMapping       map[string]string              `json:"customKeyMapping"`
 	ConsoleKeyMappings     map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
+	RALinked               bool                           `json:"raLinked"`
+	RAUsername             string                         `json:"raUsername"`
+	RAHardcoreEnabled      bool                           `json:"raHardcoreEnabled"`
 }
 
 type consoleKeyMappingDTO struct {
@@ -95,6 +98,9 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		selectedKeyMapping = "arrows-left"
 	}
 
+	var raCred db.RetroAchievementCredential
+	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
+
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
@@ -104,6 +110,9 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		SelectedKeyMapping:     selectedKeyMapping,
 		CustomKeyMapping:       customKeyMapping,
 		ConsoleKeyMappings:     consoleKeyMappings,
+		RALinked:               raLinked,
+		RAUsername:             raCred.RAUsername,
+		RAHardcoreEnabled:      raCred.HardcoreEnabled,
 	})
 }
 
@@ -231,6 +240,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		selectedKeyMapping = "arrows-left"
 	}
 
+	var raCred db.RetroAchievementCredential
+	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
+
 	c.JSON(http.StatusOK, preferencesResponse{
 		ShowPerformanceOverlay: user.ShowPerfOverlay,
 		AutoSaveEnabled:        user.AutoSaveEnabled,
@@ -240,6 +252,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		SelectedKeyMapping:     selectedKeyMapping,
 		CustomKeyMapping:       customKeyMapping,
 		ConsoleKeyMappings:     consoleKeyMappings,
+		RALinked:               raLinked,
+		RAUsername:             raCred.RAUsername,
+		RAHardcoreEnabled:      raCred.HardcoreEnabled,
 	})
 }
 

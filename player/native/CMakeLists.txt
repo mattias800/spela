@@ -8,10 +8,13 @@ add_library(spela-libretro SHARED
     src/libretro_audio.c
     src/libretro_video.c
     src/libretro_input.c
+    src/libretro_achievements.c
+    rcheevos/src/rc_client_stub.c
 )
 
 target_include_directories(spela-libretro PRIVATE
     src
+    rcheevos/include
 )
 
 # Link platform libraries
