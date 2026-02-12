@@ -14,6 +14,11 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
+
 - scrollUntilVisible:
     element:
       text: "Auto Save on Exit"
@@ -45,6 +50,11 @@ appId: com.spela.player
 # ── Navigate to Settings and verify toggle persisted ──
 
 - tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 - scrollUntilVisible:
     element:

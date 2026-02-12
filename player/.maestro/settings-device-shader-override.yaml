@@ -6,6 +6,8 @@ appId: com.spela.player
 # Verifies that enabling "Override on this device only" for a console
 # stores a device-local shader preference, which persists across
 # navigation and is distinct from the server-synced per-console shader.
+#
+# Per-console shader is configured on ConsoleSettingsScreen.
 
 # ── Setup: login as player ──
 
@@ -14,6 +16,11 @@ appId: com.spela.player
 # ── Navigate to Settings ──
 
 - tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 # ── Set global shader to CRT Classic on Default tab ──
 
@@ -30,7 +37,7 @@ appId: com.spela.player
 
 - tapOn: "CRT Classic"
 
-# ── Switch to Per Console tab (scroll up — tabs are above shader options) ──
+# ── Switch to Per Console tab ──
 
 - scrollUntilVisible:
     element:
@@ -39,7 +46,7 @@ appId: com.spela.player
 
 - tapOn: "Per Console"
 
-# ── Expand Super Nintendo ──
+# ── Tap Super Nintendo to open ConsoleSettingsScreen ──
 
 - scrollUntilVisible:
     element:
@@ -47,6 +54,13 @@ appId: com.spela.player
     direction: DOWN
 
 - tapOn: "Super Nintendo"
+
+# ── Wait for ConsoleSettingsScreen ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
 
 # ── Enable device override ──
 
@@ -58,20 +72,27 @@ appId: com.spela.player
 - tapOn: "Override on this device only"
 
 # ── Select Smooth (Bilinear) as the device override shader ──
-# The device shader picker appears below the checkbox.
-# Scroll past the regular shader picker to the device section.
+# The ConsoleSettingsScreen has two shader lists with the same names:
+# per-console and device. Use the "below" selector to tap the Bilinear
+# option that is below the "Device Shader" heading.
 
 - scrollUntilVisible:
     element:
       text: "Device Shader"
     direction: DOWN
+    timeout: 10000
+    centerElement: true
 
-- scrollUntilVisible:
-    element:
-      text: "Softens hard pixel edges"
-    direction: DOWN
+- tapOn: "Smooth.*Bilinear.*"
 
-- tapOn: "Smooth (Bilinear)"
+# ── Navigate back to Settings ──
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 # ── Navigate back to Home ──
 
@@ -86,6 +107,11 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
+
 - scrollUntilVisible:
     element:
       text: "Per Console"
@@ -97,34 +123,11 @@ appId: com.spela.player
 - tapOn: "Per Console"
 
 # ── Verify SNES shows Bilinear with device override indicator ──
-# The console card subtitle shows "Smooth (Bilinear) (device)" when
-# a device-local override is active.
 
 - scrollUntilVisible:
     element:
       text: "Super Nintendo"
     direction: DOWN
+    timeout: 10000
 
-- assertVisible: "Smooth (Bilinear) (device)"
-
-# ── Verify another console does NOT have a device override ──
-# Expand Game Boy Advance and confirm the device override checkbox is unchecked.
-# The checkbox state description is part of the composable semantics.
-
-- scrollUntilVisible:
-    element:
-      text: "Game Boy Advance"
-    direction: DOWN
-
-- tapOn: "Game Boy Advance"
-
-# GBA should show "CRT Classic" (the global default) with no "(device)" marker.
-# After expanding, the "Override on this device only" checkbox should be visible
-# but unchecked (we only set a device override for SNES, not GBA).
-
-- scrollUntilVisible:
-    element:
-      text: "Override on this device only"
-    direction: DOWN
-
-- assertVisible: "Override on this device only"
+- assertVisible: "Smooth.*Bilinear.*device.*"

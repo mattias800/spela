@@ -20,6 +20,11 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
+
 # Scroll to Emulation section (may be below the fold on small screens)
 - scrollUntilVisible:
     element:

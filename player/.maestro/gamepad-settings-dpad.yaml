@@ -22,6 +22,11 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
+
 # ── Scroll well past Account section to the shader area ──
 # This ensures the Device Name text field and Sign Out button are
 # off-screen and won't capture D-pad focus.

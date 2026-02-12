@@ -44,7 +44,12 @@ class LoginViewModelTest {
         SpelaDatabase.Schema.create(driver)
         val database = SpelaDatabase(driver)
         val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
-        deviceManager = DeviceManager(database, apiClient)
+        // Use a fake DeviceManager that skips the real HTTP call to avoid
+        // Ktor's MockEngine dispatching on Dispatchers.Default (which the
+        // test dispatcher cannot advance).
+        deviceManager = object : DeviceManager(database, apiClient) {
+            override suspend fun registerWithServer(): Result<Long> = Result.success(1L)
+        }
     }
 
     @AfterTest

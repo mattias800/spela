@@ -6,13 +6,17 @@ import androidx.compose.foundation.focusable
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,53 +44,59 @@ fun SpTopBar(
     onBack: () -> Unit = {},
     actions: @Composable () -> Unit = {},
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(SpSpacing.TopBarHeight)
-            .background(SpColor.Surface.copy(alpha = 0.95f))
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
-        verticalAlignment = Alignment.CenterVertically,
+            .background(SpColor.Surface.copy(alpha = 0.95f)),
     ) {
-        if (showBack) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .spFocusRing(shape = CircleShape)
-                    .clip(CircleShape)
-                    .background(SpColor.SurfaceVariant)
-                    .clickable(onClick = onBack)
-                    .focusable()
-                    .semantics {
-                        contentDescription = "Go back"
-                        role = Role.Button
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    tint = SpColor.OnSurface,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            Spacer(Modifier.width(SpSpacing.Medium))
-        }
-
-        Text(
-            text = title,
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { heading() },
-        )
-
+        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(SpSpacing.TopBarHeight)
+                .padding(horizontal = SpSpacing.ScreenHorizontal),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            actions()
+            if (showBack) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .spFocusRing(shape = CircleShape)
+                        .clip(CircleShape)
+                        .background(SpColor.SurfaceVariant)
+                        .clickable(onClick = onBack)
+                        .focusable()
+                        .semantics {
+                            contentDescription = "Go back"
+                            role = Role.Button
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = SpColor.OnSurface,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(Modifier.width(SpSpacing.Medium))
+            }
+
+            Text(
+                text = title,
+                style = SpTypography.HeadlineMedium,
+                color = SpColor.OnBackground,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                actions()
+            }
         }
     }
 }

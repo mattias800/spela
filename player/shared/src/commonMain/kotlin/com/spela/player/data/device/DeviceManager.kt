@@ -7,7 +7,7 @@ import com.spela.player.util.currentPlatform
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class DeviceManager(
+open class DeviceManager(
     private val database: SpelaDatabase,
     private val apiClient: SpelaApiClient,
 ) {
@@ -39,7 +39,7 @@ class DeviceManager(
         }
     }
 
-    suspend fun registerWithServer(): Result<Long> = runCatching {
+    open suspend fun registerWithServer(): Result<Long> = runCatching {
         val uuid = getDeviceUuid()
         val name = getDeviceName()
         val platform = currentPlatform()

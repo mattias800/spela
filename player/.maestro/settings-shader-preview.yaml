@@ -5,8 +5,8 @@ appId: com.spela.player
 #
 # Verifies that the shader preview section in Settings shows a preview
 # image for both the global default shader and per-console shader.
-# The preview image comes from the libretro thumbnail archive via the
-# server's /api/consoles/{id}/preview-screenshot endpoint.
+#
+# Per-console shader preview is on ConsoleSettingsScreen.
 
 # ── Setup: login as player ──
 
@@ -15,6 +15,11 @@ appId: com.spela.player
 # ── Navigate to Settings ──
 
 - tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 - scrollUntilVisible:
     element:
@@ -46,7 +51,7 @@ appId: com.spela.player
 - takeScreenshot: shader-preview-default
 
 # ── Test per-console shader preview ──
-# Switch to "Per Console" tab
+# Navigate to a ConsoleSettingsScreen
 
 - scrollUntilVisible:
     element:
@@ -55,7 +60,7 @@ appId: com.spela.player
 
 - tapOn: "Per Console"
 
-# ── Expand a console (e.g., NES) to see its shader preview ──
+# ── Tap a console (NES) to open ConsoleSettingsScreen ──
 
 - scrollUntilVisible:
     element:
@@ -66,19 +71,19 @@ appId: com.spela.player
 - tapOn:
     text: ".*Nintendo Entertainment System.*"
 
-# ── Scroll down to see shader options and preview for the console ──
+# ── Wait for ConsoleSettingsScreen ──
 
-- scrollUntilVisible:
-    element:
-      text: "Override on this device only"
-    direction: DOWN
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
 
-# ── Verify console-specific shader preview is visible ──
+# ── Scroll to shader preview on ConsoleSettingsScreen ──
 
 - scrollUntilVisible:
     element:
       text: "Shader preview"
-    direction: UP
+    direction: DOWN
 
 - assertVisible: "Shader preview"
 
@@ -99,5 +104,12 @@ appId: com.spela.player
 # Dismiss the dialog
 - tapOn: "Tap to close"
 
+# ── Navigate back to Settings ──
+
+- pressKey: "back"
+
 # Verify we're back to settings
-- assertVisible: "Settings"
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 3000

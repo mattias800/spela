@@ -90,6 +90,14 @@ fun SpelaApp(
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
                 navState.currentScreen !is SpScreen.Login
 
+        // Handle system back button for non-emulation screens (Android)
+        val hasBackStack = navState.currentScreen !is SpScreen.Home &&
+                navState.currentScreen !is SpScreen.ServerConnection &&
+                navState.currentScreen !is SpScreen.Login
+        PlatformBackHandler(enabled = hasBackStack && !navState.showInGameOverlay) {
+            navigationViewModel.onIntent(NavigationIntent.GoBack)
+        }
+
         GamepadHandler(
             onBack = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }

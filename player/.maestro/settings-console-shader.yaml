@@ -6,6 +6,9 @@ appId: com.spela.player
 # Verifies that selecting a shader for a specific console under the
 # "Per Console" tab saves correctly and is still shown after
 # navigating away and returning to Settings.
+#
+# Per-console cards navigate to a dedicated ConsoleSettingsScreen
+# where shader selection happens.
 
 # ── Setup: login as player ──
 
@@ -14,6 +17,11 @@ appId: com.spela.player
 # ── Navigate to Settings ──
 
 - tapOn: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 # ── Scroll to Video Filter section and Per Console tab ──
 
@@ -27,7 +35,7 @@ appId: com.spela.player
 
 - tapOn: "Per Console"
 
-# ── Expand Super Nintendo ──
+# ── Tap Super Nintendo to open ConsoleSettingsScreen ──
 
 - scrollUntilVisible:
     element:
@@ -35,6 +43,13 @@ appId: com.spela.player
     direction: DOWN
 
 - tapOn: "Super Nintendo"
+
+# ── Wait for ConsoleSettingsScreen to load ──
+
+- extendedWaitUntil:
+    visible:
+      text: "Video Filter"
+    timeout: 5000
 
 # ── Select CRT Classic shader for SNES ──
 
@@ -44,6 +59,15 @@ appId: com.spela.player
     direction: DOWN
 
 - tapOn: "CRT Classic"
+
+# ── Navigate back to Settings ──
+
+- pressKey: "back"
+
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
 
 # ── Navigate back to Home ──
 
@@ -58,6 +82,11 @@ appId: com.spela.player
 
 - tapOn: "Settings"
 
+- extendedWaitUntil:
+    visible:
+      text: "Account"
+    timeout: 5000
+
 - scrollUntilVisible:
     element:
       text: "Per Console"
@@ -70,7 +99,6 @@ appId: com.spela.player
 
 # ── Verify SNES still shows CRT Classic as its shader ──
 # The console card subtitle displays the effective shader name.
-# Since we selected CRT Classic for SNES, it should persist.
 
 - scrollUntilVisible:
     element:
