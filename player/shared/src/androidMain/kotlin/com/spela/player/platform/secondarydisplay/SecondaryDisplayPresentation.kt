@@ -1,4 +1,4 @@
-package com.spela.player.libretro
+package com.spela.player.platform.secondarydisplay
 
 import android.app.Presentation
 import android.content.Context

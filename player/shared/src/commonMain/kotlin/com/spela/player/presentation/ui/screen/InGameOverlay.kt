@@ -278,7 +278,8 @@ fun InGameOverlay(
     }
 
     // Performance HUD (always visible when game is running, but small)
-    if (state.isRunning && !state.showOverlay) {
+    // Hidden when secondary display is active (HUD moves there)
+    if (state.isRunning && !state.showOverlay && !state.secondaryDisplayActive) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

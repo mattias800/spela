@@ -1,11 +1,16 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.runtime.Composable
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.usecase.*
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
+import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.viewmodel.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestDispatcher
@@ -28,8 +33,27 @@ class SpelaTestHarness(
     val saveRepo = FakeSaveRepository()
     val coreRepo = FakeCoreRepository()
     val libretroController = FakeLibretroController()
+    val secondaryDisplay: PlatformSecondaryDisplay = DesktopSecondaryDisplay()
 
-    val navigationViewModel = NavigationViewModel()
+    private val fakeApiClient = createFakeApiClient()
+    private val testDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).also {
+        SpelaDatabase.Schema.create(it)
+    }
+    private val testDatabase = SpelaDatabase(testDriver)
+    val deviceManager = DeviceManager(testDatabase, fakeApiClient)
+
+    val navigationViewModel = NavigationViewModel(
+        restoreSessionUseCase = RestoreSessionUseCase(authRepo, serverRepo, fakeApiClient),
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    init {
+        // Flush restoreSession() so isRestoringSession becomes false before tests run.
+        // With no active server, this resolves to NoSession → ServerConnection screen,
+        // matching the original default NavigationState behavior.
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
 
     val serverConnectionViewModel = ServerConnectionViewModel(
         serverRepository = serverRepo,
@@ -38,8 +62,8 @@ class SpelaTestHarness(
     )
 
     val loginViewModel = LoginViewModel(
-        loginUseCase = LoginUseCase(authRepo),
-        registerUseCase = RegisterUseCase(authRepo),
+        loginUseCase = LoginUseCase(authRepo, deviceManager),
+        registerUseCase = RegisterUseCase(authRepo, deviceManager),
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -60,7 +84,7 @@ class SpelaTestHarness(
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
         downloadRepository = downloadRepo,
         saveRepository = saveRepo,
-        apiClient = createFakeApiClient(),
+        apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -70,7 +94,11 @@ class SpelaTestHarness(
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
         loadGameStateUseCase = LoadGameStateUseCase(saveRepo),
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
+        preferencesRepository = FakePreferencesRepository(),
+        achievementsRepository = FakeAchievementsRepository(),
+        achievementsController = FakeAchievementsController(),
         libretroController = libretroController,
+        secondaryDisplay = secondaryDisplay,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -84,6 +112,11 @@ class SpelaTestHarness(
     val settingsViewModel = SettingsViewModel(
         authRepository = authRepo,
         downloadRepository = downloadRepo,
+        preferencesRepository = FakePreferencesRepository(),
+        gameRepository = gameRepo,
+        serverRepository = serverRepo,
+        achievementsRepository = FakeAchievementsRepository(),
+        deviceManager = deviceManager,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -115,6 +148,7 @@ class SpelaTestHarness(
             downloadsViewModel = downloadsViewModel,
             settingsViewModel = settingsViewModel,
             keyMappingViewModel = keyMappingViewModel,
+            secondaryDisplay = secondaryDisplay,
         )
     }
 }

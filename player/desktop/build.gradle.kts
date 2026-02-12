@@ -68,6 +68,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.ktor.client.mock)
+                implementation(libs.sqldelight.jvm.driver)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }

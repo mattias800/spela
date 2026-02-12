@@ -40,6 +40,7 @@ class DesktopAudioPlayerTest {
         override fun stop() {}
         override fun serialize(): ByteArray? = null
         override fun unserialize(data: ByteArray): Boolean = false
+        override fun supportsSaveStates(): Boolean = false
         override fun setFastForward(enabled: Boolean) {}
         override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
 

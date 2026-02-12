@@ -2,6 +2,8 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -224,14 +227,31 @@ private fun QuickActionButton(
     isActive: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val alpha = when {
+        isPressed -> 0.6f
+        isActive -> 1f
+        else -> 0.85f
+    }
+
     Box(
         modifier = Modifier
             .size(48.dp)
+            .graphicsLayer { this.alpha = alpha }
             .clip(CircleShape)
             .background(
-                if (isActive) SpColor.Primary.copy(alpha = 0.2f) else SpColor.SurfaceBright
+                when {
+                    isPressed -> SpColor.Primary.copy(alpha = 0.3f)
+                    isActive -> SpColor.Primary.copy(alpha = 0.2f)
+                    else -> SpColor.SurfaceBright
+                }
             )
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -241,7 +261,7 @@ private fun QuickActionButton(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isActive) SpColor.Primary else SpColor.OnBackground,
+            tint = if (isActive || isPressed) SpColor.Primary else SpColor.OnBackground,
             modifier = Modifier.size(20.dp),
         )
     }

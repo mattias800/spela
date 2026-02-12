@@ -6,7 +6,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.libretro.DesktopAchievementsController
 import com.spela.player.libretro.DesktopLibretroController
-import com.spela.player.libretro.DesktopSecondaryDisplay
+import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay

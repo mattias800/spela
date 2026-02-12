@@ -62,6 +62,18 @@ class FakeServerRepository : ServerRepository {
     override suspend fun setActiveServer(id: String) {
         activeServerId = id
     }
+
+    fun preAddServer(name: String, url: String, active: Boolean = false): ServerConnection {
+        val server = ServerConnection(
+            id = (servers.size + 1).toString(),
+            name = name,
+            url = url,
+        )
+        servers.add(server)
+        serversFlow.value = servers.toList()
+        if (active) activeServerId = server.id
+        return server
+    }
 }
 
 class FakeAuthRepository : AuthRepository {
@@ -122,6 +134,10 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override fun isLoggedIn(): Boolean = tokens != null
+
+    fun preSetTokens(accessToken: String = "test-access", refreshToken: String = "test-refresh") {
+        tokens = AuthTokens(accessToken, refreshToken)
+    }
 }
 
 class FakeGameRepository : GameRepository {
@@ -433,12 +449,7 @@ class FakeLibretroController : LibretroController {
 
     override fun supportsSaveStates(): Boolean = true
 
-    override fun performanceStats(): Flow<Pair<Float, Float>> = flow {
-        while (true) {
-            emit(59.9f to 16.5f)
-            kotlinx.coroutines.delay(500)
-        }
-    }
+    override fun performanceStats(): Flow<Pair<Float, Float>> = MutableStateFlow(59.9f to 16.5f)
 }
 
 class FakeFileStorage : FileStorage {
@@ -451,6 +462,43 @@ class FakeFileStorage : FileStorage {
     override suspend fun deleteFile(path: String) {}
     override suspend fun deleteDirectory(path: String) {}
     override suspend fun getDirectorySize(path: String): Long = 0
+}
+
+class FakePreferencesRepository : PreferencesRepository {
+    override suspend fun getPreferences(): Result<UserPreferences> = Result.success(UserPreferences())
+    override suspend fun updatePreferences(
+        showPerformanceOverlay: Boolean?,
+        autoSaveEnabled: Boolean?,
+        autoLoadSaveEnabled: Boolean?,
+        selectedShader: String?,
+        consoleShaders: Map<String, String>?,
+    ): Result<UserPreferences> = Result.success(UserPreferences())
+    override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
+    override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
+    override fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset> = emptyMap()
+    override suspend fun syncDeviceShaderOverrides() {}
+    override suspend fun resolveShader(consoleId: String): ShaderPreset = ShaderPreset.NONE
+    override suspend fun pushDeviceShaderOverridesToServer() {}
+}
+
+class FakeAchievementsRepository : AchievementsRepository {
+    override suspend fun getRAStatus(): Result<RAStatus> = Result.success(RAStatus())
+    override suspend fun linkRA(username: String, password: String): Result<RAStatus> = Result.success(RAStatus())
+    override suspend fun unlinkRA(): Result<Unit> = Result.success(Unit)
+    override suspend fun getRAToken(): Result<RACredentials> = Result.failure(Exception("Not linked"))
+    override suspend fun updateRASettings(hardcoreEnabled: Boolean): Result<RAStatus> = Result.success(RAStatus())
+}
+
+class FakeAchievementsController : com.spela.player.domain.controller.AchievementsController {
+    override fun init() {}
+    override fun deinit() {}
+    override fun login(username: String, token: String) {}
+    override fun loadGame(hash: String) {}
+    override fun doFrame() {}
+    override val isHardcore: Boolean = false
+    override fun setHardcore(enabled: Boolean) {}
+    override val events: Flow<AchievementEvent> = flow {}
+    override fun httpComplete(requestId: Int, responseCode: Int, responseBody: ByteArray) {}
 }
 
 class FakeKeyMappingRepository : KeyMappingRepository {

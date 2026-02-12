@@ -1,4 +1,4 @@
-package com.spela.player.libretro
+package com.spela.player.platform.secondarydisplay
 
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import kotlinx.coroutines.flow.MutableStateFlow
