@@ -112,6 +112,11 @@ class EmulationViewModel(
                 consoleId = detail.game.consoleId
             }
 
+            // Detect dual-screen consoles (Nintendo DS)
+            val isDualScreen = consoleId.lowercase() == "nds"
+            val splitY = if (isDualScreen) 192 else 0
+            _state.update { it.copy(isDualScreenConsole = isDualScreen, dualScreenSplitY = splitY) }
+
             // Resolve shader using two-layer system
             val resolvedShader = preferencesRepository.resolveShader(consoleId)
 
@@ -126,6 +131,12 @@ class EmulationViewModel(
             prepareGameUseCase(gameId).fold(
                 onSuccess = { (gamePath, corePath) ->
                     try {
+                        // Set DS core options before loading
+                        if (isDualScreen) {
+                            libretroController.setCoreVariable("desmume_screens_layout", "vertical")
+                            libretroController.setCoreVariable("desmume_screens_gap", "0")
+                        }
+
                         libretroController.loadCore(corePath)
                         libretroController.loadGame(gamePath)
 
@@ -138,7 +149,7 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
-                        _state.update { it.copy(isRunning = true, isLoading = false, showOverlay = true, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
+                        _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
 
                         // Initialize achievements if RA is linked
                         initAchievements(gameId)
@@ -338,4 +349,10 @@ interface LibretroController {
     fun unserialize(data: ByteArray): Boolean
     fun setFastForward(enabled: Boolean)
     fun performanceStats(): kotlinx.coroutines.flow.Flow<Pair<Float, Float>>
+
+    /** Set pointer/touch state for the given port (used for DS touch screen). */
+    fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
+
+    /** Set a core option variable (e.g. DeSmuME screen layout). */
+    fun setCoreVariable(key: String, value: String) {}
 }

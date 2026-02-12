@@ -206,7 +206,7 @@ fun InGameOverlay(
                                 modifier = Modifier.weight(1f),
                             )
                             SpButton(
-                                text = "Resume",
+                                text = "Continue",
                                 onClick = {
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
@@ -263,7 +263,7 @@ fun InGameOverlay(
                                 modifier = Modifier.weight(1f),
                             )
                             SpButton(
-                                text = "Resume",
+                                text = "Continue",
                                 onClick = {
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
