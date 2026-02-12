@@ -13,6 +13,8 @@ import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +43,7 @@ class EmulationViewModel(
     val state: StateFlow<EmulationState> = _state.asStateFlow()
 
     private var currentPreferences = UserPreferences()
+    private var sessionTimerJob: Job? = null
 
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
@@ -135,13 +138,14 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
-                        _state.update { it.copy(isRunning = true, isLoading = false, showOverlay = true, supportsSaveStates = saveStatesSupported) }
+                        _state.update { it.copy(isRunning = true, isLoading = false, showOverlay = true, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
 
                         // Initialize achievements if RA is linked
                         initAchievements(gameId)
 
-                        // Start FPS tracking
+                        // Start FPS tracking and session timer
                         trackPerformance()
+                        startSessionTimer()
 
                         // Show secondary display if available
                         showSecondaryDisplayIfAvailable()
@@ -170,7 +174,21 @@ class EmulationViewModel(
         _state.update { it.copy(isPaused = false) }
     }
 
+    private fun startSessionTimer() {
+        sessionTimerJob?.cancel()
+        sessionTimerJob = scope.launch(dispatchers.default) {
+            while (true) {
+                delay(1000)
+                if (!_state.value.isPaused) {
+                    _state.update { it.copy(sessionElapsedSeconds = it.sessionElapsedSeconds + 1) }
+                }
+            }
+        }
+    }
+
     private fun stopGame() {
+        sessionTimerJob?.cancel()
+        sessionTimerJob = null
         scope.launch(dispatchers.io) {
             // Auto-save before stopping if enabled
             if (currentPreferences.autoSaveEnabled) {

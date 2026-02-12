@@ -29,4 +29,7 @@ data class EmulationState(
 
     /** True when a secondary display is connected and showing content. */
     val secondaryDisplayActive: Boolean = false,
+
+    /** Elapsed play session time in seconds, updated every second while running. */
+    val sessionElapsedSeconds: Long = 0,
 )

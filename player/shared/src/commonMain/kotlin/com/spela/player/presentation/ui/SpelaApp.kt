@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -343,7 +344,11 @@ fun SpelaApp(
 
                         // Touch gamepad controls (Android only, no-op on desktop)
                         // Hidden when secondary display is active (controls move there)
-                        if (emulationState.isRunning && !emulationState.showOverlay && !emulationState.secondaryDisplayActive) {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = emulationState.isRunning && !emulationState.showOverlay && !emulationState.secondaryDisplayActive,
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                        ) {
                             PlatformTouchControls(
                                 controller = libretroController,
                             )

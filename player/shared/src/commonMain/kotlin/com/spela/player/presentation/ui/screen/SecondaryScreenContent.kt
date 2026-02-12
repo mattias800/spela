@@ -85,6 +85,7 @@ fun SecondaryScreenContent(
             // Game info bar
             GameInfoBar(
                 gameTitle = state.gameTitle,
+                sessionElapsedSeconds = state.sessionElapsedSeconds,
             )
 
             // Touch controls area (takes remaining space)
@@ -129,12 +130,21 @@ fun SecondaryScreenContent(
 @Composable
 private fun GameInfoBar(
     gameTitle: String,
+    sessionElapsedSeconds: Long,
 ) {
+    val hours = sessionElapsedSeconds / 3600
+    val minutes = (sessionElapsedSeconds % 3600) / 60
+    val seconds = sessionElapsedSeconds % 60
+    val timeText = "%02d:%02d:%02d".format(hours, minutes, seconds)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(SpColor.SurfaceVariant)
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
+            .semantics {
+                contentDescription = "Now playing: $gameTitle"
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -144,6 +154,12 @@ private fun GameInfoBar(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(SpSpacing.Small))
+        Text(
+            text = timeText,
+            style = SpTypography.LabelLarge,
+            color = SpColor.OnBackgroundTertiary,
         )
     }
 }
@@ -162,7 +178,7 @@ private fun QuickActionBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(SpColor.SurfaceVariant)
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Quick action buttons
@@ -204,7 +220,7 @@ private fun QuickActionBar(
         ) {
             Text(
                 text = "%.0f FPS".format(fps),
-                style = SpTypography.LabelMedium,
+                style = SpTypography.LabelLarge,
                 color = when {
                     fps >= 55f -> SpColor.Success
                     fps >= 30f -> SpColor.Warning
@@ -262,7 +278,7 @@ private fun QuickActionButton(
             imageVector = icon,
             contentDescription = null,
             tint = if (isActive || isPressed) SpColor.Primary else SpColor.OnBackground,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(24.dp),
         )
     }
 }
