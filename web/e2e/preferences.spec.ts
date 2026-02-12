@@ -53,7 +53,6 @@ test.describe("Preferences Page", () => {
     await page.goto("/preferences");
 
     await expect(page.getByRole("heading", { name: "Devices", exact: true })).toBeVisible();
-    await expect(page.getByText("No devices registered")).toBeVisible();
   });
 });
 

@@ -202,8 +202,8 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 				continue
 			}
 			if km.SelectedMapping == "" {
-				// Delete the row to revert to global default
-				h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).
+				// Hard delete to avoid soft-delete + unique constraint conflict
+				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, consoleID).
 					Delete(&db.ConsoleKeyMappingPreference{})
 			} else {
 				customJSON := ""
@@ -211,14 +211,14 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 					b, _ := json.Marshal(km.CustomMapping)
 					customJSON = string(b)
 				}
-				// Upsert: update if exists, create if not
+				// Upsert: use Unscoped to find soft-deleted rows and avoid unique constraint conflict
 				var existing db.ConsoleKeyMappingPreference
-				result := h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
+				result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
 				if result.Error == nil {
-					h.DB.Model(&existing).Updates(map[string]interface{}{
-						"selected_mapping": km.SelectedMapping,
-						"custom_mapping":   customJSON,
-					})
+					existing.SelectedMapping = km.SelectedMapping
+					existing.CustomMapping = customJSON
+					existing.DeletedAt = gorm.DeletedAt{}
+					h.DB.Unscoped().Save(&existing)
 				} else {
 					h.DB.Create(&db.ConsoleKeyMappingPreference{
 						UserID:          uid,

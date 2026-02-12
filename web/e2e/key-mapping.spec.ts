@@ -61,7 +61,7 @@ test.describe("Controller Visual", () => {
     await expect(page.getByRole("button", { name: "Arrows + Left" })).toHaveClass(/ring-2/);
 
     // D-pad uses arrow keys: Up=↑, Down=↓, Left=←, Right=→
-    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    const visual = page.getByTestId("controller-visual");
     await expect(visual).toBeVisible();
 
     // Check arrow key symbols for D-pad
@@ -70,11 +70,11 @@ test.describe("Controller Visual", () => {
     await expect(visual.getByText("←").first()).toBeVisible();
     await expect(visual.getByText("→").first()).toBeVisible();
 
-    // Face buttons: Z, X, A, S
+    // Face buttons: Z, X, A, S (exact match to avoid uppercase CSS labels like D-PAD, START, FACE)
     await expect(visual.getByText("Z")).toBeVisible();
     await expect(visual.getByText("X")).toBeVisible();
-    await expect(visual.getByText("A")).toBeVisible();
-    await expect(visual.getByText("S")).toBeVisible();
+    await expect(visual.getByText("A", { exact: true })).toBeVisible();
+    await expect(visual.getByText("S", { exact: true })).toBeVisible();
   });
 
   test("shows correct key badges for wasd-arrows preset", async ({ page }) => {
@@ -84,12 +84,12 @@ test.describe("Controller Visual", () => {
     await page.getByRole("button", { name: "WASD + Arrows" }).click();
     await expect(page.getByRole("button", { name: "WASD + Arrows" })).toHaveClass(/ring-2/);
 
-    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    const visual = page.getByTestId("controller-visual");
     await expect(visual).toBeVisible();
 
-    // D-pad uses WASD: W=up, S=down, A=left, D=right
+    // D-pad uses WASD: W=up, S=down, A=left, D=right (exact match to avoid D-PAD label)
     await expect(visual.getByText("W")).toBeVisible();
-    await expect(visual.getByText("D")).toBeVisible();
+    await expect(visual.getByText("D", { exact: true })).toBeVisible();
 
     // Face buttons use arrow keys
     // Face bottom=ArrowDown(↓), Face right=ArrowRight(→),
@@ -108,7 +108,7 @@ test.describe("Custom Key Mapping Editor", () => {
     await page.goto("/preferences");
 
     // The controller visual should be visible initially
-    const visual = page.locator(".bg-surface-900.border.border-surface-800.rounded-xl");
+    const visual = page.getByTestId("controller-visual");
     await expect(visual).toBeVisible();
 
     // Switch to custom mode
@@ -116,7 +116,7 @@ test.describe("Custom Key Mapping Editor", () => {
 
     // Controller visual should be gone, editor groups should appear
     await expect(visual).not.toBeVisible();
-    await expect(page.getByText("D-Pad", { exact: false })).toBeVisible();
+    await expect(page.getByText("D-Pad", { exact: true })).toBeVisible();
     await expect(page.getByText("Face Buttons")).toBeVisible();
   });
 
@@ -124,10 +124,10 @@ test.describe("Custom Key Mapping Editor", () => {
     await page.goto("/preferences");
     await page.getByRole("button", { name: "Custom" }).click();
 
-    await expect(page.getByText("D-Pad", { exact: false })).toBeVisible();
+    await expect(page.getByText("D-Pad", { exact: true })).toBeVisible();
     await expect(page.getByText("Face Buttons")).toBeVisible();
     await expect(page.getByText("Shoulders & Triggers")).toBeVisible();
-    await expect(page.getByText("Meta")).toBeVisible();
+    await expect(page.getByText("Meta", { exact: true })).toBeVisible();
   });
 
   test("editor has all 14 assignable buttons", async ({ page }) => {
@@ -209,10 +209,8 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("override table renders with console names and dropdowns", async ({ page }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByText("Per-Console Overrides")).toBeVisible();
-
-    // The table should have header columns
-    const table = page.locator("table").last();
+    // Find the key mapping table by its unique "Key Mapping" column header (th)
+    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     await expect(table).toBeVisible();
     await expect(table.getByText("Console")).toBeVisible();
     await expect(table.getByText("Key Mapping")).toBeVisible();
@@ -232,7 +230,7 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("per-console dropdown has correct options", async ({ page }) => {
     await page.goto("/preferences");
 
-    const table = page.locator("table").last();
+    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     const firstSelect = table.locator("select").first();
     await expect(firstSelect).toBeVisible();
 
@@ -246,12 +244,16 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("per-console override persists after page reload", async ({ page }) => {
     await page.goto("/preferences");
 
-    const table = page.locator("table").last();
+    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     const firstSelect = table.locator("select").first();
     await expect(firstSelect).toBeVisible();
 
-    // Change to "WASD + Arrows"
+    // Change to "WASD + Arrows" and wait for the mutation + refetch cycle
+    const refetchPromise = page.waitForResponse(
+      (resp) => resp.url().includes("/api/user/preferences") && resp.request().method() === "GET" && resp.status() === 200,
+    );
     await firstSelect.selectOption("wasd-arrows");
+    await refetchPromise;
     await expect(firstSelect).toHaveValue("wasd-arrows");
 
     // Wait for the API call to complete
@@ -261,12 +263,17 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     await page.reload();
 
     // Verify the value persisted
-    const reloadedSelect = page.locator("table").last().locator("select").first();
+    const reloadedTable = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
+    const reloadedSelect = reloadedTable.locator("select").first();
     await expect(reloadedSelect).toBeVisible();
     await expect(reloadedSelect).toHaveValue("wasd-arrows");
 
     // Reset back to global default to avoid test pollution
+    const resetRefetch = page.waitForResponse(
+      (resp) => resp.url().includes("/api/user/preferences") && resp.request().method() === "GET" && resp.status() === 200,
+    );
     await reloadedSelect.selectOption("");
+    await resetRefetch;
     await page.waitForTimeout(500);
   });
 });

@@ -90,9 +90,7 @@ test.describe("Emulator Save State Sync", () => {
 
   test.describe("Auto-Load on Return", () => {
     test("loads auto-save when preferences have autoLoadSave enabled", async ({ page }) => {
-      const gameId = await navigateToPlayPage(page);
-
-      // Ensure auto-load preference is enabled
+      // Set up route mocks BEFORE navigating so TanStack Query uses mocked data
       await page.route("**/api/user/preferences", (route) => {
         if (route.request().method() === "GET") {
           route.fulfill({
@@ -102,12 +100,17 @@ test.describe("Emulator Save State Sync", () => {
               autoLoadSaveEnabled: true,
               selectedShader: "none",
               consoleShaders: {},
+              selectedKeyMapping: "arrows-left",
+              customKeyMapping: {},
+              consoleKeyMappings: {},
             },
           });
         } else {
           route.continue();
         }
       });
+
+      const gameId = await navigateToPlayPage(page);
 
       // Intercept auto-save download to track if it's fetched
       let autoLoadRequested = false;
@@ -140,9 +143,7 @@ test.describe("Emulator Save State Sync", () => {
     });
 
     test("skips auto-load when autoLoadSave preference is disabled", async ({ page }) => {
-      const gameId = await navigateToPlayPage(page);
-
-      // Ensure auto-load preference is disabled
+      // Set up route mocks BEFORE navigating so TanStack Query uses mocked data
       await page.route("**/api/user/preferences", (route) => {
         if (route.request().method() === "GET") {
           route.fulfill({
@@ -152,12 +153,17 @@ test.describe("Emulator Save State Sync", () => {
               autoLoadSaveEnabled: false,
               selectedShader: "none",
               consoleShaders: {},
+              selectedKeyMapping: "arrows-left",
+              customKeyMapping: {},
+              consoleKeyMappings: {},
             },
           });
         } else {
           route.continue();
         }
       });
+
+      const gameId = await navigateToPlayPage(page);
 
       let autoLoadRequested = false;
       await page.route(`**/api/games/${gameId}/saves/auto`, (route) => {

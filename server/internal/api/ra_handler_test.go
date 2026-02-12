@@ -521,7 +521,13 @@ func TestGetGameAchievements_NotLinked(t *testing.T) {
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Should return empty achievements when not linked
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(0), resp["raGameId"])
+	assert.Equal(t, float64(0), resp["totalCount"])
 }
 
 func TestGetAchievementProgress_Success(t *testing.T) {
@@ -574,7 +580,12 @@ func TestGetAchievementProgress_NotLinked(t *testing.T) {
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/progress", game.ID), nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Should return empty array when not linked
+	var resp []interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Empty(t, resp)
 }
 
 func TestPreferences_IncludesRAFields(t *testing.T) {

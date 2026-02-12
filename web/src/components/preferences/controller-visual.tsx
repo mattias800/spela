@@ -17,7 +17,7 @@ function KeyBadge({ label, keyName }: { label: string; keyName: string }) {
 
 export function ControllerVisual({ mapping }: ControllerVisualProps) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div data-testid="controller-visual" className="bg-surface-900 border border-surface-800 rounded-xl p-5">
       {/* Triggers */}
       <div className="flex justify-between mb-3 px-8">
         <div className="flex gap-4">

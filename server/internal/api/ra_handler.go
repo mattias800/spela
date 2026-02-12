@@ -162,10 +162,12 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 		return
 	}
 
-	// Get user's RA credentials
+	// Get user's RA credentials — return empty achievements if not linked
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no RA account linked"})
+		c.JSON(http.StatusOK, gin.H{
+			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
+		})
 		return
 	}
 
@@ -174,7 +176,9 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 	hash, err := computeMD5(romPath)
 	if err != nil {
 		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute ROM hash"})
+		c.JSON(http.StatusOK, gin.H{
+			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
+		})
 		return
 	}
 
@@ -182,7 +186,9 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 	raGameID, err := h.RAClient.GetGameIDFromHash(hash)
 	if err != nil {
 		slog.Warn("RA game ID lookup failed", "hash", hash, "error", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found on RetroAchievements"})
+		c.JSON(http.StatusOK, gin.H{
+			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
+		})
 		return
 	}
 
@@ -254,10 +260,10 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 		return
 	}
 
-	// Get user's RA credentials
+	// Get user's RA credentials — return empty progress if not linked
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no RA account linked"})
+		c.JSON(http.StatusOK, []any{})
 		return
 	}
 
@@ -266,14 +272,14 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	hash, err := computeMD5(romPath)
 	if err != nil {
 		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute ROM hash"})
+		c.JSON(http.StatusOK, []any{})
 		return
 	}
 
 	// Look up RA game ID from hash
 	raGameID, err := h.RAClient.GetGameIDFromHash(hash)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found on RetroAchievements"})
+		c.JSON(http.StatusOK, []any{})
 		return
 	}
 
