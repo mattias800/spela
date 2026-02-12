@@ -8,6 +8,9 @@ import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.libretro.AndroidAchievementsController
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.LibretroJni
+import com.spela.player.libretro.AndroidSecondaryDisplay
+import com.spela.player.libretro.SecondaryDisplayManager
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.platform.AndroidFileStorage
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
@@ -27,6 +30,14 @@ actual fun platformModule(): Module = module {
     single { LibretroJni() }
     single<LibretroController> { AndroidLibretroController(get(), get()) }
     single<AchievementsController> { AndroidAchievementsController(get(), get(), get()) }
+    single { SecondaryDisplayManager(get()) }
+    single<PlatformSecondaryDisplay> {
+        AndroidSecondaryDisplay(
+            context = get(),
+            displayManager = get(),
+            scope = get(),
+        )
+    }
     single {
         HttpClient(OkHttp) {
             install(HttpTimeout) {

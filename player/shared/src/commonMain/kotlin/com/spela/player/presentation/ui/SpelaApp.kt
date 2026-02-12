@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
@@ -70,6 +71,7 @@ fun SpelaApp(
     downloadsViewModel: DownloadsViewModel,
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
+    secondaryDisplay: PlatformSecondaryDisplay,
 ) {
     SpelaTheme {
         val navState by navigationViewModel.state.collectAsState()
@@ -276,6 +278,14 @@ fun SpelaApp(
                         }
 
                         val emulationState by emulationViewModel.state.collectAsState()
+                        val secondaryAvailable by secondaryDisplay.isAvailable.collectAsState()
+
+                        // Notify ViewModel about secondary display availability changes
+                        LaunchedEffect(secondaryAvailable) {
+                            emulationViewModel.onIntent(
+                                EmulationIntent.SecondaryDisplayAvailabilityChanged(secondaryAvailable)
+                            )
+                        }
 
                         // Handle auto-exit (when auto-save skips confirmation)
                         LaunchedEffect(emulationState.requestExit) {
@@ -332,7 +342,8 @@ fun SpelaApp(
                         }
 
                         // Touch gamepad controls (Android only, no-op on desktop)
-                        if (emulationState.isRunning && !emulationState.showOverlay) {
+                        // Hidden when secondary display is active (controls move there)
+                        if (emulationState.isRunning && !emulationState.showOverlay && !emulationState.secondaryDisplayActive) {
                             PlatformTouchControls(
                                 controller = libretroController,
                             )

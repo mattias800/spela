@@ -6,8 +6,10 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.libretro.DesktopAchievementsController
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.libretro.DesktopSecondaryDisplay
 import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.platform.DesktopFileStorage
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
@@ -30,6 +32,7 @@ actual fun platformModule(): Module = module {
     single { LibretroJni() }
     single<LibretroController> { DesktopLibretroController(get()) }
     single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
+    single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
     single {
         HttpClient(CIO) {
             install(HttpTimeout) {

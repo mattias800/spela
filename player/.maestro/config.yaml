@@ -32,6 +32,8 @@ executionOrder:
     - "touch-controls-hidden-during-overlay"
     - "touch-controls-visible"
     - "touch-controls-with-overlay-cycle"
+    # Dual-screen regression (single-screen behavior unchanged)
+    - "dual-screen-regression"
     # Gamepad navigation
     - "gamepad-dpad-home-navigation"
     - "gamepad-overlay-dpad"

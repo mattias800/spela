@@ -1,6 +1,7 @@
 package com.spela.player.presentation
 
 import androidx.compose.runtime.Composable
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
@@ -30,6 +31,7 @@ fun App() {
     val downloadsViewModel: DownloadsViewModel = koinInject()
     val settingsViewModel: SettingsViewModel = koinInject()
     val keyMappingViewModel: KeyMappingViewModel = koinInject()
+    val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -42,5 +44,6 @@ fun App() {
         downloadsViewModel = downloadsViewModel,
         settingsViewModel = settingsViewModel,
         keyMappingViewModel = keyMappingViewModel,
+        secondaryDisplay = secondaryDisplay,
     )
 }

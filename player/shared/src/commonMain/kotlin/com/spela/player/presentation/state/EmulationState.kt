@@ -26,4 +26,7 @@ data class EmulationState(
 
     val achievementEvent: AchievementEvent? = null,
     val isHardcoreMode: Boolean = false,
+
+    /** True when a secondary display is connected and showing content. */
+    val secondaryDisplayActive: Boolean = false,
 )

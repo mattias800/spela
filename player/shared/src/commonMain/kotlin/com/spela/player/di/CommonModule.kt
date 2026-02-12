@@ -99,6 +99,7 @@ val commonModule = module {
             achievementsRepository = get(),
             achievementsController = get(),
             libretroController = get(),
+            secondaryDisplay = get(),
             dispatchers = get(),
             scope = get(),
         )

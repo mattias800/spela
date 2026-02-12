@@ -9,6 +9,7 @@ import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class EmulationViewModel(
     private val achievementsRepository: AchievementsRepository,
     private val achievementsController: AchievementsController,
     private val libretroController: LibretroController,
+    private val secondaryDisplay: PlatformSecondaryDisplay,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -76,6 +78,8 @@ class EmulationViewModel(
             EmulationIntent.HideKeyMapping -> _state.update { it.copy(showKeyMapping = false, showOverlay = true) }
 
             EmulationIntent.DismissAchievement -> _state.update { it.copy(achievementEvent = null) }
+
+            is EmulationIntent.SecondaryDisplayAvailabilityChanged -> onSecondaryDisplayAvailabilityChanged(intent.available)
         }
     }
 
@@ -138,6 +142,9 @@ class EmulationViewModel(
 
                         // Start FPS tracking
                         trackPerformance()
+
+                        // Show secondary display if available
+                        showSecondaryDisplayIfAvailable()
                     } catch (e: Exception) {
                         _state.update {
                             it.copy(error = "Failed to start emulation: ${e.message}", isLoading = false)
@@ -184,9 +191,10 @@ class EmulationViewModel(
                 // Best effort
             }
 
+            dismissSecondaryDisplay()
             libretroController.stop()
             _state.update {
-                it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false)
+                it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false, secondaryDisplayActive = false)
             }
         }
     }
@@ -269,6 +277,30 @@ class EmulationViewModel(
                 _state.update { it.copy(fps = fps, frameTime = frameTime) }
             }
         }
+    }
+
+    private fun onSecondaryDisplayAvailabilityChanged(available: Boolean) {
+        if (_state.value.isRunning && available) {
+            if (!_state.value.secondaryDisplayActive) {
+                secondaryDisplay.show()
+                _state.update { it.copy(secondaryDisplayActive = true) }
+            }
+        } else if (_state.value.secondaryDisplayActive) {
+            secondaryDisplay.dismiss()
+            _state.update { it.copy(secondaryDisplayActive = false) }
+        }
+    }
+
+    private fun showSecondaryDisplayIfAvailable() {
+        if (secondaryDisplay.isAvailable.value) {
+            secondaryDisplay.show()
+            _state.update { it.copy(secondaryDisplayActive = true) }
+        }
+    }
+
+    private fun dismissSecondaryDisplay() {
+        secondaryDisplay.dismiss()
+        _state.update { it.copy(secondaryDisplayActive = false) }
     }
 }
 

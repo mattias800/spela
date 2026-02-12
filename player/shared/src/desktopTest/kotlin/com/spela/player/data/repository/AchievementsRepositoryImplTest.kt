@@ -21,7 +21,7 @@ class AchievementsRepositoryImplTest {
 
     private lateinit var repo: AchievementsRepositoryImpl
 
-    private fun createMockFactory(handler: suspend io.ktor.client.engine.mock.MockRequestHandleScope.(io.ktor.client.request.HttpRequestData) -> io.ktor.client.engine.mock.HttpResponseData): HttpClientEngineFactory<MockEngineConfig> {
+    private fun createMockFactory(handler: suspend io.ktor.client.engine.mock.MockRequestHandleScope.(io.ktor.client.request.HttpRequestData) -> io.ktor.client.request.HttpResponseData): HttpClientEngineFactory<MockEngineConfig> {
         return object : HttpClientEngineFactory<MockEngineConfig> {
             override fun create(block: MockEngineConfig.() -> Unit): HttpClientEngine {
                 return MockEngine(MockEngineConfig().apply {
