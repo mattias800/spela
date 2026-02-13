@@ -1,6 +1,8 @@
 package com.spela.player.libretro
 
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
@@ -66,6 +68,9 @@ class AndroidLibretroController(
     /* Reusable short buffer for audio samples from JNI (avoids NewShortArray per frame) */
     private var audioSampleBuffer = ShortArray(0)
 
+    /* Handler for posting state updates to the main thread (avoids Compose multithreading crash) */
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     override fun loadCore(corePath: String) {
         jni.nativeSetSystemDir(fileStorage.getCoresDir())
         jni.nativeSetSaveDir(fileStorage.getSavesDir())
@@ -87,7 +92,7 @@ class AndroidLibretroController(
     override fun start() {
         running = true
         paused = false
-        _physicalControllerActive.value = false
+        mainHandler.post { _physicalControllerActive.value = false }
         lastPhysicalInputNanos = 0L
 
         emulationThread = Thread({
@@ -117,7 +122,7 @@ class AndroidLibretroController(
         audioOutput = null
         jni.nativeUnloadGame()
         jni.nativeDeinit()
-        _frameBitmap.value = null
+        mainHandler.post { _frameBitmap.value = null }
         frontBitmap?.recycle()
         frontBitmap = null
         backBitmap?.recycle()
@@ -251,7 +256,7 @@ class AndroidLibretroController(
             if (_physicalControllerActive.value && lastInput > 0 &&
                 (frameEnd - lastInput) > PHYSICAL_CONTROLLER_TIMEOUT_NS
             ) {
-                _physicalControllerActive.value = false
+                mainHandler.post { _physicalControllerActive.value = false }
             }
 
             /* Frame pacing: sleep until next frame (skip for fast-forward) */
@@ -308,9 +313,11 @@ class AndroidLibretroController(
         // Write to back buffer, then swap: Compose only ever reads the front bitmap
         val back = backBitmap ?: return
         back.setPixels(pixelBuffer, 0, width, 0, 0, width, height)
-        _frameBitmap.value = back
         backBitmap = frontBitmap
         frontBitmap = back
+        // Post the bitmap reference to main thread so Compose's SnapshotStateObserver
+        // sees the update on the correct thread
+        mainHandler.post { _frameBitmap.value = back }
     }
 
     /**

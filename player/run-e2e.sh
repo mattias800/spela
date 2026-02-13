@@ -29,17 +29,16 @@ else
   echo "Device is already unlocked."
 fi
 
-# ── Build and install ──
-
-echo "Building and installing APK..."
-"$SCRIPT_DIR/gradlew" :android:installDebug
-
-# ── Run tests ──
+# ── Run Compose instrumented tests ──
 
 if [ $# -gt 0 ]; then
+  # Run a specific test class or method
+  # Usage: ./run-e2e.sh com.spela.player.android.EmulationTest#playCastlevania
+  #    or: ./run-e2e.sh com.spela.player.android.EmulationTest
   echo "Running test: $1"
-  ANDROID_SERIAL="$ADB_SERIAL" maestro test "$SCRIPT_DIR/.maestro/$1"
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class="$1"
 else
   echo "Running all E2E tests..."
-  ANDROID_SERIAL="$ADB_SERIAL" maestro test "$SCRIPT_DIR/.maestro/"
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest
 fi

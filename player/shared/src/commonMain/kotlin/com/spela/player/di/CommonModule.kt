@@ -89,7 +89,7 @@ val commonModule = module {
             scope = get(),
         )
     }
-    factory {
+    single {
         EmulationViewModel(
             prepareGameUseCase = get(),
             saveGameStateUseCase = get(),

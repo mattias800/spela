@@ -1,8 +1,0 @@
-appId: com.spela.player
----
-
-# Bootstrap test: runs first (alphabetical order) to establish a
-# persisted session for all subsequent tests that use
-# setup/start-logged-in.yaml.
-
-- runFlow: setup/login-player.yaml

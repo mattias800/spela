@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Bridges between Compose UI and the platform-specific libretro core.
@@ -109,23 +110,29 @@ class EmulationViewModel(
             // Get game detail for consoleId
             var consoleId = ""
             getGameDetailUseCase(gameId).onSuccess { detail ->
-                _state.update { it.copy(gameTitle = detail.game.title, consoleId = detail.game.consoleId) }
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(gameTitle = detail.game.title, consoleId = detail.game.consoleId) }
+                }
                 consoleId = detail.game.consoleId
             }
 
             // Detect dual-screen consoles (Nintendo DS)
             val isDualScreen = consoleId.lowercase() == "nds"
             val splitY = if (isDualScreen) 192 else 0
-            _state.update { it.copy(isDualScreenConsole = isDualScreen, dualScreenSplitY = splitY) }
+            withContext(dispatchers.main) {
+                _state.update { it.copy(isDualScreenConsole = isDualScreen, dualScreenSplitY = splitY) }
+            }
 
             // Resolve shader using two-layer system
             val resolvedShader = preferencesRepository.resolveShader(consoleId)
 
-            _state.update {
-                it.copy(
-                    showPerformanceOverlay = currentPreferences.showPerformanceOverlay,
-                    selectedShader = resolvedShader,
-                )
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(
+                        showPerformanceOverlay = currentPreferences.showPerformanceOverlay,
+                        selectedShader = resolvedShader,
+                    )
+                }
             }
 
             // Prepare game and core files
@@ -150,7 +157,9 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
-                        _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
+                        }
 
                         // Initialize achievements if RA is linked
                         initAchievements(gameId)
@@ -162,14 +171,18 @@ class EmulationViewModel(
                         // Show secondary display if available
                         showSecondaryDisplayIfAvailable()
                     } catch (e: Exception) {
-                        _state.update {
-                            it.copy(error = "Failed to start emulation: ${e.message}", isLoading = false)
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(error = "Failed to start emulation: ${e.message}", isLoading = false)
+                            }
                         }
                     }
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(error = "Failed to prepare game: ${error.message}", isLoading = false)
+                    withContext(dispatchers.main) {
+                        _state.update {
+                            it.copy(error = "Failed to prepare game: ${error.message}", isLoading = false)
+                        }
                     }
                 },
             )
@@ -192,7 +205,9 @@ class EmulationViewModel(
             while (isActive) {
                 delay(1000)
                 if (!_state.value.isPaused) {
-                    _state.update { it.copy(sessionElapsedSeconds = it.sessionElapsedSeconds + 1) }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(sessionElapsedSeconds = it.sessionElapsedSeconds + 1) }
+                    }
                 }
             }
         }
@@ -223,8 +238,10 @@ class EmulationViewModel(
 
             dismissSecondaryDisplay()
             libretroController.stop()
-            _state.update {
-                it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false, secondaryDisplayActive = false)
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false, secondaryDisplayActive = false)
+                }
             }
         }
     }
@@ -239,10 +256,14 @@ class EmulationViewModel(
             val saveData = libretroController.serialize() ?: return@launch
             saveGameStateUseCase(gameId, saveData).fold(
                 onSuccess = {
-                    _state.update { it.copy(statusMessage = "State saved") }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "State saved") }
+                    }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                    }
                 },
             )
         }
@@ -258,10 +279,14 @@ class EmulationViewModel(
             loadGameStateUseCase(gameId).fold(
                 onSuccess = { saveData ->
                     libretroController.unserialize(saveData)
-                    _state.update { it.copy(statusMessage = "State loaded") }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "State loaded") }
+                    }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = "Failed to load save: ${error.message}") }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(error = "Failed to load save: ${error.message}") }
+                    }
                 },
             )
         }
@@ -283,7 +308,9 @@ class EmulationViewModel(
                 achievementsRepository.getRAStatus().onSuccess { status ->
                     if (status.hardcoreEnabled) {
                         achievementsController.setHardcore(true)
-                        _state.update { it.copy(isHardcoreMode = true) }
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(isHardcoreMode = true) }
+                        }
                     }
                 }
 
@@ -293,7 +320,9 @@ class EmulationViewModel(
                 // Collect achievement events for UI
                 scope.launch(dispatchers.default) {
                     achievementsController.events.collect { event ->
-                        _state.update { it.copy(achievementEvent = event) }
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(achievementEvent = event) }
+                        }
                     }
                 }
             }
@@ -304,7 +333,9 @@ class EmulationViewModel(
     private fun trackPerformance() {
         scope.launch(dispatchers.default) {
             libretroController.performanceStats().collect { (fps, frameTime) ->
-                _state.update { it.copy(fps = fps, frameTime = frameTime) }
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(fps = fps, frameTime = frameTime) }
+                }
             }
         }
     }
