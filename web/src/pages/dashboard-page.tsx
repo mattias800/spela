@@ -1,12 +1,14 @@
-import { Play, Heart, Clock, ChevronRight, Gamepad2 } from "lucide-react";
+import { Play, Heart, Clock, ChevronRight, Gamepad2, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { GameCardSkeleton, EmptyState } from "@/components/ui";
+import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
 import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
+import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
-import type { Game } from "@/types/api";
+import { formatRelativeTime } from "@/lib/format";
+import type { Game, RecentAchievement } from "@/types/api";
 
 function SectionHeader({
   title,
@@ -70,6 +72,94 @@ function GameRow({
   );
 }
 
+function RecentAchievementsSkeleton() {
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-2">
+      {Array.from({ length: 4 }, (_, i) => (
+        <div
+          key={i}
+          className="flex-shrink-0 w-48 rounded-xl bg-surface-800/50 p-4 space-y-3"
+        >
+          <Skeleton className="h-12 w-12 rounded" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecentAchievementCard({
+  achievement,
+}: {
+  achievement: RecentAchievement;
+}) {
+  return (
+    <Link
+      to={`/games/${achievement.gameId}`}
+      className="flex-shrink-0 w-48 rounded-xl bg-surface-800/50 p-4 hover:bg-surface-800/80 transition-colors"
+      data-testid={`recent-achievement-${achievement.achievementRaId}`}
+    >
+      <img
+        src={achievement.badgeUrl}
+        alt={achievement.title}
+        className="h-12 w-12 rounded"
+      />
+      <p className="text-sm font-medium text-surface-100 truncate mt-3">
+        {achievement.title}
+      </p>
+      <p className="text-xs text-surface-500 truncate">
+        {achievement.gameTitle}
+      </p>
+      <div className="flex items-center gap-2 mt-2">
+        <span className="text-xs text-surface-400">
+          {formatRelativeTime(achievement.unlockedAt)}
+        </span>
+        <Badge variant="brand" className="text-[10px] px-1.5 py-0">
+          {achievement.points} pts
+        </Badge>
+      </div>
+      {achievement.isHardcore && (
+        <Badge variant="warning" className="text-[10px] px-1.5 py-0 mt-1">
+          Hardcore
+        </Badge>
+      )}
+    </Link>
+  );
+}
+
+function RecentAchievementsSection() {
+  const { data: achievements, isLoading } = useRecentAchievements();
+
+  if (isLoading) {
+    return (
+      <section data-testid="recent-achievements-section">
+        <SectionHeader title="Recent Achievements" icon={Trophy} linkTo="/stats" />
+        <RecentAchievementsSkeleton />
+      </section>
+    );
+  }
+
+  if (!achievements || achievements.length === 0) {
+    return null;
+  }
+
+  return (
+    <section data-testid="recent-achievements-section">
+      <SectionHeader title="Recent Achievements" icon={Trophy} linkTo="/stats" />
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {achievements.slice(0, 5).map((achievement) => (
+          <RecentAchievementCard
+            key={achievement.achievementRaId}
+            achievement={achievement}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const recentGames = useRecentGames();
@@ -95,6 +185,8 @@ export function DashboardPage() {
       </div>
 
       <PersonalStatsCard />
+
+      <RecentAchievementsSection />
 
       {showEmptyState && (
         <EmptyState

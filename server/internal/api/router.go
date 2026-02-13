@@ -180,6 +180,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/ra/token", raHandler.GetToken)
 		api.GET("/games/:id/achievements", raHandler.GetGameAchievements)
 		api.GET("/games/:id/achievements/progress", raHandler.GetAchievementProgress)
+		api.GET("/games/:id/achievements/timeline", raHandler.GetAchievementTimeline)
+		api.GET("/games/:id/achievements/leaderboard", raHandler.GetAchievementLeaderboard)
+		api.GET("/user/achievements/recent", raHandler.GetRecentAchievements)
 
 		// Admin routes
 		admin := api.Group("/admin")

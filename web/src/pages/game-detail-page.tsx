@@ -13,6 +13,7 @@ import { GameScreenshots } from "@/components/game-detail/game-screenshots";
 import { GameCommunityStats } from "@/components/game-detail/game-community-stats";
 import { SaveStatesList } from "@/components/game-detail/save-states-list";
 import { GameAchievements } from "@/components/game-detail/game-achievements";
+import { GameAchievementLeaderboard } from "@/components/game-detail/game-achievement-leaderboard";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 
 export function GameDetailPage() {
@@ -97,6 +98,8 @@ export function GameDetailPage() {
       />
 
       <GameCommunityStats gameId={game.id} game={game} />
+
+      <GameAchievementLeaderboard gameId={game.id} />
 
       <GameScreenshots
         screenshotUrls={game.screenshotUrls}

@@ -9,6 +9,7 @@ import {
   useRASettings,
   useGameAchievements,
   useGameAchievementProgress,
+  useRecentAchievements,
 } from "../use-retroachievements";
 
 vi.mock("@/lib/api-client", () => ({
@@ -59,7 +60,7 @@ const mockAchievements = {
 };
 
 const mockProgress = [
-  { achievementId: 1, unlockedAt: "2025-06-01T12:00:00Z", isHardcore: false },
+  { achievementId: 1, unlockedAt: "2025-06-01T12:00:00Z", isHardcore: false, playTimeAtUnlock: 1200 },
 ];
 
 describe("useRAStatus", () => {
@@ -194,7 +195,7 @@ describe("useGameAchievements", () => {
 
 describe("useGameAchievementProgress", () => {
   it("fetches achievement progress for a game", async () => {
-    mockApi.get.mockResolvedValue(mockProgress);
+    mockApi.get.mockResolvedValue({ raGameId: 123, progress: mockProgress });
 
     const { result } = renderHook(() => useGameAchievementProgress("game-1"), {
       wrapper: createWrapper(),
@@ -204,6 +205,7 @@ describe("useGameAchievementProgress", () => {
 
     expect(mockApi.get).toHaveBeenCalledWith("/games/game-1/achievements/progress");
     expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].playTimeAtUnlock).toBe(1200);
   });
 
   it("does not fetch when gameId is undefined", () => {
@@ -218,6 +220,48 @@ describe("useGameAchievementProgress", () => {
     mockApi.get.mockRejectedValue(new Error("Forbidden"));
 
     const { result } = renderHook(() => useGameAchievementProgress("game-bad"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe("useRecentAchievements", () => {
+  it("fetches and unwraps recent achievements", async () => {
+    const mockRecent = [
+      {
+        achievementRaId: 101,
+        title: "First Steps",
+        description: "Complete tutorial",
+        points: 5,
+        badgeUrl: "https://ra.org/badge/101.png",
+        unlockedAt: "2025-06-15T10:00:00Z",
+        isHardcore: false,
+        playTimeAtUnlock: 600,
+        gameId: "game-1",
+        gameTitle: "Super Mario",
+        consoleName: "NES",
+        coverUrl: "https://example.com/smb.png",
+      },
+    ];
+    mockApi.get.mockResolvedValue({ achievements: mockRecent });
+
+    const { result } = renderHook(() => useRecentAchievements(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockApi.get).toHaveBeenCalledWith("/user/achievements/recent");
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].title).toBe("First Steps");
+  });
+
+  it("handles fetch error", async () => {
+    mockApi.get.mockRejectedValue(new Error("Unauthorized"));
+
+    const { result } = renderHook(() => useRecentAchievements(), {
       wrapper: createWrapper(),
     });
 

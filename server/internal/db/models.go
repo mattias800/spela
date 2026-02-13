@@ -216,15 +216,16 @@ type GameAchievementCache struct {
 
 // UserAchievementProgress tracks per-user achievement unlocks.
 type UserAchievementProgress struct {
-	ID              uint           `gorm:"primarykey" json:"id"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID          uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"userId"`
-	AchievementRAID uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"achievementRaId"`
-	RAGameID        uint           `gorm:"index;not null" json:"raGameId"`
-	UnlockedAt      time.Time      `json:"unlockedAt"`
-	IsHardcore      bool           `json:"isHardcore"`
+	ID               uint           `gorm:"primarykey" json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID           uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"userId"`
+	AchievementRAID  uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"achievementRaId"`
+	RAGameID         uint           `gorm:"index;not null" json:"raGameId"`
+	UnlockedAt       time.Time      `json:"unlockedAt"`
+	IsHardcore       bool           `json:"isHardcore"`
+	PlayTimeAtUnlock int64          `json:"playTimeAtUnlock"` // cumulative play time (seconds) at sync time
 }
 
 // Core represents a libretro core.

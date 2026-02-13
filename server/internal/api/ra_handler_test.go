@@ -10,7 +10,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
@@ -561,12 +563,17 @@ func TestGetAchievementProgress_Success(t *testing.T) {
 	progress := resp["progress"].([]interface{})
 	assert.Len(t, progress, 1) // Only achievement 501 was earned
 
+	// Verify playTimeAtUnlock is included in response (0 since no play history)
+	entry := progress[0].(map[string]interface{})
+	assert.Equal(t, float64(0), entry["playTimeAtUnlock"])
+
 	// Verify stored in DB
 	var dbProgress []db.UserAchievementProgress
 	cfg.DB.Find(&dbProgress)
 	assert.Len(t, dbProgress, 1)
 	assert.Equal(t, uint(501), dbProgress[0].AchievementRAID)
 	assert.Equal(t, uint(42), dbProgress[0].RAGameID)
+	assert.Equal(t, int64(0), dbProgress[0].PlayTimeAtUnlock)
 }
 
 func TestGetAchievementProgress_NotLinked(t *testing.T) {
@@ -586,6 +593,118 @@ func TestGetAchievementProgress_NotLinked(t *testing.T) {
 	var resp []interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Empty(t, resp)
+}
+
+func TestGetAchievementProgress_IncludesPlayTime(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+
+	// Link RA
+	body, _ := json.Marshal(map[string]string{"username": "rauser", "password": "rapass"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/ra/link", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	game := createGameWithROM(t, cfg)
+
+	// Create play history with 3600 seconds
+	var user db.User
+	cfg.DB.First(&user)
+	cfg.DB.Create(&db.PlayHistory{
+		UserID:   user.ID,
+		GameID:   game.ID,
+		PlayTime: 3600,
+	})
+
+	// Get progress — should include play time
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/progress", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	progress := resp["progress"].([]interface{})
+	assert.Len(t, progress, 1)
+
+	entry := progress[0].(map[string]interface{})
+	assert.Equal(t, float64(3600), entry["playTimeAtUnlock"])
+
+	// Verify stored in DB
+	var dbProgress []db.UserAchievementProgress
+	cfg.DB.Find(&dbProgress)
+	assert.Len(t, dbProgress, 1)
+	assert.Equal(t, int64(3600), dbProgress[0].PlayTimeAtUnlock)
+}
+
+func TestGetAchievementProgress_PreservesPlayTimeOnResync(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+
+	// Link RA
+	body, _ := json.Marshal(map[string]string{"username": "rauser", "password": "rapass"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/ra/link", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	game := createGameWithROM(t, cfg)
+
+	// Create play history with 1800 seconds
+	var user db.User
+	cfg.DB.First(&user)
+	cfg.DB.Create(&db.PlayHistory{
+		UserID:   user.ID,
+		GameID:   game.ID,
+		PlayTime: 1800,
+	})
+
+	// First sync — should capture PlayTimeAtUnlock as 1800
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/progress", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var dbProgress []db.UserAchievementProgress
+	cfg.DB.Find(&dbProgress)
+	require.Len(t, dbProgress, 1)
+	assert.Equal(t, int64(1800), dbProgress[0].PlayTimeAtUnlock)
+
+	// Increase play time to 7200 and re-sync
+	cfg.DB.Model(&db.PlayHistory{}).Where("user_id = ? AND game_id = ?", user.ID, game.ID).
+		Update("play_time", 7200)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/progress", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// PlayTimeAtUnlock should still be 1800 (preserved from first sync)
+	var dbProgressAfter []db.UserAchievementProgress
+	cfg.DB.Find(&dbProgressAfter)
+	require.Len(t, dbProgressAfter, 1)
+	assert.Equal(t, int64(1800), dbProgressAfter[0].PlayTimeAtUnlock,
+		"PlayTimeAtUnlock should be preserved from initial sync, not overwritten")
+
+	// Response should also reflect the preserved value
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	progress := resp["progress"].([]interface{})
+	entry := progress[0].(map[string]interface{})
+	assert.Equal(t, float64(1800), entry["playTimeAtUnlock"])
 }
 
 func TestPreferences_IncludesRAFields(t *testing.T) {
@@ -627,4 +746,302 @@ func TestPreferences_IncludesRAFields(t *testing.T) {
 	assert.Equal(t, true, prefs["raLinked"])
 	assert.Equal(t, "rauser", prefs["raUsername"])
 	assert.Equal(t, false, prefs["raHardcoreEnabled"])
+}
+
+// seedAchievementData creates test achievement cache and progress records.
+func seedAchievementData(t *testing.T, cfg *Config, gameID uint, userID uint) {
+	t.Helper()
+	achievements := []map[string]interface{}{
+		{"id": 501, "title": "First Achievement", "description": "Do the thing", "points": 10, "badgeUrl": "https://example.com/badge1.png", "type": "core"},
+		{"id": 502, "title": "Second Achievement", "description": "Do another thing", "points": 20, "badgeUrl": "https://example.com/badge2.png", "type": "core"},
+	}
+	achJSON, _ := json.Marshal(achievements)
+	cfg.DB.Create(&db.GameAchievementCache{
+		RAGameID:        42,
+		GameID:          gameID,
+		Title:           "Test ROM Game",
+		AchievementJSON: string(achJSON),
+		TotalCount:      2,
+		TotalPoints:     30,
+	})
+
+	// Create progress for one achievement
+	cfg.DB.Create(&db.UserAchievementProgress{
+		UserID:           userID,
+		AchievementRAID:  501,
+		RAGameID:         42,
+		UnlockedAt:       time.Date(2025, 1, 10, 8, 0, 0, 0, time.UTC),
+		IsHardcore:       true,
+		PlayTimeAtUnlock: 1200,
+	})
+}
+
+func TestGetRecentAchievements_Success(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	var user db.User
+	cfg.DB.First(&user)
+	seedAchievementData(t, cfg, game.ID, user.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/achievements/recent", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	achievements := resp["achievements"].([]interface{})
+	assert.Len(t, achievements, 1)
+
+	entry := achievements[0].(map[string]interface{})
+	assert.Equal(t, float64(501), entry["achievementRaId"])
+	assert.Equal(t, "First Achievement", entry["title"])
+	assert.Equal(t, "Do the thing", entry["description"])
+	assert.Equal(t, float64(10), entry["points"])
+	assert.Equal(t, true, entry["isHardcore"])
+	assert.Equal(t, float64(1200), entry["playTimeAtUnlock"])
+	assert.Equal(t, "Test ROM Game", entry["gameTitle"])
+}
+
+func TestGetRecentAchievements_Empty(t *testing.T) {
+	mockRA, router, _ := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/achievements/recent", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	achievements := resp["achievements"].([]interface{})
+	assert.Empty(t, achievements)
+}
+
+func TestGetAchievementTimeline_Success(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	var user db.User
+	cfg.DB.First(&user)
+	seedAchievementData(t, cfg, game.ID, user.ID)
+
+	// Add play history
+	cfg.DB.Create(&db.PlayHistory{
+		UserID:   user.ID,
+		GameID:   game.ID,
+		PlayTime: 7200,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/timeline", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(42), resp["raGameId"])
+	assert.Equal(t, "Test ROM Game", resp["gameTitle"])
+	assert.Equal(t, float64(7200), resp["totalPlayTime"])
+	assert.Equal(t, float64(2), resp["totalAchievements"])
+	assert.Equal(t, float64(1), resp["unlockedCount"])
+	assert.Equal(t, float64(30), resp["totalPoints"])
+	assert.Equal(t, float64(10), resp["earnedPoints"])
+
+	timeline := resp["timeline"].([]interface{})
+	assert.Len(t, timeline, 1)
+
+	entry := timeline[0].(map[string]interface{})
+	assert.Equal(t, float64(501), entry["achievementRaId"])
+	assert.Equal(t, "First Achievement", entry["title"])
+	assert.Equal(t, float64(1200), entry["playTimeAtUnlock"])
+	assert.Equal(t, true, entry["isHardcore"])
+}
+
+func TestGetAchievementTimeline_GameNotFound(t *testing.T) {
+	mockRA, router, _ := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/99999/achievements/timeline", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetAchievementTimeline_NoCache(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/timeline", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(0), resp["raGameId"])
+	assert.Equal(t, float64(0), resp["totalAchievements"])
+	timeline := resp["timeline"].([]interface{})
+	assert.Empty(t, timeline)
+}
+
+func TestGetAchievementLeaderboard_Success(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	var user db.User
+	cfg.DB.First(&user)
+	seedAchievementData(t, cfg, game.ID, user.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/leaderboard", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(42), resp["raGameId"])
+	assert.Equal(t, float64(2), resp["totalAchievements"])
+
+	leaderboard := resp["leaderboard"].([]interface{})
+	assert.Len(t, leaderboard, 1)
+
+	entry := leaderboard[0].(map[string]interface{})
+	assert.Equal(t, strconv.FormatUint(uint64(user.ID), 10), entry["userId"])
+	assert.Equal(t, "apitest", entry["username"])
+	assert.Equal(t, float64(1), entry["unlockedCount"])
+	assert.Equal(t, float64(10), entry["earnedPoints"])
+	assert.Equal(t, false, entry["isComplete"])
+}
+
+func TestGetAchievementLeaderboard_GameNotFound(t *testing.T) {
+	mockRA, router, _ := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/99999/achievements/leaderboard", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetAchievementLeaderboard_NoCache(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/leaderboard", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(0), resp["raGameId"])
+	leaderboard := resp["leaderboard"].([]interface{})
+	assert.Empty(t, leaderboard)
+}
+
+func TestGetAchievementLeaderboard_MultipleUsers(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	var user1 db.User
+	cfg.DB.First(&user1)
+
+	// Seed cache
+	achievements := []map[string]interface{}{
+		{"id": 501, "title": "First", "description": "desc", "points": 10, "badgeUrl": "", "type": "core"},
+		{"id": 502, "title": "Second", "description": "desc", "points": 20, "badgeUrl": "", "type": "core"},
+	}
+	achJSON, _ := json.Marshal(achievements)
+	cfg.DB.Create(&db.GameAchievementCache{
+		RAGameID:        42,
+		GameID:          game.ID,
+		Title:           "Test ROM Game",
+		AchievementJSON: string(achJSON),
+		TotalCount:      2,
+		TotalPoints:     30,
+	})
+
+	// User 1: unlocked 1 achievement
+	cfg.DB.Create(&db.UserAchievementProgress{
+		UserID:          user1.ID,
+		AchievementRAID: 501,
+		RAGameID:        42,
+		UnlockedAt:      time.Date(2025, 1, 10, 8, 0, 0, 0, time.UTC),
+		IsHardcore:      false,
+	})
+
+	// Create second user and give them 2 achievements
+	user2 := db.User{Username: "player2", Email: "p2@example.com", PasswordHash: "hash"}
+	cfg.DB.Create(&user2)
+	cfg.DB.Create(&db.UserAchievementProgress{
+		UserID:          user2.ID,
+		AchievementRAID: 501,
+		RAGameID:        42,
+		UnlockedAt:      time.Date(2025, 1, 5, 8, 0, 0, 0, time.UTC),
+		IsHardcore:      false,
+	})
+	cfg.DB.Create(&db.UserAchievementProgress{
+		UserID:          user2.ID,
+		AchievementRAID: 502,
+		RAGameID:        42,
+		UnlockedAt:      time.Date(2025, 1, 8, 8, 0, 0, 0, time.UTC),
+		IsHardcore:      false,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements/leaderboard", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	leaderboard := resp["leaderboard"].([]interface{})
+	assert.Len(t, leaderboard, 2)
+
+	// First entry should be user2 (2 unlocks)
+	first := leaderboard[0].(map[string]interface{})
+	assert.Equal(t, float64(2), first["unlockedCount"])
+	assert.Equal(t, float64(30), first["earnedPoints"])
+	assert.Equal(t, true, first["isComplete"]) // 2/2
+
+	// Second entry should be user1 (1 unlock)
+	second := leaderboard[1].(map[string]interface{})
+	assert.Equal(t, float64(1), second["unlockedCount"])
+	assert.Equal(t, false, second["isComplete"])
 }

@@ -175,6 +175,12 @@ export interface GameAchievementProgress {
   achievementId: number;
   unlockedAt: string;
   isHardcore: boolean;
+  playTimeAtUnlock: number;
+}
+
+export interface GameAchievementProgressResponse {
+  raGameId: number;
+  progress: GameAchievementProgress[];
 }
 
 export interface GameStats {
@@ -222,4 +228,58 @@ export interface UserStats {
   mostPlayedGame: Game | null;
   mostPlayedGameTime: number;
   lastPlayedAt: string | null;
+}
+
+export interface AchievementLeaderboardEntry {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  unlockedCount: number;
+  earnedPoints: number;
+  lastUnlockedAt: string;
+  firstUnlockedAt: string;
+  isComplete: boolean;
+}
+
+export interface AchievementLeaderboard {
+  raGameId: number;
+  totalAchievements: number;
+  leaderboard: AchievementLeaderboardEntry[];
+}
+
+export interface AchievementTimelineEntry {
+  achievementRaId: number;
+  title: string;
+  description: string;
+  points: number;
+  badgeUrl: string;
+  unlockedAt: string;
+  isHardcore: boolean;
+  playTimeAtUnlock: number;
+}
+
+export interface AchievementTimeline {
+  raGameId: number;
+  gameTitle: string;
+  totalPlayTime: number;
+  timeline: AchievementTimelineEntry[];
+  totalAchievements: number;
+  unlockedCount: number;
+  totalPoints: number;
+  earnedPoints: number;
+}
+
+export interface RecentAchievement {
+  achievementRaId: number;
+  title: string;
+  description: string;
+  points: number;
+  badgeUrl: string;
+  unlockedAt: string;
+  isHardcore: boolean;
+  playTimeAtUnlock: number;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  coverUrl: string;
 }

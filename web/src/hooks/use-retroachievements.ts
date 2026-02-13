@@ -5,7 +5,10 @@ import type {
   RALinkRequest,
   RASettingsRequest,
   GameAchievements,
-  GameAchievementProgress,
+  GameAchievementProgressResponse,
+  AchievementLeaderboard,
+  AchievementTimeline,
+  RecentAchievement,
 } from "@/types/api";
 
 export function useRAStatus() {
@@ -63,9 +66,43 @@ export function useGameAchievementProgress(gameId: string | undefined) {
   return useQuery({
     queryKey: ["game-achievement-progress", gameId],
     queryFn: () =>
-      api.get<GameAchievementProgress[]>(
-        `/games/${gameId}/achievements/progress`,
+      api
+        .get<GameAchievementProgressResponse>(
+          `/games/${gameId}/achievements/progress`,
+        )
+        .then((res) => res.progress),
+    enabled: !!gameId,
+  });
+}
+
+export function useAchievementLeaderboard(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["achievement-leaderboard", gameId],
+    queryFn: () =>
+      api.get<AchievementLeaderboard>(
+        `/games/${gameId}/achievements/leaderboard`,
       ),
     enabled: !!gameId,
+  });
+}
+
+export function useAchievementTimeline(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["achievement-timeline", gameId],
+    queryFn: () =>
+      api.get<AchievementTimeline>(
+        `/games/${gameId}/achievements/timeline`,
+      ),
+    enabled: !!gameId,
+  });
+}
+
+export function useRecentAchievements() {
+  return useQuery({
+    queryKey: ["recent-achievements"],
+    queryFn: () =>
+      api
+        .get<{ achievements: RecentAchievement[] }>("/user/achievements/recent")
+        .then((res) => res.achievements),
   });
 }
