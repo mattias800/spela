@@ -34,7 +34,7 @@ class DownloadRepositoryImpl(
 
         val data = apiClient.downloadGame(gameId) { downloaded, total ->
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: 0))
             }
         }
 

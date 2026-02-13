@@ -36,7 +36,7 @@ class CoreRepositoryImpl(
 
         val response: HttpResponse = httpClient.get(url) {
             onDownload { bytesSentTotal, contentLength ->
-                if (contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
+                if (contentLength != null && contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
             }
         }
         if (!response.status.isSuccess()) {
