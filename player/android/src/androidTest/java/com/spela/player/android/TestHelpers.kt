@@ -504,15 +504,54 @@ fun ComposeRule.tapNodeMatchingBoth(text1: String, text2: String) {
 }
 
 fun ComposeRule.scrollToAndTapText(text: String) {
-    // First wait for the text to appear
-    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+    // LazyColumn only composes items near the viewport, so off-screen items
+    // won't appear in the semantic tree. Swipe down to find the text if needed.
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val maxSwipes = 10
+    var found = false
+
+    for (attempt in 0..maxSwipes) {
         try {
-            onAllNodesWithText(text, substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
+            if (onAllNodesWithText(text, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            ) {
+                found = true
+                break
+            }
         } catch (_: IllegalStateException) {
-            false
+            // Compose hierarchy not yet available
+        }
+
+        if (attempt == 0) {
+            // First attempt: wait briefly for initial load before swiping
+            try {
+                waitUntil(timeoutMillis = 2_000) {
+                    try {
+                        onAllNodesWithText(text, substring = true)
+                            .fetchSemanticsNodes().isNotEmpty()
+                    } catch (_: IllegalStateException) {
+                        false
+                    }
+                }
+                found = true
+                break
+            } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+                // Not found yet — start swiping
+            }
+        }
+
+        if (attempt < maxSwipes) {
+            // Swipe up to scroll down (from 70% to 30% of screen height)
+            val centerX = device.displayWidth / 2
+            val fromY = (device.displayHeight * 0.7).toInt()
+            val toY = (device.displayHeight * 0.3).toInt()
+            device.swipe(centerX, fromY, centerX, toY, 15)
+            waitForIdle()
         }
     }
+
+    check(found) { "Could not find text '$text' after scrolling $maxSwipes times" }
+
     val nodes = onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
     if (nodes.size == 1) {
         onNodeWithText(text, substring = true).performScrollTo()
