@@ -34,6 +34,7 @@ type User struct {
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
 	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
+	SelectedTheme       string         `gorm:"size:64;default:default-dark" json:"selectedTheme"`
 	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
 	CustomKeyMapping    string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
 }

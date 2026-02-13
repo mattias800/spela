@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@import "./lib/themes/default-dark.css";
+@import "./lib/themes/default-light.css";
+@import "./lib/themes/nintendo-colorful.css";
+@import "./lib/themes/ocean-dark.css";
+@import "./lib/themes/sunset-warm.css";
+
 @theme {
   --color-surface-50: #f8f9fa;
   --color-surface-100: #f1f3f5;
@@ -25,9 +31,23 @@
   --color-brand-900: #004060;
   --color-brand-950: #002640;
 
+  --color-accent-400: #26c8ff;
+  --color-accent-500: #00bfff;
+  --color-accent-600: #00a3e0;
+
   --color-success-500: #22c55e;
   --color-warning-500: #f59e0b;
   --color-danger-500: #ef4444;
+
+  --color-card-bg: #212529;
+  --color-card-border: #343a40;
+  --color-nav-bg: #16191d;
+  --color-nav-text: #adb5bd;
+  --color-nav-active: #00bfff;
+  --color-heading: #f1f3f5;
+  --color-body: #16191d;
+  --color-body-text: #f1f3f5;
+  --color-muted: #868e96;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -38,18 +58,9 @@
   }
 
   body {
-    @apply bg-surface-950 text-surface-100 font-sans antialiased;
+    @apply bg-body text-body-text font-sans antialiased;
     margin: 0;
     min-height: 100vh;
-  }
-
-  .light {
-    color-scheme: light;
-  }
-
-  .light body,
-  .light {
-    @apply bg-surface-50 text-surface-900;
   }
 }
 
@@ -58,7 +69,9 @@
     @apply bg-surface-900/60 backdrop-blur-xl border border-surface-800/50;
   }
 
-  .light .glass {
+  [data-theme="default-light"] .glass,
+  [data-theme="nintendo-colorful"] .glass,
+  [data-theme="sunset-warm"] .glass {
     @apply bg-white/60 border-surface-200/50;
   }
 }

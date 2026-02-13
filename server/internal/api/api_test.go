@@ -877,6 +877,69 @@ func TestUpdatePlayTime_GameNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestGetPreferences_DefaultTheme(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &prefs)
+	require.NoError(t, err)
+	assert.Equal(t, "default-dark", prefs["selectedTheme"])
+}
+
+func TestUpdatePreferences_ThemeSelection(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Set theme
+	body, _ := json.Marshal(map[string]interface{}{
+		"selectedTheme": "nintendo-colorful",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "nintendo-colorful", prefs["selectedTheme"])
+
+	// GET to verify persistence
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "nintendo-colorful", prefs["selectedTheme"])
+
+	// Partial update of another field should not clear theme
+	body, _ = json.Marshal(map[string]interface{}{
+		"showPerformanceOverlay": true,
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "nintendo-colorful", prefs["selectedTheme"])
+	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()

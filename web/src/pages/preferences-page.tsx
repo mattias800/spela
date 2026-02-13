@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
+import { ThemeCard } from "@/components/preferences/theme-card";
 import { EmulationSettingsCard } from "@/components/preferences/emulation-settings-card";
 import { VideoFiltersCard } from "@/components/preferences/video-filters-card";
 import { KeyMappingCard } from "@/components/preferences/key-mapping-card";
@@ -89,6 +90,13 @@ export function PreferencesPage() {
     );
   }
 
+  function handleThemeChange(theme: string) {
+    updatePreferences.mutate(
+      { selectedTheme: theme },
+      { onError: (err) => toast("error", err.message) },
+    );
+  }
+
   function handleDeviceShaderChange(deviceId: number, consoleId: string, shader: string) {
     updateDevicePrefs.mutate(
       { id: deviceId, consoleShaders: { [consoleId]: shader } },
@@ -104,6 +112,12 @@ export function PreferencesPage() {
           Manage your emulation settings and devices.
         </p>
       </div>
+
+      <ThemeCard
+        selectedTheme={preferences?.selectedTheme}
+        isLoading={prefsLoading}
+        onThemeChange={handleThemeChange}
+      />
 
       <EmulationSettingsCard
         preferences={preferences}

@@ -138,6 +138,7 @@ export interface UserPreferences {
   raLinked: boolean;
   raUsername: string;
   raHardcoreEnabled: boolean;
+  selectedTheme: string;
 }
 
 export interface RAStatus {

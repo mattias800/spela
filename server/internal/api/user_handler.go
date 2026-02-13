@@ -67,6 +67,7 @@ type preferencesResponse struct {
 	AutoSaveEnabled        bool                           `json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled    bool                           `json:"autoLoadSaveEnabled"`
 	SelectedShader         string                         `json:"selectedShader"`
+	SelectedTheme          string                         `json:"selectedTheme"`
 	ConsoleShaders         map[string]string              `json:"consoleShaders"`
 	SelectedKeyMapping     string                         `json:"selectedKeyMapping"`
 	CustomKeyMapping       map[string]string              `json:"customKeyMapping"`
@@ -100,6 +101,11 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		selectedKeyMapping = "arrows-left"
 	}
 
+	selectedTheme := user.SelectedTheme
+	if selectedTheme == "" {
+		selectedTheme = "default-dark"
+	}
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
@@ -108,6 +114,7 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
+		SelectedTheme:          selectedTheme,
 		ConsoleShaders:         consoleShaders,
 		SelectedKeyMapping:     selectedKeyMapping,
 		CustomKeyMapping:       customKeyMapping,
@@ -133,6 +140,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		AutoSaveEnabled        *bool                            `json:"autoSaveEnabled"`
 		AutoLoadSaveEnabled    *bool                            `json:"autoLoadSaveEnabled"`
 		SelectedShader         *string                          `json:"selectedShader"`
+		SelectedTheme          *string                          `json:"selectedTheme"`
 		ConsoleShaders         map[string]string                `json:"consoleShaders"`
 		SelectedKeyMapping     *string                          `json:"selectedKeyMapping"`
 		CustomKeyMapping       map[string]string                `json:"customKeyMapping"`
@@ -154,6 +162,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 	if req.SelectedShader != nil {
 		user.SelectedShader = *req.SelectedShader
+	}
+	if req.SelectedTheme != nil {
+		user.SelectedTheme = *req.SelectedTheme
 	}
 	if req.SelectedKeyMapping != nil {
 		user.SelectedKeyMapping = *req.SelectedKeyMapping
@@ -242,6 +253,11 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		selectedKeyMapping = "arrows-left"
 	}
 
+	selectedTheme := user.SelectedTheme
+	if selectedTheme == "" {
+		selectedTheme = "default-dark"
+	}
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
@@ -250,6 +266,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		AutoSaveEnabled:        user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
 		SelectedShader:         user.SelectedShader,
+		SelectedTheme:          selectedTheme,
 		ConsoleShaders:         consoleShaders,
 		SelectedKeyMapping:     selectedKeyMapping,
 		CustomKeyMapping:       customKeyMapping,

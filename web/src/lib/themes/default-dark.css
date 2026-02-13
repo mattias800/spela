@@ -1,0 +1,4 @@
+[data-theme="default-dark"] {
+  color-scheme: dark;
+  /* Default dark values match the @theme block — no overrides needed */
+}

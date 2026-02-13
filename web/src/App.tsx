@@ -20,6 +20,7 @@ import { PreferencesPage } from "@/pages/preferences-page";
 import { PlayPage } from "@/pages/play-page";
 import { StatsPage } from "@/pages/stats-page";
 import { SetupPage } from "@/pages/setup-page";
+import { useTheme } from "@/hooks/use-theme";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,12 +31,18 @@ const queryClient = new QueryClient({
   },
 });
 
+function ThemeApplier({ children }: { children: React.ReactNode }) {
+  useTheme();
+  return <>{children}</>;
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
           <ToastProvider>
+            <ThemeApplier>
             <Routes>
               {/* Auth routes */}
               <Route path="/setup" element={<SetupPage />} />
@@ -107,6 +114,7 @@ export function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </ThemeApplier>
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
