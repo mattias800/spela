@@ -95,6 +95,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage}
 	userHandler := &UserHandler{DB: cfg.DB}
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
+	statsHandler := &StatsHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
 	raClient := cfg.RAClient
@@ -132,6 +133,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
+		api.GET("/games/:id/stats", gameHandler.GetGameStats)
 		api.POST("/games/scan", gameHandler.ScanGames)
 
 		// Save states
@@ -147,11 +149,16 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/cores", coreHandler.ListCores)
 		api.GET("/cores/:id/download", coreHandler.DownloadCore)
 
+		// Stats
+		api.GET("/stats/most-played", statsHandler.MostPlayedGames)
+		api.GET("/stats/most-active-players", statsHandler.MostActivePlayers)
+
 		// User
 		api.GET("/user/profile", userHandler.GetProfile)
 		api.PUT("/user/profile", userHandler.UpdateProfile)
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
+		api.GET("/user/stats", userHandler.GetUserStats)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)

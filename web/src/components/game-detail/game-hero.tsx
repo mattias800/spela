@@ -8,10 +8,11 @@ import {
   RefreshCw,
   Play,
   Trophy,
+  Clock,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { MetaItem } from "@/components/meta-item";
-import { formatFileSize } from "@/lib/format";
+import { formatFileSize, formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { Game } from "@/types/api";
 
@@ -137,6 +138,18 @@ export function GameHero({
           <MetaItem icon={HardDrive} label="Size" value={formatFileSize(game.fileSize)} />
           {game.rating !== undefined && game.rating > 0 && (
             <MetaItem icon={Star} label="Rating" value={`${game.rating}/10`} />
+          )}
+          <MetaItem
+            icon={Clock}
+            label="Play Time"
+            value={game.totalPlayTime > 0 ? formatPlayTime(game.totalPlayTime) : "Not played yet"}
+          />
+          {game.lastPlayedAt && (
+            <MetaItem
+              icon={Calendar}
+              label="Last Played"
+              value={formatRelativeTime(game.lastPlayedAt)}
+            />
           )}
         </div>
 

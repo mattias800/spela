@@ -517,3 +517,83 @@ func (h *GameHandler) GetRecommendedCore(c *gin.Context) {
 
 	c.JSON(http.StatusOK, core)
 }
+
+// gameStatsTopPlayer is a player entry in the game stats response.
+type gameStatsTopPlayer struct {
+	UserID   string `json:"userId"`
+	Username string `json:"username"`
+	AvatarURL string `json:"avatarUrl"`
+	PlayTime int64  `json:"playTime"`
+}
+
+// gameStatsResponse is the response for GET /api/games/:id/stats.
+type gameStatsResponse struct {
+	TotalPlayers   int64                `json:"totalPlayers"`
+	TotalPlayTime  int64                `json:"totalPlayTime"`
+	AveragePlayTime int64              `json:"averagePlayTime"`
+	TopPlayers     []gameStatsTopPlayer `json:"topPlayers"`
+}
+
+// GetGameStats returns aggregate community play statistics for a game.
+func (h *GameHandler) GetGameStats(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	// Aggregate stats
+	var stats struct {
+		TotalPlayers  int64
+		TotalPlayTime int64
+	}
+	if err := h.DB.Model(&db.PlayHistory{}).
+		Where("game_id = ?", game.ID).
+		Select("COUNT(DISTINCT user_id) as total_players, COALESCE(SUM(play_time), 0) as total_play_time").
+		Scan(&stats).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch game stats"})
+		return
+	}
+
+	var averagePlayTime int64
+	if stats.TotalPlayers > 0 {
+		averagePlayTime = stats.TotalPlayTime / stats.TotalPlayers
+	}
+
+	// Top players
+	type topPlayerRow struct {
+		UserID   uint
+		Username string
+		AvatarURL string
+		PlayTime int64
+	}
+	var rows []topPlayerRow
+	if err := h.DB.Model(&db.PlayHistory{}).
+		Select("play_histories.user_id, users.username, users.avatar_url, play_histories.play_time").
+		Joins("JOIN users ON users.id = play_histories.user_id").
+		Where("play_histories.game_id = ?", game.ID).
+		Order("play_histories.play_time DESC").
+		Limit(10).
+		Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch top players"})
+		return
+	}
+
+	topPlayers := make([]gameStatsTopPlayer, 0, len(rows))
+	for _, r := range rows {
+		topPlayers = append(topPlayers, gameStatsTopPlayer{
+			UserID:   strconv.FormatUint(uint64(r.UserID), 10),
+			Username: r.Username,
+			AvatarURL: r.AvatarURL,
+			PlayTime: r.PlayTime,
+		})
+	}
+
+	c.JSON(http.StatusOK, gameStatsResponse{
+		TotalPlayers:    stats.TotalPlayers,
+		TotalPlayTime:   stats.TotalPlayTime,
+		AveragePlayTime: averagePlayTime,
+		TopPlayers:      topPlayers,
+	})
+}

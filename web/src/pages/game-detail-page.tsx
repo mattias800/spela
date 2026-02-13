@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GameHero } from "@/components/game-detail/game-hero";
 import { GameScreenshots } from "@/components/game-detail/game-screenshots";
+import { GameCommunityStats } from "@/components/game-detail/game-community-stats";
 import { SaveStatesList } from "@/components/game-detail/save-states-list";
 import { GameAchievements } from "@/components/game-detail/game-achievements";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
@@ -94,6 +95,8 @@ export function GameDetailPage() {
           toggleFavorite.mutate({ gameId: game.id, isFavorite })
         }
       />
+
+      <GameCommunityStats gameId={game.id} game={game} />
 
       <GameScreenshots
         screenshotUrls={game.screenshotUrls}

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
+import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import type { Game } from "@/types/api";
@@ -92,6 +93,8 @@ export function DashboardPage() {
           Pick up where you left off or discover something new.
         </p>
       </div>
+
+      <PersonalStatsCard />
 
       {showEmptyState && (
         <EmptyState

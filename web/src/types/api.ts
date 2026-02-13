@@ -176,3 +176,50 @@ export interface GameAchievementProgress {
   unlockedAt: string;
   isHardcore: boolean;
 }
+
+export interface GameStats {
+  totalPlayers: number;
+  totalPlayTime: number;
+  averagePlayTime: number;
+  topPlayers: GameStatsPlayer[];
+}
+
+export interface GameStatsPlayer {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  playTime: number;
+}
+
+export interface MostPlayedGame {
+  game: Game;
+  totalPlayers: number;
+  totalPlayTime: number;
+}
+
+export interface MostPlayedGamesResponse {
+  games: MostPlayedGame[];
+}
+
+export interface ActivePlayer {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  totalPlayTime: number;
+  gamesPlayed: number;
+  lastPlayed: string;
+}
+
+export interface MostActivePlayersResponse {
+  players: ActivePlayer[];
+}
+
+export interface UserStats {
+  totalPlayTime: number;
+  gamesPlayed: number;
+  currentStreak: number;
+  longestStreak: number;
+  mostPlayedGame: Game | null;
+  mostPlayedGameTime: number;
+  lastPlayedAt: string | null;
+}
