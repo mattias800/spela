@@ -138,7 +138,8 @@ class GamepadMappingTest {
 
     @Test
     fun normalizeAxisFullNegativeReturnsMinShort() {
-        assertEquals(Short.MIN_VALUE, GamepadMapping.normalizeAxis(-1.0f))
+        // -1.0 * 32767 = -32767 (not Short.MIN_VALUE which is -32768)
+        assertEquals((-32767).toShort(), GamepadMapping.normalizeAxis(-1.0f))
     }
 
     @Test
