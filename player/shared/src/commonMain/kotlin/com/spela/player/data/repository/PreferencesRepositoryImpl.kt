@@ -25,6 +25,7 @@ class PreferencesRepositoryImpl(
         autoSaveEnabled: Boolean?,
         autoLoadSaveEnabled: Boolean?,
         selectedShader: String?,
+        selectedTheme: String?,
         consoleShaders: Map<String, String>?,
     ): Result<UserPreferences> = runCatching {
         apiClient.updatePreferences(
@@ -33,6 +34,7 @@ class PreferencesRepositoryImpl(
                 autoSaveEnabled = autoSaveEnabled,
                 autoLoadSaveEnabled = autoLoadSaveEnabled,
                 selectedShader = selectedShader,
+                selectedTheme = selectedTheme,
                 consoleShaders = consoleShaders,
             )
         ).toDomain()

@@ -211,6 +211,32 @@ fun SettingsScreen(
                 }
             }
 
+            // Color Theme section
+            item {
+                SettingsSectionHeader(title = "Color Theme")
+            }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SpSpacing.Small),
+                    ) {
+                        ThemeOption.entries.forEachIndexed { index, option ->
+                            ThemeOptionRow(
+                                option = option,
+                                isSelected = state.selectedTheme == option.apiId,
+                                onClick = { viewModel.onIntent(SettingsIntent.SelectTheme(option.apiId)) },
+                            )
+                            if (index < ThemeOption.entries.size - 1) {
+                                SettingsDivider()
+                            }
+                        }
+                    }
+                }
+            }
+
             // Emulation section
             item {
                 SettingsSectionHeader(title = "Emulation")
@@ -838,6 +864,62 @@ internal fun ShaderOption(
             )
             Text(
                 text = shader.description,
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
+        }
+        Spacer(Modifier.width(SpSpacing.Medium))
+        RadioButton(
+            selected = isSelected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = SpColor.Primary,
+                unselectedColor = SpColor.OnBackgroundTertiary,
+            ),
+        )
+    }
+}
+
+private enum class ThemeOption(
+    val apiId: String,
+    val displayName: String,
+    val description: String,
+) {
+    DEFAULT_DARK("default-dark", "Default Dark", "Current dark theme"),
+    DEFAULT_LIGHT("default-light", "Default Light", "Clean light theme"),
+    NINTENDO_COLORFUL("nintendo-colorful", "Nintendo Colorful", "Bright, joyful, retro"),
+    OCEAN_DARK("ocean-dark", "Ocean Dark", "Deep blue dark theme"),
+    SUNSET_WARM("sunset-warm", "Sunset Warm", "Warm amber light theme"),
+}
+
+@Composable
+private fun ThemeOptionRow(
+    option: ThemeOption,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .spFocusRing(shape = RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .focusable()
+            .semantics {
+                contentDescription = option.displayName
+                role = Role.RadioButton
+                stateDescription = if (isSelected) "Selected" else "Not selected"
+            }
+            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = option.displayName,
+                style = SpTypography.TitleMedium,
+                color = SpColor.OnCard,
+            )
+            Text(
+                text = option.description,
                 style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundTertiary,
             )

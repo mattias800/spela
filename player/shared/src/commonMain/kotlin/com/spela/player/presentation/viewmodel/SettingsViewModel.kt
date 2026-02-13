@@ -17,6 +17,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -31,6 +34,7 @@ data class SettingsState(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
+    val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
     val deviceShaderOverrides: Map<String, ShaderPreset> = emptyMap(),
     val consoles: List<Console> = emptyList(),
@@ -51,6 +55,7 @@ sealed interface SettingsIntent {
     data object ToggleAutoSave : SettingsIntent
     data object ToggleAutoLoadSave : SettingsIntent
     data class SelectShader(val shader: ShaderPreset) : SettingsIntent
+    data class SelectTheme(val theme: String) : SettingsIntent
     data class SwitchShaderScope(val scope: ShaderScope) : SettingsIntent
     data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
     data class SetDeviceOverride(val consoleId: String, val shader: ShaderPreset?) : SettingsIntent
@@ -86,6 +91,11 @@ class SettingsViewModel(
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
+    val selectedTheme: StateFlow<String> = _state
+        .map { it.selectedTheme }
+        .distinctUntilChanged()
+        .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, "default-dark")
+
     private var deviceNameSyncJob: Job? = null
 
     fun onIntent(intent: SettingsIntent) {
@@ -107,6 +117,7 @@ class SettingsViewModel(
                 apiCall = { preferencesRepository.updatePreferences(autoLoadSaveEnabled = it) },
             )
             is SettingsIntent.SelectShader -> selectShader(intent.shader)
+            is SettingsIntent.SelectTheme -> selectTheme(intent.theme)
             is SettingsIntent.SwitchShaderScope ->
                 _state.update { it.copy(shaderScope = intent.scope) }
             is SettingsIntent.SelectConsoleShader ->
@@ -180,6 +191,7 @@ class SettingsViewModel(
                         autoSaveEnabled = prefs.autoSaveEnabled,
                         autoLoadSaveEnabled = prefs.autoLoadSaveEnabled,
                         selectedShader = prefs.selectedShader,
+                        selectedTheme = prefs.selectedTheme,
                         consoleShaders = prefs.consoleShaders,
                     )
                 }
@@ -213,6 +225,16 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             preferencesRepository.updatePreferences(selectedShader = shader.apiId).onFailure {
                 _state.update { it.copy(selectedShader = previous) }
+            }
+        }
+    }
+
+    private fun selectTheme(theme: String) {
+        val previous = _state.value.selectedTheme
+        _state.update { it.copy(selectedTheme = theme) }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(selectedTheme = theme).onFailure {
+                _state.update { it.copy(selectedTheme = previous) }
             }
         }
     }

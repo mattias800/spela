@@ -471,6 +471,7 @@ class FakePreferencesRepository : PreferencesRepository {
         autoSaveEnabled: Boolean?,
         autoLoadSaveEnabled: Boolean?,
         selectedShader: String?,
+        selectedTheme: String?,
         consoleShaders: Map<String, String>?,
     ): Result<UserPreferences> = Result.success(UserPreferences())
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null

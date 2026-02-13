@@ -414,6 +414,7 @@ class EmulationViewModelSecondaryDisplayTest {
             autoSaveEnabled: Boolean?,
             autoLoadSaveEnabled: Boolean?,
             selectedShader: String?,
+            selectedTheme: String?,
             consoleShaders: Map<String, String>?,
         ): Result<UserPreferences> = Result.success(UserPreferences())
 

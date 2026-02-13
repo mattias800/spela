@@ -105,6 +105,7 @@ data class UserPreferences(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
+    val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
 )
 

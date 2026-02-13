@@ -121,6 +121,7 @@ data class UserPreferencesDto(
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
     val selectedShader: String = "none",
+    val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, String> = emptyMap(),
     val raLinked: Boolean = false,
     val raUsername: String = "",
@@ -133,6 +134,7 @@ data class UpdatePreferencesRequest(
     val autoSaveEnabled: Boolean? = null,
     val autoLoadSaveEnabled: Boolean? = null,
     val selectedShader: String? = null,
+    val selectedTheme: String? = null,
     val consoleShaders: Map<String, String>? = null,
 )
 

@@ -75,6 +75,7 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     autoSaveEnabled = autoSaveEnabled,
     autoLoadSaveEnabled = autoLoadSaveEnabled,
     selectedShader = ShaderPreset.fromApiId(selectedShader),
+    selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },
 )
 

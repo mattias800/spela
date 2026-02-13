@@ -74,7 +74,9 @@ fun SpelaApp(
     keyMappingViewModel: KeyMappingViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
 ) {
-    SpelaTheme {
+    val currentTheme by settingsViewModel.selectedTheme.collectAsState()
+
+    SpelaTheme(theme = currentTheme) {
         val navState by navigationViewModel.state.collectAsState()
 
         // Show loading screen while session is being restored

@@ -10,6 +10,7 @@ interface PreferencesRepository {
         autoSaveEnabled: Boolean? = null,
         autoLoadSaveEnabled: Boolean? = null,
         selectedShader: String? = null,
+        selectedTheme: String? = null,
         consoleShaders: Map<String, String>? = null,
     ): Result<UserPreferences>
     fun getDeviceShaderOverride(consoleId: String): ShaderPreset?
