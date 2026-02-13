@@ -21,13 +21,6 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class KeyboardInputMappingTest {
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun emulationStartsAndAcceptsInput() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
@@ -39,15 +32,11 @@ class KeyboardInputMappingTest {
         )
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game
+        // Start game (overlay hidden by default, game enters playing state)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
-
-        // Resume to hide overlay (game is in playing state)
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify the emulation is running and ready for input
         assertTrue(harness.libretroController.isRunning, "Emulation should be running")

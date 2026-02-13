@@ -21,19 +21,12 @@ class GameBrowsingAndSelectionTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun homeScreenShowsConsolesAfterLoad() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Should show consoles section
         onNodeWithText("Consoles").assertIsDisplayed()
@@ -46,7 +39,7 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Recent games should be displayed
         onNodeWithText("Continue Playing").assertIsDisplayed()
@@ -58,11 +51,11 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Tap on NES console
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should navigate to console screen and show NES games
         onNodeWithText("Castlevania").assertIsDisplayed()
@@ -81,7 +74,7 @@ class GameBrowsingAndSelectionTest {
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
         // GameDetailScreen has LaunchedEffect to load the game
-        advance(harness, this)
+        advance(harness)
 
         // Game detail should show game info
         onNodeWithText("Castlevania").assertIsDisplayed()
@@ -99,7 +92,7 @@ class GameBrowsingAndSelectionTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
-        advance(harness, this)
+        advance(harness)
 
         // Game is not cached, so Download should be shown
         onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
@@ -117,7 +110,7 @@ class GameBrowsingAndSelectionTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
         )
-        advance(harness, this)
+        advance(harness)
 
         // Game is cached, so Play should be shown
         onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
@@ -128,7 +121,7 @@ class GameBrowsingAndSelectionTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Home screen should show Downloads and Settings icons in top bar
         onNodeWithContentDescription("Downloads").assertIsDisplayed()
@@ -136,25 +129,25 @@ class GameBrowsingAndSelectionTest {
 
         // Navigate to Downloads via top bar icon
         onNodeWithContentDescription("Downloads").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should show Downloads screen with back button
         onNodeWithContentDescription("Go back").assertIsDisplayed()
 
         // Navigate back to Home
         onNodeWithContentDescription("Go back").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Navigate to Settings via top bar icon
         onNodeWithContentDescription("Settings").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should show Settings screen with back button
         onNodeWithContentDescription("Go back").assertIsDisplayed()
 
         // Navigate back to Home
         onNodeWithContentDescription("Go back").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should be back on Home
         onNodeWithText("Consoles").assertIsDisplayed()

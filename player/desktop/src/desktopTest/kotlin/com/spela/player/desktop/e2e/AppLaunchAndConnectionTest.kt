@@ -13,19 +13,12 @@ import kotlin.test.Test
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class AppLaunchAndConnectionTest {
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun appLaunchShowsServerConnectionScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithText("Spela").assertIsDisplayed()
         onNodeWithText("Connect to your game server").assertIsDisplayed()
@@ -42,14 +35,14 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Initially the add-server form is hidden
         onNodeWithText("Server Name").assertDoesNotExist()
 
         // Tap "Add Server" to reveal form
         onNodeWithText("Add Server").performClick()
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithText("Server Name").assertIsDisplayed()
         onNodeWithText("Server URL").assertIsDisplayed()
@@ -65,11 +58,11 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Tap server name to select it and navigate to login
         onNodeWithText("Local Server").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should now be on the login screen
         onNodeWithText("Welcome Back").assertIsDisplayed()
@@ -87,15 +80,15 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithText("Local").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Toggle to register mode
         onNodeWithText("Don't have an account? Register").assertIsDisplayed()
         onNodeWithText("Don't have an account? Register").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // "Create Account" appears as both heading and button - verify both exist
         onAllNodesWithText("Create Account").assertCountEquals(2)
@@ -111,11 +104,11 @@ class AppLaunchAndConnectionTest {
         }
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Select server
         onNodeWithText("Local").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Enter credentials
         onNodeWithText("Username").performClick()
@@ -125,7 +118,7 @@ class AppLaunchAndConnectionTest {
 
         // Submit login
         onNodeWithText("Sign In").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Should navigate to Home screen
         onNodeWithText("Spela").assertIsDisplayed()

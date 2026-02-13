@@ -34,24 +34,13 @@ class EscapeKeyOverlayTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     private fun ComposeUiTest.launchAndStartGame(harness: SpelaTestHarness) {
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game from detail screen
+        // Start game from detail screen (overlay is hidden by default)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
-
-        // Resume to dismiss initial overlay and enter gameplay
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        advance(harness)
     }
 
     @Test
@@ -64,10 +53,10 @@ class EscapeKeyOverlayTest {
 
         // Simulate what Escape key handler does: toggle overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // Overlay should now be visible with Resume and Exit Game
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
         onNodeWithText("Exit Game").assertIsDisplayed()
     }
 
@@ -78,7 +67,7 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // Game title should be shown in overlay (multiple nodes may match due to merged semantics)
         onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()
@@ -91,13 +80,13 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithText("Exit Game").assertIsDisplayed()
 
         // Toggle overlay again (simulates second Escape press)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // Overlay should be hidden
         onNodeWithText("Exit Game").assertDoesNotExist()
@@ -110,7 +99,7 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // All overlay action buttons should be present
         onNodeWithContentDescription("Save").assertIsDisplayed()
@@ -126,13 +115,13 @@ class EscapeKeyOverlayTest {
 
         // Open overlay via toggle
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
 
         // Click Resume
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        onNodeWithText("Continue").performClick()
+        advance(harness)
 
         // Overlay should be hidden, game should be running
         onNodeWithText("Exit Game").assertDoesNotExist()
@@ -149,11 +138,11 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // Click Exit Game
         onNodeWithText("Exit Game").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Game should be stopped
         assertFalse(harness.libretroController.isRunning, "Game should be stopped after exit")
@@ -167,20 +156,20 @@ class EscapeKeyOverlayTest {
 
         // Cycle 1: open and close
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
-        onNodeWithText("Resume").assertIsDisplayed()
+        advance(harness)
+        onNodeWithText("Continue").assertIsDisplayed()
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
         onNodeWithText("Exit Game").assertDoesNotExist()
 
         // Cycle 2: open and close
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
-        onNodeWithText("Resume").assertIsDisplayed()
+        advance(harness)
+        onNodeWithText("Continue").assertIsDisplayed()
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
         onNodeWithText("Exit Game").assertDoesNotExist()
 
         // Game should still be running throughout
@@ -196,13 +185,13 @@ class EscapeKeyOverlayTest {
         assertFalse(state1.showOverlay, "Overlay should initially be hidden")
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         val state2 = harness.emulationViewModel.state.value
         assertTrue(state2.showOverlay, "Overlay should be shown after toggle")
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         val state3 = harness.emulationViewModel.state.value
         assertFalse(state3.showOverlay, "Overlay should be hidden after second toggle")

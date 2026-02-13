@@ -35,61 +35,54 @@ class PauseHintTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
-    fun gameStartsWithOverlayShowingResumeAndExit() = runComposeUiTest {
+    fun gameStartsWithOverlayHiddenAndCanBeToggled() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
-        // Initial overlay should show Resume and Exit
-        onNodeWithText("Resume").assertIsDisplayed()
+        // Overlay should be hidden by default
+        onNodeWithText("Exit Game").assertDoesNotExist()
+
+        // Toggle overlay to verify it works
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
+
+        onNodeWithText("Continue").assertIsDisplayed()
         onNodeWithText("Exit Game").assertIsDisplayed()
     }
 
     @Test
-    fun afterResumingGameIsInPlayingState() = runComposeUiTest {
+    fun afterStartingGameIsInPlayingState() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game and dismiss overlay
+        // Start game (overlay hidden by default)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
-
-        // Game should be running, overlay dismissed
+        // Game should be running, overlay hidden
         assertTrue(harness.libretroController.isRunning, "Game should be running")
         onNodeWithText("Exit Game").assertDoesNotExist()
     }
 
     @Test
-    fun pauseHintAppearsAfterDismissingOverlay() = runComposeUiTest {
+    fun pauseHintStateCorrectAfterGameStart() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game and dismiss overlay
+        // Start game (overlay hidden by default)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
-
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // The "Press Esc to pause" hint should be visible in the emulation surface.
         // It is rendered inside DesktopEmulationSurface with AnimatedVisibility
@@ -108,19 +101,23 @@ class PauseHintTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game (overlay shows automatically)
+        // Start game (overlay hidden by default)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
+
+        // Toggle overlay to show it
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
 
         // Overlay is showing - the hint should NOT be visible simultaneously
-        // The hint only appears after overlay is dismissed
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
 
         // Verify the overlay is the primary UI, not the hint
         val emulationState = harness.emulationViewModel.state.value
         assertTrue(emulationState.isRunning, "Game should be running")
+        assertTrue(emulationState.showOverlay, "Overlay should be showing")
     }
 
     @Test
@@ -128,14 +125,11 @@ class PauseHintTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game and dismiss overlay
+        // Start game (overlay hidden by default, FPS HUD should be visible)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
-
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // FPS HUD should be visible (the small badge in top-right)
         // The FPS text node has content description like "X FPS, tap to open game menu"
@@ -151,25 +145,23 @@ class PauseHintTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
-        // Start game, dismiss overlay (hint would show and fade)
+        // Start game (overlay hidden by default, hint would show and fade)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        advance(harness)
 
-        // Reopen overlay via ViewModel
+        // Open overlay via ViewModel
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness, this)
+        advance(harness)
 
         // Overlay should be showing
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
         onNodeWithText("Exit Game").assertIsDisplayed()
 
-        // Dismiss again
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        // Dismiss overlay
+        onNodeWithText("Continue").performClick()
+        advance(harness)
 
         // Game should continue running normally
         assertTrue(harness.libretroController.isRunning, "Game should still be running")

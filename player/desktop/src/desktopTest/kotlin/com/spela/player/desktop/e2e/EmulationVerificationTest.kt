@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,22 +30,15 @@ class EmulationVerificationTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun emulationLoadsCorrectCoreAndGame() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify the correct core was loaded
         assertNotNull(harness.libretroController.loadedCore, "A core should have been loaded")
@@ -58,10 +52,10 @@ class EmulationVerificationTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify emulation state
         assertTrue(harness.libretroController.isRunning, "Emulation should be running")
@@ -75,18 +69,15 @@ class EmulationVerificationTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
-        // Resume (which hides overlay and resumes)
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
-
+        // Game starts with overlay hidden; verify it's running
         assertTrue(harness.libretroController.isRunning)
-        assertFalse(harness.libretroController.isPaused, "Should not be paused after resume")
+        assertFalse(harness.libretroController.isPaused, "Should not be paused after start")
     }
 
     @Test
@@ -94,15 +85,19 @@ class EmulationVerificationTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(harness.libretroController.isRunning)
 
+        // Open overlay to access Exit Game button
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
+
         onNodeWithText("Exit Game").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify clean stop
         assertFalse(harness.libretroController.isRunning, "Should no longer be running")
@@ -126,18 +121,20 @@ class EmulationVerificationTest {
         )
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Play first game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(harness.libretroController.isRunning)
         assertEquals(1, harness.libretroController.startCallCount)
 
-        // Exit first game
+        // Open overlay and exit first game
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
         onNodeWithText("Exit Game").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertFalse(harness.libretroController.isRunning)
 
@@ -145,11 +142,11 @@ class EmulationVerificationTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.GameDetail("2"))
         )
-        advance(harness, this)
+        advance(harness)
 
         // Play second game
         onNodeWithContentDescription("Play Super Mario Bros.").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(harness.libretroController.isRunning)
         assertEquals(2, harness.libretroController.startCallCount)

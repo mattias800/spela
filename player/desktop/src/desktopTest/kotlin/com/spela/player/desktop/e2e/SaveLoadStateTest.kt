@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,27 +26,24 @@ class SaveLoadStateTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun saveStatePersistsThroughSaveRepository() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
+
+        // Open overlay to access Save button
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
 
         // Tap Save
         onNodeWithContentDescription("Save").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify save was persisted through the repository
         assertTrue(
@@ -59,20 +57,24 @@ class SaveLoadStateTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
+
+        // Open overlay to access Save/Load buttons
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
 
         // First save, then load
         onNodeWithContentDescription("Save").performClick()
-        advance(harness, this)
+        advance(harness)
 
         val loadCountBefore = harness.libretroController.loadCallCount
 
         onNodeWithContentDescription("Load").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(
             harness.libretroController.loadCallCount > loadCountBefore,
@@ -85,17 +87,21 @@ class SaveLoadStateTest {
         val harness = createHarnessWithGameReady()
 
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         val saveCountBefore = harness.libretroController.saveCallCount
 
+        // Open overlay to access Exit Game button
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
+
         // Exit game (should auto-save)
         onNodeWithText("Exit Game").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Auto-save should have been triggered (serialize called during stop)
         assertTrue(

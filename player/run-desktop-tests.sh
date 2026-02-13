@@ -17,10 +17,10 @@ done
 
 # ── Build gradle args ──
 
-GRADLE_ARGS=":shared:desktopTest"
+GRADLE_ARGS=":shared:desktopTest :desktop:desktopTest"
 
 if [ -n "$FILTER" ]; then
-  GRADLE_ARGS="$GRADLE_ARGS --tests $FILTER"
+  GRADLE_ARGS=":shared:desktopTest --tests $FILTER :desktop:desktopTest --tests $FILTER"
   echo "Running desktop tests matching: $FILTER"
 else
   echo "Running all desktop tests..."
@@ -41,7 +41,7 @@ fi
 
 echo ""
 echo "── Test Results ──"
-RESULT_DIR="$SCRIPT_DIR/shared/build/test-results/desktopTest"
+for RESULT_DIR in "$SCRIPT_DIR/shared/build/test-results/desktopTest" "$SCRIPT_DIR/desktop/build/test-results/desktopTest"; do
 if [ -d "$RESULT_DIR" ]; then
   TOTAL=0
   FAILURES=0
@@ -65,3 +65,4 @@ if [ -d "$RESULT_DIR" ]; then
   echo ""
   echo "Total: $TOTAL tests, $FAILURES failures, $ERRORS errors"
 fi
+done

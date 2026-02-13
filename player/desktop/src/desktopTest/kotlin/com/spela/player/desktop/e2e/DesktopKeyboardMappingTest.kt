@@ -132,24 +132,11 @@ class DesktopKeyboardMappingTest {
         )
 
         setContent { harness.App() }
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness)
 
-        // Start game
+        // Start game (overlay hidden by default, game enters playing state)
         onNodeWithContentDescription("Play Castlevania").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
-
-        // Resume to enter gameplay mode
-        onNodeWithText("Resume").performClick()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        waitForIdle()
+        advance(harness)
 
         // Verify the controller is ready for input
         assertTrue(harness.libretroController.isRunning, "Controller should be running")

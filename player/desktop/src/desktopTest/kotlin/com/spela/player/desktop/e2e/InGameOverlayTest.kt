@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,20 +28,17 @@ class InGameOverlayTest {
         return harness
     }
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     private fun ComposeUiTest.startGame(harness: SpelaTestHarness) {
         setContent { harness.App() }
-        advance(harness, this)
+        advance(harness)
 
         // Start game
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
+
+        // Open overlay (hidden by default on game start)
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
     }
 
     @Test
@@ -63,7 +61,7 @@ class InGameOverlayTest {
 
         // Tap Save
         onNodeWithContentDescription("Save").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(
             harness.libretroController.saveCallCount > saveCountBefore,
@@ -87,7 +85,7 @@ class InGameOverlayTest {
 
         // Tap Load
         onNodeWithContentDescription("Load").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(
             harness.libretroController.loadCallCount > loadCountBefore,
@@ -104,13 +102,13 @@ class InGameOverlayTest {
 
         // Tap Fast Forward button (labeled "Fast" initially)
         onNodeWithContentDescription("Fast").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertTrue(harness.libretroController.isFastForward, "Fast forward should be on")
 
         // Tap again to toggle off (now labeled "Normal")
         onNodeWithContentDescription("Normal").performClick()
-        advance(harness, this)
+        advance(harness)
 
         assertFalse(harness.libretroController.isFastForward, "Fast forward should be off again")
     }
@@ -121,11 +119,11 @@ class InGameOverlayTest {
         startGame(harness)
 
         // Overlay should be visible
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
 
         // Tap Resume
-        onNodeWithText("Resume").performClick()
-        advance(harness, this)
+        onNodeWithText("Continue").performClick()
+        advance(harness)
 
         // Overlay panel should be hidden (Exit Game text should no longer be visible)
         onNodeWithText("Exit Game").assertDoesNotExist()
@@ -144,7 +142,7 @@ class InGameOverlayTest {
 
         // Tap Exit Game
         onNodeWithText("Exit Game").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Emulation should stop
         assertFalse(harness.libretroController.isRunning, "Emulation should be stopped after exit")

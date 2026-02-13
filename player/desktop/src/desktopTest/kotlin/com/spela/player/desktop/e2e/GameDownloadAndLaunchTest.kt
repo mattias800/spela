@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,14 +16,6 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class GameDownloadAndLaunchTest {
 
-    private fun advance(harness: SpelaTestHarness, scope: ComposeUiTest) {
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-        // Second advance to process any newly enqueued coroutines
-        harness.testDispatcher.scheduler.advanceUntilIdle()
-        scope.waitForIdle()
-    }
-
     @Test
     fun downloadGameThenShowPlayButton() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
@@ -35,14 +28,14 @@ class GameDownloadAndLaunchTest {
 
         setContent { harness.App() }
 
-        advance(harness, this)
+        advance(harness)
 
         // Should show Download button initially
         onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
 
         // Tap Download
         onNodeWithContentDescription("Download Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // After download completes, Play button should appear
         onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
@@ -62,15 +55,18 @@ class GameDownloadAndLaunchTest {
 
         setContent { harness.App() }
 
-        advance(harness, this)
+        advance(harness)
 
         // Tap Play
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
-        // In-game overlay should appear with game controls
+        // Open overlay (hidden by default) and verify controls
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
+
         onNodeWithText("Exit Game").assertIsDisplayed()
-        onNodeWithText("Resume").assertIsDisplayed()
+        onNodeWithText("Continue").assertIsDisplayed()
     }
 
     @Test
@@ -86,10 +82,10 @@ class GameDownloadAndLaunchTest {
 
         setContent { harness.App() }
 
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
 
         // Verify emulation actually started via the fake controller
         assertTrue(harness.libretroController.isRunning, "Emulation should be running")
@@ -109,10 +105,14 @@ class GameDownloadAndLaunchTest {
 
         setContent { harness.App() }
 
-        advance(harness, this)
+        advance(harness)
 
         onNodeWithContentDescription("Play Castlevania").performClick()
-        advance(harness, this)
+        advance(harness)
+
+        // Open overlay to see game title
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advance(harness)
 
         // The overlay should show the game title (multiple nodes may match due to merged semantics)
         onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()

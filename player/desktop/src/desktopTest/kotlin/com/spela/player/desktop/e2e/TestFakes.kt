@@ -1,5 +1,7 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.test.ComposeUiTest
+import androidx.compose.ui.test.ExperimentalTestApi
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
@@ -16,10 +18,35 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.TestDispatcher
+
+/**
+ * Advance both the test dispatcher and Compose clock in bounded steps.
+ *
+ * Compose Multiplatform 1.7.x `waitForIdle()` hangs when the composition
+ * contains infinite animations (`rememberInfiniteTransition`).  Disabling
+ * `mainClock.autoAdvance` prevents this.
+ *
+ * We use bounded `advanceTimeBy` instead of `advanceUntilIdle()` on the
+ * test dispatcher so that perpetual coroutine loops (e.g. the session
+ * timer in EmulationViewModel) don't hang the scheduler.  Multiple
+ * iterations handle cascading async chains (click → navigation → compose
+ * effect → ViewModel coroutine → state update → recomposition).
+ */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.advance(harness: SpelaTestHarness) {
+    mainClock.autoAdvance = false
+    repeat(8) {
+        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
+        harness.testDispatcher.scheduler.runCurrent()
+        mainClock.advanceTimeBy(1_000)
+        waitForIdle()
+    }
+}
 
 fun createTestDispatchers(testDispatcher: TestDispatcher): DispatcherProvider {
     return object : DispatcherProvider {
