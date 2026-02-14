@@ -370,3 +370,28 @@ export interface SharedSavesResponse {
   page: number;
   pageSize: number;
 }
+
+export interface Collection {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  name: string;
+  description?: string;
+  isPublic: boolean;
+  coverUrl?: string;
+  gameCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CollectionDetail extends Collection {
+  games: Game[];
+}
+
+export interface CollectionsResponse {
+  data: Collection[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

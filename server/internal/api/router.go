@@ -105,6 +105,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
+	collectionHandler := &CollectionHandler{DB: cfg.DB, Hub: cfg.Hub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
@@ -187,6 +188,16 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/user/devices/:id", deviceHandler.DeleteDevice)
 		api.GET("/user/devices/:id/preferences", deviceHandler.GetDevicePreferences)
 		api.PUT("/user/devices/:id/preferences", deviceHandler.UpdateDevicePreferences)
+
+		// Collections
+		api.POST("/collections", collectionHandler.CreateCollection)
+		api.GET("/collections", collectionHandler.ListMyCollections)
+		api.GET("/collections/public", collectionHandler.ListPublicCollections)
+		api.GET("/collections/:id", collectionHandler.GetCollection)
+		api.PUT("/collections/:id", collectionHandler.UpdateCollection)
+		api.DELETE("/collections/:id", collectionHandler.DeleteCollection)
+		api.POST("/collections/:id/games", collectionHandler.AddGame)
+		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
 
 		// Social
 		api.GET("/social/online", socialHandler.GetOnlineUsers)

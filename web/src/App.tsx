@@ -20,6 +20,8 @@ import { PreferencesPage } from "@/pages/preferences-page";
 import { PlayPage } from "@/pages/play-page";
 import { StatsPage } from "@/pages/stats-page";
 import { ActivityPage } from "@/pages/activity-page";
+import { CollectionsPage } from "@/pages/collections-page";
+import { CollectionDetailPage } from "@/pages/collection-detail-page";
 import { SetupPage } from "@/pages/setup-page";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -74,6 +76,8 @@ export function App() {
                 <Route path="games" element={<GamesPage />} />
                 <Route path="games/:id" element={<GameDetailPage />} />
                 <Route path="favorites" element={<FavoritesPage />} />
+                <Route path="collections" element={<CollectionsPage />} />
+                <Route path="collections/:id" element={<CollectionDetailPage />} />
                 <Route path="stats" element={<StatsPage />} />
                 <Route path="activity" element={<ActivityPage />} />
                 <Route path="preferences" element={<PreferencesPage />} />

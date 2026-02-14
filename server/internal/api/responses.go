@@ -340,6 +340,27 @@ type SharedSaveResponse struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
+// CollectionResponse is the API response for a game collection.
+type CollectionResponse struct {
+	ID          string    `json:"id"`
+	UserID      string    `json:"userId"`
+	Username    string    `json:"username"`
+	AvatarURL   string    `json:"avatarUrl,omitempty"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	IsPublic    bool      `json:"isPublic"`
+	CoverURL    string    `json:"coverUrl,omitempty"`
+	GameCount   int       `json:"gameCount"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+// CollectionDetailResponse is the API response for a collection with its games.
+type CollectionDetailResponse struct {
+	CollectionResponse
+	Games []GameResponse `json:"games"`
+}
+
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
 func parseAspectRatio(aspect string) float64 {
 	parts := strings.SplitN(aspect, ":", 2)

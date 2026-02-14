@@ -274,6 +274,31 @@ type ActivityEvent struct {
 	Metadata  string         `gorm:"type:text" json:"metadata,omitempty"` // JSON
 }
 
+// GameCollection represents a user-created collection of games.
+type GameCollection struct {
+	ID          uint           `gorm:"primarykey" json:"id"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID      uint           `gorm:"index;not null" json:"userId"`
+	User        User           `gorm:"foreignKey:UserID" json:"-"`
+	Name        string         `gorm:"size:255;not null" json:"name"`
+	Description string         `gorm:"type:text" json:"description,omitempty"`
+	IsPublic    bool           `gorm:"default:false" json:"isPublic"`
+	Items       []CollectionItem `gorm:"foreignKey:CollectionID" json:"items,omitempty"`
+}
+
+// CollectionItem represents a game within a collection.
+type CollectionItem struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	CollectionID uint           `gorm:"uniqueIndex:idx_collection_game;not null" json:"collectionId"`
+	GameID       uint           `gorm:"uniqueIndex:idx_collection_game;not null" json:"gameId"`
+	Game         Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Position     int            `gorm:"default:0" json:"position"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

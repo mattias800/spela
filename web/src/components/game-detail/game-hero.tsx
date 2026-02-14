@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import {
   Heart,
   Calendar,
@@ -23,6 +24,7 @@ interface GameHeroProps {
   isFavorite: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
+  extraButtons?: ReactNode;
   onPlay: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
@@ -35,6 +37,7 @@ export function GameHero({
   isFavorite,
   isScraping,
   hasAchievements,
+  extraButtons,
   onPlay,
   onScrape,
   onToggleFavorite,
@@ -111,6 +114,7 @@ export function GameHero({
                 />
                 {isFavorite ? "Unfavorite" : "Favorite"}
               </Button>
+              {extraButtons}
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">

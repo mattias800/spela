@@ -1,13 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FolderPlus } from "lucide-react";
 import { Button, GameDetailSkeleton } from "@/components/ui";
+import { useToast } from "@/components/ui";
 import { useGame, useGameSaves, useToggleFavorite, useScrapeIfNeeded } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMyCollections, useAddGameToCollection } from "@/hooks/use-collections";
 import { GameHero } from "@/components/game-detail/game-hero";
 import { GameScreenshots } from "@/components/game-detail/game-screenshots";
 import { GameCommunityStats } from "@/components/game-detail/game-community-stats";
@@ -19,6 +21,78 @@ import { RatingSummaryCard } from "@/components/game-detail/rating-summary";
 import { GameReviews } from "@/components/game-detail/game-reviews";
 import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
+import type { Collection } from "@/types/api";
+
+function AddToCollectionButton({ gameId }: { gameId: string }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { data: collectionsData } = useMyCollections(1, 100);
+  const addGame = useAddGameToCollection();
+  const { toast } = useToast();
+
+  const collections = collectionsData?.data ?? [];
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  function handleAdd(collection: Collection) {
+    addGame.mutate(
+      { collectionId: collection.id, gameId },
+      {
+        onSuccess: () => {
+          toast("success", `Added to ${collection.name}`);
+          setOpen(false);
+        },
+        onError: () => {
+          toast("error", "Failed to add to collection");
+        },
+      },
+    );
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => setOpen(!open)}
+      >
+        <FolderPlus className="h-4 w-4" />
+        Add to Collection
+      </Button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-40 w-64 rounded-xl bg-surface-900 border border-surface-800 shadow-2xl py-1 max-h-64 overflow-y-auto">
+          {collections.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-surface-500">
+              No collections yet. Create one first.
+            </p>
+          ) : (
+            collections.map((collection) => (
+              <button
+                key={collection.id}
+                onClick={() => handleAdd(collection)}
+                className="w-full text-left px-3 py-2 text-sm text-surface-200 hover:bg-surface-800 transition-colors flex items-center justify-between"
+              >
+                <span className="truncate">{collection.name}</span>
+                <span className="text-xs text-surface-500 flex-shrink-0 ml-2">
+                  {collection.gameCount} games
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,6 +168,7 @@ export function GameDetailPage() {
         isFavorite={isFavorite}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
+        extraButtons={<AddToCollectionButton gameId={game.id} />}
         onPlay={() => navigate(`/games/${game.id}/play`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
