@@ -49,6 +49,8 @@ class GameListViewModelTest {
             getRecentGamesUseCase = GetRecentGamesUseCase(fakeGameRepo),
             getFavoriteGamesUseCase = GetFavoriteGamesUseCase(fakeGameRepo),
             toggleFavoriteUseCase = ToggleFavoriteUseCase(fakeGameRepo),
+            getPlayLaterGamesUseCase = GetPlayLaterGamesUseCase(fakeGameRepo),
+            togglePlayLaterUseCase = TogglePlayLaterUseCase(fakeGameRepo),
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -183,4 +185,8 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun addFavorite(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFavorite(gameId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
 }

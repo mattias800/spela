@@ -45,6 +45,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.SharedSaveState{},
 		&db.GameCollection{},
 		&db.CollectionItem{},
+		&db.PlayLaterItem{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

@@ -23,6 +23,7 @@ import { useToast } from "@/components/ui";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { useToggleFavorite } from "@/hooks/use-games";
+import { useTogglePlayLater } from "@/hooks/use-play-later";
 import {
   useCollection,
   useUpdateCollection,
@@ -64,6 +65,7 @@ export function CollectionDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   const { data: collection, isLoading } = useCollection(id ?? "");
   const updateCollection = useUpdateCollection();
@@ -250,7 +252,7 @@ export function CollectionDetailPage() {
               <GameGrid>
                 {filtered.map((game) => (
                   <div key={game.id} className="relative group/card">
-                    <GameCard game={game} onToggleFavorite={handleToggleFavorite} />
+                    <GameCard game={game} onToggleFavorite={handleToggleFavorite} onTogglePlayLater={handleTogglePlayLater} />
                     {isOwner && (
                       <button
                         onClick={(e) => {

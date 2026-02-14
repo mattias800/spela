@@ -14,4 +14,7 @@ interface GameRepository {
     suspend fun getFavoriteGames(): Result<List<Game>>
     suspend fun addFavorite(gameId: String): Result<Unit>
     suspend fun removeFavorite(gameId: String): Result<Unit>
+    suspend fun getPlayLaterGames(): Result<List<Game>>
+    suspend fun addToPlayLater(gameId: String): Result<Unit>
+    suspend fun removeFromPlayLater(gameId: String): Result<Unit>
 }

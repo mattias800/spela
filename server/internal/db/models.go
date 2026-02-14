@@ -299,6 +299,18 @@ type CollectionItem struct {
 	Position     int            `gorm:"default:0" json:"position"`
 }
 
+// PlayLaterItem represents a game in a user's Play Later queue.
+type PlayLaterItem struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	GameID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"gameId"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Position  int            `gorm:"not null;default:0" json:"position"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

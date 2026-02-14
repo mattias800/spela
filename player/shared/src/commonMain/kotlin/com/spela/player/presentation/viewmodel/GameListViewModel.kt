@@ -18,6 +18,8 @@ class GameListViewModel(
     private val getRecentGamesUseCase: GetRecentGamesUseCase,
     private val getFavoriteGamesUseCase: GetFavoriteGamesUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private val getPlayLaterGamesUseCase: GetPlayLaterGamesUseCase,
+    private val togglePlayLaterUseCase: TogglePlayLaterUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -31,6 +33,7 @@ class GameListViewModel(
             is GameListIntent.SelectConsole -> loadGamesForConsole(intent.consoleId)
             is GameListIntent.Search -> searchGames(intent.query)
             is GameListIntent.ToggleFavorite -> toggleFavorite(intent.gameId, intent.isFavorite)
+            is GameListIntent.TogglePlayLater -> togglePlayLater(intent.gameId, intent.isInPlayLater)
             GameListIntent.DismissError -> _state.update { it.copy(error = null) }
         }
     }
@@ -41,11 +44,13 @@ class GameListViewModel(
             val consoles = getConsolesUseCase().getOrDefault(emptyList())
             val recent = getRecentGamesUseCase().getOrDefault(emptyList())
             val favorites = getFavoriteGamesUseCase().getOrDefault(emptyList())
+            val playLater = getPlayLaterGamesUseCase().getOrDefault(emptyList())
             _state.update {
                 it.copy(
                     consoles = consoles,
                     recentGames = recent,
                     favoriteGames = favorites,
+                    playLaterGames = playLater,
                     isLoading = false,
                 )
             }
@@ -100,6 +105,20 @@ class GameListViewModel(
                 onSuccess = {
                     val updatedFavorites = getFavoriteGamesUseCase().getOrDefault(emptyList())
                     _state.update { it.copy(favoriteGames = updatedFavorites) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun togglePlayLater(gameId: String, isInPlayLater: Boolean) {
+        scope.launch(dispatchers.io) {
+            togglePlayLaterUseCase(gameId, isInPlayLater).fold(
+                onSuccess = {
+                    val updatedPlayLater = getPlayLaterGamesUseCase().getOrDefault(emptyList())
+                    _state.update { it.copy(playLaterGames = updatedPlayLater) }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message) }

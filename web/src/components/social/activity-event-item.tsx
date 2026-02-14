@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Play, Heart, Star, Share2 } from "lucide-react";
+import { Play, Heart, Star, Share2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { formatRelativeTime } from "@/lib/format";
@@ -15,6 +15,8 @@ function eventIcon(eventType: ActivityEvent["eventType"]) {
       return <Star className="h-3.5 w-3.5 text-amber-400" />;
     case "shared_save":
       return <Share2 className="h-3.5 w-3.5 text-green-400" />;
+    case "queued_play_later":
+      return <Clock className="h-3.5 w-3.5 text-brand-400" />;
   }
 }
 
@@ -46,6 +48,8 @@ function eventDescription(event: ActivityEvent): React.ReactNode {
     }
     case "shared_save":
       return <>shared a save for {gameLink}</>;
+    case "queued_play_later":
+      return <>added {gameLink} to their Play Later queue</>;
   }
 }
 

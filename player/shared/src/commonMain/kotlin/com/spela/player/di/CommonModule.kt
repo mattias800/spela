@@ -55,6 +55,8 @@ val commonModule = module {
     factory { GetRecentGamesUseCase(get()) }
     factory { GetFavoriteGamesUseCase(get()) }
     factory { ToggleFavoriteUseCase(get()) }
+    factory { GetPlayLaterGamesUseCase(get()) }
+    factory { TogglePlayLaterUseCase(get()) }
     factory { PrepareGameUseCase(get(), get()) }
     factory { SaveGameStateUseCase(get()) }
     factory { LoadGameStateUseCase(get()) }
@@ -79,6 +81,8 @@ val commonModule = module {
             getRecentGamesUseCase = get(),
             getFavoriteGamesUseCase = get(),
             toggleFavoriteUseCase = get(),
+            getPlayLaterGamesUseCase = get(),
+            togglePlayLaterUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -87,6 +91,7 @@ val commonModule = module {
         GameDetailViewModel(
             getGameDetailUseCase = get(),
             toggleFavoriteUseCase = get(),
+            togglePlayLaterUseCase = get(),
             downloadRepository = get(),
             saveRepository = get(),
             ratingRepository = get(),

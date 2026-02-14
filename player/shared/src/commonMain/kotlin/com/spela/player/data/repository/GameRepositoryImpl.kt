@@ -52,6 +52,18 @@ class GameRepositoryImpl(
         apiClient.removeFavorite(gameId)
     }
 
+    override suspend fun getPlayLaterGames(): Result<List<Game>> = runCatching {
+        apiClient.getPlayLaterGames().map { it.toDomain().resolveImageUrls() }
+    }
+
+    override suspend fun addToPlayLater(gameId: String): Result<Unit> = runCatching {
+        apiClient.addToPlayLater(gameId)
+    }
+
+    override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = runCatching {
+        apiClient.removeFromPlayLater(gameId)
+    }
+
     /** Resolve relative image URLs to absolute URLs using the server base URL. */
     private fun Game.resolveImageUrls(): Game = copy(
         coverUrl = apiClient.resolveUrl(coverUrl),

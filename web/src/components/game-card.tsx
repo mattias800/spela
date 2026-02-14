@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Star } from "lucide-react";
+import { Heart, Star, Clock } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
 import type { Game } from "@/types/api";
@@ -7,9 +7,10 @@ import type { Game } from "@/types/api";
 interface GameCardProps {
   game: Game;
   onToggleFavorite?: (game: Game) => void;
+  onTogglePlayLater?: (game: Game) => void;
 }
 
-export function GameCard({ game, onToggleFavorite }: GameCardProps) {
+export function GameCard({ game, onToggleFavorite, onTogglePlayLater }: GameCardProps) {
   return (
     <Link
       to={`/games/${game.id}`}
@@ -52,6 +53,28 @@ export function GameCard({ game, onToggleFavorite }: GameCardProps) {
           >
             <Heart
               className={cn("h-4 w-4", game.isFavorite && "fill-current")}
+            />
+          </button>
+        )}
+
+        {/* Play Later button */}
+        {onTogglePlayLater && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onTogglePlayLater(game);
+            }}
+            className={cn(
+              "absolute top-2.5 right-12 p-2 rounded-full transition-all duration-200 z-20",
+              "opacity-0 group-hover:opacity-100",
+              game.isInPlayLater
+                ? "bg-brand-500/20 text-brand-400 opacity-100"
+                : "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
+            )}
+          >
+            <Clock
+              className={cn("h-4 w-4", game.isInPlayLater && "fill-current")}
             />
           </button>
         )}

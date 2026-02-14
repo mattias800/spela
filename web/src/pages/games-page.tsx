@@ -4,6 +4,7 @@ import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
+import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useConsoles } from "@/hooks/use-consoles";
 import { GamesFilterBar } from "@/components/games/games-filter-bar";
 import { GameListRow } from "@/components/games/game-list-row";
@@ -23,6 +24,7 @@ export function GamesPage() {
   const { data, isLoading } = useGames(filters);
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   const games = data?.data ?? [];
 
@@ -75,6 +77,7 @@ export function GamesPage() {
               key={game.id}
               game={game}
               onToggleFavorite={handleToggleFavorite}
+              onTogglePlayLater={handleTogglePlayLater}
             />
           ))}
         </GameGrid>

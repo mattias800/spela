@@ -3,10 +3,12 @@ import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
+import { useTogglePlayLater } from "@/hooks/use-play-later";
 
 export function FavoritesPage() {
   const { data: games, isLoading } = useFavoriteGames();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   return (
     <div className="space-y-6">
@@ -36,6 +38,7 @@ export function FavoritesPage() {
               key={game.id}
               game={game}
               onToggleFavorite={handleToggleFavorite}
+              onTogglePlayLater={handleTogglePlayLater}
             />
           ))}
         </GameGrid>

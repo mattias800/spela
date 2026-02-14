@@ -22,12 +22,14 @@ interface GameHeroProps {
   canPlayInBrowser: boolean;
   isAdmin: boolean;
   isFavorite: boolean;
+  isInPlayLater: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
   extraButtons?: ReactNode;
   onPlay: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
+  onTogglePlayLater: () => void;
 }
 
 export function GameHero({
@@ -35,12 +37,14 @@ export function GameHero({
   canPlayInBrowser,
   isAdmin,
   isFavorite,
+  isInPlayLater,
   isScraping,
   hasAchievements,
   extraButtons,
   onPlay,
   onScrape,
   onToggleFavorite,
+  onTogglePlayLater,
 }: GameHeroProps) {
   const consoleName = game.consoleName ?? "";
 
@@ -113,6 +117,19 @@ export function GameHero({
                   )}
                 />
                 {isFavorite ? "Unfavorite" : "Favorite"}
+              </Button>
+              <Button
+                variant={isInPlayLater ? "primary" : "secondary"}
+                size="sm"
+                onClick={onTogglePlayLater}
+              >
+                <Clock
+                  className={cn(
+                    "h-4 w-4",
+                    isInPlayLater && "fill-current",
+                  )}
+                />
+                {isInPlayLater ? "In Queue" : "Play Later"}
               </Button>
               {extraButtons}
             </div>

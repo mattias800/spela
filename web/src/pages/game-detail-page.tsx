@@ -3,6 +3,7 @@ import { ArrowLeft, FolderPlus } from "lucide-react";
 import { Button, GameDetailSkeleton } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useGame, useGameSaves, useToggleFavorite, useScrapeIfNeeded } from "@/hooks/use-games";
+import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -100,6 +101,7 @@ export function GameDetailPage() {
   const { data: game, isLoading } = useGame(id ?? "");
   const { data: saves } = useGameSaves(id ?? "");
   const toggleFavorite = useToggleFavorite();
+  const togglePlayLater = useTogglePlayLater();
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
   const scrapeIfNeeded = useScrapeIfNeeded();
@@ -131,6 +133,7 @@ export function GameDetailPage() {
   });
 
   const isFavorite = game?.isFavorite ?? false;
+  const isInPlayLater = game?.isInPlayLater ?? false;
 
   if (isLoading) {
     return (
@@ -166,6 +169,7 @@ export function GameDetailPage() {
         canPlayInBrowser={canPlayInBrowser}
         isAdmin={isAdmin}
         isFavorite={isFavorite}
+        isInPlayLater={isInPlayLater}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         extraButtons={<AddToCollectionButton gameId={game.id} />}
@@ -173,6 +177,9 @@ export function GameDetailPage() {
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
           toggleFavorite.mutate({ gameId: game.id, isFavorite })
+        }
+        onTogglePlayLater={() =>
+          togglePlayLater.mutate({ gameId: game.id, isInPlayLater })
         }
       />
 

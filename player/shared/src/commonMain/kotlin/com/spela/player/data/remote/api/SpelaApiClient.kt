@@ -138,6 +138,19 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/user/favorites/$gameId")
     }
 
+    /** Returns flat GameResponse[] for user's Play Later queue */
+    suspend fun getPlayLaterGames(): List<GameDto> {
+        return client.get("$baseUrl/api/user/play-later").body()
+    }
+
+    suspend fun addToPlayLater(gameId: String) {
+        client.post("$baseUrl/api/user/play-later/$gameId")
+    }
+
+    suspend fun removeFromPlayLater(gameId: String) {
+        client.delete("$baseUrl/api/user/play-later/$gameId")
+    }
+
     // User Preferences
 
     suspend fun getPreferences(): UserPreferencesDto {

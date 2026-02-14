@@ -164,6 +164,7 @@ fun HomeScreen(
             ) {
                 val isEmpty = state.recentGames.isEmpty() &&
                         state.favoriteGames.isEmpty() &&
+                        state.playLaterGames.isEmpty() &&
                         state.consoles.isEmpty()
 
                 if (isEmpty && !state.isLoading) {
@@ -188,6 +189,22 @@ fun HomeScreen(
                                 Spacer(Modifier.height(SpSpacing.Medium))
                                 ContinuePlayingRow(
                                     games = state.recentGames.take(10),
+                                    onGameSelected = onGameSelected,
+                                )
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Play Later section
+                        if (state.playLaterGames.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Play Later",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                GameCarouselRow(
+                                    games = state.playLaterGames.take(10),
                                     onGameSelected = onGameSelected,
                                 )
                                 Spacer(Modifier.height(SpSpacing.XLarge))

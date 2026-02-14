@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -138,6 +139,7 @@ private fun formatActivityAction(event: ActivityEvent): String {
         "favorited_game" -> "favorited $gameName"
         "rated_game" -> "rated $gameName"
         "shared_save" -> "shared a save for $gameName"
+        "queued_play_later" -> "added $gameName to Play Later queue"
         else -> "did something with $gameName"
     }
 }
@@ -148,6 +150,7 @@ private fun getEventIconAndColor(eventType: String): Pair<ImageVector, androidx.
         "favorited_game" -> Icons.Filled.Favorite to SpColor.Secondary
         "rated_game" -> Icons.Filled.Star to SpColor.Warning
         "shared_save" -> Icons.Filled.Save to SpColor.Accent
+        "queued_play_later" -> Icons.Filled.WatchLater to SpColor.Accent
         else -> Icons.Filled.PlayArrow to SpColor.OnBackgroundTertiary
     }
 }

@@ -49,6 +49,7 @@ type GameResponse struct {
 	ScraperID      string   `json:"scraperId,omitempty"`
 	ScrapeAttempts int      `json:"scrapeAttempts"`
 	IsFavorite     bool     `json:"isFavorite"`
+	IsInPlayLater  bool     `json:"isInPlayLater"`
 	LastPlayedAt   *time.Time `json:"lastPlayedAt"`
 	TotalPlayTime  int64    `json:"totalPlayTime"`
 	AverageRating  float64  `json:"averageRating"`
@@ -98,16 +99,19 @@ type ratingAggregate struct {
 // userGameData holds pre-loaded per-user enrichment data for games.
 type userGameData struct {
 	favorites   map[uint]bool
+	playLater   map[uint]bool
 	playHistory map[uint]*db.PlayHistory
 	userRatings map[uint]int            // gameID -> user's rating (1-5)
 	ratingAggs  map[uint]ratingAggregate // gameID -> aggregate rating data
 }
 
-// loadUserGameData batch-loads favorites and play history for a set of game IDs.
-// This runs 2 queries total regardless of the number of games.
+// loadUserGameData batch-loads favorites, play later, play history, ratings, and
+// user ratings for a set of game IDs. This runs 5 queries total regardless of the
+// number of games (1 for rating aggregates + 4 user-scoped queries).
 func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameData {
 	data := userGameData{
 		favorites:   make(map[uint]bool, len(gameIDs)),
+		playLater:   make(map[uint]bool, len(gameIDs)),
 		playHistory: make(map[uint]*db.PlayHistory, len(gameIDs)),
 		userRatings: make(map[uint]int, len(gameIDs)),
 		ratingAggs:  make(map[uint]ratingAggregate, len(gameIDs)),
@@ -144,6 +148,13 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&favs)
 	for _, f := range favs {
 		data.favorites[f.GameID] = true
+	}
+
+	// Batch-load play later items
+	var playLaterItems []db.PlayLaterItem
+	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&playLaterItems)
+	for _, item := range playLaterItems {
+		data.playLater[item.GameID] = true
 	}
 
 	// Batch-load play history
@@ -216,6 +227,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 
 	if data != nil {
 		resp.IsFavorite = data.favorites[g.ID]
+		resp.IsInPlayLater = data.playLater[g.ID]
 		if ph, ok := data.playHistory[g.ID]; ok {
 			resp.LastPlayedAt = &ph.LastPlayed
 			resp.TotalPlayTime = ph.PlayTime

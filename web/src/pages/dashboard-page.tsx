@@ -5,6 +5,7 @@ import { GameGrid } from "@/components/game-grid";
 import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
 import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
+import { usePlayLaterGames, useTogglePlayLater } from "@/hooks/use-play-later";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
 import { ActivityFeed } from "@/components/social/activity-feed";
@@ -44,10 +45,12 @@ function GameRow({
   games,
   isLoading,
   onToggleFavorite,
+  onTogglePlayLater,
 }: {
   games: Game[] | undefined;
   isLoading: boolean;
   onToggleFavorite: (game: Game) => void;
+  onTogglePlayLater?: (game: Game) => void;
 }) {
   if (isLoading) {
     return (
@@ -68,6 +71,7 @@ function GameRow({
           key={game.id}
           game={game}
           onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
         />
       ))}
     </GameGrid>
@@ -166,10 +170,13 @@ export function DashboardPage() {
   const { user } = useAuth();
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
+  const playLaterGames = usePlayLaterGames();
   const allGames = useGames({ pageSize: 12, sortBy: "title", sortOrder: "asc" });
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   const hasRecent = recentGames.data && recentGames.data.length > 0;
+  const hasPlayLater = playLaterGames.data && playLaterGames.data.length > 0;
   const hasFavorites = favoriteGames.data && favoriteGames.data.length > 0;
   const hasGames = allGames.data && allGames.data.data && allGames.data.data.length > 0;
   const isLoading = recentGames.isLoading || favoriteGames.isLoading || allGames.isLoading;
@@ -200,12 +207,24 @@ export function DashboardPage() {
 
       {(recentGames.isLoading || hasRecent) && (
         <section>
-          <SectionHeader title="Continue Playing" icon={Clock} linkTo="/games" />
+          <SectionHeader title="Continue Playing" icon={Play} linkTo="/games" />
           <GameRow
             games={recentGames.data}
             isLoading={recentGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
+            onTogglePlayLater={handleTogglePlayLater}
+          />
+        </section>
+      )}
 
+      {(playLaterGames.isLoading || hasPlayLater) && (
+        <section>
+          <SectionHeader title="Play Later" icon={Clock} linkTo="/play-later" />
+          <GameRow
+            games={playLaterGames.data}
+            isLoading={playLaterGames.isLoading}
+            onToggleFavorite={handleToggleFavorite}
+            onTogglePlayLater={handleTogglePlayLater}
           />
         </section>
       )}
@@ -217,7 +236,7 @@ export function DashboardPage() {
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
-
+            onTogglePlayLater={handleTogglePlayLater}
           />
         </section>
       )}
@@ -229,7 +248,7 @@ export function DashboardPage() {
             games={allGames.data?.data}
             isLoading={allGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
-
+            onTogglePlayLater={handleTogglePlayLater}
           />
         </section>
       )}

@@ -43,7 +43,9 @@ import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.intent.GameDetailIntent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -344,6 +346,23 @@ private fun GameInfoContent(
             leadingIcon = {
                 Icon(
                     imageVector = if (game.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        SpButton(
+            text = "",
+            onClick = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+            style = if (game.isInPlayLater) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
+            modifier = Modifier.semantics {
+                contentDescription = if (game.isInPlayLater) "Remove from Play Later" else "Add to Play Later"
+                role = Role.Button
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (game.isInPlayLater) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )

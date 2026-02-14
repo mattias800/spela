@@ -339,6 +339,12 @@ class EmulationViewModelSecondaryDisplayTest {
             Result.success(Unit)
         override suspend fun removeFavorite(gameId: String): Result<Unit> =
             Result.success(Unit)
+        override suspend fun getPlayLaterGames(): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun addToPlayLater(gameId: String): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun removeFromPlayLater(gameId: String): Result<Unit> =
+            Result.success(Unit)
     }
 
     private class StubDownloadRepository : DownloadRepository {
@@ -402,6 +408,12 @@ class EmulationViewModelSecondaryDisplayTest {
         override suspend fun addFavorite(gameId: String): Result<Unit> =
             Result.success(Unit)
         override suspend fun removeFavorite(gameId: String): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun getPlayLaterGames(): Result<List<Game>> =
+            Result.success(emptyList())
+        override suspend fun addToPlayLater(gameId: String): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun removeFromPlayLater(gameId: String): Result<Unit> =
             Result.success(Unit)
     }
 

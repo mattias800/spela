@@ -75,6 +75,8 @@ class SpelaTestHarness(
         getRecentGamesUseCase = GetRecentGamesUseCase(gameRepo),
         getFavoriteGamesUseCase = GetFavoriteGamesUseCase(gameRepo),
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
+        getPlayLaterGamesUseCase = GetPlayLaterGamesUseCase(gameRepo),
+        togglePlayLaterUseCase = TogglePlayLaterUseCase(gameRepo),
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -85,6 +87,7 @@ class SpelaTestHarness(
     val gameDetailViewModel = GameDetailViewModel(
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
+        togglePlayLaterUseCase = TogglePlayLaterUseCase(gameRepo),
         downloadRepository = downloadRepo,
         saveRepository = saveRepo,
         ratingRepository = ratingRepo,

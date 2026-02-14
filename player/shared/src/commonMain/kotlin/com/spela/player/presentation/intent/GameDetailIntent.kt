@@ -6,6 +6,7 @@ sealed interface GameDetailIntent {
     data object PlayGame : GameDetailIntent
     data object DeleteLocalGame : GameDetailIntent
     data object ToggleFavorite : GameDetailIntent
+    data object TogglePlayLater : GameDetailIntent
     data class RateGame(val rating: Int, val review: String = "") : GameDetailIntent
     data object DeleteRating : GameDetailIntent
     data object LoadSharedSaves : GameDetailIntent

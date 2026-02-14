@@ -45,3 +45,17 @@ class ToggleFavoriteUseCase(private val gameRepository: GameRepository) {
         }
     }
 }
+
+class GetPlayLaterGamesUseCase(private val gameRepository: GameRepository) {
+    suspend operator fun invoke(): Result<List<Game>> = gameRepository.getPlayLaterGames()
+}
+
+class TogglePlayLaterUseCase(private val gameRepository: GameRepository) {
+    suspend operator fun invoke(gameId: String, isInPlayLater: Boolean): Result<Unit> {
+        return if (isInPlayLater) {
+            gameRepository.removeFromPlayLater(gameId)
+        } else {
+            gameRepository.addToPlayLater(gameId)
+        }
+    }
+}

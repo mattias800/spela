@@ -6,6 +6,7 @@ import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState, SearchInput } from "@/components/ui";
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
+import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
 
@@ -15,6 +16,7 @@ export function ConsoleDetailPage() {
   const { data: games, isLoading } = useConsoleGames(id ?? "");
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
   const [search, setSearch] = useState("");
 
   // Find console info from the consoles list
@@ -95,6 +97,7 @@ export function ConsoleDetailPage() {
               key={game.id}
               game={game}
               onToggleFavorite={handleToggleFavorite}
+              onTogglePlayLater={handleTogglePlayLater}
             />
           ))}
         </GameGrid>

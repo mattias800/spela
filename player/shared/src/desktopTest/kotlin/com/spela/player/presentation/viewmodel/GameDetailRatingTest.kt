@@ -7,6 +7,7 @@ import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
+import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
@@ -58,6 +59,7 @@ class GameDetailRatingTest {
         return GameDetailViewModel(
             getGameDetailUseCase = GetGameDetailUseCase(fakeGameRepo),
             toggleFavoriteUseCase = ToggleFavoriteUseCase(fakeGameRepo),
+            togglePlayLaterUseCase = TogglePlayLaterUseCase(fakeGameRepo),
             downloadRepository = fakeDownloadRepo,
             saveRepository = fakeSaveRepo,
             ratingRepository = fakeRatingRepo,
@@ -145,6 +147,9 @@ private class StubGameRepository : GameRepository {
     override suspend fun getFavoriteGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun addFavorite(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFavorite(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
 }
 
 private class StubRatingRepository : RatingRepository {

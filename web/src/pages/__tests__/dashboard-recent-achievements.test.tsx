@@ -29,6 +29,11 @@ vi.mock("@/hooks/use-social", () => ({
   useActivityRealtime: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-play-later", () => ({
+  usePlayLaterGames: vi.fn(() => ({ data: [], isLoading: false })),
+  useTogglePlayLater: vi.fn(() => ({ toggle: vi.fn() })),
+}));
+
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 
 const mockUseRecentAchievements = useRecentAchievements as ReturnType<typeof vi.fn>;

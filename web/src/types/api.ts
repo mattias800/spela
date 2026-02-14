@@ -52,6 +52,7 @@ export interface Game {
   scraperId?: string;
   scrapeAttempts: number;
   isFavorite: boolean;
+  isInPlayLater: boolean;
   averageRating: number;
   ratingCount: number;
   userRating?: number;
@@ -309,7 +310,7 @@ export interface ActivityEvent {
   userId: string;
   username: string;
   userAvatarUrl?: string;
-  eventType: "started_playing" | "favorited_game" | "rated_game" | "shared_save";
+  eventType: "started_playing" | "favorited_game" | "rated_game" | "shared_save" | "queued_play_later";
   gameId: string;
   gameTitle: string;
   gameCoverUrl?: string;

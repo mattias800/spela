@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
+import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.SaveRepository
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 class GameDetailViewModel(
     private val getGameDetailUseCase: GetGameDetailUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private val togglePlayLaterUseCase: TogglePlayLaterUseCase,
     private val downloadRepository: DownloadRepository,
     private val saveRepository: SaveRepository,
     private val ratingRepository: RatingRepository,
@@ -41,6 +43,7 @@ class GameDetailViewModel(
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
             GameDetailIntent.ToggleFavorite -> toggleFavorite()
+            GameDetailIntent.TogglePlayLater -> togglePlayLater()
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
             GameDetailIntent.DeleteRating -> deleteRating()
             GameDetailIntent.LoadSharedSaves -> loadSharedSaves()
@@ -152,6 +155,26 @@ class GameDetailViewModel(
                 onSuccess = {
                     _state.update {
                         val updatedGame = it.gameDetail?.game?.copy(isFavorite = !currentlyFavorite)
+                        it.copy(
+                            gameDetail = updatedGame?.let { g -> it.gameDetail?.copy(game = g) }
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun togglePlayLater() {
+        val detail = _state.value.gameDetail ?: return
+        val currentlyInPlayLater = detail.game.isInPlayLater
+        scope.launch(dispatchers.io) {
+            togglePlayLaterUseCase(detail.game.id, currentlyInPlayLater).fold(
+                onSuccess = {
+                    _state.update {
+                        val updatedGame = it.gameDetail?.game?.copy(isInPlayLater = !currentlyInPlayLater)
                         it.copy(
                             gameDetail = updatedGame?.let { g -> it.gameDetail?.copy(game = g) }
                         )

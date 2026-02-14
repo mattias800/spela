@@ -8,6 +8,7 @@ data class GameListState(
     val games: List<Game> = emptyList(),
     val recentGames: List<Game> = emptyList(),
     val favoriteGames: List<Game> = emptyList(),
+    val playLaterGames: List<Game> = emptyList(),
     val selectedConsoleId: String? = null,
     val searchQuery: String = "",
     val isLoading: Boolean = false,

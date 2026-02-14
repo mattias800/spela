@@ -106,6 +106,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	collectionHandler := &CollectionHandler{DB: cfg.DB, Hub: cfg.Hub}
+	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
@@ -180,6 +181,12 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
 		api.DELETE("/user/favorites/:gameId", userHandler.RemoveFavorite)
+
+		// Play Later
+		api.GET("/user/play-later", playLaterHandler.ListPlayLater)
+		api.POST("/user/play-later/:gameId", playLaterHandler.AddToPlayLater)
+		api.DELETE("/user/play-later/:gameId", playLaterHandler.RemoveFromPlayLater)
+		api.PUT("/user/play-later/reorder", playLaterHandler.ReorderPlayLater)
 
 		// Devices
 		api.POST("/user/devices", deviceHandler.RegisterDevice)

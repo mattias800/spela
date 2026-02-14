@@ -12,6 +12,7 @@ import { ConsoleDetailPage } from "@/pages/console-detail-page";
 import { GamesPage } from "@/pages/games-page";
 import { GameDetailPage } from "@/pages/game-detail-page";
 import { FavoritesPage } from "@/pages/favorites-page";
+import { PlayLaterPage } from "@/pages/play-later-page";
 import { AdminUsersPage } from "@/pages/admin/users-page";
 import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
@@ -76,6 +77,7 @@ export function App() {
                 <Route path="games" element={<GamesPage />} />
                 <Route path="games/:id" element={<GameDetailPage />} />
                 <Route path="favorites" element={<FavoritesPage />} />
+                <Route path="play-later" element={<PlayLaterPage />} />
                 <Route path="collections" element={<CollectionsPage />} />
                 <Route path="collections/:id" element={<CollectionDetailPage />} />
                 <Route path="stats" element={<StatsPage />} />

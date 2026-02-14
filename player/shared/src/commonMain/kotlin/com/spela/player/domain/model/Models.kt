@@ -60,6 +60,7 @@ data class Game(
     val ratingCount: Long = 0,
     val userRating: Int? = null,
     val isFavorite: Boolean = false,
+    val isInPlayLater: Boolean = false,
     val lastPlayedAt: String? = null,
     val totalPlayTime: Long = 0,
 )

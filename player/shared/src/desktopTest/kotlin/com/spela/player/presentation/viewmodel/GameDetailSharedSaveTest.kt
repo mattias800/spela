@@ -6,6 +6,7 @@ import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
+import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
@@ -50,9 +51,11 @@ class GameDetailSharedSaveTest {
     private fun createViewModel(): GameDetailViewModel {
         val scope = CoroutineScope(testDispatcher)
         val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
+        val testGameRepo = TestGameRepository()
         return GameDetailViewModel(
-            getGameDetailUseCase = GetGameDetailUseCase(TestGameRepository()),
-            toggleFavoriteUseCase = ToggleFavoriteUseCase(TestGameRepository()),
+            getGameDetailUseCase = GetGameDetailUseCase(testGameRepo),
+            toggleFavoriteUseCase = ToggleFavoriteUseCase(testGameRepo),
+            togglePlayLaterUseCase = TogglePlayLaterUseCase(testGameRepo),
             downloadRepository = TestDownloadRepository(),
             saveRepository = fakeSaveRepo,
             ratingRepository = TestRatingRepository(),
@@ -200,6 +203,9 @@ private class TestGameRepository : GameRepository {
     override suspend fun getFavoriteGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun addFavorite(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFavorite(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
 }
 
 private class TestRatingRepository : RatingRepository {

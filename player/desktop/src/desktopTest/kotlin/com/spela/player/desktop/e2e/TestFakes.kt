@@ -175,7 +175,7 @@ class FakeGameRepository : GameRepository {
         Console("2", "Super Nintendo", "SNES", 2, "#3182ce"),
     )
 
-    val games = listOf(
+    var games: List<Game> = listOf(
         Game(
             id = "1",
             title = "Castlevania",
@@ -284,6 +284,13 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun addFavorite(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFavorite(gameId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun getPlayLaterGames(): Result<List<Game>> {
+        return Result.success(games.filter { it.isInPlayLater })
+    }
+
+    override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
 }
 
 class FakeDownloadRepository : DownloadRepository {

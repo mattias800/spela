@@ -51,6 +51,7 @@ fun GameDto.toDomain(): Game = Game(
     ratingCount = ratingCount,
     userRating = userRating,
     isFavorite = isFavorite,
+    isInPlayLater = isInPlayLater,
     lastPlayedAt = lastPlayedAt,
     totalPlayTime = totalPlayTime,
 )
