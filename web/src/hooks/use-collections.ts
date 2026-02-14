@@ -2,23 +2,29 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { CollectionsResponse, CollectionDetail } from "@/types/api";
 
-export function useMyCollections(page = 1, pageSize = 20) {
+export function useMyCollections(page = 1, pageSize = 20, search = "") {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("pageSize", String(pageSize));
+  if (search) params.set("search", search);
+
   return useQuery({
-    queryKey: ["collections", "mine", page, pageSize],
+    queryKey: ["collections", "mine", page, pageSize, search],
     queryFn: () =>
-      api.get<CollectionsResponse>(
-        `/collections?page=${page}&pageSize=${pageSize}`,
-      ),
+      api.get<CollectionsResponse>(`/collections?${params}`),
   });
 }
 
-export function usePublicCollections(page = 1, pageSize = 20) {
+export function usePublicCollections(page = 1, pageSize = 20, search = "") {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("pageSize", String(pageSize));
+  if (search) params.set("search", search);
+
   return useQuery({
-    queryKey: ["collections", "public", page, pageSize],
+    queryKey: ["collections", "public", page, pageSize, search],
     queryFn: () =>
-      api.get<CollectionsResponse>(
-        `/collections/public?page=${page}&pageSize=${pageSize}`,
-      ),
+      api.get<CollectionsResponse>(`/collections/public?${params}`),
   });
 }
 

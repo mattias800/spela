@@ -1,8 +1,9 @@
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { GameCardSkeleton, EmptyState } from "@/components/ui";
+import { GameCardSkeleton, EmptyState, SearchInput } from "@/components/ui";
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { getConsoleStyle } from "@/lib/console-metadata";
@@ -14,6 +15,7 @@ export function ConsoleDetailPage() {
   const { data: games, isLoading } = useConsoleGames(id ?? "");
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const [search, setSearch] = useState("");
 
   // Find console info from the consoles list
   const console = consoles?.find((c) => c.id === id);
@@ -23,6 +25,12 @@ export function ConsoleDetailPage() {
   const gameList = games ?? [];
   const style = getConsoleStyle(consoleAbbr);
   const Icon = style.icon;
+
+  const filteredGames = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return gameList;
+    return gameList.filter((g) => g.title.toLowerCase().includes(q));
+  }, [gameList, search]);
 
   return (
     <div className="space-y-6">
@@ -53,6 +61,16 @@ export function ConsoleDetailPage() {
         </div>
       </div>
 
+      {/* Search */}
+      {gameList.length > 5 && (
+        <SearchInput
+          placeholder={`Search ${consoleName} games...`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+      )}
+
       {/* Games grid */}
       {isLoading ? (
         <GameGrid>
@@ -60,15 +78,19 @@ export function ConsoleDetailPage() {
             <GameCardSkeleton key={i} />
           ))}
         </GameGrid>
-      ) : gameList.length === 0 ? (
+      ) : filteredGames.length === 0 ? (
         <EmptyState
           icon={Library}
-          title="No games found"
-          description="No games have been detected for this console yet."
+          title={search.trim() ? "No matching games" : "No games found"}
+          description={
+            search.trim()
+              ? `No games matching "${search.trim()}" for this console.`
+              : "No games have been detected for this console yet."
+          }
         />
       ) : (
         <GameGrid>
-          {gameList.map((game) => (
+          {filteredGames.map((game) => (
             <GameCard
               key={game.id}
               game={game}

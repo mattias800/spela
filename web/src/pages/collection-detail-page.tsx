@@ -17,6 +17,7 @@ import {
   Badge,
   Skeleton,
   EmptyState,
+  SearchInput,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { GameCard } from "@/components/game-card";
@@ -69,6 +70,7 @@ export function CollectionDetailPage() {
   const deleteCollection = useDeleteCollection();
   const removeGame = useRemoveGameFromCollection();
 
+  const [search, setSearch] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editName, setEditName] = useState("");
@@ -222,26 +224,52 @@ export function CollectionDetailPage() {
           }
         />
       ) : (
-        <GameGrid>
-          {collection.games.map((game) => (
-            <div key={game.id} className="relative group/card">
-              <GameCard game={game} onToggleFavorite={handleToggleFavorite} />
-              {isOwner && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleRemoveGame(game.id);
-                  }}
-                  className="absolute top-2.5 left-2.5 p-1.5 rounded-full bg-black/60 text-surface-300 hover:text-danger-500 hover:bg-black/80 opacity-0 group-hover/card:opacity-100 transition-all z-20"
-                  title="Remove from collection"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
-        </GameGrid>
+        <>
+          {collection.games.length > 5 && (
+            <SearchInput
+              placeholder="Search games in this collection..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm"
+            />
+          )}
+          {(() => {
+            const filtered = search.trim()
+              ? collection.games.filter((g) =>
+                  g.title.toLowerCase().includes(search.trim().toLowerCase()),
+                )
+              : collection.games;
+
+            return filtered.length === 0 ? (
+              <EmptyState
+                icon={Gamepad2}
+                title="No matching games"
+                description={`No games matching "${search.trim()}" in this collection.`}
+              />
+            ) : (
+              <GameGrid>
+                {filtered.map((game) => (
+                  <div key={game.id} className="relative group/card">
+                    <GameCard game={game} onToggleFavorite={handleToggleFavorite} />
+                    {isOwner && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveGame(game.id);
+                        }}
+                        className="absolute top-2.5 left-2.5 p-1.5 rounded-full bg-black/60 text-surface-300 hover:text-danger-500 hover:bg-black/80 opacity-0 group-hover/card:opacity-100 transition-all z-20"
+                        title="Remove from collection"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </GameGrid>
+            );
+          })()}
+        </>
       )}
 
       {/* Edit Modal */}

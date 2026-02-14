@@ -61,11 +61,24 @@ func (h *CollectionHandler) ListMyCollections(c *gin.Context) {
 		pageSize = 20
 	}
 
+	search := c.Query("search")
+
+	query := h.DB.Model(&db.GameCollection{}).Where("user_id = ?", uid)
+	if search != "" {
+		query = query.Where("name LIKE ?", "%"+search+"%")
+	}
+
 	var total int64
-	h.DB.Model(&db.GameCollection{}).Where("user_id = ?", uid).Count(&total)
+	query.Count(&total)
 
 	var collections []db.GameCollection
 	if err := h.DB.Where("user_id = ?", uid).
+		Scopes(func(d *gorm.DB) *gorm.DB {
+			if search != "" {
+				return d.Where("name LIKE ?", "%"+search+"%")
+			}
+			return d
+		}).
 		Preload("User").
 		Preload("Items").
 		Order("created_at DESC").
@@ -102,11 +115,24 @@ func (h *CollectionHandler) ListPublicCollections(c *gin.Context) {
 		pageSize = 20
 	}
 
+	search := c.Query("search")
+
+	query := h.DB.Model(&db.GameCollection{}).Where("is_public = ?", true)
+	if search != "" {
+		query = query.Where("name LIKE ?", "%"+search+"%")
+	}
+
 	var total int64
-	h.DB.Model(&db.GameCollection{}).Where("is_public = ?", true).Count(&total)
+	query.Count(&total)
 
 	var collections []db.GameCollection
 	if err := h.DB.Where("is_public = ?", true).
+		Scopes(func(d *gorm.DB) *gorm.DB {
+			if search != "" {
+				return d.Where("name LIKE ?", "%"+search+"%")
+			}
+			return d
+		}).
 		Preload("User").
 		Preload("Items").
 		Order("created_at DESC").
