@@ -12,10 +12,12 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
+import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  useGameScrapedListener();
 
   const links = [
     {

@@ -17,9 +17,7 @@ import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
-import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useMyCollections,
   useAddGameToCollection,
@@ -120,7 +118,6 @@ export function GameDetailPage() {
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
   const scrapeIfNeeded = useScrapeIfNeeded();
-  const queryClient = useQueryClient();
   const { data: consoles } = useConsoles();
   const isAdmin =
     currentUser?.role === "admin" || currentUser?.role === "owner";
@@ -132,21 +129,9 @@ export function GameDetailPage() {
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
-      scrapeIfNeeded.mutate(game.id, {
-        onSuccess: () => {
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ["game", game.id] });
-          }, 4000);
-        },
-      });
+      scrapeIfNeeded.mutate(game.id);
     }
   }, [game?.id, game?.scrapeAttempts]);
-
-  useWebSocketEvent("game_scraped", (payload: { id?: string }) => {
-    if (payload.id === id) {
-      queryClient.invalidateQueries({ queryKey: ["game", id] });
-    }
-  });
 
   const isFavorite = game?.isFavorite ?? false;
   const isInPlayLater = game?.isInPlayLater ?? false;
