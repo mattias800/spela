@@ -152,8 +152,8 @@ export function GameHero({
 
       {/* Info */}
       <div className="w-full min-w-0 flex-1 space-y-5 pt-2">
-        <div>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+        <div className="space-y-4">
+          <div>
             <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-2 md:text-3xl">
               {game.title}
               {hasAchievements && (
@@ -163,89 +163,89 @@ export function GameHero({
                 />
               )}
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={onPlay}
-                disabled={!canPlayInBrowser}
-                title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
-                data-testid="play-in-browser-btn"
-              >
-                <Play className="h-5 w-5" />
-                Play in Browser
-              </Button>
-              {/* Desktop: show all buttons inline */}
-              <div className="hidden lg:contents">
-                {isAdmin && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={onScrape}
-                    loading={isScraping}
-                  >
-                    <RefreshCw className="h-5 w-5" />
-                    Scrape Metadata
-                  </Button>
-                )}
-                <Button
-                  variant={isFavorite ? "danger" : "secondary"}
-                  size="sm"
-                  onClick={onToggleFavorite}
-                >
-                  <Heart
-                    className={cn(
-                      "h-5 w-5",
-                      isFavorite && "fill-current",
-                    )}
-                  />
-                  {isFavorite ? "Unfavorite" : "Favorite"}
-                </Button>
-                <Button
-                  variant={isInPlayLater ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={onTogglePlayLater}
-                  disabled={isPlayLaterPending}
-                >
-                  <Clock
-                    className={cn(
-                      "h-5 w-5",
-                      isInPlayLater && "fill-current",
-                    )}
-                  />
-                  {isInPlayLater ? "In Queue" : "Play Later"}
-                </Button>
-                {extraButtons}
-              </div>
-              {/* Mobile/tablet: overflow menu */}
-              <div className="lg:hidden">
-                <OverflowMenu
-                  isAdmin={isAdmin}
-                  isFavorite={isFavorite}
-                  isInPlayLater={isInPlayLater}
-                  isPlayLaterPending={isPlayLaterPending}
-                  isScraping={isScraping}
-                  extraMenuButtons={extraMenuButtons}
-                  onScrape={onScrape}
-                  onToggleFavorite={onToggleFavorite}
-                  onTogglePlayLater={onTogglePlayLater}
-                />
-              </div>
+            <div className="flex items-center gap-3 mt-2">
+              {consoleName && (
+                <Badge variant="brand">{consoleName}</Badge>
+              )}
+              {game.averageRating > 0 && (
+                <span className="flex items-center gap-1 text-sm text-surface-400">
+                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                  {game.averageRating.toFixed(1)}
+                  <span className="text-surface-500">
+                    ({game.ratingCount})
+                  </span>
+                </span>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-2">
-            {consoleName && (
-              <Badge variant="brand">{consoleName}</Badge>
-            )}
-            {game.averageRating > 0 && (
-              <span className="flex items-center gap-1 text-sm text-surface-400">
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                {game.averageRating.toFixed(1)}
-                <span className="text-surface-500">
-                  ({game.ratingCount})
-                </span>
-              </span>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onPlay}
+              disabled={!canPlayInBrowser}
+              title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
+              data-testid="play-in-browser-btn"
+            >
+              <Play className="h-5 w-5" />
+              Play in Browser
+            </Button>
+            {/* Desktop: show all buttons inline */}
+            <div className="hidden lg:contents">
+              {isAdmin && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onScrape}
+                  loading={isScraping}
+                >
+                  <RefreshCw className="h-5 w-5" />
+                  Scrape Metadata
+                </Button>
+              )}
+              <Button
+                variant={isFavorite ? "danger" : "secondary"}
+                size="sm"
+                onClick={onToggleFavorite}
+              >
+                <Heart
+                  className={cn(
+                    "h-5 w-5",
+                    isFavorite && "fill-current",
+                  )}
+                />
+                {isFavorite ? "Unfavorite" : "Favorite"}
+              </Button>
+              <Button
+                variant={isInPlayLater ? "primary" : "secondary"}
+                size="sm"
+                onClick={onTogglePlayLater}
+                disabled={isPlayLaterPending}
+              >
+                <Clock
+                  className={cn(
+                    "h-5 w-5",
+                    isInPlayLater && "fill-current",
+                  )}
+                />
+                {isInPlayLater ? "In Queue" : "Play Later"}
+              </Button>
+              {extraButtons}
+            </div>
+            {/* Mobile/tablet: overflow menu */}
+            <div className="lg:hidden">
+              <OverflowMenu
+                isAdmin={isAdmin}
+                isFavorite={isFavorite}
+                isInPlayLater={isInPlayLater}
+                isPlayLaterPending={isPlayLaterPending}
+                isScraping={isScraping}
+                extraMenuButtons={extraMenuButtons}
+                onScrape={onScrape}
+                onToggleFavorite={onToggleFavorite}
+                onTogglePlayLater={onTogglePlayLater}
+              />
+            </div>
           </div>
         </div>
 
