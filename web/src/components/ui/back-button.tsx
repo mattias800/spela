@@ -12,7 +12,7 @@ export function BackButton({ children = "Back", className, ...props }: BackButto
     <Button
       variant="ghost"
       size="sm"
-      className={cn("gap-2 text-surface-400 hover:text-surface-100 px-0", className)}
+      className={cn("gap-2 text-surface-400 hover:text-surface-100", className)}
       {...props}
     >
       <ArrowLeft className="h-4 w-4" />

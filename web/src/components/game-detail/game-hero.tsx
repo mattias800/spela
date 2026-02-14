@@ -28,6 +28,7 @@ interface GameHeroProps {
   isScraping: boolean;
   hasAchievements?: boolean;
   extraButtons?: ReactNode;
+  extraMenuButtons?: ReactNode;
   onPlay: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
@@ -40,7 +41,7 @@ function OverflowMenu({
   isInPlayLater,
   isPlayLaterPending,
   isScraping,
-  extraButtons,
+  extraMenuButtons,
   onScrape,
   onToggleFavorite,
   onTogglePlayLater,
@@ -51,7 +52,7 @@ function OverflowMenu({
   | "isInPlayLater"
   | "isPlayLaterPending"
   | "isScraping"
-  | "extraButtons"
+  | "extraMenuButtons"
   | "onScrape"
   | "onToggleFavorite"
   | "onTogglePlayLater"
@@ -105,7 +106,7 @@ function OverflowMenu({
         />
         {isInPlayLater ? "In Queue" : "Play Later"}
       </Button>
-      {extraButtons}
+      {extraMenuButtons}
     </DropdownMenu>
   );
 }
@@ -120,6 +121,7 @@ export function GameHero({
   isScraping,
   hasAchievements,
   extraButtons,
+  extraMenuButtons,
   onPlay,
   onScrape,
   onToggleFavorite,
@@ -223,7 +225,7 @@ export function GameHero({
                   isInPlayLater={isInPlayLater}
                   isPlayLaterPending={isPlayLaterPending}
                   isScraping={isScraping}
-                  extraButtons={extraButtons}
+                  extraMenuButtons={extraMenuButtons}
                   onScrape={onScrape}
                   onToggleFavorite={onToggleFavorite}
                   onTogglePlayLater={onTogglePlayLater}

@@ -24,7 +24,13 @@ import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import type { Collection } from "@/types/api";
 
-function AddToCollectionButton({ gameId }: { gameId: string }) {
+function AddToCollectionButton({
+  gameId,
+  menuItem,
+}: {
+  gameId: string;
+  menuItem?: boolean;
+}) {
   const { data: collectionsData } = useMyCollections(1, 100);
   const addGame = useAddGameToCollection();
   const { toast } = useToast();
@@ -50,10 +56,21 @@ function AddToCollectionButton({ gameId }: { gameId: string }) {
       align="right"
       className="w-64"
       trigger={
-        <Button variant="secondary" size="sm">
-          <FolderPlus className="h-5 w-5" />
-          Add to Collection
-        </Button>
+        menuItem ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start rounded-none"
+          >
+            <FolderPlus className="h-4 w-4" />
+            Add to Collection
+          </Button>
+        ) : (
+          <Button variant="secondary" size="sm">
+            <FolderPlus className="h-5 w-5" />
+            Add to Collection
+          </Button>
+        )
       }
     >
       {collections.length === 0 ? (
@@ -153,6 +170,7 @@ export function GameDetailPage() {
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         extraButtons={<AddToCollectionButton gameId={game.id} />}
+        extraMenuButtons={<AddToCollectionButton gameId={game.id} menuItem />}
         onPlay={() => navigate(`/games/${game.id}/play`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>

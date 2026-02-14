@@ -6,19 +6,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +44,8 @@ import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
+import com.spela.player.presentation.ui.components.GameDetailLayout
+import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -54,7 +53,6 @@ import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpHeroCover
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -84,14 +82,7 @@ fun GameDetailScreen(
     }
 
     if (state.isLoading && state.gameDetail == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
-            contentAlignment = Alignment.Center,
-        ) {
-            SpLoadingIndicator(message = "Loading game details...")
-        }
+        GameDetailSkeleton(onBack = onBack)
         return
     }
 
@@ -99,104 +90,30 @@ fun GameDetailScreen(
     val game = detail.game
 
     Box(modifier = Modifier.fillMaxSize()) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        val constraintsMaxWidth = maxWidth
-        val isLandscape = maxWidth > maxHeight
-
-        if (isLandscape) {
-            // Landscape: side-by-side layout
-            Row(modifier = Modifier.fillMaxSize()) {
-                // Left: Cover art
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(constraintsMaxWidth * 0.4f),
-                ) {
-                    SpHeroCover(
-                        imageUrl = game.coverUrl,
-                        contentDescription = "${game.title} cover art",
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    SpTopBar(
-                        title = "",
-                        showBack = true,
-                        onBack = onBack,
-                        modifier = Modifier.background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    SpColor.Background.copy(alpha = 0.7f),
-                                    SpColor.Background.copy(alpha = 0f),
-                                ),
-                            )
-                        ),
-                    )
-                }
-                // Right: Info
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    contentPadding = PaddingValues(SpSpacing.XLarge),
-                ) {
-                    item {
-                        GameInfoContent(
-                            gameId = gameId,
-                            game = game,
-                            detail = detail,
-                            state = state,
-                            viewModel = viewModel,
-                            onPlay = onPlay,
-                        )
-                    }
-                    item {
-                        ScreenshotsSection(detail.screenshots)
-                    }
-                    item {
-                        SaveStatesSection(state.saveStates)
-                    }
-                    item {
-                        CommunitySharesSection(
-                            sharedSaves = state.sharedSaves,
-                            onDownload = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
-                            },
-                            onDelete = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
-                            },
-                        )
-                    }
-                }
-            }
-        } else {
-            // Portrait: stacked layout
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().height(360.dp)) {
-                        SpHeroCover(
-                            imageUrl = game.coverUrl,
-                            contentDescription = "${game.title} cover art",
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        SpTopBar(
-                            title = "",
-                            showBack = true,
-                            onBack = onBack,
-                            modifier = Modifier.background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        SpColor.Background.copy(alpha = 0.7f),
-                                        SpColor.Background.copy(alpha = 0f),
-                                    ),
-                                )
+        GameDetailLayout(
+            topBar = {
+                SpTopBar(
+                    title = "",
+                    showBack = true,
+                    onBack = onBack,
+                    modifier = Modifier.background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                SpColor.Background.copy(alpha = 0.7f),
+                                SpColor.Background.copy(alpha = 0f),
                             ),
                         )
-                    }
-                }
-
+                    ),
+                )
+            },
+            cover = { modifier ->
+                SpHeroCover(
+                    imageUrl = game.coverUrl,
+                    contentDescription = "${game.title} cover art",
+                    modifier = modifier,
+                )
+            },
+            sections = {
                 item {
                     Column(
                         modifier = Modifier
@@ -241,28 +158,23 @@ fun GameDetailScreen(
                         )
                     }
                 }
+            },
+        )
 
-                item {
-                    Spacer(Modifier.height(SpSpacing.XXXLarge))
-                }
-            }
-        }
+        // Error snackbar
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(GameDetailIntent.DismissError) },
+                )
+            },
+            onDismiss = { viewModel.onIntent(GameDetailIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
-
-    // Error snackbar
-    SpSnackbar(
-        data = state.error?.let {
-            SpSnackbarData(
-                message = it,
-                type = SpSnackbarType.Error,
-                actionLabel = "Dismiss",
-                onAction = { viewModel.onIntent(GameDetailIntent.DismissError) },
-            )
-        },
-        onDismiss = { viewModel.onIntent(GameDetailIntent.DismissError) },
-        modifier = Modifier.align(Alignment.BottomCenter),
-    )
-    } // outer Box
 }
 
 @Composable
