@@ -33,7 +33,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   };
 }
 
@@ -213,7 +217,9 @@ describe("useTogglePlayLater", () => {
     };
 
     act(() => {
-      result.current.toggle(game as Parameters<typeof result.current.toggle>[0]);
+      result.current.toggle(
+        game as Parameters<typeof result.current.toggle>[0],
+      );
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

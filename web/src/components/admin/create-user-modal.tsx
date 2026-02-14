@@ -20,7 +20,12 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
   function handleCreateUser() {
     if (!newUsername || !newEmail || !newPassword) return;
     createUser.mutate(
-      { username: newUsername, email: newEmail, password: newPassword, role: newRole },
+      {
+        username: newUsername,
+        email: newEmail,
+        password: newPassword,
+        role: newRole,
+      },
       {
         onSuccess: () => {
           toast("success", "User created");
@@ -36,12 +41,7 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Create User"
-      size="sm"
-    >
+    <Modal open={open} onClose={onClose} title="Create User" size="sm">
       <div className="space-y-4">
         <Input
           label="Username"

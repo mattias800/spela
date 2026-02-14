@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Globe,
-  Lock,
-  Pencil,
-  Trash2,
-  Gamepad2,
-} from "lucide-react";
+import { Globe, Lock, Pencil, Trash2, Gamepad2 } from "lucide-react";
 import {
   Button,
   BackButton,
@@ -158,7 +152,9 @@ export function CollectionDetailPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton onClick={() => navigate("/collections")}>Collections</BackButton>
+      <BackButton onClick={() => navigate("/collections")}>
+        Collections
+      </BackButton>
 
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -184,7 +180,8 @@ export function CollectionDetailPage() {
               by {collection.username}
             </span>
             <span className="text-sm text-surface-500">
-              {collection.gameCount} {collection.gameCount === 1 ? "game" : "games"}
+              {collection.gameCount}{" "}
+              {collection.gameCount === 1 ? "game" : "games"}
             </span>
           </div>
         </div>
@@ -245,7 +242,11 @@ export function CollectionDetailPage() {
               <GameGrid>
                 {filtered.map((game) => (
                   <div key={game.id} className="relative group/card">
-                    <GameCard game={game} onToggleFavorite={handleToggleFavorite} onTogglePlayLater={handleTogglePlayLater} />
+                    <GameCard
+                      game={game}
+                      onToggleFavorite={handleToggleFavorite}
+                      onTogglePlayLater={handleTogglePlayLater}
+                    />
                     {isOwner && (
                       <button
                         onClick={(e) => {

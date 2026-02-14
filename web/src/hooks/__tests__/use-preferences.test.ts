@@ -13,14 +13,21 @@ vi.mock("@/lib/api-client", () => ({
 
 import { api } from "@/lib/api-client";
 
-const mockApi = api as unknown as { get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn> };
+const mockApi = api as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
+};
 
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   };
 }
 
@@ -39,7 +46,9 @@ describe("useUserPreferences", () => {
     };
     mockApi.get.mockResolvedValue(prefs);
 
-    const { result } = renderHook(() => useUserPreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUserPreferences(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -50,7 +59,9 @@ describe("useUserPreferences", () => {
   it("handles fetch error", async () => {
     mockApi.get.mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() => useUserPreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUserPreferences(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe("Network error");
@@ -61,18 +72,24 @@ describe("useUpdatePreferences", () => {
   it("sends partial update to the server", async () => {
     mockApi.put.mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useUpdatePreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdatePreferences(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ autoSaveEnabled: true });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/preferences", { autoSaveEnabled: true });
+    expect(mockApi.put).toHaveBeenCalledWith("/user/preferences", {
+      autoSaveEnabled: true,
+    });
   });
 
   it("handles update error", async () => {
     mockApi.put.mockRejectedValue(new Error("Forbidden"));
 
-    const { result } = renderHook(() => useUpdatePreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdatePreferences(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ selectedShader: "scanlines" });
 

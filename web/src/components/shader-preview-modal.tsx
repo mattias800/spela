@@ -8,7 +8,12 @@ interface ShaderPreviewModalProps {
   shader: string;
 }
 
-export function ShaderPreviewModal({ open, onClose, imageUrl, shader }: ShaderPreviewModalProps) {
+export function ShaderPreviewModal({
+  open,
+  onClose,
+  imageUrl,
+  shader,
+}: ShaderPreviewModalProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -38,13 +43,11 @@ export function ShaderPreviewModal({ open, onClose, imageUrl, shader }: ShaderPr
     >
       <div className="absolute inset-0 bg-black/90" />
       <div className="relative w-full max-w-4xl px-4">
-        <ShaderPreview
-          imageUrl={imageUrl}
-          shader={shader}
-          className="w-full"
-        />
+        <ShaderPreview imageUrl={imageUrl} shader={shader} className="w-full" />
       </div>
-      <p className="relative mt-4 text-sm text-surface-500">Click anywhere to close</p>
+      <p className="relative mt-4 text-sm text-surface-500">
+        Click anywhere to close
+      </p>
     </div>
   );
 }

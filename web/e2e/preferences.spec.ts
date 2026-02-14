@@ -4,18 +4,26 @@ test.describe("Preferences Page", () => {
   test("displays emulation settings with toggles", async ({ page }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Emulation Settings" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Preferences" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Emulation Settings" }),
+    ).toBeVisible();
 
     await expect(page.getByText("Performance Overlay")).toBeVisible();
     await expect(page.getByText("Auto Save")).toBeVisible();
     await expect(page.getByText("Auto Load Save")).toBeVisible();
   });
 
-  test("displays video filters section with shader selector", async ({ page }) => {
+  test("displays video filters section with shader selector", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByRole("heading", { name: "Video Filters" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Video Filters" }),
+    ).toBeVisible();
     await expect(page.getByText("Global Default Shader")).toBeVisible();
 
     const select = page.locator("select").first();
@@ -52,7 +60,9 @@ test.describe("Preferences Page", () => {
   test("displays devices section", async ({ page }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByRole("heading", { name: "Devices", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Devices", exact: true }),
+    ).toBeVisible();
   });
 });
 
@@ -104,7 +114,11 @@ test.describe("Shader Preview", () => {
           canvas.height / 2,
         );
         for (let i = 0; i < data.data.length; i += 4) {
-          if (data.data[i] > 5 || data.data[i + 1] > 5 || data.data[i + 2] > 5) {
+          if (
+            data.data[i] > 5 ||
+            data.data[i + 1] > 5 ||
+            data.data[i + 2] > 5
+          ) {
             return true;
           }
         }
@@ -115,7 +129,9 @@ test.describe("Shader Preview", () => {
     expect(hasContent).toBe(true);
   });
 
-  test("global preview fetches correct console screenshot", async ({ page }) => {
+  test("global preview fetches correct console screenshot", async ({
+    page,
+  }) => {
     // Intercept preview-screenshot requests to verify the URL
     const screenshotRequests: string[] = [];
     await page.route("**/api/consoles/*/preview-screenshot", (route) => {
@@ -131,7 +147,9 @@ test.describe("Shader Preview", () => {
     // At least one preview-screenshot request should have been made
     expect(screenshotRequests.length).toBeGreaterThan(0);
     // The URL should contain a valid console ID (numeric)
-    expect(screenshotRequests[0]).toMatch(/\/api\/consoles\/\d+\/preview-screenshot/);
+    expect(screenshotRequests[0]).toMatch(
+      /\/api\/consoles\/\d+\/preview-screenshot/,
+    );
   });
 
   test("opens fullscreen shader preview modal on click", async ({ page }) => {
@@ -141,7 +159,9 @@ test.describe("Shader Preview", () => {
     await expect(preview).toBeVisible({ timeout: 10_000 });
 
     await preview.click();
-    await expect(page.getByText("Click anywhere to close")).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByText("Click anywhere to close")).toBeVisible({
+      timeout: 3_000,
+    });
 
     const modalCanvas = page.locator(".fixed canvas");
     await expect(modalCanvas).toBeVisible();
@@ -154,7 +174,9 @@ test.describe("Shader Preview", () => {
     await expect(preview).toBeVisible({ timeout: 10_000 });
 
     await preview.click();
-    await expect(page.getByText("Click anywhere to close")).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByText("Click anywhere to close")).toBeVisible({
+      timeout: 3_000,
+    });
 
     await page.keyboard.press("Escape");
     await expect(page.getByText("Click anywhere to close")).not.toBeVisible();
@@ -167,13 +189,17 @@ test.describe("Shader Preview", () => {
     await expect(preview).toBeVisible({ timeout: 10_000 });
 
     await preview.click();
-    await expect(page.getByText("Click anywhere to close")).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByText("Click anywhere to close")).toBeVisible({
+      timeout: 3_000,
+    });
 
     await page.locator(".fixed.inset-0").click({ position: { x: 10, y: 10 } });
     await expect(page.getByText("Click anywhere to close")).not.toBeVisible();
   });
 
-  test("per-console preview button opens modal with correct console screenshot", async ({ page }) => {
+  test("per-console preview button opens modal with correct console screenshot", async ({
+    page,
+  }) => {
     // Intercept preview-screenshot requests
     const screenshotRequests: string[] = [];
     await page.route("**/api/consoles/*/preview-screenshot", (route) => {
@@ -192,14 +218,20 @@ test.describe("Shader Preview", () => {
 
     // Get the console IDs from the per-console shader selects in the table rows
     const rows = page.locator("table tbody tr");
-    const firstRowConsoleName = await rows.first().locator("td").first().textContent();
+    const firstRowConsoleName = await rows
+      .first()
+      .locator("td")
+      .first()
+      .textContent();
     expect(firstRowConsoleName).toBeTruthy();
 
     // Clear tracked requests before clicking
     screenshotRequests.length = 0;
 
     await previewButtons.first().click();
-    await expect(page.getByText("Click anywhere to close")).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByText("Click anywhere to close")).toBeVisible({
+      timeout: 3_000,
+    });
 
     // The modal should have made a request for a specific console's preview
     // (may reuse cached image, so check the modal canvas instead)
@@ -213,14 +245,18 @@ test.describe("Shader Preview", () => {
     if (count > 1) {
       screenshotRequests.length = 0;
       await previewButtons.nth(1).click();
-      await expect(page.getByText("Click anywhere to close")).toBeVisible({ timeout: 3_000 });
+      await expect(page.getByText("Click anywhere to close")).toBeVisible({
+        timeout: 3_000,
+      });
       await expect(page.locator(".fixed canvas")).toBeVisible();
 
       await page.keyboard.press("Escape");
     }
   });
 
-  test("shader preview re-renders on shader change without crashing", async ({ page }) => {
+  test("shader preview re-renders on shader change without crashing", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
     const preview = page.locator("canvas").first();
@@ -233,8 +269,13 @@ test.describe("Shader Preview", () => {
       if (gl) {
         const pixels = new Uint8Array(4 * 4);
         gl.readPixels(
-          Math.floor(canvas.width / 2), Math.floor(canvas.height / 2),
-          2, 2, gl.RGBA, gl.UNSIGNED_BYTE, pixels,
+          Math.floor(canvas.width / 2),
+          Math.floor(canvas.height / 2),
+          2,
+          2,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          pixels,
         );
         return Array.from(pixels);
       }
@@ -255,8 +296,13 @@ test.describe("Shader Preview", () => {
       if (gl) {
         const pixels = new Uint8Array(4 * 4);
         gl.readPixels(
-          Math.floor(canvas.width / 2), Math.floor(canvas.height / 2),
-          2, 2, gl.RGBA, gl.UNSIGNED_BYTE, pixels,
+          Math.floor(canvas.width / 2),
+          Math.floor(canvas.height / 2),
+          2,
+          2,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          pixels,
         );
         return Array.from(pixels);
       }
@@ -266,14 +312,14 @@ test.describe("Shader Preview", () => {
     // If we got pixel data both times, verify the shader actually changed the output
     if (pixelsBefore && pixelsAfter) {
       // At minimum, verify the canvas still has content after re-render
-      const hasContentAfter = pixelsAfter.some(
-        (v, i) => i % 4 !== 3 && v > 5,
-      );
+      const hasContentAfter = pixelsAfter.some((v, i) => i % 4 !== 3 && v > 5);
       expect(hasContentAfter).toBe(true);
     }
   });
 
-  test("shader effect is visually different from no-shader", async ({ page }) => {
+  test("shader effect is visually different from no-shader", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
     const preview = page.locator("canvas").first();
@@ -316,32 +362,34 @@ test.describe("Shader Preview", () => {
     await select.selectOption("scanlines");
     await page.waitForTimeout(1_000);
 
-    const scanlinesPixels = await preview.evaluate((canvas: HTMLCanvasElement) => {
-      const w = Math.min(canvas.width, 64);
-      const h = Math.min(canvas.height, 64);
-      const x = Math.floor((canvas.width - w) / 2);
-      const y = Math.floor((canvas.height - h) / 2);
+    const scanlinesPixels = await preview.evaluate(
+      (canvas: HTMLCanvasElement) => {
+        const w = Math.min(canvas.width, 64);
+        const h = Math.min(canvas.height, 64);
+        const x = Math.floor((canvas.width - w) / 2);
+        const y = Math.floor((canvas.height - h) / 2);
 
-      const gl = canvas.getContext("webgl2");
-      if (gl) {
-        const pixels = new Uint8Array(4 * w * h);
-        gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        const gl = canvas.getContext("webgl2");
+        if (gl) {
+          const pixels = new Uint8Array(4 * w * h);
+          gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+          let sum = 0;
+          for (let i = 0; i < pixels.length; i += 4) {
+            sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+          }
+          return sum;
+        }
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        const data = ctx.getImageData(x, y, w, h).data;
         let sum = 0;
-        for (let i = 0; i < pixels.length; i += 4) {
-          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        for (let i = 0; i < data.length; i += 4) {
+          sum += data[i] + data[i + 1] + data[i + 2];
         }
         return sum;
-      }
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return null;
-      const data = ctx.getImageData(x, y, w, h).data;
-      let sum = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        sum += data[i] + data[i + 1] + data[i + 2];
-      }
-      return sum;
-    });
+      },
+    );
 
     // Both should have content
     expect(nonePixels).not.toBeNull();

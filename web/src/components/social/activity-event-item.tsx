@@ -76,7 +76,10 @@ export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm text-surface-400">
-          <Link to={`/users/${event.userId}`} className="font-medium text-surface-200 hover:text-brand-400 transition-colors">
+          <Link
+            to={`/users/${event.userId}`}
+            className="font-medium text-surface-200 hover:text-brand-400 transition-colors"
+          >
             {event.username}
           </Link>{" "}
           {eventDescription(event)}
@@ -94,10 +97,7 @@ export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
       </div>
 
       {!compact && event.gameCoverUrl && (
-        <Link
-          to={`/games/${event.gameId}`}
-          className="flex-shrink-0"
-        >
+        <Link to={`/games/${event.gameId}`} className="flex-shrink-0">
           <img
             src={event.gameCoverUrl}
             alt={event.gameTitle}

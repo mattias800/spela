@@ -10,7 +10,11 @@ interface EditUserModalProps {
   onClose: () => void;
 }
 
-export function EditUserModal({ user, currentUser, onClose }: EditUserModalProps) {
+export function EditUserModal({
+  user,
+  currentUser,
+  onClose,
+}: EditUserModalProps) {
   const updateUser = useUpdateUser();
   const { toast } = useToast();
 
@@ -30,7 +34,12 @@ export function EditUserModal({ user, currentUser, onClose }: EditUserModalProps
 
   function handleSaveUser() {
     if (!user) return;
-    const data: { role?: string; email?: string; password?: string; disabled?: boolean } = {};
+    const data: {
+      role?: string;
+      email?: string;
+      password?: string;
+      disabled?: boolean;
+    } = {};
     if (editEmail !== user.email) data.email = editEmail;
     if (editPassword) data.password = editPassword;
     if (editRole !== user.role) data.role = editRole;
@@ -49,12 +58,7 @@ export function EditUserModal({ user, currentUser, onClose }: EditUserModalProps
   }
 
   return (
-    <Modal
-      open={!!user}
-      onClose={onClose}
-      title="Edit User"
-      size="sm"
-    >
+    <Modal open={!!user} onClose={onClose} title="Edit User" size="sm">
       <div className="space-y-4">
         <Input
           label="Email"

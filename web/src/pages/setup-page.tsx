@@ -89,12 +89,7 @@ export function SetupPage() {
           required
         />
 
-        <Button
-          type="submit"
-          size="lg"
-          loading={loading}
-          className="w-full"
-        >
+        <Button type="submit" size="lg" loading={loading} className="w-full">
           Create Owner Account
         </Button>
       </form>

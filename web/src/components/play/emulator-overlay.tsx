@@ -11,7 +11,13 @@ interface EmulatorOverlayProps {
   onBack: () => void;
 }
 
-export function EmulatorOverlay({ status, error, romProgress, onRetry, onBack }: EmulatorOverlayProps) {
+export function EmulatorOverlay({
+  status,
+  error,
+  romProgress,
+  onRetry,
+  onBack,
+}: EmulatorOverlayProps) {
   if (status === "loading") {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-surface-950 transition-opacity duration-300">

@@ -45,8 +45,32 @@ const mockDevices = [
 ];
 
 const mockConsoles = [
-  { id: "1", name: "NES", abbreviation: "nes", extensions: [".nes"], defaultCore: "fceumm", coverAspectRatio: 0.75, colorTheme: "red", iconUrl: "", gameCount: 5, createdAt: "", updatedAt: "" },
-  { id: "2", name: "SNES", abbreviation: "snes", extensions: [".sfc"], defaultCore: "snes9x", coverAspectRatio: 0.75, colorTheme: "purple", iconUrl: "", gameCount: 3, createdAt: "", updatedAt: "" },
+  {
+    id: "1",
+    name: "NES",
+    abbreviation: "nes",
+    extensions: [".nes"],
+    defaultCore: "fceumm",
+    coverAspectRatio: 0.75,
+    colorTheme: "red",
+    iconUrl: "",
+    gameCount: 5,
+    createdAt: "",
+    updatedAt: "",
+  },
+  {
+    id: "2",
+    name: "SNES",
+    abbreviation: "snes",
+    extensions: [".sfc"],
+    defaultCore: "snes9x",
+    coverAspectRatio: 0.75,
+    colorTheme: "purple",
+    iconUrl: "",
+    gameCount: 3,
+    createdAt: "",
+    updatedAt: "",
+  },
 ];
 
 const mockMutate = vi.fn();
@@ -72,30 +96,47 @@ vi.mock("@/hooks/use-consoles", () => ({
 }));
 
 vi.mock("@/hooks/use-retroachievements", () => ({
-  useRAStatus: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+  useRAStatus: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  })),
   useLinkRA: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useUnlinkRA: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useRASettings: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
 vi.mock("@/components/ui", async () => {
-  const actual = await vi.importActual<Record<string, unknown>>("@/components/ui");
+  const actual =
+    await vi.importActual<Record<string, unknown>>("@/components/ui");
   return {
     ...actual,
     useToast: () => ({ toast: vi.fn() }),
   };
 });
 
-import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
-import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "@/hooks/use-devices";
+import {
+  useUserPreferences,
+  useUpdatePreferences,
+} from "@/hooks/use-preferences";
+import {
+  useDevices,
+  useUpdateDevice,
+  useDeleteDevice,
+  useUpdateDevicePreferences,
+} from "@/hooks/use-devices";
 import { useConsoles } from "@/hooks/use-consoles";
 
 const mockUseUserPreferences = useUserPreferences as ReturnType<typeof vi.fn>;
-const mockUseUpdatePreferences = useUpdatePreferences as ReturnType<typeof vi.fn>;
+const mockUseUpdatePreferences = useUpdatePreferences as ReturnType<
+  typeof vi.fn
+>;
 const mockUseDevices = useDevices as ReturnType<typeof vi.fn>;
 const mockUseUpdateDevice = useUpdateDevice as ReturnType<typeof vi.fn>;
 const mockUseDeleteDevice = useDeleteDevice as ReturnType<typeof vi.fn>;
-const mockUseUpdateDevicePreferences = useUpdateDevicePreferences as ReturnType<typeof vi.fn>;
+const mockUseUpdateDevicePreferences = useUpdateDevicePreferences as ReturnType<
+  typeof vi.fn
+>;
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 
 function renderPage() {
@@ -113,7 +154,10 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseUserPreferences.mockReturnValue({ data: mockPreferences, isLoading: false });
+  mockUseUserPreferences.mockReturnValue({
+    data: mockPreferences,
+    isLoading: false,
+  });
   mockUseUpdatePreferences.mockReturnValue(mockUpdatePrefs);
   mockUseDevices.mockReturnValue({ data: mockDevices, isLoading: false });
   mockUseUpdateDevice.mockReturnValue(mockUpdateDevice);
@@ -129,7 +173,10 @@ describe("PreferencesPage", () => {
   });
 
   it("renders loading state for preferences", () => {
-    mockUseUserPreferences.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseUserPreferences.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     renderPage();
     expect(screen.getByText("Emulation Settings")).toBeInTheDocument();
     // Skeleton elements should be present (no toggle switches)
@@ -180,7 +227,11 @@ describe("PreferencesPage", () => {
     mockUseDevices.mockReturnValue({ data: [], isLoading: false });
     renderPage();
     expect(screen.getByText("No devices registered")).toBeInTheDocument();
-    expect(screen.getByText("Connect with the Spela player app to register a device.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Connect with the Spela player app to register a device.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("renders loading state for devices", () => {
@@ -207,7 +258,10 @@ describe("PreferencesPage", () => {
 
     expect(mockUpdateDevice.mutate).toHaveBeenCalledWith(
       { id: 1, name: "New Name" },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
     );
   });
 
@@ -229,7 +283,9 @@ describe("PreferencesPage", () => {
     const deleteButtons = screen.getAllByTitle("Delete device");
     await userEvent.click(deleteButtons[0]);
 
-    expect(screen.getByRole("heading", { name: "Delete Device" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Delete Device" }),
+    ).toBeInTheDocument();
     // The modal contains a confirmation message with the device name
     expect(screen.getByText(/This will remove/)).toBeInTheDocument();
   });
@@ -244,7 +300,10 @@ describe("PreferencesPage", () => {
 
     expect(mockDeleteDevice.mutate).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
     );
   });
 

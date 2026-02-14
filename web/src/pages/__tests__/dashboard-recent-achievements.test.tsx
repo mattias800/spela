@@ -25,7 +25,10 @@ vi.mock("@/hooks/use-retroachievements", () => ({
 
 vi.mock("@/hooks/use-social", () => ({
   useOnlineUsers: vi.fn(() => ({ data: { users: [] }, isLoading: false })),
-  useActivityFeed: vi.fn(() => ({ data: { data: [], total: 0, page: 1, pageSize: 20 }, isLoading: false })),
+  useActivityFeed: vi.fn(() => ({
+    data: { data: [], total: 0, page: 1, pageSize: 20 },
+    isLoading: false,
+  })),
   useActivityRealtime: vi.fn(),
 }));
 
@@ -36,7 +39,9 @@ vi.mock("@/hooks/use-play-later", () => ({
 
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 
-const mockUseRecentAchievements = useRecentAchievements as ReturnType<typeof vi.fn>;
+const mockUseRecentAchievements = useRecentAchievements as ReturnType<
+  typeof vi.fn
+>;
 
 const mockRecentAchievements = [
   {
@@ -181,7 +186,9 @@ describe("DashboardPage - Recent Achievements", () => {
     renderDashboard();
 
     expect(screen.getByText("Recent Achievements")).toBeInTheDocument();
-    expect(screen.getByTestId("recent-achievements-section")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("recent-achievements-section"),
+    ).toBeInTheDocument();
   });
 
   it("limits to 5 achievements maximum", () => {

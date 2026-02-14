@@ -81,25 +81,22 @@ async function setupGameDetailSocialRoutes(
     },
   );
 
-  await page.route(
-    `**/api/games/${gameId}/achievements/timeline`,
-    (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          raGameId: 0,
-          gameTitle: "",
-          totalPlayTime: 0,
-          timeline: [],
-          totalAchievements: 0,
-          unlockedCount: 0,
-          totalPoints: 0,
-          earnedPoints: 0,
-        }),
-      });
-    },
-  );
+  await page.route(`**/api/games/${gameId}/achievements/timeline`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        raGameId: 0,
+        gameTitle: "",
+        totalPlayTime: 0,
+        timeline: [],
+        totalAchievements: 0,
+        unlockedCount: 0,
+        totalPoints: 0,
+        earnedPoints: 0,
+      }),
+    });
+  });
 }
 
 test.describe("RetroAchievements - Preferences Page", () => {
@@ -228,9 +225,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     await expect(page.getByText("Hardcore Mode")).toBeVisible();
   });
 
-  test("displays linked state with username and controls", async ({
-    page,
-  }) => {
+  test("displays linked state with username and controls", async ({ page }) => {
     await page.route("**/api/user/ra/status", (route) => {
       route.fulfill({
         status: 200,
@@ -309,7 +304,11 @@ test.describe("RetroAchievements - Preferences Page", () => {
     await page.route("**/api/user/ra/link", (route) => {
       if (route.request().method() === "DELETE") {
         linked = false;
-        route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "{}",
+        });
       } else {
         route.continue();
       }
@@ -550,7 +549,11 @@ test.describe("RetroAchievements - Game Detail", () => {
     });
 
     await page.route("**/api/games/1/saves", (route) => {
-      route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
     });
 
     await page.route("**/api/consoles", (route) => {
@@ -558,7 +561,12 @@ test.describe("RetroAchievements - Game Detail", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify([
-          { id: "1", name: "NES", abbreviation: "NES", emulatorJsCore: "nestopia" },
+          {
+            id: "1",
+            name: "NES",
+            abbreviation: "NES",
+            emulatorJsCore: "nestopia",
+          },
         ]),
       });
     });
@@ -623,7 +631,11 @@ test.describe("RetroAchievements - Game Detail", () => {
     });
 
     await page.route("**/api/games/1/saves", (route) => {
-      route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
     });
 
     await page.route("**/api/consoles", (route) => {
@@ -631,7 +643,12 @@ test.describe("RetroAchievements - Game Detail", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify([
-          { id: "1", name: "NES", abbreviation: "NES", emulatorJsCore: "nestopia" },
+          {
+            id: "1",
+            name: "NES",
+            abbreviation: "NES",
+            emulatorJsCore: "nestopia",
+          },
         ]),
       });
     });
@@ -647,8 +664,6 @@ test.describe("RetroAchievements - Game Detail", () => {
     });
 
     // Achievements section should NOT be visible (component returns null for empty)
-    await expect(
-      page.getByTestId("browser-warning-banner"),
-    ).not.toBeVisible();
+    await expect(page.getByTestId("browser-warning-banner")).not.toBeVisible();
   });
 });

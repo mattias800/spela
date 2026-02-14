@@ -1,11 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Gamepad2,
-  Smartphone,
-  Monitor,
-  Joystick,
-  Tv,
-} from "lucide-react";
+import { Gamepad2, Smartphone, Monitor, Joystick, Tv } from "lucide-react";
 
 interface ConsoleStyle {
   icon: LucideIcon;
@@ -114,5 +108,9 @@ const defaultStyle: ConsoleStyle = {
 
 export function getConsoleStyle(abbreviation: string): ConsoleStyle {
   const key = abbreviation.toLowerCase();
-  return consoleStyles[key] ?? consoleStyles[abbreviationAliases[key] ?? ""] ?? defaultStyle;
+  return (
+    consoleStyles[key] ??
+    consoleStyles[abbreviationAliases[key] ?? ""] ??
+    defaultStyle
+  );
 }

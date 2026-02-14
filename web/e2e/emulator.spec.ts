@@ -2,7 +2,9 @@ import { test, expect } from "./fixtures";
 
 test.describe("Emulator Page", () => {
   test.describe("Play Button on Game Detail", () => {
-    test("shows enabled Play in Browser button for NES game", async ({ page }) => {
+    test("shows enabled Play in Browser button for NES game", async ({
+      page,
+    }) => {
       // Navigate to games list, find Castlevania (NES — has emulatorJsCore)
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
@@ -18,7 +20,9 @@ test.describe("Emulator Page", () => {
       await expect(playButton).toBeEnabled();
     });
 
-    test("navigates to play page when Play in Browser is clicked", async ({ page }) => {
+    test("navigates to play page when Play in Browser is clicked", async ({
+      page,
+    }) => {
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
@@ -53,12 +57,16 @@ test.describe("Emulator Page", () => {
       await page.goto(`/games/${gameId}/play`);
 
       // Game title should be displayed in the top bar
-      await expect(page.getByText("Castlevania", { exact: false })).toBeVisible({
-        timeout: 15_000,
-      });
+      await expect(page.getByText("Castlevania", { exact: false })).toBeVisible(
+        {
+          timeout: 15_000,
+        },
+      );
 
       // Back button should be visible (use exact match to avoid matching "Back to Game")
-      await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Back", exact: true }),
+      ).toBeVisible();
 
       // Toolbar buttons should be present (Save, Load, Fullscreen)
       await expect(page.getByTitle("Save State")).toBeVisible();
@@ -97,9 +105,14 @@ test.describe("Emulator Page", () => {
 
       // Wait for the page to finish loading game data first
       await expect(
-        page.locator('iframe[src="/emulator.html"]').or(
-          page.getByText(/initializing emulator|loading rom|error|not available|failed/i),
-        ).first(),
+        page
+          .locator('iframe[src="/emulator.html"]')
+          .or(
+            page.getByText(
+              /initializing emulator|loading rom|error|not available|failed/i,
+            ),
+          )
+          .first(),
       ).toBeVisible({ timeout: 15_000 });
 
       // Loading indicator should appear (may be brief)
@@ -111,8 +124,14 @@ test.describe("Emulator Page", () => {
       if (!isLoading) {
         // Either the emulator loaded very quickly, or an error occurred
         // Both are acceptable outcomes for this test
-        const hasError = await page.getByText(/error|not available|failed/i).isVisible().catch(() => false);
-        const hasIframe = await page.locator('iframe[src="/emulator.html"]').isVisible().catch(() => false);
+        const hasError = await page
+          .getByText(/error|not available|failed/i)
+          .isVisible()
+          .catch(() => false);
+        const hasIframe = await page
+          .locator('iframe[src="/emulator.html"]')
+          .isVisible()
+          .catch(() => false);
         expect(hasError || hasIframe).toBe(true);
       }
     });
@@ -128,7 +147,9 @@ test.describe("Emulator Page", () => {
       await page.goto(`/games/${gameId}/play`);
 
       // Wait for the page to be ready (use exact match to avoid matching "Back to Game")
-      await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole("button", { name: "Back", exact: true }),
+      ).toBeVisible({ timeout: 15_000 });
 
       // Click the Back button to return to game detail
       await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -138,7 +159,9 @@ test.describe("Emulator Page", () => {
   });
 
   test.describe("Unsupported Console Handling", () => {
-    test("shows not available message for unsupported console", async ({ page }) => {
+    test("shows not available message for unsupported console", async ({
+      page,
+    }) => {
       // Intercept the consoles API BEFORE any navigation so the cache
       // is populated with modified data from the very first request.
       await page.route("**/api/consoles", async (route) => {
@@ -169,14 +192,18 @@ test.describe("Emulator Page", () => {
       await expect(page.getByText("Browser Play Not Available")).toBeVisible({
         timeout: 15_000,
       });
-      await expect(page.getByText(/not yet supported for browser play/i)).toBeVisible();
+      await expect(
+        page.getByText(/not yet supported for browser play/i),
+      ).toBeVisible();
 
       // The "Back to Game Details" button should navigate back
       await page.getByRole("button", { name: /back to game details/i }).click();
       await expect(page).toHaveURL(`/games/${gameId}`, { timeout: 10_000 });
     });
 
-    test("Play in Browser button is disabled for unsupported console", async ({ page }) => {
+    test("Play in Browser button is disabled for unsupported console", async ({
+      page,
+    }) => {
       // Intercept consoles API to remove emulatorJsCore
       await page.route("**/api/consoles", async (route) => {
         try {
@@ -206,7 +233,9 @@ test.describe("Emulator Page", () => {
   });
 
   test.describe("Toolbar Controls", () => {
-    test("save and load buttons are disabled before emulator is playing", async ({ page }) => {
+    test("save and load buttons are disabled before emulator is playing", async ({
+      page,
+    }) => {
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
@@ -225,7 +254,9 @@ test.describe("Emulator Page", () => {
       await expect(loadButton).toBeDisabled();
     });
 
-    test("load state modal shows empty state when no saves exist", async ({ page }) => {
+    test("load state modal shows empty state when no saves exist", async ({
+      page,
+    }) => {
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
@@ -268,7 +299,9 @@ test.describe("Emulator Page", () => {
     test("shows not found message for invalid game ID", async ({ page }) => {
       await page.goto("/games/999999/play");
 
-      await expect(page.getByText("Game not found")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText("Game not found")).toBeVisible({
+        timeout: 15_000,
+      });
       await expect(page.getByText("Go back")).toBeVisible();
     });
   });

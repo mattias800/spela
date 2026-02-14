@@ -26,7 +26,13 @@ export function AppLayout() {
           to: "/consoles",
           icon: Library,
           label: "Library",
-          matchPaths: ["/consoles", "/games", "/favorites", "/play-later", "/collections"],
+          matchPaths: [
+            "/consoles",
+            "/games",
+            "/favorites",
+            "/play-later",
+            "/collections",
+          ],
         },
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/activity", icon: Activity, label: "Activity" },
@@ -41,7 +47,11 @@ export function AppLayout() {
               { to: "/admin/users", icon: Users, label: "Users" },
               { to: "/admin/settings", icon: Settings, label: "Settings" },
               { to: "/admin/scan", icon: ScanSearch, label: "Library Scan" },
-              { to: "/admin/metadata", icon: FileSearch, label: "Metadata Fix" },
+              {
+                to: "/admin/metadata",
+                icon: FileSearch,
+                label: "Metadata Fix",
+              },
             ],
           },
         ]

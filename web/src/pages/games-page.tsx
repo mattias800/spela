@@ -33,7 +33,9 @@ export function GamesPage() {
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Games</h1>
         <p className="mt-1 text-surface-400">
-          {data ? `${data.total} games in your library` : "Browse your game library"}
+          {data
+            ? `${data.total} games in your library`
+            : "Browse your game library"}
         </p>
       </div>
 
@@ -56,7 +58,10 @@ export function GamesPage() {
         ) : (
           <div className="space-y-2">
             {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-surface-900/50 animate-pulse" />
+              <div
+                key={i}
+                className="h-16 rounded-xl bg-surface-900/50 animate-pulse"
+              />
             ))}
           </div>
         )

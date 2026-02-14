@@ -10,7 +10,12 @@ interface TabNavProps {
 
 export function TabNav({ children, className }: TabNavProps) {
   return (
-    <nav className={cn("flex flex-wrap items-center gap-1 border-b border-surface-800/50", className)}>
+    <nav
+      className={cn(
+        "flex flex-wrap items-center gap-1 border-b border-surface-800/50",
+        className,
+      )}
+    >
       {children}
     </nav>
   );

@@ -73,7 +73,9 @@ export function Sidebar({ links, user, onLogout }: SidebarProps) {
         <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-600/20">
           <Gamepad2 className="h-5 w-5 text-white" />
         </div>
-        <span className="text-lg font-bold tracking-tight text-surface-100">Spela</span>
+        <span className="text-lg font-bold tracking-tight text-surface-100">
+          Spela
+        </span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
@@ -93,7 +95,9 @@ export function Sidebar({ links, user, onLogout }: SidebarProps) {
               {user.username.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-surface-200 truncate">{user.username}</p>
+              <p className="text-sm font-medium text-surface-200 truncate">
+                {user.username}
+              </p>
               <p className="text-xs text-surface-500 capitalize">{user.role}</p>
             </div>
             {onLogout && (

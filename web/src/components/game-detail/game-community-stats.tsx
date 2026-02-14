@@ -129,9 +129,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
         />
         <StatCard
           value={
-            game.lastPlayedAt
-              ? formatRelativeTime(game.lastPlayedAt)
-              : "Never"
+            game.lastPlayedAt ? formatRelativeTime(game.lastPlayedAt) : "Never"
           }
           label="Last played"
         />
@@ -160,9 +158,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
               const rank = index + 1;
               const isCurrentUser = player.userId === user?.id;
               const barWidth =
-                maxPlayTime > 0
-                  ? (player.playTime / maxPlayTime) * 100
-                  : 0;
+                maxPlayTime > 0 ? (player.playTime / maxPlayTime) * 100 : 0;
 
               return (
                 <div

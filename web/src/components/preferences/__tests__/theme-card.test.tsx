@@ -47,7 +47,9 @@ describe("ThemeCard", () => {
     );
 
     // The selected theme button should have ring styling
-    const nintendoButton = screen.getByText("Nintendo Colorful").closest("button");
+    const nintendoButton = screen
+      .getByText("Nintendo Colorful")
+      .closest("button");
     expect(nintendoButton?.className).toContain("border-brand-500");
 
     // Other buttons should not have the selected style

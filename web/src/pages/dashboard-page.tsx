@@ -1,10 +1,24 @@
-import { Play, Heart, Clock, ChevronRight, Gamepad2, Trophy, Activity, Users } from "lucide-react";
+import {
+  Play,
+  Heart,
+  Clock,
+  ChevronRight,
+  Gamepad2,
+  Trophy,
+  Activity,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
 import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
-import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
+import {
+  useRecentGames,
+  useFavoriteGames,
+  useToggleFavorite,
+  useGames,
+} from "@/hooks/use-games";
 import { usePlayLaterGames, useTogglePlayLater } from "@/hooks/use-play-later";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
@@ -141,7 +155,11 @@ function RecentAchievementsSection() {
   if (isLoading) {
     return (
       <section data-testid="recent-achievements-section">
-        <SectionHeader title="Recent Achievements" icon={Trophy} linkTo="/stats" />
+        <SectionHeader
+          title="Recent Achievements"
+          icon={Trophy}
+          linkTo="/stats"
+        />
         <RecentAchievementsSkeleton />
       </section>
     );
@@ -153,7 +171,11 @@ function RecentAchievementsSection() {
 
   return (
     <section data-testid="recent-achievements-section">
-      <SectionHeader title="Recent Achievements" icon={Trophy} linkTo="/stats" />
+      <SectionHeader
+        title="Recent Achievements"
+        icon={Trophy}
+        linkTo="/stats"
+      />
       <div className="flex gap-4 overflow-x-auto pb-2">
         {achievements.slice(0, 5).map((achievement) => (
           <RecentAchievementCard
@@ -171,15 +193,21 @@ export function DashboardPage() {
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
   const playLaterGames = usePlayLaterGames();
-  const allGames = useGames({ pageSize: 12, sortBy: "title", sortOrder: "asc" });
+  const allGames = useGames({
+    pageSize: 12,
+    sortBy: "title",
+    sortOrder: "asc",
+  });
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   const hasRecent = recentGames.data && recentGames.data.length > 0;
   const hasPlayLater = playLaterGames.data && playLaterGames.data.length > 0;
   const hasFavorites = favoriteGames.data && favoriteGames.data.length > 0;
-  const hasGames = allGames.data && allGames.data.data && allGames.data.data.length > 0;
-  const isLoading = recentGames.isLoading || favoriteGames.isLoading || allGames.isLoading;
+  const hasGames =
+    allGames.data && allGames.data.data && allGames.data.data.length > 0;
+  const isLoading =
+    recentGames.isLoading || favoriteGames.isLoading || allGames.isLoading;
   const showEmptyState = !isLoading && !hasRecent && !hasFavorites && !hasGames;
 
   return (

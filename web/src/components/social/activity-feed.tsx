@@ -72,11 +72,7 @@ export function ActivityFeed({
       {!isLoading && events && events.length > 0 && (
         <div className="space-y-1">
           {events.map((event) => (
-            <ActivityEventItem
-              key={event.id}
-              event={event}
-              compact={compact}
-            />
+            <ActivityEventItem key={event.id} event={event} compact={compact} />
           ))}
         </div>
       )}

@@ -7,8 +7,16 @@ import { KeyMappingCard } from "@/components/preferences/key-mapping-card";
 import { DevicesCard } from "@/components/preferences/devices-card";
 import { DeleteDeviceModal } from "@/components/preferences/delete-device-modal";
 import { RetroAchievementsCard } from "@/components/preferences/retroachievements-card";
-import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
-import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "@/hooks/use-devices";
+import {
+  useUserPreferences,
+  useUpdatePreferences,
+} from "@/hooks/use-preferences";
+import {
+  useDevices,
+  useUpdateDevice,
+  useDeleteDevice,
+  useUpdateDevicePreferences,
+} from "@/hooks/use-devices";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useToast } from "@/components/ui";
 import type { Device } from "@/types/api";
@@ -24,9 +32,14 @@ export function PreferencesPage() {
   const { toast } = useToast();
 
   const [deleteTarget, setDeleteTarget] = useState<Device | null>(null);
-  const [previewModal, setPreviewModal] = useState<{ consoleId: string; shader: string } | null>(null);
+  const [previewModal, setPreviewModal] = useState<{
+    consoleId: string;
+    shader: string;
+  } | null>(null);
 
-  function handleToggle(key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled") {
+  function handleToggle(
+    key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled",
+  ) {
     if (!preferences) return;
     updatePreferences.mutate(
       { [key]: !preferences[key] },
@@ -97,7 +110,11 @@ export function PreferencesPage() {
     );
   }
 
-  function handleDeviceShaderChange(deviceId: number, consoleId: string, shader: string) {
+  function handleDeviceShaderChange(
+    deviceId: number,
+    consoleId: string,
+    shader: string,
+  ) {
     updateDevicePrefs.mutate(
       { id: deviceId, consoleShaders: { [consoleId]: shader } },
       { onError: (err) => toast("error", err.message) },
@@ -131,7 +148,9 @@ export function PreferencesPage() {
         isLoading={prefsLoading}
         onShaderChange={handleShaderChange}
         onConsoleShaderChange={handleConsoleShaderChange}
-        onPreview={(consoleId, shader) => setPreviewModal({ consoleId, shader })}
+        onPreview={(consoleId, shader) =>
+          setPreviewModal({ consoleId, shader })
+        }
       />
 
       <KeyMappingCard
@@ -164,7 +183,11 @@ export function PreferencesPage() {
       <ShaderPreviewModal
         open={!!previewModal}
         onClose={() => setPreviewModal(null)}
-        imageUrl={previewModal ? `/api/consoles/${previewModal.consoleId}/preview-screenshot` : ""}
+        imageUrl={
+          previewModal
+            ? `/api/consoles/${previewModal.consoleId}/preview-screenshot`
+            : ""
+        }
         shader={previewModal?.shader ?? "none"}
       />
     </div>

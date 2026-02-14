@@ -50,10 +50,7 @@ async function refreshAccessToken(): Promise<string> {
   return data.accessToken;
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),

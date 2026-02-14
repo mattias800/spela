@@ -21,7 +21,11 @@ export function Card({ className, hover, children, ...props }: CardProps) {
   );
 }
 
-export function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function CardHeader({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("px-5 pt-5 pb-2", className)} {...props}>
       {children}
@@ -29,7 +33,11 @@ export function CardHeader({ className, children, ...props }: HTMLAttributes<HTM
   );
 }
 
-export function CardContent({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function CardContent({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("px-5 pb-5", className)} {...props}>
       {children}

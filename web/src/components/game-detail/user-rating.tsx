@@ -43,23 +43,14 @@ export function UserRating({ gameId }: UserRatingProps) {
   };
 
   return (
-    <div
-      className="rounded-xl bg-surface-900/50 p-4"
-      data-testid="user-rating"
-    >
+    <div className="rounded-xl bg-surface-900/50 p-4" data-testid="user-rating">
       <div className="flex items-center gap-2.5 mb-3">
         <Star className="h-4 w-4 text-brand-400" />
-        <h3 className="text-sm font-semibold text-surface-200">
-          Your Rating
-        </h3>
+        <h3 className="text-sm font-semibold text-surface-200">Your Rating</h3>
       </div>
 
       <div className="flex items-center gap-3">
-        <StarRating
-          value={currentRating}
-          onChange={handleRate}
-          size="lg"
-        />
+        <StarRating value={currentRating} onChange={handleRate} size="lg" />
         {currentRating > 0 && (
           <button
             onClick={handleDelete}

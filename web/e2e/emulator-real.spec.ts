@@ -137,9 +137,7 @@ test.describe("EmulatorJS Real Integration", () => {
     // canvas, .ejs--css-btn, or the loading overlay with progress bar.
     // Use a generous timeout since it downloads WASM cores at runtime.
     const ejsCanvas = frame.locator("#game canvas");
-    const ejsLoadingText = frame.locator(
-      'text="Loading..."',
-    );
+    const ejsLoadingText = frame.locator('text="Loading..."');
     const ejsStartButton = frame.locator('[class*="ejs"]');
 
     // At least one of these should appear, confirming EmulatorJS initialized
@@ -162,9 +160,7 @@ test.describe("EmulatorJS Real Integration", () => {
     monitor.assertClean();
   });
 
-  test("EmulatorJS assets are served at the correct path", async ({
-    page,
-  }) => {
+  test("EmulatorJS assets are served at the correct path", async ({ page }) => {
     const monitor = monitorPageErrors(page);
 
     // Verify the critical EmulatorJS endpoints are available
@@ -222,9 +218,9 @@ test.describe("EmulatorJS Real Integration", () => {
     await expect(page).toHaveURL(`/games/${gameId}/play`);
 
     // Wait for the iframe to appear
-    await expect(
-      page.locator('iframe[src="/emulator.html"]'),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
+      timeout: 15_000,
+    });
 
     // Wait for the game-started postMessage from the iframe
     const gameStarted = await page.evaluate(() => {
@@ -250,8 +246,7 @@ test.describe("EmulatorJS Real Integration", () => {
     // Set up listener for auto-save POST before clicking Back
     const autoSavePromise = page.waitForResponse(
       (res) =>
-        res.request().method() === "POST" &&
-        res.url().includes("/saves/auto"),
+        res.request().method() === "POST" && res.url().includes("/saves/auto"),
       { timeout: 10_000 },
     );
 
@@ -287,9 +282,9 @@ test.describe("EmulatorJS Real Integration", () => {
     await page.goto(`/games/${gameId}/play`);
 
     // Wait for iframe
-    await expect(
-      page.locator('iframe[src="/emulator.html"]'),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
+      timeout: 15_000,
+    });
 
     // Save/Load should be disabled initially
     const saveButton = page.getByTitle("Save State");

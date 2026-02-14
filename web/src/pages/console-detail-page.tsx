@@ -3,7 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { BackButton, GameCardSkeleton, EmptyState, SearchInput } from "@/components/ui";
+import {
+  BackButton,
+  GameCardSkeleton,
+  EmptyState,
+  SearchInput,
+} from "@/components/ui";
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";

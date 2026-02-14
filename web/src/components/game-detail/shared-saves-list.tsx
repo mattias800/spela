@@ -10,7 +10,10 @@ function SharedSavesSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50">
+        <div
+          key={i}
+          className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50"
+        >
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
             <Skeleton className="h-4 w-40" />
@@ -92,7 +95,8 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                 </div>
 
                 <span className="text-xs text-surface-500 whitespace-nowrap">
-                  {save.downloadCount} {save.downloadCount === 1 ? "download" : "downloads"}
+                  {save.downloadCount}{" "}
+                  {save.downloadCount === 1 ? "download" : "downloads"}
                 </span>
 
                 <div className="flex items-center gap-1">
@@ -120,7 +124,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
         </div>
       )}
 
-      {data && data.data.length > 0 && (data.total > pageSize) && (
+      {data && data.data.length > 0 && data.total > pageSize && (
         <div className="flex items-center justify-center gap-3 mt-6">
           <Button
             variant="secondary"
@@ -152,7 +156,8 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
         size="sm"
       >
         <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to delete this shared save? Others will no longer be able to download it.
+          Are you sure you want to delete this shared save? Others will no
+          longer be able to download it.
         </p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteTarget(null)}>

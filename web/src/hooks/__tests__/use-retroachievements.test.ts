@@ -35,7 +35,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   };
 }
 
@@ -54,20 +58,41 @@ const mockAchievements = {
   totalCount: 2,
   totalPoints: 15,
   achievements: [
-    { id: 1, title: "First Blood", description: "Beat level 1", points: 5, badgeUrl: "https://ra.org/badge/1.png", type: "core" },
-    { id: 2, title: "Speed Run", description: "Beat game in 30 min", points: 10, badgeUrl: "https://ra.org/badge/2.png", type: "core" },
+    {
+      id: 1,
+      title: "First Blood",
+      description: "Beat level 1",
+      points: 5,
+      badgeUrl: "https://ra.org/badge/1.png",
+      type: "core",
+    },
+    {
+      id: 2,
+      title: "Speed Run",
+      description: "Beat game in 30 min",
+      points: 10,
+      badgeUrl: "https://ra.org/badge/2.png",
+      type: "core",
+    },
   ],
 };
 
 const mockProgress = [
-  { achievementId: 1, unlockedAt: "2025-06-01T12:00:00Z", isHardcore: false, playTimeAtUnlock: 1200 },
+  {
+    achievementId: 1,
+    unlockedAt: "2025-06-01T12:00:00Z",
+    isHardcore: false,
+    playTimeAtUnlock: 1200,
+  },
 ];
 
 describe("useRAStatus", () => {
   it("fetches RA status", async () => {
     mockApi.get.mockResolvedValue(mockStatus);
 
-    const { result } = renderHook(() => useRAStatus(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRAStatus(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -78,7 +103,9 @@ describe("useRAStatus", () => {
   it("handles fetch error", async () => {
     mockApi.get.mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() => useRAStatus(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRAStatus(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe("Network error");
@@ -89,7 +116,9 @@ describe("useLinkRA", () => {
   it("sends link request", async () => {
     mockApi.post.mockResolvedValue(mockStatus);
 
-    const { result } = renderHook(() => useLinkRA(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLinkRA(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ username: "player1", password: "secret" });
 
@@ -103,7 +132,9 @@ describe("useLinkRA", () => {
   it("handles link error", async () => {
     mockApi.post.mockRejectedValue(new Error("Invalid credentials"));
 
-    const { result } = renderHook(() => useLinkRA(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLinkRA(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ username: "bad", password: "creds" });
 
@@ -116,7 +147,9 @@ describe("useUnlinkRA", () => {
   it("sends unlink request", async () => {
     mockApi.delete.mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useUnlinkRA(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUnlinkRA(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate();
 
@@ -127,7 +160,9 @@ describe("useUnlinkRA", () => {
   it("handles unlink error", async () => {
     mockApi.delete.mockRejectedValue(new Error("Forbidden"));
 
-    const { result } = renderHook(() => useUnlinkRA(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUnlinkRA(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate();
 
@@ -139,7 +174,9 @@ describe("useRASettings", () => {
   it("sends settings update", async () => {
     mockApi.put.mockResolvedValue({ ...mockStatus, hardcoreEnabled: true });
 
-    const { result } = renderHook(() => useRASettings(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRASettings(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ hardcoreEnabled: true });
 
@@ -152,7 +189,9 @@ describe("useRASettings", () => {
   it("handles settings error", async () => {
     mockApi.put.mockRejectedValue(new Error("Bad request"));
 
-    const { result } = renderHook(() => useRASettings(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRASettings(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ hardcoreEnabled: true });
 
@@ -203,7 +242,9 @@ describe("useGameAchievementProgress", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/game-1/achievements/progress");
+    expect(mockApi.get).toHaveBeenCalledWith(
+      "/games/game-1/achievements/progress",
+    );
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].playTimeAtUnlock).toBe(1200);
   });
@@ -219,9 +260,12 @@ describe("useGameAchievementProgress", () => {
   it("handles fetch error", async () => {
     mockApi.get.mockRejectedValue(new Error("Forbidden"));
 
-    const { result } = renderHook(() => useGameAchievementProgress("game-bad"), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(
+      () => useGameAchievementProgress("game-bad"),
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });

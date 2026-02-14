@@ -10,12 +10,13 @@ interface GameCardProps {
   onTogglePlayLater?: (game: Game) => void;
 }
 
-export function GameCard({ game, onToggleFavorite, onTogglePlayLater }: GameCardProps) {
+export function GameCard({
+  game,
+  onToggleFavorite,
+  onTogglePlayLater,
+}: GameCardProps) {
   return (
-    <Link
-      to={`/games/${game.id}`}
-      className="group block space-y-3"
-    >
+    <Link to={`/games/${game.id}`} className="group block space-y-3">
       <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1">
         {game.coverUrl ? (
           <img

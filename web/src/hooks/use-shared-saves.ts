@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { SharedSave, SharedSavesResponse } from "@/types/api";
 
-export function useSharedSaves(gameId: string, page: number = 1, pageSize: number = 20) {
+export function useSharedSaves(
+  gameId: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
   return useQuery({
     queryKey: ["shared-saves", gameId, page, pageSize],
     queryFn: () =>

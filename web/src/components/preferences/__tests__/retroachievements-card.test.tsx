@@ -15,7 +15,12 @@ vi.mock("@/hooks/use-retroachievements", () => ({
   useRASettings: vi.fn(),
 }));
 
-import { useRAStatus, useLinkRA, useUnlinkRA, useRASettings } from "@/hooks/use-retroachievements";
+import {
+  useRAStatus,
+  useLinkRA,
+  useUnlinkRA,
+  useRASettings,
+} from "@/hooks/use-retroachievements";
 
 const mockUseRAStatus = useRAStatus as ReturnType<typeof vi.fn>;
 const mockUseLinkRA = useLinkRA as ReturnType<typeof vi.fn>;
@@ -36,22 +41,38 @@ function renderCard() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseLinkRA.mockReturnValue({ mutate: mockMutate, isPending: false });
-  mockUseUnlinkRA.mockReturnValue({ mutate: mockUnlinkMutate, isPending: false });
-  mockUseRASettings.mockReturnValue({ mutate: mockSettingsMutate, isPending: false });
+  mockUseUnlinkRA.mockReturnValue({
+    mutate: mockUnlinkMutate,
+    isPending: false,
+  });
+  mockUseRASettings.mockReturnValue({
+    mutate: mockSettingsMutate,
+    isPending: false,
+  });
 });
 
 describe("RetroAchievementsCard", () => {
   it("renders loading state", () => {
-    mockUseRAStatus.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    mockUseRAStatus.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
     renderCard();
     expect(screen.getByText("RetroAchievements")).toBeInTheDocument();
     expect(screen.queryByTestId("ra-username-input")).not.toBeInTheDocument();
   });
 
   it("renders error state", () => {
-    mockUseRAStatus.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    mockUseRAStatus.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
     renderCard();
-    expect(screen.getByText("Failed to load RetroAchievements status.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Failed to load RetroAchievements status."),
+    ).toBeInTheDocument();
   });
 
   it("renders unlinked state with form", () => {
@@ -65,7 +86,11 @@ describe("RetroAchievementsCard", () => {
     expect(screen.getByTestId("ra-username-input")).toBeInTheDocument();
     expect(screen.getByTestId("ra-password-input")).toBeInTheDocument();
     expect(screen.getByTestId("link-ra-btn")).toBeInTheDocument();
-    expect(screen.getByText("Your password is only used to obtain a token and is never stored.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your password is only used to obtain a token and is never stored.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("disables link button when fields are empty", () => {
@@ -93,7 +118,10 @@ describe("RetroAchievementsCard", () => {
 
     expect(mockMutate).toHaveBeenCalledWith(
       { username: "player1", password: "secret123" },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
     );
   });
 

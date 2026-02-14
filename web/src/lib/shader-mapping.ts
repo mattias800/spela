@@ -7,10 +7,10 @@
  */
 
 const SPELA_TO_EMULATORJS: Record<string, string> = {
-  "none": "",
-  "bilinear": "",
+  none: "",
+  bilinear: "",
   "sharp-bilinear": "",
-  "scanlines": "crt-mattias",
+  scanlines: "crt-mattias",
   "crt-simple": "crt-easymode",
   "lcd-grid": "crt-aperture",
 };

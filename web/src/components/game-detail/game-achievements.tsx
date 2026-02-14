@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { AlertTriangle, Trophy, LayoutGrid, Clock } from "lucide-react";
-import { Card, CardHeader, CardContent, Skeleton, Badge } from "@/components/ui";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Skeleton,
+  Badge,
+} from "@/components/ui";
 import {
   useGameAchievements,
   useGameAchievementProgress,
@@ -145,8 +151,7 @@ export function GameAchievements({ gameId }: GameAchievementsProps) {
           <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5" />
           <p className="text-sm text-amber-200">
             Achievements are available for this game but require the Spela
-            Player app. Browser emulation does not support
-            RetroAchievements.
+            Player app. Browser emulation does not support RetroAchievements.
           </p>
         </div>
 
@@ -227,7 +232,11 @@ function TimelineView({
   totalAchievements,
 }: {
   timeline:
-    | { timeline: AchievementTimelineEntry[]; unlockedCount: number; earnedPoints: number }
+    | {
+        timeline: AchievementTimelineEntry[];
+        unlockedCount: number;
+        earnedPoints: number;
+      }
     | undefined;
   isLoading: boolean;
   achievements: Achievement[];
@@ -283,9 +292,7 @@ function TimelineView({
           />
           <StatCard
             value={
-              latestUnlock
-                ? formatRelativeTime(latestUnlock.unlockedAt)
-                : "--"
+              latestUnlock ? formatRelativeTime(latestUnlock.unlockedAt) : "--"
             }
             label="Latest unlock"
           />
@@ -308,10 +315,7 @@ function TimelineView({
             </p>
             <div className="space-y-3">
               {entries.map((entry) => (
-                <TimelineEntryCard
-                  key={entry.achievementRaId}
-                  entry={entry}
-                />
+                <TimelineEntryCard key={entry.achievementRaId} entry={entry} />
               ))}
             </div>
           </div>
@@ -377,9 +381,7 @@ function TimelineEntryCard({ entry }: { entry: AchievementTimelineEntry }) {
             <p className="text-sm font-medium text-surface-100 truncate">
               {entry.title}
             </p>
-            <span className="text-xs text-surface-500">
-              {entry.points} pts
-            </span>
+            <span className="text-xs text-surface-500">{entry.points} pts</span>
             {entry.isHardcore && (
               <Badge variant="warning" className="text-[10px] px-1.5 py-0">
                 HC

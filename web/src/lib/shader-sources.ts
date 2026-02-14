@@ -95,10 +95,10 @@ void main() {
 }`;
 
 export const FRAGMENT_SHADERS: Record<string, string> = {
-  "none": PASSTHROUGH_FRAGMENT,
-  "bilinear": PASSTHROUGH_FRAGMENT,
+  none: PASSTHROUGH_FRAGMENT,
+  bilinear: PASSTHROUGH_FRAGMENT,
   "sharp-bilinear": PASSTHROUGH_FRAGMENT,
-  "scanlines": SCANLINES_FRAGMENT,
+  scanlines: SCANLINES_FRAGMENT,
   "crt-simple": CRT_SIMPLE_FRAGMENT,
   "lcd-grid": LCD_GRID_FRAGMENT,
 };

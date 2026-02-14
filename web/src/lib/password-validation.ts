@@ -1,4 +1,7 @@
-export function validatePasswords(password: string, confirmPassword: string): string | null {
+export function validatePasswords(
+  password: string,
+  confirmPassword: string,
+): string | null {
   if (password !== confirmPassword) {
     return "Passwords do not match";
   }

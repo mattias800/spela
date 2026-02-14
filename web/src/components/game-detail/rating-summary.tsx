@@ -84,9 +84,7 @@ export function RatingSummaryCard({ gameId }: RatingSummaryProps) {
     );
   }
 
-  const maxCount = Math.max(
-    ...Object.values(summary.distribution),
-  );
+  const maxCount = Math.max(...Object.values(summary.distribution));
 
   return (
     <div data-testid="rating-summary">
@@ -100,9 +98,14 @@ export function RatingSummaryCard({ gameId }: RatingSummaryProps) {
           {summary.averageRating.toFixed(1)}
         </span>
         <div>
-          <StarRating value={Math.round(summary.averageRating)} readonly size="sm" />
+          <StarRating
+            value={Math.round(summary.averageRating)}
+            readonly
+            size="sm"
+          />
           <p className="text-xs text-surface-500 mt-0.5">
-            {summary.totalRatings} {summary.totalRatings === 1 ? "rating" : "ratings"}
+            {summary.totalRatings}{" "}
+            {summary.totalRatings === 1 ? "rating" : "ratings"}
           </p>
         </div>
       </div>

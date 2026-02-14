@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { Button, Badge, DropdownMenu } from "@/components/ui";
 import { MetaItem } from "@/components/meta-item";
-import { formatFileSize, formatPlayTime, formatRelativeTime } from "@/lib/format";
+import {
+  formatFileSize,
+  formatPlayTime,
+  formatRelativeTime,
+} from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { Game } from "@/types/api";
 
@@ -62,11 +66,7 @@ function OverflowMenu({
       align="right"
       className="w-56"
       trigger={
-        <Button
-          variant="secondary"
-          size="sm"
-          data-testid="overflow-menu-btn"
-        >
+        <Button variant="secondary" size="sm" data-testid="overflow-menu-btn">
           <Ellipsis className="h-5 w-5" />
         </Button>
       }
@@ -90,7 +90,10 @@ function OverflowMenu({
         className="w-full justify-start rounded-none"
       >
         <Heart
-          className={cn("h-4 w-4", isFavorite && "fill-current text-danger-500")}
+          className={cn(
+            "h-4 w-4",
+            isFavorite && "fill-current text-danger-500",
+          )}
         />
         {isFavorite ? "Unfavorite" : "Favorite"}
       </Button>
@@ -102,7 +105,10 @@ function OverflowMenu({
         className="w-full justify-start rounded-none"
       >
         <Clock
-          className={cn("h-4 w-4", isInPlayLater && "fill-current text-brand-500")}
+          className={cn(
+            "h-4 w-4",
+            isInPlayLater && "fill-current text-brand-500",
+          )}
         />
         {isInPlayLater ? "In Queue" : "Play Later"}
       </Button>
@@ -164,16 +170,12 @@ export function GameHero({
               )}
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              {consoleName && (
-                <Badge variant="brand">{consoleName}</Badge>
-              )}
+              {consoleName && <Badge variant="brand">{consoleName}</Badge>}
               {game.averageRating > 0 && (
                 <span className="flex items-center gap-1 text-sm text-surface-400">
                   <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
                   {game.averageRating.toFixed(1)}
-                  <span className="text-surface-500">
-                    ({game.ratingCount})
-                  </span>
+                  <span className="text-surface-500">({game.ratingCount})</span>
                 </span>
               )}
             </div>
@@ -184,7 +186,11 @@ export function GameHero({
               size="sm"
               onClick={onPlay}
               disabled={!canPlayInBrowser}
-              title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
+              title={
+                canPlayInBrowser
+                  ? "Play in Browser"
+                  : `${game.consoleName} is not supported for browser play`
+              }
               data-testid="play-in-browser-btn"
             >
               <Play className="h-5 w-5" />
@@ -209,10 +215,7 @@ export function GameHero({
                 onClick={onToggleFavorite}
               >
                 <Heart
-                  className={cn(
-                    "h-5 w-5",
-                    isFavorite && "fill-current",
-                  )}
+                  className={cn("h-5 w-5", isFavorite && "fill-current")}
                 />
                 {isFavorite ? "Unfavorite" : "Favorite"}
               </Button>
@@ -223,10 +226,7 @@ export function GameHero({
                 disabled={isPlayLaterPending}
               >
                 <Clock
-                  className={cn(
-                    "h-5 w-5",
-                    isInPlayLater && "fill-current",
-                  )}
+                  className={cn("h-5 w-5", isInPlayLater && "fill-current")}
                 />
                 {isInPlayLater ? "In Queue" : "Play Later"}
               </Button>
@@ -252,13 +252,25 @@ export function GameHero({
         {/* Metadata grid */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {game.developer && (
-            <MetaItem icon={Building2} label="Developer" value={game.developer} />
+            <MetaItem
+              icon={Building2}
+              label="Developer"
+              value={game.developer}
+            />
           )}
           {game.publisher && (
-            <MetaItem icon={Building2} label="Publisher" value={game.publisher} />
+            <MetaItem
+              icon={Building2}
+              label="Publisher"
+              value={game.publisher}
+            />
           )}
           {game.releaseDate && (
-            <MetaItem icon={Calendar} label="Released" value={game.releaseDate} />
+            <MetaItem
+              icon={Calendar}
+              label="Released"
+              value={game.releaseDate}
+            />
           )}
           {game.genre && (
             <MetaItem icon={Star} label="Genre" value={game.genre} />
@@ -266,14 +278,22 @@ export function GameHero({
           {game.players != null && (
             <MetaItem icon={Users} label="Players" value={`${game.players}`} />
           )}
-          <MetaItem icon={HardDrive} label="Size" value={formatFileSize(game.fileSize)} />
+          <MetaItem
+            icon={HardDrive}
+            label="Size"
+            value={formatFileSize(game.fileSize)}
+          />
           {game.rating !== undefined && game.rating > 0 && (
             <MetaItem icon={Star} label="Rating" value={`${game.rating}/10`} />
           )}
           <MetaItem
             icon={Clock}
             label="Play Time"
-            value={game.totalPlayTime > 0 ? formatPlayTime(game.totalPlayTime) : "Not played yet"}
+            value={
+              game.totalPlayTime > 0
+                ? formatPlayTime(game.totalPlayTime)
+                : "Not played yet"
+            }
           />
           {game.lastPlayedAt && (
             <MetaItem

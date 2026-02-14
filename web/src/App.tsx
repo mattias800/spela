@@ -46,94 +46,100 @@ function ThemeApplier({ children }: { children: React.ReactNode }) {
 export function App() {
   return (
     <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <ToastProvider>
-            <ThemeApplier>
-            <Routes>
-              {/* Auth routes */}
-              <Route path="/setup" element={<SetupPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <ToastProvider>
+              <ThemeApplier>
+                <Routes>
+                  {/* Auth routes */}
+                  <Route path="/setup" element={<SetupPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
 
-              {/* Emulator route (protected, no sidebar) */}
-              <Route
-                path="games/:id/play"
-                element={
-                  <ProtectedRoute>
-                    <PlayPage />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* Emulator route (protected, no sidebar) */}
+                  <Route
+                    path="games/:id/play"
+                    element={
+                      <ProtectedRoute>
+                        <PlayPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* App routes (protected) */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<DashboardPage />} />
-                <Route element={<LibraryLayout />}>
-                  <Route path="consoles" element={<ConsolesPage />} />
-                  <Route path="games" element={<GamesPage />} />
-                  <Route path="favorites" element={<FavoritesPage />} />
-                  <Route path="play-later" element={<PlayLaterPage />} />
-                  <Route path="collections" element={<CollectionsPage />} />
-                </Route>
-                <Route path="consoles/:id" element={<ConsoleDetailPage />} />
-                <Route path="games/:id" element={<GameDetailPage />} />
-                <Route path="collections/:id" element={<CollectionDetailPage />} />
-                <Route path="stats" element={<StatsPage />} />
-                <Route path="activity" element={<ActivityPage />} />
-                <Route path="users/:id" element={<UserProfilePage />} />
-                <Route path="preferences" element={<PreferencesPage />} />
+                  {/* App routes (protected) */}
+                  <Route
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<DashboardPage />} />
+                    <Route element={<LibraryLayout />}>
+                      <Route path="consoles" element={<ConsolesPage />} />
+                      <Route path="games" element={<GamesPage />} />
+                      <Route path="favorites" element={<FavoritesPage />} />
+                      <Route path="play-later" element={<PlayLaterPage />} />
+                      <Route path="collections" element={<CollectionsPage />} />
+                    </Route>
+                    <Route
+                      path="consoles/:id"
+                      element={<ConsoleDetailPage />}
+                    />
+                    <Route path="games/:id" element={<GameDetailPage />} />
+                    <Route
+                      path="collections/:id"
+                      element={<CollectionDetailPage />}
+                    />
+                    <Route path="stats" element={<StatsPage />} />
+                    <Route path="activity" element={<ActivityPage />} />
+                    <Route path="users/:id" element={<UserProfilePage />} />
+                    <Route path="preferences" element={<PreferencesPage />} />
 
-                {/* Admin routes */}
-                <Route
-                  path="admin/users"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminUsersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="admin/settings"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminSettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="admin/scan"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminScanPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="admin/metadata"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <MetadataFixPage />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
+                    {/* Admin routes */}
+                    <Route
+                      path="admin/users"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminUsersPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/settings"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminSettingsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/scan"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminScanPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/metadata"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <MetadataFixPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            </ThemeApplier>
-          </ToastProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+                  {/* Fallback */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </ThemeApplier>
+            </ToastProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

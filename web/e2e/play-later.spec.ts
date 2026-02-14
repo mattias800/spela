@@ -29,7 +29,12 @@ function mockGame(overrides?: Record<string, unknown>) {
 const mockGames = [
   mockGame({ id: "1", title: "Super Mario Bros.", isInPlayLater: true }),
   mockGame({ id: "2", title: "The Legend of Zelda", isInPlayLater: true }),
-  mockGame({ id: "3", title: "Metroid", consoleName: "SNES", isInPlayLater: true }),
+  mockGame({
+    id: "3",
+    title: "Metroid",
+    consoleName: "SNES",
+    isInPlayLater: true,
+  }),
 ];
 
 /**
@@ -72,7 +77,12 @@ async function setupGameDetailRoutes(
       status: 200,
       contentType: "application/json",
       body: JSON.stringify([
-        { id: "1", name: "NES", abbreviation: "NES", emulatorJsCore: "nestopia" },
+        {
+          id: "1",
+          name: "NES",
+          abbreviation: "NES",
+          emulatorJsCore: "nestopia",
+        },
       ]),
     });
   });
@@ -84,7 +94,12 @@ async function setupGameDetailRoutes(
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ raGameId: 0, totalCount: 0, totalPoints: 0, achievements: [] }),
+      body: JSON.stringify({
+        raGameId: 0,
+        totalCount: 0,
+        totalPoints: 0,
+        achievements: [],
+      }),
     });
   });
 
@@ -96,13 +111,20 @@ async function setupGameDetailRoutes(
     });
   });
 
-  await page.route(`**/api/games/${gameId}/achievements/leaderboard`, (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ raGameId: 0, totalAchievements: 0, leaderboard: [] }),
-    });
-  });
+  await page.route(
+    `**/api/games/${gameId}/achievements/leaderboard`,
+    (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          raGameId: 0,
+          totalAchievements: 0,
+          leaderboard: [],
+        }),
+      });
+    },
+  );
 
   await page.route(`**/api/games/${gameId}/achievements/timeline`, (route) => {
     route.fulfill({
@@ -125,7 +147,12 @@ async function setupGameDetailRoutes(
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ totalPlayers: 0, totalPlayTime: 0, averagePlayTime: 0, topPlayers: [] }),
+      body: JSON.stringify({
+        totalPlayers: 0,
+        totalPlayTime: 0,
+        averagePlayTime: 0,
+        topPlayers: [],
+      }),
     });
   });
 
@@ -133,7 +160,11 @@ async function setupGameDetailRoutes(
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ averageRating: 0, totalRatings: 0, distribution: {} }),
+      body: JSON.stringify({
+        averageRating: 0,
+        totalRatings: 0,
+        distribution: {},
+      }),
     });
   });
 
@@ -199,7 +230,9 @@ test.describe("Play Later Page", () => {
     ).toBeVisible();
   });
 
-  test("displays ordered list of games in play later queue", async ({ page }) => {
+  test("displays ordered list of games in play later queue", async ({
+    page,
+  }) => {
     await page.route("**/api/user/play-later", (route) => {
       if (route.request().url().includes("/reorder")) return route.continue();
       route.fulfill({
@@ -245,7 +278,9 @@ test.describe("Play Later Page", () => {
 
     await page.goto("/play-later");
 
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Super Mario Bros.")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Click the first remove button
     const removeButtons = page.getByTitle("Remove from queue");
@@ -270,7 +305,11 @@ test.describe("Play Later Page", () => {
     await page.route("**/api/user/play-later/reorder", (route) => {
       if (route.request().method() === "PUT") {
         reorderPayload = route.request().postDataJSON();
-        route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "[]",
+        });
       } else {
         route.continue();
       }
@@ -278,7 +317,9 @@ test.describe("Play Later Page", () => {
 
     await page.goto("/play-later");
 
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Super Mario Bros.")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Click move down on the first item
     const moveDownButtons = page.getByTitle("Move down");
@@ -305,7 +346,11 @@ test.describe("Play Later Page", () => {
     await page.route("**/api/user/play-later/reorder", (route) => {
       if (route.request().method() === "PUT") {
         reorderPayload = route.request().postDataJSON();
-        route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "[]",
+        });
       } else {
         route.continue();
       }
@@ -313,7 +358,9 @@ test.describe("Play Later Page", () => {
 
     await page.goto("/play-later");
 
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Super Mario Bros.")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Click move up on the second item (index 1)
     const moveUpButtons = page.getByTitle("Move up");
@@ -334,7 +381,11 @@ test.describe("Play Later on Game Detail Page", () => {
     // Mock the toggle POST endpoint
     await page.route("**/api/user/play-later/*", (route) => {
       if (route.request().method() === "POST") {
-        route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "{}",
+        });
       } else if (route.request().method() === "DELETE") {
         route.fulfill({ status: 204 });
       } else {
@@ -349,7 +400,9 @@ test.describe("Play Later on Game Detail Page", () => {
     await expect(playLaterBtn).toBeVisible({ timeout: 10_000 });
   });
 
-  test("shows In Queue button when game is already in play later", async ({ page }) => {
+  test("shows In Queue button when game is already in play later", async ({
+    page,
+  }) => {
     const gameData = mockGame({ isInPlayLater: true });
     await setupGameDetailRoutes(page, gameData);
 
@@ -367,7 +420,11 @@ test.describe("Play Later on Game Detail Page", () => {
     await page.route("**/api/user/play-later/*", (route) => {
       if (route.request().method() === "POST") {
         postCalled = true;
-        route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "{}",
+        });
       } else if (route.request().method() === "DELETE") {
         route.fulfill({ status: 204 });
       } else {
@@ -395,7 +452,11 @@ test.describe("Play Later on Game Detail Page", () => {
         deleteCalled = true;
         route.fulfill({ status: 204 });
       } else if (route.request().method() === "POST") {
-        route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "{}",
+        });
       } else {
         route.continue();
       }
@@ -418,11 +479,19 @@ test.describe("Dashboard Play Later Section", () => {
     playLaterGames: Record<string, unknown>[],
   ) {
     await page.route("**/api/games/recent*", (route) => {
-      route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
     });
 
     await page.route("**/api/games/favorites*", (route) => {
-      route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
     });
 
     await page.route("**/api/games?*", (route) => {
@@ -443,7 +512,11 @@ test.describe("Dashboard Play Later Section", () => {
     });
 
     await page.route("**/api/user/achievements/recent*", (route) => {
-      route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
     });
 
     await page.route("**/api/user/stats", (route) => {
@@ -476,20 +549,24 @@ test.describe("Dashboard Play Later Section", () => {
     });
   }
 
-  test("dashboard shows Play Later section when queue has items", async ({ page }) => {
+  test("dashboard shows Play Later section when queue has items", async ({
+    page,
+  }) => {
     await setupDashboardRoutes(page, mockGames);
 
     await page.goto("/");
 
-    await expect(
-      page.getByRole("heading", { name: "Play Later" }),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Play Later" })).toBeVisible(
+      { timeout: 10_000 },
+    );
 
     // Games should be visible in the section
     await expect(page.getByText("Super Mario Bros.")).toBeVisible();
   });
 
-  test("dashboard hides Play Later section when queue is empty", async ({ page }) => {
+  test("dashboard hides Play Later section when queue is empty", async ({
+    page,
+  }) => {
     await setupDashboardRoutes(page, []);
 
     await page.goto("/");
@@ -551,8 +628,6 @@ test.describe("Activity Feed - Play Later Event", () => {
     await expect(page.getByText("Castlevania")).toBeVisible();
 
     // The event description text
-    await expect(
-      page.getByText("to their Play Later queue"),
-    ).toBeVisible();
+    await expect(page.getByText("to their Play Later queue")).toBeVisible();
   });
 });

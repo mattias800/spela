@@ -10,7 +10,10 @@ function ReviewsSkeleton() {
   return (
     <div className="space-y-4">
       {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-900/50">
+        <div
+          key={i}
+          className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-900/50"
+        >
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-32" />

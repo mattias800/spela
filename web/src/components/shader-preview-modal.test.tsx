@@ -35,14 +35,26 @@ afterEach(() => {
 describe("ShaderPreviewModal", () => {
   it("renders nothing when closed", () => {
     render(
-      <ShaderPreviewModal open={false} onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open={false}
+        onClose={vi.fn()}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
-    expect(screen.queryByText("Click anywhere to close")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Click anywhere to close"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders content when open", () => {
     render(
-      <ShaderPreviewModal open onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open
+        onClose={vi.fn()}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     expect(screen.getByText("Click anywhere to close")).toBeInTheDocument();
   });
@@ -50,7 +62,12 @@ describe("ShaderPreviewModal", () => {
   it("calls onClose when clicking the overlay", () => {
     const onClose = vi.fn();
     render(
-      <ShaderPreviewModal open onClose={onClose} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open
+        onClose={onClose}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     const closeHint = screen.getByText("Click anywhere to close");
     fireEvent.click(closeHint.closest("[class*='fixed']") as HTMLElement);
@@ -60,7 +77,12 @@ describe("ShaderPreviewModal", () => {
   it("calls onClose when pressing Escape", async () => {
     const onClose = vi.fn();
     render(
-      <ShaderPreviewModal open onClose={onClose} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open
+        onClose={onClose}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
@@ -68,19 +90,34 @@ describe("ShaderPreviewModal", () => {
 
   it("locks body scroll when open", () => {
     const { rerender } = render(
-      <ShaderPreviewModal open onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open
+        onClose={vi.fn()}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     expect(document.body.style.overflow).toBe("hidden");
 
     rerender(
-      <ShaderPreviewModal open={false} onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open={false}
+        onClose={vi.fn()}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     expect(document.body.style.overflow).toBe("");
   });
 
   it("renders the overlay when open", () => {
     const { container } = render(
-      <ShaderPreviewModal open onClose={vi.fn()} imageUrl="/test.png" shader="none" />,
+      <ShaderPreviewModal
+        open
+        onClose={vi.fn()}
+        imageUrl="/test.png"
+        shader="none"
+      />,
     );
     const overlay = container.querySelector("[class*='fixed']") as HTMLElement;
     expect(overlay).toBeTruthy();

@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { api } from "@/lib/api-client";
 import type { User, AuthTokens } from "@/types/api";
 
@@ -10,7 +17,11 @@ interface AuthContextValue {
   needsSetup: boolean | null;
   registrationEnabled: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   setup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -63,23 +74,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const data = await api.post<AuthTokens>("/auth/login", { username, password });
+    const data = await api.post<AuthTokens>("/auth/login", {
+      username,
+      password,
+    });
     api.setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
   }, []);
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
-    const data = await api.post<AuthTokens>("/auth/register", { username, email, password });
-    api.setTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
-  }, []);
+  const register = useCallback(
+    async (username: string, email: string, password: string) => {
+      const data = await api.post<AuthTokens>("/auth/register", {
+        username,
+        email,
+        password,
+      });
+      api.setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+    },
+    [],
+  );
 
-  const setup = useCallback(async (username: string, email: string, password: string) => {
-    const data = await api.post<AuthTokens>("/auth/setup", { username, email, password });
-    api.setTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
-    setNeedsSetup(false);
-  }, []);
+  const setup = useCallback(
+    async (username: string, email: string, password: string) => {
+      const data = await api.post<AuthTokens>("/auth/setup", {
+        username,
+        email,
+        password,
+      });
+      api.setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+      setNeedsSetup(false);
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     api.clearTokens();

@@ -3,11 +3,18 @@ import { Button } from "./button";
 import { cn } from "@/lib/cn";
 import { type ButtonHTMLAttributes } from "react";
 
-interface BackButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface BackButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
   children?: string;
 }
 
-export function BackButton({ children = "Back", className, ...props }: BackButtonProps) {
+export function BackButton({
+  children = "Back",
+  className,
+  ...props
+}: BackButtonProps) {
   return (
     <Button
       variant="ghost"

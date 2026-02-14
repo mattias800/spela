@@ -14,8 +14,9 @@ vi.mock("@/hooks/use-auth", () => ({
 import { useAchievementLeaderboard } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
 
-const mockUseAchievementLeaderboard =
-  useAchievementLeaderboard as ReturnType<typeof vi.fn>;
+const mockUseAchievementLeaderboard = useAchievementLeaderboard as ReturnType<
+  typeof vi.fn
+>;
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 
 const mockLeaderboard = {
@@ -192,9 +193,6 @@ describe("GameAchievementLeaderboard", () => {
     renderComponent();
 
     const avatarImg = screen.getByAltText("player1");
-    expect(avatarImg).toHaveAttribute(
-      "src",
-      "https://example.com/avatar1.png",
-    );
+    expect(avatarImg).toHaveAttribute("src", "https://example.com/avatar1.png");
   });
 });

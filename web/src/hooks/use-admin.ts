@@ -13,7 +13,18 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { role?: string; email?: string; password?: string; disabled?: boolean } }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        role?: string;
+        email?: string;
+        password?: string;
+        disabled?: boolean;
+      };
+    }) => {
       await api.put(`/admin/users/${id}`, data);
     },
     onSuccess: () => {
@@ -26,7 +37,12 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { username: string; email: string; password: string; role: string }) => {
+    mutationFn: async (data: {
+      username: string;
+      email: string;
+      password: string;
+      role: string;
+    }) => {
       await api.post("/admin/users", data);
     },
     onSuccess: () => {
@@ -117,7 +133,13 @@ export function useScrapeGame() {
 export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],
-    queryFn: () => api.get<{ users: number; games: number; consoles: number; saves: number }>("/admin/stats"),
+    queryFn: () =>
+      api.get<{
+        users: number;
+        games: number;
+        consoles: number;
+        saves: number;
+      }>("/admin/stats"),
   });
 }
 
@@ -125,13 +147,21 @@ export function useUpdateGameMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, metadata }: { gameId: string; metadata: Record<string, unknown> }) => {
+    mutationFn: async ({
+      gameId,
+      metadata,
+    }: {
+      gameId: string;
+      metadata: Record<string, unknown>;
+    }) => {
       await api.post(`/games/${gameId}/metadata`, metadata);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "metadata-matches"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "metadata-matches"],
+      });
     },
   });
 }

@@ -28,7 +28,8 @@ export function ThemeCard({
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {THEME_OPTIONS.map((option) => {
-              const isSelected = (selectedTheme ?? "default-dark") === option.value;
+              const isSelected =
+                (selectedTheme ?? "default-dark") === option.value;
               return (
                 <button
                   key={option.value}
@@ -56,7 +57,9 @@ export function ThemeCard({
                   <p className="text-sm font-medium text-surface-100">
                     {option.label}
                   </p>
-                  <p className="text-xs text-surface-500">{option.description}</p>
+                  <p className="text-xs text-surface-500">
+                    {option.description}
+                  </p>
                 </button>
               );
             })}

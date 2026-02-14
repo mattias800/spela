@@ -86,7 +86,11 @@ export function AdminScanPage() {
             <Button
               onClick={() =>
                 scanLibrary.mutate(undefined, {
-                  onError: (err) => toast("error", err instanceof Error ? err.message : "Scan failed"),
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scan failed",
+                    ),
                 })
               }
               loading={scanLibrary.isPending}
@@ -107,15 +111,20 @@ export function AdminScanPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-surface-400">
-              Fetch cover art, descriptions, and other metadata for games that are
-              missing information.
+              Fetch cover art, descriptions, and other metadata for games that
+              are missing information.
             </p>
 
             <Button
               onClick={() =>
                 scrapeMetadata.mutate(undefined, {
-                  onSuccess: () => toast("success", "Metadata scraping started"),
-                  onError: (err) => toast("error", err instanceof Error ? err.message : "Scrape failed"),
+                  onSuccess: () =>
+                    toast("success", "Metadata scraping started"),
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
                 })
               }
               loading={scrapeMetadata.isPending}

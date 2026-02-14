@@ -47,13 +47,18 @@ export function PlayPage() {
   const resolvedShader = toEmulatorJsShader(spelaShader) || spelaShader;
 
   // Resolve key mapping: per-console override -> global default -> arrows-left
-  const consoleKeyMapping = preferences?.consoleKeyMappings[game?.consoleId ?? ""];
-  const resolvedKeyMapping = consoleKeyMapping?.selectedMapping
-    ?? preferences?.selectedKeyMapping
-    ?? "arrows-left";
-  const resolvedCustomMapping = resolvedKeyMapping === "custom"
-    ? (consoleKeyMapping?.customMapping ?? preferences?.customKeyMapping ?? {})
-    : undefined;
+  const consoleKeyMapping =
+    preferences?.consoleKeyMappings[game?.consoleId ?? ""];
+  const resolvedKeyMapping =
+    consoleKeyMapping?.selectedMapping ??
+    preferences?.selectedKeyMapping ??
+    "arrows-left";
+  const resolvedCustomMapping =
+    resolvedKeyMapping === "custom"
+      ? (consoleKeyMapping?.customMapping ??
+        preferences?.customKeyMapping ??
+        {})
+      : undefined;
 
   const emulatorPrefs: EmulatorPreferences = {
     shader: resolvedShader,
@@ -141,7 +146,9 @@ export function PlayPage() {
       const EXIT_SAVE_TIMEOUT_MS = 3_000;
       await Promise.race([
         saveManager.requestExitSave(),
-        new Promise<void>((resolve) => setTimeout(resolve, EXIT_SAVE_TIMEOUT_MS)),
+        new Promise<void>((resolve) =>
+          setTimeout(resolve, EXIT_SAVE_TIMEOUT_MS),
+        ),
       ]);
     }
     navigate(-1);

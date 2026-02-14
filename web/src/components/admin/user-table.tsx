@@ -1,5 +1,11 @@
 import { Shield, ShieldCheck, Crown, Trash2, UserX } from "lucide-react";
-import { Button, Badge, Card, EmptyState, TableRowSkeleton } from "@/components/ui";
+import {
+  Button,
+  Badge,
+  Card,
+  EmptyState,
+  TableRowSkeleton,
+} from "@/components/ui";
 import { Users } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import type { User } from "@/types/api";
@@ -39,7 +45,14 @@ function getRoleBadge(role: string) {
   }
 }
 
-export function UserTable({ users, currentUser, isLoading, onEdit, onDelete, onViewDevices }: UserTableProps) {
+export function UserTable({
+  users,
+  currentUser,
+  isLoading,
+  onEdit,
+  onDelete,
+  onViewDevices,
+}: UserTableProps) {
   const isOwnerOrSelf = (user: User) =>
     user.role === "owner" || user.id === currentUser?.id;
 
@@ -98,7 +111,9 @@ export function UserTable({ users, currentUser, isLoading, onEdit, onDelete, onV
                           {user.username}
                         </span>
                         {user.id === currentUser?.id && (
-                          <span className="ml-2 text-xs text-surface-500">(you)</span>
+                          <span className="ml-2 text-xs text-surface-500">
+                            (you)
+                          </span>
                         )}
                       </div>
                     </div>
@@ -106,9 +121,7 @@ export function UserTable({ users, currentUser, isLoading, onEdit, onDelete, onV
                   <td className="px-5 py-3 text-sm text-surface-400">
                     {user.email}
                   </td>
-                  <td className="px-5 py-3">
-                    {getRoleBadge(user.role)}
-                  </td>
+                  <td className="px-5 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-5 py-3">
                     {user.disabled ? (
                       <Badge variant="danger">

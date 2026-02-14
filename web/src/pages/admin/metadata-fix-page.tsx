@@ -62,7 +62,8 @@ export function MetadataFixPage() {
             setCurrentIndex((i) => i + 1);
           }
         },
-        onError: (err) => toast("error", err instanceof Error ? err.message : "Unknown error"),
+        onError: (err) =>
+          toast("error", err instanceof Error ? err.message : "Unknown error"),
       },
     );
   }
@@ -114,7 +115,9 @@ export function MetadataFixPage() {
                 <h3 className="text-lg font-semibold text-surface-100">
                   {current.currentTitle}
                 </h3>
-                <p className="text-sm text-surface-500 mt-1">Game ID: {current.gameId}</p>
+                <p className="text-sm text-surface-500 mt-1">
+                  Game ID: {current.gameId}
+                </p>
               </div>
             </div>
           </div>

@@ -4,14 +4,20 @@ test.describe("Key Mapping Card", () => {
   test("displays Key Mapping heading on preferences page", async ({ page }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByRole("heading", { name: "Key Mapping" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Key Mapping" }),
+    ).toBeVisible();
   });
 
   test("renders all three mode buttons", async ({ page }) => {
     await page.goto("/preferences");
 
-    await expect(page.getByRole("button", { name: "Arrows + Left" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "WASD + Arrows" }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Custom" })).toBeVisible();
   });
 
@@ -25,7 +31,9 @@ test.describe("Key Mapping Card", () => {
     await expect(arrowsBtn).toHaveClass(/ring-2/);
   });
 
-  test("clicking a mode button updates the active visual state", async ({ page }) => {
+  test("clicking a mode button updates the active visual state", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
@@ -58,7 +66,9 @@ test.describe("Controller Visual", () => {
     await page.goto("/preferences");
 
     // Ensure arrows-left is active (default)
-    await expect(page.getByRole("button", { name: "Arrows + Left" })).toHaveClass(/ring-2/);
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).toHaveClass(/ring-2/);
 
     // D-pad uses arrow keys: Up=↑, Down=↓, Left=←, Right=→
     const visual = page.getByTestId("controller-visual");
@@ -82,7 +92,9 @@ test.describe("Controller Visual", () => {
 
     // Switch to WASD + Arrows mode
     await page.getByRole("button", { name: "WASD + Arrows" }).click();
-    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toHaveClass(/ring-2/);
+    await expect(
+      page.getByRole("button", { name: "WASD + Arrows" }),
+    ).toHaveClass(/ring-2/);
 
     const visual = page.getByTestId("controller-visual");
     await expect(visual).toBeVisible();
@@ -104,7 +116,9 @@ test.describe("Controller Visual", () => {
 });
 
 test.describe("Custom Key Mapping Editor", () => {
-  test("switching to custom mode shows the key capture editor", async ({ page }) => {
+  test("switching to custom mode shows the key capture editor", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
     // The controller visual should be visible initially
@@ -157,12 +171,17 @@ test.describe("Custom Key Mapping Editor", () => {
     await expect(page.getByText("Start", { exact: true })).toBeVisible();
   });
 
-  test("key capture: click button shows listening state, press key captures it", async ({ page }) => {
+  test("key capture: click button shows listening state, press key captures it", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
     await page.getByRole("button", { name: "Custom" }).click();
 
     // Find the first key capture button (next to a label like "D-pad Up")
-    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const dpadUpRow = page
+      .locator("div")
+      .filter({ hasText: /^D-pad Up$/ })
+      .locator("..");
     const captureBtn = dpadUpRow.locator("button");
     await expect(captureBtn).toBeVisible();
 
@@ -181,11 +200,16 @@ test.describe("Custom Key Mapping Editor", () => {
     await expect(captureBtn).not.toHaveText("...");
   });
 
-  test("key capture: pressing Escape cancels without changing the key", async ({ page }) => {
+  test("key capture: pressing Escape cancels without changing the key", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
     await page.getByRole("button", { name: "Custom" }).click();
 
-    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const dpadUpRow = page
+      .locator("div")
+      .filter({ hasText: /^D-pad Up$/ })
+      .locator("..");
     const captureBtn = dpadUpRow.locator("button");
     await expect(captureBtn).toBeVisible();
 
@@ -206,11 +230,15 @@ test.describe("Custom Key Mapping Editor", () => {
 });
 
 test.describe("Per-Console Key Mapping Overrides", () => {
-  test("override table renders with console names and dropdowns", async ({ page }) => {
+  test("override table renders with console names and dropdowns", async ({
+    page,
+  }) => {
     await page.goto("/preferences");
 
     // Find the key mapping table by its unique "Key Mapping" column header (th)
-    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
+    const table = page
+      .locator("table")
+      .filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     await expect(table).toBeVisible();
     await expect(table.getByText("Console")).toBeVisible();
     await expect(table.getByText("Key Mapping")).toBeVisible();
@@ -230,7 +258,9 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("per-console dropdown has correct options", async ({ page }) => {
     await page.goto("/preferences");
 
-    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
+    const table = page
+      .locator("table")
+      .filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     const firstSelect = table.locator("select").first();
     await expect(firstSelect).toBeVisible();
 
@@ -244,13 +274,18 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("per-console override persists after page reload", async ({ page }) => {
     await page.goto("/preferences");
 
-    const table = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
+    const table = page
+      .locator("table")
+      .filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     const firstSelect = table.locator("select").first();
     await expect(firstSelect).toBeVisible();
 
     // Change to "WASD + Arrows" and wait for the mutation + refetch cycle
     const refetchPromise = page.waitForResponse(
-      (resp) => resp.url().includes("/api/user/preferences") && resp.request().method() === "GET" && resp.status() === 200,
+      (resp) =>
+        resp.url().includes("/api/user/preferences") &&
+        resp.request().method() === "GET" &&
+        resp.status() === 200,
     );
     await firstSelect.selectOption("wasd-arrows");
     await refetchPromise;
@@ -263,14 +298,19 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     await page.reload();
 
     // Verify the value persisted
-    const reloadedTable = page.locator("table").filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
+    const reloadedTable = page
+      .locator("table")
+      .filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
     const reloadedSelect = reloadedTable.locator("select").first();
     await expect(reloadedSelect).toBeVisible();
     await expect(reloadedSelect).toHaveValue("wasd-arrows");
 
     // Reset back to global default to avoid test pollution
     const resetRefetch = page.waitForResponse(
-      (resp) => resp.url().includes("/api/user/preferences") && resp.request().method() === "GET" && resp.status() === 200,
+      (resp) =>
+        resp.url().includes("/api/user/preferences") &&
+        resp.request().method() === "GET" &&
+        resp.status() === 200,
     );
     await reloadedSelect.selectOption("");
     await resetRefetch;
@@ -294,8 +334,12 @@ test.describe("Key Mapping Persistence", () => {
     await page.reload();
 
     // Verify WASD + Arrows is still selected
-    await expect(page.getByRole("button", { name: "WASD + Arrows" })).toHaveClass(/ring-2/);
-    await expect(page.getByRole("button", { name: "Arrows + Left" })).not.toHaveClass(/ring-2/);
+    await expect(
+      page.getByRole("button", { name: "WASD + Arrows" }),
+    ).toHaveClass(/ring-2/);
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).not.toHaveClass(/ring-2/);
 
     // Reset to arrows-left to avoid test pollution
     await page.getByRole("button", { name: "Arrows + Left" }).click();
@@ -307,10 +351,15 @@ test.describe("Key Mapping Persistence", () => {
 
     // Switch to custom mode
     await page.getByRole("button", { name: "Custom" }).click();
-    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(/ring-2/);
+    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(
+      /ring-2/,
+    );
 
     // Find and click the D-pad Up capture button
-    const dpadUpRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const dpadUpRow = page
+      .locator("div")
+      .filter({ hasText: /^D-pad Up$/ })
+      .locator("..");
     const captureBtn = dpadUpRow.locator("button");
     await expect(captureBtn).toBeVisible();
 
@@ -327,10 +376,15 @@ test.describe("Key Mapping Persistence", () => {
     await page.reload();
 
     // Should still be in custom mode
-    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(/ring-2/);
+    await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(
+      /ring-2/,
+    );
 
     // Verify the custom key assignment persisted
-    const reloadedRow = page.locator("div").filter({ hasText: /^D-pad Up$/ }).locator("..");
+    const reloadedRow = page
+      .locator("div")
+      .filter({ hasText: /^D-pad Up$/ })
+      .locator("..");
     const reloadedBtn = reloadedRow.locator("button");
     await expect(reloadedBtn).toHaveText("M");
 

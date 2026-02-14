@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Settings, Plus, X, Key } from "lucide-react";
-import { Button, Card, CardHeader, CardContent, Input, Select, Switch } from "@/components/ui";
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardContent,
+  Input,
+  Select,
+  Switch,
+} from "@/components/ui";
 import { useServerSettings, useUpdateSettings } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
@@ -54,7 +62,8 @@ export function AdminSettingsPage() {
       },
       {
         onSuccess: () => toast("success", "Settings saved"),
-        onError: (err) => toast("error", err instanceof Error ? err.message : "Unknown error"),
+        onError: (err) =>
+          toast("error", err instanceof Error ? err.message : "Unknown error"),
       },
     );
   }
@@ -126,8 +135,12 @@ export function AdminSettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-surface-200">Allow Registration</p>
-              <p className="text-xs text-surface-500">Allow new users to create accounts</p>
+              <p className="text-sm font-medium text-surface-200">
+                Allow Registration
+              </p>
+              <p className="text-xs text-surface-500">
+                Allow new users to create accounts
+              </p>
             </div>
             <Switch
               checked={allowRegistration}
@@ -137,13 +150,14 @@ export function AdminSettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-surface-200">Auto-scrape on Scan</p>
-              <p className="text-xs text-surface-500">Automatically fetch metadata when scanning</p>
+              <p className="text-sm font-medium text-surface-200">
+                Auto-scrape on Scan
+              </p>
+              <p className="text-xs text-surface-500">
+                Automatically fetch metadata when scanning
+              </p>
             </div>
-            <Switch
-              checked={scrapeOnScan}
-              onChange={setScrapeOnScan}
-            />
+            <Switch checked={scrapeOnScan} onChange={setScrapeOnScan} />
           </div>
 
           <Select
@@ -189,7 +203,11 @@ export function AdminSettingsPage() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} loading={updateSettings.isPending} size="lg">
+        <Button
+          onClick={handleSave}
+          loading={updateSettings.isPending}
+          size="lg"
+        >
           Save Settings
         </Button>
       </div>

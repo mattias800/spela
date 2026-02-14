@@ -6,7 +6,11 @@ import type {
   RatingSummary,
 } from "@/types/api";
 
-export function useGameRatings(gameId: string, page: number = 1, pageSize: number = 20) {
+export function useGameRatings(
+  gameId: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
   return useQuery({
     queryKey: ["ratings", gameId, page, pageSize],
     queryFn: () =>

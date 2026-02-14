@@ -8,7 +8,14 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, Badge, EmptyState, Skeleton } from "@/components/ui";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Badge,
+  EmptyState,
+  Skeleton,
+} from "@/components/ui";
 import { formatRelativeTime } from "@/lib/format";
 import { getPlatformIcon } from "@/lib/platform-icons";
 import { SHADER_OPTIONS } from "@/lib/shader-constants";
@@ -20,7 +27,11 @@ interface DevicesCardProps {
   isLoading: boolean;
   onDelete: (device: Device) => void;
   onRename: (id: number, name: string) => void;
-  onDeviceShaderChange: (deviceId: number, consoleId: string, shader: string) => void;
+  onDeviceShaderChange: (
+    deviceId: number,
+    consoleId: string,
+    shader: string,
+  ) => void;
 }
 
 export function DevicesCard({
@@ -72,7 +83,10 @@ export function DevicesCard({
               const isEditing = editingDeviceId === device.id;
 
               return (
-                <div key={device.id} className="rounded-xl border border-surface-800 bg-surface-900/50">
+                <div
+                  key={device.id}
+                  className="rounded-xl border border-surface-800 bg-surface-900/50"
+                >
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="h-9 w-9 rounded-lg bg-surface-800 flex items-center justify-center">
                       <PlatformIcon className="h-4 w-4 text-surface-400" />
@@ -90,19 +104,29 @@ export function DevicesCard({
                             }}
                             autoFocus
                           />
-                          <button onClick={saveDeviceName} className="p-1 text-brand-400 hover:text-brand-300">
+                          <button
+                            onClick={saveDeviceName}
+                            className="p-1 text-brand-400 hover:text-brand-300"
+                          >
                             <Check className="h-4 w-4" />
                           </button>
-                          <button onClick={() => setEditingDeviceId(null)} className="p-1 text-surface-400 hover:text-surface-300">
+                          <button
+                            onClick={() => setEditingDeviceId(null)}
+                            className="p-1 text-surface-400 hover:text-surface-300"
+                          >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       ) : (
                         <div>
-                          <p className="text-sm font-medium text-surface-200 truncate">{device.name}</p>
+                          <p className="text-sm font-medium text-surface-200 truncate">
+                            {device.name}
+                          </p>
                           <div className="flex items-center gap-2">
                             <Badge variant="default">{device.platform}</Badge>
-                            <span className="text-xs text-surface-500">Last seen {formatRelativeTime(device.lastSeenAt)}</span>
+                            <span className="text-xs text-surface-500">
+                              Last seen {formatRelativeTime(device.lastSeenAt)}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -118,11 +142,17 @@ export function DevicesCard({
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => setExpandedDeviceId(isExpanded ? null : device.id)}
+                            onClick={() =>
+                              setExpandedDeviceId(isExpanded ? null : device.id)
+                            }
                             className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                             title="Shader overrides"
                           >
-                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
                           </button>
                           <button
                             onClick={() => onDelete(device)}
@@ -143,16 +173,29 @@ export function DevicesCard({
                       </p>
                       <div className="space-y-2">
                         {consoles.map((console) => (
-                          <div key={console.id} className="flex items-center justify-between gap-4">
-                            <span className="text-sm text-surface-300">{console.name}</span>
+                          <div
+                            key={console.id}
+                            className="flex items-center justify-between gap-4"
+                          >
+                            <span className="text-sm text-surface-300">
+                              {console.name}
+                            </span>
                             <select
                               className="rounded-lg bg-surface-800 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
                               value={device.consoleShaders[console.id] ?? ""}
-                              onChange={(e) => onDeviceShaderChange(device.id, console.id, e.target.value)}
+                              onChange={(e) =>
+                                onDeviceShaderChange(
+                                  device.id,
+                                  console.id,
+                                  e.target.value,
+                                )
+                              }
                             >
                               <option value="">Use account default</option>
                               {SHADER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
                               ))}
                             </select>
                           </div>

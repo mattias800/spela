@@ -10,14 +10,14 @@ interface LoadSaveModalProps {
   onLoad: (save: SaveState) => void;
 }
 
-export function LoadSaveModal({ saves, open, onClose, onLoad }: LoadSaveModalProps) {
+export function LoadSaveModal({
+  saves,
+  open,
+  onClose,
+  onLoad,
+}: LoadSaveModalProps) {
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Load Save State"
-      size="md"
-    >
+    <Modal open={open} onClose={onClose} title="Load Save State" size="md">
       {!saves || saves.length === 0 ? (
         <EmptyState
           icon={FolderOpen}

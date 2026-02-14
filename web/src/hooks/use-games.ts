@@ -46,7 +46,13 @@ export function useToggleFavorite() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async ({ gameId, isFavorite }: { gameId: string; isFavorite: boolean }) => {
+    mutationFn: async ({
+      gameId,
+      isFavorite,
+    }: {
+      gameId: string;
+      isFavorite: boolean;
+    }) => {
       if (isFavorite) {
         await api.delete(`/user/favorites/${gameId}`);
       } else {
@@ -59,7 +65,8 @@ export function useToggleFavorite() {
     },
   });
 
-  const toggle = (game: Game) => mutation.mutate({ gameId: game.id, isFavorite: game.isFavorite });
+  const toggle = (game: Game) =>
+    mutation.mutate({ gameId: game.id, isFavorite: game.isFavorite });
 
   return { ...mutation, toggle };
 }
@@ -83,7 +90,13 @@ export function useDeleteSave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, saveId }: { gameId: string; saveId: number }) => {
+    mutationFn: async ({
+      gameId,
+      saveId,
+    }: {
+      gameId: string;
+      saveId: number;
+    }) => {
       await api.delete(`/games/${gameId}/saves/${saveId}`);
     },
     onSuccess: (_, { gameId }) => {

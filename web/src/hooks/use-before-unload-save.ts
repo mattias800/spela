@@ -18,8 +18,7 @@ export function useBeforeUnloadSave({
   latestStateCacheRef,
 }: UseBeforeUnloadSaveOptions) {
   useEffect(() => {
-    if (emulatorStatus !== "playing" || !autoSaveEnabled || !gameId)
-      return;
+    if (emulatorStatus !== "playing" || !autoSaveEnabled || !gameId) return;
 
     function handleBeforeUnload() {
       // Flush any pending saves via sendBeacon
@@ -43,15 +42,10 @@ export function useBeforeUnloadSave({
       const cached = latestStateCacheRef.current;
       if (cached) {
         try {
-          const bytes = Uint8Array.from(atob(cached), (c) =>
-            c.charCodeAt(0),
-          );
+          const bytes = Uint8Array.from(atob(cached), (c) => c.charCodeAt(0));
           const formData = new FormData();
           formData.append("save", new Blob([bytes]), "auto-save.state");
-          navigator.sendBeacon(
-            `/api/games/${gameId}/saves/auto`,
-            formData,
-          );
+          navigator.sendBeacon(`/api/games/${gameId}/saves/auto`, formData);
         } catch {
           // Best effort
         }

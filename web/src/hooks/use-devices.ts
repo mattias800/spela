@@ -39,7 +39,13 @@ export function useUpdateDevicePreferences() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, consoleShaders }: { id: number; consoleShaders: Record<string, string> }) => {
+    mutationFn: async ({
+      id,
+      consoleShaders,
+    }: {
+      id: number;
+      consoleShaders: Record<string, string>;
+    }) => {
       await api.put(`/user/devices/${id}/preferences`, { consoleShaders });
     },
     onSuccess: () => {

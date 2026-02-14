@@ -106,13 +106,15 @@ describe("createWebGLRenderer", () => {
     const renderer = createWebGLRenderer(canvas)!;
 
     renderer.setShader("scanlines");
-    const firstCallCount = (mockGL.createProgram as ReturnType<typeof vi.fn>).mock.calls.length;
+    const firstCallCount = (mockGL.createProgram as ReturnType<typeof vi.fn>)
+      .mock.calls.length;
     expect(firstCallCount).toBe(1);
 
     // Same preset should reuse cached program
     renderer.setShader("none");
     renderer.setShader("scanlines");
-    const secondCallCount = (mockGL.createProgram as ReturnType<typeof vi.fn>).mock.calls.length;
+    const secondCallCount = (mockGL.createProgram as ReturnType<typeof vi.fn>)
+      .mock.calls.length;
     // "none" creates a new program (2), but "scanlines" reuses cache (still 2)
     expect(secondCallCount).toBe(2);
   });
@@ -147,7 +149,9 @@ describe("createWebGLRenderer", () => {
 
     renderer.setImage(img);
     renderer.setImage(img);
-    expect((mockGL.texImage2D as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
+    expect(
+      (mockGL.texImage2D as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBe(1);
   });
 
   it("applies LINEAR filter for bilinear presets", () => {
@@ -164,11 +168,16 @@ describe("createWebGLRenderer", () => {
     renderer.setShader("bilinear");
     renderer.setImage(img);
 
-    const texParamCalls = (mockGL.texParameteri as ReturnType<typeof vi.fn>).mock.calls;
+    const texParamCalls = (mockGL.texParameteri as ReturnType<typeof vi.fn>)
+      .mock.calls;
     const filterCalls = texParamCalls.filter(
-      (c: unknown[]) => c[1] === mockGL.TEXTURE_MIN_FILTER || c[1] === mockGL.TEXTURE_MAG_FILTER,
+      (c: unknown[]) =>
+        c[1] === mockGL.TEXTURE_MIN_FILTER ||
+        c[1] === mockGL.TEXTURE_MAG_FILTER,
     );
-    const hasLinear = filterCalls.some((c: unknown[]) => c[2] === mockGL.LINEAR);
+    const hasLinear = filterCalls.some(
+      (c: unknown[]) => c[2] === mockGL.LINEAR,
+    );
     expect(hasLinear).toBe(true);
   });
 
@@ -186,11 +195,16 @@ describe("createWebGLRenderer", () => {
     renderer.setShader("scanlines");
     renderer.setImage(img);
 
-    const texParamCalls = (mockGL.texParameteri as ReturnType<typeof vi.fn>).mock.calls;
+    const texParamCalls = (mockGL.texParameteri as ReturnType<typeof vi.fn>)
+      .mock.calls;
     const filterCalls = texParamCalls.filter(
-      (c: unknown[]) => c[1] === mockGL.TEXTURE_MIN_FILTER || c[1] === mockGL.TEXTURE_MAG_FILTER,
+      (c: unknown[]) =>
+        c[1] === mockGL.TEXTURE_MIN_FILTER ||
+        c[1] === mockGL.TEXTURE_MAG_FILTER,
     );
-    const allNearest = filterCalls.every((c: unknown[]) => c[2] === mockGL.NEAREST);
+    const allNearest = filterCalls.every(
+      (c: unknown[]) => c[2] === mockGL.NEAREST,
+    );
     expect(allNearest).toBe(true);
   });
 

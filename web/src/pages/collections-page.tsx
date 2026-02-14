@@ -60,7 +60,8 @@ function CollectionCard({ collection }: { collection: Collection }) {
         <div className="absolute bottom-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Badge variant="brand">
             <Gamepad2 className="h-3 w-3 mr-1" />
-            {collection.gameCount} {collection.gameCount === 1 ? "game" : "games"}
+            {collection.gameCount}{" "}
+            {collection.gameCount === 1 ? "game" : "games"}
           </Badge>
         </div>
       </div>
@@ -92,15 +93,15 @@ export function CollectionsPage() {
   const { toast } = useToast();
   const createCollection = useCreateCollection();
 
-  const {
-    data: myData,
-    isLoading: myLoading,
-  } = useMyCollections(activeTab === "mine" ? page : 1, pageSize);
+  const { data: myData, isLoading: myLoading } = useMyCollections(
+    activeTab === "mine" ? page : 1,
+    pageSize,
+  );
 
-  const {
-    data: publicData,
-    isLoading: publicLoading,
-  } = usePublicCollections(activeTab === "public" ? page : 1, pageSize);
+  const { data: publicData, isLoading: publicLoading } = usePublicCollections(
+    activeTab === "public" ? page : 1,
+    pageSize,
+  );
 
   const data = activeTab === "mine" ? myData : publicData;
   const isLoading = activeTab === "mine" ? myLoading : publicLoading;
@@ -114,7 +115,11 @@ export function CollectionsPage() {
   function handleCreate() {
     if (!newName.trim()) return;
     createCollection.mutate(
-      { name: newName.trim(), description: newDescription.trim() || undefined, isPublic: newIsPublic },
+      {
+        name: newName.trim(),
+        description: newDescription.trim() || undefined,
+        isPublic: newIsPublic,
+      },
       {
         onSuccess: () => {
           toast("success", "Collection created");
@@ -179,7 +184,11 @@ export function CollectionsPage() {
       ) : collections.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title={activeTab === "mine" ? "No collections yet" : "No public collections"}
+          title={
+            activeTab === "mine"
+              ? "No collections yet"
+              : "No public collections"
+          }
           description={
             activeTab === "mine"
               ? "Create a collection to organize your favorite games."

@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { Card, CardHeader, CardContent, Skeleton, Switch, Button, Input } from "@/components/ui";
-import { useRAStatus, useLinkRA, useUnlinkRA, useRASettings } from "@/hooks/use-retroachievements";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Skeleton,
+  Switch,
+  Button,
+  Input,
+} from "@/components/ui";
+import {
+  useRAStatus,
+  useLinkRA,
+  useUnlinkRA,
+  useRASettings,
+} from "@/hooks/use-retroachievements";
 
 export function RetroAchievementsCard() {
   const { data: status, isLoading, isError } = useRAStatus();
@@ -45,7 +58,9 @@ export function RetroAchievementsCard() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-surface-100">RetroAchievements</h2>
+        <h2 className="text-lg font-semibold text-surface-100">
+          RetroAchievements
+        </h2>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -54,12 +69,16 @@ export function RetroAchievementsCard() {
             <Skeleton className="h-12 w-full rounded-lg" />
           </div>
         ) : isError ? (
-          <p className="text-sm text-red-400">Failed to load RetroAchievements status.</p>
+          <p className="text-sm text-red-400">
+            Failed to load RetroAchievements status.
+          </p>
         ) : status?.linked ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-surface-200">Linked Account</p>
+                <p className="text-sm font-medium text-surface-200">
+                  Linked Account
+                </p>
                 <p className="text-xs text-surface-400">{status.username}</p>
               </div>
               <Button
@@ -78,7 +97,8 @@ export function RetroAchievementsCard() {
                   Hardcore Mode
                 </p>
                 <p className="text-xs text-surface-500">
-                  Disable save states and cheats for official leaderboard eligibility
+                  Disable save states and cheats for official leaderboard
+                  eligibility
                 </p>
               </div>
               <Switch
@@ -105,9 +125,7 @@ export function RetroAchievementsCard() {
                 data-testid="ra-password-input"
               />
             </div>
-            {linkError && (
-              <p className="text-sm text-red-400">{linkError}</p>
-            )}
+            {linkError && <p className="text-sm text-red-400">{linkError}</p>}
             <p className="text-xs text-surface-500">
               Your password is only used to obtain a token and is never stored.
             </p>

@@ -2,7 +2,12 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
-import { useDevices, useUpdateDevice, useDeleteDevice, useUpdateDevicePreferences } from "../use-devices";
+import {
+  useDevices,
+  useUpdateDevice,
+  useDeleteDevice,
+  useUpdateDevicePreferences,
+} from "../use-devices";
 
 vi.mock("@/lib/api-client", () => ({
   api: {
@@ -25,7 +30,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   };
 }
 
@@ -62,7 +71,9 @@ describe("useDevices", () => {
   it("fetches the user's devices", async () => {
     mockApi.get.mockResolvedValue(mockDevices);
 
-    const { result } = renderHook(() => useDevices(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDevices(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -74,7 +85,9 @@ describe("useDevices", () => {
   it("handles fetch error", async () => {
     mockApi.get.mockRejectedValue(new Error("Server error"));
 
-    const { result } = renderHook(() => useDevices(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDevices(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
@@ -84,18 +97,24 @@ describe("useUpdateDevice", () => {
   it("sends rename request", async () => {
     mockApi.put.mockResolvedValue({ id: 1, name: "New Name" });
 
-    const { result } = renderHook(() => useUpdateDevice(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateDevice(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ id: 1, name: "New Name" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/devices/1", { name: "New Name" });
+    expect(mockApi.put).toHaveBeenCalledWith("/user/devices/1", {
+      name: "New Name",
+    });
   });
 
   it("handles rename error", async () => {
     mockApi.put.mockRejectedValue(new Error("Not found"));
 
-    const { result } = renderHook(() => useUpdateDevice(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateDevice(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ id: 999, name: "Nope" });
 
@@ -107,7 +126,9 @@ describe("useDeleteDevice", () => {
   it("sends delete request", async () => {
     mockApi.delete.mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useDeleteDevice(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDeleteDevice(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate(1);
 
@@ -118,7 +139,9 @@ describe("useDeleteDevice", () => {
   it("handles delete error", async () => {
     mockApi.delete.mockRejectedValue(new Error("Forbidden"));
 
-    const { result } = renderHook(() => useDeleteDevice(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDeleteDevice(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate(1);
 
@@ -130,7 +153,9 @@ describe("useUpdateDevicePreferences", () => {
   it("sends shader preferences update", async () => {
     mockApi.put.mockResolvedValue({ consoleShaders: { "1": "scanlines" } });
 
-    const { result } = renderHook(() => useUpdateDevicePreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateDevicePreferences(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ id: 1, consoleShaders: { "1": "scanlines" } });
 
@@ -143,7 +168,9 @@ describe("useUpdateDevicePreferences", () => {
   it("handles preferences update error", async () => {
     mockApi.put.mockRejectedValue(new Error("Bad request"));
 
-    const { result } = renderHook(() => useUpdateDevicePreferences(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateDevicePreferences(), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({ id: 1, consoleShaders: { "1": "invalid" } });
 

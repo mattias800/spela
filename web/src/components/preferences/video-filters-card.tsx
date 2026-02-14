@@ -1,6 +1,12 @@
 import { Eye } from "lucide-react";
 import { ShaderPreview } from "@/components/shader-preview";
-import { Card, CardHeader, CardContent, Select, Skeleton } from "@/components/ui";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Select,
+  Skeleton,
+} from "@/components/ui";
 import { SHADER_OPTIONS } from "@/lib/shader-constants";
 import type { UserPreferences, Console } from "@/types/api";
 
@@ -24,7 +30,9 @@ export function VideoFiltersCard({
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-surface-100">Video Filters</h2>
+        <h2 className="text-lg font-semibold text-surface-100">
+          Video Filters
+        </h2>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -40,14 +48,19 @@ export function VideoFiltersCard({
 
             {consoles && consoles.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm font-medium text-surface-300 mb-2">Preview</p>
+                <p className="text-sm font-medium text-surface-300 mb-2">
+                  Preview
+                </p>
                 <ShaderPreview
                   imageUrl={`/api/consoles/${consoles[0].id}/preview-screenshot`}
                   shader={preferences?.selectedShader ?? "none"}
-                  onClick={() => consoles[0] && onPreview(
-                    consoles[0].id,
-                    preferences?.selectedShader ?? "none",
-                  )}
+                  onClick={() =>
+                    consoles[0] &&
+                    onPreview(
+                      consoles[0].id,
+                      preferences?.selectedShader ?? "none",
+                    )
+                  }
                   className="max-w-sm"
                 />
               </div>
@@ -55,38 +68,64 @@ export function VideoFiltersCard({
 
             {consoles && consoles.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-surface-300 mb-3">Per-Console Overrides</p>
+                <p className="text-sm font-medium text-surface-300 mb-3">
+                  Per-Console Overrides
+                </p>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-surface-800">
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Console</th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Shader</th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">Preview</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                          Console
+                        </th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                          Shader
+                        </th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                          Preview
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {consoles.map((console) => (
-                        <tr key={console.id} className="border-b border-surface-800/50">
-                          <td className="px-3 py-2 text-sm text-surface-200">{console.name}</td>
+                        <tr
+                          key={console.id}
+                          className="border-b border-surface-800/50"
+                        >
+                          <td className="px-3 py-2 text-sm text-surface-200">
+                            {console.name}
+                          </td>
                           <td className="px-3 py-2">
                             <select
                               className="rounded-lg bg-surface-900 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
-                              value={preferences?.consoleShaders[console.id] ?? ""}
-                              onChange={(e) => onConsoleShaderChange(console.id, e.target.value)}
+                              value={
+                                preferences?.consoleShaders[console.id] ?? ""
+                              }
+                              onChange={(e) =>
+                                onConsoleShaderChange(
+                                  console.id,
+                                  e.target.value,
+                                )
+                              }
                             >
                               <option value="">Use global default</option>
                               {SHADER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
                               ))}
                             </select>
                           </td>
                           <td className="px-3 py-2">
                             <button
-                              onClick={() => onPreview(
-                                console.id,
-                                preferences?.consoleShaders[console.id] || preferences?.selectedShader || "none",
-                              )}
+                              onClick={() =>
+                                onPreview(
+                                  console.id,
+                                  preferences?.consoleShaders[console.id] ||
+                                    preferences?.selectedShader ||
+                                    "none",
+                                )
+                              }
                               className="p-1.5 rounded-lg text-surface-400 hover:text-brand-400 hover:bg-surface-800 transition-colors"
                               title="Preview shader"
                             >

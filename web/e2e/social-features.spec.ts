@@ -58,7 +58,13 @@ async function setupGameDetailRoutes(
   const gameId = gameData.id as string;
 
   await page.route(`**/api/games/${gameId}`, (route) => {
-    if (route.request().url().includes("/saves") || route.request().url().includes("/ratings") || route.request().url().includes("/stats") || route.request().url().includes("/shared-saves") || route.request().url().includes("/achievements")) {
+    if (
+      route.request().url().includes("/saves") ||
+      route.request().url().includes("/ratings") ||
+      route.request().url().includes("/stats") ||
+      route.request().url().includes("/shared-saves") ||
+      route.request().url().includes("/achievements")
+    ) {
       return route.continue();
     }
     route.fulfill({
@@ -82,7 +88,12 @@ async function setupGameDetailRoutes(
       contentType: "application/json",
       body: JSON.stringify(
         consoles ?? [
-          { id: "1", name: "NES", abbreviation: "NES", emulatorJsCore: "nestopia" },
+          {
+            id: "1",
+            name: "NES",
+            abbreviation: "NES",
+            emulatorJsCore: "nestopia",
+          },
         ],
       ),
     });
@@ -94,7 +105,12 @@ async function setupGameDetailRoutes(
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(
-        achievements ?? { raGameId: 0, totalCount: 0, totalPoints: 0, achievements: [] },
+        achievements ?? {
+          raGameId: 0,
+          totalCount: 0,
+          totalPoints: 0,
+          achievements: [],
+        },
       ),
     });
   });
@@ -112,7 +128,12 @@ async function setupGameDetailRoutes(
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(
-        stats ?? { totalPlayers: 0, totalPlayTime: 0, averagePlayTime: 0, topPlayers: [] },
+        stats ?? {
+          totalPlayers: 0,
+          totalPlayTime: 0,
+          averagePlayTime: 0,
+          topPlayers: [],
+        },
       ),
     });
   });
@@ -122,20 +143,36 @@ async function setupGameDetailRoutes(
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(
-        ratingSummary ?? { averageRating: 0, totalRatings: 0, distribution: {} },
+        ratingSummary ?? {
+          averageRating: 0,
+          totalRatings: 0,
+          distribution: {},
+        },
       ),
     });
   });
 
   await page.route(`**/api/games/${gameId}/ratings/mine`, (route) => {
     if (myRating === null) {
-      route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+      route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: "{}",
+      });
     } else {
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(
-          myRating ?? { id: "", userId: "", username: "", gameId, rating: 0, createdAt: "", updatedAt: "" },
+          myRating ?? {
+            id: "",
+            userId: "",
+            username: "",
+            gameId,
+            rating: 0,
+            createdAt: "",
+            updatedAt: "",
+          },
         ),
       });
     }
@@ -175,13 +212,20 @@ async function setupGameDetailRoutes(
   });
 
   // Mock the achievement leaderboard endpoint
-  await page.route(`**/api/games/${gameId}/achievements/leaderboard`, (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ raGameId: 0, totalAchievements: 0, leaderboard: [] }),
-    });
-  });
+  await page.route(
+    `**/api/games/${gameId}/achievements/leaderboard`,
+    (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          raGameId: 0,
+          totalAchievements: 0,
+          leaderboard: [],
+        }),
+      });
+    },
+  );
 
   // Mock the achievement timeline endpoint
   await page.route(`**/api/games/${gameId}/achievements/timeline`, (route) => {
@@ -370,15 +414,11 @@ test.describe("Activity Feed Page", () => {
     });
 
     // Pagination should be visible
-    await expect(
-      page.getByRole("button", { name: "Previous" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Previous" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Next" })).toBeVisible();
 
     // Previous should be disabled on first page
-    await expect(
-      page.getByRole("button", { name: "Previous" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
 
     // Next should be enabled since there are more pages
     await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
@@ -640,9 +680,7 @@ test.describe("Game Ratings", () => {
     await expect(page.getByText("15 ratings")).toBeVisible();
   });
 
-  test("rating summary shows empty state when no ratings", async ({
-    page,
-  }) => {
+  test("rating summary shows empty state when no ratings", async ({ page }) => {
     await setupGameDetailRoutes(page, {
       ratingSummary: {
         averageRating: 0,
@@ -825,9 +863,7 @@ test.describe("Game Reviews", () => {
     await expect(page.getByTestId("game-reviews")).toBeVisible({
       timeout: 10_000,
     });
-    await expect(
-      page.getByRole("heading", { name: "Reviews" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Reviews" })).toBeVisible();
 
     // Reviews should be visible
     await expect(page.getByTestId("review-r-1")).toBeVisible();

@@ -37,7 +37,10 @@ function serveEmulatorjs(): Plugin {
       const stat = fs.statSync(filePath);
       if (!stat.isFile()) return false;
       const ext = path.extname(filePath);
-      res.setHeader("Content-Type", mimeTypes[ext] || "application/octet-stream");
+      res.setHeader(
+        "Content-Type",
+        mimeTypes[ext] || "application/octet-stream",
+      );
       fs.createReadStream(filePath).pipe(res);
       return true;
     } catch {
@@ -68,14 +71,12 @@ function serveEmulatorjs(): Plugin {
 
     // Extract core name from filenames like "nestopia-wasm.data"
     const fileName = urlPath.slice(1);
-    const match = fileName.match(/^([a-z0-9_]+?)(?:-thread)?(?:-legacy)?-wasm\.data$/);
+    const match = fileName.match(
+      /^([a-z0-9_]+?)(?:-thread)?(?:-legacy)?-wasm\.data$/,
+    );
     if (!match) return null;
     const coreName = match[1];
-    const candidate = path.join(
-      coresBaseDir,
-      `core-${coreName}`,
-      fileName,
-    );
+    const candidate = path.join(coresBaseDir, `core-${coreName}`, fileName);
     if (fs.existsSync(candidate)) return candidate;
     return null;
   }
@@ -129,11 +130,9 @@ function serveEmulatorjs(): Plugin {
           }
           const reportsDir = path.join(pkgDir, "reports");
           if (fs.existsSync(reportsDir)) {
-            fs.cpSync(
-              reportsDir,
-              path.join(coresTargetDir, "reports"),
-              { recursive: true },
-            );
+            fs.cpSync(reportsDir, path.join(coresTargetDir, "reports"), {
+              recursive: true,
+            });
           }
         }
       } catch {

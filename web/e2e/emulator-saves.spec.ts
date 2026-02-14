@@ -5,7 +5,9 @@ test.describe("Emulator Save State Sync", () => {
    * Helper: navigate to the play page for the first Castlevania game.
    * Returns the extracted game ID.
    */
-  async function navigateToPlayPage(page: import("@playwright/test").Page): Promise<string> {
+  async function navigateToPlayPage(
+    page: import("@playwright/test").Page,
+  ): Promise<string> {
     await page.goto("/games");
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
@@ -32,7 +34,9 @@ test.describe("Emulator Save State Sync", () => {
   }
 
   test.describe("Auto-Save on Navigation", () => {
-    test("triggers auto-save API call when navigating away", async ({ page }) => {
+    test("triggers auto-save API call when navigating away", async ({
+      page,
+    }) => {
       const gameId = await navigateToPlayPage(page);
 
       // Intercept auto-save uploads to track them
@@ -89,7 +93,9 @@ test.describe("Emulator Save State Sync", () => {
   });
 
   test.describe("Auto-Load on Return", () => {
-    test("loads auto-save when preferences have autoLoadSave enabled", async ({ page }) => {
+    test("loads auto-save when preferences have autoLoadSave enabled", async ({
+      page,
+    }) => {
       // Set up route mocks BEFORE navigating so TanStack Query uses mocked data
       await page.route("**/api/user/preferences", (route) => {
         if (route.request().method() === "GET") {
@@ -142,7 +148,9 @@ test.describe("Emulator Save State Sync", () => {
       expect(autoLoadRequested).toBe(true);
     });
 
-    test("skips auto-load when autoLoadSave preference is disabled", async ({ page }) => {
+    test("skips auto-load when autoLoadSave preference is disabled", async ({
+      page,
+    }) => {
       // Set up route mocks BEFORE navigating so TanStack Query uses mocked data
       await page.route("**/api/user/preferences", (route) => {
         if (route.request().method() === "GET") {
@@ -186,7 +194,9 @@ test.describe("Emulator Save State Sync", () => {
   });
 
   test.describe("Manual Save & Load", () => {
-    test("manual save button sends save request and shows saving indicator", async ({ page }) => {
+    test("manual save button sends save request and shows saving indicator", async ({
+      page,
+    }) => {
       const gameId = await navigateToPlayPage(page);
 
       // Intercept manual save uploads with a delay so "Saving..." indicator is visible
@@ -245,7 +255,9 @@ test.describe("Emulator Save State Sync", () => {
       expect(manualSaveUploaded).toBe(true);
     });
 
-    test("load state modal shows save list and allows loading", async ({ page }) => {
+    test("load state modal shows save list and allows loading", async ({
+      page,
+    }) => {
       const gameId = await navigateToPlayPage(page);
 
       const mockSaves = [
@@ -312,7 +324,9 @@ test.describe("Emulator Save State Sync", () => {
       await page.getByTitle("Load State").click();
 
       // Modal should show the save list
-      await expect(page.getByText("Load Save State")).toBeVisible({ timeout: 3_000 });
+      await expect(page.getByText("Load Save State")).toBeVisible({
+        timeout: 3_000,
+      });
       await expect(page.getByText("Before Boss Fight")).toBeVisible();
       await expect(page.getByText("Auto Save")).toBeVisible();
       // Auto badge should be visible on the auto-save entry
@@ -322,7 +336,9 @@ test.describe("Emulator Save State Sync", () => {
       await page.getByText("Before Boss Fight").click();
 
       // Modal should close
-      await expect(page.getByText("Load Save State")).not.toBeVisible({ timeout: 3_000 });
+      await expect(page.getByText("Load Save State")).not.toBeVisible({
+        timeout: 3_000,
+      });
 
       // Wait for the save download
       await page.waitForTimeout(1_000);
@@ -331,7 +347,9 @@ test.describe("Emulator Save State Sync", () => {
   });
 
   test.describe("Saving Indicator", () => {
-    test("shows saving indicator when a save is in progress", async ({ page }) => {
+    test("shows saving indicator when a save is in progress", async ({
+      page,
+    }) => {
       const gameId = await navigateToPlayPage(page);
 
       // Slow down the save endpoint to keep the saving indicator visible

@@ -8,15 +8,37 @@ export const KEY_MAPPING_MODES: { value: KeyMappingMode; label: string }[] = [
 
 // Button index → key name for each preset
 export const PRESET_ARROWS_LEFT: Record<string, string> = {
-  "0": "z", "1": "x", "2": "v", "3": "enter",
-  "4": "arrowup", "5": "arrowdown", "6": "arrowleft", "7": "arrowright",
-  "8": "a", "9": "s", "10": "q", "11": "e", "12": "r", "13": "f",
+  "0": "z",
+  "1": "x",
+  "2": "v",
+  "3": "enter",
+  "4": "arrowup",
+  "5": "arrowdown",
+  "6": "arrowleft",
+  "7": "arrowright",
+  "8": "a",
+  "9": "s",
+  "10": "q",
+  "11": "e",
+  "12": "r",
+  "13": "f",
 };
 
 export const PRESET_WASD_ARROWS: Record<string, string> = {
-  "0": "arrowdown", "1": "arrowright", "2": "v", "3": "enter",
-  "4": "w", "5": "s", "6": "a", "7": "d",
-  "8": "arrowleft", "9": "arrowup", "10": "q", "11": "]", "12": "e", "13": "[",
+  "0": "arrowdown",
+  "1": "arrowright",
+  "2": "v",
+  "3": "enter",
+  "4": "w",
+  "5": "s",
+  "6": "a",
+  "7": "d",
+  "8": "arrowleft",
+  "9": "arrowup",
+  "10": "q",
+  "11": "]",
+  "12": "e",
+  "13": "[",
 };
 
 // Button metadata with position-based labels (NOT A/B/X/Y)

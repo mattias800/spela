@@ -7,9 +7,21 @@ import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 function rankStyle(rank: number): { text: string; bg: string } {
-  if (rank === 1) return { text: "text-amber-400", bg: "bg-amber-400/15 border border-amber-400/30" };
-  if (rank === 2) return { text: "text-surface-300", bg: "bg-surface-300/15 border border-surface-300/30" };
-  if (rank === 3) return { text: "text-amber-700", bg: "bg-amber-700/15 border border-amber-700/30" };
+  if (rank === 1)
+    return {
+      text: "text-amber-400",
+      bg: "bg-amber-400/15 border border-amber-400/30",
+    };
+  if (rank === 2)
+    return {
+      text: "text-surface-300",
+      bg: "bg-surface-300/15 border border-surface-300/30",
+    };
+  if (rank === 3)
+    return {
+      text: "text-amber-700",
+      bg: "bg-amber-700/15 border border-amber-700/30",
+    };
   return { text: "text-surface-500", bg: "" };
 }
 
@@ -42,7 +54,10 @@ function MostPlayedSkeleton() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
-        <div key={i} className="flex items-center gap-4 rounded-xl px-4 py-3 bg-surface-900/50">
+        <div
+          key={i}
+          className="flex items-center gap-4 rounded-xl px-4 py-3 bg-surface-900/50"
+        >
           <Skeleton className="h-7 w-7 rounded-full" />
           <Skeleton className="h-10 w-8 rounded-lg" />
           <div className="flex-1 space-y-1">
@@ -61,7 +76,10 @@ function MostActiveSkeleton() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 bg-surface-900/50">
+        <div
+          key={i}
+          className="flex items-center gap-3 rounded-xl px-4 py-3 bg-surface-900/50"
+        >
           <Skeleton className="h-7 w-7 rounded-full" />
           <Skeleton className="h-8 w-8 rounded-full" />
           <div className="flex-1">
@@ -77,8 +95,10 @@ function MostActiveSkeleton() {
 }
 
 export function StatsPage() {
-  const { data: mostPlayed, isLoading: isLoadingMostPlayed } = useMostPlayedGames();
-  const { data: mostActive, isLoading: isLoadingMostActive } = useMostActivePlayers();
+  const { data: mostPlayed, isLoading: isLoadingMostPlayed } =
+    useMostPlayedGames();
+  const { data: mostActive, isLoading: isLoadingMostActive } =
+    useMostActivePlayers();
 
   const hasNoData =
     !isLoadingMostPlayed &&
@@ -107,7 +127,8 @@ export function StatsPage() {
       )}
 
       {/* Most Played Games / Hall of Fame */}
-      {(isLoadingMostPlayed || (mostPlayed?.games && mostPlayed.games.length > 0)) && (
+      {(isLoadingMostPlayed ||
+        (mostPlayed?.games && mostPlayed.games.length > 0)) && (
         <section>
           <div className="flex items-center gap-2.5 mb-5">
             <Trophy className="h-5 w-5 text-brand-400" />

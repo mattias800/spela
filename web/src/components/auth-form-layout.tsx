@@ -9,7 +9,13 @@ interface AuthFormLayoutProps {
   footer?: ReactNode;
 }
 
-export function AuthFormLayout({ title, subtitle, error, children, footer }: AuthFormLayoutProps) {
+export function AuthFormLayout({
+  title,
+  subtitle,
+  error,
+  children,
+  footer,
+}: AuthFormLayoutProps) {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       {/* Background gradient */}
@@ -25,9 +31,7 @@ export function AuthFormLayout({ title, subtitle, error, children, footer }: Aut
             <h1 className="text-3xl font-bold tracking-tight text-surface-100">
               {title}
             </h1>
-            <p className="mt-2 text-surface-400">
-              {subtitle}
-            </p>
+            <p className="mt-2 text-surface-400">{subtitle}</p>
           </div>
         </div>
 

@@ -62,7 +62,10 @@ export function OnlineUsers() {
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-surface-900" />
               </div>
               <div className="flex-1 min-w-0">
-                <Link to={`/users/${user.id}`} className="text-sm font-medium text-surface-200 truncate hover:text-brand-400 transition-colors">
+                <Link
+                  to={`/users/${user.id}`}
+                  className="text-sm font-medium text-surface-200 truncate hover:text-brand-400 transition-colors"
+                >
                   {user.username}
                 </Link>
                 {user.currentGame ? (
@@ -74,7 +77,10 @@ export function OnlineUsers() {
                     <span className="text-xs text-surface-400 truncate group-hover:text-brand-400 transition-colors">
                       {user.currentGame.title}
                     </span>
-                    <Badge variant="brand" className="text-[10px] px-1.5 py-0 flex-shrink-0">
+                    <Badge
+                      variant="brand"
+                      className="text-[10px] px-1.5 py-0 flex-shrink-0"
+                    >
                       {user.currentGame.consoleName}
                     </Badge>
                   </Link>

@@ -1,4 +1,10 @@
-import { useState, useCallback, createContext, useContext, type ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -70,7 +76,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 typeStyles[t.type],
               )}
             >
-              <Icon className={cn("h-5 w-5 mt-0.5 flex-shrink-0", iconStyles[t.type])} />
+              <Icon
+                className={cn(
+                  "h-5 w-5 mt-0.5 flex-shrink-0",
+                  iconStyles[t.type],
+                )}
+              />
               <p className="text-sm text-surface-100 flex-1">{t.message}</p>
               <button
                 onClick={() => removeToast(t.id)}

@@ -30,7 +30,11 @@ export function useEmulatorSaves({
   const latestStateCacheRef = useRef<string | null>(null);
   const exitSaveResolveRef = useRef<(() => void) | null>(null);
 
-  const { isSaving, enqueueSave: queueEnqueue, queueRef } = useSaveQueue({
+  const {
+    isSaving,
+    enqueueSave: queueEnqueue,
+    queueRef,
+  } = useSaveQueue({
     onSaveSuccess,
     onSaveError,
   });
@@ -57,7 +61,8 @@ export function useEmulatorSaves({
           const blob = new Blob([bytes]);
           const formData = new FormData();
           formData.append("save", blob, "auto-save.state");
-          api.upload(`/games/${gameId}/saves/auto`, formData)
+          api
+            .upload(`/games/${gameId}/saves/auto`, formData)
             .then(() => exitResolve())
             .catch(() => exitResolve());
         } else {

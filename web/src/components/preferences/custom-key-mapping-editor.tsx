@@ -15,7 +15,10 @@ const GROUP_LABELS: Record<string, string> = {
 
 const GROUP_ORDER = ["dpad", "face", "shoulder", "meta"];
 
-export function CustomKeyMappingEditor({ mapping, onChange }: CustomKeyMappingEditorProps) {
+export function CustomKeyMappingEditor({
+  mapping,
+  onChange,
+}: CustomKeyMappingEditorProps) {
   function handleKeyChange(index: string, key: string) {
     onChange({ ...mapping, [index]: key });
   }
@@ -34,7 +37,10 @@ export function CustomKeyMappingEditor({ mapping, onChange }: CustomKeyMappingEd
           </p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {group.buttons.map((button) => (
-              <div key={button.index} className="flex items-center justify-between">
+              <div
+                key={button.index}
+                className="flex items-center justify-between"
+              >
                 <div className="text-sm text-surface-300">{button.label}</div>
                 <KeyCaptureButton
                   value={mapping[button.index] ?? ""}

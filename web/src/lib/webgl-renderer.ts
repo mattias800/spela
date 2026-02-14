@@ -1,4 +1,8 @@
-import { VERTEX_SHADER, FRAGMENT_SHADERS, LINEAR_FILTER_PRESETS } from "./shader-sources";
+import {
+  VERTEX_SHADER,
+  FRAGMENT_SHADERS,
+  LINEAR_FILTER_PRESETS,
+} from "./shader-sources";
 
 export interface WebGLRenderer {
   setImage(img: HTMLImageElement): void;
@@ -8,10 +12,15 @@ export interface WebGLRenderer {
   destroy(): void;
 }
 
-export function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLRenderer | null {
+export function createWebGLRenderer(
+  canvas: HTMLCanvasElement,
+): WebGLRenderer | null {
   let gl: WebGL2RenderingContext | null;
   try {
-    gl = canvas.getContext("webgl2", { alpha: false, preserveDrawingBuffer: true });
+    gl = canvas.getContext("webgl2", {
+      alpha: false,
+      preserveDrawingBuffer: true,
+    });
   } catch {
     return null;
   }
@@ -139,15 +148,28 @@ export function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLRenderer | 
       }
 
       // Set viewport to image rect so shaders operate in image-local coords
-      gl.viewport(Math.round(drawX), Math.round(drawY), Math.round(drawW), Math.round(drawH));
+      gl.viewport(
+        Math.round(drawX),
+        Math.round(drawY),
+        Math.round(drawW),
+        Math.round(drawH),
+      );
 
       gl.useProgram(activeProgram);
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.uniform1i(gl.getUniformLocation(activeProgram, "u_texture"), 0);
-      gl.uniform2f(gl.getUniformLocation(activeProgram, "u_resolution"), Math.round(drawW), Math.round(drawH));
-      gl.uniform2f(gl.getUniformLocation(activeProgram, "u_sourceSize"), sourceWidth, sourceHeight);
+      gl.uniform2f(
+        gl.getUniformLocation(activeProgram, "u_resolution"),
+        Math.round(drawW),
+        Math.round(drawH),
+      );
+      gl.uniform2f(
+        gl.getUniformLocation(activeProgram, "u_sourceSize"),
+        sourceWidth,
+        sourceHeight,
+      );
 
       gl.bindVertexArray(vao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

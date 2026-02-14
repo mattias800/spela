@@ -46,17 +46,17 @@ Output is written to `dist/`.
 
 ## Tech Stack
 
-| Library | Purpose |
-|---------|---------|
-| React 19 | UI framework |
-| TypeScript 5.9 | Type safety |
-| Vite 7 | Build tool and dev server |
-| Tailwind CSS 4 | Utility-first styling |
-| TanStack Query 5 | Server state management |
-| React Router 7 | Client-side routing |
-| Lucide React | Icons |
-| Vitest 4 | Test runner |
-| React Testing Library | Component testing |
+| Library               | Purpose                   |
+| --------------------- | ------------------------- |
+| React 19              | UI framework              |
+| TypeScript 5.9        | Type safety               |
+| Vite 7                | Build tool and dev server |
+| Tailwind CSS 4        | Utility-first styling     |
+| TanStack Query 5      | Server state management   |
+| React Router 7        | Client-side routing       |
+| Lucide React          | Icons                     |
+| Vitest 4              | Test runner               |
+| React Testing Library | Component testing         |
 
 ## Project Structure
 
@@ -100,19 +100,19 @@ src/
 
 The design system lives in `src/components/ui/` and is re-exported from `src/components/ui/index.ts`.
 
-| Component | Description |
-|-----------|-------------|
-| `Button` | Primary, secondary, ghost, and danger variants. Three sizes. Loading state with spinner. |
-| `Card`, `CardHeader`, `CardContent` | Container with optional hover effect. |
-| `Input` | Text input with label and error message support. |
-| `Badge` | Inline label with default, brand, success, warning, and danger variants. |
-| `Skeleton` | Animated loading placeholder. Includes `GameCardSkeleton`, `ConsoleCardSkeleton`, `GameDetailSkeleton`, `TableRowSkeleton` presets. |
-| `Modal` | Dialog overlay with escape key and backdrop click dismissal. Small, medium, and large sizes. |
-| `ToastProvider` / `useToast` | Toast notification system with success, error, and info types. Auto-dismiss. |
-| `Sidebar` | Navigation sidebar with `NavLink` active state styling. |
-| `SearchInput` | Search field with icon. |
-| `Select` | Dropdown select with label support. |
-| `EmptyState` | Centered icon + title + description for empty lists. |
+| Component                           | Description                                                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                            | Primary, secondary, ghost, and danger variants. Three sizes. Loading state with spinner.                                            |
+| `Card`, `CardHeader`, `CardContent` | Container with optional hover effect.                                                                                               |
+| `Input`                             | Text input with label and error message support.                                                                                    |
+| `Badge`                             | Inline label with default, brand, success, warning, and danger variants.                                                            |
+| `Skeleton`                          | Animated loading placeholder. Includes `GameCardSkeleton`, `ConsoleCardSkeleton`, `GameDetailSkeleton`, `TableRowSkeleton` presets. |
+| `Modal`                             | Dialog overlay with escape key and backdrop click dismissal. Small, medium, and large sizes.                                        |
+| `ToastProvider` / `useToast`        | Toast notification system with success, error, and info types. Auto-dismiss.                                                        |
+| `Sidebar`                           | Navigation sidebar with `NavLink` active state styling.                                                                             |
+| `SearchInput`                       | Search field with icon.                                                                                                             |
+| `Select`                            | Dropdown select with label support.                                                                                                 |
+| `EmptyState`                        | Centered icon + title + description for empty lists.                                                                                |
 
 ## API Integration
 

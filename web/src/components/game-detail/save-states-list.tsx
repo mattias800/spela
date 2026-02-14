@@ -22,7 +22,10 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
       {!saves || saves.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-surface-400">No save states yet. Play the game in the Spela player to create saves.</p>
+            <p className="text-surface-400">
+              No save states yet. Play the game in the Spela player to create
+              saves.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -34,11 +37,14 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                   <p className="text-sm font-medium text-surface-100">
                     {save.name}
                     {save.isAuto && (
-                      <Badge variant="brand" className="ml-2">Auto</Badge>
+                      <Badge variant="brand" className="ml-2">
+                        Auto
+                      </Badge>
                     )}
                   </p>
                   <p className="text-xs text-surface-500">
-                    {formatRelativeTime(save.createdAt)} &middot; {formatFileSize(save.fileSize)}
+                    {formatRelativeTime(save.createdAt)} &middot;{" "}
+                    {formatFileSize(save.fileSize)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -78,7 +84,8 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
         size="sm"
       >
         <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to delete this save state? This action cannot be undone.
+          Are you sure you want to delete this save state? This action cannot be
+          undone.
         </p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteTarget(null)}>

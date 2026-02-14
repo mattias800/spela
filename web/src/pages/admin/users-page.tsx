@@ -25,7 +25,9 @@ export function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-surface-100">User Management</h1>
+          <h1 className="text-3xl font-bold text-surface-100">
+            User Management
+          </h1>
           <p className="mt-1 text-surface-400">
             Manage user accounts and permissions.
           </p>
@@ -47,12 +49,22 @@ export function AdminUsersPage() {
         onViewDevices={setDevicesUser}
       />
 
-      <EditUserModal user={editingUser} currentUser={currentUser} onClose={() => setEditingUser(null)} />
-      <DeleteUserModal user={deleteTarget} onClose={() => setDeleteTarget(null)} />
+      <EditUserModal
+        user={editingUser}
+        currentUser={currentUser}
+        onClose={() => setEditingUser(null)}
+      />
+      <DeleteUserModal
+        user={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+      />
       <CreateUserModal open={showCreate} onClose={() => setShowCreate(false)} />
 
       {devicesUser && (
-        <AdminDevicesModal user={devicesUser} onClose={() => setDevicesUser(null)} />
+        <AdminDevicesModal
+          user={devicesUser}
+          onClose={() => setDevicesUser(null)}
+        />
       )}
     </div>
   );

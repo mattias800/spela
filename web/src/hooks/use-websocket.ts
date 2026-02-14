@@ -81,12 +81,16 @@ function unsubscribe(type: string, listener: Listener) {
   }
 }
 
-export function useWebSocketEvent(type: string, callback: (payload: never) => void) {
+export function useWebSocketEvent(
+  type: string,
+  callback: (payload: never) => void,
+) {
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
 
   useEffect(() => {
-    const listener: Listener = (payload) => callbackRef.current(payload as never);
+    const listener: Listener = (payload) =>
+      callbackRef.current(payload as never);
     subscribe(type, listener);
     return () => unsubscribe(type, listener);
   }, [type]);

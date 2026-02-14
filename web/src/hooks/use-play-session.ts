@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef } from "react";
 import { api } from "@/lib/api-client";
 import type { EmulatorStatus } from "./use-emulator-iframe";
 
-export function usePlaySession(gameId: string | undefined, emulatorStatus: EmulatorStatus) {
+export function usePlaySession(
+  gameId: string | undefined,
+  emulatorStatus: EmulatorStatus,
+) {
   const lastReportedRef = useRef<number>(Date.now());
 
   const flushPlayTime = useCallback(() => {

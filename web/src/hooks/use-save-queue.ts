@@ -17,7 +17,10 @@ interface UseSaveQueueOptions {
   onSaveError?: (error: string, isAuto: boolean) => void;
 }
 
-export function useSaveQueue({ onSaveSuccess, onSaveError }: UseSaveQueueOptions) {
+export function useSaveQueue({
+  onSaveSuccess,
+  onSaveError,
+}: UseSaveQueueOptions) {
   const [isSaving, setIsSaving] = useState(false);
   const saveQueueRef = useRef<SaveQueueItem[]>([]);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,7 +38,11 @@ export function useSaveQueue({ onSaveSuccess, onSaveError }: UseSaveQueueOptions
       const bytes = Uint8Array.from(atob(item.data), (c) => c.charCodeAt(0));
       const blob = new Blob([bytes]);
       const formData = new FormData();
-      formData.append("save", blob, item.isAuto ? "auto-save.state" : `${item.name ?? "save"}.state`);
+      formData.append(
+        "save",
+        blob,
+        item.isAuto ? "auto-save.state" : `${item.name ?? "save"}.state`,
+      );
       if (item.name) {
         formData.append("name", item.name);
       }

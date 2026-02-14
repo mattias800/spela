@@ -13,7 +13,10 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -58,18 +61,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </div>
             )}
             <div className="flex items-center justify-center gap-3">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={this.handleRetry}
-              >
+              <Button variant="primary" size="sm" onClick={this.handleRetry}>
                 <RefreshCw className="h-4 w-4" />
                 Try Again
               </Button>
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => { window.location.href = "/"; }}
+                onClick={() => {
+                  window.location.href = "/";
+                }}
               >
                 Go to Dashboard
               </Button>

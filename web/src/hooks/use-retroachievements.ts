@@ -56,8 +56,7 @@ export function useRASettings() {
 export function useGameAchievements(gameId: string | undefined) {
   return useQuery({
     queryKey: ["game-achievements", gameId],
-    queryFn: () =>
-      api.get<GameAchievements>(`/games/${gameId}/achievements`),
+    queryFn: () => api.get<GameAchievements>(`/games/${gameId}/achievements`),
     enabled: !!gameId,
   });
 }
@@ -90,9 +89,7 @@ export function useAchievementTimeline(gameId: string | undefined) {
   return useQuery({
     queryKey: ["achievement-timeline", gameId],
     queryFn: () =>
-      api.get<AchievementTimeline>(
-        `/games/${gameId}/achievements/timeline`,
-      ),
+      api.get<AchievementTimeline>(`/games/${gameId}/achievements/timeline`),
     enabled: !!gameId,
   });
 }

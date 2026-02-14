@@ -12,10 +12,7 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
   const Icon = style.icon;
 
   return (
-    <Link
-      to={`/consoles/${c.id}`}
-      className="group block"
-    >
+    <Link to={`/consoles/${c.id}`} className="group block">
       <div
         className={cn(
           "relative aspect-[16/10] rounded-2xl overflow-hidden transition-all duration-300",
@@ -23,7 +20,9 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
           "border border-surface-800/50 group-hover:border-surface-700/50",
         )}
       >
-        <div className={cn("absolute inset-0 bg-gradient-to-br", style.gradient)} />
+        <div
+          className={cn("absolute inset-0 bg-gradient-to-br", style.gradient)}
+        />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110">

@@ -10,8 +10,7 @@ export function useMyCollections(page = 1, pageSize = 20, search = "") {
 
   return useQuery({
     queryKey: ["collections", "mine", page, pageSize, search],
-    queryFn: () =>
-      api.get<CollectionsResponse>(`/collections?${params}`),
+    queryFn: () => api.get<CollectionsResponse>(`/collections?${params}`),
   });
 }
 
@@ -40,8 +39,11 @@ export function useCreateCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { name: string; description?: string; isPublic: boolean }) =>
-      api.post<CollectionDetail>("/collections", data),
+    mutationFn: (data: {
+      name: string;
+      description?: string;
+      isPublic: boolean;
+    }) => api.post<CollectionDetail>("/collections", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
@@ -83,8 +85,13 @@ export function useAddGameToCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ collectionId, gameId }: { collectionId: string; gameId: string }) =>
-      api.post(`/collections/${collectionId}/games`, { gameId }),
+    mutationFn: ({
+      collectionId,
+      gameId,
+    }: {
+      collectionId: string;
+      gameId: string;
+    }) => api.post(`/collections/${collectionId}/games`, { gameId }),
     onSuccess: (_, { collectionId }) => {
       queryClient.invalidateQueries({ queryKey: ["collection", collectionId] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
@@ -96,8 +103,13 @@ export function useRemoveGameFromCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ collectionId, gameId }: { collectionId: string; gameId: string }) =>
-      api.delete(`/collections/${collectionId}/games/${gameId}`),
+    mutationFn: ({
+      collectionId,
+      gameId,
+    }: {
+      collectionId: string;
+      gameId: string;
+    }) => api.delete(`/collections/${collectionId}/games/${gameId}`),
     onSuccess: (_, { collectionId }) => {
       queryClient.invalidateQueries({ queryKey: ["collection", collectionId] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });

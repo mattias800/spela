@@ -9,8 +9,14 @@ interface UseAutoSaveOptions {
   requestAutoSave: () => void;
 }
 
-export function useAutoSave({ emulatorStatus, autoSaveEnabled, requestAutoSave }: UseAutoSaveOptions) {
-  const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+export function useAutoSave({
+  emulatorStatus,
+  autoSaveEnabled,
+  requestAutoSave,
+}: UseAutoSaveOptions) {
+  const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   useEffect(() => {
     if (emulatorStatus !== "playing" || !autoSaveEnabled) return;

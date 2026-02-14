@@ -97,7 +97,11 @@ describe("ShaderPreview", () => {
 
   it("shows hover overlay text on mouse enter", () => {
     const { container } = render(
-      <ShaderPreview imageUrl="/test.png" shader="scanlines" onClick={vi.fn()} />,
+      <ShaderPreview
+        imageUrl="/test.png"
+        shader="scanlines"
+        onClick={vi.fn()}
+      />,
     );
     const wrapper = container.firstElementChild as HTMLElement;
     fireEvent.mouseEnter(wrapper);
@@ -116,7 +120,14 @@ describe("ShaderPreview", () => {
   });
 
   it("renders with each shader value without crashing", () => {
-    const shaders = ["none", "bilinear", "sharp-bilinear", "crt-simple", "lcd-grid", "scanlines"];
+    const shaders = [
+      "none",
+      "bilinear",
+      "sharp-bilinear",
+      "crt-simple",
+      "lcd-grid",
+      "scanlines",
+    ];
     for (const shader of shaders) {
       const { unmount } = render(
         <ShaderPreview imageUrl="/test.png" shader={shader} />,

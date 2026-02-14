@@ -68,7 +68,10 @@ export function applyShaderOverlay(
   }
 }
 
-export function configureSmoothing(ctx: CanvasRenderingContext2D, shader: string) {
+export function configureSmoothing(
+  ctx: CanvasRenderingContext2D,
+  shader: string,
+) {
   switch (shader) {
     case "none":
       ctx.imageSmoothingEnabled = false;

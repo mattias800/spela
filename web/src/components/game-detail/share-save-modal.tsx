@@ -30,7 +30,12 @@ export function ShareSaveModal({
   const handleSubmit = () => {
     if (!save || !name.trim()) return;
     shareSave.mutate(
-      { gameId, saveId: save.id, name: name.trim(), description: description.trim() },
+      {
+        gameId,
+        saveId: save.id,
+        name: name.trim(),
+        description: description.trim(),
+      },
       {
         onSuccess: () => {
           onClose();
@@ -42,12 +47,7 @@ export function ShareSaveModal({
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Share Save State"
-      size="sm"
-    >
+    <Modal open={open} onClose={onClose} title="Share Save State" size="sm">
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-surface-300 mb-1.5">

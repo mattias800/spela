@@ -16,22 +16,52 @@ import {
 } from "@/hooks/use-retroachievements";
 
 const mockUseGameAchievements = useGameAchievements as ReturnType<typeof vi.fn>;
-const mockUseGameAchievementProgress = useGameAchievementProgress as ReturnType<typeof vi.fn>;
-const mockUseAchievementTimeline = useAchievementTimeline as ReturnType<typeof vi.fn>;
+const mockUseGameAchievementProgress = useGameAchievementProgress as ReturnType<
+  typeof vi.fn
+>;
+const mockUseAchievementTimeline = useAchievementTimeline as ReturnType<
+  typeof vi.fn
+>;
 
 const mockAchievements = {
   raGameId: 123,
   totalCount: 3,
   totalPoints: 25,
   achievements: [
-    { id: 1, title: "First Blood", description: "Beat level 1", points: 5, badgeUrl: "https://ra.org/badge/1.png", type: "core" },
-    { id: 2, title: "Speed Run", description: "Beat game in 30 min", points: 10, badgeUrl: "https://ra.org/badge/2.png", type: "core" },
-    { id: 3, title: "Completionist", description: "Find all secrets", points: 10, badgeUrl: "https://ra.org/badge/3.png", type: "core" },
+    {
+      id: 1,
+      title: "First Blood",
+      description: "Beat level 1",
+      points: 5,
+      badgeUrl: "https://ra.org/badge/1.png",
+      type: "core",
+    },
+    {
+      id: 2,
+      title: "Speed Run",
+      description: "Beat game in 30 min",
+      points: 10,
+      badgeUrl: "https://ra.org/badge/2.png",
+      type: "core",
+    },
+    {
+      id: 3,
+      title: "Completionist",
+      description: "Find all secrets",
+      points: 10,
+      badgeUrl: "https://ra.org/badge/3.png",
+      type: "core",
+    },
   ],
 };
 
 const mockProgress = [
-  { achievementId: 1, unlockedAt: "2025-06-01T12:00:00Z", isHardcore: false, playTimeAtUnlock: 1800 },
+  {
+    achievementId: 1,
+    unlockedAt: "2025-06-01T12:00:00Z",
+    isHardcore: false,
+    playTimeAtUnlock: 1800,
+  },
 ];
 
 const mockTimeline = {
@@ -80,7 +110,10 @@ vi.stubGlobal("localStorage", {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAchievementTimeline.mockReturnValue({ data: undefined, isLoading: false });
+  mockUseAchievementTimeline.mockReturnValue({
+    data: undefined,
+    isLoading: false,
+  });
   for (const key of Object.keys(localStorageMock)) {
     delete localStorageMock[key];
   }
@@ -88,8 +121,14 @@ beforeEach(() => {
 
 describe("GameAchievements", () => {
   it("renders loading state", () => {
-    mockUseGameAchievements.mockReturnValue({ data: undefined, isLoading: true });
-    mockUseGameAchievementProgress.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseGameAchievements.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     renderComponent();
 
     expect(screen.getByText("Achievements")).toBeInTheDocument();
@@ -100,23 +139,38 @@ describe("GameAchievements", () => {
       data: { raGameId: 0, totalCount: 0, totalPoints: 0, achievements: [] },
       isLoading: false,
     });
-    mockUseGameAchievementProgress.mockReturnValue({ data: [], isLoading: false });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
     const { container } = renderComponent();
 
     expect(container.innerHTML).toBe("");
   });
 
   it("renders nothing when achievements data is undefined", () => {
-    mockUseGameAchievements.mockReturnValue({ data: undefined, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: undefined, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
     const { container } = renderComponent();
 
     expect(container.innerHTML).toBe("");
   });
 
   it("renders achievement grid with all achievements", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     expect(screen.getByText("First Blood")).toBeInTheDocument();
@@ -125,27 +179,49 @@ describe("GameAchievements", () => {
   });
 
   it("shows browser warning banner", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const banner = screen.getByTestId("browser-warning-banner");
     expect(banner).toBeInTheDocument();
-    expect(screen.getByText(/require the Spela Player app/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/require the Spela Player app/),
+    ).toBeInTheDocument();
   });
 
   it("displays progress summary", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const summary = screen.getByTestId("achievement-progress-summary");
-    expect(summary).toHaveTextContent("1 of 3 achievements unlocked (5 points)");
+    expect(summary).toHaveTextContent(
+      "1 of 3 achievements unlocked (5 points)",
+    );
   });
 
   it("highlights unlocked achievements", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const unlockedCard = screen.getByTestId("achievement-1");
@@ -156,8 +232,14 @@ describe("GameAchievements", () => {
   });
 
   it("shows locked achievements with dimmed styling", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const lockedCard = screen.getByTestId("achievement-3");
@@ -166,8 +248,14 @@ describe("GameAchievements", () => {
   });
 
   it("renders achievement badge images", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const images = screen.getAllByRole("img");
@@ -176,8 +264,14 @@ describe("GameAchievements", () => {
   });
 
   it("displays point values for each achievement", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     expect(screen.getByText("5 pts")).toBeInTheDocument();
@@ -185,8 +279,14 @@ describe("GameAchievements", () => {
   });
 
   it("shows progress bar with correct percentage", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     const progressBar = screen.getByTestId("achievement-progress-bar");
@@ -196,12 +296,33 @@ describe("GameAchievements", () => {
 
   it("shows Complete! badge at 100%", () => {
     const allProgress = [
-      { achievementId: 1, unlockedAt: "2025-06-01T12:00:00Z", isHardcore: false, playTimeAtUnlock: 1800 },
-      { achievementId: 2, unlockedAt: "2025-06-02T12:00:00Z", isHardcore: false, playTimeAtUnlock: 3600 },
-      { achievementId: 3, unlockedAt: "2025-06-03T12:00:00Z", isHardcore: false, playTimeAtUnlock: 5400 },
+      {
+        achievementId: 1,
+        unlockedAt: "2025-06-01T12:00:00Z",
+        isHardcore: false,
+        playTimeAtUnlock: 1800,
+      },
+      {
+        achievementId: 2,
+        unlockedAt: "2025-06-02T12:00:00Z",
+        isHardcore: false,
+        playTimeAtUnlock: 3600,
+      },
+      {
+        achievementId: 3,
+        unlockedAt: "2025-06-03T12:00:00Z",
+        isHardcore: false,
+        playTimeAtUnlock: 5400,
+      },
     ];
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: allProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: allProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     expect(screen.getByText("100%")).toBeInTheDocument();
@@ -209,8 +330,14 @@ describe("GameAchievements", () => {
   });
 
   it("renders view toggle with Grid and Timeline options", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
     renderComponent();
 
     expect(screen.getByTestId("view-toggle")).toBeInTheDocument();
@@ -219,9 +346,18 @@ describe("GameAchievements", () => {
   });
 
   it("switches to timeline view when Timeline button clicked", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
-    mockUseAchievementTimeline.mockReturnValue({ data: mockTimeline, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    mockUseAchievementTimeline.mockReturnValue({
+      data: mockTimeline,
+      isLoading: false,
+    });
     renderComponent();
 
     fireEvent.click(screen.getByLabelText("Timeline view"));
@@ -230,9 +366,18 @@ describe("GameAchievements", () => {
   });
 
   it("shows timeline stat cards when timeline has entries", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
-    mockUseAchievementTimeline.mockReturnValue({ data: mockTimeline, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    mockUseAchievementTimeline.mockReturnValue({
+      data: mockTimeline,
+      isLoading: false,
+    });
     renderComponent();
 
     fireEvent.click(screen.getByLabelText("Timeline view"));
@@ -244,9 +389,18 @@ describe("GameAchievements", () => {
   });
 
   it("shows locked achievements in timeline with 'Not yet unlocked'", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
-    mockUseAchievementTimeline.mockReturnValue({ data: mockTimeline, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    mockUseAchievementTimeline.mockReturnValue({
+      data: mockTimeline,
+      isLoading: false,
+    });
     renderComponent();
 
     fireEvent.click(screen.getByLabelText("Timeline view"));
@@ -256,9 +410,18 @@ describe("GameAchievements", () => {
   });
 
   it("shows timeline skeleton while timeline is loading", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
-    mockUseAchievementTimeline.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    mockUseAchievementTimeline.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     renderComponent();
 
     fireEvent.click(screen.getByLabelText("Timeline view"));
@@ -267,13 +430,25 @@ describe("GameAchievements", () => {
   });
 
   it("persists view mode to localStorage", () => {
-    mockUseGameAchievements.mockReturnValue({ data: mockAchievements, isLoading: false });
-    mockUseGameAchievementProgress.mockReturnValue({ data: mockProgress, isLoading: false });
-    mockUseAchievementTimeline.mockReturnValue({ data: mockTimeline, isLoading: false });
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    mockUseAchievementTimeline.mockReturnValue({
+      data: mockTimeline,
+      isLoading: false,
+    });
     renderComponent();
 
     fireEvent.click(screen.getByLabelText("Timeline view"));
 
-    expect(localStorage.setItem).toHaveBeenCalledWith("spela-achievements-view", "timeline");
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      "spela-achievements-view",
+      "timeline",
+    );
   });
 });

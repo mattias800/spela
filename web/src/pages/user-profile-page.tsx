@@ -132,9 +132,7 @@ export function UserProfilePage() {
             <h1 className="text-3xl font-bold text-surface-100">
               {profile.username}
             </h1>
-            {profile.isOnline && (
-              <Badge variant="brand">Online</Badge>
-            )}
+            {profile.isOnline && <Badge variant="brand">Online</Badge>}
           </div>
           <p className="text-surface-400 mt-1">
             Member since {formatDate(profile.memberSince)}

@@ -1,6 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { createWebGLRenderer, type WebGLRenderer } from "../lib/webgl-renderer";
-import { applyShaderOverlay, configureSmoothing } from "../lib/canvas-shader-renderer";
+import {
+  applyShaderOverlay,
+  configureSmoothing,
+} from "../lib/canvas-shader-renderer";
 
 interface ShaderPreviewProps {
   imageUrl: string;
@@ -9,7 +12,12 @@ interface ShaderPreviewProps {
   className?: string;
 }
 
-export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPreviewProps) {
+export function ShaderPreview({
+  imageUrl,
+  shader,
+  onClick,
+  className,
+}: ShaderPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
@@ -76,7 +84,16 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
 
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-    applyShaderOverlay(ctx, shader, drawX, drawY, drawW, drawH, img.naturalWidth, img.naturalHeight);
+    applyShaderOverlay(
+      ctx,
+      shader,
+      drawX,
+      drawY,
+      drawW,
+      drawH,
+      img.naturalWidth,
+      img.naturalHeight,
+    );
   }, [shader]);
 
   useEffect(() => {
@@ -134,7 +151,10 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
       onMouseLeave={() => setHovering(false)}
     >
       {!loaded && (
-        <div className="w-full bg-surface-900 rounded-lg" style={{ aspectRatio: "4/3" }} />
+        <div
+          className="w-full bg-surface-900 rounded-lg"
+          style={{ aspectRatio: "4/3" }}
+        />
       )}
       <canvas
         ref={canvasRef}
@@ -143,7 +163,9 @@ export function ShaderPreview({ imageUrl, shader, onClick, className }: ShaderPr
       />
       {hovering && loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg transition-opacity">
-          <span className="text-sm font-medium text-white/80">Click to enlarge</span>
+          <span className="text-sm font-medium text-white/80">
+            Click to enlarge
+          </span>
         </div>
       )}
     </div>

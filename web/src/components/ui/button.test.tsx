@@ -6,7 +6,9 @@ import { Button } from "./button";
 describe("Button", () => {
   it("renders children", () => {
     render(<Button>Click me</Button>);
-    expect(screen.getByRole("button", { name: "Click me" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Click me" }),
+    ).toBeInTheDocument();
   });
 
   it("handles click events", async () => {
@@ -40,7 +42,9 @@ describe("Button", () => {
     expect(screen.getByRole("button").className).toContain("bg-surface-800");
 
     rerender(<Button variant="ghost">Ghost</Button>);
-    expect(screen.getByRole("button").className).toContain("hover:bg-surface-800/50");
+    expect(screen.getByRole("button").className).toContain(
+      "hover:bg-surface-800/50",
+    );
 
     rerender(<Button variant="danger">Danger</Button>);
     expect(screen.getByRole("button").className).toContain("text-danger-500");

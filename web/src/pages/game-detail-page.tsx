@@ -1,8 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { FolderPlus } from "lucide-react";
-import { Button, BackButton, GameDetailSkeleton, DropdownMenu } from "@/components/ui";
+import {
+  Button,
+  BackButton,
+  GameDetailSkeleton,
+  DropdownMenu,
+} from "@/components/ui";
 import { useToast } from "@/components/ui";
-import { useGame, useGameSaves, useToggleFavorite, useScrapeIfNeeded } from "@/hooks/use-games";
+import {
+  useGame,
+  useGameSaves,
+  useToggleFavorite,
+  useScrapeIfNeeded,
+} from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
@@ -10,7 +20,10 @@ import { useConsoles } from "@/hooks/use-consoles";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyCollections, useAddGameToCollection } from "@/hooks/use-collections";
+import {
+  useMyCollections,
+  useAddGameToCollection,
+} from "@/hooks/use-collections";
 import { GameHero } from "@/components/game-detail/game-hero";
 import { GameScreenshots } from "@/components/game-detail/game-screenshots";
 import { GameCommunityStats } from "@/components/game-detail/game-community-stats";
@@ -109,7 +122,8 @@ export function GameDetailPage() {
   const scrapeIfNeeded = useScrapeIfNeeded();
   const queryClient = useQueryClient();
   const { data: consoles } = useConsoles();
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
+  const isAdmin =
+    currentUser?.role === "admin" || currentUser?.role === "owner";
 
   const { data: gameAchievements } = useGameAchievements(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
