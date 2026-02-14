@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Star, Clock } from "lucide-react";
+import { Heart, Star, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
@@ -16,7 +16,7 @@ export function GameCard({
   onToggleFavorite,
   onTogglePlayLater,
 }: GameCardProps) {
-  const { ref } = useAutoScrape(game);
+  const { ref, isScraping } = useAutoScrape(game);
 
   return (
     <Link ref={ref} to={`/games/${game.id}`} className="group block space-y-3">
@@ -30,9 +30,13 @@ export function GameCard({
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900">
-            <span className="text-3xl font-bold text-surface-700">
-              {game.title.charAt(0)}
-            </span>
+            {isScraping ? (
+              <Loader2 className="h-6 w-6 animate-spin text-surface-500" />
+            ) : (
+              <span className="text-3xl font-bold text-surface-700">
+                {game.title.charAt(0)}
+              </span>
+            )}
           </div>
         )}
 

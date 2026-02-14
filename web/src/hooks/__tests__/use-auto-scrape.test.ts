@@ -86,4 +86,30 @@ describe("useAutoScrape", () => {
 
     expect(result.current.ref).toBe(mockRef);
   });
+
+  it("returns isScraping=true when needs scrape and in view", () => {
+    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+
+    const { result } = renderHook(() => useAutoScrape(makeGame()));
+
+    expect(result.current.isScraping).toBe(true);
+  });
+
+  it("returns isScraping=false when game has cover", () => {
+    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+
+    const { result } = renderHook(() =>
+      useAutoScrape(makeGame({ coverUrl: "https://example.com/cover.jpg" })),
+    );
+
+    expect(result.current.isScraping).toBe(false);
+  });
+
+  it("returns isScraping=false when not in view", () => {
+    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: false });
+
+    const { result } = renderHook(() => useAutoScrape(makeGame()));
+
+    expect(result.current.isScraping).toBe(false);
+  });
 });

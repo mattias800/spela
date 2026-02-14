@@ -13,5 +13,7 @@ export function useAutoScrape(game: Game) {
     }
   }, [needsScrape, isInView, game.id]);
 
-  return { ref };
+  const isScraping = needsScrape && isInView;
+
+  return { ref, isScraping };
 }
