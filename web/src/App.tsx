@@ -25,6 +25,8 @@ import { CollectionsPage } from "@/pages/collections-page";
 import { CollectionDetailPage } from "@/pages/collection-detail-page";
 import { UserProfilePage } from "@/pages/user-profile-page";
 import { SetupPage } from "@/pages/setup-page";
+import { LibraryLayout } from "@/components/library-layout";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { useTheme } from "@/hooks/use-theme";
 
 const queryClient = new QueryClient({
@@ -43,6 +45,7 @@ function ThemeApplier({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
@@ -73,13 +76,15 @@ export function App() {
                 }
               >
                 <Route index element={<DashboardPage />} />
-                <Route path="consoles" element={<ConsolesPage />} />
+                <Route element={<LibraryLayout />}>
+                  <Route path="consoles" element={<ConsolesPage />} />
+                  <Route path="games" element={<GamesPage />} />
+                  <Route path="favorites" element={<FavoritesPage />} />
+                  <Route path="play-later" element={<PlayLaterPage />} />
+                  <Route path="collections" element={<CollectionsPage />} />
+                </Route>
                 <Route path="consoles/:id" element={<ConsoleDetailPage />} />
-                <Route path="games" element={<GamesPage />} />
                 <Route path="games/:id" element={<GameDetailPage />} />
-                <Route path="favorites" element={<FavoritesPage />} />
-                <Route path="play-later" element={<PlayLaterPage />} />
-                <Route path="collections" element={<CollectionsPage />} />
                 <Route path="collections/:id" element={<CollectionDetailPage />} />
                 <Route path="stats" element={<StatsPage />} />
                 <Route path="activity" element={<ActivityPage />} />
@@ -129,5 +134,6 @@ export function App() {
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,11 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  Gamepad2,
   Library,
-  Heart,
-  Clock,
-  FolderOpen,
   BarChart3,
   Activity,
   SlidersHorizontal,
@@ -26,11 +22,12 @@ export function AppLayout() {
       section: undefined,
       items: [
         { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-        { to: "/consoles", icon: Gamepad2, label: "Consoles" },
-        { to: "/games", icon: Library, label: "Games" },
-        { to: "/favorites", icon: Heart, label: "Favorites" },
-        { to: "/play-later", icon: Clock, label: "Play Later" },
-        { to: "/collections", icon: FolderOpen, label: "Collections" },
+        {
+          to: "/consoles",
+          icon: Library,
+          label: "Library",
+          matchPaths: ["/consoles", "/games", "/favorites", "/play-later", "/collections"],
+        },
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/activity", icon: Activity, label: "Activity" },
         { to: "/preferences", icon: SlidersHorizontal, label: "Preferences" },

@@ -1,27 +1,34 @@
 import { type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { Gamepad2, LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-interface SidebarLinkProps {
+export interface SidebarLinkProps {
   to: string;
   icon: LucideIcon;
   label: string;
+  /** Additional path prefixes that should highlight this link. */
+  matchPaths?: string[];
 }
 
-function SidebarLink({ to, icon: Icon, label }: SidebarLinkProps) {
+function SidebarLink({ to, icon: Icon, label, matchPaths }: SidebarLinkProps) {
+  const location = useLocation();
+
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
-        cn(
+      className={({ isActive }) => {
+        const active =
+          isActive ||
+          (matchPaths?.some((p) => location.pathname.startsWith(p)) ?? false);
+        return cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-          isActive
+          active
             ? "bg-brand-600/15 text-brand-400 shadow-sm"
             : "text-surface-400 hover:text-surface-100 hover:bg-surface-800/50",
-        )
-      }
+        );
+      }}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
       <span>{label}</span>
