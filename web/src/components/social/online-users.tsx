@@ -28,7 +28,7 @@ export function OnlineUsers() {
       <div className="flex items-center gap-2.5 mb-4">
         <Users className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-bold text-surface-100">Online Now</h2>
-        {data && data.users.length > 0 && (
+        {data?.users && data.users.length > 0 && (
           <span className="text-xs font-medium text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded-full">
             {data.users.length}
           </span>

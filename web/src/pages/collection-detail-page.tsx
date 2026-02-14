@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Globe,
   Lock,
   Pencil,
   Trash2,
-  FolderOpen,
   Gamepad2,
 } from "lucide-react";
 import {
   Button,
+  BackButton,
   Input,
   Modal,
   Switch,
@@ -159,13 +158,7 @@ export function CollectionDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button
-        onClick={() => navigate("/collections")}
-        className="flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Collections
-      </button>
+      <BackButton onClick={() => navigate("/collections")}>Collections</BackButton>
 
       {/* Header */}
       <div className="flex items-start justify-between">

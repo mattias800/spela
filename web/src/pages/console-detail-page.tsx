@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Library } from "lucide-react";
+import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { GameCardSkeleton, EmptyState, SearchInput } from "@/components/ui";
+import { BackButton, GameCardSkeleton, EmptyState, SearchInput } from "@/components/ui";
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -37,13 +37,7 @@ export function ConsoleDetailPage() {
   return (
     <div className="space-y-6">
       {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Consoles
-      </button>
+      <BackButton onClick={() => navigate(-1)}>Back to Consoles</BackButton>
 
       {/* Console header */}
       <div className="flex items-center gap-4">
