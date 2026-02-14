@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +12,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +26,25 @@ class SettingsTest {
 
     @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()
+
+    /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */
+    private fun scrollDownUntilContentDescription(description: String) {
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        for (attempt in 0..5) {
+            try {
+                if (rule.onAllNodesWithContentDescription(description, substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+                ) return
+            } catch (_: IllegalStateException) { /* tree not ready */ }
+            val centerX = device.displayWidth / 2
+            val fromY = (device.displayHeight * 0.7).toInt()
+            val toY = (device.displayHeight * 0.3).toInt()
+            device.swipe(centerX, fromY, centerX, toY, 15)
+            rule.waitForIdle()
+        }
+        // Final assertion — will throw a clear error if still not found
+        rule.waitForContentDescription(description, timeout = 5_000)
+    }
 
     /**
      * Navigate from the Per Console tab to ConsoleSettingsScreen for NES.
@@ -58,11 +80,6 @@ class SettingsTest {
         // Select CRT Classic
         rule.scrollToAndTapText("CRT Classic")
 
-        // Scroll to shader preview (contentDescription, not text)
-        // ShaderPreview only renders after loadSettings() fetches consoles from server
-        rule.waitForContentDescription("Shader preview", timeout = 15_000)
-        rule.onNodeWithContentDescription("Shader preview", substring = true).performScrollTo()
-
         // Navigate to Per Console tab
         rule.onNodeWithText("Per Console").performScrollTo()
         rule.onNodeWithText("Per Console").performClick()
@@ -71,8 +88,7 @@ class SettingsTest {
         tapNESConsole()
 
         // Scroll to shader preview on ConsoleSettingsScreen
-        rule.waitForContentDescription("Shader preview", timeout = 10_000)
-        rule.onNodeWithContentDescription("Shader preview", substring = true).performScrollTo()
+        scrollDownUntilContentDescription("Shader preview")
 
         // Test fullscreen preview dialog
         rule.onNodeWithContentDescription("Shader preview", substring = true).performClick()
