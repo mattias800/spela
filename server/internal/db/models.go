@@ -229,6 +229,51 @@ type UserAchievementProgress struct {
 	PlayTimeAtUnlock int64          `json:"playTimeAtUnlock"` // cumulative play time (seconds) at sync time
 }
 
+// SharedSaveState represents a save state shared by a user for others to download.
+type SharedSaveState struct {
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID        uint           `gorm:"index;not null" json:"userId"`
+	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	GameID        uint           `gorm:"index;not null" json:"gameId"`
+	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name          string         `gorm:"size:255;not null" json:"name"`
+	Description   string         `gorm:"type:text" json:"description,omitempty"`
+	FilePath      string         `gorm:"size:1024;not null" json:"-"`
+	FileSize      int64          `json:"fileSize"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	DownloadCount int            `gorm:"default:0" json:"downloadCount"`
+}
+
+// GameRating represents a user's rating and optional review for a game.
+type GameRating struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"uniqueIndex:idx_user_game_rating;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	GameID    uint           `gorm:"uniqueIndex:idx_user_game_rating;not null;index" json:"gameId"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
+	Rating    int            `gorm:"not null" json:"rating"` // 1-5
+	Review    string         `gorm:"type:text" json:"review,omitempty"`
+}
+
+// ActivityEvent represents a social activity event in the feed.
+type ActivityEvent struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"index;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	EventType string         `gorm:"size:64;not null;index" json:"eventType"` // started_playing, favorited_game, rated_game, shared_save
+	GameID    uint           `gorm:"index" json:"gameId"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
+	Metadata  string         `gorm:"type:text" json:"metadata,omitempty"` // JSON
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

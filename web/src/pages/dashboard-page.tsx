@@ -1,4 +1,4 @@
-import { Play, Heart, Clock, ChevronRight, Gamepad2, Trophy } from "lucide-react";
+import { Play, Heart, Clock, ChevronRight, Gamepad2, Trophy, Activity, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
@@ -7,6 +7,8 @@ import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
 import { useRecentGames, useFavoriteGames, useToggleFavorite, useGames } from "@/hooks/use-games";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
+import { ActivityFeed } from "@/components/social/activity-feed";
+import { OnlineUsers } from "@/components/social/online-users";
 import { formatRelativeTime } from "@/lib/format";
 import type { Game, RecentAchievement } from "@/types/api";
 
@@ -231,6 +233,18 @@ export function DashboardPage() {
           />
         </section>
       )}
+
+      {/* Social widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <ActivityFeed compact maxItems={5} />
+        </div>
+        <div className="lg:col-span-1">
+          <div className="rounded-2xl bg-surface-900/50 p-5">
+            <OnlineUsers />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,8 @@
+package com.spela.player.presentation.intent
+
+sealed interface SocialIntent {
+    data object LoadOnlineUsers : SocialIntent
+    data object LoadActivityFeed : SocialIntent
+    data object RefreshAll : SocialIntent
+    data object DismissError : SocialIntent
+}

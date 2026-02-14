@@ -93,7 +93,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		Scraper:  cfg.Scraper,
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage}
-	userHandler := &UserHandler{DB: cfg.DB}
+	userHandler := &UserHandler{DB: cfg.DB, Hub: cfg.Hub}
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	statsHandler := &StatsHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
@@ -102,6 +102,9 @@ func NewRouter(cfg Config) *gin.Engine {
 	if raClient == nil {
 		raClient = retroachievements.NewRAClient()
 	}
+	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
+	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
+	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
@@ -135,6 +138,19 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
 		api.POST("/games/scan", gameHandler.ScanGames)
+
+		// Ratings
+		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)
+		api.GET("/games/:id/ratings", ratingHandler.GetRatings)
+		api.GET("/games/:id/ratings/summary", ratingHandler.GetRatingSummary)
+		api.GET("/games/:id/ratings/mine", ratingHandler.GetMyRating)
+		api.DELETE("/games/:id/ratings", ratingHandler.DeleteRating)
+
+		// Shared saves
+		api.POST("/games/:id/shared-saves", sharedSaveHandler.ShareSave)
+		api.GET("/games/:id/shared-saves", sharedSaveHandler.ListSharedSaves)
+		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
+		api.DELETE("/games/:id/shared-saves/:saveId", sharedSaveHandler.DeleteSharedSave)
 
 		// Save states
 		api.GET("/games/:id/saves", gameHandler.ListSaves)
@@ -171,6 +187,10 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/user/devices/:id", deviceHandler.DeleteDevice)
 		api.GET("/user/devices/:id/preferences", deviceHandler.GetDevicePreferences)
 		api.PUT("/user/devices/:id/preferences", deviceHandler.UpdateDevicePreferences)
+
+		// Social
+		api.GET("/social/online", socialHandler.GetOnlineUsers)
+		api.GET("/social/activity", socialHandler.GetActivityFeed)
 
 		// RetroAchievements
 		api.POST("/user/ra/link", raHandler.LinkAccount)

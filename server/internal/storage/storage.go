@@ -139,6 +139,46 @@ func (s *Storage) DeleteSave(path string) error {
 	return nil
 }
 
+// SharedSavePath returns the filesystem path for a shared save state.
+func (s *Storage) SharedSavePath(gameID, saveID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, "shared-saves", fmt.Sprintf("game_%d", gameID), fmt.Sprintf("%d_%s", saveID, safe))
+}
+
+// WriteSharedSave stores a shared save state file.
+func (s *Storage) WriteSharedSave(gameID, saveID uint, filename string, data io.Reader) (string, int64, error) {
+	path := s.SharedSavePath(gameID, saveID, filename)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving shared save path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid shared save path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", 0, fmt.Errorf("creating shared save directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating shared save file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return "", 0, fmt.Errorf("writing shared save file: %w", err)
+	}
+
+	return path, n, nil
+}
+
 // ValidateROMPath checks that a ROM path is within allowed game directories.
 func ValidateROMPath(filePath string, allowedDirs []string) bool {
 	absPath, err := filepath.Abs(filePath)

@@ -1,5 +1,107 @@
 import { test, expect } from "./fixtures";
 
+/**
+ * Sets up common API route mocks needed for the game detail page to load
+ * the new social/rating/shared-saves components without errors.
+ */
+async function setupGameDetailSocialRoutes(
+  page: import("@playwright/test").Page,
+  gameId: string,
+) {
+  await page.route(`**/api/games/${gameId}/stats`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        totalPlayers: 0,
+        totalPlayTime: 0,
+        averagePlayTime: 0,
+        topPlayers: [],
+      }),
+    });
+  });
+
+  await page.route(`**/api/games/${gameId}/ratings/summary`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        averageRating: 0,
+        totalRatings: 0,
+        distribution: {},
+      }),
+    });
+  });
+
+  await page.route(`**/api/games/${gameId}/ratings/mine`, (route) => {
+    route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: "{}",
+    });
+  });
+
+  await page.route(`**/api/games/${gameId}/ratings?*`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 10 }),
+    });
+  });
+
+  await page.route(`**/api/games/${gameId}/shared-saves?*`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 10 }),
+    });
+  });
+
+  await page.route(`**/api/games/${gameId}/shared-saves`, (route) => {
+    if (route.request().url().includes("?")) return route.continue();
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 10 }),
+    });
+  });
+
+  await page.route(
+    `**/api/games/${gameId}/achievements/leaderboard`,
+    (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          raGameId: 0,
+          totalAchievements: 0,
+          leaderboard: [],
+        }),
+      });
+    },
+  );
+
+  await page.route(
+    `**/api/games/${gameId}/achievements/timeline`,
+    (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          raGameId: 0,
+          gameTitle: "",
+          totalPlayTime: 0,
+          timeline: [],
+          totalAchievements: 0,
+          unlockedCount: 0,
+          totalPoints: 0,
+          earnedPoints: 0,
+        }),
+      });
+    },
+  );
+}
+
 test.describe("RetroAchievements - Preferences Page", () => {
   test("displays RetroAchievements card with link form when not linked", async ({
     page,
@@ -316,13 +418,15 @@ test.describe("RetroAchievements - Game Detail", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([
-          {
-            achievementId: 101,
-            unlockedAt: "2025-12-01T10:00:00Z",
-            isHardcore: false,
-          },
-        ]),
+        body: JSON.stringify({
+          progress: [
+            {
+              achievementId: 101,
+              unlockedAt: "2025-12-01T10:00:00Z",
+              isHardcore: false,
+            },
+          ],
+        }),
       });
     });
 
@@ -349,6 +453,9 @@ test.describe("RetroAchievements - Game Detail", () => {
         ]),
       });
     });
+
+    // Mock social/ratings/shared-saves endpoints for the game detail page
+    await setupGameDetailSocialRoutes(page, "1");
 
     await page.goto("/games/1");
 
@@ -430,13 +537,15 @@ test.describe("RetroAchievements - Game Detail", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([
-          {
-            achievementId: 101,
-            unlockedAt: "2025-12-01T10:00:00Z",
-            isHardcore: false,
-          },
-        ]),
+        body: JSON.stringify({
+          progress: [
+            {
+              achievementId: 101,
+              unlockedAt: "2025-12-01T10:00:00Z",
+              isHardcore: false,
+            },
+          ],
+        }),
       });
     });
 
@@ -453,6 +562,9 @@ test.describe("RetroAchievements - Game Detail", () => {
         ]),
       });
     });
+
+    // Mock social/ratings/shared-saves endpoints for the game detail page
+    await setupGameDetailSocialRoutes(page, "1");
 
     await page.goto("/games/1");
 
@@ -506,7 +618,7 @@ test.describe("RetroAchievements - Game Detail", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: "[]",
+        body: JSON.stringify({ progress: [] }),
       });
     });
 
@@ -523,6 +635,9 @@ test.describe("RetroAchievements - Game Detail", () => {
         ]),
       });
     });
+
+    // Mock social/ratings/shared-saves endpoints for the game detail page
+    await setupGameDetailSocialRoutes(page, "1");
 
     await page.goto("/games/1");
 

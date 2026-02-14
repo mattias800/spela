@@ -55,16 +55,21 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.social.ActivityEventItem
+import com.spela.player.presentation.ui.components.social.OnlineUsersRow
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
+import com.spela.player.presentation.viewmodel.SocialViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: GameListViewModel,
+    socialViewModel: SocialViewModel,
     onGameSelected: (String) -> Unit,
     onConsoleSelected: (String) -> Unit,
     onNavigateToDownloads: () -> Unit = {},
@@ -72,9 +77,11 @@ fun HomeScreen(
     hasActiveDownloads: Boolean = false,
 ) {
     val state by viewModel.state.collectAsState()
+    val socialState by socialViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(GameListIntent.LoadDashboard)
+        socialViewModel.onIntent(SocialIntent.RefreshAll)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -149,7 +156,10 @@ fun HomeScreen(
         } else {
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
-                onRefresh = { viewModel.onIntent(GameListIntent.LoadDashboard) },
+                onRefresh = {
+                    viewModel.onIntent(GameListIntent.LoadDashboard)
+                    socialViewModel.onIntent(SocialIntent.RefreshAll)
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 val isEmpty = state.recentGames.isEmpty() &&
@@ -180,6 +190,39 @@ fun HomeScreen(
                                     games = state.recentGames.take(10),
                                     onGameSelected = onGameSelected,
                                 )
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Online Now section
+                        if (socialState.onlineUsers.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Online Now",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                OnlineUsersRow(users = socialState.onlineUsers)
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Recent Activity section
+                        if (socialState.activityEvents.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Recent Activity",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Small))
+                            }
+                            items(
+                                socialState.activityEvents.take(5),
+                                key = { "activity-${it.id}" },
+                            ) { event ->
+                                ActivityEventItem(event = event)
+                            }
+                            item {
                                 Spacer(Modifier.height(SpSpacing.XLarge))
                             }
                         }

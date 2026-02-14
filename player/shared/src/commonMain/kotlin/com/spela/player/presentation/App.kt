@@ -13,6 +13,7 @@ import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import com.spela.player.presentation.viewmodel.SocialViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -31,6 +32,7 @@ fun App() {
     val downloadsViewModel: DownloadsViewModel = koinInject()
     val settingsViewModel: SettingsViewModel = koinInject()
     val keyMappingViewModel: KeyMappingViewModel = koinInject()
+    val socialViewModel: SocialViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
 
     SpelaApp(
@@ -44,6 +46,7 @@ fun App() {
         downloadsViewModel = downloadsViewModel,
         settingsViewModel = settingsViewModel,
         keyMappingViewModel = keyMappingViewModel,
+        socialViewModel = socialViewModel,
         secondaryDisplay = secondaryDisplay,
     )
 }

@@ -258,6 +258,77 @@ class SpelaApiClient(
         return response.body()
     }
 
+    // Shared Saves
+
+    suspend fun getSharedSaves(gameId: String, page: Int = 1, pageSize: Int = 20): SharedSavesResponse {
+        return client.get("$baseUrl/api/games/$gameId/shared-saves") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun shareSave(gameId: String, name: String, description: String, data: ByteArray): SharedSaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/shared-saves",
+            formData = formData {
+                append("name", name)
+                append("description", description)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"shared-save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
+    }
+
+    suspend fun downloadSharedSave(gameId: String, saveId: String): ByteArray {
+        return client.get("$baseUrl/api/games/$gameId/shared-saves/$saveId/download").body()
+    }
+
+    suspend fun deleteSharedSave(gameId: String, saveId: String) {
+        client.delete("$baseUrl/api/games/$gameId/shared-saves/$saveId")
+    }
+
+    // Ratings
+
+    suspend fun rateGame(gameId: String, request: RateGameRequest): GameRatingDto {
+        return client.post("$baseUrl/api/games/$gameId/ratings") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun getGameRatings(gameId: String, page: Int = 1, pageSize: Int = 20): GameRatingsResponse {
+        return client.get("$baseUrl/api/games/$gameId/ratings") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getGameRatingSummary(gameId: String): RatingSummaryDto {
+        return client.get("$baseUrl/api/games/$gameId/ratings/summary").body()
+    }
+
+    suspend fun getMyRating(gameId: String): GameRatingDto {
+        return client.get("$baseUrl/api/games/$gameId/ratings/mine").body()
+    }
+
+    suspend fun deleteRating(gameId: String) {
+        client.delete("$baseUrl/api/games/$gameId/ratings")
+    }
+
+    // Social
+
+    suspend fun getOnlineUsers(): OnlineUsersResponse {
+        return client.get("$baseUrl/api/social/online").body()
+    }
+
+    suspend fun getActivityFeed(page: Int = 1, pageSize: Int = 20): ActivityFeedResponse {
+        return client.get("$baseUrl/api/social/activity") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
     // RetroAchievements
 
     suspend fun getRAStatus(): RAStatusDto {

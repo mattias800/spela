@@ -36,6 +36,9 @@ val commonModule = module {
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
     single<KeyMappingRepository> { KeyMappingRepositoryImpl(get(), get(named("platformDefaultMapping"))) }
     single<AchievementsRepository> { AchievementsRepositoryImpl(get()) }
+    single<SocialRepository> { SocialRepositoryImpl(get()) }
+    single<RatingRepository> { RatingRepositoryImpl(get()) }
+    single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
     single { GamepadPortManager(get()) }
 
     /* Use Cases */
@@ -56,6 +59,8 @@ val commonModule = module {
     factory { SaveGameStateUseCase(get()) }
     factory { LoadGameStateUseCase(get()) }
     factory { RestoreSessionUseCase(get(), get(), get()) }
+    factory { GetOnlineUsersUseCase(get()) }
+    factory { GetActivityFeedUseCase(get()) }
 
     /* ViewModels */
     factory {
@@ -84,6 +89,8 @@ val commonModule = module {
             toggleFavoriteUseCase = get(),
             downloadRepository = get(),
             saveRepository = get(),
+            ratingRepository = get(),
+            sharedSaveRepository = get(),
             apiClient = get(),
             dispatchers = get(),
             scope = get(),
@@ -100,6 +107,15 @@ val commonModule = module {
             achievementsController = get(),
             libretroController = get(),
             secondaryDisplay = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        SocialViewModel(
+            getOnlineUsersUseCase = get(),
+            getActivityFeedUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )

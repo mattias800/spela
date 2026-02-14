@@ -129,26 +129,26 @@ KMP module when changes affect desktop behavior.
 **Role:** Android test and verification specialist
 
 Responsible for verifying the Android app is fully working and feature
-complete. Writes Maestro E2E tests for every user-facing behavior. Runs
-the full E2E suite after changes and reports regressions.
+complete. Writes Espresso + Compose UI Test E2E tests for every user-facing
+behavior. Runs the full E2E suite after changes and reports regressions.
 
 **A task is not done until it has a passing E2E test that covers the
 changed behavior.** No exceptions. If a feature cannot be E2E tested,
 the QA engineer must flag it and explain why before the task can close.
 
-**Owns:** `player/.maestro/`
+**Owns:** `player/android/src/androidTest/`
 
 **Running E2E tests:** See `E2E.md` for full instructions. Use `player/run-e2e.sh` to run the suite. Check if a physical Android device is connected via `adb devices` — if available, use it (it's faster and more reliable). If no device is connected, fall back to an Android emulator.
 
 **Responsibilities:**
-- Write Maestro E2E tests for all user-facing Android behavior
+- Write Espresso + Compose UI Test E2E tests for all user-facing Android behavior
 - Reject any task that lacks E2E test coverage
 - Maintain the E2E test suite and CI configuration
 - Run the FULL suite after every change and report results — zero regressions allowed
 - File detailed bug reports with reproduction steps
 - Verify bug fixes with regression tests (failing test first)
 
-**Tech:** Maestro, ADB, shell scripting
+**Tech:** Espresso, Compose UI Test, JUnit4, ADB, shell scripting
 
 ---
 

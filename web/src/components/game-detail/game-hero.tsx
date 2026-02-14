@@ -113,9 +113,20 @@ export function GameHero({
               </Button>
             </div>
           </div>
-          {consoleName && (
-            <Badge variant="brand" className="mt-2">{consoleName}</Badge>
-          )}
+          <div className="flex items-center gap-3 mt-2">
+            {consoleName && (
+              <Badge variant="brand">{consoleName}</Badge>
+            )}
+            {game.averageRating > 0 && (
+              <span className="flex items-center gap-1 text-sm text-surface-400">
+                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                {game.averageRating.toFixed(1)}
+                <span className="text-surface-500">
+                  ({game.ratingCount})
+                </span>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Metadata grid */}

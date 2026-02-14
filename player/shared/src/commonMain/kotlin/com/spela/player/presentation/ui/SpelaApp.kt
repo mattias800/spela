@@ -59,6 +59,7 @@ import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import com.spela.player.presentation.viewmodel.SocialViewModel
 
 @Composable
 fun SpelaApp(
@@ -72,6 +73,7 @@ fun SpelaApp(
     downloadsViewModel: DownloadsViewModel,
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
+    socialViewModel: SocialViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
@@ -165,6 +167,7 @@ fun SpelaApp(
                                 val downloadsState by downloadsViewModel.state.collectAsState()
                                 HomeScreen(
                                     viewModel = gameListViewModel,
+                                    socialViewModel = socialViewModel,
                                     onGameSelected = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))

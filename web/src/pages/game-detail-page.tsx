@@ -14,6 +14,10 @@ import { GameCommunityStats } from "@/components/game-detail/game-community-stat
 import { SaveStatesList } from "@/components/game-detail/save-states-list";
 import { GameAchievements } from "@/components/game-detail/game-achievements";
 import { GameAchievementLeaderboard } from "@/components/game-detail/game-achievement-leaderboard";
+import { UserRating } from "@/components/game-detail/user-rating";
+import { RatingSummaryCard } from "@/components/game-detail/rating-summary";
+import { GameReviews } from "@/components/game-detail/game-reviews";
+import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 
 export function GameDetailPage() {
@@ -99,6 +103,17 @@ export function GameDetailPage() {
 
       <GameCommunityStats gameId={game.id} game={game} />
 
+      {/* Rating section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-4">
+          <UserRating gameId={game.id} />
+          <RatingSummaryCard gameId={game.id} />
+        </div>
+        <div className="lg:col-span-2">
+          <GameReviews gameId={game.id} />
+        </div>
+      </div>
+
       <GameAchievementLeaderboard gameId={game.id} />
 
       <GameScreenshots
@@ -109,6 +124,8 @@ export function GameDetailPage() {
       <GameAchievements gameId={game.id} />
 
       <SaveStatesList saves={saves} gameId={game.id} />
+
+      <SharedSavesList gameId={game.id} />
     </div>
   );
 }

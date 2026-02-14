@@ -529,6 +529,44 @@ class FakeAchievementsController : com.spela.player.domain.controller.Achievemen
     override fun httpComplete(requestId: Int, responseCode: Int, responseBody: ByteArray) {}
 }
 
+class FakeRatingRepository : RatingRepository {
+    var ratingSummary: RatingSummary = RatingSummary(0.0, 0, emptyMap())
+    var myRating: GameRating? = null
+
+    override suspend fun rateGame(gameId: String, rating: Int, review: String): Result<GameRating> =
+        Result.success(GameRating("1", "1", "player", null, gameId, rating, review, ""))
+    override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> =
+        Result.success(emptyList())
+    override suspend fun getRatingSummary(gameId: String): Result<RatingSummary> =
+        Result.success(ratingSummary)
+    override suspend fun getMyRating(gameId: String): Result<GameRating?> =
+        Result.success(myRating)
+    override suspend fun deleteRating(gameId: String): Result<Unit> =
+        Result.success(Unit)
+}
+
+class FakeSharedSaveRepository : SharedSaveRepository {
+    var sharedSaves: List<SharedSaveState> = emptyList()
+
+    override suspend fun getSharedSaves(gameId: String, page: Int, pageSize: Int): Result<List<SharedSaveState>> =
+        Result.success(sharedSaves)
+    override suspend fun shareSave(gameId: String, name: String, description: String, saveData: ByteArray): Result<SharedSaveState> =
+        Result.success(SharedSaveState("1", "1", "player", null, gameId, name, description, saveData.size.toLong(), 0, ""))
+    override suspend fun downloadSharedSave(gameId: String, saveId: String): Result<ByteArray> =
+        Result.success(ByteArray(256) { it.toByte() })
+    override suspend fun deleteSharedSave(gameId: String, saveId: String): Result<Unit> =
+        Result.success(Unit)
+}
+
+class FakeSocialRepository : SocialRepository {
+    var onlineUsers: List<OnlineUser> = emptyList()
+    var activityEvents: List<ActivityEvent> = emptyList()
+
+    override suspend fun getOnlineUsers(): Result<List<OnlineUser>> = Result.success(onlineUsers)
+    override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> =
+        Result.success(activityEvents)
+}
+
 class FakeKeyMappingRepository : KeyMappingRepository {
     private val mappings = mutableMapOf<String, MutableMap<Int, Int>>()
 

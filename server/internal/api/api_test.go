@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,6 +40,9 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.RetroAchievementCredential{},
 		&db.GameAchievementCache{},
 		&db.UserAchievementProgress{},
+		&db.ActivityEvent{},
+		&db.GameRating{},
+		&db.SharedSaveState{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
@@ -938,6 +942,919 @@ func TestUpdatePreferences_ThemeSelection(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	assert.Equal(t, "nintendo-colorful", prefs["selectedTheme"])
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
+}
+
+func TestGetOnlineUsers_Empty(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/social/online", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var users []map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &users)
+	require.NoError(t, err)
+	assert.Len(t, users, 0)
+}
+
+func TestGetActivityFeed_Empty(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 0)
+	assert.Equal(t, float64(0), resp["total"])
+	assert.Equal(t, float64(1), resp["page"])
+	assert.Equal(t, float64(20), resp["pageSize"])
+}
+
+func TestGetActivityFeed_AfterPlayTime(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Activity Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Post play time (triggers activity event)
+	body, _ := json.Marshal(map[string]interface{}{"seconds": 60})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Get activity feed - should have one event
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 1)
+
+	event := data[0].(map[string]interface{})
+	assert.Equal(t, "started_playing", event["eventType"])
+	assert.Equal(t, "apitest", event["username"])
+	assert.Equal(t, "Activity Test Game", event["gameTitle"])
+	assert.NotEmpty(t, event["id"])
+	assert.NotEmpty(t, event["userId"])
+	assert.NotEmpty(t, event["gameId"])
+}
+
+func TestGetActivityFeed_AfterFavorite(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Favorite Feed Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Add favorite (triggers activity event)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/favorites/"+gameID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Get activity feed - should have one event
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 1)
+
+	event := data[0].(map[string]interface{})
+	assert.Equal(t, "favorited_game", event["eventType"])
+	assert.Equal(t, "Favorite Feed Game", event["gameTitle"])
+}
+
+func TestGetActivityFeed_Pagination(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Pagination Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+
+	// Create multiple activity events directly
+	var user db.User
+	database.Where("username = ?", "apitest").First(&user)
+	for i := 0; i < 5; i++ {
+		database.Create(&db.ActivityEvent{
+			UserID:    user.ID,
+			EventType: "started_playing",
+			GameID:    game.ID,
+		})
+	}
+
+	// Get page 1 with pageSize=2
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/social/activity?page=1&pageSize=2", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 2)
+	assert.Equal(t, float64(5), resp["total"])
+	assert.Equal(t, float64(1), resp["page"])
+	assert.Equal(t, float64(2), resp["pageSize"])
+
+	// Get page 3 with pageSize=2 (should have 1 item)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity?page=3&pageSize=2", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data = resp["data"].([]interface{})
+	assert.Len(t, data, 1)
+}
+
+func TestCreateActivityEvent_BroadcastsWebSocket(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+
+	var user db.User
+	database.Create(&db.User{Username: "wsuser", Email: "ws@example.com", PasswordHash: "x", Role: db.RoleUser})
+	database.Where("username = ?", "wsuser").First(&user)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "WS Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+
+	// CreateActivityEvent should not panic even with an active hub
+	CreateActivityEvent(database, cfg.Hub, user.ID, "started_playing", game.ID, map[string]interface{}{"seconds": 30})
+
+	// Verify event was persisted
+	var events []db.ActivityEvent
+	database.Where("user_id = ?", user.ID).Find(&events)
+	assert.Len(t, events, 1)
+	assert.Equal(t, "started_playing", events[0].EventType)
+	assert.Equal(t, game.ID, events[0].GameID)
+}
+
+func TestOnlineUserTracking(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	hub := cfg.Hub
+
+	// Initially no one is playing
+	assert.Equal(t, uint(0), hub.GetUserGame(1))
+
+	// Set user as playing a game
+	hub.SetUserGame(1, 42)
+	assert.Equal(t, uint(42), hub.GetUserGame(1))
+
+	// Clear the game
+	hub.SetUserGame(1, 0)
+	assert.Equal(t, uint(0), hub.GetUserGame(1))
+}
+
+func TestCreateRating(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 4, "review": "Great game!"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, float64(4), resp["rating"])
+	assert.Equal(t, "Great game!", resp["review"])
+	assert.Equal(t, "apitest", resp["username"])
+	assert.NotEmpty(t, resp["id"])
+}
+
+func TestUpdateRating(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Update Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 3})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Update rating
+	body, _ = json.Marshal(map[string]interface{}{"rating": 5, "review": "Changed my mind, amazing!"})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(5), resp["rating"])
+	assert.Equal(t, "Changed my mind, amazing!", resp["review"])
+}
+
+func TestCreateRating_InvalidInput(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Invalid Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	tests := []struct {
+		name string
+		body string
+		code int
+	}{
+		{"rating too low", `{"rating": 0}`, http.StatusBadRequest},
+		{"rating too high", `{"rating": 6}`, http.StatusBadRequest},
+		{"missing rating", `{}`, http.StatusBadRequest},
+		{"negative rating", `{"rating": -1}`, http.StatusBadRequest},
+		{"invalid JSON", `not json`, http.StatusBadRequest},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader([]byte(tt.body)))
+			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Content-Type", "application/json")
+			router.ServeHTTP(w, req)
+			assert.Equal(t, tt.code, w.Code)
+		})
+	}
+}
+
+func TestCreateRating_GameNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{"rating": 4})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/99999/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetRatings(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "List Ratings Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create a rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 5, "review": "Best game ever"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Get ratings
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/ratings", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 1)
+	assert.Equal(t, float64(1), resp["total"])
+
+	rating := data[0].(map[string]interface{})
+	assert.Equal(t, float64(5), rating["rating"])
+	assert.Equal(t, "Best game ever", rating["review"])
+	assert.Equal(t, "apitest", rating["username"])
+}
+
+func TestGetRatingSummary(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Summary Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create ratings from multiple users
+	var user1 db.User
+	database.Where("username = ?", "apitest").First(&user1)
+	database.Create(&db.GameRating{UserID: user1.ID, GameID: game.ID, Rating: 5})
+
+	user2 := db.User{Username: "user2", Email: "user2@example.com", PasswordHash: "x", Role: db.RoleUser}
+	database.Create(&user2)
+	database.Create(&db.GameRating{UserID: user2.ID, GameID: game.ID, Rating: 3})
+
+	user3 := db.User{Username: "user3", Email: "user3@example.com", PasswordHash: "x", Role: db.RoleUser}
+	database.Create(&user3)
+	database.Create(&db.GameRating{UserID: user3.ID, GameID: game.ID, Rating: 4})
+
+	// Get summary
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+gameID+"/ratings/summary", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(3), resp["totalRatings"])
+	assert.Equal(t, float64(4), resp["averageRating"])
+
+	dist := resp["distribution"].(map[string]interface{})
+	assert.Equal(t, float64(0), dist["1"])
+	assert.Equal(t, float64(0), dist["2"])
+	assert.Equal(t, float64(1), dist["3"])
+	assert.Equal(t, float64(1), dist["4"])
+	assert.Equal(t, float64(1), dist["5"])
+}
+
+func TestGetMyRating(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "My Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// No rating yet
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+gameID+"/ratings/mine", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 4})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Now get my rating
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/ratings/mine", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(4), resp["rating"])
+}
+
+func TestDeleteRating(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Delete Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 2})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Delete rating
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/games/"+gameID+"/ratings", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify it's gone
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/ratings/mine", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestDeleteRating_NotFound(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "No Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/games/"+gameID+"/ratings", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGameResponse_IncludesRatingData(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Enriched Rating Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 4})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Get game - should include rating data
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(4), resp["averageRating"])
+	assert.Equal(t, float64(1), resp["ratingCount"])
+	assert.Equal(t, float64(4), resp["userRating"])
+}
+
+func TestRating_CreatesActivityEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Rating Activity Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create rating
+	body, _ := json.Marshal(map[string]interface{}{"rating": 5})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Check activity feed has rated_game event
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var feedResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &feedResp)
+	data := feedResp["data"].([]interface{})
+	assert.True(t, len(data) >= 1)
+
+	// Find the rated_game event
+	found := false
+	for _, item := range data {
+		event := item.(map[string]interface{})
+		if event["eventType"] == "rated_game" {
+			found = true
+			assert.Equal(t, "Rating Activity Game", event["gameTitle"])
+			break
+		}
+	}
+	assert.True(t, found, "should have a rated_game activity event")
+}
+
+func TestShareSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Share Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Create multipart form
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "mysave.sav")
+	part.Write([]byte("fake save data"))
+	writer.WriteField("name", "My Awesome Save")
+	writer.WriteField("description", "Beat the final boss!")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, "My Awesome Save", resp["name"])
+	assert.Equal(t, "Beat the final boss!", resp["description"])
+	assert.Equal(t, "apitest", resp["username"])
+	assert.Equal(t, float64(14), resp["fileSize"]) // len("fake save data")
+	assert.NotEmpty(t, resp["id"])
+}
+
+func TestShareSave_GameNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "mysave.sav")
+	part.Write([]byte("data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/99999/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestShareSave_NoFile(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "No File Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestListSharedSaves(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "List Saves Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Upload a shared save
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "shared.sav")
+	part.Write([]byte("save data"))
+	writer.WriteField("name", "Shared Save 1")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// List shared saves
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/shared-saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 1)
+	assert.Equal(t, float64(1), resp["total"])
+
+	save := data[0].(map[string]interface{})
+	assert.Equal(t, "Shared Save 1", save["name"])
+	assert.Equal(t, "apitest", save["username"])
+}
+
+func TestListSharedSaves_Empty(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Empty Saves Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+gameID+"/shared-saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 0)
+	assert.Equal(t, float64(0), resp["total"])
+}
+
+func TestDownloadSharedSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Download Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Upload
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "download.sav")
+	part.Write([]byte("downloadable save data"))
+	writer.WriteField("name", "Download Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var createResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &createResp)
+	saveID := createResp["id"].(string)
+
+	// Download
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/shared-saves/"+saveID+"/download", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "downloadable save data", w.Body.String())
+
+	// Verify download count incremented
+	var save db.SharedSaveState
+	database.First(&save, saveID)
+	assert.Equal(t, 1, save.DownloadCount)
+}
+
+func TestDeleteSharedSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Delete Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Upload
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "todelete.sav")
+	part.Write([]byte("delete me"))
+	writer.WriteField("name", "Delete Me Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var createResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &createResp)
+	saveID := createResp["id"].(string)
+
+	// Delete
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/games/"+gameID+"/shared-saves/"+saveID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify it's gone from listing
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/shared-saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].([]interface{})
+	assert.Len(t, data, 0)
+}
+
+func TestDeleteSharedSave_NotOwner(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router) // owner user
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Ownership Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Upload as owner
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "owned.sav")
+	part.Write([]byte("owned save"))
+	writer.WriteField("name", "Owned Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var createResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &createResp)
+	saveID := createResp["id"].(string)
+
+	// Register a second user
+	body, _ := json.Marshal(map[string]string{
+		"username": "otheruser",
+		"email":    "other@example.com",
+		"password": "password123",
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var regResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &regResp)
+	otherToken := regResp["accessToken"].(string)
+
+	// Try to delete as other user - should fail
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/games/"+gameID+"/shared-saves/"+saveID, nil)
+	req.Header.Set("Authorization", "Bearer "+otherToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestShareSave_CreatesActivityEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Activity Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Upload
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "activity.sav")
+	part.Write([]byte("activity save"))
+	writer.WriteField("name", "Activity Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Check activity feed
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var feedResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &feedResp)
+	data := feedResp["data"].([]interface{})
+
+	found := false
+	for _, item := range data {
+		event := item.(map[string]interface{})
+		if event["eventType"] == "shared_save" {
+			found = true
+			assert.Equal(t, "Activity Save Game", event["gameTitle"])
+			break
+		}
+	}
+	assert.True(t, found, "should have a shared_save activity event")
 }
 
 // registerAndGetToken registers a user and returns an access token.

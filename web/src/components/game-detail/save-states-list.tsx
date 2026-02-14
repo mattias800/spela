@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, Share2 } from "lucide-react";
 import { Button, Badge, Card, CardContent, Modal } from "@/components/ui";
 import { useDeleteSave } from "@/hooks/use-games";
+import { ShareSaveModal } from "@/components/game-detail/share-save-modal";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import type { SaveState } from "@/types/api";
 
@@ -13,6 +14,7 @@ interface SaveStatesListProps {
 export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
   const deleteSave = useDeleteSave();
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [shareTarget, setShareTarget] = useState<SaveState | null>(null);
 
   return (
     <section>
@@ -40,6 +42,13 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShareTarget(save)}
+                    className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-brand-400 hover:bg-surface-800/50 transition-colors"
+                    title="Share save"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
                   <a
                     href={`/api/games/${gameId}/saves/${save.id}`}
                     download
@@ -91,6 +100,14 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
           </Button>
         </div>
       </Modal>
+
+      {/* Share save modal */}
+      <ShareSaveModal
+        open={!!shareTarget}
+        onClose={() => setShareTarget(null)}
+        save={shareTarget}
+        gameId={gameId}
+      />
     </section>
   );
 }

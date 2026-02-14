@@ -110,15 +110,14 @@ On Android, the native library is built automatically via the `externalNativeBui
 ./gradlew :shared:allTests
 ```
 
-### Running E2E Tests (Maestro)
+### Running E2E Tests (Espresso + Compose UI Test)
 
-The player app uses [Maestro](https://maestro.dev/) for end-to-end UI testing. E2E tests are the primary regression prevention tool for the player app. **Any change that affects user-facing behavior must have a corresponding E2E test.**
+The player app uses **Espresso** and the **Jetpack Compose Test API** for end-to-end UI testing. E2E tests are the primary regression prevention tool for the player app. **Any change that affects user-facing behavior must have a corresponding E2E test.**
 
 #### Prerequisites
 
-- **Maestro CLI** (2.1.0+): `curl -Ls "https://get.maestro.mobile.dev" | bash`
 - **adb** on PATH: `brew install android-platform-tools` (macOS)
-- **A connected Android device or emulator** with the app installed
+- **A connected Android device or emulator**
 - **The Spela backend server running** with seeded data (users and scanned games)
 
 #### Starting the backend for E2E tests
@@ -137,40 +136,54 @@ The server must have ROM files in its game directories for games to appear in th
 
 #### Running the tests
 
-From the repo root:
-
 ```sh
-# Run all E2E tests
-maestro test player/.maestro/
+# Run all Android E2E tests
+cd player
+./run-e2e.sh
 
-# Run a single test
-maestro test player/.maestro/play-castlevania.yaml
+# Run a specific test class
+./run-e2e.sh com.spela.player.android.EmulationTest
+
+# Run a specific test method
+./run-e2e.sh com.spela.player.android.EmulationTest#playCastlevania
+
+# Run desktop E2E tests
+./run-desktop-tests.sh
 ```
 
 #### Test structure
 
 ```
-player/.maestro/
-├── config.yaml                # Suite configuration (initFlow, etc.)
-├── play-castlevania.yaml      # Test: navigate to Castlevania and play it
-└── setup/
-    ├── login-player.yaml      # Setup flow: login as player/player123
-    └── login-admin.yaml       # Setup flow: login as admin/admin123
+player/android/src/androidTest/java/com/spela/player/android/
+├── EmulationTest.kt           # Emulation and gameplay tests
+├── EstablishSessionTest.kt    # Login session establishment
+├── GamepadNavigationTest.kt   # Gamepad navigation tests
+├── NavigationTest.kt          # App navigation tests
+├── SessionTest.kt             # Session management tests
+├── SettingsTest.kt            # Settings screen tests
+├── TouchControlsTest.kt       # Touch control tests
+└── TestHelpers.kt             # Shared test utilities
+
+player/desktop/src/desktopTest/kotlin/.../e2e/
+├── AppLaunchAndConnectionTest.kt
+├── GameBrowsingAndSelectionTest.kt
+├── SaveLoadStateTest.kt
+├── SpelaTestHarness.kt        # Desktop test infrastructure
+├── TestFakes.kt               # Test doubles
+└── ... (15 test files total)
 ```
 
-- **Test flows** live in `player/.maestro/` and are auto-discovered by `maestro test`.
-- **Setup flows** live in `player/.maestro/setup/` and are NOT auto-discovered. They are referenced by `config.yaml` or by test flows directly.
-- Each test flow is **self-contained** — it clears app state, launches the app, connects to the server, logs in, and then performs the test. This ensures tests are idempotent and can run in any order.
+- Android E2E tests use `@RunWith(AndroidJUnit4::class)` with `createComposeRule()` and `UiAutomator`
+- Desktop E2E tests use `runComposeUiTest { }` with `SpelaTestHarness` for fake backend injection
+- Each test is self-contained and idempotent
 
 #### Writing new E2E tests
 
-1. Create a new `.yaml` file in `player/.maestro/`.
-2. Start with `appId: com.spela.player` and `---` separator.
-3. Include the full setup (clearState, launchApp, add server, login) or reference a setup flow.
-4. Use `contentDescription` semantics for element selection where possible — the app has accessibility labels on all interactive elements (e.g., `"Play Castlevania"`, `"Nintendo Entertainment System, 12 games"`).
-5. Use `extendedWaitUntil` with reasonable timeouts for assertions after navigation or network operations.
-6. Use `scrollUntilVisible` to find elements in scrollable lists.
-7. Add `hideKeyboard` before tapping buttons that may be covered by the on-screen keyboard.
+1. Create a new test class in the appropriate `androidTest` or `desktopTest` directory.
+2. Use `createComposeRule()` (Android) or `runComposeUiTest { }` (desktop) for Compose UI testing.
+3. Use `onNodeWithContentDescription()` for element selection — the app has accessibility labels on all interactive elements.
+4. Use `waitUntil {}` with reasonable timeouts for assertions after navigation or network operations.
+5. Use `performScrollToNode()` to find elements in scrollable lists.
 
 #### Key accessibility labels in the app
 
@@ -188,14 +201,12 @@ player/.maestro/
 
 #### Debugging failed tests
 
-Maestro writes debug output (screenshots, logs) to `~/.maestro/tests/<timestamp>/`. After a failure:
-
 ```sh
-# View the failure screenshot
-open ~/.maestro/tests/$(ls ~/.maestro/tests/ | sort | tail -1)/*.png
-
 # View Android logcat for the app
 adb logcat -d --pid=$(adb shell pidof com.spela.player) | tail -50
+
+# Run with verbose output
+ANDROID_SERIAL="$ADB_SERIAL" ./gradlew :android:connectedDebugAndroidTest --info
 ```
 
 #### Server URL configuration

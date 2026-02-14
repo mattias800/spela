@@ -9,12 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
+	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
 // UserHandler handles user profile and preference endpoints.
 type UserHandler struct {
-	DB *gorm.DB
+	DB  *gorm.DB
+	Hub *ws.Hub
 }
 
 // GetProfile returns the current user's profile.
@@ -410,6 +412,8 @@ func (h *UserHandler) AddFavorite(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "already favorited"})
 		return
 	}
+
+	CreateActivityEvent(h.DB, h.Hub, uid, "favorited_game", game.ID, nil)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "favorite added"})
 }

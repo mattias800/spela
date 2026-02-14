@@ -79,11 +79,16 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val ratingRepo = FakeRatingRepository()
+    val sharedSaveRepo = FakeSharedSaveRepository()
+
     val gameDetailViewModel = GameDetailViewModel(
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
         downloadRepository = downloadRepo,
         saveRepository = saveRepo,
+        ratingRepository = ratingRepo,
+        sharedSaveRepository = sharedSaveRepo,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
@@ -135,6 +140,15 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val socialRepo = FakeSocialRepository()
+
+    val socialViewModel = SocialViewModel(
+        getOnlineUsersUseCase = GetOnlineUsersUseCase(socialRepo),
+        getActivityFeedUseCase = GetActivityFeedUseCase(socialRepo),
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         SpelaApp(
@@ -148,6 +162,7 @@ class SpelaTestHarness(
             downloadsViewModel = downloadsViewModel,
             settingsViewModel = settingsViewModel,
             keyMappingViewModel = keyMappingViewModel,
+            socialViewModel = socialViewModel,
             secondaryDisplay = secondaryDisplay,
         )
     }

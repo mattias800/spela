@@ -47,6 +47,9 @@ fun GameDto.toDomain(): Game = Game(
     scrapeAttempts = scrapeAttempts,
     players = players,
     rating = rating,
+    averageRating = averageRating,
+    ratingCount = ratingCount,
+    userRating = userRating,
     isFavorite = isFavorite,
     lastPlayedAt = lastPlayedAt,
     totalPlayTime = totalPlayTime,
@@ -77,6 +80,63 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     selectedShader = ShaderPreset.fromApiId(selectedShader),
     selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },
+)
+
+fun SharedSaveStateDto.toDomain(): SharedSaveState = SharedSaveState(
+    id = id,
+    userId = userId,
+    username = username,
+    userAvatarUrl = avatarUrl,
+    gameId = gameId,
+    name = name,
+    description = description,
+    fileSize = fileSize,
+    downloadCount = downloadCount,
+    createdAt = createdAt,
+)
+
+fun GameRatingDto.toDomain(): GameRating = GameRating(
+    id = id,
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    gameId = gameId,
+    rating = rating,
+    review = review,
+    createdAt = createdAt,
+)
+
+fun RatingSummaryDto.toDomain(): RatingSummary = RatingSummary(
+    averageRating = averageRating,
+    totalRatings = totalRatings,
+    distribution = distribution.mapKeys { it.key.toIntOrNull() ?: 0 },
+)
+
+fun OnlineUserGameDto.toDomain(): OnlineUserGame = OnlineUserGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+)
+
+fun OnlineUserDto.toDomain(): OnlineUser = OnlineUser(
+    id = id,
+    username = username,
+    avatarUrl = avatarUrl,
+    currentGame = currentGame?.toDomain(),
+)
+
+fun ActivityEventDto.toDomain(): ActivityEvent = ActivityEvent(
+    id = id,
+    userId = userId,
+    username = username,
+    userAvatarUrl = userAvatarUrl,
+    eventType = eventType,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = gameConsoleName,
+    createdAt = createdAt,
 )
 
 fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(

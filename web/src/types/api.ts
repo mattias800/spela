@@ -52,6 +52,9 @@ export interface Game {
   scraperId?: string;
   scrapeAttempts: number;
   isFavorite: boolean;
+  averageRating: number;
+  ratingCount: number;
+  userRating?: number;
   lastPlayedAt?: string | null;
   totalPlayTime: number;
   createdAt: string;
@@ -283,4 +286,87 @@ export interface RecentAchievement {
   gameTitle: string;
   consoleName: string;
   coverUrl: string;
+}
+
+export interface OnlineUser {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+  currentGame?: {
+    id: string;
+    title: string;
+    coverUrl?: string;
+    consoleName: string;
+  };
+}
+
+export interface OnlineUsersResponse {
+  users: OnlineUser[];
+}
+
+export interface ActivityEvent {
+  id: string;
+  userId: string;
+  username: string;
+  userAvatarUrl?: string;
+  eventType: "started_playing" | "favorited_game" | "rated_game" | "shared_save";
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  gameConsoleName: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ActivityFeedResponse {
+  data: ActivityEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface GameRating {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  gameId: string;
+  rating: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GameRatingsResponse {
+  data: GameRating[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface RatingSummary {
+  averageRating: number;
+  totalRatings: number;
+  distribution: Record<string, number>;
+}
+
+export interface SharedSave {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  gameId: string;
+  name: string;
+  description?: string;
+  fileSize: number;
+  screenshotUrl?: string;
+  downloadCount: number;
+  createdAt: string;
+}
+
+export interface SharedSavesResponse {
+  data: SharedSave[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

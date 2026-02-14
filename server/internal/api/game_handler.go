@@ -488,6 +488,16 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		}
 	}
 
+	// Mark user as currently playing this game
+	if h.Hub != nil {
+		h.Hub.SetUserGame(uid, uint(gid))
+	}
+
+	// Emit activity event for started playing
+	CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), map[string]interface{}{
+		"seconds": req.Seconds,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"playTime":   ph.PlayTime,
 		"lastPlayed": ph.LastPlayed,

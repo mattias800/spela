@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.SaveState
+import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.intent.GameDetailIntent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -58,6 +59,8 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.social.SharedSaveItem
+import com.spela.player.presentation.ui.components.social.StarRatingRow
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -153,6 +156,17 @@ fun GameDetailScreen(
                     item {
                         SaveStatesSection(state.saveStates)
                     }
+                    item {
+                        CommunitySharesSection(
+                            sharedSaves = state.sharedSaves,
+                            onDownload = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
+                            },
+                            onDelete = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
+                            },
+                        )
+                    }
                 }
             }
         } else {
@@ -207,6 +221,22 @@ fun GameDetailScreen(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
                         SaveStatesSection(state.saveStates)
+                    }
+                }
+
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        CommunitySharesSection(
+                            sharedSaves = state.sharedSaves,
+                            onDownload = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
+                            },
+                            onDelete = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
+                            },
+                        )
                     }
                 }
 
@@ -368,6 +398,17 @@ private fun GameInfoContent(
         }
         Spacer(Modifier.height(SpSpacing.XLarge))
     }
+
+    // Rating
+    StarRatingRow(
+        currentRating = state.myRating,
+        averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
+        ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+        onRate = { rating ->
+            viewModel.onIntent(GameDetailIntent.RateGame(rating))
+        },
+    )
+    Spacer(Modifier.height(SpSpacing.XLarge))
 }
 
 @Composable
@@ -443,6 +484,41 @@ private fun InfoColumn(label: String, value: String) {
             style = SpTypography.BodyMedium,
             color = SpColor.OnBackground,
         )
+    }
+}
+
+@Composable
+private fun CommunitySharesSection(
+    sharedSaves: List<SharedSaveState>,
+    onDownload: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    Spacer(Modifier.height(SpSpacing.XLarge))
+    Text(
+        text = "Community Saves",
+        style = SpTypography.HeadlineSmall,
+        color = SpColor.OnBackground,
+        modifier = Modifier.semantics { heading() },
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+
+    if (sharedSaves.isEmpty()) {
+        Text(
+            text = "No community saves yet. Be the first to share!",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundTertiary,
+        )
+    } else {
+        sharedSaves.forEach { save ->
+            SharedSaveItem(
+                sharedSave = save,
+                onDownload = { onDownload(save.id) },
+                onDelete = { onDelete(save.id) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = SpSpacing.XSmall),
+            )
+        }
     }
 }
 

@@ -72,6 +72,9 @@ data class GameDto(
     val genre: String? = null,
     val players: Int = 0,
     val rating: Double = 0.0,
+    val averageRating: Double = 0.0,
+    val ratingCount: Long = 0,
+    val userRating: Int? = null,
     val coreOverride: String? = null,
     val scraperId: String? = null,
     val scrapeAttempts: Int = 0,
@@ -160,6 +163,113 @@ data class DeviceDto(
 @Serializable
 data class UpdateDevicePreferencesRequest(
     val consoleShaders: Map<String, String>,
+)
+
+// Shared Saves
+
+@Serializable
+data class SharedSaveStateDto(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val gameId: String,
+    val name: String,
+    val description: String = "",
+    val fileSize: Long = 0,
+    val screenshotUrl: String? = null,
+    val downloadCount: Int = 0,
+    val createdAt: String = "",
+)
+
+@Serializable
+data class SharedSavesResponse(
+    val data: List<SharedSaveStateDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+)
+
+// Ratings
+
+@Serializable
+data class RateGameRequest(
+    val rating: Int,
+    val review: String = "",
+)
+
+@Serializable
+data class GameRatingDto(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val gameId: String,
+    val rating: Int,
+    val review: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+@Serializable
+data class GameRatingsResponse(
+    val data: List<GameRatingDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+)
+
+@Serializable
+data class RatingSummaryDto(
+    val averageRating: Double = 0.0,
+    val totalRatings: Long = 0,
+    val distribution: Map<String, Int> = emptyMap(),
+)
+
+// Social
+
+@Serializable
+data class OnlineUserGameDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+)
+
+@Serializable
+data class OnlineUserDto(
+    val id: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val currentGame: OnlineUserGameDto? = null,
+)
+
+@Serializable
+data class OnlineUsersResponse(
+    val users: List<OnlineUserDto> = emptyList(),
+)
+
+@Serializable
+data class ActivityEventDto(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val userAvatarUrl: String? = null,
+    val eventType: String,
+    val gameId: String? = null,
+    val gameTitle: String? = null,
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String? = null,
+    val metadata: String? = null,
+    val createdAt: String = "",
+)
+
+@Serializable
+data class ActivityFeedResponse(
+    val data: List<ActivityEventDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
 )
 
 /** Wrapper for GET /api/games/:id/core when core is not in DB */

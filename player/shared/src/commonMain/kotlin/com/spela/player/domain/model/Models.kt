@@ -56,6 +56,9 @@ data class Game(
     val scrapeAttempts: Int = 0,
     val players: Int = 0,
     val rating: Double = 0.0,
+    val averageRating: Double = 0.0,
+    val ratingCount: Long = 0,
+    val userRating: Int? = null,
     val isFavorite: Boolean = false,
     val lastPlayedAt: String? = null,
     val totalPlayTime: Long = 0,
@@ -139,6 +142,69 @@ data class RAStatus(
 data class RACredentials(
     val username: String,
     val token: String,
+)
+
+// Shared Saves
+
+data class SharedSaveState(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val userAvatarUrl: String?,
+    val gameId: String,
+    val name: String,
+    val description: String,
+    val fileSize: Long,
+    val downloadCount: Int,
+    val createdAt: String,
+)
+
+// Ratings
+
+data class GameRating(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String?,
+    val gameId: String,
+    val rating: Int,
+    val review: String,
+    val createdAt: String,
+)
+
+data class RatingSummary(
+    val averageRating: Double,
+    val totalRatings: Long,
+    val distribution: Map<Int, Int>,
+)
+
+// Social
+
+data class OnlineUser(
+    val id: String,
+    val username: String,
+    val avatarUrl: String?,
+    val currentGame: OnlineUserGame?,
+)
+
+data class OnlineUserGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String?,
+    val consoleName: String,
+)
+
+data class ActivityEvent(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val userAvatarUrl: String?,
+    val eventType: String,
+    val gameId: String?,
+    val gameTitle: String?,
+    val gameCoverUrl: String?,
+    val gameConsoleName: String?,
+    val createdAt: String,
 )
 
 enum class AchievementEventType(val nativeValue: Int) {

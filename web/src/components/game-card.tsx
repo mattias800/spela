@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
 import type { Game } from "@/types/api";
@@ -68,9 +68,17 @@ export function GameCard({ game, onToggleFavorite }: GameCardProps) {
         <h3 className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </h3>
-        {game.consoleName && (
-          <p className="text-xs text-surface-500">{game.consoleName}</p>
-        )}
+        <div className="flex items-center gap-2">
+          {game.consoleName && (
+            <p className="text-xs text-surface-500">{game.consoleName}</p>
+          )}
+          {game.averageRating > 0 && (
+            <span className="flex items-center gap-0.5 text-xs text-surface-400">
+              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+              {game.averageRating.toFixed(1)}
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   );

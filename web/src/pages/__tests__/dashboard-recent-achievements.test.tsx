@@ -23,6 +23,12 @@ vi.mock("@/hooks/use-retroachievements", () => ({
   useRecentAchievements: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-social", () => ({
+  useOnlineUsers: vi.fn(() => ({ data: { users: [] }, isLoading: false })),
+  useActivityFeed: vi.fn(() => ({ data: { data: [], total: 0, page: 1, pageSize: 20 }, isLoading: false })),
+  useActivityRealtime: vi.fn(),
+}));
+
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 
 const mockUseRecentAchievements = useRecentAchievements as ReturnType<typeof vi.fn>;

@@ -38,10 +38,15 @@ adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted
 
 ## Test Suite Structure
 
-- `00-establish-session.yaml` runs first (alphabetical order) and establishes a persisted login session
-- 27 tests use `setup/start-logged-in.yaml` — lightweight restart, no login needed
-- 4 tests use `setup/login-player.yaml` — full login for session/sync verification
-- 2 tests have inline setup for specific startup scenarios
+### Android E2E Tests (`player/android/src/androidTest/`)
+- 8 test classes using Espresso + Compose UI Test + JUnit4
+- `EstablishSessionTest` handles login session setup
+- `TestHelpers.kt` provides shared test utilities
+
+### Desktop E2E Tests (`player/desktop/src/desktopTest/.../e2e/`)
+- 15 test files using Compose UI Test with `SpelaTestHarness`
+- `SpelaTestHarness.kt` provides fake backend injection for isolated testing
+- `TestFakes.kt` provides test doubles for repositories
 
 ## Using the Emulator in Landscape Mode
 
@@ -62,5 +67,5 @@ This should be done after the emulator boots, before running tests.
 
 - The Odin 2 has a horizontal (landscape) screen — the keyboard covers the entire screen. All test flows must include `hideKeyboard` after every `inputText` step.
 - When using the emulator, set it to landscape mode (see above) to match the Odin 2's screen orientation.
-- Gamepad button tests (BUTTON_A, BUTTON_B, L1/R1) require manual QA with a physical controller. See `.maestro/MANUAL-QA-gamepad.md`.
-- D-pad navigation tests use Maestro's `Remote Dpad` keys which send standard Android DPAD keycodes.
+- Gamepad button tests (BUTTON_A, BUTTON_B, L1/R1) require manual QA with a physical controller.
+- D-pad navigation tests use standard Android DPAD keycodes via UiAutomator.

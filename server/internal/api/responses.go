@@ -51,6 +51,9 @@ type GameResponse struct {
 	IsFavorite     bool     `json:"isFavorite"`
 	LastPlayedAt   *time.Time `json:"lastPlayedAt"`
 	TotalPlayTime  int64    `json:"totalPlayTime"`
+	AverageRating  float64  `json:"averageRating"`
+	RatingCount    int64    `json:"ratingCount"`
+	UserRating     *int     `json:"userRating,omitempty"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.
@@ -86,10 +89,18 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 	}
 }
 
+// ratingAggregate holds average rating and count for a game.
+type ratingAggregate struct {
+	AverageRating float64
+	RatingCount   int64
+}
+
 // userGameData holds pre-loaded per-user enrichment data for games.
 type userGameData struct {
 	favorites   map[uint]bool
 	playHistory map[uint]*db.PlayHistory
+	userRatings map[uint]int            // gameID -> user's rating (1-5)
+	ratingAggs  map[uint]ratingAggregate // gameID -> aggregate rating data
 }
 
 // loadUserGameData batch-loads favorites and play history for a set of game IDs.
@@ -98,8 +109,33 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 	data := userGameData{
 		favorites:   make(map[uint]bool, len(gameIDs)),
 		playHistory: make(map[uint]*db.PlayHistory, len(gameIDs)),
+		userRatings: make(map[uint]int, len(gameIDs)),
+		ratingAggs:  make(map[uint]ratingAggregate, len(gameIDs)),
 	}
-	if database == nil || userID == 0 || len(gameIDs) == 0 {
+	if database == nil || len(gameIDs) == 0 {
+		return data
+	}
+
+	// Batch-load rating aggregates (works even without a logged-in user)
+	type aggRow struct {
+		GameID        uint
+		AverageRating float64
+		RatingCount   int64
+	}
+	var aggRows []aggRow
+	database.Model(&db.GameRating{}).
+		Where("game_id IN ?", gameIDs).
+		Select("game_id, AVG(rating) as average_rating, COUNT(*) as rating_count").
+		Group("game_id").
+		Scan(&aggRows)
+	for _, r := range aggRows {
+		data.ratingAggs[r.GameID] = ratingAggregate{
+			AverageRating: r.AverageRating,
+			RatingCount:   r.RatingCount,
+		}
+	}
+
+	if userID == 0 {
 		return data
 	}
 
@@ -115,6 +151,13 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&histories)
 	for i := range histories {
 		data.playHistory[histories[i].GameID] = &histories[i]
+	}
+
+	// Batch-load user ratings
+	var ratings []db.GameRating
+	database.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&ratings)
+	for _, r := range ratings {
+		data.userRatings[r.GameID] = r.Rating
 	}
 
 	return data
@@ -177,6 +220,13 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 			resp.LastPlayedAt = &ph.LastPlayed
 			resp.TotalPlayTime = ph.PlayTime
 		}
+		if agg, ok := data.ratingAggs[g.ID]; ok {
+			resp.AverageRating = agg.AverageRating
+			resp.RatingCount = agg.RatingCount
+		}
+		if rating, ok := data.userRatings[g.ID]; ok {
+			resp.UserRating = &rating
+		}
 	}
 
 	return resp
@@ -230,6 +280,64 @@ func ToUserResponse(u db.User) UserResponse {
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}
+}
+
+// OnlineUserResponse is the API response for an online user.
+type OnlineUserResponse struct {
+	ID          string  `json:"id"`
+	Username    string  `json:"username"`
+	AvatarURL   string  `json:"avatarUrl,omitempty"`
+	CurrentGame *string `json:"currentGame,omitempty"` // game ID if playing
+}
+
+// ActivityEventResponse is the API response for an activity feed event.
+type ActivityEventResponse struct {
+	ID          string    `json:"id"`
+	EventType   string    `json:"eventType"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UserID      string    `json:"userId"`
+	Username    string    `json:"username"`
+	AvatarURL   string    `json:"avatarUrl,omitempty"`
+	GameID      string    `json:"gameId"`
+	GameTitle   string    `json:"gameTitle"`
+	GameCoverURL string  `json:"gameCoverUrl,omitempty"`
+	ConsoleName string    `json:"consoleName,omitempty"`
+	Metadata    string    `json:"metadata,omitempty"`
+}
+
+// GameRatingResponse is the API response for a single game rating.
+type GameRatingResponse struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Username  string    `json:"username"`
+	AvatarURL string    `json:"avatarUrl,omitempty"`
+	GameID    string    `json:"gameId"`
+	Rating    int       `json:"rating"`
+	Review    string    `json:"review,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// RatingSummaryResponse is the API response for a game's rating summary.
+type RatingSummaryResponse struct {
+	AverageRating float64        `json:"averageRating"`
+	TotalRatings  int64          `json:"totalRatings"`
+	Distribution  map[string]int `json:"distribution"` // "1" through "5" -> count
+}
+
+// SharedSaveResponse is the API response for a shared save state.
+type SharedSaveResponse struct {
+	ID            string    `json:"id"`
+	UserID        string    `json:"userId"`
+	Username      string    `json:"username"`
+	AvatarURL     string    `json:"avatarUrl,omitempty"`
+	GameID        string    `json:"gameId"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description,omitempty"`
+	FileSize      int64     `json:"fileSize"`
+	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
+	DownloadCount int       `json:"downloadCount"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.

@@ -16,6 +16,13 @@ type Event struct {
 	Payload interface{} `json:"payload"`
 }
 
+// OnlineUser represents a user currently connected via WebSocket.
+type OnlineUser struct {
+	UserID      uint
+	Username    string
+	CurrentGame uint // 0 means not playing
+}
+
 // Hub manages WebSocket connections and broadcasts events.
 type Hub struct {
 	clients    map[*Client]bool
@@ -24,6 +31,7 @@ type Hub struct {
 	unregister chan *Client
 	mu         sync.Mutex
 	upgrader   websocket.Upgrader
+	userGames  map[uint]uint // userID -> gameID (0 = not playing)
 }
 
 // Client represents a single WebSocket connection.
@@ -42,6 +50,7 @@ func NewHub(allowedOrigins []string) *Hub {
 		broadcast:  make(chan Event, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		userGames:  make(map[uint]uint),
 	}
 	h.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -77,6 +86,10 @@ func (h *Hub) Run() {
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.Send)
+				// Clean up user game tracking if no other connections for this user
+				if !h.hasOtherConnection(client.UserID, client) {
+					delete(h.userGames, client.UserID)
+				}
 			}
 			h.mu.Unlock()
 			slog.Info("websocket client disconnected", "userId", client.UserID)
@@ -104,6 +117,51 @@ func (h *Hub) Run() {
 // Broadcast sends an event to all connected clients.
 func (h *Hub) Broadcast(event Event) {
 	h.broadcast <- event
+}
+
+// hasOtherConnection checks if the user has another active WebSocket connection
+// besides the one being removed. Must be called with h.mu held.
+func (h *Hub) hasOtherConnection(userID uint, exclude *Client) bool {
+	for client := range h.clients {
+		if client != exclude && client.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
+
+// GetOnlineUserIDs returns a list of unique user IDs currently connected.
+func (h *Hub) GetOnlineUserIDs() []uint {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	seen := make(map[uint]bool)
+	var ids []uint
+	for client := range h.clients {
+		if client.UserID != 0 && !seen[client.UserID] {
+			seen[client.UserID] = true
+			ids = append(ids, client.UserID)
+		}
+	}
+	return ids
+}
+
+// SetUserGame marks a user as currently playing a game. Pass 0 to clear.
+func (h *Hub) SetUserGame(userID, gameID uint) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if gameID == 0 {
+		delete(h.userGames, userID)
+	} else {
+		h.userGames[userID] = gameID
+	}
+}
+
+// GetUserGame returns the game ID a user is currently playing (0 if not playing).
+func (h *Hub) GetUserGame(userID uint) uint {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.userGames[userID]
 }
 
 // HandleWebSocket upgrades an HTTP request to a WebSocket connection.
