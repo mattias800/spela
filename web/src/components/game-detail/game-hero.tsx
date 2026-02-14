@@ -10,8 +10,9 @@ import {
   Play,
   Trophy,
   Clock,
+  Ellipsis,
 } from "lucide-react";
-import { Button, Badge } from "@/components/ui";
+import { Button, Badge, DropdownMenu } from "@/components/ui";
 import { MetaItem } from "@/components/meta-item";
 import { formatFileSize, formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -33,6 +34,82 @@ interface GameHeroProps {
   onTogglePlayLater: () => void;
 }
 
+function OverflowMenu({
+  isAdmin,
+  isFavorite,
+  isInPlayLater,
+  isPlayLaterPending,
+  isScraping,
+  extraButtons,
+  onScrape,
+  onToggleFavorite,
+  onTogglePlayLater,
+}: Pick<
+  GameHeroProps,
+  | "isAdmin"
+  | "isFavorite"
+  | "isInPlayLater"
+  | "isPlayLaterPending"
+  | "isScraping"
+  | "extraButtons"
+  | "onScrape"
+  | "onToggleFavorite"
+  | "onTogglePlayLater"
+>) {
+  return (
+    <DropdownMenu
+      align="right"
+      className="w-56"
+      trigger={
+        <Button
+          variant="secondary"
+          size="sm"
+          data-testid="overflow-menu-btn"
+        >
+          <Ellipsis className="h-5 w-5" />
+        </Button>
+      }
+    >
+      {isAdmin && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onScrape}
+          loading={isScraping}
+          className="w-full justify-start rounded-none"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Scrape Metadata
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onToggleFavorite}
+        className="w-full justify-start rounded-none"
+      >
+        <Heart
+          className={cn("h-4 w-4", isFavorite && "fill-current text-danger-500")}
+        />
+        {isFavorite ? "Unfavorite" : "Favorite"}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onTogglePlayLater}
+        disabled={isPlayLaterPending}
+        className="w-full justify-start rounded-none"
+      >
+        <Clock
+          className={cn("h-4 w-4", isInPlayLater && "fill-current text-brand-500")}
+        />
+        {isInPlayLater ? "In Queue" : "Play Later"}
+      </Button>
+      {extraButtons}
+    </DropdownMenu>
+  );
+}
+
 export function GameHero({
   game,
   canPlayInBrowser,
@@ -51,9 +128,9 @@ export function GameHero({
   const consoleName = game.consoleName ?? "";
 
   return (
-    <div className="flex gap-8">
+    <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
       {/* Cover art */}
-      <div className="w-64 flex-shrink-0">
+      <div className="w-48 flex-shrink-0 md:w-64">
         <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl">
           {game.coverUrl ? (
             <img
@@ -72,10 +149,10 @@ export function GameHero({
       </div>
 
       {/* Info */}
-      <div className="flex-1 space-y-5 pt-2">
+      <div className="w-full min-w-0 flex-1 space-y-5 pt-2">
         <div>
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+            <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-2 md:text-3xl">
               {game.title}
               {hasAchievements && (
                 <Trophy
@@ -84,7 +161,7 @@ export function GameHero({
                 />
               )}
             </h1>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="primary"
                 size="sm"
@@ -93,48 +170,65 @@ export function GameHero({
                 title={canPlayInBrowser ? "Play in Browser" : `${game.consoleName} is not supported for browser play`}
                 data-testid="play-in-browser-btn"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-5 w-5" />
                 Play in Browser
               </Button>
-              {isAdmin && (
+              {/* Desktop: show all buttons inline */}
+              <div className="hidden lg:contents">
+                {isAdmin && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onScrape}
+                    loading={isScraping}
+                  >
+                    <RefreshCw className="h-5 w-5" />
+                    Scrape Metadata
+                  </Button>
+                )}
                 <Button
-                  variant="secondary"
+                  variant={isFavorite ? "danger" : "secondary"}
                   size="sm"
-                  onClick={onScrape}
-                  loading={isScraping}
+                  onClick={onToggleFavorite}
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Scrape Metadata
+                  <Heart
+                    className={cn(
+                      "h-5 w-5",
+                      isFavorite && "fill-current",
+                    )}
+                  />
+                  {isFavorite ? "Unfavorite" : "Favorite"}
                 </Button>
-              )}
-              <Button
-                variant={isFavorite ? "danger" : "secondary"}
-                size="sm"
-                onClick={onToggleFavorite}
-              >
-                <Heart
-                  className={cn(
-                    "h-4 w-4",
-                    isFavorite && "fill-current",
-                  )}
+                <Button
+                  variant={isInPlayLater ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={onTogglePlayLater}
+                  disabled={isPlayLaterPending}
+                >
+                  <Clock
+                    className={cn(
+                      "h-5 w-5",
+                      isInPlayLater && "fill-current",
+                    )}
+                  />
+                  {isInPlayLater ? "In Queue" : "Play Later"}
+                </Button>
+                {extraButtons}
+              </div>
+              {/* Mobile/tablet: overflow menu */}
+              <div className="lg:hidden">
+                <OverflowMenu
+                  isAdmin={isAdmin}
+                  isFavorite={isFavorite}
+                  isInPlayLater={isInPlayLater}
+                  isPlayLaterPending={isPlayLaterPending}
+                  isScraping={isScraping}
+                  extraButtons={extraButtons}
+                  onScrape={onScrape}
+                  onToggleFavorite={onToggleFavorite}
+                  onTogglePlayLater={onTogglePlayLater}
                 />
-                {isFavorite ? "Unfavorite" : "Favorite"}
-              </Button>
-              <Button
-                variant={isInPlayLater ? "primary" : "secondary"}
-                size="sm"
-                onClick={onTogglePlayLater}
-                disabled={isPlayLaterPending}
-              >
-                <Clock
-                  className={cn(
-                    "h-4 w-4",
-                    isInPlayLater && "fill-current",
-                  )}
-                />
-                {isInPlayLater ? "In Queue" : "Play Later"}
-              </Button>
-              {extraButtons}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
@@ -154,7 +248,7 @@ export function GameHero({
         </div>
 
         {/* Metadata grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {game.developer && (
             <MetaItem icon={Building2} label="Developer" value={game.developer} />
           )}
@@ -167,7 +261,7 @@ export function GameHero({
           {game.genre && (
             <MetaItem icon={Star} label="Genre" value={game.genre} />
           )}
-          {game.players && (
+          {game.players != null && (
             <MetaItem icon={Users} label="Players" value={`${game.players}`} />
           )}
           <MetaItem icon={HardDrive} label="Size" value={formatFileSize(game.fileSize)} />

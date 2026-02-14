@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, FolderPlus } from "lucide-react";
-import { Button, GameDetailSkeleton } from "@/components/ui";
+import { FolderPlus } from "lucide-react";
+import { Button, BackButton, GameDetailSkeleton, DropdownMenu } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useGame, useGameSaves, useToggleFavorite, useScrapeIfNeeded } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
-import { useEffect, useState, useRef } from "react";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyCollections, useAddGameToCollection } from "@/hooks/use-collections";
 import { GameHero } from "@/components/game-detail/game-hero";
@@ -25,24 +25,11 @@ import { useGameAchievements } from "@/hooks/use-retroachievements";
 import type { Collection } from "@/types/api";
 
 function AddToCollectionButton({ gameId }: { gameId: string }) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const { data: collectionsData } = useMyCollections(1, 100);
   const addGame = useAddGameToCollection();
   const { toast } = useToast();
 
   const collections = collectionsData?.data ?? [];
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
 
   function handleAdd(collection: Collection) {
     addGame.mutate(
@@ -50,7 +37,6 @@ function AddToCollectionButton({ gameId }: { gameId: string }) {
       {
         onSuccess: () => {
           toast("success", `Added to ${collection.name}`);
-          setOpen(false);
         },
         onError: () => {
           toast("error", "Failed to add to collection");
@@ -60,38 +46,37 @@ function AddToCollectionButton({ gameId }: { gameId: string }) {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => setOpen(!open)}
-      >
-        <FolderPlus className="h-4 w-4" />
-        Add to Collection
-      </Button>
-      {open && (
-        <div className="absolute right-0 top-full mt-2 z-40 w-64 rounded-xl bg-surface-900 border border-surface-800 shadow-2xl py-1 max-h-64 overflow-y-auto">
-          {collections.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-surface-500">
-              No collections yet. Create one first.
-            </p>
-          ) : (
-            collections.map((collection) => (
-              <button
-                key={collection.id}
-                onClick={() => handleAdd(collection)}
-                className="w-full text-left px-3 py-2 text-sm text-surface-200 hover:bg-surface-800 transition-colors flex items-center justify-between"
-              >
-                <span className="truncate">{collection.name}</span>
-                <span className="text-xs text-surface-500 flex-shrink-0 ml-2">
-                  {collection.gameCount} games
-                </span>
-              </button>
-            ))
-          )}
-        </div>
+    <DropdownMenu
+      align="right"
+      className="w-64"
+      trigger={
+        <Button variant="secondary" size="sm">
+          <FolderPlus className="h-5 w-5" />
+          Add to Collection
+        </Button>
+      }
+    >
+      {collections.length === 0 ? (
+        <p className="px-3 py-2 text-sm text-surface-500">
+          No collections yet. Create one first.
+        </p>
+      ) : (
+        collections.map((collection) => (
+          <Button
+            key={collection.id}
+            variant="ghost"
+            size="sm"
+            onClick={() => handleAdd(collection)}
+            className="w-full justify-between rounded-none"
+          >
+            <span className="truncate">{collection.name}</span>
+            <span className="text-xs text-surface-500 flex-shrink-0 ml-2">
+              {collection.gameCount} games
+            </span>
+          </Button>
+        ))
       )}
-    </div>
+    </DropdownMenu>
   );
 }
 
@@ -156,13 +141,7 @@ export function GameDetailPage() {
 
   return (
     <div className="max-w-5xl space-y-8">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </button>
+      <BackButton onClick={() => navigate(-1)} />
 
       <GameHero
         game={game}

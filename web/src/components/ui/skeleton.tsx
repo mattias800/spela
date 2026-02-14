@@ -42,9 +42,9 @@ export function ConsoleCardSkeleton() {
 export function GameDetailSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="flex gap-8">
-        <Skeleton className="w-64 aspect-[3/4] rounded-2xl flex-shrink-0" />
-        <div className="flex-1 space-y-4 pt-2">
+      <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
+        <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-2xl flex-shrink-0" />
+        <div className="w-full flex-1 space-y-4 pt-2">
           <Skeleton className="h-8 w-2/3" />
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-4 w-1/4" />
