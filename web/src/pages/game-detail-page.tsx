@@ -170,6 +170,7 @@ export function GameDetailPage() {
         isAdmin={isAdmin}
         isFavorite={isFavorite}
         isInPlayLater={isInPlayLater}
+        isPlayLaterPending={togglePlayLater.isPending}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         extraButtons={<AddToCollectionButton gameId={game.id} />}

@@ -94,7 +94,7 @@ class EmulationTest {
         rule.waitForVisible("Castlevania", timeout = 8_000)
         rule.waitForText("Play", timeout = 3_000)
 
-        rule.assertTextNotVisible("Consoles")
+        rule.assertTextNotVisible("Spela")
         rule.assertTextNotVisible("Exit Game")
         rule.assertTextNotVisible("Continue")
     }
@@ -127,7 +127,7 @@ class EmulationTest {
         rule.waitForText("Auto Save on Exit", timeout = 8_000)
 
         rule.pressBack()
-        rule.waitForText("Consoles")
+        rule.waitForText("Spela")
 
         rule.navigateToGameAndPlay()
         rule.openOverlay()

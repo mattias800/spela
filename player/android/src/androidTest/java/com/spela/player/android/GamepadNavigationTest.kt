@@ -34,7 +34,7 @@ class GamepadNavigationTest {
 
         // Navigate back
         rule.pressBack()
-        rule.waitForText("Consoles", timeout = 3_000)
+        rule.waitForText("Spela", timeout = 3_000)
 
         // Verify D-pad RIGHT also works
         rule.sendDpad(DpadDirection.DOWN)
@@ -50,7 +50,7 @@ class GamepadNavigationTest {
 
         // Go back
         rule.pressBack()
-        rule.waitForText("Consoles", timeout = 3_000)
+        rule.waitForText("Spela", timeout = 3_000)
     }
 
     @Test

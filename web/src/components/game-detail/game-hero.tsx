@@ -23,6 +23,7 @@ interface GameHeroProps {
   isAdmin: boolean;
   isFavorite: boolean;
   isInPlayLater: boolean;
+  isPlayLaterPending?: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
   extraButtons?: ReactNode;
@@ -38,6 +39,7 @@ export function GameHero({
   isAdmin,
   isFavorite,
   isInPlayLater,
+  isPlayLaterPending,
   isScraping,
   hasAchievements,
   extraButtons,
@@ -122,6 +124,7 @@ export function GameHero({
                 variant={isInPlayLater ? "primary" : "secondary"}
                 size="sm"
                 onClick={onTogglePlayLater}
+                disabled={isPlayLaterPending}
               >
                 <Clock
                   className={cn(

@@ -105,6 +105,39 @@ class PlayLaterTest {
     }
 
     @Test
+    fun activityFeedShowsPlayLaterEvent() {
+        rule.startLoggedIn()
+        rule.navigateToCastlevania()
+        ensureNotInPlayLater()
+
+        // Add to play later to generate a queued_play_later activity event
+        rule.tapOn("Add to Play Later")
+        rule.waitForContentDescription("Remove from Play Later", timeout = 5_000)
+
+        // Navigate back to home
+        rule.pressBack()
+        rule.pressBack()
+        rule.waitForText("Spela", timeout = 8_000)
+
+        // Restart app to force fresh data load including activity feed
+        rule.restartApp()
+        rule.waitForText("Spela", timeout = 15_000)
+
+        // The activity event is rendered in the LazyColumn and may be off-screen.
+        // First scroll to find "Recent Activity" section, then verify the event text.
+        // The event text is "player added Castlevania to Play Later queue" (rendered as
+        // annotated string). Search for a substring that identifies the event.
+        try {
+            rule.scrollToAndTapText("Play Later queue")
+        } catch (_: IllegalStateException) {
+            throw AssertionError(
+                "Expected activity event with 'Play Later queue' text on home screen " +
+                    "but it was not found after scrolling"
+            )
+        }
+    }
+
+    @Test
     fun playLaterTogglePersistsOnGameDetail() {
         rule.startLoggedIn()
         rule.navigateToCastlevania()
@@ -128,8 +161,12 @@ class PlayLaterTest {
         rule.scrollToAndTapText("Castlevania")
         rule.waitForText("About", timeout = 5_000)
 
-        // Verify server persisted the state
+        // Wait for the play later button to appear (either Add or Remove)
         waitForPlayLaterButton()
+
+        // The game detail initially loads from the cached game list which may have
+        // stale isInPlayLater state. Give extra time for the server response to arrive.
+        rule.waitForContentDescription("Remove from Play Later", timeout = 15_000)
         rule.assertContentDescriptionVisible("Remove from Play Later")
     }
 }

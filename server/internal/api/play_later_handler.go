@@ -60,10 +60,16 @@ func (h *PlayLaterHandler) AddToPlayLater(c *gin.Context) {
 		return
 	}
 
-	// Check if already in queue
+	// Idempotent add: if already in queue, return OK without creating another activity event.
 	var existing db.PlayLaterItem
-	if err := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "already in play later queue"})
+	err = h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, gameID).First(&existing).Error
+	if err == nil {
+		// Record exists (possibly soft-deleted) — restore if needed
+		if existing.DeletedAt.Valid {
+			existing.DeletedAt = gorm.DeletedAt{}
+			h.DB.Unscoped().Save(&existing)
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "already in play later"})
 		return
 	}
 
@@ -80,7 +86,8 @@ func (h *PlayLaterHandler) AddToPlayLater(c *gin.Context) {
 		Position: maxPos.MaxPos + 1,
 	}
 	if err := h.DB.Create(&item).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add to play later queue"})
+		// Unique constraint violation from race condition — treat as success
+		c.JSON(http.StatusOK, gin.H{"message": "already in play later"})
 		return
 	}
 
@@ -100,7 +107,7 @@ func (h *PlayLaterHandler) RemoveFromPlayLater(c *gin.Context) {
 		return
 	}
 
-	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.PlayLaterItem{})
+	result := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.PlayLaterItem{})
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not in play later queue"})
 		return

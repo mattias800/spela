@@ -66,16 +66,25 @@ func TestAddToPlayLater_Duplicate(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	// Add again - should conflict
+	// Add again - should be idempotent (return OK, not create duplicate)
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("POST", "/api/user/play-later/"+gameID, nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	assert.Equal(t, "already in play later queue", resp["error"])
+	assert.Equal(t, "already in play later", resp["message"])
+
+	// Verify only one item exists in queue (no duplicate)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/play-later", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	var games []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &games)
+	assert.Equal(t, 1, len(games))
 }
 
 func TestAddToPlayLater_CreatesActivityEvent(t *testing.T) {

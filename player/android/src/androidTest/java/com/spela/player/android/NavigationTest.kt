@@ -22,8 +22,8 @@ class NavigationTest {
         rule.startLoggedIn()
 
         // Navigate forward to Screen 2: NES console game list
-        // Use compound matcher to avoid ambiguity with "Continue Playing" card
-        rule.tapNodeMatchingBoth("Nintendo Entertainment System", "games")
+        // Use compound matcher to avoid ambiguity with game cards that mention the console name
+        rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
         // Verify we're on console game list
         rule.waitForTextNotVisible("Spela", timeout = 8_000)
@@ -58,7 +58,8 @@ class NavigationTest {
         rule.startLoggedIn()
 
         // Navigate to NES > Castlevania
-        rule.scrollToAndTapText("Nintendo Entertainment System")
+        rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+        rule.waitForText("Castlevania", timeout = 8_000)
         rule.scrollToAndTapText("Castlevania")
 
         // Wait for game detail screen

@@ -41,7 +41,7 @@ class SessionTest {
         rule.restartApp()
 
         // Assert home screen appears without login prompt
-        rule.waitForText("Consoles", timeout = 8_000)
+        rule.waitForText("Spela", timeout = 8_000)
     }
 
     @Test
@@ -141,7 +141,7 @@ class SessionTest {
         rule.onNodeWithText("Sign In").performClick()
 
         // Verify home screen
-        rule.waitForText("Consoles", timeout = 8_000)
+        rule.waitForText("Spela", timeout = 8_000)
     }
 
     @Test
@@ -161,7 +161,7 @@ class SessionTest {
         rule.restartApp()
 
         // Session restored
-        rule.waitForText("Consoles", timeout = 15_000)
+        rule.waitForText("Spela", timeout = 15_000)
 
         // Navigate to Settings and verify toggle persisted
         rule.navigateToSettings()

@@ -23,7 +23,7 @@ class EstablishSessionTest {
 
         // Verify we're on the Home screen
         composeTestRule.waitUntil(timeoutMillis = 8000) {
-            composeTestRule.onAllNodesWithText("Consoles")
+            composeTestRule.onAllNodesWithText("Spela")
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }

@@ -57,8 +57,8 @@ export function GameCard({ game, onToggleFavorite, onTogglePlayLater }: GameCard
           </button>
         )}
 
-        {/* Play Later button */}
-        {onTogglePlayLater && (
+        {/* Play Later button — hidden if already in queue (use game detail to remove) */}
+        {onTogglePlayLater && !game.isInPlayLater && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -68,15 +68,17 @@ export function GameCard({ game, onToggleFavorite, onTogglePlayLater }: GameCard
             className={cn(
               "absolute top-2.5 right-12 p-2 rounded-full transition-all duration-200 z-20",
               "opacity-0 group-hover:opacity-100",
-              game.isInPlayLater
-                ? "bg-brand-500/20 text-brand-400 opacity-100"
-                : "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
+              "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
             )}
           >
-            <Clock
-              className={cn("h-4 w-4", game.isInPlayLater && "fill-current")}
-            />
+            <Clock className="h-4 w-4" />
           </button>
+        )}
+        {/* Show filled clock icon when already in queue (not clickable) */}
+        {game.isInPlayLater && (
+          <div className="absolute top-2.5 right-12 p-2 rounded-full bg-brand-500/20 text-brand-400 z-20">
+            <Clock className="h-4 w-4 fill-current" />
+          </div>
         )}
 
         {/* Console badge */}

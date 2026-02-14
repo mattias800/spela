@@ -95,7 +95,7 @@ class SettingsTest {
 
         // Navigate back to Home
         rule.pressBack()
-        rule.waitForText("Consoles", timeout = 3_000)
+        rule.waitForText("Spela", timeout = 3_000)
 
         // Return to Settings
         rule.navigateToSettings()
@@ -148,7 +148,7 @@ class SettingsTest {
 
         // Navigate back to Home
         rule.pressBack()
-        rule.waitForText("Consoles", timeout = 3_000)
+        rule.waitForText("Spela", timeout = 3_000)
 
         // Return to Settings
         rule.navigateToSettings()
@@ -182,7 +182,7 @@ class SettingsTest {
         rule.restartApp()
 
         // Session restored - expect Home screen
-        rule.waitForText("Consoles", timeout = 15_000)
+        rule.waitForText("Spela", timeout = 15_000)
 
         // Navigate to Settings and verify shader persisted
         rule.navigateToSettings()
