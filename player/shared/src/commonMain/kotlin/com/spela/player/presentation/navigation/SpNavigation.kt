@@ -9,6 +9,7 @@ sealed class SpScreen(val route: String) {
     data object Downloads : SpScreen("downloads")
     data object Settings : SpScreen("settings")
     data class ConsoleSettings(val consoleId: String) : SpScreen("console_settings/$consoleId")
+    data class UserProfile(val userId: String) : SpScreen("user/$userId")
 }
 
 data class NavigationState(

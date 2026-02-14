@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components.social
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import com.spela.player.presentation.ui.theme.SpTypography
 fun OnlineUsersRow(
     users: List<OnlineUser>,
     modifier: Modifier = Modifier,
+    onUserSelected: (String) -> Unit = {},
 ) {
     LazyRow(
         modifier = modifier,
@@ -41,7 +43,7 @@ fun OnlineUsersRow(
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
     ) {
         items(users, key = { it.id }) { user ->
-            OnlineUserItem(user = user)
+            OnlineUserItem(user = user, onUserSelected = onUserSelected)
         }
     }
 }
@@ -49,6 +51,7 @@ fun OnlineUsersRow(
 @Composable
 private fun OnlineUserItem(
     user: OnlineUser,
+    onUserSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val description = if (user.currentGame != null) {
@@ -60,6 +63,7 @@ private fun OnlineUserItem(
     Column(
         modifier = modifier
             .width(64.dp)
+            .clickable { onUserSelected(user.id) }
             .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

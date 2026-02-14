@@ -4,6 +4,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.domain.model.OnlineUser
+import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.repository.SocialRepository
 
 class SocialRepositoryImpl(
@@ -30,5 +31,19 @@ class SocialRepositoryImpl(
                 gameCoverUrl = apiClient.resolveUrl(event.gameCoverUrl),
             )
         }
+    }
+
+    override suspend fun getPublicProfile(userId: String): Result<PublicProfile> = runCatching {
+        val dto = apiClient.getPublicProfile(userId)
+        val profile = dto.toDomain()
+        profile.copy(
+            avatarUrl = apiClient.resolveUrl(profile.avatarUrl),
+            currentGame = profile.currentGame?.copy(
+                coverUrl = apiClient.resolveUrl(profile.currentGame.coverUrl),
+            ),
+            favoriteGames = profile.favoriteGames.map { it.copy(coverUrl = apiClient.resolveUrl(it.coverUrl)) },
+            recentGames = profile.recentGames.map { it.copy(coverUrl = apiClient.resolveUrl(it.coverUrl)) },
+            topGames = profile.topGames.map { it.copy(coverUrl = apiClient.resolveUrl(it.coverUrl)) },
+        )
     }
 }

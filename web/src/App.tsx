@@ -23,6 +23,7 @@ import { StatsPage } from "@/pages/stats-page";
 import { ActivityPage } from "@/pages/activity-page";
 import { CollectionsPage } from "@/pages/collections-page";
 import { CollectionDetailPage } from "@/pages/collection-detail-page";
+import { UserProfilePage } from "@/pages/user-profile-page";
 import { SetupPage } from "@/pages/setup-page";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -82,6 +83,7 @@ export function App() {
                 <Route path="collections/:id" element={<CollectionDetailPage />} />
                 <Route path="stats" element={<StatsPage />} />
                 <Route path="activity" element={<ActivityPage />} />
+                <Route path="users/:id" element={<UserProfilePage />} />
                 <Route path="preferences" element={<PreferencesPage />} />
 
                 {/* Admin routes */}

@@ -230,3 +230,27 @@ data class AchievementEvent(
     val description: String = "",
     val points: Int = 0,
 )
+
+// Public Profile
+
+data class PublicProfile(
+    val id: String,
+    val username: String,
+    val avatarUrl: String?,
+    val memberSince: String,
+    val isOnline: Boolean,
+    val currentGame: OnlineUserGame?,
+    val totalPlayTime: Long,
+    val gamesPlayed: Long,
+    val favoriteGames: List<PublicProfileGame>,
+    val recentGames: List<PublicProfileGame>,
+    val topGames: List<PublicProfileGame>,
+)
+
+data class PublicProfileGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String?,
+    val consoleName: String,
+    val playTime: Long,
+)

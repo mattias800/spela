@@ -16,6 +16,7 @@ import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
 import io.ktor.client.*
+import io.ktor.client.engine.*
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import org.koin.core.module.Module
@@ -25,6 +26,7 @@ import org.koin.dsl.module
 actual fun platformModule(): Module = module {
     single { AndroidSqliteDriver(SpelaDatabase.Schema, get(), "spela.db") }
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
+    single<HttpClientEngineFactory<*>> { OkHttp }
     single { SpelaApiClient(OkHttp, get()) }
     single<FileStorage> { AndroidFileStorage(get()) }
     single { LibretroJni() }

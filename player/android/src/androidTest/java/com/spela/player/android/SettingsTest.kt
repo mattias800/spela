@@ -1,10 +1,15 @@
 package com.spela.player.android
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -18,6 +23,26 @@ class SettingsTest {
 
     @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()
+
+    /**
+     * Navigate from the Per Console tab to ConsoleSettingsScreen for NES.
+     * Uses hasClickAction() to find the clickable SpCard (not a child text node)
+     * and performSemanticsAction to invoke onClick directly, bypassing touch
+     * event handling that can be intercepted by the LazyColumn scroll handler.
+     */
+    private fun tapNESConsole() {
+        val nesCard = hasText("Nintendo Entertainment System", substring = true) and
+                hasText("Super", substring = true).not() and
+                hasClickAction()
+        rule.waitUntil(timeoutMillis = 10_000) {
+            try {
+                rule.onAllNodes(nesCard).fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
+        rule.onNode(nesCard).performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
+    }
 
     @Test
     fun shaderPreview() {
@@ -34,24 +59,19 @@ class SettingsTest {
         rule.scrollToAndTapText("CRT Classic")
 
         // Scroll to shader preview (contentDescription, not text)
-        rule.waitForContentDescription("Shader preview", timeout = 8_000)
+        // ShaderPreview only renders after loadSettings() fetches consoles from server
+        rule.waitForContentDescription("Shader preview", timeout = 15_000)
         rule.onNodeWithContentDescription("Shader preview", substring = true).performScrollTo()
 
         // Navigate to Per Console tab
         rule.onNodeWithText("Per Console").performScrollTo()
         rule.onNodeWithText("Per Console").performClick()
 
-        // Wait for console list to load
-        rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
-
-        // Tap NES console
-        rule.scrollToAndTapText("Nintendo Entertainment System")
-
-        // Wait for ConsoleSettingsScreen
-        rule.waitForText("Video Filter")
+        // Tap NES console and wait for ConsoleSettingsScreen
+        tapNESConsole()
 
         // Scroll to shader preview on ConsoleSettingsScreen
-        rule.waitForContentDescription("Shader preview", timeout = 5_000)
+        rule.waitForContentDescription("Shader preview", timeout = 10_000)
         rule.onNodeWithContentDescription("Shader preview", substring = true).performScrollTo()
 
         // Test fullscreen preview dialog
@@ -63,7 +83,7 @@ class SettingsTest {
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account", timeout = 3_000)
+        rule.waitForText("Account", timeout = 8_000)
     }
 
     @Test
@@ -79,19 +99,15 @@ class SettingsTest {
         rule.onNodeWithText("Per Console").performScrollTo()
         rule.onNodeWithText("Per Console").performClick()
 
-        // Wait for console list to load, then tap NES
-        rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
-        rule.scrollToAndTapText("Nintendo Entertainment System")
-
-        // Wait for ConsoleSettingsScreen
-        rule.waitForText("Video Filter")
+        // Tap NES console and wait for ConsoleSettingsScreen
+        tapNESConsole()
 
         // Select CRT Classic
         rule.scrollToAndTapText("CRT Classic")
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account")
+        rule.waitForText("Account", timeout = 8_000)
 
         // Navigate back to Home
         rule.pressBack()
@@ -127,12 +143,8 @@ class SettingsTest {
         rule.onNodeWithText("Per Console").performScrollTo()
         rule.onNodeWithText("Per Console").performClick()
 
-        // Wait for console list to load, then tap NES
-        rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
-        rule.scrollToAndTapText("Nintendo Entertainment System")
-
-        // Wait for ConsoleSettingsScreen
-        rule.waitForText("Video Filter")
+        // Tap NES console and wait for ConsoleSettingsScreen
+        tapNESConsole()
 
         // Enable device override
         rule.scrollToAndTapText("Override on this device only")
@@ -144,7 +156,7 @@ class SettingsTest {
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account")
+        rule.waitForText("Account", timeout = 8_000)
 
         // Navigate back to Home
         rule.pressBack()

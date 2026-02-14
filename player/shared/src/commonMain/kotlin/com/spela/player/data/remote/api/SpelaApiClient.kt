@@ -342,6 +342,29 @@ class SpelaApiClient(
         }.body()
     }
 
+    suspend fun getPublicProfile(userId: String): PublicProfileDto {
+        return client.get("$baseUrl/api/users/$userId/profile").body()
+    }
+
+    suspend fun updatePlayTime(gameId: String, seconds: Long) {
+        client.post("$baseUrl/api/games/$gameId/play-time") {
+            setBody(mapOf("seconds" to seconds))
+        }
+    }
+
+    /**
+     * Returns the WebSocket URL for real-time events, with the auth token as a query param.
+     * Converts http(s):// to ws(s)://.
+     */
+    fun getWebSocketUrl(): String? {
+        if (baseUrl.isBlank()) return null
+        val token = tokenManager.accessToken ?: return null
+        val wsBase = baseUrl
+            .replace("https://", "wss://")
+            .replace("http://", "ws://")
+        return "$wsBase/api/ws?token=$token"
+    }
+
     // RetroAchievements
 
     suspend fun getRAStatus(): RAStatusDto {

@@ -13,6 +13,7 @@ sealed class Screen(val route: String) {
     data class Emulation(val gameId: String) : Screen("play/$gameId")
     data object Settings : Screen("settings")
     data object Downloads : Screen("downloads")
+    data class UserProfile(val userId: String) : Screen("users/$userId")
 }
 
 /**

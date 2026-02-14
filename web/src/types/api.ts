@@ -396,3 +396,30 @@ export interface CollectionsResponse {
   page: number;
   pageSize: number;
 }
+
+export interface PublicProfileGame {
+  id: string;
+  title: string;
+  coverUrl?: string;
+  consoleName: string;
+  playTime?: number;
+}
+
+export interface PublicProfile {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+  memberSince: string;
+  isOnline: boolean;
+  currentGame?: {
+    id: string;
+    title: string;
+    coverUrl?: string;
+    consoleName: string;
+  };
+  totalPlayTime: number;
+  gamesPlayed: number;
+  favoriteGames: PublicProfileGame[];
+  recentGames: PublicProfileGame[];
+  topGames: PublicProfileGame[];
+}

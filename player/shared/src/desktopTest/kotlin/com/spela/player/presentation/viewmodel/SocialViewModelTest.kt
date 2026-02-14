@@ -6,6 +6,7 @@ import com.spela.player.domain.model.OnlineUserGame
 import com.spela.player.domain.repository.SocialRepository
 import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
+import com.spela.player.domain.usecase.GetPublicProfileUseCase
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -47,6 +48,7 @@ class SocialViewModelTest {
         return SocialViewModel(
             getOnlineUsersUseCase = GetOnlineUsersUseCase(fakeSocialRepo),
             getActivityFeedUseCase = GetActivityFeedUseCase(fakeSocialRepo),
+            getPublicProfileUseCase = GetPublicProfileUseCase(fakeSocialRepo),
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -159,5 +161,10 @@ private class FakeSocialRepository : SocialRepository {
     override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(activityEvents)
+    }
+
+    override suspend fun getPublicProfile(userId: String): Result<com.spela.player.domain.model.PublicProfile> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.failure(Exception("Not implemented in fake"))
     }
 }

@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.screen.PlatformTouchControls
 
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
+import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -59,6 +60,7 @@ import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.SocialViewModel
 
 @Composable
@@ -75,6 +77,7 @@ fun SpelaApp(
     keyMappingViewModel: KeyMappingViewModel,
     socialViewModel: SocialViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
+    presenceService: PresenceService,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
@@ -92,6 +95,17 @@ fun SpelaApp(
                 CircularProgressIndicator(color = SpColor.Primary)
             }
             return@SpelaTheme
+        }
+
+        // Connect/disconnect WebSocket presence based on authentication state
+        val isAuthenticated = navState.currentScreen !is SpScreen.ServerConnection &&
+                navState.currentScreen !is SpScreen.Login
+        LaunchedEffect(isAuthenticated) {
+            if (isAuthenticated) {
+                presenceService.connect()
+            } else {
+                presenceService.disconnect()
+            }
         }
 
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
@@ -188,6 +202,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.Settings)
                                         )
                                     },
+                                    onUserSelected = { userId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
                                     hasActiveDownloads = downloadsState.activeDownloads.isNotEmpty(),
                                 )
                             }
@@ -260,6 +279,21 @@ fun SpelaApp(
                                     consoleId = screen.consoleId,
                                     settingsViewModel = settingsViewModel,
                                     keyMappingViewModel = keyMappingViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.UserProfile -> {
+                                UserProfileScreen(
+                                    userId = screen.userId,
+                                    socialViewModel = socialViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },

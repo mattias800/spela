@@ -296,10 +296,42 @@ func ToUserResponse(u db.User) UserResponse {
 
 // OnlineUserResponse is the API response for an online user.
 type OnlineUserResponse struct {
-	ID          string  `json:"id"`
-	Username    string  `json:"username"`
-	AvatarURL   string  `json:"avatarUrl,omitempty"`
-	CurrentGame *string `json:"currentGame,omitempty"` // game ID if playing
+	ID          string                  `json:"id"`
+	Username    string                  `json:"username"`
+	AvatarURL   string                  `json:"avatarUrl,omitempty"`
+	CurrentGame *OnlineUserGameResponse `json:"currentGame,omitempty"`
+}
+
+// OnlineUserGameResponse contains game details for an online user's current game.
+type OnlineUserGameResponse struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	CoverURL    string `json:"coverUrl,omitempty"`
+	ConsoleName string `json:"consoleName"`
+}
+
+// PublicProfileResponse is the API response for a user's public profile.
+type PublicProfileResponse struct {
+	ID            string                  `json:"id"`
+	Username      string                  `json:"username"`
+	AvatarURL     string                  `json:"avatarUrl,omitempty"`
+	MemberSince   time.Time               `json:"memberSince"`
+	IsOnline      bool                    `json:"isOnline"`
+	CurrentGame   *OnlineUserGameResponse `json:"currentGame,omitempty"`
+	TotalPlayTime int64                   `json:"totalPlayTime"`
+	GamesPlayed   int64                   `json:"gamesPlayed"`
+	FavoriteGames []PublicProfileGame     `json:"favoriteGames"`
+	RecentGames   []PublicProfileGame     `json:"recentGames"`
+	TopGames      []PublicProfileGame     `json:"topGames"`
+}
+
+// PublicProfileGame represents a game in a public profile response.
+type PublicProfileGame struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	CoverURL    string `json:"coverUrl,omitempty"`
+	ConsoleName string `json:"consoleName"`
+	PlayTime    int64  `json:"playTime,omitempty"`
 }
 
 // ActivityEventResponse is the API response for an activity feed event.

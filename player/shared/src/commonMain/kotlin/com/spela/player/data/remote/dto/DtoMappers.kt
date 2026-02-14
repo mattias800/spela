@@ -147,3 +147,25 @@ fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     version = version,
     platforms = platforms,
 )
+
+fun PublicProfileGameDto.toDomain(): PublicProfileGame = PublicProfileGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+    playTime = playTime,
+)
+
+fun PublicProfileDto.toDomain(): PublicProfile = PublicProfile(
+    id = id,
+    username = username,
+    avatarUrl = avatarUrl,
+    memberSince = memberSince,
+    isOnline = isOnline,
+    currentGame = currentGame?.toDomain(),
+    totalPlayTime = totalPlayTime,
+    gamesPlayed = gamesPlayed,
+    favoriteGames = favoriteGames.map { it.toDomain() },
+    recentGames = recentGames.map { it.toDomain() },
+    topGames = topGames.map { it.toDomain() },
+)

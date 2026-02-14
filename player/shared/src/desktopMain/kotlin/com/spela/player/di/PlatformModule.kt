@@ -14,6 +14,7 @@ import com.spela.player.platform.DesktopFileStorage
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
 import io.ktor.client.*
+import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import org.koin.core.module.Module
@@ -27,6 +28,7 @@ actual fun platformModule(): Module = module {
         driver
     }
     single { SpelaDatabase(get<JdbcSqliteDriver>()) }
+    single<HttpClientEngineFactory<*>> { CIO }
     single { SpelaApiClient(CIO, get()) }
     single<FileStorage> { DesktopFileStorage() }
     single { LibretroJni() }

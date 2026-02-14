@@ -1,5 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.PresenceService
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.DownloadProgress
@@ -25,6 +28,14 @@ import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.secondarydisplay.FakePlatformSecondaryDisplay
 import com.spela.player.util.DispatcherProvider
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineConfig
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +68,14 @@ class EmulationViewModelSecondaryDisplayTest {
 
     private lateinit var fakeSecondaryDisplay: FakePlatformSecondaryDisplay
     private lateinit var fakeLibretroController: StubLibretroController
+    private lateinit var stubPresenceService: PresenceService
     private lateinit var vmScope: CoroutineScope
+
+    private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineConfig> {
+        override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
+            return MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+        }
+    }
 
     @BeforeTest
     fun setup() {
@@ -65,6 +83,7 @@ class EmulationViewModelSecondaryDisplayTest {
         fakeSecondaryDisplay = FakePlatformSecondaryDisplay()
         fakeLibretroController = StubLibretroController()
         vmScope = CoroutineScope(testDispatcher + Job())
+        stubPresenceService = PresenceService(SpelaApiClient(StubMockEngineFactory, TokenManager()), StubMockEngineFactory, testDispatchers, vmScope)
     }
 
     @AfterTest
@@ -93,6 +112,7 @@ class EmulationViewModelSecondaryDisplayTest {
             achievementsController = StubAchievementsController(),
             libretroController = fakeLibretroController,
             secondaryDisplay = fakeSecondaryDisplay,
+            presenceService = stubPresenceService,
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -266,6 +286,7 @@ class EmulationViewModelSecondaryDisplayTest {
             achievementsController = StubAchievementsController(),
             libretroController = fakeLibretroController,
             secondaryDisplay = fakeSecondaryDisplay,
+            presenceService = stubPresenceService,
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -291,6 +312,7 @@ class EmulationViewModelSecondaryDisplayTest {
             achievementsController = StubAchievementsController(),
             libretroController = controller,
             secondaryDisplay = fakeSecondaryDisplay,
+            presenceService = stubPresenceService,
             dispatchers = testDispatchers,
             scope = vmScope,
         )

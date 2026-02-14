@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
+import com.spela.player.domain.usecase.GetPublicProfileUseCase
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.state.SocialState
 import com.spela.player.util.DispatcherProvider
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 class SocialViewModel(
     private val getOnlineUsersUseCase: GetOnlineUsersUseCase,
     private val getActivityFeedUseCase: GetActivityFeedUseCase,
+    private val getPublicProfileUseCase: GetPublicProfileUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -27,6 +29,7 @@ class SocialViewModel(
             SocialIntent.LoadActivityFeed -> loadActivityFeed()
             SocialIntent.RefreshAll -> refreshAll()
             SocialIntent.DismissError -> _state.update { it.copy(error = null) }
+            is SocialIntent.LoadPublicProfile -> loadPublicProfile(intent.userId)
         }
     }
 
@@ -71,6 +74,20 @@ class SocialViewModel(
                     isLoadingActivity = false,
                 )
             }
+        }
+    }
+
+    private fun loadPublicProfile(userId: String) {
+        _state.update { it.copy(isLoadingProfile = true, publicProfile = null) }
+        scope.launch(dispatchers.io) {
+            getPublicProfileUseCase(userId).fold(
+                onSuccess = { profile ->
+                    _state.update { it.copy(publicProfile = profile, isLoadingProfile = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isLoadingProfile = false) }
+                },
+            )
         }
     }
 }

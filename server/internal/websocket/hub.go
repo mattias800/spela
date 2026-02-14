@@ -78,21 +78,30 @@ func (h *Hub) Run() {
 		case client := <-h.register:
 			h.mu.Lock()
 			h.clients[client] = true
+			userID := client.UserID
 			h.mu.Unlock()
-			slog.Info("websocket client connected", "userId", client.UserID)
+			slog.Info("websocket client connected", "userId", userID)
+			h.Broadcast(Event{Type: "online_status", Payload: map[string]interface{}{"userId": userID, "status": "online"}})
 
 		case client := <-h.unregister:
+			var broadcastOffline bool
+			var userID uint
 			h.mu.Lock()
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.Send)
+				userID = client.UserID
 				// Clean up user game tracking if no other connections for this user
-				if !h.hasOtherConnection(client.UserID, client) {
-					delete(h.userGames, client.UserID)
+				if !h.hasOtherConnection(userID, client) {
+					delete(h.userGames, userID)
+					broadcastOffline = true
 				}
 			}
 			h.mu.Unlock()
-			slog.Info("websocket client disconnected", "userId", client.UserID)
+			slog.Info("websocket client disconnected", "userId", userID)
+			if broadcastOffline {
+				h.Broadcast(Event{Type: "online_status", Payload: map[string]interface{}{"userId": userID, "status": "offline"}})
+			}
 
 		case event := <-h.broadcast:
 			data, err := json.Marshal(event)

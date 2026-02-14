@@ -74,6 +74,7 @@ fun HomeScreen(
     onConsoleSelected: (String) -> Unit,
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onUserSelected: (String) -> Unit = {},
     hasActiveDownloads: Boolean = false,
 ) {
     val state by viewModel.state.collectAsState()
@@ -219,7 +220,7 @@ fun HomeScreen(
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                                 Spacer(Modifier.height(SpSpacing.Medium))
-                                OnlineUsersRow(users = socialState.onlineUsers)
+                                OnlineUsersRow(users = socialState.onlineUsers, onUserSelected = onUserSelected)
                                 Spacer(Modifier.height(SpSpacing.XLarge))
                             }
                         }

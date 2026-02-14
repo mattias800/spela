@@ -1,6 +1,7 @@
 package com.spela.player.di
 
 import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
@@ -25,6 +26,9 @@ val commonModule = module {
 
     /* Device */
     single { DeviceManager(get(), get()) }
+
+    /* Presence */
+    single { PresenceService(get(), get(), get(), get()) }
 
     /* Repositories */
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
@@ -63,6 +67,7 @@ val commonModule = module {
     factory { RestoreSessionUseCase(get(), get(), get()) }
     factory { GetOnlineUsersUseCase(get()) }
     factory { GetActivityFeedUseCase(get()) }
+    factory { GetPublicProfileUseCase(get()) }
 
     /* ViewModels */
     factory {
@@ -112,6 +117,7 @@ val commonModule = module {
             achievementsController = get(),
             libretroController = get(),
             secondaryDisplay = get(),
+            presenceService = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -121,6 +127,7 @@ val commonModule = module {
         SocialViewModel(
             getOnlineUsersUseCase = get(),
             getActivityFeedUseCase = get(),
+            getPublicProfileUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )

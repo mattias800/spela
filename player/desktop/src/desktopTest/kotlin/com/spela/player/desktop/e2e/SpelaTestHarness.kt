@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.PresenceService
 import com.spela.player.domain.usecase.*
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
@@ -12,6 +13,14 @@ import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.viewmodel.*
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineConfig
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -97,6 +106,13 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    private val stubEngineFactory = object : HttpClientEngineFactory<HttpClientEngineConfig> {
+        override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
+            return MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+        }
+    }
+    val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
+
     val emulationViewModel = EmulationViewModel(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
@@ -107,6 +123,7 @@ class SpelaTestHarness(
         achievementsController = FakeAchievementsController(),
         libretroController = libretroController,
         secondaryDisplay = secondaryDisplay,
+        presenceService = presenceService,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -148,6 +165,7 @@ class SpelaTestHarness(
     val socialViewModel = SocialViewModel(
         getOnlineUsersUseCase = GetOnlineUsersUseCase(socialRepo),
         getActivityFeedUseCase = GetActivityFeedUseCase(socialRepo),
+        getPublicProfileUseCase = GetPublicProfileUseCase(socialRepo),
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -167,6 +185,7 @@ class SpelaTestHarness(
             keyMappingViewModel = keyMappingViewModel,
             socialViewModel = socialViewModel,
             secondaryDisplay = secondaryDisplay,
+            presenceService = presenceService,
         )
     }
 }

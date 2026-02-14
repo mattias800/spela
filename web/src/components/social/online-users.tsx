@@ -62,9 +62,9 @@ export function OnlineUsers() {
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-surface-900" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-surface-200 truncate">
+                <Link to={`/users/${user.id}`} className="text-sm font-medium text-surface-200 truncate hover:text-brand-400 transition-colors">
                   {user.username}
-                </p>
+                </Link>
                 {user.currentGame ? (
                   <Link
                     to={`/games/${user.currentGame.id}`}

@@ -76,9 +76,9 @@ export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm text-surface-400">
-          <span className="font-medium text-surface-200">
+          <Link to={`/users/${event.userId}`} className="font-medium text-surface-200 hover:text-brand-400 transition-colors">
             {event.username}
-          </span>{" "}
+          </Link>{" "}
           {eventDescription(event)}
         </p>
         <div className="flex items-center gap-2 mt-1">

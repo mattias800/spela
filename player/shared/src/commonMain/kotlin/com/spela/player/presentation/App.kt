@@ -13,6 +13,7 @@ import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import org.koin.compose.koinInject
 
@@ -34,6 +35,7 @@ fun App() {
     val keyMappingViewModel: KeyMappingViewModel = koinInject()
     val socialViewModel: SocialViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
+    val presenceService: PresenceService = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -48,5 +50,6 @@ fun App() {
         keyMappingViewModel = keyMappingViewModel,
         socialViewModel = socialViewModel,
         secondaryDisplay = secondaryDisplay,
+        presenceService = presenceService,
     )
 }

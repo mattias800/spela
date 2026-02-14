@@ -304,3 +304,29 @@ data class RATokenResponseDto(
 data class RASettingsRequestDto(
     val hardcoreEnabled: Boolean,
 )
+
+// Public Profile
+
+@Serializable
+data class PublicProfileGameDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val playTime: Long = 0,
+)
+
+@Serializable
+data class PublicProfileDto(
+    val id: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val memberSince: String = "",
+    val isOnline: Boolean = false,
+    val currentGame: OnlineUserGameDto? = null,
+    val totalPlayTime: Long = 0,
+    val gamesPlayed: Long = 0,
+    val favoriteGames: List<PublicProfileGameDto> = emptyList(),
+    val recentGames: List<PublicProfileGameDto> = emptyList(),
+    val topGames: List<PublicProfileGameDto> = emptyList(),
+)

@@ -209,6 +209,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Social
 		api.GET("/social/online", socialHandler.GetOnlineUsers)
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
+		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
 
 		// RetroAchievements
 		api.POST("/user/ra/link", raHandler.LinkAccount)

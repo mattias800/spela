@@ -24,7 +24,7 @@ func (h *SocialHandler) GetOnlineUsers(c *gin.Context) {
 	onlineIDs := h.Hub.GetOnlineUserIDs()
 
 	if len(onlineIDs) == 0 {
-		c.JSON(http.StatusOK, []OnlineUserResponse{})
+		c.JSON(http.StatusOK, gin.H{"users": []OnlineUserResponse{}})
 		return
 	}
 
@@ -42,13 +42,161 @@ func (h *SocialHandler) GetOnlineUsers(c *gin.Context) {
 			AvatarURL: u.AvatarURL,
 		}
 		if gameID := h.Hub.GetUserGame(u.ID); gameID != 0 {
-			gidStr := strconv.FormatUint(uint64(gameID), 10)
-			resp.CurrentGame = &gidStr
+			var game db.Game
+			if err := h.DB.Preload("Console").First(&game, gameID).Error; err == nil {
+				coverURL := game.CoverURL
+				if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+					coverURL = "/api/images/" + coverURL
+				}
+				consoleName := ""
+				if game.Console.ID != 0 {
+					consoleName = game.Console.Name
+				}
+				resp.CurrentGame = &OnlineUserGameResponse{
+					ID:          strconv.FormatUint(uint64(game.ID), 10),
+					Title:       game.Title,
+					CoverURL:    coverURL,
+					ConsoleName: consoleName,
+				}
+			}
 		}
 		result = append(result, resp)
 	}
 
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, gin.H{"users": result})
+}
+
+// GetPublicProfile returns a user's public profile with stats and game lists.
+func (h *SocialHandler) GetPublicProfile(c *gin.Context) {
+	userID := c.Param("id")
+
+	var user db.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	uid := user.ID
+
+	// Aggregate stats
+	var agg struct {
+		TotalPlayTime int64
+		GamesPlayed   int64
+	}
+	h.DB.Model(&db.PlayHistory{}).
+		Where("user_id = ?", uid).
+		Select("COALESCE(SUM(play_time), 0) as total_play_time, COUNT(*) as games_played").
+		Scan(&agg)
+
+	// Favorite games (up to 6)
+	var favorites []db.Favorite
+	h.DB.Where("user_id = ?", uid).
+		Preload("Game").Preload("Game.Console").
+		Limit(6).
+		Find(&favorites)
+
+	favGames := make([]PublicProfileGame, 0, len(favorites))
+	for _, f := range favorites {
+		if f.Game.ID == 0 {
+			continue
+		}
+		favGames = append(favGames, toPublicProfileGame(f.Game, 0))
+	}
+
+	// Recent games (up to 6)
+	var recentHistory []db.PlayHistory
+	h.DB.Where("user_id = ?", uid).
+		Preload("Game").Preload("Game.Console").
+		Order("last_played DESC").
+		Limit(6).
+		Find(&recentHistory)
+
+	recentGames := make([]PublicProfileGame, 0, len(recentHistory))
+	for _, ph := range recentHistory {
+		if ph.Game.ID == 0 {
+			continue
+		}
+		recentGames = append(recentGames, toPublicProfileGame(ph.Game, ph.PlayTime))
+	}
+
+	// Top games by play time (up to 6)
+	var topHistory []db.PlayHistory
+	h.DB.Where("user_id = ?", uid).
+		Preload("Game").Preload("Game.Console").
+		Order("play_time DESC").
+		Limit(6).
+		Find(&topHistory)
+
+	topGames := make([]PublicProfileGame, 0, len(topHistory))
+	for _, ph := range topHistory {
+		if ph.Game.ID == 0 {
+			continue
+		}
+		topGames = append(topGames, toPublicProfileGame(ph.Game, ph.PlayTime))
+	}
+
+	// Online status
+	isOnline := false
+	var currentGame *OnlineUserGameResponse
+	for _, oid := range h.Hub.GetOnlineUserIDs() {
+		if oid == uid {
+			isOnline = true
+			break
+		}
+	}
+	if isOnline {
+		if gameID := h.Hub.GetUserGame(uid); gameID != 0 {
+			var game db.Game
+			if err := h.DB.Preload("Console").First(&game, gameID).Error; err == nil {
+				coverURL := game.CoverURL
+				if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+					coverURL = "/api/images/" + coverURL
+				}
+				consoleName := ""
+				if game.Console.ID != 0 {
+					consoleName = game.Console.Name
+				}
+				currentGame = &OnlineUserGameResponse{
+					ID:          strconv.FormatUint(uint64(game.ID), 10),
+					Title:       game.Title,
+					CoverURL:    coverURL,
+					ConsoleName: consoleName,
+				}
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, PublicProfileResponse{
+		ID:            strconv.FormatUint(uint64(user.ID), 10),
+		Username:      user.Username,
+		AvatarURL:     user.AvatarURL,
+		MemberSince:   user.CreatedAt,
+		IsOnline:      isOnline,
+		CurrentGame:   currentGame,
+		TotalPlayTime: agg.TotalPlayTime,
+		GamesPlayed:   agg.GamesPlayed,
+		FavoriteGames: favGames,
+		RecentGames:   recentGames,
+		TopGames:      topGames,
+	})
+}
+
+func toPublicProfileGame(g db.Game, playTime int64) PublicProfileGame {
+	coverURL := g.CoverURL
+	if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+		coverURL = "/api/images/" + coverURL
+	}
+	consoleName := ""
+	if g.Console.ID != 0 {
+		consoleName = g.Console.Name
+	}
+	return PublicProfileGame{
+		ID:          strconv.FormatUint(uint64(g.ID), 10),
+		Title:       g.Title,
+		CoverURL:    coverURL,
+		ConsoleName: consoleName,
+		PlayTime:    playTime,
+	}
 }
 
 // GetActivityFeed returns a paginated activity feed (most recent first).

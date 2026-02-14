@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.PresenceService
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
@@ -38,6 +39,7 @@ class EmulationViewModel(
     private val achievementsController: AchievementsController,
     private val libretroController: LibretroController,
     private val secondaryDisplay: PlatformSecondaryDisplay,
+    private val presenceService: PresenceService,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -164,6 +166,9 @@ class EmulationViewModel(
                         // Initialize achievements if RA is linked
                         initAchievements(gameId)
 
+                        // Start play-time heartbeat for online presence
+                        presenceService.startHeartbeat(gameId)
+
                         // Start FPS tracking and session timer
                         trackPerformance()
                         startSessionTimer()
@@ -216,6 +221,7 @@ class EmulationViewModel(
     private fun stopGame() {
         sessionTimerJob?.cancel()
         sessionTimerJob = null
+        presenceService.stopHeartbeat()
         scope.launch(dispatchers.io) {
             // Auto-save before stopping if enabled
             if (currentPreferences.autoSaveEnabled) {

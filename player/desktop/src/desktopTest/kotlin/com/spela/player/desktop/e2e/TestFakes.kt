@@ -572,6 +572,8 @@ class FakeSocialRepository : SocialRepository {
     override suspend fun getOnlineUsers(): Result<List<OnlineUser>> = Result.success(onlineUsers)
     override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> =
         Result.success(activityEvents)
+    override suspend fun getPublicProfile(userId: String): Result<com.spela.player.domain.model.PublicProfile> =
+        Result.failure(Exception("Not implemented in fake"))
 }
 
 class FakeKeyMappingRepository : KeyMappingRepository {

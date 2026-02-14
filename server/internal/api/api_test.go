@@ -958,10 +958,125 @@ func TestGetOnlineUsers_Empty(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var users []map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &users)
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
+	users := resp["users"].([]interface{})
 	assert.Len(t, users, 0)
+}
+
+func TestGetPublicProfile(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Get the user ID
+	var user db.User
+	database.Where("username = ?", "apitest").First(&user)
+	userID := fmt.Sprintf("%d", user.ID)
+
+	// Create a test game and some data
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Profile Game", FileName: "test.nes", FilePath: "/tmp/profile-test.nes", FileSize: 100, CoverURL: "covers/profile.jpg"}
+	database.Create(&game)
+
+	// Add favorite
+	database.Create(&db.Favorite{UserID: user.ID, GameID: game.ID})
+
+	// Add play history
+	database.Create(&db.PlayHistory{UserID: user.ID, GameID: game.ID, PlayTime: 3600})
+
+	// Get public profile
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/users/"+userID+"/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, userID, resp["id"])
+	assert.Equal(t, "apitest", resp["username"])
+	assert.NotNil(t, resp["memberSince"])
+	assert.Equal(t, float64(3600), resp["totalPlayTime"])
+	assert.Equal(t, float64(1), resp["gamesPlayed"])
+
+	favGames := resp["favoriteGames"].([]interface{})
+	assert.Len(t, favGames, 1)
+	fav := favGames[0].(map[string]interface{})
+	assert.Equal(t, "Profile Game", fav["title"])
+	assert.Equal(t, "/api/images/covers/profile.jpg", fav["coverUrl"])
+
+	recentGames := resp["recentGames"].([]interface{})
+	assert.Len(t, recentGames, 1)
+
+	topGames := resp["topGames"].([]interface{})
+	assert.Len(t, topGames, 1)
+	top := topGames[0].(map[string]interface{})
+	assert.Equal(t, float64(3600), top["playTime"])
+}
+
+func TestGetPublicProfile_NotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/users/99999/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetPublicProfile_EmptyStats(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Register a second user with no activity
+	body, _ := json.Marshal(map[string]string{
+		"username": "emptyuser",
+		"email":    "empty@example.com",
+		"password": "password123",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var database *gorm.DB
+	database = cfg.DB
+	var user db.User
+	database.Where("username = ?", "emptyuser").First(&user)
+	userID := fmt.Sprintf("%d", user.ID)
+
+	// Get public profile of empty user
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/users/"+userID+"/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, "emptyuser", resp["username"])
+	assert.Equal(t, float64(0), resp["totalPlayTime"])
+	assert.Equal(t, float64(0), resp["gamesPlayed"])
+	assert.Equal(t, false, resp["isOnline"])
+	assert.Nil(t, resp["currentGame"])
+
+	favGames := resp["favoriteGames"].([]interface{})
+	assert.Len(t, favGames, 0)
+	recentGames := resp["recentGames"].([]interface{})
+	assert.Len(t, recentGames, 0)
+	topGames := resp["topGames"].([]interface{})
+	assert.Len(t, topGames, 0)
 }
 
 func TestGetActivityFeed_Empty(t *testing.T) {
