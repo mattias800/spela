@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/cn";
-import { Gamepad2 } from "lucide-react";
+import { Gamepad2, LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface SidebarLinkProps {
@@ -52,9 +52,14 @@ interface SidebarProps {
     section?: string;
     items: SidebarLinkProps[];
   }>;
+  user?: {
+    username: string;
+    role: string;
+  };
+  onLogout?: () => void;
 }
 
-export function Sidebar({ links }: SidebarProps) {
+export function Sidebar({ links, user, onLogout }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex flex-col z-40">
       <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-800/50">
@@ -73,6 +78,29 @@ export function Sidebar({ links }: SidebarProps) {
           </SidebarSection>
         ))}
       </nav>
+
+      {user && (
+        <div className="border-t border-surface-800/50 px-3 py-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 flex-shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-sm font-bold text-white">
+              {user.username.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-surface-200 truncate">{user.username}</p>
+              <p className="text-xs text-surface-500 capitalize">{user.role}</p>
+            </div>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-2 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/50 transition-colors cursor-pointer"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
