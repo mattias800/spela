@@ -3,9 +3,9 @@
 ## Both web UI and app
 [x] In the console list, only list the consoles that have games.
 [ ] In the console list, add an image of the console.
-[ ] BIOS files are appearing in the games list.
-[ ] We should have dedicated path (in env variables) for BIOS files, so they can be separated from the ROMs.
-[ ] Pass correct BIOS paths to libretro and EmulatorJS.
+[x] BIOS files are appearing in the games list.
+[x] We should have dedicated path (in env variables) for BIOS files, so they can be separated from the ROMs.
+[x] Pass correct BIOS paths to libretro and EmulatorJS.
 [x] When autoscraping a game is done, the UI doesn't automatically update, the game is stuck spinning until refresh browser. Ensure this logic works on desktop and app as well.
 [x] Netplay game details doesn't respect box art aspect ratio difference between consoles.
 [x] NES box art aspect ratio could be more precise, compared to the box art.

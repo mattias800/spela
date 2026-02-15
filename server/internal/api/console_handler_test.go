@@ -42,6 +42,7 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 		filepath.Join(tmpDir, "saves"),
 		filepath.Join(tmpDir, "cores"),
 		filepath.Join(tmpDir, "images"),
+		filepath.Join(tmpDir, "bios"),
 	)
 	require.NoError(t, err)
 

@@ -118,6 +118,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
+	biosHandler := &BiosHandler{Storage: cfg.Storage}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -176,6 +177,10 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/core", gameHandler.GetRecommendedCore)
 		api.GET("/cores", coreHandler.ListCores)
 		api.GET("/cores/:id/download", coreHandler.DownloadCore)
+
+		// BIOS files
+		api.GET("/bios", biosHandler.ListBiosFiles)
+		api.GET("/bios/:filename", biosHandler.GetBiosFile)
 
 		// Stats
 		api.GET("/stats/most-played", statsHandler.MostPlayedGames)

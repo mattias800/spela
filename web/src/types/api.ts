@@ -527,3 +527,8 @@ export interface NetplaySessionsResponse {
   page: number;
   pageSize: number;
 }
+
+export interface BiosFile {
+  name: string;
+  size: number;
+}

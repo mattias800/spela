@@ -247,6 +247,16 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/saves/auto").body()
     }
 
+    // BIOS
+
+    suspend fun listBiosFiles(): List<BiosFileDto> {
+        return client.get("$baseUrl/api/bios").body()
+    }
+
+    suspend fun downloadBiosFile(filename: String): ByteArray {
+        return client.get("$baseUrl/api/bios/${filename.encodeURLPath()}").body()
+    }
+
     // Cores
 
     suspend fun getAvailableCores(): List<LibretroCoreDto> {

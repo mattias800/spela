@@ -57,7 +57,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	require.NoError(t, err)
 
 	tmpDir := t.TempDir()
-	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images")
+	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images", tmpDir+"/bios")
 	require.NoError(t, err)
 
 	hub := ws.NewHub(nil)

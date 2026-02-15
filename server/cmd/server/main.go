@@ -22,6 +22,7 @@ func main() {
 	saveDir := getEnv("SPELA_SAVE_DIR", "./saves")
 	coreDir := getEnv("SPELA_CORE_DIR", "./cores")
 	imageDir := getEnv("SPELA_IMAGE_DIR", "./images")
+	biosDir := getEnv("SPELA_BIOS_DIR", "./bios")
 	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
@@ -70,7 +71,7 @@ func main() {
 	}
 
 	// Initialize storage
-	store, err := storage.NewStorage(saveDir, coreDir, imageDir)
+	store, err := storage.NewStorage(saveDir, coreDir, imageDir, biosDir)
 	if err != nil {
 		slog.Error("failed to initialize storage", "error", err)
 		os.Exit(1)

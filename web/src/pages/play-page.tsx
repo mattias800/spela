@@ -5,6 +5,7 @@ import { Button, Skeleton } from "@/components/ui";
 import { useGame, useGameSaves } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
+import { useBiosFiles, getBiosFileUrl } from "@/hooks/use-bios";
 import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
 import { usePlaySession } from "@/hooks/use-play-session";
@@ -28,6 +29,7 @@ export function PlayPage() {
   const { data: saves } = useGameSaves(id ?? "");
   const { data: preferences } = useUserPreferences();
   const { data: consoles } = useConsoles();
+  const { data: biosFiles } = useBiosFiles();
 
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -109,14 +111,26 @@ export function PlayPage() {
 
     async function init() {
       const token = api.getAccessToken();
-      const romUrl = `/api/games/${game!.id}/download${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+      const tokenSuffix = token
+        ? `?token=${encodeURIComponent(token)}`
+        : "";
+      const romUrl = `/api/games/${game!.id}/download${tokenSuffix}`;
       const saveStateData = await saveManager.loadInitialSave();
+
+      // Build authenticated BIOS file URLs
+      const biosUrls =
+        biosFiles && biosFiles.length > 0
+          ? biosFiles.map(
+              (f) => getBiosFileUrl(f.name) + tokenSuffix,
+            )
+          : undefined;
 
       emulator.initEmulator({
         romUrl,
         core: emulatorJsCore!,
         gameName: game!.title,
         saveStateData,
+        biosUrls,
         preferences: emulatorPrefs,
       });
     }

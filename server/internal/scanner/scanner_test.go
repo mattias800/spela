@@ -277,3 +277,81 @@ func TestScan_RemovesMissingGames(t *testing.T) {
 	assert.Equal(t, 1, result.RemovedGames)
 	assert.Equal(t, 0, result.TotalGames)
 }
+
+func TestScanSkipsBiosDirectory(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// Create a valid NES ROM in nes/ directory
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "Mario.nes"), []byte("rom"), 0644))
+
+	// Create a BIOS subdirectory with a .bin file that could match a console
+	biosDir := filepath.Join(dir, "bios")
+	require.NoError(t, os.MkdirAll(biosDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(biosDir, "scph5501.bin"), []byte("bios data"), 0644))
+
+	// Also test case-insensitivity: create a "BIOS" directory
+	biosUpper := filepath.Join(dir, "BIOS")
+	// On case-insensitive filesystems this may be the same dir, so skip if it already exists
+	if _, err := os.Stat(biosUpper); os.IsNotExist(err) {
+		require.NoError(t, os.MkdirAll(biosUpper, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(biosUpper, "gba_bios.bin"), []byte("gba bios"), 0644))
+	}
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Only the NES ROM should be detected, not BIOS files
+	assert.Equal(t, 1, result.NewGames)
+	assert.Equal(t, 1, result.TotalGames)
+}
+
+func TestScanRejectsWrongExtensionInConsoleDir(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// NES console only supports .nes and .fds extensions
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+
+	// Valid NES ROM
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "Mario.nes"), []byte("rom"), 0644))
+	// Valid FDS ROM
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "DiskSystem.fds"), []byte("fds rom"), 0644))
+	// Invalid: .bin is not a valid NES extension
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "wrong.bin"), []byte("not nes"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Only .nes and .fds should be detected, not .bin
+	assert.Equal(t, 2, result.NewGames)
+	assert.Equal(t, 2, result.TotalGames)
+}
+
+func TestConsoleHasExtension(t *testing.T) {
+	tests := []struct {
+		name       string
+		extensions string
+		ext        string
+		want       bool
+	}{
+		{"exact match", ".nes,.fds", ".nes", true},
+		{"second extension", ".nes,.fds", ".fds", true},
+		{"no match", ".nes,.fds", ".bin", false},
+		{"single extension", ".gb", ".gb", true},
+		{"single no match", ".gb", ".gbc", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			console := &db.Console{Extensions: tt.extensions}
+			result := consoleHasExtension(console, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}

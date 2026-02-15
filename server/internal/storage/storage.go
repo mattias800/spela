@@ -13,11 +13,12 @@ type Storage struct {
 	SaveDir  string
 	CoreDir  string
 	ImageDir string
+	BiosDir  string
 }
 
 // NewStorage creates a new storage instance, creating directories as needed.
-func NewStorage(saveDir, coreDir, imageDir string) (*Storage, error) {
-	for _, dir := range []string{saveDir, coreDir, imageDir} {
+func NewStorage(saveDir, coreDir, imageDir, biosDir string) (*Storage, error) {
+	for _, dir := range []string{saveDir, coreDir, imageDir, biosDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, fmt.Errorf("creating directory %s: %w", dir, err)
 		}
@@ -26,6 +27,7 @@ func NewStorage(saveDir, coreDir, imageDir string) (*Storage, error) {
 		SaveDir:  saveDir,
 		CoreDir:  coreDir,
 		ImageDir: imageDir,
+		BiosDir:  biosDir,
 	}, nil
 }
 
@@ -67,6 +69,13 @@ func (s *Storage) WriteImage(subpath string, data io.Reader) (string, error) {
 // ImagePath returns the full filesystem path for a stored image subpath.
 func (s *Storage) ImagePath(subpath string) string {
 	return filepath.Join(s.ImageDir, subpath)
+}
+
+// BiosFilePath returns the filesystem path for a BIOS file, using sanitizeFilename
+// to prevent path traversal attacks.
+func (s *Storage) BiosFilePath(filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.BiosDir, safe)
 }
 
 // sanitizeFilename strips path separators and traversal sequences from a filename,

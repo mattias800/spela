@@ -187,6 +187,9 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 			return nil // skip errors
 		}
 		if info.IsDir() {
+			if strings.EqualFold(info.Name(), "bios") {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -203,6 +206,11 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 
 		console, exists := consoleMap[abbrev]
 		if !exists {
+			return nil
+		}
+
+		// Validate the file extension is supported by this console
+		if !consoleHasExtension(console, ext) {
 			return nil
 		}
 
@@ -259,6 +267,16 @@ func (s *Scanner) identifyConsole(path, ext string) string {
 	}
 
 	return ""
+}
+
+// consoleHasExtension checks if the console's Extensions field includes the given extension.
+func consoleHasExtension(console *db.Console, ext string) bool {
+	for _, e := range strings.Split(console.Extensions, ",") {
+		if strings.TrimSpace(e) == ext {
+			return true
+		}
+	}
+	return false
 }
 
 // gameTitle extracts a clean game title from a filename.

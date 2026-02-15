@@ -40,7 +40,7 @@ actual fun platformModule(): Module = module {
     single { SpelaApiClient(CIO, get()) }
     single<FileStorage> { DesktopFileStorage() }
     single { LibretroJni() }
-    single<LibretroController> { DesktopLibretroController(get()) }
+    single<LibretroController> { DesktopLibretroController(get(), get()) }
     single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
     single {

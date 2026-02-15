@@ -15,7 +15,7 @@ func TestNewStorage(t *testing.T) {
 	saveDir := filepath.Join(dir, "saves")
 	coreDir := filepath.Join(dir, "cores")
 
-	store, err := NewStorage(saveDir, coreDir, filepath.Join(dir, "images"))
+	store, err := NewStorage(saveDir, coreDir, filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
 	require.NoError(t, err)
 	assert.DirExists(t, saveDir)
 	assert.DirExists(t, coreDir)
@@ -31,7 +31,7 @@ func TestSaveStatePath(t *testing.T) {
 
 func TestWriteAndReadSave(t *testing.T) {
 	dir := t.TempDir()
-	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"))
+	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
 	require.NoError(t, err)
 
 	data := strings.NewReader("save state data here")
@@ -51,7 +51,7 @@ func TestWriteAndReadSave(t *testing.T) {
 
 func TestDeleteSave(t *testing.T) {
 	dir := t.TempDir()
-	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"))
+	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
 	require.NoError(t, err)
 
 	data := strings.NewReader("save data")
@@ -99,7 +99,7 @@ func TestSaveStatePath_PathTraversal(t *testing.T) {
 // This allows writing files anywhere on the filesystem.
 func TestWriteSave_PathTraversal(t *testing.T) {
 	dir := t.TempDir()
-	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"))
+	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
 	require.NoError(t, err)
 
 	// Create a target file outside the save directory

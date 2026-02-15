@@ -4,6 +4,7 @@ import com.spela.player.netplay.InputState
 import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplayTransport
 import com.spela.player.presentation.viewmodel.LibretroController
+import com.spela.player.util.FileStorage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.runBlocking
  */
 class DesktopLibretroController(
     private val jni: LibretroJni,
+    private val fileStorage: FileStorage,
 ) : LibretroController {
 
     @Volatile
@@ -57,6 +59,9 @@ class DesktopLibretroController(
     private var currentFrameTime = 0f
 
     override fun loadCore(corePath: String) {
+        jni.nativeSetSystemDir(fileStorage.getBiosDir())
+        jni.nativeSetSaveDir(fileStorage.getSavesDir())
+
         if (!jni.nativeLoadCore(corePath)) {
             throw RuntimeException("Failed to load core: $corePath")
         }

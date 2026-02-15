@@ -133,6 +133,11 @@
             window.EJS_loadStateURL = URL.createObjectURL(saveBlob);
           }
 
+          // Set BIOS URL for systems that require it (e.g. PlayStation, GBA)
+          if (config.biosUrls && config.biosUrls.length > 0) {
+            window.EJS_biosUrl = config.biosUrls[0];
+          }
+
           // Apply preferences
           var prefs = config.preferences || {};
           window.EJS_defaultOptions = window.EJS_defaultOptions || {};

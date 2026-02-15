@@ -14,6 +14,7 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
     override fun getGamesDir(): String = File(baseDir, "games").apply { mkdirs() }.absolutePath
     override fun getCoresDir(): String = File(baseDir, "cores").apply { mkdirs() }.absolutePath
     override fun getSavesDir(): String = File(baseDir, "saves").apply { mkdirs() }.absolutePath
+    override fun getBiosDir(): String = File(baseDir, "bios").apply { mkdirs() }.absolutePath
 
     override suspend fun writeFile(path: String, data: ByteArray) = withContext(Dispatchers.IO) {
         val file = File(path)

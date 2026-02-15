@@ -13,6 +13,7 @@ export interface InitEmulatorMessage {
   core: string;
   gameName: string;
   saveStateData?: string; // base64-encoded save state to auto-load
+  biosUrls?: string[]; // authenticated URLs for BIOS files
   preferences: EmulatorPreferences;
 }
 

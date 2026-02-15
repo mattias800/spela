@@ -95,7 +95,7 @@ class AndroidLibretroController(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun loadCore(corePath: String) {
-        jni.nativeSetSystemDir(fileStorage.getCoresDir())
+        jni.nativeSetSystemDir(fileStorage.getBiosDir())
         jni.nativeSetSaveDir(fileStorage.getSavesDir())
 
         if (!jni.nativeLoadCore(corePath)) {

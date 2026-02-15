@@ -95,6 +95,7 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
       core: string;
       gameName: string;
       saveStateData?: string;
+      biosUrls?: string[];
       preferences: EmulatorPreferences;
     }) => {
       setStatus("loading");

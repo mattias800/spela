@@ -45,6 +45,7 @@ val commonModule = module {
     single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
     single<RelayRepository> { RelayRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
+    single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 
     /* Use Cases */

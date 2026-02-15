@@ -32,6 +32,9 @@ TURN_HOST=
 # Host path to your ROM directory
 SPELA_GAMES_PATH=/data/spela/games
 
+# Host path to your BIOS directory (optional — needed for systems that require BIOS files)
+# SPELA_BIOS_PATH=/data/spela/bios
+
 # ScreenScraper credentials (optional — enables game metadata/cover art)
 # SPELA_SCRAPER_DEV_ID=
 # SPELA_SCRAPER_DEV_PASS=

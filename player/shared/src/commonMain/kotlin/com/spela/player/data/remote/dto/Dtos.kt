@@ -448,6 +448,14 @@ data class RelayInvitationCountResponse(
     val count: Int = 0,
 )
 
+// BIOS
+
+@Serializable
+data class BiosFileDto(
+    val name: String,
+    val size: Long,
+)
+
 // Netplay
 
 @Serializable

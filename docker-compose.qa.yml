@@ -28,6 +28,7 @@ services:
       - spela-cores:/app/cores
       - spela-images:/app/images
       - ${SPELA_GAMES_PATH:-/data/spela/games}:/app/games:ro
+      - ${SPELA_BIOS_PATH:-./bios}:/app/bios:ro
     environment:
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in Portainer stack env}
@@ -36,6 +37,7 @@ services:
       - SPELA_SAVE_DIR=/app/saves
       - SPELA_CORE_DIR=/app/cores
       - SPELA_IMAGE_DIR=/app/images
+      - SPELA_BIOS_DIR=/app/bios
       - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
       - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
       - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
