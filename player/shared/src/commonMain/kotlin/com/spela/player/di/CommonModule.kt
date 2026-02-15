@@ -43,6 +43,7 @@ val commonModule = module {
     single<SocialRepository> { SocialRepositoryImpl(get()) }
     single<RatingRepository> { RatingRepositoryImpl(get()) }
     single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
+    single<RelayRepository> { RelayRepositoryImpl(get()) }
     single { GamepadPortManager(get()) }
 
     /* Use Cases */
@@ -118,6 +119,7 @@ val commonModule = module {
             libretroController = get(),
             secondaryDisplay = get(),
             presenceService = get(),
+            relayRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -128,6 +130,22 @@ val commonModule = module {
             getOnlineUsersUseCase = get(),
             getActivityFeedUseCase = get(),
             getPublicProfileUseCase = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        RelaysViewModel(
+            relayRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        RelayDetailViewModel(
+            relayRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

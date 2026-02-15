@@ -169,3 +169,75 @@ fun PublicProfileDto.toDomain(): PublicProfile = PublicProfile(
     recentGames = recentGames.map { it.toDomain() },
     topGames = topGames.map { it.toDomain() },
 )
+
+// Relay mappers
+
+fun RelayDto.toDomain(): Relay = Relay(
+    id = id,
+    name = name,
+    ownerId = ownerId,
+    ownerUsername = ownerUsername,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = gameConsoleName,
+    status = status,
+    memberCount = memberCount,
+    activeUserId = activeUserId,
+    lastActivityAt = lastActivityAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+fun RelayDetailDto.toDomain(): RelayDetail = RelayDetail(
+    id = id,
+    name = name,
+    ownerId = ownerId,
+    ownerUsername = ownerUsername,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = gameConsoleName,
+    status = status,
+    memberCount = memberCount,
+    activeUserId = activeUserId,
+    members = members.map { it.toDomain() },
+    lastActivityAt = lastActivityAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+fun RelayMemberDto.toDomain(): RelayMember = RelayMember(
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    role = role,
+    joinedAt = joinedAt,
+    lastPlayedAt = lastPlayedAt,
+    isOnline = isOnline,
+)
+
+fun RelayInvitationDto.toDomain(): RelayInvitation = RelayInvitation(
+    id = id,
+    relayId = relayId,
+    relayName = relayName,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = gameConsoleName,
+    inviterUsername = inviterUsername,
+    inviterAvatarUrl = inviterAvatarUrl,
+    createdAt = createdAt,
+)
+
+fun RelaySaveDto.toDomain(): RelaySave = RelaySave(
+    id = id,
+    relayId = relayId,
+    username = username,
+    avatarUrl = avatarUrl,
+    name = name,
+    fileSize = fileSize,
+    isAuto = isAuto,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)

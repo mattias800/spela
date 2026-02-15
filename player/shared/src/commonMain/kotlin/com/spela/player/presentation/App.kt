@@ -12,6 +12,8 @@ import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import com.spela.player.presentation.viewmodel.RelayDetailViewModel
+import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.SocialViewModel
@@ -34,6 +36,8 @@ fun App() {
     val settingsViewModel: SettingsViewModel = koinInject()
     val keyMappingViewModel: KeyMappingViewModel = koinInject()
     val socialViewModel: SocialViewModel = koinInject()
+    val relaysViewModel: RelaysViewModel = koinInject()
+    val relayDetailViewModel: RelayDetailViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
     val presenceService: PresenceService = koinInject()
 
@@ -49,6 +53,8 @@ fun App() {
         settingsViewModel = settingsViewModel,
         keyMappingViewModel = keyMappingViewModel,
         socialViewModel = socialViewModel,
+        relaysViewModel = relaysViewModel,
+        relayDetailViewModel = relayDetailViewModel,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
     )

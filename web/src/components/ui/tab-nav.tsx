@@ -46,3 +46,51 @@ export function TabItem({ to, icon: Icon, label }: TabItemProps) {
     </NavLink>
   );
 }
+
+interface StateTabNavProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function StateTabNav({ children, className }: StateTabNavProps) {
+  return (
+    <div
+      role="tablist"
+      className={cn(
+        "flex gap-1 rounded-lg bg-surface-900/50 p-1 w-fit",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface StateTabItemProps {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}
+
+export function StateTabItem({
+  active,
+  onClick,
+  children,
+}: StateTabItemProps) {
+  return (
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950",
+        active
+          ? "bg-surface-800 text-surface-100"
+          : "text-surface-400 hover:text-surface-200",
+      )}
+    >
+      {children}
+    </button>
+  );
+}

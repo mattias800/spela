@@ -43,6 +43,8 @@ import com.spela.player.presentation.ui.screen.LoginScreen
 import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
 import com.spela.player.presentation.ui.screen.PlatformTouchControls
 
+import com.spela.player.presentation.ui.screen.RelayDetailScreen
+import com.spela.player.presentation.ui.screen.RelaysScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
@@ -57,6 +59,8 @@ import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
+import com.spela.player.presentation.viewmodel.RelayDetailViewModel
+import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
@@ -76,6 +80,8 @@ fun SpelaApp(
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
     socialViewModel: SocialViewModel,
+    relaysViewModel: RelaysViewModel,
+    relayDetailViewModel: RelayDetailViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
 ) {
@@ -197,6 +203,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.Downloads)
                                         )
                                     },
+                                    onNavigateToRelays = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Relays)
+                                        )
+                                    },
                                     onNavigateToSettings = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Settings)
@@ -299,15 +310,53 @@ fun SpelaApp(
                                     },
                                 )
                             }
+
+                            is SpScreen.Relays -> {
+                                RelaysScreen(
+                                    viewModel = relaysViewModel,
+                                    onRelaySelected = { relayId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.RelayDetail -> {
+                                RelayDetailScreen(
+                                    relayId = screen.relayId,
+                                    viewModel = relayDetailViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onPlay = { gameId, relayId ->
+                                        val turnToken = relayDetailViewModel.state.value.turnToken
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.ShowOverlay(
+                                                gameId = gameId,
+                                                relayId = relayId,
+                                                turnToken = turnToken,
+                                            )
+                                        )
+                                    },
+                                )
+                            }
                         }
                     }
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
-                        LaunchedEffect(navState.overlayGameId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
-                                    EmulationIntent.StartGame(gameId)
+                                    EmulationIntent.StartGame(
+                                        gameId = gameId,
+                                        relayId = navState.overlayRelayId,
+                                        turnToken = navState.overlayTurnToken,
+                                    )
                                 )
                             }
                         }

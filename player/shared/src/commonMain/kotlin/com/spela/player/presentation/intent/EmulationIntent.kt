@@ -1,7 +1,11 @@
 package com.spela.player.presentation.intent
 
 sealed interface EmulationIntent {
-    data class StartGame(val gameId: String) : EmulationIntent
+    data class StartGame(
+        val gameId: String,
+        val relayId: String? = null,
+        val turnToken: String? = null,
+    ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent
     data object StopGame : EmulationIntent

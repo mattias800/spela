@@ -330,3 +330,120 @@ data class PublicProfileDto(
     val recentGames: List<PublicProfileGameDto> = emptyList(),
     val topGames: List<PublicProfileGameDto> = emptyList(),
 )
+
+// Relay
+
+@Serializable
+data class RelayDto(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val gameId: String,
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val ownerId: String,
+    val ownerUsername: String = "",
+    val status: String = "active",
+    val memberCount: Int = 0,
+    val activeUserId: String? = null,
+    val lastActivityAt: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+@Serializable
+data class RelayDetailDto(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val gameId: String,
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val ownerId: String,
+    val ownerUsername: String = "",
+    val status: String = "active",
+    val memberCount: Int = 0,
+    val activeUserId: String? = null,
+    val lastActivityAt: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = "",
+    val members: List<RelayMemberDto> = emptyList(),
+)
+
+@Serializable
+data class RelayMemberDto(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val role: String = "member",
+    val joinedAt: String = "",
+    val lastPlayedAt: String? = null,
+    val isOnline: Boolean = false,
+)
+
+@Serializable
+data class RelayInvitationDto(
+    val id: String,
+    val relayId: String,
+    val relayName: String = "",
+    val gameId: String = "",
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val inviterUsername: String = "",
+    val inviterAvatarUrl: String? = null,
+    val createdAt: String = "",
+)
+
+@Serializable
+data class RelaySaveDto(
+    val id: Long,
+    val relayId: String = "",
+    val gameId: Long = 0,
+    val userId: Long = 0,
+    val username: String = "",
+    val avatarUrl: String? = null,
+    val name: String,
+    val fileSize: Long = 0,
+    val isAuto: Boolean = false,
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+@Serializable
+data class RelaysResponse(
+    val data: List<RelayDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+)
+
+@Serializable
+data class RelayInvitationsResponse(
+    val data: List<RelayInvitationDto> = emptyList(),
+    val total: Long = 0,
+)
+
+@Serializable
+data class CreateRelayRequest(
+    val name: String,
+    val gameId: String,
+    val description: String = "",
+)
+
+@Serializable
+data class InviteToRelayRequest(
+    val username: String,
+)
+
+@Serializable
+data class TakeTurnResponse(
+    val turnToken: String,
+)
+
+@Serializable
+data class RelayInvitationCountResponse(
+    val count: Int = 0,
+)

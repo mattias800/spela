@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -73,6 +74,7 @@ fun HomeScreen(
     onGameSelected: (String) -> Unit,
     onConsoleSelected: (String) -> Unit,
     onNavigateToDownloads: () -> Unit = {},
+    onNavigateToRelays: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onUserSelected: (String) -> Unit = {},
     hasActiveDownloads: Boolean = false,
@@ -123,6 +125,27 @@ fun HomeScreen(
                             .background(SpColor.Primary),
                     )
                 }
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .spFocusRing(shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(SpColor.SurfaceVariant)
+                    .clickable(onClick = onNavigateToRelays)
+                    .focusable()
+                    .semantics {
+                        contentDescription = "Relays"
+                        role = Role.Button
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SyncAlt,
+                    contentDescription = null,
+                    tint = SpColor.OnSurface,
+                    modifier = Modifier.size(20.dp),
+                )
             }
             Box(
                 modifier = Modifier

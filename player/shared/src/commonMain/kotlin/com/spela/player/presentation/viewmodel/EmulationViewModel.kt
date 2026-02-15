@@ -5,6 +5,7 @@ import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
@@ -40,6 +41,7 @@ class EmulationViewModel(
     private val libretroController: LibretroController,
     private val secondaryDisplay: PlatformSecondaryDisplay,
     private val presenceService: PresenceService,
+    private val relayRepository: RelayRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -48,10 +50,11 @@ class EmulationViewModel(
 
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
+    private var relayHeartbeatJob: Job? = null
 
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
-            is EmulationIntent.StartGame -> startGame(intent.gameId)
+            is EmulationIntent.StartGame -> startGame(intent.gameId, intent.relayId, intent.turnToken)
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
             EmulationIntent.StopGame -> stopGame()
@@ -90,14 +93,15 @@ class EmulationViewModel(
         }
     }
 
-    private fun startGame(gameId: String) {
+    private fun startGame(gameId: String, relayId: String? = null, turnToken: String? = null) {
         _state.update {
             it.copy(
                 gameId = gameId,
                 isLoading = true,
                 showOverlay = false,
                 showExitConfirm = false,
-
+                relayId = relayId,
+                turnToken = turnToken,
                 error = null,
                 statusMessage = null,
                 isFastForward = false,
@@ -150,8 +154,12 @@ class EmulationViewModel(
                         libretroController.loadCore(corePath)
                         libretroController.loadGame(gamePath)
 
-                        // Try to load auto-save if enabled
-                        if (currentPreferences.autoLoadSaveEnabled) {
+                        // Try to load auto-save: in relay mode, download relay auto-save
+                        if (relayId != null) {
+                            relayRepository.downloadRelayAutoSave(relayId).onSuccess { saveData ->
+                                libretroController.unserialize(saveData)
+                            }
+                        } else if (currentPreferences.autoLoadSaveEnabled) {
                             loadGameStateUseCase(gameId).onSuccess { saveData ->
                                 libretroController.unserialize(saveData)
                             }
@@ -168,6 +176,11 @@ class EmulationViewModel(
 
                         // Start play-time heartbeat for online presence
                         presenceService.startHeartbeat(gameId)
+
+                        // Start relay heartbeat if in relay mode
+                        if (relayId != null) {
+                            startRelayHeartbeat(relayId)
+                        }
 
                         // Start FPS tracking and session timer
                         trackPerformance()
@@ -221,11 +234,33 @@ class EmulationViewModel(
     private fun stopGame() {
         sessionTimerJob?.cancel()
         sessionTimerJob = null
+        relayHeartbeatJob?.cancel()
+        relayHeartbeatJob = null
         presenceService.stopHeartbeat()
         scope.launch(dispatchers.io) {
-            // Auto-save before stopping if enabled
-            if (currentPreferences.autoSaveEnabled) {
-                val gameId = _state.value.gameId
+            val currentState = _state.value
+            val relayId = currentState.relayId
+            val turnToken = currentState.turnToken
+
+            // Save before stopping
+            if (relayId != null && turnToken != null) {
+                // Relay mode: upload auto-save to relay, then release turn
+                try {
+                    val saveData = libretroController.serialize()
+                    if (saveData != null) {
+                        relayRepository.uploadRelayAutoSave(relayId, turnToken, saveData)
+                    }
+                } catch (_: Exception) {
+                    // Best effort relay auto-save
+                }
+                try {
+                    relayRepository.releaseTurn(relayId)
+                } catch (_: Exception) {
+                    // Best effort release turn
+                }
+            } else if (currentPreferences.autoSaveEnabled) {
+                // Normal mode: auto-save to personal saves
+                val gameId = currentState.gameId
                 try {
                     val saveData = libretroController.serialize()
                     if (saveData != null) {
@@ -246,7 +281,16 @@ class EmulationViewModel(
             libretroController.stop()
             withContext(dispatchers.main) {
                 _state.update {
-                    it.copy(isRunning = false, isPaused = false, fps = 0f, frameTime = 0f, isHardcoreMode = false, secondaryDisplayActive = false)
+                    it.copy(
+                        isRunning = false,
+                        isPaused = false,
+                        fps = 0f,
+                        frameTime = 0f,
+                        isHardcoreMode = false,
+                        secondaryDisplayActive = false,
+                        relayId = null,
+                        turnToken = null,
+                    )
                 }
             }
         }
@@ -368,6 +412,20 @@ class EmulationViewModel(
     private fun dismissSecondaryDisplay() {
         secondaryDisplay.dismiss()
         _state.update { it.copy(secondaryDisplayActive = false) }
+    }
+
+    private fun startRelayHeartbeat(relayId: String) {
+        relayHeartbeatJob?.cancel()
+        relayHeartbeatJob = scope.launch(dispatchers.io) {
+            while (isActive) {
+                delay(60_000) // 60 seconds
+                try {
+                    relayRepository.heartbeat(relayId)
+                } catch (_: Exception) {
+                    // Best effort heartbeat
+                }
+            }
+        }
     }
 }
 

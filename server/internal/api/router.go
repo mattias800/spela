@@ -47,7 +47,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Turn-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: allowCreds,
 		MaxAge:           12 * time.Hour,
@@ -107,6 +107,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	collectionHandler := &CollectionHandler{DB: cfg.DB, Hub: cfg.Hub}
 	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
+	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
@@ -205,6 +206,28 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/collections/:id", collectionHandler.DeleteCollection)
 		api.POST("/collections/:id/games", collectionHandler.AddGame)
 		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
+
+		// Relays
+		api.POST("/relays", relayHandler.CreateRelay)
+		api.GET("/relays", relayHandler.ListRelays)
+		api.GET("/relays/:id", relayHandler.GetRelay)
+		api.PUT("/relays/:id", relayHandler.UpdateRelay)
+		api.DELETE("/relays/:id", relayHandler.DeleteRelay)
+		api.POST("/relays/:id/invites", relayHandler.InviteUser)
+		api.POST("/relays/:id/leave", relayHandler.LeaveRelay)
+		api.DELETE("/relays/:id/members/:userId", relayHandler.RemoveMember)
+		api.POST("/relays/:id/take-turn", relayHandler.TakeTurn)
+		api.POST("/relays/:id/release-turn", relayHandler.ReleaseTurn)
+		api.POST("/relays/:id/heartbeat", relayHandler.Heartbeat)
+		api.GET("/relays/:id/saves", relayHandler.ListSaves)
+		api.POST("/relays/:id/saves", relayHandler.UploadSave)
+		api.GET("/relays/:id/saves/auto", relayHandler.GetAutoSave)
+		api.POST("/relays/:id/saves/auto", relayHandler.UploadAutoSave)
+		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
+		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
+		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
+		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)
+		api.POST("/user/relay-invites/:id/decline", relayHandler.DeclineInvite)
 
 		// Social
 		api.GET("/social/online", socialHandler.GetOnlineUsers)

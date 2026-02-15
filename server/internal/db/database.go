@@ -42,6 +42,10 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameCollection{},
 		&CollectionItem{},
 		&PlayLaterItem{},
+		&Relay{},
+		&RelayMember{},
+		&RelayInvite{},
+		&RelaySave{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

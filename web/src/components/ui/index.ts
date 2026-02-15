@@ -18,4 +18,5 @@ export { Select } from "./select";
 export { EmptyState } from "./empty-state";
 export { Switch } from "./switch";
 export { DropdownMenu } from "./dropdown-menu";
-export { TabNav, TabItem } from "./tab-nav";
+export { TabNav, TabItem, StateTabNav, StateTabItem } from "./tab-nav";
+export { Textarea } from "./textarea";

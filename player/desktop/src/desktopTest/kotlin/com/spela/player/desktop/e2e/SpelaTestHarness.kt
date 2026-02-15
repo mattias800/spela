@@ -113,6 +113,8 @@ class SpelaTestHarness(
     }
     val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
 
+    val relayRepo = FakeRelayRepository()
+
     val emulationViewModel = EmulationViewModel(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
@@ -124,6 +126,7 @@ class SpelaTestHarness(
         libretroController = libretroController,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
+        relayRepository = relayRepo,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -170,6 +173,18 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val relaysViewModel = RelaysViewModel(
+        relayRepository = relayRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val relayDetailViewModel = RelayDetailViewModel(
+        relayRepository = relayRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         SpelaApp(
@@ -184,6 +199,8 @@ class SpelaTestHarness(
             settingsViewModel = settingsViewModel,
             keyMappingViewModel = keyMappingViewModel,
             socialViewModel = socialViewModel,
+            relaysViewModel = relaysViewModel,
+            relayDetailViewModel = relayDetailViewModel,
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
         )

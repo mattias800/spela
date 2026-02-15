@@ -565,6 +565,58 @@ class FakeSharedSaveRepository : SharedSaveRepository {
         Result.success(Unit)
 }
 
+class FakeRelayRepository : RelayRepository {
+    var relays: List<Relay> = emptyList()
+    var relayDetail: RelayDetail? = null
+    var invitations: List<RelayInvitation> = emptyList()
+    var relaySaves: List<RelaySave> = emptyList()
+    var gameRelays: List<Relay> = emptyList()
+
+    override suspend fun getMyRelays(page: Int, pageSize: Int): Result<List<Relay>> =
+        Result.success(relays)
+    override suspend fun getRelay(relayId: String): Result<RelayDetail> =
+        relayDetail?.let { Result.success(it) }
+            ?: Result.failure(Exception("Relay not found"))
+    override suspend fun getRelayInvitations(): Result<List<RelayInvitation>> =
+        Result.success(invitations)
+    override suspend fun getPendingInvitationCount(): Result<Int> =
+        Result.success(invitations.size)
+    override suspend fun createRelay(name: String, gameId: String, description: String): Result<RelayDetail> =
+        Result.success(RelayDetail(id = "new-relay", name = name, gameId = gameId, ownerId = "1", ownerUsername = "player"))
+    override suspend fun deleteRelay(relayId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun inviteUser(relayId: String, username: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun acceptInvitation(invitationId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun rejectInvitation(invitationId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun leaveRelay(relayId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun removeMember(relayId: String, userId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun getGameRelays(gameId: String): Result<List<Relay>> =
+        Result.success(gameRelays)
+    override suspend fun getRelaySaves(relayId: String): Result<List<RelaySave>> =
+        Result.success(relaySaves)
+    override suspend fun deleteRelaySave(relayId: String, saveId: Long): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun takeTurn(relayId: String): Result<String> =
+        Result.success("fake-turn-token")
+    override suspend fun releaseTurn(relayId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun heartbeat(relayId: String): Result<Unit> =
+        Result.success(Unit)
+    override suspend fun uploadRelaySave(relayId: String, name: String, turnToken: String, data: ByteArray): Result<RelaySave> =
+        Result.success(RelaySave(id = 1, relayId = relayId, name = name, fileSize = data.size.toLong()))
+    override suspend fun downloadRelaySave(relayId: String, saveId: Long): Result<ByteArray> =
+        Result.success(ByteArray(256) { it.toByte() })
+    override suspend fun downloadRelayAutoSave(relayId: String): Result<ByteArray> =
+        Result.success(ByteArray(256) { it.toByte() })
+    override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray): Result<RelaySave> =
+        Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
+}
+
 class FakeSocialRepository : SocialRepository {
     var onlineUsers: List<OnlineUser> = emptyList()
     var activityEvents: List<ActivityEvent> = emptyList()

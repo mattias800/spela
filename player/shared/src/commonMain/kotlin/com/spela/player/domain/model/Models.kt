@@ -231,6 +231,80 @@ data class AchievementEvent(
     val points: Int = 0,
 )
 
+// Relay
+
+data class Relay(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val gameId: String,
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val ownerId: String,
+    val ownerUsername: String = "",
+    val status: String = "active",
+    val memberCount: Int = 0,
+    val activeUserId: String? = null,
+    val lastActivityAt: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+data class RelayDetail(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val gameId: String,
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val ownerId: String,
+    val ownerUsername: String = "",
+    val status: String = "active",
+    val memberCount: Int = 0,
+    val activeUserId: String? = null,
+    val members: List<RelayMember> = emptyList(),
+    val lastActivityAt: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+data class RelayMember(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val role: String = "member",
+    val joinedAt: String = "",
+    val lastPlayedAt: String? = null,
+    val isOnline: Boolean = false,
+)
+
+data class RelayInvitation(
+    val id: String,
+    val relayId: String,
+    val relayName: String = "",
+    val gameId: String = "",
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val inviterUsername: String = "",
+    val inviterAvatarUrl: String? = null,
+    val createdAt: String = "",
+)
+
+data class RelaySave(
+    val id: Long,
+    val relayId: String = "",
+    val username: String = "",
+    val avatarUrl: String? = null,
+    val name: String,
+    val fileSize: Long = 0,
+    val isAuto: Boolean = false,
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
 // Public Profile
 
 data class PublicProfile(

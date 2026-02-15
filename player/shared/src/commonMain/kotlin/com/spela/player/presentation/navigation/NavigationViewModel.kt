@@ -61,6 +61,8 @@ class NavigationViewModel(
                     it.copy(
                         showInGameOverlay = true,
                         overlayGameId = intent.gameId,
+                        overlayRelayId = intent.relayId,
+                        overlayTurnToken = intent.turnToken,
                         screenBehindOverlay = it.currentScreen,
                         backStackBehindOverlay = it.backStack,
                     )
@@ -73,6 +75,8 @@ class NavigationViewModel(
                         it.copy(
                             showInGameOverlay = false,
                             overlayGameId = null,
+                            overlayRelayId = null,
+                            overlayTurnToken = null,
                             currentScreen = it.screenBehindOverlay,
                             backStack = it.backStackBehindOverlay,
                             screenBehindOverlay = null,
@@ -82,6 +86,8 @@ class NavigationViewModel(
                         it.copy(
                             showInGameOverlay = false,
                             overlayGameId = null,
+                            overlayRelayId = null,
+                            overlayTurnToken = null,
                         )
                     }
                 }

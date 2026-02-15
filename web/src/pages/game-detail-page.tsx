@@ -32,6 +32,7 @@ import { UserRating } from "@/components/game-detail/user-rating";
 import { RatingSummaryCard } from "@/components/game-detail/rating-summary";
 import { GameReviews } from "@/components/game-detail/game-reviews";
 import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
+import { GameActiveRelays } from "@/components/relays/game-active-relays";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import type { Collection } from "@/types/api";
 
@@ -205,6 +206,8 @@ export function GameDetailPage() {
       <SaveStatesList saves={saves} gameId={game.id} />
 
       <SharedSavesList gameId={game.id} />
+
+      <GameActiveRelays gameId={game.id} />
     </div>
   );
 }

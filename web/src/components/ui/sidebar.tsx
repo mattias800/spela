@@ -10,9 +10,11 @@ export interface SidebarLinkProps {
   label: string;
   /** Additional path prefixes that should highlight this link. */
   matchPaths?: string[];
+  /** Optional count badge shown next to the label. */
+  badge?: number;
 }
 
-function SidebarLink({ to, icon: Icon, label, matchPaths }: SidebarLinkProps) {
+function SidebarLink({ to, icon: Icon, label, matchPaths, badge }: SidebarLinkProps) {
   const location = useLocation();
 
   return (
@@ -31,7 +33,12 @@ function SidebarLink({ to, icon: Icon, label, matchPaths }: SidebarLinkProps) {
       }}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-xs font-medium bg-brand-500/15 text-brand-400">
+          {badge}
+        </span>
+      )}
     </NavLink>
   );
 }

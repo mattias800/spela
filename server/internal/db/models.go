@@ -311,6 +311,68 @@ type PlayLaterItem struct {
 	Position  int            `gorm:"not null;default:0" json:"position"`
 }
 
+// Relay represents a shared play session where friends take turns playing a game.
+type Relay struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	OwnerID      uint           `gorm:"index;not null" json:"ownerId"`
+	Owner        User           `gorm:"foreignKey:OwnerID" json:"-"`
+	GameID       uint           `gorm:"index;not null" json:"gameId"`
+	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name         string         `gorm:"size:255;not null" json:"name"`
+	Status       string         `gorm:"size:32;default:active;not null" json:"status"` // "active", "completed", "archived"
+	ActiveUserID *uint          `json:"activeUserId,omitempty"`
+	TurnToken    string         `gorm:"size:64" json:"-"`
+	TurnTakenAt  *time.Time     `json:"turnTakenAt,omitempty"`
+	Members      []RelayMember  `gorm:"foreignKey:RelayID" json:"members,omitempty"`
+}
+
+// RelayMember represents a user's membership in a relay.
+type RelayMember struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	RelayID   uint           `gorm:"uniqueIndex:idx_relay_user;not null" json:"relayId"`
+	Relay     Relay          `gorm:"foreignKey:RelayID" json:"-"`
+	UserID    uint           `gorm:"uniqueIndex:idx_relay_user;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	Role      string         `gorm:"size:16;default:member;not null" json:"role"` // "owner", "member"
+	JoinedAt  time.Time      `json:"joinedAt"`
+}
+
+// RelayInvite represents a pending invitation to join a relay.
+type RelayInvite struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	RelayID   uint           `gorm:"uniqueIndex:idx_relay_invitee;not null" json:"relayId"`
+	Relay     Relay          `gorm:"foreignKey:RelayID" json:"-"`
+	InviterID uint           `gorm:"not null" json:"inviterId"`
+	Inviter   User           `gorm:"foreignKey:InviterID" json:"-"`
+	InviteeID uint           `gorm:"uniqueIndex:idx_relay_invitee;not null" json:"inviteeId"`
+	Invitee   User           `gorm:"foreignKey:InviteeID" json:"-"`
+	Status    string         `gorm:"size:32;default:pending;not null" json:"status"` // "pending", "accepted", "declined"
+}
+
+// RelaySave represents a save state within a relay.
+type RelaySave struct {
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	RelayID       uint           `gorm:"index;not null" json:"relayId"`
+	Relay         Relay          `gorm:"foreignKey:RelayID" json:"-"`
+	UserID        uint           `gorm:"not null" json:"userId"`
+	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	Name          string         `gorm:"size:255;not null" json:"name"`
+	FilePath      string         `gorm:"size:1024;not null" json:"-"`
+	FileSize      int64          `json:"fileSize"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

@@ -428,3 +428,73 @@ export interface PublicProfile {
   recentGames: PublicProfileGame[];
   topGames: PublicProfileGame[];
 }
+
+export interface Relay {
+  id: string;
+  name: string;
+  description?: string;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  gameConsoleName: string;
+  ownerId: string;
+  ownerUsername: string;
+  status: "active" | "paused" | "completed";
+  memberCount: number;
+  lastActivityAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RelayMember {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  role: "owner" | "member";
+  joinedAt: string;
+  lastPlayedAt?: string;
+  isOnline: boolean;
+}
+
+export interface RelayDetail extends Relay {
+  members: RelayMember[];
+}
+
+export interface RelayInvitation {
+  id: string;
+  relayId: string;
+  relayName: string;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  gameConsoleName: string;
+  inviterUsername: string;
+  inviterAvatarUrl?: string;
+  createdAt: string;
+}
+
+export interface RelaySave {
+  id: string;
+  relayId: string;
+  gameId: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  name: string;
+  fileSize: number;
+  isAuto: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RelaysResponse {
+  data: Relay[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface RelayInvitationsResponse {
+  data: RelayInvitation[];
+  total: number;
+}

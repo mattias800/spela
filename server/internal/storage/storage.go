@@ -179,6 +179,54 @@ func (s *Storage) WriteSharedSave(gameID, saveID uint, filename string, data io.
 	return path, n, nil
 }
 
+// RelaySavePath returns the filesystem path for a relay save state.
+func (s *Storage) RelaySavePath(relayID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, "relays", fmt.Sprintf("relay_%d", relayID), safe)
+}
+
+// WriteRelaySave stores a relay save state file.
+func (s *Storage) WriteRelaySave(relayID uint, filename string, data io.Reader) (string, int64, error) {
+	path := s.RelaySavePath(relayID, filename)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving relay save path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid relay save path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", 0, fmt.Errorf("creating relay save directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating relay save file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return "", 0, fmt.Errorf("writing relay save file: %w", err)
+	}
+
+	return path, n, nil
+}
+
+// DeleteRelaySave removes a relay save state file.
+func (s *Storage) DeleteRelaySave(filePath string) error {
+	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("deleting relay save file: %w", err)
+	}
+	return nil
+}
+
 // ValidateROMPath checks that a ROM path is within allowed game directories.
 func ValidateROMPath(filePath string, allowedDirs []string) bool {
 	absPath, err := filepath.Abs(filePath)

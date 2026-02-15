@@ -20,6 +20,7 @@ import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.LoadGameStateUseCase
@@ -113,6 +114,7 @@ class EmulationViewModelSecondaryDisplayTest {
             libretroController = fakeLibretroController,
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
+            relayRepository = StubRelayRepository(),
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -287,6 +289,7 @@ class EmulationViewModelSecondaryDisplayTest {
             libretroController = fakeLibretroController,
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
+            relayRepository = StubRelayRepository(),
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -313,6 +316,7 @@ class EmulationViewModelSecondaryDisplayTest {
             libretroController = controller,
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
+            relayRepository = StubRelayRepository(),
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -496,5 +500,31 @@ class EmulationViewModelSecondaryDisplayTest {
         override fun unserialize(data: ByteArray): Boolean = true
         override fun setFastForward(enabled: Boolean) {}
         override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
+    }
+
+    private class StubRelayRepository : RelayRepository {
+        override suspend fun getMyRelays(page: Int, pageSize: Int) = Result.success(emptyList<com.spela.player.domain.model.Relay>())
+        override suspend fun getRelay(relayId: String) = Result.failure<com.spela.player.domain.model.RelayDetail>(Exception("stub"))
+        override suspend fun getRelayInvitations() = Result.success(emptyList<com.spela.player.domain.model.RelayInvitation>())
+        override suspend fun getPendingInvitationCount() = Result.success(0)
+        override suspend fun createRelay(name: String, gameId: String, description: String) = Result.failure<com.spela.player.domain.model.RelayDetail>(Exception("stub"))
+        override suspend fun deleteRelay(relayId: String) = Result.success(Unit)
+        override suspend fun inviteUser(relayId: String, username: String) = Result.success(Unit)
+        override suspend fun acceptInvitation(invitationId: String) = Result.success(Unit)
+        override suspend fun rejectInvitation(invitationId: String) = Result.success(Unit)
+        override suspend fun leaveRelay(relayId: String) = Result.success(Unit)
+        override suspend fun removeMember(relayId: String, userId: String) = Result.success(Unit)
+        override suspend fun getGameRelays(gameId: String) = Result.success(emptyList<com.spela.player.domain.model.Relay>())
+        override suspend fun getRelaySaves(relayId: String) = Result.success(emptyList<com.spela.player.domain.model.RelaySave>())
+        override suspend fun deleteRelaySave(relayId: String, saveId: Long) = Result.success(Unit)
+        override suspend fun takeTurn(relayId: String) = Result.success("stub-token")
+        override suspend fun releaseTurn(relayId: String) = Result.success(Unit)
+        override suspend fun heartbeat(relayId: String) = Result.success(Unit)
+        override suspend fun uploadRelaySave(relayId: String, name: String, turnToken: String, data: ByteArray) =
+            Result.success(com.spela.player.domain.model.RelaySave(id = 1, relayId = relayId, name = name))
+        override suspend fun downloadRelaySave(relayId: String, saveId: Long) = Result.success(byteArrayOf())
+        override suspend fun downloadRelayAutoSave(relayId: String) = Result.success(byteArrayOf())
+        override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray) =
+            Result.success(com.spela.player.domain.model.RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
     }
 }

@@ -4,6 +4,7 @@ import {
   Library,
   BarChart3,
   Activity,
+  Repeat,
   SlidersHorizontal,
   Settings,
   Users,
@@ -13,11 +14,14 @@ import {
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
+import { usePendingInvitationCount } from "@/hooks/use-relays";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   useGameScrapedListener();
+  const { data: invitationCountData } = usePendingInvitationCount();
+  const relayBadge = invitationCountData?.count;
 
   const links = [
     {
@@ -38,6 +42,13 @@ export function AppLayout() {
         },
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/activity", icon: Activity, label: "Activity" },
+        {
+          to: "/relays",
+          icon: Repeat,
+          label: "Relays",
+          matchPaths: ["/relays"],
+          badge: relayBadge,
+        },
         { to: "/preferences", icon: SlidersHorizontal, label: "Preferences" },
       ],
     },

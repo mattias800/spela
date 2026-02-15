@@ -10,6 +10,8 @@ sealed class SpScreen(val route: String) {
     data object Settings : SpScreen("settings")
     data class ConsoleSettings(val consoleId: String) : SpScreen("console_settings/$consoleId")
     data class UserProfile(val userId: String) : SpScreen("user/$userId")
+    data object Relays : SpScreen("relays")
+    data class RelayDetail(val relayId: String) : SpScreen("relay/$relayId")
 }
 
 data class NavigationState(
@@ -18,6 +20,8 @@ data class NavigationState(
     val isGoingBack: Boolean = false,
     val showInGameOverlay: Boolean = false,
     val overlayGameId: String? = null,
+    val overlayRelayId: String? = null,
+    val overlayTurnToken: String? = null,
     val screenBehindOverlay: SpScreen? = null,
     val backStackBehindOverlay: List<SpScreen> = emptyList(),
     val isRestoringSession: Boolean = true,
@@ -27,6 +31,6 @@ data class NavigationState(
 sealed interface NavigationIntent {
     data class NavigateTo(val screen: SpScreen) : NavigationIntent
     data object GoBack : NavigationIntent
-    data class ShowOverlay(val gameId: String) : NavigationIntent
+    data class ShowOverlay(val gameId: String, val relayId: String? = null, val turnToken: String? = null) : NavigationIntent
     data object HideOverlay : NavigationIntent
 }

@@ -405,6 +405,69 @@ type CollectionDetailResponse struct {
 	Games []GameResponse `json:"games"`
 }
 
+// RelayResponse is the API response for a relay (list view).
+type RelayResponse struct {
+	ID             string     `json:"id"`
+	OwnerID        string     `json:"ownerId"`
+	OwnerUsername  string     `json:"ownerUsername"`
+	GameID         string     `json:"gameId"`
+	GameTitle      string     `json:"gameTitle"`
+	GameCoverURL   string     `json:"gameCoverUrl,omitempty"`
+	ConsoleName    string     `json:"consoleName,omitempty"`
+	Name           string     `json:"name"`
+	Status         string     `json:"status"`
+	ActiveUserID   *string    `json:"activeUserId"`
+	ActiveUsername string     `json:"activeUsername,omitempty"`
+	TurnTakenAt    *time.Time `json:"turnTakenAt"`
+	MemberCount    int        `json:"memberCount"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+}
+
+// RelayDetailResponse is the API response for a relay with full member list.
+type RelayDetailResponse struct {
+	RelayResponse
+	Members []RelayMemberResponse `json:"members"`
+}
+
+// RelayMemberResponse is the API response for a relay member.
+type RelayMemberResponse struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Username  string    `json:"username"`
+	AvatarURL string    `json:"avatarUrl,omitempty"`
+	Role      string    `json:"role"`
+	JoinedAt  time.Time `json:"joinedAt"`
+}
+
+// RelayInviteResponse is the API response for a relay invite.
+type RelayInviteResponse struct {
+	ID              string    `json:"id"`
+	RelayID         string    `json:"relayId"`
+	RelayName       string    `json:"relayName"`
+	GameTitle       string    `json:"gameTitle"`
+	InviterID       string    `json:"inviterId"`
+	InviterUsername string    `json:"inviterUsername"`
+	InviteeID       string    `json:"inviteeId"`
+	InviteeUsername string    `json:"inviteeUsername"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+// RelaySaveResponse is the API response for a relay save state.
+type RelaySaveResponse struct {
+	ID            string    `json:"id"`
+	RelayID       string    `json:"relayId"`
+	UserID        string    `json:"userId"`
+	Username      string    `json:"username"`
+	Name          string    `json:"name"`
+	FileSize      int64     `json:"fileSize"`
+	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
+	IsAuto        bool      `json:"isAuto"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
 func parseAspectRatio(aspect string) float64 {
 	parts := strings.SplitN(aspect, ":", 2)

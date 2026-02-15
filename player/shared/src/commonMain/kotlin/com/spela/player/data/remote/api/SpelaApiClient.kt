@@ -391,6 +391,127 @@ class SpelaApiClient(
         }.body()
     }
 
+    // Relays
+
+    suspend fun getMyRelays(page: Int = 1, pageSize: Int = 20): RelaysResponse {
+        return client.get("$baseUrl/api/relays") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getRelay(relayId: String): RelayDetailDto {
+        return client.get("$baseUrl/api/relays/$relayId").body()
+    }
+
+    suspend fun getRelayInvitations(): RelayInvitationsResponse {
+        return client.get("$baseUrl/api/relays/invitations").body()
+    }
+
+    suspend fun getPendingInvitationCount(): RelayInvitationCountResponse {
+        return client.get("$baseUrl/api/relays/invitations/count").body()
+    }
+
+    suspend fun createRelay(request: CreateRelayRequest): RelayDetailDto {
+        return client.post("$baseUrl/api/relays") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun deleteRelay(relayId: String) {
+        client.delete("$baseUrl/api/relays/$relayId")
+    }
+
+    suspend fun inviteToRelay(relayId: String, request: InviteToRelayRequest) {
+        client.post("$baseUrl/api/relays/$relayId/invitations") {
+            setBody(request)
+        }
+    }
+
+    suspend fun acceptRelayInvitation(invitationId: String) {
+        client.post("$baseUrl/api/relays/invitations/$invitationId/accept")
+    }
+
+    suspend fun rejectRelayInvitation(invitationId: String) {
+        client.post("$baseUrl/api/relays/invitations/$invitationId/reject")
+    }
+
+    suspend fun leaveRelay(relayId: String) {
+        client.delete("$baseUrl/api/relays/$relayId/members/me")
+    }
+
+    suspend fun removeRelayMember(relayId: String, userId: String) {
+        client.delete("$baseUrl/api/relays/$relayId/members/$userId")
+    }
+
+    suspend fun getGameRelays(gameId: String): List<RelayDto> {
+        return client.get("$baseUrl/api/games/$gameId/relays").body()
+    }
+
+    suspend fun getRelaySaves(relayId: String): List<RelaySaveDto> {
+        return client.get("$baseUrl/api/relays/$relayId/saves").body()
+    }
+
+    suspend fun deleteRelaySave(relayId: String, saveId: Long) {
+        client.delete("$baseUrl/api/relays/$relayId/saves/$saveId")
+    }
+
+    suspend fun takeTurn(relayId: String): TakeTurnResponse {
+        return client.post("$baseUrl/api/relays/$relayId/turn/take").body()
+    }
+
+    suspend fun releaseTurn(relayId: String) {
+        client.post("$baseUrl/api/relays/$relayId/turn/release")
+    }
+
+    suspend fun relayHeartbeat(relayId: String) {
+        client.post("$baseUrl/api/relays/$relayId/heartbeat")
+    }
+
+    suspend fun uploadRelaySave(
+        relayId: String,
+        name: String,
+        turnToken: String,
+        data: ByteArray,
+    ): RelaySaveDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/relays/$relayId/saves",
+            formData = formData {
+                append("name", name)
+                append("turnToken", turnToken)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"relay-save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
+    }
+
+    suspend fun downloadRelaySave(relayId: String, saveId: Long): ByteArray {
+        return client.get("$baseUrl/api/relays/$relayId/saves/$saveId/download").body()
+    }
+
+    suspend fun downloadRelayAutoSave(relayId: String): ByteArray {
+        return client.get("$baseUrl/api/relays/$relayId/saves/auto").body()
+    }
+
+    suspend fun uploadRelayAutoSave(
+        relayId: String,
+        turnToken: String,
+        data: ByteArray,
+    ): RelaySaveDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/relays/$relayId/saves/auto",
+            formData = formData {
+                append("turnToken", turnToken)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"relay-autosave.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
+    }
+
     fun close() {
         client.close()
     }
