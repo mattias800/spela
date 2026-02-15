@@ -20,6 +20,13 @@ vi.mock("@/hooks/use-relays", () => ({
   })),
 }));
 
+vi.mock("@/hooks/use-social", () => ({
+  useSearchUsers: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+}));
+
 vi.mock("@/components/ui", async () => {
   const actual = await vi.importActual("@/components/ui");
   return {

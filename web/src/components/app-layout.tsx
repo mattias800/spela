@@ -16,11 +16,13 @@ import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
 import { usePendingInvitationCount } from "@/hooks/use-relays";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   useGameScrapedListener();
+  useNotifications();
   const { data: invitationCountData } = usePendingInvitationCount();
   const relayBadge = invitationCountData?.count;
 

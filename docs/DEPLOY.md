@@ -190,6 +190,45 @@ labels:
   - "traefik.http.services.spela.loadbalancer.server.port=80"
 ```
 
+## Required Headers (EmulatorJS)
+
+Spela's web-based emulation uses multi-threaded WebAssembly cores for full-speed performance. This requires two HTTP response headers to enable `SharedArrayBuffer` in the browser:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Cross-Origin-Opener-Policy` | `same-origin` | Isolates the browsing context |
+| `Cross-Origin-Embedder-Policy` | `credentialless` | Allows cross-origin resource loading |
+
+**These headers are already set by Spela's containers** -- both the Go server and the nginx frontend include them automatically. You only need to worry about this if your reverse proxy strips or overrides response headers.
+
+### What happens without them
+
+Without these headers, the browser cannot create `SharedArrayBuffer`, so EmulatorJS falls back to single-threaded cores. Games still work, but emulation is noticeably slower (roughly 2-4x).
+
+### Verify headers are working
+
+Open your browser's developer tools, go to the Network tab, and check the response headers on any page load:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: credentialless
+```
+
+Alternatively, check from the command line:
+
+```bash
+curl -sI https://spela.example.com | grep -i cross-origin
+```
+
+### Reverse proxy notes
+
+Most reverse proxies (Caddy, Traefik, nginx) pass response headers through by default. If you're having issues:
+
+- **nginx**: Ensure you are not using `proxy_hide_header` for these headers
+- **Caddy**: Headers are passed through automatically, no action needed
+- **Traefik**: Headers are passed through automatically, no action needed
+- **Cloudflare**: If using Cloudflare as a proxy, these headers are preserved by default
+
 ## TURN Server (Netplay)
 
 The TURN server (coturn) enables netplay for players behind restrictive firewalls or NATs. It runs on the host network and requires these UDP ports to be open:

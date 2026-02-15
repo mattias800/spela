@@ -4,7 +4,6 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   RelaysResponse,
   RelayDetail,
-  RelayInvitation,
   RelayInvitationsResponse,
   RelaySave,
   Relay,
@@ -25,7 +24,7 @@ export function useRelayInvitations() {
   return useQuery({
     queryKey: ["relays", "invitations"],
     queryFn: () =>
-      api.get<RelayInvitationsResponse>("/relays/invitations"),
+      api.get<RelayInvitationsResponse>("/user/relay-invites"),
   });
 }
 
@@ -33,7 +32,7 @@ export function usePendingInvitationCount() {
   return useQuery({
     queryKey: ["relays", "invitations", "count"],
     queryFn: () =>
-      api.get<{ count: number }>("/relays/invitations/count"),
+      api.get<{ count: number }>("/user/relay-invites/count"),
     refetchInterval: 30000,
   });
 }
@@ -98,7 +97,7 @@ export function useInviteToRelay() {
     }: {
       relayId: string;
       username: string;
-    }) => api.post(`/relays/${relayId}/invitations`, { username }),
+    }) => api.post(`/relays/${relayId}/invites`, { username }),
     onSuccess: (_, { relayId }) => {
       queryClient.invalidateQueries({ queryKey: ["relays", "detail", relayId] });
     },
@@ -110,7 +109,7 @@ export function useAcceptRelayInvitation() {
 
   return useMutation({
     mutationFn: (invitationId: string) =>
-      api.post(`/relays/invitations/${invitationId}/accept`),
+      api.post(`/user/relay-invites/${invitationId}/accept`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["relays"] });
     },
@@ -122,7 +121,7 @@ export function useRejectRelayInvitation() {
 
   return useMutation({
     mutationFn: (invitationId: string) =>
-      api.post(`/relays/invitations/${invitationId}/reject`),
+      api.post(`/user/relay-invites/${invitationId}/decline`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["relays"] });
     },
@@ -134,7 +133,7 @@ export function useLeaveRelay() {
 
   return useMutation({
     mutationFn: (relayId: string) =>
-      api.delete(`/relays/${relayId}/members/me`),
+      api.post(`/relays/${relayId}/leave`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["relays"] });
     },
@@ -178,7 +177,7 @@ export function useDeleteRelaySave() {
 export function useRelayRealtime(relayId?: string) {
   const queryClient = useQueryClient();
 
-  useWebSocketEvent("relay_invitation", () => {
+  useWebSocketEvent("relay_invite_sent", () => {
     queryClient.invalidateQueries({ queryKey: ["relays", "invitations"] });
     queryClient.invalidateQueries({
       queryKey: ["relays", "invitations", "count"],
@@ -191,7 +190,7 @@ export function useRelayRealtime(relayId?: string) {
     }
   });
 
-  useWebSocketEvent("relay_member_joined", () => {
+  useWebSocketEvent("relay_invite_accepted", () => {
     if (relayId) {
       queryClient.invalidateQueries({ queryKey: ["relays", "detail", relayId] });
     }
@@ -199,6 +198,13 @@ export function useRelayRealtime(relayId?: string) {
   });
 
   useWebSocketEvent("relay_member_left", () => {
+    if (relayId) {
+      queryClient.invalidateQueries({ queryKey: ["relays", "detail", relayId] });
+    }
+    queryClient.invalidateQueries({ queryKey: ["relays"] });
+  });
+
+  useWebSocketEvent("relay_member_removed", () => {
     if (relayId) {
       queryClient.invalidateQueries({ queryKey: ["relays", "detail", relayId] });
     }

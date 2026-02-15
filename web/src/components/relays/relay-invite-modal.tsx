@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { UserPlus, Check } from "lucide-react";
-import { Button, Modal, Input } from "@/components/ui";
+import { useState, useRef, useEffect } from "react";
+import { UserPlus, Check, Search } from "lucide-react";
+import { Button, Modal } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useInviteToRelay } from "@/hooks/use-relays";
+import { useSearchUsers } from "@/hooks/use-social";
+import type { UserSearchResult } from "@/types/api";
 
 interface RelayInviteModalProps {
   relayId: string;
@@ -15,22 +17,51 @@ export function RelayInviteModal({
   open,
   onClose,
 }: RelayInviteModalProps) {
-  const [username, setUsername] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
+    null,
+  );
   const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const inviteUser = useInviteToRelay();
   const { toast } = useToast();
+  const { data: searchResults, isLoading: isSearching } =
+    useSearchUsers(query);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handleSelectUser(user: UserSearchResult) {
+    setSelectedUser(user);
+    setQuery(user.username);
+    setShowDropdown(false);
+  }
 
   function handleInvite() {
-    const trimmed = username.trim();
-    if (!trimmed) return;
+    const username = selectedUser?.username ?? query.trim();
+    if (!username) return;
 
     inviteUser.mutate(
-      { relayId, username: trimmed },
+      { relayId, username },
       {
         onSuccess: () => {
-          toast("success", `Invitation sent to ${trimmed}`);
-          setInvitedUsers((prev) => [...prev, trimmed]);
-          setUsername("");
+          toast("success", `Invitation sent to ${username}`);
+          setInvitedUsers((prev) => [...prev, username]);
+          setQuery("");
+          setSelectedUser(null);
+          inputRef.current?.focus();
         },
         onError: (error) => {
           toast(
@@ -45,10 +76,16 @@ export function RelayInviteModal({
   }
 
   function handleClose() {
-    setUsername("");
+    setQuery("");
+    setSelectedUser(null);
     setInvitedUsers([]);
+    setShowDropdown(false);
     onClose();
   }
+
+  const filteredResults = (searchResults ?? []).filter(
+    (u) => !invitedUsers.includes(u.username),
+  );
 
   return (
     <Modal open={open} onClose={handleClose} title="Invite Players">
@@ -59,14 +96,70 @@ export function RelayInviteModal({
         }}
         className="space-y-4"
       >
-        <Input
-          id="invite-username"
-          label="Username"
-          placeholder="Enter username to invite"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-        />
+        <div className="relative" ref={dropdownRef}>
+          <label
+            htmlFor="invite-username"
+            className="block text-sm font-medium text-surface-300 mb-1.5"
+          >
+            Username
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-500 pointer-events-none" />
+            <input
+              ref={inputRef}
+              id="invite-username"
+              type="text"
+              placeholder="Search for a user..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSelectedUser(null);
+                setShowDropdown(e.target.value.length >= 2);
+              }}
+              onFocus={() => {
+                if (query.length >= 2) setShowDropdown(true);
+              }}
+              autoFocus
+              autoComplete="off"
+              className="w-full rounded-lg border border-surface-700 bg-surface-800 py-2.5 pl-10 pr-3 text-sm text-surface-100 placeholder:text-surface-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+          {showDropdown && query.length >= 2 && (
+            <div className="absolute z-50 mt-1 w-full rounded-lg border border-surface-700 bg-surface-800 shadow-lg max-h-48 overflow-y-auto">
+              {isSearching ? (
+                <div className="px-3 py-2 text-sm text-surface-500">
+                  Searching...
+                </div>
+              ) : filteredResults.length > 0 ? (
+                filteredResults.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-surface-700 transition-colors"
+                    onClick={() => handleSelectUser(user)}
+                  >
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt=""
+                        className="h-6 w-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-300">
+                        {user.username[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-surface-200">{user.username}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-sm text-surface-500">
+                  No users found
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {invitedUsers.length > 0 && (
           <div className="space-y-1.5">
@@ -88,7 +181,7 @@ export function RelayInviteModal({
         )}
 
         <p className="text-xs text-surface-500">
-          You can invite multiple players before closing this dialog.
+          Search for users by name and invite them to this relay.
         </p>
 
         <div className="flex justify-end gap-3">
@@ -98,7 +191,7 @@ export function RelayInviteModal({
           <Button
             type="submit"
             loading={inviteUser.isPending}
-            disabled={!username.trim()}
+            disabled={!query.trim()}
           >
             <UserPlus className="h-4 w-4" />
             Send Invite

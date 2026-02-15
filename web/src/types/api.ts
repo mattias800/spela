@@ -289,6 +289,12 @@ export interface RecentAchievement {
   coverUrl: string;
 }
 
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+}
+
 export interface OnlineUser {
   id: string;
   username: string;

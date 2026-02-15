@@ -199,6 +199,35 @@ func toPublicProfileGame(g db.Game, playTime int64) PublicProfileGame {
 	}
 }
 
+// SearchUsers returns users matching a search query, excluding the current user.
+func (h *SocialHandler) SearchUsers(c *gin.Context) {
+	uid := getUserID(c)
+	query := strings.TrimSpace(c.Query("q"))
+	if len(query) < 2 {
+		c.JSON(http.StatusOK, []UserSearchResult{})
+		return
+	}
+
+	var users []db.User
+	if err := h.DB.Where("username LIKE ? AND id != ? AND disabled = ?", query+"%", uid, false).
+		Limit(10).
+		Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
+		return
+	}
+
+	result := make([]UserSearchResult, 0, len(users))
+	for _, u := range users {
+		result = append(result, UserSearchResult{
+			ID:        strconv.FormatUint(uint64(u.ID), 10),
+			Username:  u.Username,
+			AvatarURL: u.AvatarURL,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // GetActivityFeed returns a paginated activity feed (most recent first).
 func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))

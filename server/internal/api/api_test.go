@@ -2000,6 +2000,166 @@ func TestShareSave_CreatesActivityEvent(t *testing.T) {
 	assert.True(t, found, "should have a shared_save activity event")
 }
 
+func TestSearchUsers(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Register additional users
+	for _, name := range []string{"alice", "alex", "bob", "charlie"} {
+		body, _ := json.Marshal(map[string]string{
+			"username": name,
+			"email":    name + "@example.com",
+			"password": "password123",
+		})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	t.Run("returns matching users by prefix", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/users/search?q=al", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var results []map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &results)
+		assert.Len(t, results, 2) // alice, alex
+		usernames := []string{results[0]["username"].(string), results[1]["username"].(string)}
+		assert.Contains(t, usernames, "alice")
+		assert.Contains(t, usernames, "alex")
+	})
+
+	t.Run("excludes current user from results", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/users/search?q=api", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var results []map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &results)
+		assert.Len(t, results, 0) // "apitest" is the current user
+	})
+
+	t.Run("returns empty for short query", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/users/search?q=a", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var results []map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &results)
+		assert.Len(t, results, 0)
+	})
+
+	t.Run("returns empty for no match", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/users/search?q=zzz", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var results []map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &results)
+		assert.Len(t, results, 0)
+	})
+
+	t.Run("response includes id and username", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/users/search?q=bob", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var results []map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &results)
+		assert.Len(t, results, 1)
+		assert.Equal(t, "bob", results[0]["username"])
+		assert.NotEmpty(t, results[0]["id"])
+	})
+}
+
+func TestGetPendingInviteCount(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Register a second user
+	body, _ := json.Marshal(map[string]string{
+		"username": "invitee",
+		"email":    "invitee@example.com",
+		"password": "password123",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var regResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &regResp)
+	inviteeToken := regResp["accessToken"].(string)
+
+	t.Run("returns zero when no invites", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/user/relay-invites/count", nil)
+		req.Header.Set("Authorization", "Bearer "+inviteeToken)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var resp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.Equal(t, float64(0), resp["count"])
+	})
+
+	t.Run("returns correct count after invite", func(t *testing.T) {
+		// Create a game and relay, then invite the second user
+		var console db.Console
+		database.First(&console)
+		game := db.Game{ConsoleID: console.ID, Title: "Invite Count Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+		database.Create(&game)
+
+		// Create relay
+		body, _ := json.Marshal(map[string]interface{}{"name": "Count Test Relay", "gameId": fmt.Sprintf("%d", game.ID)})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/api/relays", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+
+		var relayResp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &relayResp)
+		relayID := relayResp["id"].(string)
+
+		// Invite invitee
+		body, _ = json.Marshal(map[string]string{"username": "invitee"})
+		w = httptest.NewRecorder()
+		req = httptest.NewRequest("POST", "/api/relays/"+relayID+"/invites", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+
+		// Check count
+		w = httptest.NewRecorder()
+		req = httptest.NewRequest("GET", "/api/user/relay-invites/count", nil)
+		req.Header.Set("Authorization", "Bearer "+inviteeToken)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var resp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.Equal(t, float64(1), resp["count"])
+	})
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()

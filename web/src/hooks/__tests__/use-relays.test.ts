@@ -190,7 +190,7 @@ describe("useRelayInvitations", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/relays/invitations");
+    expect(mockApi.get).toHaveBeenCalledWith("/user/relay-invites");
     expect(result.current.data?.data).toHaveLength(1);
     expect(result.current.data?.data[0].relayName).toBe("Friday Night SNES");
   });
@@ -206,7 +206,7 @@ describe("usePendingInvitationCount", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/relays/invitations/count");
+    expect(mockApi.get).toHaveBeenCalledWith("/user/relay-invites/count");
     expect(result.current.data?.count).toBe(3);
   });
 });
@@ -328,7 +328,7 @@ describe("useInviteToRelay", () => {
     result.current.mutate({ relayId: "relay-1", username: "charlie" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/relays/relay-1/invitations", {
+    expect(mockApi.post).toHaveBeenCalledWith("/relays/relay-1/invites", {
       username: "charlie",
     });
   });
@@ -358,7 +358,7 @@ describe("useAcceptRelayInvitation", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockApi.post).toHaveBeenCalledWith(
-      "/relays/invitations/inv-1/accept",
+      "/user/relay-invites/inv-1/accept",
     );
   });
 });
@@ -375,14 +375,14 @@ describe("useRejectRelayInvitation", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockApi.post).toHaveBeenCalledWith(
-      "/relays/invitations/inv-1/reject",
+      "/user/relay-invites/inv-1/decline",
     );
   });
 });
 
 describe("useLeaveRelay", () => {
   it("leaves a relay", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockApi.post.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useLeaveRelay(), {
       wrapper: createWrapper(),
@@ -391,7 +391,9 @@ describe("useLeaveRelay", () => {
     result.current.mutate("relay-1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/relays/relay-1/members/me");
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/relays/relay-1/leave",
+    );
   });
 });
 

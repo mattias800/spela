@@ -301,6 +301,19 @@ func (h *RelayHandler) ListMyInvites(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetPendingInviteCount returns the number of pending relay invites for the current user.
+func (h *RelayHandler) GetPendingInviteCount(c *gin.Context) {
+	uid := getUserID(c)
+
+	var count int64
+	if err := h.DB.Model(&db.RelayInvite{}).Where("invitee_id = ? AND status = ?", uid, "pending").Count(&count).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count invites"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}
+
 // AcceptInvite accepts a relay invite.
 func (h *RelayHandler) AcceptInvite(c *gin.Context) {
 	uid := getUserID(c)

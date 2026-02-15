@@ -294,6 +294,13 @@ func ToUserResponse(u db.User) UserResponse {
 	}
 }
 
+// UserSearchResult is the API response for a user search result.
+type UserSearchResult struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatarUrl,omitempty"`
+}
+
 // OnlineUserResponse is the API response for an online user.
 type OnlineUserResponse struct {
 	ID          string                  `json:"id"`

@@ -243,6 +243,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
 		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
 		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
+		api.GET("/user/relay-invites/count", relayHandler.GetPendingInviteCount)
 		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)
 		api.POST("/user/relay-invites/:id/decline", relayHandler.DeclineInvite)
 
@@ -262,6 +263,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Social
 		api.GET("/social/online", socialHandler.GetOnlineUsers)
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
+		api.GET("/users/search", socialHandler.SearchUsers)
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
 
 		// RetroAchievements

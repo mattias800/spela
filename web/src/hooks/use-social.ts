@@ -5,6 +5,7 @@ import type {
   OnlineUsersResponse,
   ActivityFeedResponse,
   ActivityEvent,
+  UserSearchResult,
 } from "@/types/api";
 
 export function useOnlineUsers() {
@@ -22,6 +23,15 @@ export function useActivityFeed(page: number = 1, pageSize: number = 20) {
       api.get<ActivityFeedResponse>(
         `/social/activity?page=${page}&pageSize=${pageSize}`,
       ),
+  });
+}
+
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: ["users", "search", query],
+    queryFn: () =>
+      api.get<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}`),
+    enabled: query.length >= 2,
   });
 }
 

@@ -101,6 +101,7 @@ sqldelight {
     databases {
         create("SpelaDatabase") {
             packageName.set("com.spela.player.data.local")
+            verifyMigrations.set(true)
         }
     }
 }
