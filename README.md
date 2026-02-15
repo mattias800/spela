@@ -1,24 +1,105 @@
-# Spela
+<p align="center">
+  <h1 align="center">Spela</h1>
+  <p align="center">Your retro game library, self-hosted. Play anywhere.</p>
+</p>
 
-A self-hosted retro game emulation service. Host your ROM library on a server, manage it through a web UI, and play games on any device with cloud saves.
+<p align="center">
+  <a href="#supported-consoles">16 Consoles</a> &bull;
+  <a href="#features">Features</a> &bull;
+  <a href="#quick-start">Quick Start</a> &bull;
+  <a href="docs/DEPLOY.md">Deploy Guide</a>
+</p>
+
+---
+
+Spela is a self-hosted retro game emulation platform. Point it at your ROM collection, and it turns into a beautiful game library with cover art, metadata, cloud saves, multiplayer, and achievements -- accessible from any device.
+
+Think of it as your own personal Steam for retro games.
+
+<!-- TODO: Add hero screenshot -->
+
+## Why Spela?
+
+- **One library, every device** -- your games, saves, and progress sync across Android, Windows, macOS, and Linux
+- **Play in seconds** -- browse your collection with cover art, pick a game, and you're playing. No fiddling with cores or configs
+- **Self-hosted** -- your server, your data. Runs on a Raspberry Pi, a NAS, or a VPS. No cloud dependency
+- **Multiplayer** -- play with friends via real-time netplay or async turn-based relay sessions
+- **Beautiful** -- dark-themed UI designed for browsing large game libraries visually
 
 ## Features
 
-- **Automatic library scanning** -- point Spela at your ROM directories and it detects consoles, titles, and file types automatically
-- **Metadata scraping** -- pulls cover art, descriptions, screenshots, and ratings from ScreenScraper
-- **Cloud saves** -- save states sync per user per game, with automatic and manual save slots
-- **Multi-user** -- JWT authentication with admin and user roles
-- **Web dashboard** -- browse your library, manage metadata, view play history and favorites
-- **Player app** -- Kotlin Multiplatform app with libretro integration for Android, Windows, macOS, and Linux
-- **16 consoles supported** -- NES, SNES, Game Boy, GBA, N64, DS, Genesis, Master System, Saturn, PlayStation, PSP, Neo Geo, Arcade, TurboGrafx-16, Atari 2600
+### Play Your Way
 
-## Screenshots
+| Feature | Description |
+|---------|-------------|
+| **Native Player App** | Kotlin Multiplatform app for Android, Windows, macOS, and Linux with libretro emulation |
+| **Browser Play** | Play directly in the web browser via EmulatorJS -- no install needed |
+| **Cloud Saves** | Save states sync automatically across all your devices |
+| **Shared Saves** | Share your save states publicly for others to download |
+| **Auto-Save & Auto-Load** | Never lose progress -- games auto-save on exit and auto-load on start |
+| **Visual Shaders** | CRT scanlines, LCD grid, sharp bilinear, and more -- per-console or global |
+| **Gamepad Support** | Auto-detected controllers with customizable button mapping, per-console overrides |
+| **Fast Forward** | Speed through slow sections with a button press |
+| **Screenshots** | Capture in-game screenshots at any time |
+| **Performance Overlay** | Optional FPS and frame time display |
 
-<!-- TODO: Add screenshots of the web UI and player app -->
+### Multiplayer
 
-## Quick Start (Docker)
+| Feature | Description |
+|---------|-------------|
+| **Real-Time Netplay** | Two-player online multiplayer with lockstep input sync. Share a 6-character invite code and play together |
+| **Relay Sessions** | Asynchronous turn-based multiplayer -- take turns playing and pass the save to your friend |
+| **Relay Invitations** | Invite friends to join relay sessions with turn management and timeout protection |
 
-1. Create a directory for your games organized by console:
+### Social
+
+| Feature | Description |
+|---------|-------------|
+| **Activity Feed** | See what your friends are playing, their new favorites, ratings, and achievements |
+| **Ratings & Reviews** | Rate games and write reviews. See community averages |
+| **Favorites** | Mark your favorite games, synced across devices |
+| **Play Later Queue** | Save games for later with custom ordering |
+| **Collections** | Create named game lists (public or private) |
+| **Play History** | Track time played per game with most-played leaderboards |
+| **Online Status** | See who's currently playing and what they're playing |
+| **User Profiles** | Public profiles with gaming activity and stats |
+
+### Library Management
+
+| Feature | Description |
+|---------|-------------|
+| **Auto-Detection** | Point Spela at your ROM folders -- it detects consoles, titles, and file types automatically |
+| **Metadata Scraping** | Cover art, descriptions, screenshots, ratings, and developer info pulled from ScreenScraper |
+| **Multi-User** | Multiple accounts with admin and user roles. First registered user becomes admin |
+| **RetroAchievements** | Link your RetroAchievements account for in-game achievements with progress tracking |
+| **Multi-Server** | The player app can connect to multiple Spela servers |
+
+## Supported Consoles
+
+| Console | Core | Extensions |
+|---------|------|------------|
+| NES | Nestopia | `.nes` `.fds` |
+| SNES | Snes9x | `.sfc` `.smc` |
+| Game Boy | Gambatte | `.gb` |
+| Game Boy Color | Gambatte | `.gbc` |
+| Game Boy Advance | mGBA | `.gba` |
+| Nintendo 64 | Mupen64Plus | `.n64` `.z64` `.v64` |
+| Nintendo DS | DeSmuME | `.nds` |
+| Sega Master System | Genesis Plus GX | `.sms` |
+| Sega Genesis / Mega Drive | Genesis Plus GX | `.md` `.gen` `.bin` |
+| Sega Saturn | Beetle Saturn | `.iso` `.bin/.cue` |
+| PlayStation | Beetle PSX | `.bin/.cue` `.iso` `.pbp` |
+| PSP | PPSSPP | `.iso` `.cso` |
+| Neo Geo | FBNeo | `.zip` |
+| Arcade (MAME) | MAME 2003+ | `.zip` |
+| TurboGrafx-16 | Beetle PCE | `.pce` |
+| Atari 2600 | Stella | `.a26` `.bin` |
+
+## Quick Start
+
+The fastest way to get running is Docker Compose.
+
+### 1. Organize your ROMs
 
 ```
 games/
@@ -30,78 +111,57 @@ games/
     Pokemon Emerald.gba
 ```
 
-2. Create a `.env` file:
+### 2. Generate secrets and configure
 
-```
-SPELA_JWT_SECRET=your-secret-key-here
+```bash
+./generate-secrets.sh
 ```
 
-3. Run with Docker Compose:
+Edit the generated `.env` file and set `SPELA_GAMES_PATH` to your ROM directory.
+
+### 3. Start Spela
 
 ```bash
 docker compose up -d
 ```
 
-4. Open `http://localhost:8080` and register your first user (the first registered user becomes admin).
+### 4. Open the web UI
 
-5. Trigger a library scan from the admin panel to detect your games.
+Go to `http://localhost:8080`, register your first account (it becomes admin), and trigger a library scan from the admin panel.
 
-### Optional: ScreenScraper metadata
+### 5. Download the player app
 
-Add scraper credentials to your `.env` to enable automatic metadata fetching:
+Download the player app on your device, point it at your server, and start playing.
 
-```
-SPELA_SCRAPER_DEV_ID=your-dev-id
-SPELA_SCRAPER_DEV_PASS=your-dev-password
-SPELA_SCRAPER_USER=your-screenscraper-username
-SPELA_SCRAPER_USER_PASS=your-screenscraper-password
-```
+---
+
+For production deployment with HTTPS, TURN server, and Portainer, see the **[Deploy Guide](docs/DEPLOY.md)**.
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Go 1.22+, Gin, GORM, SQLite |
-| Web Frontend | React 19, TypeScript, Vite, Tailwind CSS |
-| Player App | Kotlin Multiplatform, Compose Multiplatform |
-| Emulation | libretro (cores loaded dynamically) |
-| Auth | JWT with refresh tokens |
-| Real-time | WebSocket |
-
-## Project Structure
-
-```
-spela/
-  server/           Go backend (REST API, WebSocket, DB)
-  web/              React web frontend
-  player/           Compose Multiplatform player app
-  ARCHITECTURE.md   Detailed architecture documentation
-```
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for full system design, API endpoints, console mappings, and component details.
+| Backend | Go, Gin, GORM, SQLite |
+| Web Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Player App | Kotlin Multiplatform, Compose Multiplatform, libretro |
+| Real-Time | WebSocket |
+| Auth | JWT with refresh token rotation |
+| TURN Server | coturn (for netplay NAT traversal) |
 
 ## Development
 
-### Backend
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 
 ```bash
-cd server
-go run ./cmd/server
+# Backend
+cd server && go run ./cmd/server
+
+# Web frontend
+cd web && npm install && npm run dev
+
+# Player app
+# See player/README.md for build instructions
 ```
-
-See [server/README.md](server/README.md) for full setup instructions and environment variable reference.
-
-### Web Frontend
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-### Player App
-
-See [player/README.md](player/README.md) for build instructions.
 
 ## License
 
