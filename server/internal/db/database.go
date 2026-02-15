@@ -72,7 +72,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 // For existing consoles, it backfills the EmulatorJSCore field if empty.
 func SeedConsoles(db *gorm.DB) error {
 	consoles := []Console{
-		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012"},
+		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012", CoverAspect: "5:7"},
 		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", FolderName: "snes", ColorTheme: "#7b7db5", CoverAspect: "4:3"},
 		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gb", ColorTheme: "#8bac0f", CoverAspect: "7:8"},
 		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8"},

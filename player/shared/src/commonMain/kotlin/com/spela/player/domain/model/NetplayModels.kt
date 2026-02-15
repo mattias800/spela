@@ -9,6 +9,7 @@ data class NetplaySession(
     val gameTitle: String = "",
     val gameCoverUrl: String? = null,
     val gameConsoleName: String = "",
+    val coverAspectRatio: Float = 0.75f,
     val hostUserId: String,
     val hostUsername: String = "",
     val hostAvatarUrl: String? = null,

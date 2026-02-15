@@ -311,8 +311,9 @@ private fun LobbyHeader(session: NetplaySession) {
         SpCoverArt(
             imageUrl = session.gameCoverUrl,
             contentDescription = "${session.gameTitle} cover",
-            modifier = Modifier.size(width = 80.dp, height = 107.dp),
+            modifier = Modifier.width(80.dp),
             cornerRadius = 12.dp,
+            aspectRatio = session.coverAspectRatio,
         )
         Spacer(Modifier.width(SpSpacing.Default))
         Column(modifier = Modifier.weight(1f)) {

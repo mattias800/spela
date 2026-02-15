@@ -212,8 +212,27 @@ func TestProtectedEndpoint_NoAuth(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+// seedGameForEachConsole adds one test game per console so consoles appear in
+// the API response (ListConsoles filters out empty consoles).
+func seedGameForEachConsole(t *testing.T, database *gorm.DB) {
+	t.Helper()
+	var consoles []db.Console
+	require.NoError(t, database.Find(&consoles).Error)
+	for _, c := range consoles {
+		game := db.Game{
+			ConsoleID: c.ID,
+			Title:     "Test Game for " + c.Abbreviation,
+			FileName:  "test" + c.Abbreviation + ".rom",
+			FilePath:  "/tmp/test" + c.Abbreviation + ".rom",
+			FileSize:  1024,
+		}
+		require.NoError(t, database.Create(&game).Error)
+	}
+}
+
 func TestListConsoles(t *testing.T) {
-	_, cfg := setupTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	seedGameForEachConsole(t, database)
 	router := NewRouter(*cfg)
 	token := registerAndGetToken(t, router)
 
@@ -226,7 +245,7 @@ func TestListConsoles(t *testing.T) {
 	var consoles []map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &consoles)
 	require.NoError(t, err)
-	assert.True(t, len(consoles) > 0, "should have seeded consoles")
+	assert.True(t, len(consoles) > 0, "should have seeded consoles with games")
 
 	// Verify API contract: string ID, extensions as array, coverAspectRatio as number
 	first := consoles[0]
@@ -744,7 +763,8 @@ func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 }
 
 func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
-	_, cfg := setupTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	seedGameForEachConsole(t, database)
 	router := NewRouter(*cfg)
 	token := registerAndGetToken(t, router)
 

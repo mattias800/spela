@@ -217,8 +217,9 @@ private fun NetplaySessionItem(
             SpCoverArt(
                 imageUrl = session.gameCoverUrl,
                 contentDescription = "${session.gameTitle} cover",
-                modifier = Modifier.size(width = 48.dp, height = 64.dp),
+                modifier = Modifier.width(48.dp),
                 cornerRadius = 8.dp,
+                aspectRatio = session.coverAspectRatio,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

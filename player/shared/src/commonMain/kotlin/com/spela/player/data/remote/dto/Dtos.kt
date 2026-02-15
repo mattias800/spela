@@ -457,6 +457,7 @@ data class NetplaySessionDto(
     val gameTitle: String = "",
     val gameCoverUrl: String? = null,
     val consoleName: String = "",
+    val coverAspectRatio: Float = 0.75f,
     val hostId: String,
     val hostUsername: String = "",
     val hostAvatarUrl: String? = null,

@@ -54,6 +54,60 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 	return database, store, router
 }
 
+func TestListConsoles_OmitsConsolesWithNoGames(t *testing.T) {
+	database, store, router := setupConsoleTestEnv(t)
+
+	handler := &ConsoleHandler{DB: database, Storage: store}
+	router.GET("/api/consoles", handler.ListConsoles)
+
+	// With seeded consoles but no games, response should be empty
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/consoles", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var consoles []ConsoleResponse
+	err := json.Unmarshal(w.Body.Bytes(), &consoles)
+	require.NoError(t, err)
+	assert.Empty(t, consoles, "should return no consoles when none have games")
+}
+
+func TestListConsoles_ReturnsConsolesWithGames(t *testing.T) {
+	database, store, router := setupConsoleTestEnv(t)
+
+	handler := &ConsoleHandler{DB: database, Storage: store}
+	router.GET("/api/consoles", handler.ListConsoles)
+
+	// Add a game to NES console
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	game := db.Game{
+		ConsoleID: nesConsole.ID,
+		Title:     "Test Game",
+		FileName:  "test.nes",
+		FilePath:  "/tmp/test.nes",
+		FileSize:  1024,
+	}
+	err = database.Create(&game).Error
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/consoles", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var consoles []ConsoleResponse
+	err = json.Unmarshal(w.Body.Bytes(), &consoles)
+	require.NoError(t, err)
+	assert.Len(t, consoles, 1, "should return only the console with games")
+	assert.Equal(t, "NES", consoles[0].Abbreviation)
+	assert.Equal(t, 1, consoles[0].GameCount)
+}
+
 func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
 	_, _, router := setupConsoleTestEnv(t)
 

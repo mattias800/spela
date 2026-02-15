@@ -57,10 +57,12 @@ func (h *ConsoleHandler) ListConsoles(c *gin.Context) {
 		consoles[i].GameCount = int(count)
 	}
 
-	// Convert to API response format
-	result := make([]ConsoleResponse, len(consoles))
-	for i, con := range consoles {
-		result[i] = ToConsoleResponse(con)
+	// Only return consoles that have at least one game
+	result := make([]ConsoleResponse, 0, len(consoles))
+	for _, con := range consoles {
+		if con.GameCount > 0 {
+			result = append(result, ToConsoleResponse(con))
+		}
 	}
 
 	c.JSON(http.StatusOK, result)

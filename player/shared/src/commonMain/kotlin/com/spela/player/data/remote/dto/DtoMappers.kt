@@ -250,6 +250,7 @@ fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
     gameConsoleName = consoleName,
+    coverAspectRatio = coverAspectRatio,
     hostUserId = hostId,
     hostUsername = hostUsername,
     hostAvatarUrl = hostAvatarUrl,

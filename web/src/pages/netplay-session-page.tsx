@@ -29,7 +29,7 @@ function NetplaySessionSkeleton() {
     <div className="max-w-5xl space-y-8">
       <Skeleton className="h-5 w-16" />
       <div className="flex flex-col gap-6 md:flex-row md:gap-8">
-        <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-2xl" />
+        <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-2xl" /> {/* Skeleton uses default 3:4, actual page uses session.coverAspectRatio */}
         <div className="flex-1 space-y-5 pt-2">
           <Skeleton className="h-9 w-64" />
           <div className="flex gap-2">
@@ -101,7 +101,7 @@ export function NetplaySessionPage() {
       <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
         {/* Cover art */}
         <div className="w-48 flex-shrink-0 md:w-64">
-          <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl">
+          <div style={{ aspectRatio: session.coverAspectRatio || 3 / 4 }} className="rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl">
             {session.gameCoverUrl ? (
               <img
                 src={session.gameCoverUrl}

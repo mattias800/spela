@@ -458,23 +458,28 @@ func (h *NetplayHandler) toSessionResponse(s db.NetplaySession) NetplaySessionRe
 	}
 
 	consoleName := ""
+	var coverAspect float64
 	if s.Game.Console.ID != 0 {
 		consoleName = s.Game.Console.Name
+		coverAspect = parseAspectRatio(s.Game.Console.CoverAspect)
+	} else {
+		coverAspect = 0.75
 	}
 
 	return NetplaySessionResponse{
-		ID:              strconv.FormatUint(uint64(s.ID), 10),
-		HostUserID:      strconv.FormatUint(uint64(s.HostUserID), 10),
-		HostUsername:    hostUsername,
-		HostAvatarURL:   hostAvatarURL,
-		ClientUserID:    clientUserID,
-		ClientUsername:  clientUsername,
-		ClientAvatarURL: clientAvatarURL,
-		GameID:          strconv.FormatUint(uint64(s.GameID), 10),
-		GameTitle:       s.Game.Title,
-		GameCoverURL:    coverURL,
-		ConsoleName:     consoleName,
-		Status:          s.Status,
+		ID:               strconv.FormatUint(uint64(s.ID), 10),
+		HostUserID:       strconv.FormatUint(uint64(s.HostUserID), 10),
+		HostUsername:     hostUsername,
+		HostAvatarURL:    hostAvatarURL,
+		ClientUserID:     clientUserID,
+		ClientUsername:   clientUsername,
+		ClientAvatarURL:  clientAvatarURL,
+		GameID:           strconv.FormatUint(uint64(s.GameID), 10),
+		GameTitle:        s.Game.Title,
+		GameCoverURL:     coverURL,
+		ConsoleName:      consoleName,
+		CoverAspectRatio: coverAspect,
+		Status:           s.Status,
 		EndReason:       s.EndReason,
 		InputDelay:      s.InputDelay,
 		CoreName:        s.CoreName,
