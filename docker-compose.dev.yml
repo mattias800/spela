@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./testdata/roms:/app/games:ro
+      - backend-data:/app/data
+      - backend-saves:/app/saves
+      - backend-images:/app/images
+    environment:
+      - SPELA_JWT_SECRET=dev-secret
+      - SPELA_SEED=true
+      - GIN_MODE=debug
+
+volumes:
+  backend-data:
+  backend-saves:
+  backend-images:
