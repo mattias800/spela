@@ -3,7 +3,8 @@
 ## Both web UI and app
 [ ] In the console list, only list the consoles that have games.
 [ ] In the console list, add an image of the console.
-[ ] In games list, BIOS files are appearing. We should have dedicated path (in env variables) for BIOS files.
+[ ] BIOS files are appearing in the games list.
+[ ] We should have dedicated path (in env variables) for BIOS files, so they can be separated from the ROMs.
 [ ] Pass correct BIOS paths to libretro and EmulatorJS.
 [ ] When autoscraping a game is done, the UI doesn't update, the game is stuck spinning.
 [ ] Netplay game details doesn't respect box art aspect ratio difference between consoles.
