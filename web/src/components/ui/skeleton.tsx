@@ -2,20 +2,29 @@ import { cn } from "@/lib/cn";
 
 interface SkeletonProps {
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function Skeleton({ className }: SkeletonProps) {
+export function Skeleton({ className, style }: SkeletonProps) {
   return (
     <div
       className={cn("animate-pulse rounded-lg bg-surface-800/60", className)}
+      style={style}
     />
   );
 }
 
-export function GameCardSkeleton() {
+export function GameCardSkeleton({
+  aspectRatio,
+}: {
+  aspectRatio?: number;
+}) {
   return (
     <div className="space-y-3">
-      <Skeleton className="aspect-[3/4] w-full rounded-2xl" />
+      <Skeleton
+        className="w-full rounded-2xl"
+        style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
+      />
       <div className="space-y-2 px-1">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/2" />
@@ -36,11 +45,18 @@ export function ConsoleCardSkeleton() {
   );
 }
 
-export function GameDetailSkeleton() {
+export function GameDetailSkeleton({
+  aspectRatio,
+}: {
+  aspectRatio?: number;
+}) {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-        <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-2xl flex-shrink-0" />
+        <Skeleton
+          className="w-48 md:w-64 rounded-2xl flex-shrink-0"
+          style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
+        />
         <div className="w-full flex-1 space-y-4 pt-2">
           <Skeleton className="h-8 w-2/3" />
           <Skeleton className="h-4 w-1/3" />

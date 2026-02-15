@@ -72,10 +72,10 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 func SeedConsoles(db *gorm.DB) error {
 	consoles := []Console{
 		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", ColorTheme: "#e60012"},
-		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", ColorTheme: "#7b7db5"},
+		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", ColorTheme: "#7b7db5", CoverAspect: "4:3"},
 		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", ColorTheme: "#8bac0f"},
 		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", ColorTheme: "#6638a8"},
-		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", ColorTheme: "#2e17a3"},
+		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", ColorTheme: "#2e17a3", CoverAspect: "7:5"},
 		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", ColorTheme: "#009e60"},
 		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "melonds", ColorTheme: "#b0b0b0"},
 		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", ColorTheme: "#0060a8"},
@@ -97,10 +97,15 @@ func SeedConsoles(db *gorm.DB) error {
 				return fmt.Errorf("seeding console %s: %w", c.Name, err)
 			}
 			slog.Info("seeded console", "name", c.Name)
-		} else if existing.EmulatorJSCore == "" && c.EmulatorJSCore != "" {
-			// Backfill EmulatorJSCore for existing consoles
-			db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
-			slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
+		} else {
+			if existing.EmulatorJSCore == "" && c.EmulatorJSCore != "" {
+				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
+				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
+			}
+			if (existing.CoverAspect == "" || existing.CoverAspect == "3:4") && c.CoverAspect != "" && c.CoverAspect != "3:4" {
+				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
+				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
+			}
 		}
 	}
 

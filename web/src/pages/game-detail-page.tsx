@@ -140,7 +140,7 @@ export function GameDetailPage() {
   if (isLoading) {
     return (
       <div className="max-w-5xl">
-        <GameDetailSkeleton />
+        <GameDetailSkeleton aspectRatio={consoleInfo?.coverAspectRatio} />
       </div>
     );
   }
@@ -162,6 +162,7 @@ export function GameDetailPage() {
 
       <GameHero
         game={game}
+        aspectRatio={consoleInfo?.coverAspectRatio}
         canPlayInBrowser={canPlayInBrowser}
         isAdmin={isAdmin}
         isFavorite={isFavorite}

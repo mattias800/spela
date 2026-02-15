@@ -24,6 +24,7 @@ import type { Game } from "@/types/api";
 
 interface GameHeroProps {
   game: Game;
+  aspectRatio?: number;
   canPlayInBrowser: boolean;
   isAdmin: boolean;
   isFavorite: boolean;
@@ -119,6 +120,7 @@ function OverflowMenu({
 
 export function GameHero({
   game,
+  aspectRatio,
   canPlayInBrowser,
   isAdmin,
   isFavorite,
@@ -139,7 +141,10 @@ export function GameHero({
     <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
       {/* Cover art */}
       <div className="w-48 flex-shrink-0 md:w-64">
-        <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl">
+        <div
+          className="rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
+          style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
+        >
           {game.coverUrl ? (
             <img
               src={game.coverUrl}

@@ -76,7 +76,10 @@ export function ConsoleDetailPage() {
       {isLoading ? (
         <GameGrid>
           {Array.from({ length: 12 }, (_, i) => (
-            <GameCardSkeleton key={i} />
+            <GameCardSkeleton
+              key={i}
+              aspectRatio={console?.coverAspectRatio}
+            />
           ))}
         </GameGrid>
       ) : filteredGames.length === 0 ? (
@@ -95,6 +98,7 @@ export function ConsoleDetailPage() {
             <GameCard
               key={game.id}
               game={game}
+              aspectRatio={console?.coverAspectRatio}
               onToggleFavorite={handleToggleFavorite}
               onTogglePlayLater={handleTogglePlayLater}
             />
