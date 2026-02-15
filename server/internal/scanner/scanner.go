@@ -75,8 +75,9 @@ var directoryConsoleMap = map[string]string{
 	"gba":     "GBA",
 	"n64":     "N64",
 	"nds":     "NDS",
-	"sms":     "SMS",
-	"genesis": "GEN",
+	"sms":          "SMS",
+	"mastersystem": "SMS",
+	"genesis":      "GEN",
 	"gen":     "GEN",
 	"md":      "GEN",
 	"megadrive": "GEN",
@@ -93,6 +94,31 @@ var directoryConsoleMap = map[string]string{
 	"tg16":    "PCE",
 	"atari2600": "A26",
 	"a26":     "A26",
+}
+
+// CreateConsoleFolders creates ES-DE standard console subdirectories in each game directory.
+// It loads console definitions from the DB and creates a subfolder per console using FolderName.
+// The operation is idempotent — existing directories and files are not affected.
+func CreateConsoleFolders(database *gorm.DB, gameDirs []string) error {
+	var consoles []db.Console
+	if err := database.Find(&consoles).Error; err != nil {
+		return fmt.Errorf("loading consoles: %w", err)
+	}
+
+	for _, dir := range gameDirs {
+		for _, c := range consoles {
+			if c.FolderName == "" {
+				continue
+			}
+			path := filepath.Join(dir, c.FolderName)
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return fmt.Errorf("creating folder %s: %w", path, err)
+			}
+			slog.Info("ensured console folder", "path", path)
+		}
+	}
+
+	return nil
 }
 
 // ScanResult holds the results of a scan operation.

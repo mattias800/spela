@@ -193,6 +193,69 @@ func TestScan_IgnoresNonROMFiles(t *testing.T) {
 	assert.Equal(t, 1, result.TotalGames)
 }
 
+func TestCreateConsoleFolders_CreatesExpectedDirs(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	expectedFolders := []string{
+		"nes", "snes", "gb", "gbc", "gba", "n64", "nds",
+		"mastersystem", "genesis", "saturn", "psx", "psp",
+		"neogeo", "arcade", "tg16", "atari2600",
+	}
+	for _, folder := range expectedFolders {
+		info, err := os.Stat(filepath.Join(dir, folder))
+		require.NoError(t, err, "folder %s should exist", folder)
+		assert.True(t, info.IsDir(), "folder %s should be a directory", folder)
+	}
+}
+
+func TestCreateConsoleFolders_MultipleGameDirs(t *testing.T) {
+	database := setupTestDB(t)
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+
+	err := CreateConsoleFolders(database, []string{dir1, dir2})
+	require.NoError(t, err)
+
+	for _, dir := range []string{dir1, dir2} {
+		info, err := os.Stat(filepath.Join(dir, "nes"))
+		require.NoError(t, err, "nes folder should exist in %s", dir)
+		assert.True(t, info.IsDir())
+
+		info, err = os.Stat(filepath.Join(dir, "snes"))
+		require.NoError(t, err, "snes folder should exist in %s", dir)
+		assert.True(t, info.IsDir())
+	}
+}
+
+func TestCreateConsoleFolders_IdempotentWithExistingFiles(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// Pre-create a console folder with a file inside
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	romPath := filepath.Join(nesDir, "Mario.nes")
+	require.NoError(t, os.WriteFile(romPath, []byte("fake rom"), 0644))
+
+	// Run CreateConsoleFolders — should not destroy existing content
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	// Verify existing file is untouched
+	data, err := os.ReadFile(romPath)
+	require.NoError(t, err)
+	assert.Equal(t, "fake rom", string(data))
+
+	// Verify other folders were also created
+	info, err := os.Stat(filepath.Join(dir, "snes"))
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+}
+
 func TestScan_RemovesMissingGames(t *testing.T) {
 	database := setupTestDB(t)
 	dir := t.TempDir()

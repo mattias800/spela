@@ -64,6 +64,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create ES-DE console subdirectories in game dirs
+	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
+		slog.Warn("failed to create console folders", "error", err)
+	}
+
 	// Initialize storage
 	store, err := storage.NewStorage(saveDir, coreDir, imageDir)
 	if err != nil {

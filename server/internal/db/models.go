@@ -50,6 +50,7 @@ type Console struct {
 	Extensions     string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
 	DefaultCore    string         `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
+	FolderName     string         `gorm:"size:64" json:"folderName"`
 	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
 	ColorTheme     string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
 	Games          []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
