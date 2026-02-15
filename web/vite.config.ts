@@ -2,6 +2,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import checker from "vite-plugin-checker";
 import path from "path";
 import fs from "fs";
 
@@ -143,7 +144,7 @@ function serveEmulatorjs(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), serveEmulatorjs()],
+  plugins: [react(), tailwindcss(), checker({ typescript: true }), serveEmulatorjs()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
