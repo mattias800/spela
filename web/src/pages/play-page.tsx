@@ -10,6 +10,7 @@ import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
 import { usePlaySession } from "@/hooks/use-play-session";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useToast } from "@/components/ui";
+import { useGamepadConnected } from "@/hooks/use-gamepad";
 import { api } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
 import { PlayToolbar } from "@/components/play/play-toolbar";
@@ -100,6 +101,7 @@ export function PlayPage() {
 
   usePlaySession(id, emulator.status);
   const { handleFullscreen } = useFullscreen(emulator.iframeRef);
+  const gamepadConnected = useGamepadConnected();
 
   // Initialize emulator once iframe is loaded and we have game data
   useEffect(() => {
@@ -136,6 +138,9 @@ export function PlayPage() {
       })
       .catch(() => {
         toast("error", "Failed to load save state");
+      })
+      .finally(() => {
+        emulator.focusEmulator();
       });
   }
 
@@ -213,10 +218,17 @@ export function PlayPage() {
         emulatorStatus={emulator.status}
         isSaving={saveManager.isSaving}
         isExitSaving={isExitSaving}
+        gamepadConnected={gamepadConnected}
         onBack={handleBack}
-        onSave={() => saveManager.requestManualSave()}
+        onSave={() => {
+          saveManager.requestManualSave();
+          emulator.focusEmulator();
+        }}
         onLoad={() => setShowLoadModal(true)}
-        onFullscreen={handleFullscreen}
+        onFullscreen={() => {
+          handleFullscreen();
+          emulator.focusEmulator();
+        }}
       />
 
       <div className="flex-1 relative bg-black">
@@ -247,7 +259,10 @@ export function PlayPage() {
       <LoadSaveModal
         saves={saves}
         open={showLoadModal}
-        onClose={() => setShowLoadModal(false)}
+        onClose={() => {
+          setShowLoadModal(false);
+          emulator.focusEmulator();
+        }}
         onLoad={handleLoadSave}
       />
     </div>

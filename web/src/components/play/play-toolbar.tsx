@@ -1,5 +1,5 @@
-import { ArrowLeft, Save, FolderOpen, Maximize, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Save, FolderOpen, Maximize, Loader2, Gamepad2 } from "lucide-react";
+import { Button, BackButton } from "@/components/ui";
 import type { EmulatorStatus } from "@/hooks/use-emulator-iframe";
 import type { Game } from "@/types/api";
 
@@ -8,6 +8,7 @@ interface PlayToolbarProps {
   emulatorStatus: EmulatorStatus;
   isSaving: boolean;
   isExitSaving: boolean;
+  gamepadConnected: boolean;
   onBack: () => void;
   onSave: () => void;
   onLoad: () => void;
@@ -19,6 +20,7 @@ export function PlayToolbar({
   emulatorStatus,
   isSaving,
   isExitSaving,
+  gamepadConnected,
   onBack,
   onSave,
   onLoad,
@@ -27,15 +29,13 @@ export function PlayToolbar({
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
       <div className="flex items-center gap-3">
-        <button
+        <BackButton
           onClick={onBack}
           data-testid="back-btn"
-          className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-100 transition-colors"
           disabled={isExitSaving}
         >
-          <ArrowLeft className="h-4 w-4" />
           {isExitSaving ? "Saving..." : "Back"}
-        </button>
+        </BackButton>
         <span className="text-sm font-medium text-surface-200 truncate max-w-xs">
           {game.title}
         </span>
@@ -48,6 +48,15 @@ export function PlayToolbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {gamepadConnected && (
+          <span
+            className="flex items-center gap-1 text-xs text-success-400"
+            title="Controller connected"
+            data-testid="gamepad-indicator"
+          >
+            <Gamepad2 className="h-4 w-4" />
+          </span>
+        )}
         <Button
           variant="ghost"
           size="sm"

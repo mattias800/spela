@@ -131,6 +131,12 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
     sendMessage({ type: "resume" });
   }, [sendMessage]);
 
+  const focusEmulator = useCallback(() => {
+    setTimeout(() => {
+      iframeRef.current?.focus();
+    }, 50);
+  }, []);
+
   return {
     iframeRef,
     status,
@@ -142,5 +148,6 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
     updatePreferences,
     pause,
     resume,
+    focusEmulator,
   };
 }
