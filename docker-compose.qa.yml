@@ -1,0 +1,89 @@
+# QA deployment — designed for Portainer GitOps stacks.
+#
+# Portainer points to the GitHub repo and this file. Clicking
+# "Pull and redeploy" builds from the latest commit automatically.
+#
+# Required environment variables (set in Portainer stack config):
+#   SPELA_JWT_SECRET        — JWT signing key (generate a random 32+ char string)
+#   TURN_SECRET             — shared secret for coturn HMAC-SHA1 credentials
+#   TURN_HOST               — public domain/IP of this server (e.g. spela.example.com)
+#
+# Optional:
+#   SPELA_GAMES_PATH        — host path to ROM directory (default: /data/spela/games)
+#   SPELA_SCRAPER_DEV_ID    — ScreenScraper dev credentials
+#   SPELA_SCRAPER_DEV_PASS
+#   SPELA_SCRAPER_USER
+#   SPELA_SCRAPER_USER_PASS
+#   TURN_EXTERNAL_IP        — public IP if behind NAT (coturn auto-detects on most VPS)
+
+services:
+  # ── Go API server ──────────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - spela-data:/app/data
+      - spela-saves:/app/saves
+      - spela-cores:/app/cores
+      - spela-images:/app/images
+      - ${SPELA_GAMES_PATH:-/data/spela/games}:/app/games:ro
+    environment:
+      - SPELA_PORT=8080
+      - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in Portainer stack env}
+      - SPELA_DB_PATH=/app/data/spela.db
+      - SPELA_GAME_DIRS=/app/games
+      - SPELA_SAVE_DIR=/app/saves
+      - SPELA_CORE_DIR=/app/cores
+      - SPELA_IMAGE_DIR=/app/images
+      - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
+      - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
+      - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
+      - SPELA_SCRAPER_USER_PASS=${SPELA_SCRAPER_USER_PASS:-}
+      # TURN server credentials endpoint config
+      - TURN_ENABLED=${TURN_ENABLED:-true}
+      - TURN_HOST=${TURN_HOST:-}
+      - TURN_SECRET=${TURN_SECRET:-}
+      - TURN_PORT=3478
+      - GIN_MODE=release
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ── Web frontend (nginx serving built React app) ───────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── TURN server for WebRTC NAT traversal (netplay Phase 2) ────
+  coturn:
+    image: coturn/coturn:4.6-alpine
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      - TURN_SECRET=${TURN_SECRET:-}
+      - TURN_REALM=${TURN_HOST:-localhost}
+      - EXTERNAL_IP=${TURN_EXTERNAL_IP:-}
+    restart: unless-stopped
+
+volumes:
+  spela-data:
+    driver: local
+  spela-saves:
+    driver: local
+  spela-cores:
+    driver: local
+  spela-images:
+    driver: local
