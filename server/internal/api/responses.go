@@ -24,6 +24,8 @@ type ConsoleResponse struct {
 	ColorTheme       string    `json:"colorTheme"`
 	IconURL          string    `json:"iconUrl"`
 	GameCount        int       `json:"gameCount"`
+	SaveStateSupport bool      `json:"saveStateSupport"`
+	BrowserPlayable  bool      `json:"browserPlayable"`
 }
 
 // GameResponse is the enriched API response for a game.
@@ -87,6 +89,8 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		ColorTheme:       c.ColorTheme,
 		IconURL:          "/api/consoles/" + strconv.FormatUint(uint64(c.ID), 10) + "/icon",
 		GameCount:        c.GameCount,
+		SaveStateSupport: c.SaveStateSupport,
+		BrowserPlayable:  c.EmulatorJSCore != "",
 	}
 }
 

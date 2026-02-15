@@ -50,6 +50,8 @@ data class ConsoleDto(
     val colorTheme: String = "#6366f1",
     val iconUrl: String = "",
     val gameCount: Int = 0,
+    val saveStateSupport: Boolean = true,
+    val browserPlayable: Boolean = false,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <a href="#supported-consoles">16 Consoles</a> &bull;
+  <a href="#supported-consoles">35 Consoles</a> &bull;
   <a href="#features">Features</a> &bull;
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="docs/DEPLOY.md">Deploy Guide</a>
@@ -86,24 +86,77 @@ Think of it as your own personal Steam for retro games.
 
 ## Supported Consoles
 
-| Console | Core | Extensions |
-|---------|------|------------|
-| NES | Nestopia | `.nes` `.fds` |
-| SNES | Snes9x | `.sfc` `.smc` |
-| Game Boy | Gambatte | `.gb` |
-| Game Boy Color | Gambatte | `.gbc` |
-| Game Boy Advance | mGBA | `.gba` |
-| Nintendo 64 | Mupen64Plus | `.n64` `.z64` `.v64` |
-| Nintendo DS | DeSmuME | `.nds` |
-| Sega Master System | Genesis Plus GX | `.sms` |
-| Sega Genesis / Mega Drive | Genesis Plus GX | `.md` `.gen` `.bin` |
-| Sega Saturn | Beetle Saturn | `.iso` `.bin/.cue` |
-| PlayStation | Beetle PSX | `.bin/.cue` `.iso` `.pbp` |
-| PSP | PPSSPP | `.iso` `.cso` |
-| Neo Geo | FBNeo | `.zip` |
-| Arcade (MAME) | MAME 2003+ | `.zip` |
-| TurboGrafx-16 | Beetle PCE | `.pce` |
-| Atari 2600 | Stella | `.a26` `.bin` |
+35 systems across 8 families. Each console shows whether it supports **save states** and **browser play** (via EmulatorJS, no install needed).
+
+### Nintendo
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| NES | Nestopia | :white_check_mark: | :white_check_mark: | `.nes` `.fds` |
+| SNES | Snes9x | :white_check_mark: | :white_check_mark: | `.sfc` `.smc` |
+| Game Boy | Gambatte | :white_check_mark: | :white_check_mark: | `.gb` |
+| Game Boy Color | Gambatte | :white_check_mark: | :white_check_mark: | `.gbc` |
+| Game Boy Advance | mGBA | :white_check_mark: | :white_check_mark: | `.gba` |
+| Nintendo 64 | Mupen64Plus | :white_check_mark: | :white_check_mark: | `.n64` `.z64` `.v64` |
+| Nintendo DS | DeSmuME | :white_check_mark: | :white_check_mark: | `.nds` |
+| Virtual Boy | Beetle VB | :white_check_mark: | :white_check_mark: | `.vb` `.vboy` |
+| Nintendo 3DS | Citra | :white_check_mark: | | `.3ds` `.cia` |
+| Pokemon Mini | PokeMini | :white_check_mark: | | `.min` |
+
+### Sega
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| Sega Master System | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.sms` |
+| Sega Genesis / Mega Drive | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.md` `.gen` `.bin` |
+| Game Gear | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.gg` |
+| Sega CD | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.iso` `.bin` `.cue` `.chd` |
+| Sega 32X | PicoDrive | :white_check_mark: | :white_check_mark: | `.32x` `.bin` |
+| Sega Saturn | Beetle Saturn | :white_check_mark: | :white_check_mark: | `.iso` `.bin/.cue` |
+| Dreamcast | Flycast | :white_check_mark: | | `.gdi` `.cdi` `.chd` |
+
+### Sony
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| PlayStation | Beetle PSX | :white_check_mark: | :white_check_mark: | `.bin/.cue` `.iso` `.pbp` |
+| PlayStation 2 | PCSX2 | :white_check_mark: | | `.iso` `.bin` `.chd` |
+| PSP | PPSSPP | :white_check_mark: | :white_check_mark: | `.iso` `.cso` |
+
+### Atari
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| Atari 2600 | Stella | :white_check_mark: | :white_check_mark: | `.a26` `.bin` |
+| Atari 5200 | A5200 | :white_check_mark: | :white_check_mark: | `.a52` `.bin` |
+| Atari 7800 | ProSystem | :white_check_mark: | :white_check_mark: | `.a78` `.bin` |
+| Atari Lynx | Handy | :white_check_mark: | :white_check_mark: | `.lnx` |
+| Atari Jaguar | Virtual Jaguar | | :white_check_mark: | `.j64` `.jag` |
+
+### NEC
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| TurboGrafx-16 | Beetle PCE | :white_check_mark: | :white_check_mark: | `.pce` |
+| PC-FX | Beetle PC-FX | :white_check_mark: | :white_check_mark: | `.cue` `.iso` `.chd` |
+
+### SNK
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| Neo Geo | FBNeo | :white_check_mark: | :white_check_mark: | `.zip` |
+| Neo Geo Pocket | Beetle NGP | :white_check_mark: | :white_check_mark: | `.ngp` `.ngc` |
+
+### Other
+
+| Console | Core | Save States | Browser Play | Extensions |
+|---------|------|:-----------:|:------------:|------------|
+| Arcade (MAME) | MAME 2003+ | :white_check_mark: | :white_check_mark: | `.zip` |
+| WonderSwan | Beetle WonderSwan | :white_check_mark: | :white_check_mark: | `.ws` `.wsc` |
+| ColecoVision | GearColeco | :white_check_mark: | :white_check_mark: | `.col` `.cv` `.bin` |
+| Commodore 64 | VICE | :white_check_mark: | :white_check_mark: | `.d64` `.t64` `.prg` `.crt` |
+| Commodore Amiga | PUAE | :white_check_mark: | :white_check_mark: | `.adf` `.hdf` `.ipf` `.lha` `.zip` |
+| DOS | DOSBox Pure | :white_check_mark: | :white_check_mark: | `.zip` `.exe` `.com` `.bat` |
 
 ## Quick Start
 

@@ -88,6 +88,101 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-amber-600 to-brown-900",
     color: "#d69e2e",
   },
+  gg: {
+    icon: Smartphone,
+    gradient: "from-blue-600 to-blue-900",
+    color: "#2563eb",
+  },
+  scd: {
+    icon: Tv,
+    gradient: "from-gray-700 to-blue-900",
+    color: "#334155",
+  },
+  "32x": {
+    icon: Gamepad2,
+    gradient: "from-gray-800 to-black",
+    color: "#1e293b",
+  },
+  dc: {
+    icon: Gamepad2,
+    gradient: "from-orange-500 to-blue-700",
+    color: "#f97316",
+  },
+  vb: {
+    icon: Monitor,
+    gradient: "from-red-800 to-red-950",
+    color: "#991b1b",
+  },
+  "3ds": {
+    icon: Smartphone,
+    gradient: "from-red-500 to-red-800",
+    color: "#ef4444",
+  },
+  a52: {
+    icon: Tv,
+    gradient: "from-amber-700 to-amber-950",
+    color: "#b45309",
+  },
+  a78: {
+    icon: Tv,
+    gradient: "from-amber-600 to-amber-900",
+    color: "#d97706",
+  },
+  lynx: {
+    icon: Smartphone,
+    gradient: "from-yellow-600 to-yellow-900",
+    color: "#ca8a04",
+  },
+  jag: {
+    icon: Gamepad2,
+    gradient: "from-red-700 to-gray-900",
+    color: "#b91c1c",
+  },
+  ngp: {
+    icon: Smartphone,
+    gradient: "from-gray-500 to-gray-800",
+    color: "#6b7280",
+  },
+  ws: {
+    icon: Smartphone,
+    gradient: "from-indigo-600 to-indigo-900",
+    color: "#4f46e5",
+  },
+  pcfx: {
+    icon: Tv,
+    gradient: "from-teal-600 to-teal-900",
+    color: "#0d9488",
+  },
+  cv: {
+    icon: Tv,
+    gradient: "from-sky-600 to-sky-900",
+    color: "#0284c7",
+  },
+  pkmn: {
+    icon: Smartphone,
+    gradient: "from-yellow-400 to-yellow-700",
+    color: "#facc15",
+  },
+  ps2: {
+    icon: Gamepad2,
+    gradient: "from-blue-800 to-blue-950",
+    color: "#1e40af",
+  },
+  c64: {
+    icon: Monitor,
+    gradient: "from-blue-500 to-purple-800",
+    color: "#6366f1",
+  },
+  dos: {
+    icon: Monitor,
+    gradient: "from-green-700 to-green-950",
+    color: "#15803d",
+  },
+  amiga: {
+    icon: Monitor,
+    gradient: "from-red-600 to-blue-800",
+    color: "#dc2626",
+  },
 };
 
 // Map backend abbreviations to our internal keys

@@ -27,6 +27,8 @@ fun ConsoleDto.toDomain(): Console = Console(
     coverAspectRatio = coverAspectRatio,
     defaultCore = defaultCore,
     iconUrl = iconUrl,
+    saveStateSupport = saveStateSupport,
+    browserPlayable = browserPlayable,
 )
 
 /** Maps the enriched GameResponse DTO to domain Game. */

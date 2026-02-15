@@ -27,6 +27,8 @@ export interface Console {
   colorTheme: string;
   iconUrl: string;
   gameCount: number;
+  saveStateSupport: boolean;
+  browserPlayable: boolean;
   createdAt: string;
   updatedAt: string;
 }

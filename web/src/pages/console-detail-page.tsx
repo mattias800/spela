@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Library } from "lucide-react";
+import { Library, Check, Globe } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
@@ -56,9 +56,23 @@ export function ConsoleDetailPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-surface-100">{consoleName}</h1>
-          <p className="text-surface-400">
-            {gameList.length} {gameList.length === 1 ? "game" : "games"}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-surface-400">
+              {gameList.length} {gameList.length === 1 ? "game" : "games"}
+            </p>
+            {console?.saveStateSupport && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                <Check className="h-3 w-3" />
+                Save states
+              </span>
+            )}
+            {console?.browserPlayable && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-400">
+                <Globe className="h-3 w-3" />
+                Browser play
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

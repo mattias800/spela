@@ -52,8 +52,9 @@ type Console struct {
 	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string         `gorm:"size:64" json:"folderName"`
 	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
-	ColorTheme     string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
-	Games          []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
+	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
+	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
 	GameCount      int            `gorm:"-" json:"gameCount,omitempty"`
 }
 

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Check, Globe } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import type { Console } from "@/types/api";
@@ -36,6 +37,22 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
             </p>
           </div>
         </div>
+
+        {/* Feature indicators */}
+        {(c.saveStateSupport || c.browserPlayable) && (
+          <div className="absolute top-2 right-2 flex gap-1">
+            {c.saveStateSupport && (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm" title="Save states supported">
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+              </div>
+            )}
+            {c.browserPlayable && (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm" title="Browser playable">
+                <Globe className="h-3.5 w-3.5 text-blue-400" />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Hover glow */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-white/5" />
