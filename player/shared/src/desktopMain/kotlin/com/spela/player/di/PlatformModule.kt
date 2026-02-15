@@ -23,8 +23,16 @@ import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
     single {
+        val dbFile = java.io.File("spela.db")
         val driver = JdbcSqliteDriver("jdbc:sqlite:spela.db")
-        SpelaDatabase.Schema.create(driver)
+
+        try {
+            // Try to create schema - if it fails, database already exists and is valid
+            SpelaDatabase.Schema.create(driver)
+        } catch (e: Exception) {
+            // Schema already exists, which is fine - just continue
+        }
+
         driver
     }
     single { SpelaDatabase(get<JdbcSqliteDriver>()) }

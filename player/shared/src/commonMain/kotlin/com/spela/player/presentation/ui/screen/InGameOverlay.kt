@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsEsports
@@ -349,8 +350,8 @@ fun InGameOverlay(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(SpSpacing.Default),
         ) {
-            // FPS pill - top right
-            Box(
+            // FPS pill with menu icon - top right
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .clip(RoundedCornerShape(8.dp))
@@ -362,7 +363,15 @@ fun InGameOverlay(
                         role = Role.Button
                     }
                     .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = null,
+                    tint = SpColor.OnBackground,
+                    modifier = Modifier.size(16.dp),
+                )
                 Text(
                     text = "%.0f FPS".format(state.fps),
                     style = SpTypography.LabelSmall,
