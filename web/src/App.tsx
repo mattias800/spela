@@ -28,6 +28,7 @@ import { RelaysPage } from "@/pages/relays-page";
 import { RelayDetailPage } from "@/pages/relay-detail-page";
 import { NetplayPage } from "@/pages/netplay-page";
 import { NetplaySessionPage } from "@/pages/netplay-session-page";
+import { LicensesPage } from "@/pages/licenses-page";
 import { SetupPage } from "@/pages/setup-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -104,6 +105,7 @@ export function App() {
                     <Route path="netplay/:id" element={<NetplaySessionPage />} />
                     <Route path="users/:id" element={<UserProfilePage />} />
                     <Route path="preferences" element={<PreferencesPage />} />
+                    <Route path="licenses" element={<LicensesPage />} />
 
                     {/* Admin routes */}
                     <Route

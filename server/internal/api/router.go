@@ -134,6 +134,9 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
 	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
 
+	// Console icons (public — embedded PNGs, loaded by <img> tags)
+	r.GET("/api/consoles/:id/icon", consoleHandler.GetConsoleIcon)
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(AuthMiddleware(cfg.JWTSecret))

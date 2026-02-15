@@ -1,0 +1,127 @@
+package com.spela.player.presentation.ui.screen
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
+
+private data class CreditEntry(
+    val name: String,
+    val url: String,
+    val license: String,
+    val description: String,
+)
+
+private val credits = listOf(
+    CreditEntry(
+        name = "retro-game-console-icons",
+        url = "github.com/KyleBing/retro-game-console-icons",
+        license = "GPL-3.0",
+        description = "Console hardware icons used in the library view.",
+    ),
+    CreditEntry(
+        name = "libretro / RetroArch",
+        url = "www.libretro.com",
+        license = "GPL-3.0",
+        description = "Emulation API and cores used by the player app.",
+    ),
+    CreditEntry(
+        name = "RetroAchievements",
+        url = "retroachievements.org",
+        license = "Community project",
+        description = "Achievement system for retro games.",
+    ),
+    CreditEntry(
+        name = "Coil",
+        url = "github.com/coil-kt/coil",
+        license = "Apache-2.0",
+        description = "Image loading library for Compose Multiplatform.",
+    ),
+)
+
+@Composable
+fun LicensesScreen(
+    onBack: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.Background),
+    ) {
+        SpTopBar(title = "Credits & Licenses", showBack = true, onBack = onBack)
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                horizontal = SpSpacing.ScreenHorizontal,
+                vertical = SpSpacing.Default,
+            ),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            item {
+                Text(
+                    text = "Spela uses the following open-source projects and resources.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+
+            items(credits) { entry ->
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpSpacing.Default),
+                    ) {
+                        Text(
+                            text = entry.name,
+                            style = SpTypography.TitleLarge,
+                            color = SpColor.OnCard,
+                            modifier = Modifier.semantics { heading() },
+                        )
+                        Spacer(Modifier.height(SpSpacing.XSmall))
+                        Text(
+                            text = entry.description,
+                            style = SpTypography.BodyMedium,
+                            color = SpColor.OnBackgroundSecondary,
+                        )
+                        Spacer(Modifier.height(SpSpacing.XSmall))
+                        Text(
+                            text = "License: ${entry.license}",
+                            style = SpTypography.BodySmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                        Spacer(Modifier.height(SpSpacing.XXSmall))
+                        Text(
+                            text = entry.url,
+                            style = SpTypography.BodySmall,
+                            color = SpColor.Accent,
+                        )
+                    }
+                }
+            }
+
+            item {
+                Spacer(Modifier.height(SpSpacing.XXXLarge))
+            }
+        }
+    }
+}

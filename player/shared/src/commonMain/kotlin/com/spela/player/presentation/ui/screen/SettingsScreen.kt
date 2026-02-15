@@ -76,6 +76,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onLogout: () -> Unit,
     onNavigateToConsoleSettings: (String) -> Unit = {},
+    onNavigateToLicenses: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -482,6 +483,32 @@ fun SettingsScreen(
                         SettingsInfoRow(label = "Version", value = "1.0.0")
                         Spacer(Modifier.height(SpSpacing.Small))
                         SettingsInfoRow(label = "Build", value = "Compose Multiplatform")
+                    }
+                }
+            }
+
+            item {
+                SpCard(
+                    onClick = onNavigateToLicenses,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpSpacing.Default),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "Credits & Licenses",
+                            style = SpTypography.TitleMedium,
+                            color = SpColor.OnCard,
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Open credits and licenses",
+                            tint = SpColor.OnBackgroundTertiary,
+                            modifier = Modifier.size(24.dp),
+                        )
                     }
                 }
             }

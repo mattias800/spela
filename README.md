@@ -173,6 +173,15 @@ cd web && npm install && npm run dev
 # See player/README.md for build instructions
 ```
 
+## Acknowledgments
+
+Spela is built with and uses the following open-source projects:
+
+- **[retro-game-console-icons](https://github.com/KyleBing/retro-game-console-icons)** (GPL-3.0) — Console hardware icons
+- **[EmulatorJS](https://emulatorjs.org)** (GPL-3.0) — Browser-based emulation frontend
+- **[libretro / RetroArch](https://www.libretro.com)** (GPL-3.0) — Emulation API and cores
+- **[RetroAchievements](https://retroachievements.org)** — Achievement system for retro games
+
 ## License
 
 This project is for personal use. Do not distribute copyrighted ROM files.

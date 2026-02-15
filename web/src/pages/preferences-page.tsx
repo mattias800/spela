@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
 import { ThemeCard } from "@/components/preferences/theme-card";
 import { EmulationSettingsCard } from "@/components/preferences/emulation-settings-card";
@@ -179,6 +180,15 @@ export function PreferencesPage() {
         onConfirm={handleDeleteDevice}
         isDeleting={deleteDevice.isPending}
       />
+
+      <div className="pt-2 pb-4 text-center">
+        <Link
+          to="/licenses"
+          className="text-sm text-surface-500 hover:text-surface-300 transition-colors"
+        >
+          Credits & Licenses
+        </Link>
+      </div>
 
       <ShaderPreviewModal
         open={!!previewModal}

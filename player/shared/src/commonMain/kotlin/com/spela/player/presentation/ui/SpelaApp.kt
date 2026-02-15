@@ -49,6 +49,7 @@ import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
+import com.spela.player.presentation.ui.screen.LicensesScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
@@ -321,6 +322,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.ConsoleSettings(consoleId))
                                         )
                                     },
+                                    onNavigateToLicenses = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Licenses)
+                                        )
+                                    },
                                 )
                             }
 
@@ -417,6 +423,14 @@ fun SpelaApp(
                                                 netplayIsHost = isHost,
                                             )
                                         )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.Licenses -> {
+                                LicensesScreen(
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
                             }

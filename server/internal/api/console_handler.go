@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
@@ -160,6 +161,27 @@ func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/api/images/"+savedPath)
 }
 
+
+// GetConsoleIcon serves the embedded PNG icon for a console.
+func (h *ConsoleHandler) GetConsoleIcon(c *gin.Context) {
+	consoleID := c.Param("id")
+
+	var console db.Console
+	if err := h.DB.First(&console, consoleID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
+		return
+	}
+
+	filename := strings.ToLower(console.Abbreviation) + ".png"
+	data, err := consoleIcons.ReadFile("static/console-icons/" + filename)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "icon not available for this console"})
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=604800")
+	c.Data(http.StatusOK, "image/png", data)
+}
 
 // getUserID extracts the authenticated user's ID from the context.
 func getUserID(c *gin.Context) uint {

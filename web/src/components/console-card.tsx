@@ -9,7 +9,6 @@ interface ConsoleCardProps {
 
 export function ConsoleCard({ console: c }: ConsoleCardProps) {
   const style = getConsoleStyle(c.abbreviation);
-  const Icon = style.icon;
 
   return (
     <Link to={`/consoles/${c.id}`} className="group block">
@@ -25,9 +24,11 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
         />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-            <Icon className="h-7 w-7 text-white" />
-          </div>
+          <img
+            src={c.iconUrl}
+            alt={`${c.name} icon`}
+            className="h-16 w-16 object-contain opacity-80 drop-shadow-lg transition-transform duration-300 group-hover:scale-110"
+          />
           <div className="text-center">
             <h3 className="text-lg font-bold text-white">{c.name}</h3>
             <p className="text-sm text-white/60 mt-0.5">

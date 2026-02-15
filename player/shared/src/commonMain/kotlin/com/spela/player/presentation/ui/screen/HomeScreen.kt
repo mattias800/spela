@@ -62,6 +62,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
+import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -587,22 +588,35 @@ private fun ConsoleCard(
             consoleColor.copy(alpha = 0.1f),
         ),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(SpSpacing.Default),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = console.name,
-                style = SpTypography.TitleLarge,
-                color = SpColor.OnBackground,
-            )
-            Text(
-                text = "${console.gameCount} games",
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundSecondary,
-            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = console.name,
+                    style = SpTypography.TitleLarge,
+                    color = SpColor.OnBackground,
+                )
+                Text(
+                    text = "${console.gameCount} games",
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+            if (console.iconUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = console.iconUrl,
+                    contentDescription = "${console.name} icon",
+                    modifier = Modifier.size(56.dp),
+                    alpha = 0.7f,
+                )
+            }
         }
     }
 }

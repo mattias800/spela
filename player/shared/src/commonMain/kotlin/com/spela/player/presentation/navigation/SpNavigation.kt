@@ -14,6 +14,7 @@ sealed class SpScreen(val route: String) {
     data class RelayDetail(val relayId: String) : SpScreen("relay/$relayId")
     data object NetplaySessions : SpScreen("netplay")
     data class NetplayLobby(val sessionId: String) : SpScreen("netplay/$sessionId")
+    data object Licenses : SpScreen("licenses")
 }
 
 data class NavigationState(
