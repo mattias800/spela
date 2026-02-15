@@ -96,6 +96,49 @@ class AppLaunchAndConnectionTest {
     }
 
     @Test
+    fun serverListShowsRemoveButton() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        runTest(harness.testDispatcher) {
+            harness.serverRepo.addServer("My Server", "http://my-server:8080")
+        }
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Server should be listed
+        onNodeWithText("My Server").assertIsDisplayed()
+
+        // Remove server button should be present with correct content description
+        onNodeWithContentDescription("Remove server").assertIsDisplayed()
+    }
+
+    @Test
+    fun removeServerRemovesItFromList() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        runTest(harness.testDispatcher) {
+            harness.serverRepo.addServer("Server A", "http://a:8080")
+            harness.serverRepo.addServer("Server B", "http://b:8080")
+        }
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Both servers should be visible
+        onNodeWithText("Server A").assertIsDisplayed()
+        onNodeWithText("Server B").assertIsDisplayed()
+
+        // Click the first remove button (removes Server A)
+        onAllNodesWithContentDescription("Remove server").onFirst().performClick()
+        advance(harness)
+
+        // Server A should be gone, Server B remains
+        onNodeWithText("Server A").assertDoesNotExist()
+        onNodeWithText("Server B").assertIsDisplayed()
+    }
+
+    @Test
     fun successfulLoginNavigatesToHomeScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 

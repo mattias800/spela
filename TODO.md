@@ -13,16 +13,16 @@
 [ ] There need to be some kind of notifications, so that it is easy to see that you have been sent a Relay or multiplayer invite.
 
 ## Android
-[ ] The "Delete" button in the server list has a broken icon
+[x] The "Delete" button in the server list has a broken icon
 
 ## Desktop
-[ ] Esc button on macOS does not quit the game.
+[x] Esc button on macOS does not quit the game.
 
 ## App and desktop
-[ ] We have no strategy for databas migrations in the app, the app could potentially break for users when upgrading. We have no releases yet, so this is not urgent.
+[ ] We have no strategy for database migrations in the app, the app could potentially break for users when upgrading. We have no releases yet, so this is not urgent.
 
 ## Scripts
-[ ] generate-secrets.sh should not overwrite .env, instead it should print the env content to stdout.
+[x] generate-secrets.sh should not overwrite .env, instead it should print the env content to stdout.
 
 ## Deploy
 [ ] docker-compose.qa.yml should use variables for all paths, there should be no predefined paths in the yml.

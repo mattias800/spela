@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -114,11 +114,11 @@ fun DesktopEmulationSurface(
                 .background(Color.Black)
                 .focusRequester(focusRequester)
                 .focusable()
-                .onKeyEvent { event ->
+                .onPreviewKeyEvent { event ->
                     // Handle Escape key to toggle overlay
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
                         onEscapePressed?.invoke()
-                        return@onKeyEvent true
+                        return@onPreviewKeyEvent true
                     }
                     val keyCode = event.key.keyCode.toInt()
                     val buttonId = effectiveMapping[keyCode]
