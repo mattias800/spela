@@ -32,6 +32,13 @@ type Config struct {
 func NewRouter(cfg Config) *gin.Engine {
 	r := gin.Default()
 
+	// COOP/COEP headers — required for SharedArrayBuffer (EmulatorJS threaded cores)
+	r.Use(func(c *gin.Context) {
+		c.Header("Cross-Origin-Opener-Policy", "same-origin")
+		c.Header("Cross-Origin-Embedder-Policy", "credentialless")
+		c.Next()
+	})
+
 	// CORS - configurable origins; AllowCredentials only when origins are explicit
 	corsOrigins := cfg.CORSOrigins
 	if len(corsOrigins) == 0 {

@@ -150,6 +150,10 @@ export default defineConfig({
     },
   },
   server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+    },
     proxy: {
       "/api": {
         target: process.env.VITE_API_URL || "http://localhost:8080",
