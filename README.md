@@ -1,6 +1,6 @@
 <p align="center">
   <h1 align="center">Spela</h1>
-  <p align="center">Your retro game library, self-hosted. Play anywhere.</p>
+  <p align="center"><em>Nu spelar vi!</em> — Your retro game library, self-hosted. Play anywhere.</p>
 </p>
 
 <p align="center">
@@ -16,7 +16,17 @@ Spela is a self-hosted retro game emulation platform. Point it at your ROM colle
 
 Think of it as your own personal Steam for retro games.
 
-<!-- TODO: Add hero screenshot -->
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard with game library" width="720" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/games.png" alt="SNES games with cover art" width="355" />
+  <img src="docs/screenshots/game-detail.png" alt="Game detail page" width="355" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/library.png" alt="Console browser" width="720" />
+</p>
 
 ## Why Spela?
 
