@@ -9,12 +9,17 @@
 
 #include "libretro_bridge.h"
 #include "libretro_achievements.h"
+#include "gpu_renderer.h"
 
 #include <jni.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef __ANDROID__
+#include <android/native_window_jni.h>
+#endif
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -192,6 +197,16 @@ static bool environment_callback(unsigned cmd, void *data) {
             /* Report we support v0 core options (basic key/value) */
             *(unsigned *)data = 0;
             return true;
+        }
+
+        case RETRO_ENVIRONMENT_SET_HW_RENDER: {
+            struct retro_hw_render_callback *cb = (struct retro_hw_render_callback *)data;
+            LOGI("Core requests HW render context type: %u", cb->context_type);
+            /* Store the callback for future use when GPU renderer supports HW cores */
+            g_core.hw_render_callback = *cb;
+            /* Return false for now -- cores will fall back to software rendering.
+             * Phase 4 will accept Vulkan/Metal contexts when GPU renderer is ready. */
+            return false;
         }
 
         default:
@@ -546,4 +561,111 @@ JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, js
 JNI_FUNC(void, nativeSetInputPointer)(JNIEnv *env, jobject thiz,
                                        jint port, jint x, jint y, jboolean pressed) {
     input_set_pointer((unsigned)port, (int16_t)x, (int16_t)y, pressed == JNI_TRUE);
+}
+
+/* === GPU Renderer JNI Methods === */
+
+static gpu_renderer_t *g_gpu_renderer = NULL;
+
+JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
+    if (g_gpu_renderer) {
+        LOGW("GPU renderer already initialized, destroying first");
+        gpu_renderer_deinit_surface(g_gpu_renderer);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        video_set_gpu_renderer(NULL);
+    }
+
+#ifdef __ANDROID__
+    /* Determine backend: Vulkan on Android */
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
+    if (!g_gpu_renderer) {
+        LOGE("Failed to create GPU renderer");
+        return JNI_FALSE;
+    }
+
+    ANativeWindow *window = ANativeWindow_fromSurface(env, surface);
+    if (!window) {
+        LOGE("Failed to get ANativeWindow from Surface");
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    if (!gpu_renderer_init_surface(g_gpu_renderer, window)) {
+        LOGE("Failed to init GPU renderer surface");
+        ANativeWindow_release(window);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    /* ANativeWindow is acquired inside gpu_renderer_init_surface,
+     * release our local reference */
+    ANativeWindow_release(window);
+#else
+    /* Desktop: determine backend based on platform */
+#ifdef __APPLE__
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_METAL);
+#else
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
+#endif
+    if (!g_gpu_renderer) {
+        LOGE("Failed to create GPU renderer");
+        return JNI_FALSE;
+    }
+
+    /* Desktop passes a native window handle (long) cast to jobject via a
+     * wrapper. For now, pass the surface pointer directly. */
+    if (!gpu_renderer_init_surface(g_gpu_renderer, (void *)(uintptr_t)surface)) {
+        LOGE("Failed to init GPU renderer surface");
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+#endif
+
+    /* Wire up the GPU renderer to the video subsystem */
+    video_set_gpu_renderer(g_gpu_renderer);
+    LOGI("GPU renderer initialized successfully");
+    return JNI_TRUE;
+}
+
+JNI_FUNC(void, nativeGpuRender)(JNIEnv *env, jobject thiz) {
+    if (g_gpu_renderer) {
+        gpu_renderer_render(g_gpu_renderer);
+    }
+}
+
+JNI_FUNC(void, nativeGpuSetShader)(JNIEnv *env, jobject thiz, jint shaderId) {
+    if (g_gpu_renderer) {
+        gpu_renderer_set_shader(g_gpu_renderer, (int)shaderId);
+    }
+}
+
+JNI_FUNC(void, nativeGpuResize)(JNIEnv *env, jobject thiz, jint width, jint height) {
+    if (g_gpu_renderer) {
+        gpu_renderer_resize(g_gpu_renderer, (int)width, (int)height);
+    }
+}
+
+JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
+    if (g_gpu_renderer) {
+        video_set_gpu_renderer(NULL);
+        gpu_renderer_deinit_surface(g_gpu_renderer);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        LOGI("GPU renderer destroyed");
+    }
+}
+
+JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {
+    return (g_gpu_renderer && gpu_renderer_is_active(g_gpu_renderer)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNI_FUNC(void, nativeGpuSetSourceRect)(JNIEnv *env, jobject thiz,
+                                        jint x, jint y, jint w, jint h) {
+    if (g_gpu_renderer) {
+        gpu_renderer_set_source_rect(g_gpu_renderer, (int)x, (int)y, (int)w, (int)h);
+    }
 }

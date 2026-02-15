@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.EmulationSurface
+import com.spela.player.libretro.VulkanEmulationSurface
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import org.koin.compose.koinInject
@@ -24,11 +25,20 @@ actual fun PlatformEmulationSurface(
 
     val isDualScreenSplit = emulationState.isDualScreenConsole && emulationState.secondaryDisplayActive
 
-    EmulationSurface(
-        controller = androidController,
-        selectedShader = selectedShader,
-        isDualScreenSplit = isDualScreenSplit,
-        splitY = emulationState.dualScreenSplitY,
-        modifier = modifier,
-    )
+    // Use GPU-accelerated Vulkan surface when available, fall back to software
+    if (androidController.gpuIsActive() && !isDualScreenSplit) {
+        VulkanEmulationSurface(
+            controller = androidController,
+            selectedShader = selectedShader,
+            modifier = modifier,
+        )
+    } else {
+        EmulationSurface(
+            controller = androidController,
+            selectedShader = selectedShader,
+            isDualScreenSplit = isDualScreenSplit,
+            splitY = emulationState.dualScreenSplitY,
+            modifier = modifier,
+        )
+    }
 }

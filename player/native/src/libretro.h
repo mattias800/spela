@@ -29,6 +29,7 @@ extern "C" {
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT     10
 #define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS 11
 #define RETRO_ENVIRONMENT_SHUTDOWN             13
+#define RETRO_ENVIRONMENT_SET_HW_RENDER       14
 #define RETRO_ENVIRONMENT_GET_VARIABLE         15
 #define RETRO_ENVIRONMENT_SET_VARIABLES        16
 #define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE  17
@@ -39,6 +40,7 @@ extern "C" {
 #define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY   31
 #define RETRO_ENVIRONMENT_SET_GEOMETRY         37
 #define RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION 52
+#define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE 41
 
 /* Input device types */
 #define RETRO_DEVICE_NONE     0
@@ -77,6 +79,37 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_X       0
 #define RETRO_DEVICE_ID_POINTER_Y       1
 #define RETRO_DEVICE_ID_POINTER_PRESSED 2
+
+/* HW render context types */
+#define RETRO_HW_CONTEXT_NONE       0
+#define RETRO_HW_CONTEXT_OPENGL     1
+#define RETRO_HW_CONTEXT_OPENGLES2  2
+#define RETRO_HW_CONTEXT_OPENGL_CORE 3
+#define RETRO_HW_CONTEXT_OPENGLES3  4
+#define RETRO_HW_CONTEXT_OPENGLES_VERSION 5
+#define RETRO_HW_CONTEXT_VULKAN     6
+#define RETRO_HW_CONTEXT_METAL      7
+
+/* HW render callback typedefs */
+typedef void (*retro_hw_context_reset_t)(void);
+typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);
+typedef void *(*retro_hw_get_proc_address_t)(const char *sym);
+
+/* HW render callback struct - passed via RETRO_ENVIRONMENT_SET_HW_RENDER */
+struct retro_hw_render_callback {
+    unsigned context_type;
+    retro_hw_context_reset_t context_reset;
+    retro_hw_get_current_framebuffer_t get_current_framebuffer;
+    retro_hw_get_proc_address_t get_proc_address;
+    bool depth;
+    bool stencil;
+    bool bottom_left_origin;
+    unsigned version_major;
+    unsigned version_minor;
+    bool cache_context;
+    retro_hw_context_reset_t context_destroy;
+    bool debug_context;
+};
 
 /* Memory regions */
 #define RETRO_MEMORY_SAVE_RAM  0

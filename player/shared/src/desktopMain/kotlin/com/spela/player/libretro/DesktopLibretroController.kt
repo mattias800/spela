@@ -152,6 +152,16 @@ class DesktopLibretroController(
         jni.nativeSetCoreVariable(key, value)
     }
 
+    /* GPU Renderer methods */
+
+    fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)
+    fun gpuRender() = jni.nativeGpuRender()
+    fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
+    fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
+    fun gpuDeinit() = jni.nativeGpuDeinit()
+    fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
+    fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
+
     override fun setNetplayMode(
         transport: NetplayTransport,
         inputBuffer: NetplayInputBuffer,
@@ -173,6 +183,9 @@ class DesktopLibretroController(
         onNetplayPeerTimeout = null
     }
 
+    /** Whether the GPU renderer is active (checked each frame). */
+    fun isGpuActive(): Boolean = jni.nativeGpuIsActive()
+
     private fun runEmulationLoop() {
         val frameTimeNs = (1_000_000_000.0 / targetFps).toLong()
         var fpsCounter = 0
@@ -187,6 +200,12 @@ class DesktopLibretroController(
             val frameStart = System.nanoTime()
 
             jni.nativeRun()
+
+            // GPU path: frame upload happened in native video_refresh_callback,
+            // just trigger the render pass
+            if (jni.nativeGpuIsActive()) {
+                jni.nativeGpuRender()
+            }
 
             fpsCounter++
             val now = System.nanoTime()
@@ -278,6 +297,10 @@ class DesktopLibretroController(
 
             // 5. Run one emulation frame
             jni.nativeRun()
+
+            if (jni.nativeGpuIsActive()) {
+                jni.nativeGpuRender()
+            }
 
             frameCounter++
 

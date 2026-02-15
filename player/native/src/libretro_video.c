@@ -3,9 +3,13 @@
  *
  * Receives frame buffers from the core via the video_refresh callback,
  * stores them for the Kotlin layer to read and render to a surface.
+ *
+ * When a GPU renderer is active, frames are routed directly to it
+ * (gpu_renderer_upload_frame), bypassing the CPU buffer entirely.
  */
 
 #include "libretro_bridge.h"
+#include "gpu_renderer.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +21,9 @@ static struct {
     unsigned height;
     size_t   pitch;
     unsigned pixel_format;  /* RETRO_PIXEL_FORMAT_* */
+
+    /* GPU renderer (NULL = software path) */
+    gpu_renderer_t *gpu_renderer;
 } video_state = {0};
 
 void video_init(void) {
@@ -26,6 +33,7 @@ void video_init(void) {
     video_state.height = 0;
     video_state.pitch = 0;
     video_state.pixel_format = RETRO_PIXEL_FORMAT_0RGB1555; /* default */
+    /* gpu_renderer is not touched here -- managed externally */
 }
 
 void video_deinit(void) {
@@ -36,15 +44,29 @@ void video_deinit(void) {
     video_state.frame_buffer_size = 0;
     video_state.width = 0;
     video_state.height = 0;
+    /* gpu_renderer is not destroyed here -- managed externally */
 }
 
 void video_set_pixel_format(unsigned format) {
     video_state.pixel_format = format;
 }
 
+void video_set_gpu_renderer(gpu_renderer_t *renderer) {
+    video_state.gpu_renderer = renderer;
+}
+
+gpu_renderer_t *video_get_gpu_renderer(void) {
+    return video_state.gpu_renderer;
+}
+
 /*
  * Called by the core each frame with the rendered framebuffer.
- * We copy the data into our own buffer so Kotlin can read it safely.
+ *
+ * When GPU renderer is active: route directly to gpu_renderer_upload_frame(),
+ * which writes to a Vulkan/Metal staging buffer. No CPU buffer copy.
+ *
+ * When GPU renderer is inactive: copy data into our own buffer so Kotlin
+ * can read it safely (software fallback path).
  *
  * data = NULL means the frame is a duplicate (software framebuffer unchanged).
  */
@@ -55,7 +77,14 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
     video_state.height = height;
     video_state.pitch = pitch;
 
-    /* Calculate bytes per pixel based on format */
+    /* GPU path: upload directly to GPU staging buffer */
+    if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer)) {
+        gpu_renderer_upload_frame(video_state.gpu_renderer, data,
+            width, height, pitch, video_state.pixel_format);
+        return;
+    }
+
+    /* Software path: copy to CPU buffer for Kotlin to read */
     unsigned bpp;
     switch (video_state.pixel_format) {
         case RETRO_PIXEL_FORMAT_XRGB8888:

@@ -1,0 +1,60 @@
+/*
+ * GPU Renderer Interface.
+ *
+ * Common abstraction over Vulkan (Android/Linux/Windows) and Metal (macOS).
+ * Software-rendered cores upload frames via gpu_renderer_upload_frame().
+ * HW-accelerated cores render directly to the GPU texture.
+ */
+
+#ifndef GPU_RENDERER_H
+#define GPU_RENDERER_H
+
+#include "libretro.h"
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Backend identifiers */
+#define GPU_BACKEND_VULKAN 1
+#define GPU_BACKEND_METAL  2
+
+/* Shader identifiers matching ShaderPreset enum on Kotlin side */
+#define GPU_SHADER_NONE            0
+#define GPU_SHADER_BILINEAR        1
+#define GPU_SHADER_SHARP_BILINEAR  2
+#define GPU_SHADER_CRT_SIMPLE      3
+#define GPU_SHADER_SCANLINES       4
+#define GPU_SHADER_LCD_GRID        5
+
+typedef struct gpu_renderer gpu_renderer_t;
+
+/* Lifecycle */
+gpu_renderer_t *gpu_renderer_create(int backend);
+void gpu_renderer_destroy(gpu_renderer_t *r);
+bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface);
+void gpu_renderer_resize(gpu_renderer_t *r, int width, int height);
+void gpu_renderer_deinit_surface(gpu_renderer_t *r);
+
+/* Rendering */
+void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
+    unsigned width, unsigned height, size_t pitch, unsigned pixel_format);
+void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id);
+void gpu_renderer_render(gpu_renderer_t *r);
+
+/* Source rect for DS dual-screen: render a sub-region of the framebuffer */
+void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h);
+
+/* HW render support (Phase 4) */
+struct retro_hw_render_callback *gpu_renderer_get_hw_callback(gpu_renderer_t *r);
+
+/* Query state */
+bool gpu_renderer_is_active(gpu_renderer_t *r);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GPU_RENDERER_H */

@@ -214,6 +214,16 @@ class AndroidLibretroController(
         jni.nativeSetCoreVariable(key, value)
     }
 
+    /* GPU Renderer methods */
+
+    fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)
+    fun gpuRender() = jni.nativeGpuRender()
+    fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
+    fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
+    fun gpuDeinit() = jni.nativeGpuDeinit()
+    fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
+    fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
+
     /**
      * Notify that physical controller input was received.
      * This triggers auto-hide of the touch overlay. If no physical input is
@@ -247,7 +257,8 @@ class AndroidLibretroController(
 
     /**
      * The main emulation loop. Runs retro_run at the core's target FPS.
-     * After each frame, updates the video bitmap and pushes audio samples.
+     * After each frame, updates the video bitmap (software path) or triggers
+     * GPU render (hardware path). Audio is always pushed.
      */
     private fun runEmulationLoop() {
         val frameTimeNs = (1_000_000_000.0 / targetFps).toLong()
@@ -264,8 +275,13 @@ class AndroidLibretroController(
 
             jni.nativeRun()
 
-            // Update video frame
-            updateVideoFrame()
+            // GPU path: frame was already uploaded in video_refresh_callback,
+            // just trigger the render pass. Software path: read pixels via JNI.
+            if (jni.nativeGpuIsActive()) {
+                jni.nativeGpuRender()
+            } else {
+                updateVideoFrame()
+            }
 
             // Push audio
             pushAudio()
@@ -392,7 +408,11 @@ class AndroidLibretroController(
             // 5. Run one emulation frame
             jni.nativeRun()
 
-            updateVideoFrame()
+            if (jni.nativeGpuIsActive()) {
+                jni.nativeGpuRender()
+            } else {
+                updateVideoFrame()
+            }
             pushAudio()
 
             frameCounter++

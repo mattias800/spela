@@ -21,6 +21,8 @@ unsigned video_get_height(void);
 const void *video_get_frame_buffer(void);
 size_t video_get_frame_buffer_size(void);
 unsigned video_get_pixel_format(void);
+void video_set_gpu_renderer(gpu_renderer_t *renderer);
+gpu_renderer_t *video_get_gpu_renderer(void);
 
 /* Audio subsystem (libretro_audio.c) */
 void audio_init(double sample_rate);
@@ -43,6 +45,10 @@ void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
 /* Core variable subsystem (libretro_bridge.c) */
 void core_variables_set(const char *key, const char *value);
 void core_variables_clear(void);
+
+/* GPU renderer (gpu_renderer.h) */
+struct gpu_renderer;
+typedef struct gpu_renderer gpu_renderer_t;
 
 /* Core state */
 typedef struct {
@@ -80,6 +86,10 @@ typedef struct {
     bool                            game_loaded;
     char                            system_dir[4096];
     char                            save_dir[4096];
+
+    /* HW render */
+    struct retro_hw_render_callback hw_render_callback;
+    bool                            hw_render_enabled;
 } libretro_core_t;
 
 /* Global core instance */

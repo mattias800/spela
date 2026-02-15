@@ -13,6 +13,7 @@ import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.libretro.DesktopAudioPlayer
 import com.spela.player.libretro.DesktopEmulationSurface
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.libretro.MetalEmulationSurface
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import org.koin.compose.koinInject
@@ -38,27 +39,54 @@ actual fun PlatformEmulationSurface(
         }
     }
 
-    // Load key mapping from repository based on current console
-    val keyMappingRepo: KeyMappingRepository = koinInject()
-    val emulationViewModel: EmulationViewModel = koinInject()
-    val consoleId = emulationViewModel.state.value.consoleId
+    // Check if GPU rendering is active (Metal on macOS, Vulkan on Linux/Windows)
+    val gpuActive = desktopController.gpuIsActive()
 
-    var keyMapping by remember { mutableStateOf<Map<Int, Int>?>(null) }
+    if (gpuActive && isMacOs()) {
+        MetalEmulationSurface(
+            controller = desktopController,
+            selectedShader = selectedShader,
+            modifier = modifier,
+        )
+    } else {
+        // Software fallback (or GPU not yet initialized -- it will be initialized
+        // by the surface itself on first composition)
 
-    LaunchedEffect(consoleId) {
-        if (consoleId.isNotEmpty()) {
-            // getEffectiveMapping returns retroButtonId -> platformKeyCode
-            // DesktopEmulationSurface expects platformKeyCode -> retroButtonId
-            val retroMapping = keyMappingRepo.getEffectiveMapping(consoleId)
-            keyMapping = retroMapping.entries.associate { (retro, platform) -> platform to retro }
+        // Load key mapping from repository based on current console
+        val keyMappingRepo: KeyMappingRepository = koinInject()
+        val emulationViewModel: EmulationViewModel = koinInject()
+        val consoleId = emulationViewModel.state.value.consoleId
+
+        var keyMapping by remember { mutableStateOf<Map<Int, Int>?>(null) }
+
+        LaunchedEffect(consoleId) {
+            if (consoleId.isNotEmpty()) {
+                val retroMapping = keyMappingRepo.getEffectiveMapping(consoleId)
+                keyMapping = retroMapping.entries.associate { (retro, platform) -> platform to retro }
+            }
+        }
+
+        // Try GPU surface first (Metal on macOS), fall back to software
+        if (isMacOs()) {
+            MetalEmulationSurface(
+                controller = desktopController,
+                selectedShader = selectedShader,
+                modifier = modifier,
+            )
+        } else {
+            DesktopEmulationSurface(
+                controller = desktopController,
+                selectedShader = selectedShader,
+                modifier = modifier,
+                onEscapePressed = onEscapePressed,
+                keyMapping = keyMapping,
+            )
         }
     }
+}
 
-    DesktopEmulationSurface(
-        controller = desktopController,
-        selectedShader = selectedShader,
-        modifier = modifier,
-        onEscapePressed = onEscapePressed,
-        keyMapping = keyMapping,
-    )
+/** Detect macOS at runtime. */
+private fun isMacOs(): Boolean {
+    val os = System.getProperty("os.name", "").lowercase()
+    return os.contains("mac") || os.contains("darwin")
 }

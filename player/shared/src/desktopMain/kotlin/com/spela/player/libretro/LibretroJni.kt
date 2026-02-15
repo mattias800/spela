@@ -58,6 +58,15 @@ class LibretroJni {
     /* Memory */
     external fun nativeGetSRAM(): ByteArray?
 
+    /* GPU Renderer */
+    external fun nativeGpuInit(surface: Any): Boolean
+    external fun nativeGpuRender()
+    external fun nativeGpuSetShader(shaderId: Int)
+    external fun nativeGpuResize(width: Int, height: Int)
+    external fun nativeGpuDeinit()
+    external fun nativeGpuIsActive(): Boolean
+    external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
+
     /* Achievements */
     external fun nativeAchievementsInit()
     external fun nativeAchievementsDeinit()

@@ -11,6 +11,20 @@ import androidx.compose.ui.unit.IntSize
 import com.spela.player.domain.model.ShaderPreset
 
 /**
+ * Maps [ShaderPreset] to the GPU shader ID constants (matching gpu_renderer.h).
+ * Used by Vulkan/Metal emulation surfaces to set the active shader.
+ */
+val ShaderPreset.gpuShaderId: Int
+    get() = when (this) {
+        ShaderPreset.NONE -> 0
+        ShaderPreset.BILINEAR -> 1
+        ShaderPreset.SHARP_BILINEAR -> 2
+        ShaderPreset.CRT_SIMPLE -> 3
+        ShaderPreset.SCANLINES -> 4
+        ShaderPreset.LCD_GRID -> 5
+    }
+
+/**
  * Returns the [FilterQuality] appropriate for the given shader preset.
  * Nearest-neighbor for pixel-art presets; bilinear for smooth presets.
  */
