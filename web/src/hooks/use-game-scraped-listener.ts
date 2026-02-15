@@ -49,8 +49,8 @@ function updateGameInArray(games: Game[], scraped: Game): Game[] {
 export function useGameScrapedListener() {
   const queryClient = useQueryClient();
 
-  useWebSocketEvent("game_scraped", (payload: { game?: Game }) => {
-    const scraped = payload.game;
+  useWebSocketEvent("game_scraped", (payload: Game) => {
+    const scraped = payload;
     if (!scraped?.id) return;
 
     // Update single game query: ["game", id]

@@ -6,7 +6,7 @@
 [ ] BIOS files are appearing in the games list.
 [ ] We should have dedicated path (in env variables) for BIOS files, so they can be separated from the ROMs.
 [ ] Pass correct BIOS paths to libretro and EmulatorJS.
-[ ] When autoscraping a game is done, the UI doesn't automatically update, the game is stuck spinning until refresh browser. Ensure this logic works on desktop and app as well.
+[x] When autoscraping a game is done, the UI doesn't automatically update, the game is stuck spinning until refresh browser. Ensure this logic works on desktop and app as well.
 [x] Netplay game details doesn't respect box art aspect ratio difference between consoles.
 [x] NES box art aspect ratio could be more precise, compared to the box art.
 [ ] When inviting to a Relay, the user should be able to select user from a list.
