@@ -26,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
+import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
@@ -43,6 +45,8 @@ import com.spela.player.presentation.ui.screen.LoginScreen
 import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
 import com.spela.player.presentation.ui.screen.PlatformTouchControls
 
+import com.spela.player.presentation.ui.screen.NetplayListScreen
+import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
@@ -65,6 +69,8 @@ import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
+import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 
 @Composable
@@ -82,6 +88,8 @@ fun SpelaApp(
     socialViewModel: SocialViewModel,
     relaysViewModel: RelaysViewModel,
     relayDetailViewModel: RelayDetailViewModel,
+    netplayViewModel: NetplayViewModel,
+    netplayLobbyViewModel: NetplayLobbyViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
 ) {
@@ -185,6 +193,13 @@ fun SpelaApp(
 
                             is SpScreen.Home -> {
                                 val downloadsState by downloadsViewModel.state.collectAsState()
+                                val netplayState by netplayViewModel.state.collectAsState()
+                                val activeNetplaySessions = netplayState.sessions.filter {
+                                    it.status != NetplaySessionStatus.ENDED
+                                }
+                                LaunchedEffect(Unit) {
+                                    netplayViewModel.onIntent(NetplayIntent.LoadSessions)
+                                }
                                 HomeScreen(
                                     viewModel = gameListViewModel,
                                     socialViewModel = socialViewModel,
@@ -213,12 +228,23 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.Settings)
                                         )
                                     },
+                                    onNavigateToNetplay = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.NetplaySessions)
+                                        )
+                                    },
+                                    onNetplaySessionSelected = { sessionId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.NetplayLobby(sessionId))
+                                        )
+                                    },
                                     onUserSelected = { userId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
                                         )
                                     },
                                     hasActiveDownloads = downloadsState.activeDownloads.isNotEmpty(),
+                                    activeNetplaySessions = activeNetplaySessions,
                                 )
                             }
 
@@ -243,6 +269,14 @@ fun SpelaApp(
                             }
 
                             is SpScreen.GameDetail -> {
+                                val netplayState by netplayViewModel.state.collectAsState()
+                                LaunchedEffect(netplayState.joinedSession) {
+                                    netplayState.joinedSession?.let { session ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.NetplayLobby(session.id))
+                                        )
+                                    }
+                                }
                                 GameDetailScreen(
                                     gameId = screen.gameId,
                                     viewModel = gameDetailViewModel,
@@ -252,6 +286,11 @@ fun SpelaApp(
                                     onPlay = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.ShowOverlay(gameId)
+                                        )
+                                    },
+                                    onCreateNetplay = { gameId ->
+                                        netplayViewModel.onIntent(
+                                            NetplayIntent.CreateSession(gameId)
                                         )
                                     },
                                 )
@@ -344,18 +383,59 @@ fun SpelaApp(
                                     },
                                 )
                             }
+
+                            is SpScreen.NetplaySessions -> {
+                                NetplayListScreen(
+                                    viewModel = netplayViewModel,
+                                    onSessionSelected = { sessionId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.NetplayLobby(sessionId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.NetplayLobby -> {
+                                val lobbyState by netplayLobbyViewModel.state.collectAsState()
+                                NetplayLobbyScreen(
+                                    sessionId = screen.sessionId,
+                                    viewModel = netplayLobbyViewModel,
+                                    currentUserId = lobbyState.currentUserId,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onStartGame = { gameId, sessionId, localPort, inputDelay, isHost ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.ShowOverlay(
+                                                gameId = gameId,
+                                                netplaySessionId = sessionId,
+                                                netplayLocalPort = localPort,
+                                                netplayInputDelay = inputDelay,
+                                                netplayIsHost = isHost,
+                                            )
+                                        )
+                                    },
+                                )
+                            }
                         }
                     }
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
-                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
                                         gameId = gameId,
                                         relayId = navState.overlayRelayId,
                                         turnToken = navState.overlayTurnToken,
+                                        netplaySessionId = navState.overlayNetplaySessionId,
+                                        netplayLocalPort = navState.overlayNetplayLocalPort,
+                                        netplayInputDelay = navState.overlayNetplayInputDelay,
+                                        netplayIsHost = navState.overlayNetplayIsHost,
                                     )
                                 )
                             }

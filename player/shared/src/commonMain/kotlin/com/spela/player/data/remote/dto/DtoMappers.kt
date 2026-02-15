@@ -241,3 +241,27 @@ fun RelaySaveDto.toDomain(): RelaySave = RelaySave(
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
+
+// Netplay mappers
+
+fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
+    id = id,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = consoleName,
+    hostUserId = hostId,
+    hostUsername = hostUsername,
+    hostAvatarUrl = hostAvatarUrl,
+    clientUserId = clientId,
+    clientUsername = clientUsername,
+    clientAvatarUrl = clientAvatarUrl,
+    status = NetplaySessionStatus.entries.find { it.name.equals(status, ignoreCase = true) }
+        ?: NetplaySessionStatus.WAITING,
+    inputDelay = inputDelay,
+    inviteCode = inviteCode,
+    endReason = endReason,
+    createdAt = createdAt,
+    startedAt = startedAt,
+    endedAt = endedAt,
+)

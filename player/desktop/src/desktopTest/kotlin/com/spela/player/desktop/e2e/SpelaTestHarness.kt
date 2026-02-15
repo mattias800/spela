@@ -127,6 +127,8 @@ class SpelaTestHarness(
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
         relayRepository = relayRepo,
+        apiClient = fakeApiClient,
+        engineFactory = stubEngineFactory,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -185,6 +187,21 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val netplayRepo = FakeNetplayRepository()
+
+    val netplayViewModel = NetplayViewModel(
+        netplayRepository = netplayRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val netplayLobbyViewModel = NetplayLobbyViewModel(
+        netplayRepository = netplayRepo,
+        authRepository = authRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         SpelaApp(
@@ -201,6 +218,8 @@ class SpelaTestHarness(
             socialViewModel = socialViewModel,
             relaysViewModel = relaysViewModel,
             relayDetailViewModel = relayDetailViewModel,
+            netplayViewModel = netplayViewModel,
+            netplayLobbyViewModel = netplayLobbyViewModel,
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
         )

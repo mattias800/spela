@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.NetplaySession
+import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -76,8 +79,11 @@ fun HomeScreen(
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToRelays: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNetplay: () -> Unit = {},
+    onNetplaySessionSelected: (String) -> Unit = {},
     onUserSelected: (String) -> Unit = {},
     hasActiveDownloads: Boolean = false,
+    activeNetplaySessions: List<NetplaySession> = emptyList(),
 ) {
     val state by viewModel.state.collectAsState()
     val socialState by socialViewModel.state.collectAsState()
@@ -153,6 +159,27 @@ fun HomeScreen(
                     .spFocusRing(shape = CircleShape)
                     .clip(CircleShape)
                     .background(SpColor.SurfaceVariant)
+                    .clickable(onClick = onNavigateToNetplay)
+                    .focusable()
+                    .semantics {
+                        contentDescription = "Netplay"
+                        role = Role.Button
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SportsEsports,
+                    contentDescription = null,
+                    tint = SpColor.OnSurface,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .spFocusRing(shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(SpColor.SurfaceVariant)
                     .clickable(onClick = onNavigateToSettings)
                     .focusable()
                     .semantics {
@@ -203,6 +230,29 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = SpSpacing.Default),
                     ) {
+                        // Netplay section (AC-15)
+                        if (activeNetplaySessions.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Netplay",
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                            }
+                            items(
+                                activeNetplaySessions,
+                                key = { "netplay-${it.id}" },
+                            ) { session ->
+                                NetplaySessionCard(
+                                    session = session,
+                                    onClick = { onNetplaySessionSelected(session.id) },
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
                         // Continue Playing section
                         if (state.recentGames.isNotEmpty()) {
                             item {
@@ -553,6 +603,63 @@ private fun ConsoleCard(
                 style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundSecondary,
             )
+        }
+    }
+}
+
+@Composable
+private fun NetplaySessionCard(
+    session: NetplaySession,
+    onClick: () -> Unit,
+) {
+    SpCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .semantics {
+                contentDescription = when (session.status) {
+                    NetplaySessionStatus.WAITING -> "${session.gameTitle} netplay session, waiting for player"
+                    NetplaySessionStatus.IN_PROGRESS -> "${session.gameTitle} with ${session.clientUsername ?: "player"}, tap to rejoin"
+                    NetplaySessionStatus.ENDED -> "${session.gameTitle} session ended"
+                }
+                role = Role.Button
+            },
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpCoverArt(
+                imageUrl = session.gameCoverUrl,
+                contentDescription = "${session.gameTitle} cover",
+                modifier = Modifier.size(width = 48.dp, height = 64.dp),
+                cornerRadius = 8.dp,
+            )
+            Spacer(Modifier.width(SpSpacing.Medium))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = session.gameTitle,
+                    style = SpTypography.TitleLarge,
+                    color = SpColor.OnCard,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(SpSpacing.XXSmall))
+                Text(
+                    text = when (session.status) {
+                        NetplaySessionStatus.WAITING -> "Waiting for player..."
+                        NetplaySessionStatus.IN_PROGRESS -> "With ${session.clientUsername ?: session.hostUsername} -- Tap to rejoin"
+                        NetplaySessionStatus.ENDED -> "Session ended"
+                    },
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

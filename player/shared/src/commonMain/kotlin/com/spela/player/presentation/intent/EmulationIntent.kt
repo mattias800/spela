@@ -5,6 +5,10 @@ sealed interface EmulationIntent {
         val gameId: String,
         val relayId: String? = null,
         val turnToken: String? = null,
+        val netplaySessionId: String? = null,
+        val netplayLocalPort: Int = 0,
+        val netplayInputDelay: Int = 3,
+        val netplayIsHost: Boolean = false,
     ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent
@@ -27,4 +31,9 @@ sealed interface EmulationIntent {
     data object DismissAchievement : EmulationIntent
 
     data class SecondaryDisplayAvailabilityChanged(val available: Boolean) : EmulationIntent
+
+    // Netplay-specific intents
+    data object ShowNetplayLeaveConfirm : EmulationIntent
+    data object DismissNetplayLeaveConfirm : EmulationIntent
+    data object ConfirmNetplayLeave : EmulationIntent
 }

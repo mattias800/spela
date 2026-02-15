@@ -210,6 +210,70 @@ delightful across every screen.
 - Empty states must be helpful, not just "No data"
 - Error states must be actionable, not just "Something went wrong"
 
+**Shared component discipline (web):**
+
+Pages (`web/src/pages/`) should be composed almost entirely from shared
+components (`web/src/components/ui/`) and feature components
+(`web/src/components/`). Raw HTML elements with custom Tailwind classes in
+page files are a code smell — they usually mean a reusable component is
+missing.
+
+Specifically, watch for:
+- **Raw `<button>` elements** — should use `Button` (or a variant like
+  `BackButton`). Every clickable element in a page should go through the
+  shared button component so hover/focus/disabled states are consistent.
+- **Repeated layout patterns** — if the same flex/grid + spacing pattern
+  appears in multiple pages, extract it into a shared layout component.
+- **Inline color/spacing tokens** — pages should use component props and
+  variants, not hardcoded `text-surface-400 hover:text-surface-100` etc.
+  If existing variants don't fit, add a new variant to the shared component
+  rather than inlining styles.
+- **Inconsistent sizing** — icons, buttons, and interactive elements within
+  the same row or section must share the same dimensions. Check that all
+  Button variants produce identical height (borders, padding, font size).
+
+There will always be a few exceptions (page-specific layout wrappers,
+one-off decorative elements), but these should be rare. When reviewing,
+flag any raw HTML interactive element in a page file and ask: "Should this
+be a shared component?"
+
+**Shared component discipline (player app):**
+
+Screen composables (`presentation/ui/screen/`) should be composed from
+`Sp*` design system components (`presentation/ui/components/`) and theme
+tokens (`SpColor`, `SpSpacing`, `SpTypography`). Screens that build
+interactive elements from raw `Box`/`Row`/`Column` + `Modifier.clickable`
+with hardcoded colors and sizes are a code smell — they usually mean a
+reusable `Sp*` component is missing.
+
+Specifically, watch for:
+- **Raw clickable containers** — a `Box` or `Row` with
+  `.clickable { ... }.background(SpColor.SurfaceVariant)` that acts as a
+  button should use `SpButton` (or a new variant). All interactive elements
+  must go through shared components so focus-ring, hover, press, and
+  disabled states are consistent. This applies equally to icon-only
+  actions — consider extracting an `SpIconButton` if the pattern repeats.
+- **Hardcoded dp values** — sizes like `16.dp`, `24.dp` etc. scattered in
+  screen files should use `SpSpacing` tokens instead. If none of the
+  existing tokens fit, add one rather than hardcoding.
+- **Hardcoded colors** — screen code should reference `SpColor` tokens, not
+  `Color(0xFF...)` literals or Material `MaterialTheme.colorScheme`
+  directly. The app has its own color system for a reason.
+- **Repeated screen-level patterns** — section headers, carousel rows,
+  labeled setting rows, etc. If the same `Column + Text + Spacer` pattern
+  shows up in more than one screen, extract it into a shared component.
+- **Screen file size** — Compose screens are prone to bloat. When a screen
+  grows beyond ~300 lines, look for private composables or sections that
+  can be extracted into standalone `Sp*` components or feature-specific
+  component files.
+- **Empty states** — must use `SpEmptyStates` factory methods (e.g.
+  `SpEmptyStates.NoGamesDownloaded()`), not ad-hoc `Text` composables.
+
+Exceptions are fine for true one-offs (login branding, platform-specific
+emulation surfaces), but they should be rare. When reviewing, flag any
+raw interactive `Modifier.clickable` in a screen file and ask: "Should
+this be an Sp* component?"
+
 ---
 
 ### 9. Web QA Engineer

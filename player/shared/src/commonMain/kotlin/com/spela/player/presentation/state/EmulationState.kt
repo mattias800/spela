@@ -42,4 +42,16 @@ data class EmulationState(
     /** Relay mode: set when playing a game through a relay. */
     val relayId: String? = null,
     val turnToken: String? = null,
-)
+
+    /** Netplay mode: set when playing a game through a netplay session. */
+    val netplaySessionId: String? = null,
+    val netplayPeerUsername: String? = null,
+    val netplayPeerLatencyMs: Int = 0,
+    val netplayPeerDisconnected: Boolean = false,
+    val netplayPausedByUsername: String? = null,
+    val netplayShowLeaveConfirm: Boolean = false,
+    val netplayPauseElapsedSeconds: Long = 0,
+    val netplaySessionExpired: Boolean = false,
+) {
+    val isNetplayMode: Boolean get() = netplaySessionId != null
+}

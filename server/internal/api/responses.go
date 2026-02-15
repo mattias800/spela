@@ -468,6 +468,29 @@ type RelaySaveResponse struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
+// NetplaySessionResponse is the API response for a netplay session.
+type NetplaySessionResponse struct {
+	ID               string     `json:"id"`
+	HostUserID       string     `json:"hostId"`
+	HostUsername     string     `json:"hostUsername"`
+	HostAvatarURL    string     `json:"hostAvatarUrl,omitempty"`
+	ClientUserID     *string    `json:"clientId"`
+	ClientUsername   string     `json:"clientUsername,omitempty"`
+	ClientAvatarURL  string     `json:"clientAvatarUrl,omitempty"`
+	GameID           string     `json:"gameId"`
+	GameTitle        string     `json:"gameTitle"`
+	GameCoverURL     string     `json:"gameCoverUrl,omitempty"`
+	ConsoleName      string     `json:"consoleName,omitempty"`
+	Status           string     `json:"status"`
+	EndReason        string     `json:"endReason,omitempty"`
+	InputDelay       int        `json:"inputDelay"`
+	CoreName         string     `json:"coreName,omitempty"`
+	InviteCode       string     `json:"inviteCode"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	StartedAt        *time.Time `json:"startedAt,omitempty"`
+	EndedAt          *time.Time `json:"endedAt,omitempty"`
+}
+
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
 func parseAspectRatio(aspect string) float64 {
 	parts := strings.SplitN(aspect, ":", 2)

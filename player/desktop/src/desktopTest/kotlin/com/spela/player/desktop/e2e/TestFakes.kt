@@ -657,6 +657,39 @@ class FakeKeyMappingRepository : KeyMappingRepository {
     override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
 }
 
+class FakeNetplayRepository : NetplayRepository {
+    var sessions: List<NetplaySession> = emptyList()
+    var currentSession: NetplaySession? = null
+
+    override suspend fun createSession(
+        gameId: String,
+        inputDelay: Int,
+    ): Result<NetplaySession> {
+        val session = NetplaySession(
+            id = "fake-session-1",
+            gameId = gameId,
+            hostUserId = "user-1",
+            hostUsername = "TestHost",
+            inputDelay = inputDelay,
+            inviteCode = "ABCD1234",
+        )
+        return Result.success(session)
+    }
+
+    override suspend fun getSessions(): Result<List<NetplaySession>> = Result.success(sessions)
+    override suspend fun getSession(sessionId: String): Result<NetplaySession> =
+        currentSession?.let { Result.success(it) }
+            ?: Result.failure(Exception("Session not found"))
+    override suspend fun joinByInviteCode(code: String): Result<NetplaySession> =
+        currentSession?.let { Result.success(it) }
+            ?: Result.failure(Exception("Invalid code"))
+    override suspend fun leaveSession(sessionId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun updateInputDelay(sessionId: String, inputDelay: Int): Result<NetplaySession> =
+        currentSession?.let { Result.success(it.copy(inputDelay = inputDelay)) }
+            ?: Result.failure(Exception("Session not found"))
+}
+
 private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineConfig> {
     override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
         return MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }

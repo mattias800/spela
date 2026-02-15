@@ -115,6 +115,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -290,6 +292,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
         )
@@ -317,6 +321,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
         )

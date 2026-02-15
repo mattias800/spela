@@ -44,6 +44,7 @@ val commonModule = module {
     single<RatingRepository> { RatingRepositoryImpl(get()) }
     single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
     single<RelayRepository> { RelayRepositoryImpl(get()) }
+    single<NetplayRepository> { NetplayRepositoryImpl(get()) }
     single { GamepadPortManager(get()) }
 
     /* Use Cases */
@@ -120,6 +121,8 @@ val commonModule = module {
             secondaryDisplay = get(),
             presenceService = get(),
             relayRepository = get(),
+            apiClient = get(),
+            engineFactory = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -146,6 +149,23 @@ val commonModule = module {
     factory {
         RelayDetailViewModel(
             relayRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        NetplayViewModel(
+            netplayRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        NetplayLobbyViewModel(
+            netplayRepository = get(),
+            authRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

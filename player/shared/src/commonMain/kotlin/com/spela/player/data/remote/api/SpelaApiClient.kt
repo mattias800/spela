@@ -512,6 +512,42 @@ class SpelaApiClient(
         ).body()
     }
 
+    // Netplay
+
+    suspend fun createNetplaySession(request: CreateNetplaySessionRequest): NetplaySessionDto {
+        return client.post("$baseUrl/api/netplay/sessions") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun getNetplaySessions(): NetplaySessionsResponse {
+        return client.get("$baseUrl/api/netplay/sessions").body()
+    }
+
+    suspend fun getNetplaySession(sessionId: String): NetplaySessionDto {
+        return client.get("$baseUrl/api/netplay/sessions/$sessionId").body()
+    }
+
+    suspend fun joinNetplayByInviteCode(request: JoinByInviteCodeRequest): NetplaySessionDto {
+        return client.post("$baseUrl/api/netplay/sessions/join") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun leaveNetplaySession(sessionId: String) {
+        client.post("$baseUrl/api/netplay/sessions/$sessionId/leave")
+    }
+
+    suspend fun deleteNetplaySession(sessionId: String) {
+        client.delete("$baseUrl/api/netplay/sessions/$sessionId")
+    }
+
+    suspend fun updateNetplaySettings(sessionId: String, request: UpdateNetplaySettingsRequest): NetplaySessionDto {
+        return client.put("$baseUrl/api/netplay/sessions/$sessionId/settings") {
+            setBody(request)
+        }.body()
+    }
+
     fun close() {
         client.close()
     }

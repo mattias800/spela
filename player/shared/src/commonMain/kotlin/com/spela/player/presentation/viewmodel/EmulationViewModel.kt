@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
@@ -10,6 +11,12 @@ import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.netplay.NetplayInputBuffer
+import com.spela.player.netplay.NetplaySignaling
+import com.spela.player.netplay.NetplayTransport
+import com.spela.player.netplay.RemoteInput
+import com.spela.player.netplay.WebSocketRelayTransport
+import com.spela.player.netplay.ControlMessage
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
@@ -21,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,6 +50,8 @@ class EmulationViewModel(
     private val secondaryDisplay: PlatformSecondaryDisplay,
     private val presenceService: PresenceService,
     private val relayRepository: RelayRepository,
+    private val apiClient: SpelaApiClient,
+    private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -51,10 +61,16 @@ class EmulationViewModel(
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
     private var relayHeartbeatJob: Job? = null
+    private var netplayTransport: NetplayTransport? = null
+    private var netplayInputCollectorJob: Job? = null
+    private var netplayControlCollectorJob: Job? = null
 
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
-            is EmulationIntent.StartGame -> startGame(intent.gameId, intent.relayId, intent.turnToken)
+            is EmulationIntent.StartGame -> startGame(
+                intent.gameId, intent.relayId, intent.turnToken,
+                intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
+            )
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
             EmulationIntent.StopGame -> stopGame()
@@ -90,10 +106,25 @@ class EmulationViewModel(
             EmulationIntent.DismissAchievement -> _state.update { it.copy(achievementEvent = null) }
 
             is EmulationIntent.SecondaryDisplayAvailabilityChanged -> onSecondaryDisplayAvailabilityChanged(intent.available)
+
+            EmulationIntent.ShowNetplayLeaveConfirm -> _state.update { it.copy(netplayShowLeaveConfirm = true) }
+            EmulationIntent.DismissNetplayLeaveConfirm -> _state.update { it.copy(netplayShowLeaveConfirm = false) }
+            EmulationIntent.ConfirmNetplayLeave -> {
+                _state.update { it.copy(netplayShowLeaveConfirm = false, requestExit = true) }
+                stopGame()
+            }
         }
     }
 
-    private fun startGame(gameId: String, relayId: String? = null, turnToken: String? = null) {
+    private fun startGame(
+        gameId: String,
+        relayId: String? = null,
+        turnToken: String? = null,
+        netplaySessionId: String? = null,
+        netplayLocalPort: Int = 0,
+        netplayInputDelay: Int = 3,
+        netplayIsHost: Boolean = false,
+    ) {
         _state.update {
             it.copy(
                 gameId = gameId,
@@ -102,6 +133,7 @@ class EmulationViewModel(
                 showExitConfirm = false,
                 relayId = relayId,
                 turnToken = turnToken,
+                netplaySessionId = netplaySessionId,
                 error = null,
                 statusMessage = null,
                 isFastForward = false,
@@ -165,14 +197,21 @@ class EmulationViewModel(
                             }
                         }
 
+                        // Set up netplay transport if in netplay mode
+                        if (netplaySessionId != null) {
+                            setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
+                        }
+
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
                         withContext(dispatchers.main) {
                             _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
                         }
 
-                        // Initialize achievements if RA is linked
-                        initAchievements(gameId)
+                        // Initialize achievements if RA is linked (skip for netplay)
+                        if (netplaySessionId == null) {
+                            initAchievements(gameId)
+                        }
 
                         // Start play-time heartbeat for online presence
                         presenceService.startHeartbeat(gameId)
@@ -207,6 +246,131 @@ class EmulationViewModel(
         }
     }
 
+    /**
+     * Set up the netplay transport, connect to the WebSocket, configure lockstep mode
+     * on the controller, and start collecting remote inputs.
+     *
+     * For the host: sends initial state to the client via STATE_CHUNK messages.
+     * For the client: receives and applies the initial state from the host.
+     */
+    private suspend fun setupNetplayTransport(
+        sessionId: String,
+        localPort: Int,
+        inputDelay: Int,
+        isHost: Boolean,
+    ) {
+        val signaling = NetplaySignaling(
+            apiClient = apiClient,
+            engineFactory = engineFactory,
+            dispatchers = dispatchers,
+            scope = scope,
+            sessionId = sessionId,
+        )
+        val transport = WebSocketRelayTransport(signaling, scope)
+        this.netplayTransport = transport
+
+        // Connect to the WebSocket
+        transport.connect()
+
+        // Small delay to let the WebSocket connection establish
+        delay(500)
+
+        val inputBuffer = NetplayInputBuffer()
+
+        // Initial state sync: host serializes and sends, client waits to receive
+        if (isHost) {
+            val stateData = libretroController.serialize()
+            if (stateData != null) {
+                sendStateChunks(transport, stateData)
+            }
+        } else {
+            // Client waits for state chunks from host
+            val stateData = receiveStateChunks(transport)
+            if (stateData != null) {
+                libretroController.unserialize(stateData)
+            }
+        }
+
+        // Configure lockstep mode on the controller
+        libretroController.setNetplayMode(transport, inputBuffer, localPort, inputDelay)
+
+        // Collect remote inputs from transport and feed into input buffer
+        netplayInputCollectorJob = scope.launch(dispatchers.io) {
+            transport.remoteInputs.collect { remote ->
+                inputBuffer.setRemoteInput(remote.frame, remote.port, remote.input)
+            }
+        }
+
+        // Collect control messages for disconnect/reconnect handling
+        netplayControlCollectorJob = scope.launch(dispatchers.io) {
+            transport.controlMessages.collect { msg ->
+                when (msg) {
+                    is ControlMessage.PlayerLeft -> {
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(netplayPeerDisconnected = true) }
+                        }
+                    }
+                    is ControlMessage.PlayerJoined -> {
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(netplayPeerDisconnected = false) }
+                        }
+                    }
+                    else -> { /* other messages handled elsewhere */ }
+                }
+            }
+        }
+    }
+
+    private fun sendStateChunks(transport: NetplayTransport, stateData: ByteArray) {
+        val chunkSize = 16_384 // 16 KB chunks
+        val totalChunks = (stateData.size + chunkSize - 1) / chunkSize
+        for (i in 0 until totalChunks) {
+            val offset = i * chunkSize
+            val end = minOf(offset + chunkSize, stateData.size)
+            val chunk = stateData.copyOfRange(offset, end)
+            val encoded = com.spela.player.netplay.NetplayProtocol.encodeStateChunk(
+                chunkIndex = i,
+                totalChunks = totalChunks,
+                totalSize = stateData.size,
+                data = chunk,
+            )
+            transport.sendBinary(encoded)
+        }
+    }
+
+    private suspend fun receiveStateChunks(transport: NetplayTransport): ByteArray? {
+        val receivedChunks = mutableMapOf<Int, ByteArray>()
+        var totalChunks = -1
+        var totalSize = -1
+
+        // Wait for all state chunks with a timeout.
+        // Use takeWhile to break out of collect when all chunks arrive.
+        kotlinx.coroutines.withTimeoutOrNull(10_000) {
+            transport.remoteBinary.takeWhile { msg ->
+                val chunk = com.spela.player.netplay.NetplayProtocol.decodeStateChunk(msg.data)
+                if (chunk != null) {
+                    totalChunks = chunk.totalChunks
+                    totalSize = chunk.totalSize
+                    receivedChunks[chunk.chunkIndex] = chunk.data
+                }
+                // Continue collecting while we don't have all chunks yet
+                receivedChunks.size < totalChunks || totalChunks < 0
+            }.collect {}
+        } ?: return null
+
+        if (totalSize < 0 || receivedChunks.size < totalChunks) return null
+
+        // Reassemble in order
+        val result = ByteArray(totalSize)
+        var offset = 0
+        for (i in 0 until totalChunks) {
+            val chunkData = receivedChunks[i] ?: return null
+            chunkData.copyInto(result, offset)
+            offset += chunkData.size
+        }
+        return result
+    }
+
     private fun pauseGame() {
         libretroController.pause()
         _state.update { it.copy(isPaused = true) }
@@ -222,9 +386,25 @@ class EmulationViewModel(
         sessionTimerJob = scope.launch(dispatchers.default) {
             while (isActive) {
                 delay(1000)
-                if (!_state.value.isPaused) {
+                val current = _state.value
+                if (!current.isPaused) {
                     withContext(dispatchers.main) {
-                        _state.update { it.copy(sessionElapsedSeconds = it.sessionElapsedSeconds + 1) }
+                        _state.update {
+                            val newElapsed = it.sessionElapsedSeconds + 1
+                            it.copy(
+                                sessionElapsedSeconds = newElapsed,
+                                netplayPauseElapsedSeconds = 0,
+                                // 15-minute session expiration for netplay (AC-12)
+                                netplaySessionExpired = it.isNetplayMode && newElapsed >= 900,
+                            )
+                        }
+                    }
+                } else if (current.isNetplayMode) {
+                    // Track how long netplay has been paused (for AC-8 5-min timeout)
+                    withContext(dispatchers.main) {
+                        _state.update {
+                            it.copy(netplayPauseElapsedSeconds = it.netplayPauseElapsedSeconds + 1)
+                        }
                     }
                 }
             }
@@ -236,6 +416,13 @@ class EmulationViewModel(
         sessionTimerJob = null
         relayHeartbeatJob?.cancel()
         relayHeartbeatJob = null
+        netplayInputCollectorJob?.cancel()
+        netplayInputCollectorJob = null
+        netplayControlCollectorJob?.cancel()
+        netplayControlCollectorJob = null
+        netplayTransport?.disconnect()
+        netplayTransport = null
+        libretroController.clearNetplayMode()
         presenceService.stopHeartbeat()
         scope.launch(dispatchers.io) {
             val currentState = _state.value
@@ -290,6 +477,14 @@ class EmulationViewModel(
                         secondaryDisplayActive = false,
                         relayId = null,
                         turnToken = null,
+                        netplaySessionId = null,
+                        netplayPeerUsername = null,
+                        netplayPeerLatencyMs = 0,
+                        netplayPeerDisconnected = false,
+                        netplayPausedByUsername = null,
+                        netplayShowLeaveConfirm = false,
+                        netplayPauseElapsedSeconds = 0,
+                        netplaySessionExpired = false,
                     )
                 }
             }
@@ -451,4 +646,23 @@ interface LibretroController {
 
     /** Set a core option variable (e.g. DeSmuME screen layout). */
     fun setCoreVariable(key: String, value: String) {}
+
+    /**
+     * Enter netplay lockstep mode. The emulation loop will synchronize inputs
+     * with the remote player via the transport layer before advancing each frame.
+     *
+     * @param transport The netplay transport for sending/receiving inputs
+     * @param inputBuffer The shared input buffer for frame synchronization
+     * @param localPort The local player's port (0 for host, 1 for client)
+     * @param inputDelay Number of frames of input delay for synchronization
+     */
+    fun setNetplayMode(
+        transport: com.spela.player.netplay.NetplayTransport,
+        inputBuffer: com.spela.player.netplay.NetplayInputBuffer,
+        localPort: Int,
+        inputDelay: Int,
+    ) {}
+
+    /** Exit netplay mode and return to normal emulation. */
+    fun clearNetplayMode() {}
 }

@@ -23,6 +23,7 @@ type Config struct {
 	Scanner     *scanner.Scanner
 	Scraper     *scraper.Scraper
 	Hub         *ws.Hub
+	NetplayHub  *ws.NetplayHub
 	CoreDir     string
 	CORSOrigins []string
 	RAClient    *retroachievements.RAClient // optional; defaults to production RA client
@@ -115,6 +116,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	collectionHandler := &CollectionHandler{DB: cfg.DB, Hub: cfg.Hub}
 	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
 	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
+	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
@@ -235,6 +237,19 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
 		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)
 		api.POST("/user/relay-invites/:id/decline", relayHandler.DeclineInvite)
+
+		// Netplay
+		netplay := api.Group("/netplay")
+		{
+			netplay.POST("/sessions", netplayHandler.CreateSession)
+			netplay.GET("/sessions", netplayHandler.ListSessions)
+			netplay.GET("/sessions/:id", netplayHandler.GetSession)
+			netplay.POST("/sessions/join", netplayHandler.JoinByInviteCode)
+			netplay.POST("/sessions/:id/leave", netplayHandler.LeaveSession)
+			netplay.DELETE("/sessions/:id", netplayHandler.DeleteSession)
+			netplay.PUT("/sessions/:id/settings", netplayHandler.UpdateSettings)
+			netplay.GET("/sessions/:id/ws", netplayHandler.HandleWebSocket)
+		}
 
 		// Social
 		api.GET("/social/online", socialHandler.GetOnlineUsers)

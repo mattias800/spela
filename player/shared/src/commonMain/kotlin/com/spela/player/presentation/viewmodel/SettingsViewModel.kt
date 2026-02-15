@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 enum class ShaderScope { DEFAULT, PER_CONSOLE }
 
 data class SettingsState(
+    val userId: String = "",
     val username: String = "",
     val serverUrl: String = "",
     val deviceName: String = "",
@@ -177,6 +178,7 @@ class SettingsViewModel(
             val activeServer = serverRepository.getActiveServer()
             _state.update {
                 it.copy(
+                    userId = user?.id ?: "",
                     username = user?.username ?: "",
                     serverUrl = activeServer?.url?.trimEnd('/') ?: "",
                     cacheSize = cacheSize,

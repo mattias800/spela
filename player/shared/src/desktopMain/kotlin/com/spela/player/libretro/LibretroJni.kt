@@ -38,7 +38,9 @@ class LibretroJni {
 
     /* Input */
     external fun nativeSetInputButton(port: Int, id: Int, pressed: Boolean)
+    external fun nativeGetInputButton(port: Int, id: Int): Boolean
     external fun nativeSetInputAnalog(port: Int, index: Int, id: Int, value: Short)
+    external fun nativeGetInputAnalog(port: Int, index: Int, id: Int): Short
     external fun nativeSetInputPointer(port: Int, x: Int, y: Int, pressed: Boolean)
 
     /* Core variables */

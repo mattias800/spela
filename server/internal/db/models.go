@@ -373,6 +373,27 @@ type RelaySave struct {
 	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
 }
 
+// NetplaySession represents a real-time two-player netplay session.
+type NetplaySession struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	HostUserID   uint           `gorm:"index;not null" json:"hostUserId"`
+	HostUser     User           `gorm:"foreignKey:HostUserID" json:"-"`
+	ClientUserID *uint          `gorm:"index" json:"clientUserId,omitempty"`
+	ClientUser   User           `gorm:"foreignKey:ClientUserID" json:"-"`
+	GameID       uint           `gorm:"index;not null" json:"gameId"`
+	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
+	Status       string         `gorm:"size:32;default:waiting;not null" json:"status"` // "waiting", "in_progress", "ended"
+	EndReason    string         `gorm:"size:32" json:"endReason,omitempty"`              // "host_left", "client_left", "timeout", "completed"
+	InputDelay   int            `gorm:"default:3" json:"inputDelay"`
+	CoreName     string         `gorm:"size:128" json:"coreName"`
+	InviteCode   string         `gorm:"uniqueIndex;size:6;not null" json:"inviteCode"`
+	StartedAt    *time.Time     `json:"startedAt,omitempty"`
+	EndedAt      *time.Time     `json:"endedAt,omitempty"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

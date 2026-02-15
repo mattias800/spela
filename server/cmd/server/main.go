@@ -85,6 +85,10 @@ func main() {
 	hub := websocket.NewHub(wsOrigins)
 	go hub.Run()
 
+	// Initialize Netplay WebSocket hub
+	netplayHub := websocket.NewNetplayHub(wsOrigins)
+	netplayHub.StartCleanup(database)
+
 	// Create router
 	router := api.NewRouter(api.Config{
 		DB:          database,
@@ -94,6 +98,7 @@ func main() {
 		Scanner:     gameScanner,
 		Scraper:     metaScraper,
 		Hub:         hub,
+		NetplayHub:  netplayHub,
 		CoreDir:     coreDir,
 		CORSOrigins: corsOrigins,
 	})

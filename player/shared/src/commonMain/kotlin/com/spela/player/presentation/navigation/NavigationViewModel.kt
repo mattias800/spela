@@ -63,6 +63,10 @@ class NavigationViewModel(
                         overlayGameId = intent.gameId,
                         overlayRelayId = intent.relayId,
                         overlayTurnToken = intent.turnToken,
+                        overlayNetplaySessionId = intent.netplaySessionId,
+                        overlayNetplayLocalPort = intent.netplayLocalPort,
+                        overlayNetplayInputDelay = intent.netplayInputDelay,
+                        overlayNetplayIsHost = intent.netplayIsHost,
                         screenBehindOverlay = it.currentScreen,
                         backStackBehindOverlay = it.backStack,
                     )
@@ -77,6 +81,10 @@ class NavigationViewModel(
                             overlayGameId = null,
                             overlayRelayId = null,
                             overlayTurnToken = null,
+                            overlayNetplaySessionId = null,
+                            overlayNetplayLocalPort = 0,
+                            overlayNetplayInputDelay = 3,
+                            overlayNetplayIsHost = false,
                             currentScreen = it.screenBehindOverlay,
                             backStack = it.backStackBehindOverlay,
                             screenBehindOverlay = null,
@@ -88,6 +96,10 @@ class NavigationViewModel(
                             overlayGameId = null,
                             overlayRelayId = null,
                             overlayTurnToken = null,
+                            overlayNetplaySessionId = null,
+                            overlayNetplayLocalPort = 0,
+                            overlayNetplayInputDelay = 3,
+                            overlayNetplayIsHost = false,
                         )
                     }
                 }

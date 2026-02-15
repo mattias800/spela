@@ -498,3 +498,31 @@ export interface RelayInvitationsResponse {
   data: RelayInvitation[];
   total: number;
 }
+
+export interface NetplaySession {
+  id: string;
+  hostId: string;
+  hostUsername: string;
+  hostAvatarUrl: string | null;
+  clientId: string | null;
+  clientUsername: string | null;
+  clientAvatarUrl: string | null;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl: string | null;
+  consoleName: string;
+  status: "waiting" | "in_progress" | "ended";
+  endReason: "host_left" | "client_left" | "timeout" | "completed" | null;
+  inputDelay: number;
+  inviteCode: string;
+  createdAt: string;
+  startedAt: string | null;
+  endedAt: string | null;
+}
+
+export interface NetplaySessionsResponse {
+  data: NetplaySession[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

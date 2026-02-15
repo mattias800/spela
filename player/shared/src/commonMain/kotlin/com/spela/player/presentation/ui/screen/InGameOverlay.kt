@@ -61,8 +61,11 @@ import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpCountdownOverlay
+import com.spela.player.presentation.ui.components.SpNetplayHud
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
+import com.spela.player.presentation.ui.components.pingColor
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -125,8 +128,28 @@ fun InGameOverlay(
 
                     Spacer(Modifier.height(SpSpacing.Small))
 
-                    // Performance stats
-                    if (state.isRunning) {
+                    // Performance stats / Netplay session info
+                    if (state.isNetplayMode) {
+                        // Netplay: show ping and session duration
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Ping: ${state.netplayPeerLatencyMs} milliseconds, session: ${formatSessionDuration(state.sessionElapsedSeconds)}"
+                            },
+                        ) {
+                            PerformanceBadge(
+                                label = "Ping",
+                                value = "${state.netplayPeerLatencyMs}ms",
+                                color = pingColor(state.netplayPeerLatencyMs),
+                            )
+                            PerformanceBadge(
+                                label = "Session",
+                                value = formatSessionDuration(state.sessionElapsedSeconds),
+                                color = SpColor.OnBackgroundSecondary,
+                            )
+                        }
+                    } else if (state.isRunning) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
                             verticalAlignment = Alignment.CenterVertically,
@@ -155,35 +178,13 @@ fun InGameOverlay(
 
                     Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
 
-                    // Action buttons - responsive layout
-                    if (isLandscape) {
-                        // Landscape: horizontal row with resume/exit alongside actions
+                    // Action buttons - different for netplay vs normal mode
+                    if (state.isNetplayMode) {
+                        // Netplay mode: only Controls action
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
                         ) {
-                            OverlayAction(
-                                label = "Save",
-                                icon = Icons.Filled.Save,
-                                onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
-                            )
-                            OverlayAction(
-                                label = "Load",
-                                icon = Icons.Filled.FolderOpen,
-                                onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
-                            )
-                            OverlayAction(
-                                label = "Screenshot",
-                                icon = Icons.Filled.CameraAlt,
-                                onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                            )
-                            OverlayAction(
-                                label = if (state.isFastForward) "Normal" else "Fast",
-                                icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                                onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                                isActive = state.isFastForward,
-                            )
                             OverlayAction(
                                 label = "Controls",
                                 icon = Icons.Filled.SportsEsports,
@@ -191,22 +192,23 @@ fun InGameOverlay(
                             )
                         }
 
-                        Spacer(Modifier.height(SpSpacing.Medium))
+                        Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
 
+                        // Leave Session / Resume buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         ) {
                             SpButton(
-                                text = "Exit Game",
+                                text = "Leave Session",
                                 onClick = {
-                                    viewModel.onIntent(EmulationIntent.ShowExitConfirm)
+                                    viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm)
                                 },
                                 style = SpButtonStyle.Outlined,
                                 modifier = Modifier.weight(1f),
                             )
                             SpButton(
-                                text = "Continue",
+                                text = "Resume",
                                 onClick = {
                                     viewModel.onIntent(EmulationIntent.ToggleOverlay)
                                     viewModel.onIntent(EmulationIntent.ResumeGame)
@@ -215,61 +217,122 @@ fun InGameOverlay(
                             )
                         }
                     } else {
-                        // Portrait: stacked layout
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                        ) {
-                            OverlayAction(
-                                label = "Save",
-                                icon = Icons.Filled.Save,
-                                onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
-                            )
-                            OverlayAction(
-                                label = "Load",
-                                icon = Icons.Filled.FolderOpen,
-                                onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
-                            )
-                            OverlayAction(
-                                label = "Screenshot",
-                                icon = Icons.Filled.CameraAlt,
-                                onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                            )
-                            OverlayAction(
-                                label = if (state.isFastForward) "Normal" else "Fast",
-                                icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                                onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                                isActive = state.isFastForward,
-                            )
-                            OverlayAction(
-                                label = "Controls",
-                                icon = Icons.Filled.SportsEsports,
-                                onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
-                            )
-                        }
+                        // Normal mode: all action buttons
+                        if (isLandscape) {
+                            // Landscape: horizontal row with resume/exit alongside actions
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                OverlayAction(
+                                    label = "Save",
+                                    icon = Icons.Filled.Save,
+                                    onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
+                                )
+                                OverlayAction(
+                                    label = "Load",
+                                    icon = Icons.Filled.FolderOpen,
+                                    onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
+                                )
+                                OverlayAction(
+                                    label = "Screenshot",
+                                    icon = Icons.Filled.CameraAlt,
+                                    onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                                )
+                                OverlayAction(
+                                    label = if (state.isFastForward) "Normal" else "Fast",
+                                    icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
+                                    onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                    isActive = state.isFastForward,
+                                )
+                                OverlayAction(
+                                    label = "Controls",
+                                    icon = Icons.Filled.SportsEsports,
+                                    onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+                                )
+                            }
 
-                        Spacer(Modifier.height(SpSpacing.XLarge))
+                            Spacer(Modifier.height(SpSpacing.Medium))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                        ) {
-                            SpButton(
-                                text = "Exit Game",
-                                onClick = {
-                                    viewModel.onIntent(EmulationIntent.ShowExitConfirm)
-                                },
-                                style = SpButtonStyle.Outlined,
-                                modifier = Modifier.weight(1f),
-                            )
-                            SpButton(
-                                text = "Continue",
-                                onClick = {
-                                    viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                                    viewModel.onIntent(EmulationIntent.ResumeGame)
-                                },
-                                modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                            ) {
+                                SpButton(
+                                    text = "Exit Game",
+                                    onClick = {
+                                        viewModel.onIntent(EmulationIntent.ShowExitConfirm)
+                                    },
+                                    style = SpButtonStyle.Outlined,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                SpButton(
+                                    text = "Continue",
+                                    onClick = {
+                                        viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                        viewModel.onIntent(EmulationIntent.ResumeGame)
+                                    },
+                                    modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
+                                )
+                            }
+                        } else {
+                            // Portrait: stacked layout
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                OverlayAction(
+                                    label = "Save",
+                                    icon = Icons.Filled.Save,
+                                    onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
+                                )
+                                OverlayAction(
+                                    label = "Load",
+                                    icon = Icons.Filled.FolderOpen,
+                                    onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
+                                )
+                                OverlayAction(
+                                    label = "Screenshot",
+                                    icon = Icons.Filled.CameraAlt,
+                                    onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                                )
+                                OverlayAction(
+                                    label = if (state.isFastForward) "Normal" else "Fast",
+                                    icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
+                                    onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                    isActive = state.isFastForward,
+                                )
+                                OverlayAction(
+                                    label = "Controls",
+                                    icon = Icons.Filled.SportsEsports,
+                                    onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+                                )
+                            }
+
+                            Spacer(Modifier.height(SpSpacing.XLarge))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                            ) {
+                                SpButton(
+                                    text = "Exit Game",
+                                    onClick = {
+                                        viewModel.onIntent(EmulationIntent.ShowExitConfirm)
+                                    },
+                                    style = SpButtonStyle.Outlined,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                SpButton(
+                                    text = "Continue",
+                                    onClick = {
+                                        viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                        viewModel.onIntent(EmulationIntent.ResumeGame)
+                                    },
+                                    modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
+                                )
+                            }
                         }
                     }
                 }
@@ -285,10 +348,11 @@ fun InGameOverlay(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(SpSpacing.Default),
-            contentAlignment = Alignment.TopEnd,
         ) {
+            // FPS pill - top right
             Box(
                 modifier = Modifier
+                    .align(Alignment.TopEnd)
                     .clip(RoundedCornerShape(8.dp))
                     .background(SpColor.Scrim)
                     .clickable { viewModel.onIntent(EmulationIntent.ToggleOverlay) }
@@ -312,11 +376,186 @@ fun InGameOverlay(
                     },
                 )
             }
+
+            // Netplay HUD - top left
+            if (state.isNetplayMode && state.netplayPeerUsername != null) {
+                SpNetplayHud(
+                    peerUsername = state.netplayPeerUsername!!,
+                    latencyMs = state.netplayPeerLatencyMs,
+                    visible = true,
+                    onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
+                    modifier = Modifier.align(Alignment.TopStart),
+                )
+            }
         }
     }
 
-    // Exit confirmation dialog
-    if (state.showExitConfirm) {
+    // Netplay pause attribution overlay
+    if (state.isNetplayMode && state.netplayPausedByUsername != null && !state.showOverlay) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Paused by ${state.netplayPausedByUsername!!}",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                    textAlign = TextAlign.Center,
+                )
+                // Show elapsed pause time after 60 seconds
+                if (state.netplayPauseElapsedSeconds >= 60) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Text(
+                        text = "Paused for ${state.netplayPauseElapsedSeconds / 60}m ${state.netplayPauseElapsedSeconds % 60}s",
+                        style = SpTypography.BodyMedium,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                SpButton(
+                    text = "Resume",
+                    onClick = { viewModel.onIntent(EmulationIntent.ResumeGame) },
+                )
+                // After 5 minutes of pause, show "Leave Session" option (AC-8)
+                if (state.netplayPauseElapsedSeconds >= 300) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    SpButton(
+                        text = "Leave Session",
+                        onClick = { viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm) },
+                        style = SpButtonStyle.Ghost,
+                    )
+                }
+            }
+        }
+    }
+
+    // Netplay disconnect countdown overlay
+    if (state.isNetplayMode && state.netplayPeerDisconnected) {
+        SpCountdownOverlay(
+            title = "${state.netplayPeerUsername ?: "Player"} disconnected",
+            subtitle = "Waiting for reconnection...",
+            totalSeconds = 60,
+            visible = true,
+            onTimeout = { onExit() },
+            actions = {
+                SpButton(
+                    text = "Leave Session",
+                    onClick = {
+                        viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
+                        onExit()
+                    },
+                    style = SpButtonStyle.Outlined,
+                )
+            },
+        )
+    }
+
+    // Netplay session expiration warning (AC-12: 15-minute max session)
+    if (state.isNetplayMode && state.netplaySessionExpired) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(SpSpacing.XLarge),
+            ) {
+                Text(
+                    text = "Session Expired",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "The maximum session time of 15 minutes has been reached.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                SpButton(
+                    text = "Leave Session",
+                    onClick = {
+                        viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
+                        onExit()
+                    },
+                )
+            }
+        }
+    }
+
+    // Netplay leave confirmation dialog
+    if (state.netplayShowLeaveConfirm) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { viewModel.onIntent(EmulationIntent.DismissNetplayLeaveConfirm) },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SpColor.SurfaceElevated)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    )
+                    .padding(SpSpacing.XLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Leave Netplay Session?",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "The other player will be disconnected.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    SpButton(
+                        text = "Keep Playing",
+                        onClick = { viewModel.onIntent(EmulationIntent.DismissNetplayLeaveConfirm) },
+                        style = SpButtonStyle.Outlined,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    SpButton(
+                        text = "Leave Session",
+                        onClick = {
+                            viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
+                            onExit()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+
+    // Exit confirmation dialog (non-netplay)
+    if (state.showExitConfirm && !state.isNetplayMode) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -434,6 +673,12 @@ fun InGameOverlay(
             keyNameResolver = ::platformKeyName,
         )
     }
+}
+
+private fun formatSessionDuration(totalSeconds: Long): String {
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
 }
 
 @Composable

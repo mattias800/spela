@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -159,6 +160,16 @@ object SpEmptyStates {
             icon = Icons.AutoMirrored.Filled.LibraryBooks,
             title = "Your library is empty",
             message = "Add games to your server and they will appear here. Pull down to refresh.",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
+    fun NoNetplaySessions(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.Filled.SportsEsports,
+            title = "No netplay sessions yet",
+            message = "Create one to play with a friend.",
             modifier = modifier,
         )
     }

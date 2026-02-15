@@ -16,6 +16,8 @@ import com.spela.player.presentation.viewmodel.RelayDetailViewModel
 import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
+import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import org.koin.compose.koinInject
 
@@ -38,6 +40,8 @@ fun App() {
     val socialViewModel: SocialViewModel = koinInject()
     val relaysViewModel: RelaysViewModel = koinInject()
     val relayDetailViewModel: RelayDetailViewModel = koinInject()
+    val netplayViewModel: NetplayViewModel = koinInject()
+    val netplayLobbyViewModel: NetplayLobbyViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
     val presenceService: PresenceService = koinInject()
 
@@ -55,6 +59,8 @@ fun App() {
         socialViewModel = socialViewModel,
         relaysViewModel = relaysViewModel,
         relayDetailViewModel = relayDetailViewModel,
+        netplayViewModel = netplayViewModel,
+        netplayLobbyViewModel = netplayLobbyViewModel,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
     )

@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadState
+import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.intent.GameDetailIntent
@@ -72,6 +73,7 @@ fun GameDetailScreen(
     viewModel: GameDetailViewModel,
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
+    onCreateNetplay: ((String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -127,6 +129,7 @@ fun GameDetailScreen(
                             state = state,
                             viewModel = viewModel,
                             onPlay = onPlay,
+                            onCreateNetplay = onCreateNetplay,
                         )
                     }
                 }
@@ -185,6 +188,7 @@ private fun GameInfoContent(
     state: com.spela.player.presentation.state.GameDetailState,
     viewModel: GameDetailViewModel,
     onPlay: (String) -> Unit,
+    onCreateNetplay: ((String) -> Unit)? = null,
 ) {
     Text(
         text = game.title,
@@ -279,6 +283,23 @@ private fun GameInfoContent(
                     modifier = Modifier.size(24.dp),
                 )
             },
+        )
+    }
+
+    // Netplay button -- only for supported consoles (AC-1/AC-16)
+    val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
+    if (onCreateNetplay != null && supportsNetplay) {
+        Spacer(Modifier.height(SpSpacing.Small))
+        SpButton(
+            text = "Netplay",
+            onClick = { onCreateNetplay(gameId) },
+            style = SpButtonStyle.Secondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = "Create netplay session for ${game.title}"
+                    role = Role.Button
+                },
         )
     }
 
