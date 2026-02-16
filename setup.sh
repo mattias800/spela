@@ -2,17 +2,18 @@
 #
 # Spela — Interactive first-time setup
 #
-# Guides the server admin through creating the .env file, then optionally
-# builds and starts the QA stack with docker compose.
+# Guides the server admin through creating the .env file.
+# All prompts go to stderr so stdout only contains the .env content.
 #
 # Usage:
 #   git clone https://github.com/mattias800/spela.git && cd spela
-#   ./setup.sh
+#   ./setup.sh          # prints .env content to stdout
+#   ./setup.sh > .env   # write directly to .env
 #
 
 set -e
 
-# ── Helpers ─────────────────────────────────────────────────────────
+# ── Helpers (all output to stderr) ───────────────────────────────────
 generate_secret() {
     LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$1"
 }
@@ -21,9 +22,9 @@ prompt() {
     # prompt VARNAME "Question" "default"
     _var="$1"; _question="$2"; _default="$3"
     if [ -n "$_default" ]; then
-        printf "%s [%s]: " "$_question" "$_default"
+        printf "%s [%s]: " "$_question" "$_default" >&2
     else
-        printf "%s: " "$_question"
+        printf "%s: " "$_question" >&2
     fi
     read -r _answer
     _answer="${_answer:-$_default}"
@@ -33,14 +34,14 @@ prompt() {
 prompt_optional() {
     # prompt_optional VARNAME "Question"
     _var="$1"; _question="$2"
-    printf "%s (leave blank to skip): " "$_question"
+    printf "%s (leave blank to skip): " "$_question" >&2
     read -r _answer
     eval "$_var=\"\$_answer\""
 }
 
 prompt_yes_no() {
     # prompt_yes_no "Question" — returns 0 for yes, 1 for no
-    printf "%s [Y/n]: " "$1"
+    printf "%s [Y/n]: " "$1" >&2
     read -r _yn
     case "$_yn" in
         [nN]*) return 1 ;;
@@ -48,78 +49,70 @@ prompt_yes_no() {
     esac
 }
 
-# ── Header ──────────────────────────────────────────────────────────
-echo ""
-echo "========================================="
-echo "  Spela Server Setup"
-echo "========================================="
-echo ""
+info() {
+    echo "$@" >&2
+}
 
-# ── Check for existing .env ─────────────────────────────────────────
-if [ -f .env ]; then
-    echo "An existing .env file was found."
-    echo ""
-    if ! prompt_yes_no "Overwrite it?"; then
-        echo "Setup cancelled. Your existing .env was not modified."
-        exit 0
-    fi
-    echo ""
-fi
+# ── Header ──────────────────────────────────────────────────────────
+info ""
+info "========================================="
+info "  Spela Server Setup"
+info "========================================="
+info ""
 
 # ── Required: hostname ──────────────────────────────────────────────
-echo "-- Server hostname --"
-echo ""
-echo "This is the public domain or IP that players will use to connect."
-echo "Examples: spela.example.com, 192.168.1.100, my-server.local"
-echo ""
+info "-- Server hostname --"
+info ""
+info "This is the public domain or IP that players will use to connect."
+info "Examples: spela.example.com, 192.168.1.100, my-server.local"
+info ""
 prompt HOSTNAME "Hostname or IP"
 while [ -z "$HOSTNAME" ]; do
-    echo "  Hostname is required."
+    info "  Hostname is required."
     prompt HOSTNAME "Hostname or IP"
 done
-echo ""
+info ""
 
 # ── Required: games path ────────────────────────────────────────────
-echo "-- Games directory --"
-echo ""
-echo "Path on the host where your ROM files are stored."
-echo "This directory will be mounted read-only into the container."
-echo ""
+info "-- Games directory --"
+info ""
+info "Path on the host where your ROM files are stored."
+info "This directory will be mounted read-only into the container."
+info ""
 prompt GAMES_PATH "Games directory path" "/data/spela/games"
-echo ""
+info ""
 
 # ── Optional: BIOS path ─────────────────────────────────────────────
-echo "-- BIOS directory (optional) --"
-echo ""
-echo "Some systems (PS1, Saturn, etc.) require BIOS files."
-echo ""
+info "-- BIOS directory (optional) --"
+info ""
+info "Some systems (PS1, Saturn, etc.) require BIOS files."
+info ""
 prompt_optional BIOS_PATH "BIOS directory path"
-echo ""
+info ""
 
 # ── Optional: ScreenScraper ──────────────────────────────────────────
-echo "-- ScreenScraper (optional) --"
-echo ""
-echo "ScreenScraper provides game metadata and cover art."
-echo "Create a free account at https://www.screenscraper.fr"
-echo ""
+info "-- ScreenScraper (optional) --"
+info ""
+info "ScreenScraper provides game metadata and cover art."
+info "Create a free account at https://www.screenscraper.fr"
+info ""
 SCRAPER_USER=""
 SCRAPER_PASS=""
 if prompt_yes_no "Configure ScreenScraper credentials?"; then
     prompt_optional SCRAPER_USER "ScreenScraper username"
     prompt_optional SCRAPER_PASS "ScreenScraper password"
 fi
-echo ""
+info ""
 
 # ── Generate secrets ─────────────────────────────────────────────────
-echo "Generating secrets..."
+info "Generating secrets..."
 JWT_SECRET=$(generate_secret 48)
 TURN_SECRET_VAL=$(generate_secret 48)
-echo "  Done."
-echo ""
+info "  Done."
+info ""
 
-# ── Write .env ───────────────────────────────────────────────────────
-cat > .env <<EOF
-# Generated by setup.sh — do not commit this file.
+# ── Build .env content ───────────────────────────────────────────────
+ENV_CONTENT="# Generated by setup.sh — do not commit this file.
 
 # JWT signing key (required — auto-generated)
 SPELA_JWT_SECRET=$JWT_SECRET
@@ -131,58 +124,33 @@ TURN_SECRET=$TURN_SECRET_VAL
 TURN_HOST=$HOSTNAME
 
 # Host path to your ROM directory
-SPELA_GAMES_PATH=$GAMES_PATH
-EOF
+SPELA_GAMES_PATH=$GAMES_PATH"
 
 if [ -n "$BIOS_PATH" ]; then
-    cat >> .env <<EOF
+    ENV_CONTENT="$ENV_CONTENT
 
 # Host path to your BIOS directory
-SPELA_BIOS_PATH=$BIOS_PATH
-EOF
+SPELA_BIOS_PATH=$BIOS_PATH"
 fi
 
 if [ -n "$SCRAPER_USER" ]; then
-    cat >> .env <<EOF
+    ENV_CONTENT="$ENV_CONTENT
 
 # ScreenScraper credentials
 SPELA_SCRAPER_USER=$SCRAPER_USER
-SPELA_SCRAPER_USER_PASS=$SCRAPER_PASS
-EOF
+SPELA_SCRAPER_USER_PASS=$SCRAPER_PASS"
 fi
 
-# ── Summary ──────────────────────────────────────────────────────────
-echo "========================================="
-echo "  Setup complete!"
-echo "========================================="
-echo ""
-echo "  .env written with the following configuration:"
-echo ""
-echo "  Hostname:       $HOSTNAME"
-echo "  Games path:     $GAMES_PATH"
-[ -n "$BIOS_PATH" ] && echo "  BIOS path:      $BIOS_PATH"
-[ -n "$SCRAPER_USER" ] && echo "  ScreenScraper:  $SCRAPER_USER"
-echo "  JWT secret:     ${JWT_SECRET%"${JWT_SECRET#????????}"}... (auto-generated)"
-echo "  TURN secret:    ${TURN_SECRET_VAL%"${TURN_SECRET_VAL#????????}"}... (auto-generated)"
-echo ""
+# ── Print result ─────────────────────────────────────────────────────
+info "========================================="
+info "  Setup complete!"
+info "========================================="
+info ""
+info "  Copy the output below into your .env file,"
+info "  or re-run with:  ./setup.sh > .env"
+info ""
+info "─────────────── .env ───────────────────"
 
-# ── Optionally start ─────────────────────────────────────────────────
-if prompt_yes_no "Start the server now? (requires Docker)"; then
-    echo ""
-    echo "Building and starting Spela..."
-    echo "  This will take a few minutes on the first run."
-    echo ""
-    docker compose -f docker-compose.qa.yml up --build -d
-    echo ""
-    echo "Spela is starting! Once ready, open:"
-    echo "  http://$HOSTNAME:8080"
-    echo ""
-    echo "To view logs:     docker compose -f docker-compose.qa.yml logs -f"
-    echo "To stop:          docker compose -f docker-compose.qa.yml down"
-    echo "To update later:  ./update.sh"
-else
-    echo "To start the server manually:"
-    echo "  docker compose -f docker-compose.qa.yml up --build -d"
-    echo ""
-    echo "To update later:  ./update.sh"
-fi
+echo "$ENV_CONTENT"
+
+info "─────────────────────────────────────────"
