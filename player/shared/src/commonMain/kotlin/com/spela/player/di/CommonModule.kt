@@ -44,6 +44,8 @@ val commonModule = module {
     single<RatingRepository> { RatingRepositoryImpl(get()) }
     single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
     single<RelayRepository> { RelayRepositoryImpl(get()) }
+    single<CollectionRepository> { CollectionRepositoryImpl(get()) }
+    single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
@@ -71,6 +73,16 @@ val commonModule = module {
     factory { GetOnlineUsersUseCase(get()) }
     factory { GetActivityFeedUseCase(get()) }
     factory { GetPublicProfileUseCase(get()) }
+    factory { GetMyCollectionsUseCase(get()) }
+    factory { GetPublicCollectionsUseCase(get()) }
+    factory { GetCollectionDetailUseCase(get()) }
+    factory { CreateCollectionUseCase(get()) }
+    factory { UpdateCollectionUseCase(get()) }
+    factory { DeleteCollectionUseCase(get()) }
+    factory { AddGameToCollectionUseCase(get()) }
+    factory { RemoveGameFromCollectionUseCase(get()) }
+    factory { GetMostPlayedGamesUseCase(get()) }
+    factory { GetMostActivePlayersUseCase(get()) }
 
     /* ViewModels */
     factory {
@@ -167,6 +179,25 @@ val commonModule = module {
         NetplayLobbyViewModel(
             netplayRepository = get(),
             authRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        StatsViewModel(
+            getMostPlayedGamesUseCase = get(),
+            getMostActivePlayersUseCase = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        CollectionsViewModel(
+            getMyCollectionsUseCase = get(),
+            getPublicCollectionsUseCase = get(),
+            getCollectionDetailUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )

@@ -22,14 +22,18 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun homeScreenShowsConsolesAfterLoad() = runComposeUiTest {
+    fun libraryScreenShowsConsolesAfterLoad() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
+
+        // Navigate to Library screen where consoles now live
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Library)
+        )
         advance(harness)
 
-        // Should show consoles section
-        onNodeWithText("Consoles").assertIsDisplayed()
+        // Should show consoles in the Library Consoles tab
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
         onNodeWithText("Super Nintendo").assertIsDisplayed()
     }
@@ -47,10 +51,15 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun tappingConsoleNavigatesToConsoleScreen() = runComposeUiTest {
+    fun tappingConsoleInLibraryNavigatesToConsoleScreen() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
+
+        // Navigate to Library screen where consoles now live
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Library)
+        )
         advance(harness)
 
         // Tap on NES console
@@ -117,15 +126,14 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun topBarIconsNavigateToDownloadsAndSettings() = runComposeUiTest {
+    fun topBarDownloadsIconNavigatesToDownloads() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Home screen should show Downloads and Settings icons in top bar
+        // Home screen should show Downloads icon in top bar
         onNodeWithContentDescription("Downloads").assertIsDisplayed()
-        onNodeWithContentDescription("Settings").assertIsDisplayed()
 
         // Navigate to Downloads via top bar icon
         onNodeWithContentDescription("Downloads").performClick()
@@ -138,18 +146,7 @@ class GameBrowsingAndSelectionTest {
         onNodeWithContentDescription("Go back").performClick()
         advance(harness)
 
-        // Navigate to Settings via top bar icon
-        onNodeWithContentDescription("Settings").performClick()
-        advance(harness)
-
-        // Should show Settings screen with back button
-        onNodeWithContentDescription("Go back").assertIsDisplayed()
-
-        // Navigate back to Home
-        onNodeWithContentDescription("Go back").performClick()
-        advance(harness)
-
         // Should be back on Home
-        onNodeWithText("Consoles").assertIsDisplayed()
+        onNodeWithText("Continue Playing").assertIsDisplayed()
     }
 }

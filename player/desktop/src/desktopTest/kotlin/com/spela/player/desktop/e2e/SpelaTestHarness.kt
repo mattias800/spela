@@ -187,6 +187,25 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val statsRepo = FakeStatsRepository()
+
+    val statsViewModel = StatsViewModel(
+        getMostPlayedGamesUseCase = GetMostPlayedGamesUseCase(statsRepo),
+        getMostActivePlayersUseCase = GetMostActivePlayersUseCase(statsRepo),
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val collectionRepo = FakeCollectionRepository()
+
+    val collectionsViewModel = CollectionsViewModel(
+        getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
+        getPublicCollectionsUseCase = GetPublicCollectionsUseCase(collectionRepo),
+        getCollectionDetailUseCase = GetCollectionDetailUseCase(collectionRepo),
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val netplayRepo = FakeNetplayRepository()
 
     val netplayViewModel = NetplayViewModel(
@@ -220,6 +239,8 @@ class SpelaTestHarness(
             relayDetailViewModel = relayDetailViewModel,
             netplayViewModel = netplayViewModel,
             netplayLobbyViewModel = netplayLobbyViewModel,
+            statsViewModel = statsViewModel,
+            collectionsViewModel = collectionsViewModel,
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
         )

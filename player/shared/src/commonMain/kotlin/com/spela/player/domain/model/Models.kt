@@ -314,6 +314,50 @@ data class RelaySave(
     val updatedAt: String = "",
 )
 
+// Collections
+
+data class GameCollection(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val name: String,
+    val description: String? = null,
+    val isPublic: Boolean = false,
+    val coverUrl: String? = null,
+    val gameCount: Int = 0,
+)
+
+data class GameCollectionDetail(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val name: String,
+    val description: String? = null,
+    val isPublic: Boolean = false,
+    val coverUrl: String? = null,
+    val gameCount: Int = 0,
+    val games: List<Game> = emptyList(),
+)
+
+// Stats
+
+data class MostPlayedGame(
+    val game: Game,
+    val totalPlayers: Int,
+    val totalPlayTime: Long,
+)
+
+data class ActivePlayer(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val totalPlayTime: Long,
+    val gamesPlayed: Int,
+    val lastPlayed: String? = null,
+)
+
 // Public Profile
 
 data class PublicProfile(

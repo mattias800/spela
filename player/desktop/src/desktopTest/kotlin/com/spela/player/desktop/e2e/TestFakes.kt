@@ -619,6 +619,37 @@ class FakeRelayRepository : RelayRepository {
         Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
 }
 
+class FakeCollectionRepository : CollectionRepository {
+    var myCollections: List<GameCollection> = emptyList()
+    var publicCollections: List<GameCollection> = emptyList()
+    var collectionDetail: GameCollectionDetail? = null
+
+    override suspend fun getMyCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
+        Result.success(myCollections)
+    override suspend fun getPublicCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
+        Result.success(publicCollections)
+    override suspend fun getCollection(id: String): Result<GameCollectionDetail> =
+        collectionDetail?.let { Result.success(it) }
+            ?: Result.failure(Exception("Collection not found"))
+    override suspend fun createCollection(name: String, description: String?, isPublic: Boolean): Result<GameCollection> =
+        Result.success(GameCollection(id = "new", userId = "1", username = "player", name = name, description = description, isPublic = isPublic))
+    override suspend fun updateCollection(id: String, name: String?, description: String?, isPublic: Boolean?): Result<GameCollection> =
+        Result.success(GameCollection(id = id, userId = "1", username = "player", name = name ?: ""))
+    override suspend fun deleteCollection(id: String): Result<Unit> = Result.success(Unit)
+    override suspend fun addGameToCollection(collectionId: String, gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeGameFromCollection(collectionId: String, gameId: String): Result<Unit> = Result.success(Unit)
+}
+
+class FakeStatsRepository : StatsRepository {
+    var mostPlayedGames: List<MostPlayedGame> = emptyList()
+    var activePlayers: List<ActivePlayer> = emptyList()
+
+    override suspend fun getMostPlayedGames(): Result<List<MostPlayedGame>> =
+        Result.success(mostPlayedGames)
+    override suspend fun getMostActivePlayers(): Result<List<ActivePlayer>> =
+        Result.success(activePlayers)
+}
+
 class FakeSocialRepository : SocialRepository {
     var onlineUsers: List<OnlineUser> = emptyList()
     var activityEvents: List<ActivityEvent> = emptyList()

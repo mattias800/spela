@@ -30,6 +30,8 @@ class SocialViewModel(
             SocialIntent.RefreshAll -> refreshAll()
             SocialIntent.DismissError -> _state.update { it.copy(error = null) }
             is SocialIntent.LoadPublicProfile -> loadPublicProfile(intent.userId)
+            SocialIntent.LoadFullActivityFeed -> loadFullActivityFeed()
+            SocialIntent.LoadMoreActivity -> loadMoreActivity()
         }
     }
 
@@ -74,6 +76,51 @@ class SocialViewModel(
                     isLoadingActivity = false,
                 )
             }
+        }
+    }
+
+    private fun loadFullActivityFeed() {
+        _state.update { it.copy(isLoadingFullActivity = true, fullActivityPage = 1) }
+        scope.launch(dispatchers.io) {
+            getActivityFeedUseCase(page = 1, pageSize = 20).fold(
+                onSuccess = { events ->
+                    _state.update {
+                        it.copy(
+                            fullActivityEvents = events,
+                            isLoadingFullActivity = false,
+                            fullActivityPage = 1,
+                            hasMoreActivity = events.size >= 20,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isLoadingFullActivity = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadMoreActivity() {
+        val currentState = _state.value
+        if (currentState.isLoadingFullActivity || !currentState.hasMoreActivity) return
+        val nextPage = currentState.fullActivityPage + 1
+        _state.update { it.copy(isLoadingFullActivity = true) }
+        scope.launch(dispatchers.io) {
+            getActivityFeedUseCase(page = nextPage, pageSize = 20).fold(
+                onSuccess = { events ->
+                    _state.update {
+                        it.copy(
+                            fullActivityEvents = it.fullActivityEvents + events,
+                            isLoadingFullActivity = false,
+                            fullActivityPage = nextPage,
+                            hasMoreActivity = events.size >= 20,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isLoadingFullActivity = false) }
+                },
+            )
         }
     }
 

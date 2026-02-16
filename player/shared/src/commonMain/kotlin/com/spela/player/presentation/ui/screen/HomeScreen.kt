@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,9 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -76,11 +72,10 @@ fun HomeScreen(
     viewModel: GameListViewModel,
     socialViewModel: SocialViewModel,
     onGameSelected: (String) -> Unit,
-    onConsoleSelected: (String) -> Unit,
     onNavigateToDownloads: () -> Unit = {},
-    onNavigateToRelays: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
-    onNavigateToNetplay: () -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToPlayLater: () -> Unit = {},
+    onNavigateToActivity: () -> Unit = {},
     onNetplaySessionSelected: (String) -> Unit = {},
     onUserSelected: (String) -> Unit = {},
     hasActiveDownloads: Boolean = false,
@@ -133,72 +128,9 @@ fun HomeScreen(
                     )
                 }
             }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .spFocusRing(shape = CircleShape)
-                    .clip(CircleShape)
-                    .background(SpColor.SurfaceVariant)
-                    .clickable(onClick = onNavigateToRelays)
-                    .focusable()
-                    .semantics {
-                        contentDescription = "Relays"
-                        role = Role.Button
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.SyncAlt,
-                    contentDescription = null,
-                    tint = SpColor.OnSurface,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .spFocusRing(shape = CircleShape)
-                    .clip(CircleShape)
-                    .background(SpColor.SurfaceVariant)
-                    .clickable(onClick = onNavigateToNetplay)
-                    .focusable()
-                    .semantics {
-                        contentDescription = "Netplay"
-                        role = Role.Button
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = null,
-                    tint = SpColor.OnSurface,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .spFocusRing(shape = CircleShape)
-                    .clip(CircleShape)
-                    .background(SpColor.SurfaceVariant)
-                    .clickable(onClick = onNavigateToSettings)
-                    .focusable()
-                    .semantics {
-                        contentDescription = "Settings"
-                        role = Role.Button
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = null,
-                    tint = SpColor.OnSurface,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
         }
 
-        if (state.isLoading && state.recentGames.isEmpty() && state.consoles.isEmpty()) {
+        if (state.isLoading && state.recentGames.isEmpty() && state.favoriteGames.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -216,8 +148,7 @@ fun HomeScreen(
             ) {
                 val isEmpty = state.recentGames.isEmpty() &&
                         state.favoriteGames.isEmpty() &&
-                        state.playLaterGames.isEmpty() &&
-                        state.consoles.isEmpty()
+                        state.playLaterGames.isEmpty()
 
                 if (isEmpty && !state.isLoading) {
                     Box(
@@ -273,13 +204,14 @@ fun HomeScreen(
                         // Play Later section
                         if (state.playLaterGames.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SectionHeaderWithSeeAll(
                                     title = "Play Later",
+                                    onSeeAll = onNavigateToPlayLater,
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                                 Spacer(Modifier.height(SpSpacing.Medium))
                                 GameCarouselRow(
-                                    games = state.playLaterGames.take(10),
+                                    games = state.playLaterGames.take(6),
                                     onGameSelected = onGameSelected,
                                 )
                                 Spacer(Modifier.height(SpSpacing.XLarge))
@@ -302,14 +234,15 @@ fun HomeScreen(
                         // Recent Activity section
                         if (socialState.activityEvents.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SectionHeaderWithSeeAll(
                                     title = "Recent Activity",
+                                    onSeeAll = onNavigateToActivity,
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                                 Spacer(Modifier.height(SpSpacing.Small))
                             }
                             items(
-                                socialState.activityEvents.take(5),
+                                socialState.activityEvents.take(3),
                                 key = { "activity-${it.id}" },
                             ) { event ->
                                 ActivityEventItem(event = event)
@@ -322,41 +255,20 @@ fun HomeScreen(
                         // Favorites section
                         if (state.favoriteGames.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SectionHeaderWithSeeAll(
                                     title = "Favorites",
+                                    onSeeAll = onNavigateToFavorites,
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                                 Spacer(Modifier.height(SpSpacing.Medium))
                                 GameCarouselRow(
-                                    games = state.favoriteGames.take(10),
+                                    games = state.favoriteGames.take(6),
                                     onGameSelected = onGameSelected,
                                 )
                                 Spacer(Modifier.height(SpSpacing.XLarge))
                             }
                         }
 
-                        // Consoles Grid
-                        if (state.consoles.isNotEmpty()) {
-                            item {
-                                SectionHeader(
-                                    title = "Consoles",
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                BoxWithConstraints(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal),
-                                ) {
-                                    val columnsPerRow = if (maxWidth > 600.dp) 3 else 2
-                                    ConsolesGrid(
-                                        consoles = state.consoles,
-                                        onConsoleSelected = onConsoleSelected,
-                                        columnsPerRow = columnsPerRow,
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -390,6 +302,39 @@ private fun SectionHeader(
         color = SpColor.OnBackground,
         modifier = modifier.semantics { contentDescription = "$title section" },
     )
+}
+
+@Composable
+private fun SectionHeaderWithSeeAll(
+    title: String,
+    onSeeAll: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = SpTypography.HeadlineLarge,
+            color = SpColor.OnBackground,
+            modifier = Modifier.semantics { contentDescription = "$title section" },
+        )
+        Text(
+            text = "See all",
+            style = SpTypography.LabelLarge,
+            color = SpColor.Primary,
+            modifier = Modifier
+                .clip(RoundedCornerShape(SpSpacing.Small))
+                .clickable(onClick = onSeeAll)
+                .padding(SpSpacing.Small)
+                .semantics {
+                    contentDescription = "See all $title"
+                    role = Role.Button
+                },
+        )
+    }
 }
 
 @Composable
@@ -538,7 +483,7 @@ private fun GameCoverCard(
 }
 
 @Composable
-private fun ConsolesGrid(
+internal fun ConsolesGrid(
     consoles: List<Console>,
     onConsoleSelected: (String) -> Unit,
     columnsPerRow: Int = 2,
@@ -568,7 +513,7 @@ private fun ConsolesGrid(
 }
 
 @Composable
-private fun ConsoleCard(
+internal fun ConsoleCard(
     console: Console,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

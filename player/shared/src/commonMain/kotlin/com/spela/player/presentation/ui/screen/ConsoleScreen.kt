@@ -182,7 +182,7 @@ fun ConsoleScreen(
 }
 
 @Composable
-private fun GameGridItem(
+internal fun GameGridItem(
     game: Game,
     onClick: () -> Unit,
 ) {

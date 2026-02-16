@@ -22,49 +22,6 @@ UPDATE ServerConnectionEntity SET is_active = CASE WHEN id = ? THEN 1 ELSE 0 END
 deleteServer:
 DELETE FROM ServerConnectionEntity WHERE id = ?;
 
--- Cached games
-CREATE TABLE CachedGameEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    title TEXT NOT NULL,
-    console_id TEXT NOT NULL,
-    console_name TEXT NOT NULL,
-    cover_url TEXT,
-    description TEXT,
-    developer TEXT,
-    publisher TEXT,
-    release_year INTEGER,
-    genre TEXT,
-    file_size INTEGER NOT NULL DEFAULT 0,
-    file_name TEXT NOT NULL DEFAULT '',
-    core_name TEXT,
-    cached_at INTEGER NOT NULL
-);
-
-insertCachedGame:
-INSERT OR REPLACE INTO CachedGameEntity(
-    id, title, console_id, console_name, cover_url, description,
-    developer, publisher, release_year, genre, file_size, file_name,
-    core_name, cached_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-
-getAllCachedGames:
-SELECT * FROM CachedGameEntity ORDER BY title;
-
-getCachedGamesByConsole:
-SELECT * FROM CachedGameEntity WHERE console_id = ? ORDER BY title;
-
-getCachedGameById:
-SELECT * FROM CachedGameEntity WHERE id = ?;
-
-searchCachedGames:
-SELECT * FROM CachedGameEntity WHERE title LIKE '%' || ? || '%' ORDER BY title;
-
-deleteCachedGame:
-DELETE FROM CachedGameEntity WHERE id = ?;
-
-deleteAllCachedGames:
-DELETE FROM CachedGameEntity;
-
 -- Download tracking
 CREATE TABLE DownloadEntity (
     game_id TEXT NOT NULL PRIMARY KEY,

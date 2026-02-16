@@ -165,6 +165,26 @@ object SpEmptyStates {
     }
 
     @Composable
+    fun NoPlayLater(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.Filled.FavoriteBorder,
+            title = "No games in Play Later",
+            message = "Tap 'Play Later' on any game to save it for later",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
+    fun NoCollections(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.AutoMirrored.Filled.LibraryBooks,
+            title = "No collections yet",
+            message = "Create a collection to organize your favorite games",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
     fun NoNetplaySessions(modifier: Modifier = Modifier) {
         SpEmptyState(
             icon = Icons.Filled.SportsEsports,

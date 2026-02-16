@@ -252,6 +252,50 @@ fun RelaySaveDto.toDomain(): RelaySave = RelaySave(
     updatedAt = updatedAt,
 )
 
+// Collection mappers
+
+fun CollectionDto.toDomain(): GameCollection = GameCollection(
+    id = id,
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    name = name,
+    description = description,
+    isPublic = isPublic,
+    coverUrl = coverUrl,
+    gameCount = gameCount,
+)
+
+fun CollectionDetailDto.toDomain(): GameCollectionDetail = GameCollectionDetail(
+    id = id,
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    name = name,
+    description = description,
+    isPublic = isPublic,
+    coverUrl = coverUrl,
+    gameCount = gameCount,
+    games = games.map { it.toDomain() },
+)
+
+// Stats mappers
+
+fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(
+    game = game.toDomain(),
+    totalPlayers = totalPlayers,
+    totalPlayTime = totalPlayTime,
+)
+
+fun ActivePlayerDto.toDomain(): ActivePlayer = ActivePlayer(
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    totalPlayTime = totalPlayTime,
+    gamesPlayed = gamesPlayed,
+    lastPlayed = lastPlayed,
+)
+
 // Netplay mappers
 
 fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(

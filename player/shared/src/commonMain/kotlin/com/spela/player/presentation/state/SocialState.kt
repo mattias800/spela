@@ -12,4 +12,9 @@ data class SocialState(
     val error: String? = null,
     val publicProfile: PublicProfile? = null,
     val isLoadingProfile: Boolean = false,
+    // Full activity feed (paginated, for the Activity screen)
+    val fullActivityEvents: List<ActivityEvent> = emptyList(),
+    val isLoadingFullActivity: Boolean = false,
+    val fullActivityPage: Int = 1,
+    val hasMoreActivity: Boolean = true,
 )

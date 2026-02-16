@@ -26,16 +26,21 @@ class RelayFeaturesTest {
         return harness
     }
 
-    // ---- Home screen: Relays navigation ----
+    // ---- Relays screen: navigation ----
 
     @Test
-    fun homeScreenShowsRelaysButton() = runComposeUiTest {
+    fun relaysScreenIsAccessibleViaNavigation() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Relays)
+        )
         advance(harness)
 
-        onNodeWithContentDescription("Relays").assertIsDisplayed()
+        // Should navigate to Relays screen (shows empty state or relay list)
+        onNodeWithContentDescription("Go back").assertIsDisplayed()
     }
 
     // ---- Relays screen: empty state ----

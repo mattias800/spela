@@ -43,7 +43,9 @@ class NavigationViewModel(
                             isGoingBack = true,
                         )
                     } else if (current.currentScreen is SpScreen.Settings ||
-                        current.currentScreen is SpScreen.Downloads
+                        current.currentScreen is SpScreen.Downloads ||
+                        current.currentScreen is SpScreen.Library ||
+                        current.currentScreen is SpScreen.Activity
                     ) {
                         // When on a non-Home tab with empty back stack, return to Home
                         current.copy(

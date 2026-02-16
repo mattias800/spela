@@ -32,7 +32,9 @@ import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpBottomNavBar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.screen.ConsoleScreen
@@ -49,9 +51,17 @@ import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
+import com.spela.player.presentation.ui.screen.AllGamesScreen
+import com.spela.player.presentation.ui.screen.CollectionDetailScreen
+import com.spela.player.presentation.ui.screen.CollectionsScreen
+import com.spela.player.presentation.ui.screen.FavoritesScreen
+import com.spela.player.presentation.ui.screen.LibraryScreen
 import com.spela.player.presentation.ui.screen.LicensesScreen
+import com.spela.player.presentation.ui.screen.PlayLaterScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
+import com.spela.player.presentation.ui.screen.ActivityScreen
+import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -72,7 +82,9 @@ import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
+import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
+import com.spela.player.presentation.viewmodel.StatsViewModel
 
 @Composable
 fun SpelaApp(
@@ -91,6 +103,8 @@ fun SpelaApp(
     relayDetailViewModel: RelayDetailViewModel,
     netplayViewModel: NetplayViewModel,
     netplayLobbyViewModel: NetplayLobbyViewModel,
+    statsViewModel: StatsViewModel,
+    collectionsViewModel: CollectionsViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
 ) {
@@ -210,29 +224,24 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                         )
                                     },
-                                    onConsoleSelected = { consoleId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
-                                        )
-                                    },
                                     onNavigateToDownloads = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Downloads)
                                         )
                                     },
-                                    onNavigateToRelays = {
+                                    onNavigateToFavorites = {
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.Relays)
+                                            NavigationIntent.NavigateTo(SpScreen.Favorites)
                                         )
                                     },
-                                    onNavigateToSettings = {
+                                    onNavigateToPlayLater = {
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.Settings)
+                                            NavigationIntent.NavigateTo(SpScreen.PlayLater)
                                         )
                                     },
-                                    onNavigateToNetplay = {
+                                    onNavigateToActivity = {
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.NetplaySessions)
+                                            NavigationIntent.NavigateTo(SpScreen.Activity)
                                         )
                                     },
                                     onNetplaySessionSelected = { sessionId ->
@@ -428,6 +437,127 @@ fun SpelaApp(
                                 )
                             }
 
+                            is SpScreen.Library -> {
+                                LibraryScreen(
+                                    gameListViewModel = gameListViewModel,
+                                    collectionsViewModel = collectionsViewModel,
+                                    onConsoleSelected = { consoleId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
+                                        )
+                                    },
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onCollectionSelected = { collectionId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.CollectionDetail(collectionId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.AllGames -> {
+                                AllGamesScreen(
+                                    viewModel = gameListViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.Favorites -> {
+                                FavoritesScreen(
+                                    viewModel = gameListViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.PlayLater -> {
+                                PlayLaterScreen(
+                                    viewModel = gameListViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.Collections -> {
+                                CollectionsScreen(
+                                    viewModel = collectionsViewModel,
+                                    onCollectionSelected = { collectionId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.CollectionDetail(collectionId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.CollectionDetail -> {
+                                CollectionDetailScreen(
+                                    collectionId = screen.collectionId,
+                                    viewModel = collectionsViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.Stats -> {
+                                StatsScreen(
+                                    viewModel = statsViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onUserSelected = { userId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.Activity -> {
+                                ActivityScreen(
+                                    viewModel = socialViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onUserSelected = { userId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
+                                    onNavigateToStats = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Stats)
+                                        )
+                                    },
+                                )
+                            }
+
                             is SpScreen.Licenses -> {
                                 LicensesScreen(
                                     onBack = {
@@ -546,8 +676,56 @@ fun SpelaApp(
                     }
                 }
 
+                // Bottom navigation bar
+                val showBottomNav = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
+                if (showBottomNav) {
+                    SpBottomNavBar(
+                        activeTab = activeTabForScreen(navState.currentScreen),
+                        onTabSelected = { tab ->
+                            val targetScreen = when (tab) {
+                                BottomNavTab.HOME -> SpScreen.Home
+                                BottomNavTab.LIBRARY -> SpScreen.Library
+                                BottomNavTab.ACTIVITY -> SpScreen.Activity
+                                BottomNavTab.SETTINGS -> SpScreen.Settings
+                            }
+                            navigationViewModel.onIntent(
+                                NavigationIntent.NavigateTo(targetScreen)
+                            )
+                        },
+                    )
+                }
             }
         }
         }
+    }
+}
+
+private fun shouldShowBottomNav(screen: SpScreen): Boolean = when (screen) {
+    is SpScreen.ServerConnection, is SpScreen.Login -> false
+    else -> true
+}
+
+private fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
+    is SpScreen.Library, is SpScreen.AllGames, is SpScreen.Favorites,
+    is SpScreen.PlayLater, is SpScreen.Collections, is SpScreen.CollectionDetail,
+    is SpScreen.Console -> BottomNavTab.LIBRARY
+    is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY
+    is SpScreen.Settings, is SpScreen.ConsoleSettings, is SpScreen.Licenses -> BottomNavTab.SETTINGS
+    else -> BottomNavTab.HOME
+}
+
+@Composable
+private fun PlaceholderScreen(title: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.Background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = title,
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+        )
     }
 }

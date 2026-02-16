@@ -13,7 +13,7 @@ class GameRepositoryImpl(
 ) : GameRepository {
 
     override suspend fun getConsoles(): Result<List<Console>> = runCatching {
-        apiClient.getConsoles().map { it.toDomain() }
+        apiClient.getConsoles().map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> = runCatching {
@@ -67,5 +67,9 @@ class GameRepositoryImpl(
     /** Resolve relative image URLs to absolute URLs using the server base URL. */
     private fun Game.resolveImageUrls(): Game = copy(
         coverUrl = apiClient.resolveUrl(coverUrl),
+    )
+
+    private fun Console.resolveImageUrls(): Console = copy(
+        iconUrl = apiClient.resolveUrl(iconUrl) ?: "",
     )
 }

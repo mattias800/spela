@@ -542,6 +542,62 @@ class SpelaApiClient(
         ).body()
     }
 
+    // Collections
+
+    suspend fun getMyCollections(page: Int = 1, pageSize: Int = 20): CollectionsResponse {
+        return client.get("$baseUrl/api/collections") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getPublicCollections(page: Int = 1, pageSize: Int = 20): CollectionsResponse {
+        return client.get("$baseUrl/api/collections/public") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getCollection(id: String): CollectionDetailDto {
+        return client.get("$baseUrl/api/collections/$id").body()
+    }
+
+    suspend fun createCollection(request: CreateCollectionRequest): CollectionDto {
+        return client.post("$baseUrl/api/collections") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun updateCollection(id: String, request: UpdateCollectionRequest): CollectionDto {
+        return client.put("$baseUrl/api/collections/$id") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun deleteCollection(id: String) {
+        client.delete("$baseUrl/api/collections/$id")
+    }
+
+    suspend fun addGameToCollection(collectionId: String, gameId: String) {
+        client.post("$baseUrl/api/collections/$collectionId/games") {
+            setBody(AddGameToCollectionRequest(gameId = gameId.toInt()))
+        }
+    }
+
+    suspend fun removeGameFromCollection(collectionId: String, gameId: String) {
+        client.delete("$baseUrl/api/collections/$collectionId/games/$gameId")
+    }
+
+    // Stats
+
+    suspend fun getMostPlayedGames(): MostPlayedResponse {
+        return client.get("$baseUrl/api/stats/most-played").body()
+    }
+
+    suspend fun getMostActivePlayers(): MostActivePlayersResponse {
+        return client.get("$baseUrl/api/stats/most-active-players").body()
+    }
+
     // Netplay
 
     suspend fun createNetplaySession(request: CreateNetplaySessionRequest): NetplaySessionDto {
