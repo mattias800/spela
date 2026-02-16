@@ -6,6 +6,7 @@ import {
   Building2,
   Star,
   HardDrive,
+  Disc,
   RefreshCw,
   Play,
   Trophy,
@@ -255,7 +256,7 @@ export function GameHero({
         </div>
 
         {/* Metadata grid */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {game.developer && (
             <MetaItem
               icon={Building2}
@@ -288,6 +289,13 @@ export function GameHero({
             label="Size"
             value={formatFileSize(game.fileSize)}
           />
+          {game.discCount > 1 && (
+            <MetaItem
+              icon={Disc}
+              label="Discs"
+              value={`${game.discCount}`}
+            />
+          )}
           {game.rating !== undefined && game.rating > 0 && (
             <MetaItem icon={Star} label="Rating" value={`${game.rating}/10`} />
           )}

@@ -106,6 +106,11 @@ export function GameCard({
         <h3 className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </h3>
+        {game.discCount > 1 && (
+          <span className="inline-block whitespace-nowrap text-xs bg-purple-600 text-white rounded-full px-1.5 py-0.5">
+            {game.discCount} Discs
+          </span>
+        )}
         <div className="flex items-center gap-2">
           {game.consoleName && (
             <p className="text-xs text-surface-500">{game.consoleName}</p>

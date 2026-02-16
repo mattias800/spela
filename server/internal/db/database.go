@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -23,6 +24,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&User{},
 		&Console{},
 		&Game{},
+		&GameDisc{},
 		&SaveState{},
 		&Favorite{},
 		&PlayHistory{},
@@ -81,8 +83,8 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "melonds", FolderName: "nds", ColorTheme: "#b0b0b0", SaveStateSupport: true},
 		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", SaveStateSupport: true},
 		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", SaveStateSupport: true},
-		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
-		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "pcsx_rearmed", FolderName: "psx", ColorTheme: "#003087", SaveStateSupport: true},
+		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
+		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "pcsx_rearmed", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", SaveStateSupport: true},
 		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", SaveStateSupport: true},
@@ -90,7 +92,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", EmulatorJSCore: "stella2014", FolderName: "atari2600", ColorTheme: "#8b4513", SaveStateSupport: true},
 		// New consoles
 		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", SaveStateSupport: true},
-		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", SaveStateSupport: true},
+		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", SaveStateSupport: true},
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", SaveStateSupport: true},
 		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", SaveStateSupport: true},
@@ -101,10 +103,10 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "", FolderName: "atarijaguar", ColorTheme: "#8b4513", SaveStateSupport: false},
 		{Name: "Neo Geo Pocket", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", SaveStateSupport: true},
-		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", SaveStateSupport: true},
+		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", SaveStateSupport: true},
 		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "colecovision", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", SaveStateSupport: true},
-		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.chd", DefaultCore: "pcsx2", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", SaveStateSupport: true},
+		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.chd,.m3u", DefaultCore: "pcsx2", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", SaveStateSupport: true},
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", SaveStateSupport: true},
 		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha", DefaultCore: "puae", EmulatorJSCore: "", FolderName: "amiga", ColorTheme: "#6c5eb5", SaveStateSupport: true},
@@ -134,6 +136,12 @@ func SeedConsoles(db *gorm.DB) error {
 			if !existing.SaveStateSupport && c.SaveStateSupport {
 				db.Model(&existing).Update("save_state_support", true)
 				slog.Info("backfilled SaveStateSupport", "name", existing.Name)
+			}
+			// Backfill .m3u extension for disc-based consoles
+			if strings.Contains(c.Extensions, ".m3u") && !strings.Contains(existing.Extensions, ".m3u") {
+				newExts := existing.Extensions + ",.m3u"
+				db.Model(&existing).Update("extensions", newExts)
+				slog.Info("backfilled .m3u extension", "name", existing.Name)
 			}
 		}
 	}
