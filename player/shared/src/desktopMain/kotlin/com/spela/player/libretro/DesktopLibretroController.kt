@@ -58,6 +58,20 @@ class DesktopLibretroController(
     @Volatile
     private var currentFrameTime = 0f
 
+    /**
+     * Double-buffered rendered frame output for offscreen Metal rendering.
+     * The emulation thread renders into one buffer while the Compose thread
+     * reads from the other. No locks needed -- volatile reference swap is atomic.
+     */
+    data class RenderedFrame(val data: ByteArray, val width: Int, val height: Int)
+
+    private val renderBuffers = arrayOf(ByteArray(0), ByteArray(0))
+    private var renderBufferIndex = 0
+
+    @Volatile
+    var latestRenderedFrame: RenderedFrame? = null
+        private set
+
     override fun loadCore(corePath: String) {
         jni.nativeSetSystemDir(fileStorage.getBiosDir())
         jni.nativeSetSaveDir(fileStorage.getSavesDir())
@@ -188,6 +202,29 @@ class DesktopLibretroController(
     /** Whether the GPU renderer is active (checked each frame). */
     fun isGpuActive(): Boolean = jni.nativeGpuIsActive()
 
+    /**
+     * Render the current GPU frame through shaders and store the BGRA result.
+     * Called on the emulation thread. Uses double buffering: writes to one buffer
+     * while the Compose thread may be reading from the other.
+     */
+    private fun renderGpuFrameToBgra() {
+        val w = jni.nativeGetVideoWidth()
+        val h = jni.nativeGetVideoHeight()
+        if (w <= 0 || h <= 0) return
+
+        val needed = w * h * 4
+        val bufIdx = renderBufferIndex
+        if (renderBuffers[bufIdx].size < needed) {
+            renderBuffers[bufIdx] = ByteArray(needed)
+        }
+
+        val written = jni.nativeGpuRenderToBgra(renderBuffers[bufIdx])
+        if (written > 0) {
+            latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], w, h)
+            renderBufferIndex = 1 - bufIdx // Swap for next frame
+        }
+    }
+
     private fun runEmulationLoop() {
         val frameTimeNs = (1_000_000_000.0 / targetFps).toLong()
         var fpsCounter = 0
@@ -203,10 +240,11 @@ class DesktopLibretroController(
 
             jni.nativeRun()
 
-            // GPU path: frame upload happened in native video_refresh_callback,
-            // just trigger the render pass
+            // GPU offscreen path: upload happened in video_refresh_callback,
+            // now render with shader and read back BGRA pixels on this thread.
+            // This avoids blocking the Compose thread with Metal waitUntilCompleted.
             if (jni.nativeGpuIsActive()) {
-                jni.nativeGpuRender()
+                renderGpuFrameToBgra()
             }
 
             fpsCounter++
@@ -214,6 +252,7 @@ class DesktopLibretroController(
             val elapsed = now - fpsTimer
             if (elapsed >= 1_000_000_000L) {
                 currentFps = fpsCounter.toFloat() * 1_000_000_000L / elapsed
+                println("[Emulation] FPS: %.1f  frameTime: %.2fms".format(currentFps, currentFrameTime))
                 fpsTimer = now
                 fpsCounter = 0
             }
@@ -222,10 +261,7 @@ class DesktopLibretroController(
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
 
             if (!fastForward) {
-                val sleepNs = frameTimeNs - (frameEnd - frameStart)
-                if (sleepNs > 0) {
-                    Thread.sleep(sleepNs / 1_000_000, (sleepNs % 1_000_000).toInt())
-                }
+                precisionSleep(frameStart + frameTimeNs)
             }
         }
     }
@@ -301,7 +337,7 @@ class DesktopLibretroController(
             jni.nativeRun()
 
             if (jni.nativeGpuIsActive()) {
-                jni.nativeGpuRender()
+                renderGpuFrameToBgra()
             }
 
             frameCounter++
@@ -320,10 +356,28 @@ class DesktopLibretroController(
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
 
             // Frame pacing (no fast forward in netplay)
-            val sleepNs = frameTimeNs - (frameEnd - frameStart)
-            if (sleepNs > 0) {
-                Thread.sleep(sleepNs / 1_000_000, (sleepNs % 1_000_000).toInt())
-            }
+            precisionSleep(frameStart + frameTimeNs)
+        }
+    }
+
+    /**
+     * High-precision frame pacing. Thread.sleep has ~1-3ms overshoot on macOS,
+     * so we sleep for the bulk of the wait and spin-wait for the last 2ms.
+     */
+    private fun precisionSleep(targetNanos: Long) {
+        val now = System.nanoTime()
+        val remainingNs = targetNanos - now
+        if (remainingNs <= 0) return
+
+        // Sleep for most of the duration (leave 2ms margin for spin-wait)
+        val sleepMs = remainingNs / 1_000_000 - 2
+        if (sleepMs > 0) {
+            Thread.sleep(sleepMs)
+        }
+
+        // Spin-wait for sub-millisecond precision
+        while (System.nanoTime() < targetNanos) {
+            Thread.onSpinWait()
         }
     }
 

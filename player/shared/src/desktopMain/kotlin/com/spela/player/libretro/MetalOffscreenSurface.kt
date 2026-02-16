@@ -66,21 +66,16 @@ fun MetalOffscreenSurface(
 
     val frameBuffers = remember { MetalFrameBuffers() }
 
-    // Frame polling loop: each Compose frame, get Metal-rendered BGRA pixels
+    // Frame display loop: each Compose frame, read the latest pre-rendered BGRA pixels.
+    // The emulation thread does all Metal work (upload + shader render + readback),
+    // so no GPU blocking happens on the Compose thread.
     LaunchedEffect(controller) {
         while (true) {
             withFrameNanos { }
-            if (!controller.isGpuActive()) continue
+            val frame = controller.latestRenderedFrame ?: continue
 
-            val width = controller.getVideoWidth()
-            val height = controller.getVideoHeight()
-            if (width <= 0 || height <= 0) continue
-
-            frameBuffers.ensureCapacity(width, height)
-            val bytesWritten = controller.gpuRenderToBgra(frameBuffers.pixelBuffer)
-            if (bytesWritten <= 0) continue
-
-            frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frameBuffers.pixelBuffer, width * 4)
+            frameBuffers.ensureCapacity(frame.width, frame.height)
+            frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frame.data, frame.width * 4)
             currentBitmap = frameBuffers.bitmap.asComposeImageBitmap()
         }
     }

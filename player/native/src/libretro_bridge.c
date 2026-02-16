@@ -213,7 +213,8 @@ static bool environment_callback(unsigned cmd, void *data) {
         }
 
         default:
-            LOGW("Unhandled environment cmd: %u", cmd);
+            /* Silently ignore unknown commands -- cores poll many optional
+             * features every frame and logging each one kills performance. */
             return false;
     }
 }
