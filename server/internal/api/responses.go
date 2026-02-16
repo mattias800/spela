@@ -28,35 +28,44 @@ type ConsoleResponse struct {
 	BrowserPlayable  bool      `json:"browserPlayable"`
 }
 
+// DiscResponse is the API response for a single disc in a multi-disc game.
+type DiscResponse struct {
+	DiscNumber int    `json:"discNumber"`
+	FileName   string `json:"fileName"`
+	FileSize   int64  `json:"fileSize"`
+}
+
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID             string   `json:"id"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	ConsoleID      string   `json:"consoleId"`
-	ConsoleName    string   `json:"consoleName"`
-	Title          string   `json:"title"`
-	FileName       string   `json:"fileName"`
-	FileSize       int64    `json:"fileSize"`
-	Description    string   `json:"description"`
-	CoverURL       string   `json:"coverUrl"`
-	ScreenshotURLs []string `json:"screenshotUrls"`
-	Developer      string   `json:"developer"`
-	Publisher      string   `json:"publisher"`
-	ReleaseDate    string   `json:"releaseDate"`
-	Genre          string   `json:"genre"`
-	Players        int      `json:"players"`
-	Rating         float64  `json:"rating"`
-	CoreOverride   string   `json:"coreOverride,omitempty"`
-	ScraperID      string   `json:"scraperId,omitempty"`
-	ScrapeAttempts int      `json:"scrapeAttempts"`
-	IsFavorite     bool     `json:"isFavorite"`
-	IsInPlayLater  bool     `json:"isInPlayLater"`
-	LastPlayedAt   *time.Time `json:"lastPlayedAt"`
-	TotalPlayTime  int64    `json:"totalPlayTime"`
-	AverageRating  float64  `json:"averageRating"`
-	RatingCount    int64    `json:"ratingCount"`
-	UserRating     *int     `json:"userRating,omitempty"`
+	ID             string         `json:"id"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	ConsoleID      string         `json:"consoleId"`
+	ConsoleName    string         `json:"consoleName"`
+	Title          string         `json:"title"`
+	FileName       string         `json:"fileName"`
+	FileSize       int64          `json:"fileSize"`
+	DiscCount      int            `json:"discCount"`
+	Discs          []DiscResponse `json:"discs,omitempty"`
+	Description    string         `json:"description"`
+	CoverURL       string         `json:"coverUrl"`
+	ScreenshotURLs []string       `json:"screenshotUrls"`
+	Developer      string         `json:"developer"`
+	Publisher      string         `json:"publisher"`
+	ReleaseDate    string         `json:"releaseDate"`
+	Genre          string         `json:"genre"`
+	Players        int            `json:"players"`
+	Rating         float64        `json:"rating"`
+	CoreOverride   string         `json:"coreOverride,omitempty"`
+	ScraperID      string         `json:"scraperId,omitempty"`
+	ScrapeAttempts int            `json:"scrapeAttempts"`
+	IsFavorite     bool           `json:"isFavorite"`
+	IsInPlayLater  bool           `json:"isInPlayLater"`
+	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`
+	TotalPlayTime  int64          `json:"totalPlayTime"`
+	AverageRating  float64        `json:"averageRating"`
+	RatingCount    int64          `json:"ratingCount"`
+	UserRating     *int           `json:"userRating,omitempty"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.
@@ -206,6 +215,15 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		}
 	}
 
+	var discs []DiscResponse
+	for _, d := range g.Discs {
+		discs = append(discs, DiscResponse{
+			DiscNumber: d.DiscNumber,
+			FileName:   d.FileName,
+			FileSize:   d.FileSize,
+		})
+	}
+
 	resp := GameResponse{
 		ID:             strconv.FormatUint(uint64(g.ID), 10),
 		CreatedAt:      g.CreatedAt,
@@ -215,6 +233,8 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Title:          g.Title,
 		FileName:       g.FileName,
 		FileSize:       g.FileSize,
+		DiscCount:      g.DiscCount,
+		Discs:          discs,
 		Description:    g.Description,
 		CoverURL:       coverURL,
 		ScreenshotURLs: screenshots,

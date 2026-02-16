@@ -56,6 +56,13 @@ data class ConsoleDto(
     val updatedAt: String? = null,
 )
 
+@Serializable
+data class GameDiscDto(
+    val discNumber: Int,
+    val fileName: String,
+    val fileSize: Long,
+)
+
 /** Matches GameResponse in responses.go - enriched with consoleName, isFavorite, etc. */
 @Serializable
 data class GameDto(
@@ -84,6 +91,8 @@ data class GameDto(
     val isInPlayLater: Boolean = false,
     val lastPlayedAt: String? = null,
     val totalPlayTime: Long = 0,
+    val discCount: Int = 0,
+    val discs: List<GameDiscDto> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

@@ -311,6 +311,14 @@ private fun GameInfoContent(
     ) {
         state.downloadProgress?.let { progress ->
             Column(modifier = Modifier.padding(top = SpSpacing.Medium)) {
+                if (progress.totalDiscs > 1) {
+                    Text(
+                        text = "Downloading Disc ${progress.currentDisc} of ${progress.totalDiscs}",
+                        style = SpTypography.LabelMedium,
+                        color = SpColor.OnBackgroundSecondary,
+                        modifier = Modifier.padding(bottom = SpSpacing.XSmall),
+                    )
+                }
                 SpProgressBar(
                     progress = progress.progress,
                     showPercentage = true,

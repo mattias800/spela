@@ -490,6 +490,7 @@ class FakeFileStorage : FileStorage {
     override fun getGamesDir(): String = "/tmp/spela-test/games"
     override fun getCoresDir(): String = "/tmp/spela-test/cores"
     override fun getSavesDir(): String = "/tmp/spela-test/saves"
+    override suspend fun createDirectory(path: String) {}
     override suspend fun writeFile(path: String, data: ByteArray) {}
     override suspend fun readFile(path: String): ByteArray = ByteArray(0)
     override suspend fun fileExists(path: String): Boolean = false

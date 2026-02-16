@@ -201,6 +201,26 @@ class SpelaApiClient(
         return response.body()
     }
 
+    suspend fun downloadDisc(gameId: String, discNumber: Int, onProgress: (Long, Long?) -> Unit = { _, _ -> }): ByteArray {
+        val response = client.get("$baseUrl/api/games/$gameId/discs/$discNumber/download") {
+            onDownload { bytesSentTotal, contentLength ->
+                onProgress(bytesSentTotal, contentLength)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
+    suspend fun downloadM3U(gameId: String): ByteArray {
+        val response = client.get("$baseUrl/api/games/$gameId/download")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("M3U download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
     // Saves
 
     suspend fun getSaveStates(gameId: String): List<SaveStateDto> {

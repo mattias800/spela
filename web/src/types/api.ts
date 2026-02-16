@@ -33,6 +33,12 @@ export interface Console {
   updatedAt: string;
 }
 
+export interface GameDisc {
+  discNumber: number;
+  fileName: string;
+  fileSize: number;
+}
+
 // GameResponse from backend responses.go DTO layer
 export interface Game {
   id: string;
@@ -41,6 +47,8 @@ export interface Game {
   consoleName: string;
   fileName: string;
   fileSize: number;
+  discCount: number;
+  discs?: GameDisc[];
   coverUrl?: string;
   screenshotUrls: string[];
   description?: string;

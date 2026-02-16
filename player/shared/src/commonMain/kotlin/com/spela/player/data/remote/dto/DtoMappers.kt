@@ -31,6 +31,12 @@ fun ConsoleDto.toDomain(): Console = Console(
     browserPlayable = browserPlayable,
 )
 
+fun GameDiscDto.toDomain(): GameDisc = GameDisc(
+    discNumber = discNumber,
+    fileName = fileName,
+    fileSize = fileSize,
+)
+
 /** Maps the enriched GameResponse DTO to domain Game. */
 fun GameDto.toDomain(): Game = Game(
     id = id,
@@ -56,6 +62,8 @@ fun GameDto.toDomain(): Game = Game(
     isInPlayLater = isInPlayLater,
     lastPlayedAt = lastPlayedAt,
     totalPlayTime = totalPlayTime,
+    discCount = discCount,
+    discs = discs.map { it.toDomain() },
 )
 
 /**

@@ -70,6 +70,8 @@ type Game struct {
 	FileName      string         `gorm:"size:512;not null" json:"fileName"`
 	FilePath      string         `gorm:"uniqueIndex;size:1024;not null" json:"-"`
 	FileSize      int64          `json:"fileSize"`
+	DiscCount     int            `json:"discCount"`                                    // 0 = single-disc legacy, 2+ = multi-disc
+	Discs         []GameDisc     `gorm:"foreignKey:GameID" json:"discs,omitempty"`
 	Description   string         `gorm:"type:text" json:"description,omitempty"`
 	CoverURL      string         `gorm:"size:512" json:"coverUrl,omitempty"`
 	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
@@ -82,6 +84,18 @@ type Game struct {
 	CoreOverride   string         `gorm:"size:128" json:"coreOverride,omitempty"`
 	ScrapeAttempts int            `json:"scrapeAttempts"`
 	ScraperID      string         `gorm:"size:128" json:"scraperId,omitempty"`
+}
+
+// GameDisc represents a single disc in a multi-disc game.
+type GameDisc struct {
+	ID         uint           `gorm:"primarykey" json:"id"`
+	CreatedAt  time.Time      `json:"createdAt"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+	GameID     uint           `gorm:"uniqueIndex:idx_game_disc;not null" json:"gameId"`
+	DiscNumber int            `gorm:"uniqueIndex:idx_game_disc;not null" json:"discNumber"`
+	FilePath   string         `gorm:"size:1024;not null" json:"-"`
+	FileName   string         `gorm:"size:512;not null" json:"fileName"`
+	FileSize   int64          `json:"fileSize"`
 }
 
 // SaveState represents a user's save state for a game.

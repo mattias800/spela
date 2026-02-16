@@ -41,6 +41,9 @@ data class Console(
 )
 
 @Serializable
+data class GameDisc(val discNumber: Int, val fileName: String, val fileSize: Long)
+
+@Serializable
 data class Game(
     val id: String,
     val title: String,
@@ -65,6 +68,8 @@ data class Game(
     val isInPlayLater: Boolean = false,
     val lastPlayedAt: String? = null,
     val totalPlayTime: Long = 0,
+    val discCount: Int = 0,
+    val discs: List<GameDisc> = emptyList(),
 )
 
 @Serializable
@@ -129,6 +134,8 @@ data class DownloadProgress(
     val state: DownloadState,
     val bytesDownloaded: Long = 0,
     val totalBytes: Long = 0,
+    val currentDisc: Int = 0,
+    val totalDiscs: Int = 0,
 ) {
     val progress: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f

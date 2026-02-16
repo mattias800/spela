@@ -9,6 +9,7 @@ interface FileStorage {
     fun getCoresDir(): String
     fun getSavesDir(): String
     fun getBiosDir(): String
+    suspend fun createDirectory(path: String)
     suspend fun writeFile(path: String, data: ByteArray)
     suspend fun readFile(path: String): ByteArray
     suspend fun fileExists(path: String): Boolean

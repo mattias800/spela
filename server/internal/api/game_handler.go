@@ -1,9 +1,12 @@
 package api
 
 import (
+	"archive/tar"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -30,7 +33,7 @@ type GameHandler struct {
 // ListGames returns all games with optional filtering.
 func (h *GameHandler) ListGames(c *gin.Context) {
 	var games []db.Game
-	query := h.DB.Preload("Console")
+	query := h.DB.Preload("Console").Preload("Discs")
 
 	if consoleID := c.Query("consoleId"); consoleID != "" {
 		query = query.Where("console_id = ?", consoleID)
@@ -106,7 +109,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 func (h *GameHandler) GetGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
-	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
+	if err := h.DB.Preload("Console").Preload("Discs").First(&game, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}
@@ -502,6 +505,88 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		"playTime":   ph.PlayTime,
 		"lastPlayed": ph.LastPlayed,
 	})
+}
+
+// DownloadDisc serves files for a specific disc in a multi-disc game.
+// For single-file disc formats (.iso, .chd), serves the file directly.
+// For multi-file disc formats (.cue+.bin), streams an uncompressed tar.
+func (h *GameHandler) DownloadDisc(c *gin.Context) {
+	gameID := c.Param("id")
+	discNumberStr := c.Param("discNumber")
+	discNumber, err := strconv.Atoi(discNumberStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid disc number"})
+		return
+	}
+
+	var disc db.GameDisc
+	if err := h.DB.Where("game_id = ? AND disc_number = ?", gameID, discNumber).First(&disc).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "disc not found"})
+		return
+	}
+
+	// Security: validate the disc file path is within allowed directories
+	if !storage.ValidateROMPath(disc.FilePath, h.GameDirs) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		return
+	}
+
+	// Get companion files for this disc
+	companions, _, err := scanner.DiscCompanionFiles(disc.FilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
+		return
+	}
+
+	if len(companions) == 1 {
+		// Single file (.iso, .chd, etc.) — serve directly
+		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
+		c.File(companions[0])
+		return
+	}
+
+	// Multiple files (.cue + .bin) — serve as tar stream
+	c.Header("Content-Type", "application/x-tar")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".tar"))
+	c.Status(http.StatusOK)
+
+	if err := serveTar(c.Writer, companions); err != nil {
+		slog.Warn("error streaming tar for disc", "disc", discNumber, "error", err)
+	}
+}
+
+// serveTar streams files as an uncompressed tar archive.
+func serveTar(w io.Writer, filePaths []string) error {
+	tw := tar.NewWriter(w)
+	defer tw.Close()
+
+	for _, path := range filePaths {
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("stat file %s: %w", path, err)
+		}
+
+		header := &tar.Header{
+			Name: filepath.Base(path),
+			Size: info.Size(),
+			Mode: 0644,
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("writing tar header for %s: %w", path, err)
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("opening file %s: %w", path, err)
+		}
+		if _, err := io.Copy(tw, f); err != nil {
+			f.Close()
+			return fmt.Errorf("writing file %s to tar: %w", path, err)
+		}
+		f.Close()
+	}
+
+	return nil
 }
 
 // GetRecommendedCore returns the recommended libretro core for a game.
