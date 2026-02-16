@@ -171,23 +171,9 @@ static bool environment_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             struct retro_variable *var = (struct retro_variable *)data;
             if (var->key) {
-                /* Log depth/FB-related variable queries for debugging z-order issues */
-                if (strstr(var->key, "Depth") || strstr(var->key, "depth") ||
-                    strstr(var->key, "FB") || strstr(var->key, "fb") ||
-                    strstr(var->key, "Emulation") || strstr(var->key, "Background") ||
-                    strstr(var->key, "EnableCopy")) {
-                    /* Will log value below */
-                }
                 for (int i = 0; i < core_variable_count; i++) {
                     if (strcmp(core_variables[i].key, var->key) == 0) {
                         var->value = core_variables[i].value;
-                        /* Log depth/FB-related values */
-                        if (strstr(var->key, "Depth") || strstr(var->key, "depth") ||
-                            strstr(var->key, "FB") || strstr(var->key, "fb") ||
-                            strstr(var->key, "Emulation") || strstr(var->key, "Background") ||
-                            strstr(var->key, "EnableCopy")) {
-                            LOGI("[core_var] GET %s = %s", var->key, var->value);
-                        }
                         return true;
                     }
                 }
@@ -244,18 +230,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                 }
                 LOGI("Parsed SET_VARIABLES: %d variables stored", core_variable_count);
 
-                /* Log all depth/FB-related variable options for debugging */
-                const struct retro_variable *v2 = (const struct retro_variable *)data;
-                for (; v2->key; v2++) {
-                    if (!v2->key || !v2->value) continue;
-                    if (strstr(v2->key, "Depth") || strstr(v2->key, "depth") ||
-                        strstr(v2->key, "FB") || strstr(v2->key, "fb") ||
-                        strstr(v2->key, "Background") || strstr(v2->key, "EnableCopy") ||
-                        strstr(v2->key, "Fragment")) {
-                        LOGI("[var_options] %s = %s", v2->key, v2->value);
-                    }
-                }
-
                 /* N64: Use Angrylion software renderer instead of GLideN64.
                  * GLideN64 has GL_INVALID_OPERATION on macOS when compositing to
                  * custom FBOs, causing z-ordering issues. Angrylion renders entirely
@@ -279,6 +253,7 @@ static bool environment_callback(unsigned cmd, void *data) {
                         }
                     }
                 }
+
             }
             return true;
         }
