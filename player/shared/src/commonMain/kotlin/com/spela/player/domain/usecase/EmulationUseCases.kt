@@ -16,8 +16,15 @@ class PrepareGameUseCase(
         val gamePath = downloadRepository.getLocalGamePath(gameId)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
 
-        val core = coreRepository.getRecommendedCore(gameId).getOrElse {
-            return Result.failure(it)
+        val core = coreRepository.getRecommendedCore(gameId).getOrElse { networkError ->
+            // Fallback: if server is unreachable, try to find any locally cached core
+            println("[PrepareGame] getRecommendedCore failed: ${networkError.message}, trying local fallback")
+            val localFallback = coreRepository.getLocalCorePath("mupen64plus_next")
+            if (localFallback != null) {
+                println("[PrepareGame] Using local fallback core: $localFallback")
+                return Result.success(gamePath to localFallback)
+            }
+            return Result.failure(networkError)
         }
 
         val corePath = coreRepository.getLocalCorePath(core.name)

@@ -34,9 +34,17 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #else
-#define LOGI(...) fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n")
-#define LOGW(...) fprintf(stderr, "WARN: " __VA_ARGS__); fprintf(stderr, "\n")
-#define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__); fprintf(stderr, "\n")
+static FILE *g_bridge_log_file = NULL;
+static FILE *bridge_log_get(void) {
+    if (!g_bridge_log_file) {
+        g_bridge_log_file = fopen("/tmp/spela_bridge.log", "w");
+        if (g_bridge_log_file) setbuf(g_bridge_log_file, NULL);
+    }
+    return g_bridge_log_file ? g_bridge_log_file : stderr;
+}
+#define LOGI(...) do { FILE *f = bridge_log_get(); fprintf(f, __VA_ARGS__); fprintf(f, "\n"); } while(0)
+#define LOGW(...) do { FILE *f = bridge_log_get(); fprintf(f, "WARN: " __VA_ARGS__); fprintf(f, "\n"); } while(0)
+#define LOGE(...) do { FILE *f = bridge_log_get(); fprintf(f, "ERROR: " __VA_ARGS__); fprintf(f, "\n"); } while(0)
 #endif
 
 /* Global core instance */
@@ -163,9 +171,23 @@ static bool environment_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             struct retro_variable *var = (struct retro_variable *)data;
             if (var->key) {
+                /* Log depth/FB-related variable queries for debugging z-order issues */
+                if (strstr(var->key, "Depth") || strstr(var->key, "depth") ||
+                    strstr(var->key, "FB") || strstr(var->key, "fb") ||
+                    strstr(var->key, "Emulation") || strstr(var->key, "Background") ||
+                    strstr(var->key, "EnableCopy")) {
+                    /* Will log value below */
+                }
                 for (int i = 0; i < core_variable_count; i++) {
                     if (strcmp(core_variables[i].key, var->key) == 0) {
                         var->value = core_variables[i].value;
+                        /* Log depth/FB-related values */
+                        if (strstr(var->key, "Depth") || strstr(var->key, "depth") ||
+                            strstr(var->key, "FB") || strstr(var->key, "fb") ||
+                            strstr(var->key, "Emulation") || strstr(var->key, "Background") ||
+                            strstr(var->key, "EnableCopy")) {
+                            LOGI("[core_var] GET %s = %s", var->key, var->value);
+                        }
                         return true;
                     }
                 }
@@ -221,6 +243,42 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
                 LOGI("Parsed SET_VARIABLES: %d variables stored", core_variable_count);
+
+                /* Log all depth/FB-related variable options for debugging */
+                const struct retro_variable *v2 = (const struct retro_variable *)data;
+                for (; v2->key; v2++) {
+                    if (!v2->key || !v2->value) continue;
+                    if (strstr(v2->key, "Depth") || strstr(v2->key, "depth") ||
+                        strstr(v2->key, "FB") || strstr(v2->key, "fb") ||
+                        strstr(v2->key, "Background") || strstr(v2->key, "EnableCopy") ||
+                        strstr(v2->key, "Fragment")) {
+                        LOGI("[var_options] %s = %s", v2->key, v2->value);
+                    }
+                }
+
+                /* N64: Use Angrylion software renderer instead of GLideN64.
+                 * GLideN64 has GL_INVALID_OPERATION on macOS when compositing to
+                 * custom FBOs, causing z-ordering issues. Angrylion renders entirely
+                 * in software with pixel-perfect N64 accuracy and no GL dependency. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    bool has_rdp_plugin = false;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "rdp-plugin")) {
+                            has_rdp_plugin = true;
+                            if (strstr(v3->value, "angrylion")) {
+                                LOGI("N64 core detected with Angrylion support, switching to software renderer");
+                                core_variables_set("mupen64plus-rdp-plugin", "angrylion");
+                                core_variables_set("mupen64plus-rsp-plugin", "parallel");
+                                core_variables_set("mupen64plus-angrylion-multithread", "all threads");
+                                core_variables_set("mupen64plus-angrylion-sync", "Low");
+                            } else {
+                                LOGI("N64 core detected but Angrylion NOT available in this build");
+                            }
+                            break;
+                        }
+                    }
+                }
             }
             return true;
         }
@@ -395,10 +453,13 @@ JNI_FUNC(jboolean, nativeLoadCore)(JNIEnv *env, jobject thiz, jstring corePath) 
 
 JNI_FUNC(void, nativeInit)(JNIEnv *env, jobject thiz) {
     if (!g_core.handle) return;
-    g_core.retro_init();
-    g_core.initialized = true;
+    /* Init video/input BEFORE retro_init() because the core may call
+     * SET_PIXEL_FORMAT during retro_init(). video_init() resets the
+     * pixel format to the default (0RGB1555), so it must run first. */
     video_init();
     input_init();
+    g_core.retro_init();
+    g_core.initialized = true;
     LOGI("Core initialized");
 }
 
@@ -698,6 +759,17 @@ JNI_FUNC(void, nativeSetInputAnalog)(JNIEnv *env, jobject thiz,
 
 JNI_FUNC(jdouble, nativeGetTargetFps)(JNIEnv *env, jobject thiz) {
     return g_core.av_info.timing.fps;
+}
+
+JNI_FUNC(jfloat, nativeGetAspectRatio)(JNIEnv *env, jobject thiz) {
+    /* Return the core-reported display aspect ratio.
+     * If the core provides one, use it. Otherwise derive from geometry. */
+    float ar = g_core.av_info.geometry.aspect_ratio;
+    if (ar > 0.0f) return ar;
+    unsigned bw = g_core.av_info.geometry.base_width;
+    unsigned bh = g_core.av_info.geometry.base_height;
+    if (bw > 0 && bh > 0) return (float)bw / (float)bh;
+    return 0.0f;
 }
 
 JNI_FUNC(jdouble, nativeGetSampleRate)(JNIEnv *env, jobject thiz) {

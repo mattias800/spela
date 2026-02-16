@@ -63,7 +63,7 @@ class DesktopLibretroController(
      * The emulation thread renders into one buffer while the Compose thread
      * reads from the other. No locks needed -- volatile reference swap is atomic.
      */
-    data class RenderedFrame(val data: ByteArray, val width: Int, val height: Int)
+    data class RenderedFrame(val data: ByteArray, val width: Int, val height: Int, val aspectRatio: Float = 0f)
 
     private val renderBuffers = arrayOf(ByteArray(0), ByteArray(0))
     private var renderBufferIndex = 0
@@ -224,7 +224,8 @@ class DesktopLibretroController(
 
         val written = jni.nativeGpuRenderToBgra(renderBuffers[bufIdx])
         if (written > 0) {
-            latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], w, h)
+            val ar = jni.nativeGetAspectRatio()
+            latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], w, h, ar)
             renderBufferIndex = 1 - bufIdx // Swap for next frame
         }
     }

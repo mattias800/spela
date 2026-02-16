@@ -126,15 +126,29 @@ fun MetalOffscreenSurface(
 
             val canvasWidth = size.width
             val canvasHeight = size.height
-            val imgWidth = bitmap.width.toFloat()
-            val imgHeight = bitmap.height.toFloat()
 
-            val scaleX = canvasWidth / imgWidth
-            val scaleY = canvasHeight / imgHeight
+            // Use the core-reported display aspect ratio (DAR) if available.
+            // This handles cases like N64 Angrylion outputting 640x240 pixels
+            // that should be displayed at 4:3 (pixels aren't square).
+            val dar = frame.aspectRatio
+            val displayWidth: Float
+            val displayHeight: Float
+            if (dar > 0f) {
+                // DAR-based: compute virtual display dimensions that match
+                // the aspect ratio while keeping one dimension from the bitmap
+                displayWidth = bitmap.height.toFloat() * dar
+                displayHeight = bitmap.height.toFloat()
+            } else {
+                displayWidth = bitmap.width.toFloat()
+                displayHeight = bitmap.height.toFloat()
+            }
+
+            val scaleX = canvasWidth / displayWidth
+            val scaleY = canvasHeight / displayHeight
             val scale = minOf(scaleX, scaleY)
 
-            val dstWidth = (imgWidth * scale).toInt()
-            val dstHeight = (imgHeight * scale).toInt()
+            val dstWidth = (displayWidth * scale).toInt()
+            val dstHeight = (displayHeight * scale).toInt()
             val offsetX = ((canvasWidth - dstWidth) / 2).toInt()
             val offsetY = ((canvasHeight - dstHeight) / 2).toInt()
 

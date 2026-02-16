@@ -662,6 +662,12 @@ struct hw_gl_context {
     bool has_stencil;
     bool use_fbo0;           /* true if FBO 0 has real backing (window or PBuffer) */
 
+    /* Readback FBO: used to blit FBO 0 content for glReadPixels */
+    GLuint readback_fbo;
+    GLuint readback_tex;
+    unsigned readback_w;
+    unsigned readback_h;
+
     /* Persistent readback buffer to avoid per-frame malloc for row flip */
     uint8_t *flip_row;
     size_t flip_row_size;
@@ -782,7 +788,9 @@ static bool create_windowed_gl_context(hw_gl_context_t *ctx,
                 NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)(depth ? 24 : 0),
                 NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)(stencil ? 8 : 0),
                 NSOpenGLPFAAccelerated,
-                NSOpenGLPFADoubleBuffer,
+                /* Single-buffered: no NSOpenGLPFADoubleBuffer.
+                 * This makes FBO 0 readable via glReadPixels(GL_FRONT)
+                 * since there's only one buffer. */
                 0
             };
             NSOpenGLPixelFormat *pixelFormat =
@@ -892,10 +900,17 @@ bool hw_gl_init(hw_gl_context_t *ctx, unsigned version_major, unsigned version_m
      * (from libretro_bridge.c) so that lazy symbol pointers are resolved. */
 
     /* Try windowed context first — gives us a real GL context backed by Metal.
-     * We still create a custom FBO because macOS doesn't commit GPU output to
-     * the window's backing store (glReadPixels returns zeros from GL_BACK).
-     * get_current_framebuffer() returns our custom FBO, the core renders to
-     * internal FBOs, and we scan those for the final output. */
+     *
+     * We use FBO 0 (the window's real backbuffer) as default_framebuffer.
+     * The core renders to its own internal FBOs, then does a final composite
+     * draw to FBO 0. We read from the core's internal FBOs (blit destinations)
+     * for our Metal display pipeline.
+     *
+     * Using FBO 0 instead of a custom FBO avoids GL_INVALID_OPERATION on the
+     * core's final composite draw (which fails on custom FBOs, possibly due to
+     * macOS Metal-backed GL restrictions on program/FBO format compatibility).
+     * The successful final draw also prevents GL error state from corrupting
+     * subsequent frame rendering (depth/state issues). */
     if (create_windowed_gl_context(ctx, 640, 480, depth, stencil)) {
         LOGI("Windowed GL context created");
         CGLSetCurrentContext(ctx->cgl_ctx);
@@ -904,15 +919,68 @@ bool hw_gl_init(hw_gl_context_t *ctx, unsigned version_major, unsigned version_m
         glGenVertexArrays(1, &ctx->default_vao);
         glBindVertexArray(ctx->default_vao);
 
-        /* Create a custom FBO as the default_framebuffer for GLSM. */
-        ctx->use_fbo0 = false;
-        if (!create_fbo(ctx, 640, 480)) {
-            LOGE("Failed to create FBO on windowed context");
-            CGLSetCurrentContext(NULL);
-            return false;
+        /* Use FBO 0 as default_framebuffer — no custom FBO, no redirect. */
+        ctx->use_fbo0 = true;
+        ctx->fbo = 0;
+        ctx->fbo_width = 640;
+        ctx->fbo_height = 480;
+        g_hw_fbo_redirect = 0;
+
+        LOGI("Using windowed context + FBO 0 (no redirect)");
+
+        /* Create a readback FBO for blitting FBO 0 content.
+         * We can't glReadPixels directly from FBO 0 on macOS (double-buffered
+         * Metal-backed window doesn't retain back buffer). Instead we blit
+         * FBO 0 → readback FBO after the core renders, then read from there.
+         *
+         * Note: g_real_glBindFramebuffer is NOT set yet (set during GOT rebinding
+         * after context_reset). Use the real GL function via dlsym directly. */
+        {
+            typedef void (*bind_fb_fn)(GLenum, GLuint);
+            bind_fb_fn real_bind = (bind_fb_fn)dlsym(RTLD_DEFAULT, "glBindFramebuffer");
+
+            GLuint rb_fbo = 0, rb_tex = 0;
+            glGenFramebuffers(1, &rb_fbo);
+            glGenTextures(1, &rb_tex);
+            glBindTexture(GL_TEXTURE_2D, rb_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 640, 480, 0,
+                         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            real_bind(GL_FRAMEBUFFER, rb_fbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D, rb_tex, 0);
+            GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            real_bind(GL_FRAMEBUFFER, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            if (status == GL_FRAMEBUFFER_COMPLETE) {
+                ctx->readback_fbo = rb_fbo;
+                ctx->readback_tex = rb_tex;
+                ctx->readback_w = 640;
+                ctx->readback_h = 480;
+                LOGI("Readback FBO %u created (640x480)", rb_fbo);
+            } else {
+                LOGW("Readback FBO incomplete (status=0x%X), will fall back to scan", status);
+                glDeleteFramebuffers(1, &rb_fbo);
+                glDeleteTextures(1, &rb_tex);
+            }
         }
 
-        LOGI("Using windowed context + custom FBO %u", ctx->fbo);
+        /* Log available extensions relevant to N64 depth compare */
+        GLint num_ext = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &num_ext);
+        bool has_image_load_store = false;
+        for (GLint i = 0; i < num_ext; i++) {
+            const char *ext = (const char *)glGetStringi(GL_EXTENSIONS, i);
+            if (ext && strstr(ext, "image_load_store")) {
+                LOGI("GL extension: %s", ext);
+                has_image_load_store = true;
+            }
+        }
+        LOGI("GL_ARB_shader_image_load_store: %s (needed for N64DepthCompare=True)",
+             has_image_load_store ? "YES" : "NO");
+
         CGLSetCurrentContext(NULL);
         return true;
     }
@@ -976,6 +1044,14 @@ void hw_gl_deinit(hw_gl_context_t *ctx) {
         CGLSetCurrentContext(ctx->cgl_ctx);
         if (!ctx->use_fbo0) {
             destroy_fbo(ctx);
+        }
+        if (ctx->readback_fbo) {
+            glDeleteFramebuffers(1, &ctx->readback_fbo);
+            ctx->readback_fbo = 0;
+        }
+        if (ctx->readback_tex) {
+            glDeleteTextures(1, &ctx->readback_tex);
+            ctx->readback_tex = 0;
         }
         if (ctx->default_vao) {
             glDeleteVertexArrays(1, &ctx->default_vao);
@@ -1101,10 +1177,6 @@ void *hw_gl_get_proc_address(const char *sym) {
 }
 
 static int g_readback_log_count = 0;
-static GLuint g_cached_source_fbo = 0;
-static unsigned g_cached_source_w = 0;
-static unsigned g_cached_source_h = 0;
-static int g_cache_countdown = 0;
 
 /* Get actual texture dimensions for an FBO's color attachment.
  * Returns false if dimensions couldn't be determined. */
@@ -1167,19 +1239,34 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     GLuint read_fbo = 0;
     unsigned read_w = w, read_h = h;
 
-    /* Strategy: use g_blit_dst_fbo (the LAST blit destination each frame).
+    /* Strategy: FBO 0 is the default framebuffer (core's composite draw succeeds).
+     * We blit FBO 0 → readback FBO, then read the readback FBO.
+     * This captures the core's fully composited frame with correct z-ordering.
      *
-     * GLideN64 renders the N64 scene to internal FBOs, then blits (downscales)
-     * them to presentation FBOs. The LAST blit destination is the final composite
-     * that the core would normally present to the screen. Using the wrong FBO
-     * (e.g., an earlier blit destination) shows incorrect z-ordering because
-     * each blit target corresponds to a different N64 framebuffer layer.
-     *
-     * We update the cache from g_blit_dst_fbo every frame since the core may
-     * change which FBO it blits to depending on the game's framebuffer state. */
+     * Fallback (if readback FBO not available): scan internal FBOs. */
 
-    if (g_blit_dst_fbo != 0 && g_blit_dst_fbo != ctx->fbo &&
-        glIsFramebuffer(g_blit_dst_fbo)) {
+    if (ctx->use_fbo0) {
+        /* Single-buffered context: read directly from FBO 0 (GL_FRONT).
+         * Flush to ensure all rendering is committed first. */
+        glFlush();
+        g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glReadBuffer(GL_FRONT);
+        read_fbo = 0;
+        read_w = w;
+        read_h = h;
+
+        /* Quick pixel check: sample center pixel to verify content */
+        if (log_this_frame) {
+            uint8_t test_pixel[4] = {0};
+            glReadPixels(read_w / 2, read_h / 2, 1, 1,
+                         GL_RGBA, GL_UNSIGNED_BYTE, test_pixel);
+            LOGI("FBO 0 direct read: center pixel = (%u,%u,%u,%u)",
+                 test_pixel[0], test_pixel[1], test_pixel[2], test_pixel[3]);
+        }
+    }
+
+    /* Fallback: use g_blit_dst_fbo (last blit destination) */
+    if (read_fbo == 0 && g_blit_dst_fbo != 0 && glIsFramebuffer(g_blit_dst_fbo)) {
         g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, g_blit_dst_fbo);
         if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
             glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -1191,8 +1278,8 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
         }
     }
 
-    /* Fallback: use g_prev_draw_fbo (FBO bound before our FBO) */
-    if (read_fbo == 0 && g_prev_draw_fbo != 0 && g_prev_draw_fbo != ctx->fbo &&
+    /* Fallback: use g_prev_draw_fbo */
+    if (read_fbo == 0 && g_prev_draw_fbo != 0 &&
         glIsFramebuffer(g_prev_draw_fbo)) {
         g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, g_prev_draw_fbo);
         if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
@@ -1208,8 +1295,8 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     /* Last resort: scan FBOs 20 down to 2 */
     if (read_fbo == 0) {
         for (GLuint fbo_id = 20; fbo_id >= 2; fbo_id--) {
-            if (fbo_id == ctx->fbo) continue;
             if (!glIsFramebuffer(fbo_id)) continue;
+            if (fbo_id == ctx->readback_fbo) continue;  /* skip our readback FBO */
             g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_id);
             if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) continue;
             glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -1227,17 +1314,6 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
         }
     }
 
-    /* Absolute fallback: our custom FBO (may be empty) */
-    if (read_fbo == 0) {
-        read_fbo = (ctx->fbo != 0) ? ctx->fbo : 0;
-        read_w = w;
-        read_h = h;
-        if (log_this_frame) {
-            LOGI("No source FBO found, using custom FBO %u (blit_dst=%u prev=%u)",
-                 read_fbo, g_blit_dst_fbo, g_prev_draw_fbo);
-        }
-    }
-
     /* Bind the selected FBO for reading (bypass interceptor) */
     if (g_real_glBindFramebuffer) {
         g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, read_fbo);
@@ -1247,9 +1323,9 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     glReadBuffer((read_fbo == 0) ? GL_BACK : GL_COLOR_ATTACHMENT0);
 
     if (log_this_frame) {
-        LOGI("readback frame %d: fbo=%u %ux%u cached=%u content=%d",
+        LOGI("readback frame %d: fbo=%u %ux%u blit_dst=%u prev=%u",
              g_readback_log_count, read_fbo, read_w, read_h,
-             g_cached_source_fbo, found_content);
+             g_blit_dst_fbo, g_prev_draw_fbo);
     }
 
     /* Ensure read dimensions fit in output buffer */
@@ -1279,6 +1355,51 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
 
     if (out_width) *out_width = w;
     if (out_height) *out_height = h;
+
+    /* Debug: dump blit src+dst FBOs to PPMs for visual inspection.
+     * Frame 500 (~8s) = title/intro, frame 1500 (~25s) = gameplay. */
+    if (g_readback_log_count == 500 || g_readback_log_count == 1500) {
+        GLuint dump_fbos[] = {7, 8, 9, 10, 11, 13, read_fbo};
+        for (int di = 0; di < 7; di++) {
+            GLuint dfbo = dump_fbos[di];
+            if (dfbo == 0 || !glIsFramebuffer(dfbo)) continue;
+            g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, dfbo);
+            if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) continue;
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            unsigned dw = 0, dh = 0;
+            get_fbo_dimensions(dfbo, &dw, &dh);
+            if (dw == 0 || dh == 0 || dw > 1920 || dh > 1080) continue;
+            size_t dbuf_size = (size_t)dw * dh * 4;
+            uint8_t *dbuf = (uint8_t *)malloc(dbuf_size);
+            if (!dbuf) continue;
+            glReadPixels(0, 0, dw, dh, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, dbuf);
+            char path[128];
+            snprintf(path, sizeof(path), "/tmp/spela_f%d_fbo%u_%ux%u.ppm",
+                     g_readback_log_count, dfbo, dw, dh);
+            FILE *ppm = fopen(path, "wb");
+            if (ppm) {
+                fprintf(ppm, "P6\n%u %u\n255\n", dw, dh);
+                uint32_t *px = (uint32_t *)dbuf;
+                for (int y = (int)dh - 1; y >= 0; y--) {
+                    for (unsigned x = 0; x < dw; x++) {
+                        uint32_t p = px[y * dw + x];
+                        uint8_t rgb[3] = {
+                            (uint8_t)((p >> 16) & 0xFF),
+                            (uint8_t)((p >>  8) & 0xFF),
+                            (uint8_t)((p >>  0) & 0xFF)
+                        };
+                        fwrite(rgb, 1, 3, ppm);
+                    }
+                }
+                fclose(ppm);
+                LOGI("Dumped FBO %u to %s (%ux%u)", dfbo, path, dw, dh);
+            }
+            free(dbuf);
+        }
+        /* Rebind the read FBO we were using */
+        g_real_glBindFramebuffer(GL_READ_FRAMEBUFFER, read_fbo);
+        glReadBuffer((read_fbo == 0) ? GL_BACK : GL_COLOR_ATTACHMENT0);
+    }
 
     return w * h;
 }

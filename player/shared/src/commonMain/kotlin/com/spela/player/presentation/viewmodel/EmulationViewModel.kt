@@ -141,9 +141,11 @@ class EmulationViewModel(
         }
 
         scope.launch(dispatchers.io) {
+            println("[EMU_DEBUG] startGame called with gameId=$gameId")
             // Fetch user preferences (fallback to defaults on error)
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
+            println("[EMU_DEBUG] preferences loaded")
 
             // Get game detail for consoleId
             var consoleId = ""
@@ -174,9 +176,11 @@ class EmulationViewModel(
             }
 
             // Prepare game and core files
+            println("[EMU_DEBUG] calling prepareGameUseCase for gameId=$gameId")
             prepareGameUseCase(gameId).fold(
                 onSuccess = { (gamePath, corePath) ->
                     try {
+                        println("[EMU_DEBUG] prepareGame success: game=$gamePath core=$corePath")
                         // Set DS core options before loading
                         if (isDualScreen) {
                             libretroController.setCoreVariable("desmume_screens_layout", "vertical")
@@ -236,6 +240,8 @@ class EmulationViewModel(
                     }
                 },
                 onFailure = { error ->
+                    println("[EMU_DEBUG] prepareGame FAILED: ${error.message}")
+                    error.printStackTrace()
                     withContext(dispatchers.main) {
                         _state.update {
                             it.copy(error = "Failed to prepare game: ${error.message}", isLoading = false)
