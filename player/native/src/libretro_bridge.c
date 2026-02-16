@@ -19,6 +19,9 @@
 
 #ifdef __ANDROID__
 #include <android/native_window_jni.h>
+#else
+/* Desktop: JAWT for extracting native surface from AWT components */
+#include <jawt.h>
 #endif
 
 #ifdef __ANDROID__
@@ -615,14 +618,68 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
         return JNI_FALSE;
     }
 
-    /* Desktop passes a native window handle (long) cast to jobject via a
-     * wrapper. For now, pass the surface pointer directly. */
-    if (!gpu_renderer_init_surface(g_gpu_renderer, (void *)(uintptr_t)surface)) {
-        LOGE("Failed to init GPU renderer surface");
+    /* Desktop: use JAWT to extract native surface from AWT Canvas.
+     * On macOS, platformInfo is an NSObject<JAWT_SurfaceLayers>*.
+     * On Linux/Windows, platformInfo contains the native window handle. */
+    JAWT awt;
+    awt.version = JAWT_VERSION_9;
+    if (!JAWT_GetAWT(env, &awt)) {
+        LOGE("JAWT_GetAWT failed");
         gpu_renderer_destroy(g_gpu_renderer);
         g_gpu_renderer = NULL;
         return JNI_FALSE;
     }
+
+    JAWT_DrawingSurface *ds = awt.GetDrawingSurface(env, surface);
+    if (!ds) {
+        LOGE("GetDrawingSurface failed");
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    jint lock_result = ds->Lock(ds);
+    if ((lock_result & JAWT_LOCK_ERROR) != 0) {
+        LOGE("DrawingSurface Lock failed");
+        awt.FreeDrawingSurface(ds);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    JAWT_DrawingSurfaceInfo *dsi = ds->GetDrawingSurfaceInfo(ds);
+    if (!dsi || !dsi->platformInfo) {
+        LOGE("GetDrawingSurfaceInfo failed or no platformInfo");
+        ds->Unlock(ds);
+        awt.FreeDrawingSurface(ds);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    void *platform_info = dsi->platformInfo;
+    int surface_width = dsi->bounds.width;
+    int surface_height = dsi->bounds.height;
+    LOGI("JAWT surface: %dx%d, platformInfo=%p", surface_width, surface_height, platform_info);
+
+    if (!gpu_renderer_init_surface(g_gpu_renderer, platform_info)) {
+        LOGE("Failed to init GPU renderer surface");
+        ds->FreeDrawingSurfaceInfo(dsi);
+        ds->Unlock(ds);
+        awt.FreeDrawingSurface(ds);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    /* Resize to match the JAWT surface dimensions */
+    if (surface_width > 0 && surface_height > 0) {
+        gpu_renderer_resize(g_gpu_renderer, surface_width, surface_height);
+    }
+
+    ds->FreeDrawingSurfaceInfo(dsi);
+    ds->Unlock(ds);
+    awt.FreeDrawingSurface(ds);
 #endif
 
     /* Wire up the GPU renderer to the video subsystem */
@@ -657,6 +714,51 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
         g_gpu_renderer = NULL;
         LOGI("GPU renderer destroyed");
     }
+}
+
+JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width, jint height) {
+    if (g_gpu_renderer) {
+        LOGW("GPU renderer already initialized, destroying first");
+        video_set_gpu_renderer(NULL);
+        gpu_renderer_deinit_surface(g_gpu_renderer);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+    }
+
+#ifdef __APPLE__
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_METAL);
+#else
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
+#endif
+    if (!g_gpu_renderer) {
+        LOGE("Failed to create GPU renderer for offscreen");
+        return JNI_FALSE;
+    }
+
+    if (!gpu_renderer_init_offscreen(g_gpu_renderer, (int)width, (int)height)) {
+        LOGE("Failed to init offscreen GPU renderer");
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return JNI_FALSE;
+    }
+
+    video_set_gpu_renderer(g_gpu_renderer);
+    LOGI("Offscreen GPU renderer initialized successfully");
+    return JNI_TRUE;
+}
+
+JNI_FUNC(jint, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray outData) {
+    if (!g_gpu_renderer || !outData) return 0;
+
+    jsize capacity = (*env)->GetArrayLength(env, outData);
+    jbyte *data = (*env)->GetPrimitiveArrayCritical(env, outData, NULL);
+    if (!data) return 0;
+
+    unsigned w = 0, h = 0;
+    size_t written = gpu_renderer_render_to_bgra(g_gpu_renderer, data, (size_t)capacity, &w, &h);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, outData, data, 0);
+    return (jint)written;
 }
 
 JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {

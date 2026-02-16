@@ -17,6 +17,8 @@ import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.screen.gpuShaderId
 import java.awt.Canvas
 import java.awt.Graphics
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 
 /**
  * macOS Metal emulation surface for Compose Desktop.
@@ -45,17 +47,30 @@ fun MetalEmulationSurface(
                 object : Canvas() {
                     override fun addNotify() {
                         super.addNotify()
-                        // Canvas is now displayable -- we can extract the native handle.
-                        // The native GPU init will use JAWT to get the NSView from this Canvas.
+                        // Canvas is now displayable -- native code uses JAWT to extract
+                        // the NSObject<JAWT_SurfaceLayers> and attaches a CAMetalLayer.
                         try {
                             val success = controller.gpuInit(this)
                             if (success) {
                                 controller.gpuSetShader(selectedShader.gpuShaderId)
+                                // Send initial size
+                                if (width > 0 && height > 0) {
+                                    controller.gpuResize(width, height)
+                                }
                                 gpuInitialized = true
                             }
                         } catch (e: Exception) {
                             println("Metal GPU init failed: ${e.message}")
                         }
+
+                        // Track size changes
+                        addComponentListener(object : ComponentAdapter() {
+                            override fun componentResized(e: ComponentEvent) {
+                                if (gpuInitialized && width > 0 && height > 0) {
+                                    controller.gpuResize(width, height)
+                                }
+                            }
+                        })
                     }
 
                     override fun removeNotify() {
@@ -67,10 +82,16 @@ fun MetalEmulationSurface(
                     }
 
                     override fun paint(g: Graphics) {
-                        // Rendering is done via Metal, no AWT painting needed.
-                        // Fill with black in case Metal hasn't initialized yet.
-                        g.color = java.awt.Color.BLACK
-                        g.fillRect(0, 0, width, height)
+                        // Metal renders via its own CALayer. Do not paint over it.
+                        if (!gpuInitialized) {
+                            g.color = java.awt.Color.BLACK
+                            g.fillRect(0, 0, width, height)
+                        }
+                    }
+
+                    override fun update(g: Graphics) {
+                        // Skip default clear + paint to avoid flicker over Metal layer.
+                        paint(g)
                     }
                 }
             },

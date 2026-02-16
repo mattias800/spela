@@ -35,6 +35,7 @@ typedef struct gpu_renderer gpu_renderer_t;
 gpu_renderer_t *gpu_renderer_create(int backend);
 void gpu_renderer_destroy(gpu_renderer_t *r);
 bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface);
+bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_deinit_surface(gpu_renderer_t *r);
 
@@ -43,6 +44,11 @@ void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
     unsigned width, unsigned height, size_t pitch, unsigned pixel_format);
 void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id);
 void gpu_renderer_render(gpu_renderer_t *r);
+/* Offscreen rendering: render with shader to an internal texture and copy to out_data (BGRA8).
+ * Returns the number of bytes written, or 0 on failure.
+ * out_width/out_height receive the rendered dimensions. */
+size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
+    unsigned *out_width, unsigned *out_height);
 
 /* Source rect for DS dual-screen: render a sub-region of the framebuffer */
 void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h);

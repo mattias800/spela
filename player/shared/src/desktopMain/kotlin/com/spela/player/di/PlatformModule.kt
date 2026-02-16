@@ -39,7 +39,20 @@ actual fun platformModule(): Module = module {
         val schemaVersion: Long = SpelaDatabase.Schema.version
 
         if (currentVersion == 0L) {
-            SpelaDatabase.Schema.create(driver)
+            // Check if tables already exist (DB created before versioning was added)
+            val tableCount = driver.executeQuery(
+                identifier = null,
+                sql = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                mapper = { cursor ->
+                    cursor.next()
+                    app.cash.sqldelight.db.QueryResult.Value(cursor.getLong(0) ?: 0L)
+                },
+                parameters = 0,
+            ).value
+
+            if (tableCount == 0L) {
+                SpelaDatabase.Schema.create(driver)
+            }
             driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
         } else if (currentVersion < schemaVersion) {
             SpelaDatabase.Schema.migrate(driver, currentVersion, schemaVersion)

@@ -10,6 +10,8 @@
 #include <stdbool.h>
 
 /* Forward declarations for subsystem modules */
+struct gpu_renderer;
+typedef struct gpu_renderer gpu_renderer_t;
 
 /* Video subsystem (libretro_video.c) */
 void video_init(void);
@@ -45,10 +47,6 @@ void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
 /* Core variable subsystem (libretro_bridge.c) */
 void core_variables_set(const char *key, const char *value);
 void core_variables_clear(void);
-
-/* GPU renderer (gpu_renderer.h) */
-struct gpu_renderer;
-typedef struct gpu_renderer gpu_renderer_t;
 
 /* Core state */
 typedef struct {

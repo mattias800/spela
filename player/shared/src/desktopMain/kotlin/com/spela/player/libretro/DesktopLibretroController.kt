@@ -155,7 +155,9 @@ class DesktopLibretroController(
     /* GPU Renderer methods */
 
     fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)
+    fun gpuInitOffscreen(width: Int, height: Int): Boolean = jni.nativeGpuInitOffscreen(width, height)
     fun gpuRender() = jni.nativeGpuRender()
+    fun gpuRenderToBgra(outData: ByteArray): Int = jni.nativeGpuRenderToBgra(outData)
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
     fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()

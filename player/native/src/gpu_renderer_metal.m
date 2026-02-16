@@ -14,9 +14,11 @@
 #include "gpu_renderer.h"
 
 #import <Metal/Metal.h>
-#import <QuartzCore/CAMetalLayer.h>
+#import <QuartzCore/QuartzCore.h>
 #import <AppKit/AppKit.h>
 #import <dispatch/dispatch.h>
+#include <jawt.h>
+#include <jawt_md.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -220,7 +222,6 @@ struct gpu_renderer {
     id<MTLDevice> device;
     id<MTLCommandQueue> command_queue;
     CAMetalLayer *metal_layer;
-    NSView *ns_view;
 
     /* Render pipeline states -- one per shader */
     id<MTLRenderPipelineState> pipelines[NUM_SHADERS];
@@ -264,17 +265,24 @@ struct gpu_renderer {
     /* Surface dimensions */
     unsigned surface_width;
     unsigned surface_height;
+
+    /* Offscreen rendering (render-to-BGRA readback path) */
+    bool offscreen_mode;
+    id<MTLTexture> offscreen_texture;
+    unsigned offscreen_width;
+    unsigned offscreen_height;
 };
 
 /* Forward declarations */
 static bool create_metal_device(gpu_renderer_t *r);
-static bool setup_metal_layer(gpu_renderer_t *r, NSView *view);
+static bool setup_metal_layer_jawt(gpu_renderer_t *r, id<JAWT_SurfaceLayers> surface_layers);
 static bool compile_shader_libraries(gpu_renderer_t *r);
 static bool create_pipeline_states(gpu_renderer_t *r);
 static bool create_metal_samplers(gpu_renderer_t *r);
 static bool create_push_constants_buffer(gpu_renderer_t *r);
 static bool create_game_texture_metal(gpu_renderer_t *r, unsigned w, unsigned h, MTLPixelFormat fmt);
 static bool ensure_staging_buffer(gpu_renderer_t *r, NSUInteger size);
+static bool ensure_offscreen_texture(gpu_renderer_t *r, unsigned w, unsigned h);
 static MTLPixelFormat pixel_format_for_retro(unsigned retro_format, unsigned *bpp);
 static void convert_0rgb1555_to_bgra(const uint16_t *src, uint8_t *dst,
     unsigned width, unsigned height, size_t src_pitch);
@@ -299,11 +307,11 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
     if (!r || r->surface_initialized) return false;
 
     @autoreleasepool {
-        NSView *view = (__bridge NSView *)native_surface;
-        r->ns_view = view;
+        /* native_surface is JAWT platformInfo: an NSObject<JAWT_SurfaceLayers>* on macOS */
+        id<JAWT_SurfaceLayers> surface_layers = (__bridge id<JAWT_SurfaceLayers>)native_surface;
 
         if (!create_metal_device(r)) return false;
-        if (!setup_metal_layer(r, view)) return false;
+        if (!setup_metal_layer_jawt(r, surface_layers)) return false;
         if (!compile_shader_libraries(r)) return false;
         if (!create_pipeline_states(r)) return false;
         if (!create_metal_samplers(r)) return false;
@@ -315,14 +323,31 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
         r->surface_initialized = true;
         r->active = true;
 
-        CGSize size = view.bounds.size;
-        CGFloat scale = view.window.backingScaleFactor;
-        if (scale < 1.0) scale = 1.0;
-        r->surface_width = (unsigned)(size.width * scale);
-        r->surface_height = (unsigned)(size.height * scale);
+        /* Initial size will be set via gpu_renderer_resize from JAWT bounds */
+        MTL_LOGI("Metal GPU renderer initialized");
+    }
 
-        MTL_LOGI("Metal GPU renderer initialized (%ux%u, scale=%.1f)",
-                 r->surface_width, r->surface_height, scale);
+    return true;
+}
+
+bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height) {
+    if (!r || r->surface_initialized) return false;
+    (void)width;
+    (void)height;
+
+    @autoreleasepool {
+        if (!create_metal_device(r)) return false;
+        if (!compile_shader_libraries(r)) return false;
+        if (!create_pipeline_states(r)) return false;
+        if (!create_metal_samplers(r)) return false;
+        if (!create_push_constants_buffer(r)) return false;
+
+        r->frame_semaphore = dispatch_semaphore_create(1);
+        r->offscreen_mode = true;
+        r->surface_initialized = true;
+        r->active = true;
+
+        MTL_LOGI("Metal GPU renderer initialized (offscreen)");
     }
 
     return true;
@@ -330,15 +355,27 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
 
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height) {
     if (!r || !r->surface_initialized) return;
+    if (width <= 0 || height <= 0) return;
 
     @autoreleasepool {
-        r->surface_width = (unsigned)width;
-        r->surface_height = (unsigned)height;
+        /* Width/height are in Java logical points. Scale to backing pixels. */
+        CGFloat scale = r->metal_layer.contentsScale;
+        if (scale < 1.0) scale = 1.0;
+        unsigned pw = (unsigned)(width * scale);
+        unsigned ph = (unsigned)(height * scale);
 
-        CGSize drawable_size = CGSizeMake(width, height);
-        r->metal_layer.drawableSize = drawable_size;
+        r->surface_width = pw;
+        r->surface_height = ph;
 
-        MTL_LOGI("Surface resize: %dx%d", width, height);
+        /* Update the layer frame (in points) and drawable size (in pixels) */
+        [CATransaction begin];
+        [CATransaction setDisableActions:YES];
+        r->metal_layer.frame = CGRectMake(0, 0, width, height);
+        r->metal_layer.drawableSize = CGSizeMake(pw, ph);
+        [CATransaction commit];
+
+        MTL_LOGI("Surface resize: %dx%d (drawable %ux%u, scale=%.1f)",
+                 width, height, pw, ph, scale);
     }
 }
 
@@ -357,6 +394,10 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
         }
 
         /* Release Metal objects (ARC handles dealloc) */
+        r->offscreen_texture = nil;
+        r->offscreen_width = 0;
+        r->offscreen_height = 0;
+        r->offscreen_mode = false;
         r->game_texture = nil;
         r->staging_buffer = nil;
         r->push_constants_buffer = nil;
@@ -372,7 +413,6 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
         r->command_queue = nil;
         r->metal_layer = nil;
         r->device = nil;
-        r->ns_view = nil;
         r->frame_semaphore = nil;
 
         r->game_texture_width = 0;
@@ -451,7 +491,14 @@ void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
 
         [blit endEncoding];
         [cmd commit];
-        [cmd waitUntilCompleted];
+
+        /* In offscreen mode, skip the synchronous wait here.
+         * The render_to_bgra() call will wait for all prior commands
+         * (same queue guarantees in-order execution).
+         * For on-screen mode, wait to ensure the staging buffer is safe to reuse. */
+        if (!r->offscreen_mode) {
+            [cmd waitUntilCompleted];
+        }
 
         r->frame_uploaded = true;
         r->frame_width = width;
@@ -469,6 +516,7 @@ void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id) {
 
 void gpu_renderer_render(gpu_renderer_t *r) {
     if (!r || !r->active || !r->frame_uploaded) return;
+    if (r->offscreen_mode) return; /* Use gpu_renderer_render_to_bgra() instead */
 
     @autoreleasepool {
         /* Wait for a frame slot */
@@ -571,6 +619,74 @@ void gpu_renderer_render(gpu_renderer_t *r) {
     }
 }
 
+size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
+    unsigned *out_width, unsigned *out_height) {
+    if (!r || !r->active || !r->frame_uploaded || !r->offscreen_mode) return 0;
+
+    @autoreleasepool {
+        unsigned w = r->frame_width;
+        unsigned h = r->frame_height;
+        size_t needed = (size_t)w * h * 4;
+        if (needed == 0 || needed > out_capacity) return 0;
+
+        if (!ensure_offscreen_texture(r, w, h)) return 0;
+
+        /* Update push constants */
+        push_constants_t pc = {
+            .texture_size = { (float)w, (float)h },
+        };
+        memcpy([r->push_constants_buffer contents], &pc, sizeof(pc));
+
+        /* Create render pass targeting offscreen texture */
+        MTLRenderPassDescriptor *pass_desc = [MTLRenderPassDescriptor renderPassDescriptor];
+        pass_desc.colorAttachments[0].texture = r->offscreen_texture;
+        pass_desc.colorAttachments[0].loadAction = MTLLoadActionClear;
+        pass_desc.colorAttachments[0].storeAction = MTLStoreActionStore;
+        pass_desc.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
+
+        id<MTLCommandBuffer> cmd = [r->command_queue commandBuffer];
+        id<MTLRenderCommandEncoder> encoder = [cmd renderCommandEncoderWithDescriptor:pass_desc];
+
+        /* Select shader pipeline */
+        int shader_idx = r->current_shader;
+        if (shader_idx < 0 || shader_idx >= NUM_SHADERS || !r->pipelines[shader_idx]) {
+            shader_idx = GPU_SHADER_NONE;
+        }
+        [encoder setRenderPipelineState:r->pipelines[shader_idx]];
+        [encoder setFragmentTexture:r->game_texture atIndex:0];
+
+        id<MTLSamplerState> sampler = r->sampler_nearest;
+        if (shader_idx == GPU_SHADER_BILINEAR || shader_idx == GPU_SHADER_SHARP_BILINEAR) {
+            sampler = r->sampler_linear;
+        }
+        [encoder setFragmentSamplerState:sampler atIndex:0];
+        [encoder setFragmentBuffer:r->push_constants_buffer offset:0 atIndex:0];
+
+        /* Full viewport -- Compose handles aspect ratio fitting */
+        MTLViewport viewport = {
+            .originX = 0, .originY = 0,
+            .width = (double)w, .height = (double)h,
+            .znear = 0.0, .zfar = 1.0,
+        };
+        [encoder setViewport:viewport];
+
+        [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+        [encoder endEncoding];
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        /* Read back pixels from offscreen texture */
+        [r->offscreen_texture getBytes:out_data
+                           bytesPerRow:(NSUInteger)w * 4
+                            fromRegion:MTLRegionMake2D(0, 0, w, h)
+                           mipmapLevel:0];
+
+        if (out_width) *out_width = w;
+        if (out_height) *out_height = h;
+        return needed;
+    }
+}
+
 void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h) {
     if (!r) return;
     if (w <= 0 || h <= 0) {
@@ -613,28 +729,36 @@ static bool create_metal_device(gpu_renderer_t *r) {
     return true;
 }
 
-static bool setup_metal_layer(gpu_renderer_t *r, NSView *view) {
+static bool setup_metal_layer_jawt(gpu_renderer_t *r, id<JAWT_SurfaceLayers> surface_layers) {
     r->metal_layer = [CAMetalLayer layer];
     r->metal_layer.device = r->device;
     r->metal_layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     r->metal_layer.framebufferOnly = YES;
-    r->metal_layer.contentsScale = view.window.backingScaleFactor;
+
+    /* Use screen backing scale if available */
+    CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
+    if (scale < 1.0) scale = 1.0;
+    r->metal_layer.contentsScale = scale;
 
     /* Enable display sync (vsync) */
     r->metal_layer.displaySyncEnabled = YES;
 
-    /* Set the layer on the view */
-    view.wantsLayer = YES;
-    view.layer = r->metal_layer;
+    /* Ensure the Metal layer draws on top of existing content */
+    r->metal_layer.zPosition = 1000;
 
-    /* Set initial drawable size */
-    CGFloat scale = view.window.backingScaleFactor;
-    if (scale < 1.0) scale = 1.0;
-    CGSize size = view.bounds.size;
-    r->metal_layer.drawableSize = CGSizeMake(size.width * scale, size.height * scale);
+    /* Attach our Metal layer to the JAWT surface via the protocol.
+     * Also add as a sublayer of the window layer to ensure it composites
+     * above Compose/Skia rendering. */
+    surface_layers.layer = r->metal_layer;
 
-    MTL_LOGI("Metal layer configured (%.0fx%.0f drawable)",
-             r->metal_layer.drawableSize.width, r->metal_layer.drawableSize.height);
+    CALayer *windowLayer = surface_layers.windowLayer;
+    if (windowLayer) {
+        [windowLayer addSublayer:r->metal_layer];
+        MTL_LOGI("Metal layer added as sublayer of windowLayer (scale=%.1f)", scale);
+    } else {
+        MTL_LOGI("Metal layer set via JAWT (no windowLayer, scale=%.1f)", scale);
+    }
+
     return true;
 }
 
@@ -797,6 +921,30 @@ static bool create_game_texture_metal(gpu_renderer_t *r, unsigned w, unsigned h,
     r->game_texture_format = fmt;
 
     MTL_LOGI("Game texture created: %ux%u, format=%lu", w, h, (unsigned long)fmt);
+    return true;
+}
+
+static bool ensure_offscreen_texture(gpu_renderer_t *r, unsigned w, unsigned h) {
+    if (r->offscreen_texture && r->offscreen_width == w && r->offscreen_height == h) {
+        return true;
+    }
+
+    MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                                    width:w
+                                                                                   height:h
+                                                                                mipmapped:NO];
+    desc.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+    desc.storageMode = MTLStorageModeShared;
+
+    r->offscreen_texture = [r->device newTextureWithDescriptor:desc];
+    if (!r->offscreen_texture) {
+        MTL_LOGE("Failed to create offscreen texture %ux%u", w, h);
+        return false;
+    }
+
+    r->offscreen_width = w;
+    r->offscreen_height = h;
+    MTL_LOGI("Offscreen texture created: %ux%u", w, h);
     return true;
 }
 

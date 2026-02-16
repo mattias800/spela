@@ -617,6 +617,26 @@ bool gpu_renderer_is_active(gpu_renderer_t *r) {
     return r && r->active;
 }
 
+bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height) {
+    /* Offscreen rendering is only implemented for the Metal backend */
+    (void)r;
+    (void)width;
+    (void)height;
+    VK_LOGW("gpu_renderer_init_offscreen not implemented for Vulkan");
+    return false;
+}
+
+size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
+    unsigned *out_width, unsigned *out_height) {
+    /* Offscreen rendering is only implemented for the Metal backend */
+    (void)r;
+    (void)out_data;
+    (void)out_capacity;
+    (void)out_width;
+    (void)out_height;
+    return 0;
+}
+
 /* ===== Internal implementation ===== */
 
 static bool create_instance(gpu_renderer_t *r) {

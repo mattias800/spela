@@ -112,28 +112,6 @@ if(ANDROID OR (NOT APPLE))
     endif()
 endif()
 
-if(APPLE)
-    # Metal shader compilation for macOS
-    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
-    set(METALLIB_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders.metallib")
-
-    find_program(XCRUN xcrun)
-    if(XCRUN)
-        add_custom_command(
-            OUTPUT ${METALLIB_OUTPUT}
-            COMMAND bash ${SHADER_DIR}/compile_metal.sh
-            DEPENDS
-                ${SHADER_DIR}/passthrough.metal
-                ${SHADER_DIR}/bilinear.metal
-                ${SHADER_DIR}/sharp_bilinear.metal
-                ${SHADER_DIR}/crt_simple.metal
-                ${SHADER_DIR}/lcd_grid.metal
-                ${SHADER_DIR}/scanlines.metal
-            COMMENT "Compiling Metal shaders to metallib"
-        )
-        add_custom_target(compile_metal_shaders DEPENDS ${METALLIB_OUTPUT})
-        add_dependencies(spela-libretro compile_metal_shaders)
-    else()
-        message(STATUS "xcrun not found -- Metal shaders will be compiled at runtime")
-    endif()
-endif()
+# Note: Metal shaders are compiled from inline MSL strings at runtime
+# (see gpu_renderer_metal.m). The .metal files in shaders/ are reference
+# copies but are not pre-compiled into a .metallib.
