@@ -17,14 +17,18 @@ set(COMMON_SOURCES
 if(ANDROID)
     list(APPEND COMMON_SOURCES src/gpu_renderer_vulkan.c)
 elseif(APPLE)
-    # macOS: Metal renderer (Objective-C)
+    # macOS: Metal renderer (Objective-C) + OpenGL HW render support
     enable_language(OBJC)
-    list(APPEND COMMON_SOURCES src/gpu_renderer_metal.m)
+    list(APPEND COMMON_SOURCES
+        src/gpu_renderer_metal.m
+        src/hw_render_gl_macos.m
+    )
 else()
-    # Linux/Windows: Vulkan renderer + desktop surface creation
+    # Linux/Windows: Vulkan renderer + desktop surface creation + OpenGL HW render
     list(APPEND COMMON_SOURCES
         src/gpu_renderer_vulkan.c
         src/gpu_renderer_vulkan_desktop.c
+        src/hw_render_gl_desktop.c
     )
 endif()
 
@@ -55,31 +59,45 @@ else()
     find_package(JNI REQUIRED)
     target_include_directories(spela-libretro PRIVATE ${JNI_INCLUDE_DIRS})
     if(APPLE)
-        # macOS: Metal + QuartzCore frameworks, no separate libdl needed
+        # macOS: Metal + QuartzCore + OpenGL frameworks
         find_library(METAL_FRAMEWORK Metal)
         find_library(METALKIT_FRAMEWORK MetalKit)
         find_library(QUARTZCORE_FRAMEWORK QuartzCore)
         find_library(COCOA_FRAMEWORK Cocoa)
+        find_library(OPENGL_FRAMEWORK OpenGL)
         target_link_libraries(spela-libretro
             ${JNI_LIBRARIES}
             ${METAL_FRAMEWORK}
             ${METALKIT_FRAMEWORK}
             ${QUARTZCORE_FRAMEWORK}
             ${COCOA_FRAMEWORK}
+            ${OPENGL_FRAMEWORK}
         )
-        # Set Objective-C ARC for Metal renderer
+        # Set Objective-C ARC for .m files
         set_source_files_properties(src/gpu_renderer_metal.m PROPERTIES
             COMPILE_FLAGS "-fobjc-arc"
         )
+        set_source_files_properties(src/hw_render_gl_macos.m PROPERTIES
+            COMPILE_FLAGS "-fobjc-arc -DGL_SILENCE_DEPRECATION"
+        )
     else()
-        # Linux/Windows: Vulkan
+        # Linux/Windows: Vulkan + OpenGL HW render (GL/EGL loaded dynamically)
         find_package(Vulkan REQUIRED)
         target_include_directories(spela-libretro PRIVATE ${Vulkan_INCLUDE_DIRS})
-        target_link_libraries(spela-libretro
-            ${JNI_LIBRARIES}
-            ${Vulkan_LIBRARIES}
-            dl
-        )
+        if(UNIX)
+            # Linux: Vulkan + dl (GL and EGL loaded at runtime via dlopen)
+            target_link_libraries(spela-libretro
+                ${JNI_LIBRARIES}
+                ${Vulkan_LIBRARIES}
+                dl
+            )
+        else()
+            # Windows: Vulkan (GL loaded at runtime via LoadLibrary)
+            target_link_libraries(spela-libretro
+                ${JNI_LIBRARIES}
+                ${Vulkan_LIBRARIES}
+            )
+        endif()
     endif()
 endif()
 

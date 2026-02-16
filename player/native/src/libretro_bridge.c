@@ -11,12 +11,15 @@
 #include "libretro_achievements.h"
 #include "gpu_renderer.h"
 
+#ifndef __ANDROID__
+#include "hw_render_gl.h"
+#endif
+
 #include <jni.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #ifdef __ANDROID__
 #include <android/native_window_jni.h>
 #else
@@ -31,7 +34,7 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #else
-#define LOGI(...) fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n")
+#define LOGI(...) fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n")
 #define LOGW(...) fprintf(stderr, "WARN: " __VA_ARGS__); fprintf(stderr, "\n")
 #define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__); fprintf(stderr, "\n")
 #endif
@@ -40,7 +43,7 @@
 libretro_core_t g_core = {0};
 
 /* Core variable storage for RETRO_ENVIRONMENT_GET_VARIABLE */
-#define MAX_CORE_VARIABLES 32
+#define MAX_CORE_VARIABLES 256
 #define MAX_VAR_KEY_LEN 128
 #define MAX_VAR_VALUE_LEN 256
 
@@ -98,6 +101,25 @@ static void core_log(enum retro_log_level level, const char *fmt, ...) {
             LOGE("[core] %s", buf);
             break;
     }
+}
+
+/* HW render callbacks wired into retro_hw_render_callback */
+static uintptr_t hw_get_current_framebuffer(void) {
+#ifndef __ANDROID__
+    if (g_core.hw_gl_ctx) {
+        return hw_gl_get_framebuffer(g_core.hw_gl_ctx);
+    }
+#endif
+    return 0;
+}
+
+static void *hw_get_proc_address(const char *sym) {
+#ifndef __ANDROID__
+    return hw_gl_get_proc_address(sym);
+#else
+    (void)sym;
+    return NULL;
+#endif
 }
 
 /*
@@ -158,9 +180,50 @@ static bool environment_callback(unsigned cmd, void *data) {
             return true;
         }
 
-        case RETRO_ENVIRONMENT_SET_VARIABLES:
-            /* Acknowledge but don't process variables yet */
+        case RETRO_ENVIRONMENT_SET_VARIABLES: {
+            /* Parse variable declarations and store default values.
+             * Format: key="var_name", value="Description; opt1|opt2|opt3"
+             * The first option after the semicolon is the default. */
+            const struct retro_variable *vars = (const struct retro_variable *)data;
+            if (vars) {
+                for (; vars->key; vars++) {
+                    if (!vars->value) continue;
+
+                    /* Only store default if we don't already have a user-set value */
+                    bool already_set = false;
+                    for (int i = 0; i < core_variable_count; i++) {
+                        if (strcmp(core_variables[i].key, vars->key) == 0) {
+                            already_set = true;
+                            break;
+                        }
+                    }
+                    if (already_set) continue;
+
+                    /* Extract default: find "; " then take text up to first '|' */
+                    const char *semi = strstr(vars->value, "; ");
+                    if (!semi) continue;
+
+                    const char *defval = semi + 2;
+                    const char *pipe = strchr(defval, '|');
+                    char buf[MAX_VAR_VALUE_LEN];
+                    if (pipe) {
+                        size_t len = (size_t)(pipe - defval);
+                        if (len >= MAX_VAR_VALUE_LEN) len = MAX_VAR_VALUE_LEN - 1;
+                        memcpy(buf, defval, len);
+                        buf[len] = '\0';
+                    } else {
+                        strncpy(buf, defval, MAX_VAR_VALUE_LEN - 1);
+                        buf[MAX_VAR_VALUE_LEN - 1] = '\0';
+                    }
+
+                    if (buf[0]) {
+                        core_variables_set(vars->key, buf);
+                    }
+                }
+                LOGI("Parsed SET_VARIABLES: %d variables stored", core_variable_count);
+            }
             return true;
+        }
 
         case RETRO_ENVIRONMENT_SET_MESSAGE: {
             struct retro_message *msg = (struct retro_message *)data;
@@ -204,18 +267,48 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_SET_HW_RENDER: {
             struct retro_hw_render_callback *cb = (struct retro_hw_render_callback *)data;
-            LOGI("Core requests HW render context type: %u", cb->context_type);
-            /* Store the callback for future use when GPU renderer supports HW cores */
+            LOGI("Core requests HW render context type: %u (v%u.%u)",
+                 cb->context_type, cb->version_major, cb->version_minor);
+#ifndef __ANDROID__
+            /* Accept OpenGL context types on desktop (macOS, Linux, Windows) */
+            if (cb->context_type == RETRO_HW_CONTEXT_OPENGL ||
+                cb->context_type == RETRO_HW_CONTEXT_OPENGL_CORE) {
+                g_core.hw_render_callback = *cb;
+                /* Wire up our callbacks so the core can query them */
+                g_core.hw_render_callback.get_current_framebuffer = hw_get_current_framebuffer;
+                g_core.hw_render_callback.get_proc_address = hw_get_proc_address;
+                /* Copy our wired-up callbacks back to the core's struct */
+                cb->get_current_framebuffer = hw_get_current_framebuffer;
+                cb->get_proc_address = hw_get_proc_address;
+                g_core.hw_render_enabled = true;
+                LOGI("Accepted OpenGL HW render (type=%u, bottom_left_origin=%d, depth=%d, stencil=%d)",
+                     cb->context_type, cb->bottom_left_origin, cb->depth, cb->stencil);
+                return true;
+            }
+#endif
+            /* Unsupported context type */
             g_core.hw_render_callback = *cb;
-            /* Return false for now -- cores will fall back to software rendering.
-             * Phase 4 will accept Vulkan/Metal contexts when GPU renderer is ready. */
+            g_core.hw_render_enabled = false;
             return false;
         }
 
-        default:
-            /* Silently ignore unknown commands -- cores poll many optional
-             * features every frame and logging each one kills performance. */
+        default: {
+            /* Log unknown commands once to detect missing features */
+            static uint64_t seen_cmds = 0;
+            unsigned cmd_bit = cmd & 63;
+            if (cmd < 64 && !(seen_cmds & (1ULL << cmd_bit))) {
+                seen_cmds |= (1ULL << cmd_bit);
+                LOGI("Unhandled env cmd: %u", cmd);
+            } else if (cmd >= 64) {
+                static uint64_t seen_cmds_hi = 0;
+                unsigned cmd_bit_hi = (cmd - 64) & 63;
+                if (cmd < 128 && !(seen_cmds_hi & (1ULL << cmd_bit_hi))) {
+                    seen_cmds_hi |= (1ULL << cmd_bit_hi);
+                    LOGI("Unhandled env cmd: %u", cmd);
+                }
+            }
             return false;
+        }
     }
 }
 
@@ -359,6 +452,56 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
              g_core.av_info.geometry.base_height,
              g_core.av_info.timing.fps,
              g_core.av_info.timing.sample_rate);
+
+#ifndef __ANDROID__
+        /* Initialize OpenGL HW render context if the core requested it */
+        if (g_core.hw_render_enabled) {
+            g_core.hw_gl_ctx = hw_gl_create();
+            if (g_core.hw_gl_ctx) {
+                unsigned vmaj = g_core.hw_render_callback.version_major;
+                unsigned vmin = g_core.hw_render_callback.version_minor;
+                if (vmaj == 0) { vmaj = 3; vmin = 2; } /* default to 3.2 */
+                if (hw_gl_init(g_core.hw_gl_ctx, vmaj, vmin,
+                               g_core.hw_render_callback.depth,
+                               g_core.hw_render_callback.stencil)) {
+                    /* Resize FBO to match game geometry */
+                    hw_gl_resize_fbo(g_core.hw_gl_ctx,
+                                     g_core.av_info.geometry.max_width > 0
+                                         ? g_core.av_info.geometry.max_width
+                                         : g_core.av_info.geometry.base_width,
+                                     g_core.av_info.geometry.max_height > 0
+                                         ? g_core.av_info.geometry.max_height
+                                         : g_core.av_info.geometry.base_height);
+                    /* Call the core's context_reset so it can create GPU resources.
+                     * This triggers rglgen_resolve_symbols() inside the core, which
+                     * resolves GL 2.0+ functions via our get_proc_address callback. */
+                    if (g_core.hw_render_callback.context_reset) {
+                        hw_gl_make_current(g_core.hw_gl_ctx);
+                        g_core.hw_render_callback.context_reset();
+                    }
+
+                    /* Rebind GL symbols in the core's GOT AFTER context_reset.
+                     * context_reset triggers lazy symbol resolution — the core
+                     * calls GL functions which resolve the lazy symbol pointers
+                     * in __DATA.__la_symbol_ptr. By rebinding after, we overwrite
+                     * the resolved OpenGL.framework addresses with our wrappers.
+                     * This catches GL 1.x functions (glDrawBuffer, glClear, etc.)
+                     * that are directly linked, not going through rglgen. */
+                    hw_gl_rebind_gl_symbols();
+
+                    LOGI("OpenGL HW render context initialized for core");
+                } else {
+                    LOGE("Failed to init OpenGL HW render context");
+                    hw_gl_destroy(g_core.hw_gl_ctx);
+                    g_core.hw_gl_ctx = NULL;
+                    g_core.hw_render_enabled = false;
+                }
+            } else {
+                LOGE("Failed to create HW GL context struct");
+                g_core.hw_render_enabled = false;
+            }
+        }
+#endif
     } else {
         LOGE("retro_load_game failed");
     }
@@ -368,7 +511,20 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 
 JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
+#ifndef __ANDROID__
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        hw_gl_debug_reset_frame();
+    }
+#endif
     g_core.retro_run();
+#ifndef __ANDROID__
+    /* Release GL context after retro_run() so subsequent GPU operations
+     * (nativeGpuRenderToBgra) aren't affected by an active GL context */
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_release_current(g_core.hw_gl_ctx);
+    }
+#endif
     achievements_do_frame();
 }
 
@@ -379,6 +535,19 @@ JNI_FUNC(void, nativeReset)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
+#ifndef __ANDROID__
+    /* Tear down OpenGL HW render context before unloading game */
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        if (g_core.hw_render_callback.context_destroy) {
+            hw_gl_make_current(g_core.hw_gl_ctx);
+            g_core.hw_render_callback.context_destroy();
+        }
+        hw_gl_destroy(g_core.hw_gl_ctx);
+        g_core.hw_gl_ctx = NULL;
+        g_core.hw_render_enabled = false;
+        LOGI("OpenGL HW render context destroyed");
+    }
+#endif
     g_core.retro_unload_game();
     g_core.game_loaded = false;
     audio_deinit();
@@ -388,6 +557,18 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
 JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     if (!g_core.initialized) return;
     if (g_core.game_loaded) {
+#ifndef __ANDROID__
+        /* Clean up GL HW render if still active */
+        if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+            if (g_core.hw_render_callback.context_destroy) {
+                hw_gl_make_current(g_core.hw_gl_ctx);
+                g_core.hw_render_callback.context_destroy();
+            }
+            hw_gl_destroy(g_core.hw_gl_ctx);
+            g_core.hw_gl_ctx = NULL;
+            g_core.hw_render_enabled = false;
+        }
+#endif
         g_core.retro_unload_game();
         g_core.game_loaded = false;
     }

@@ -12,6 +12,8 @@
 /* Forward declarations for subsystem modules */
 struct gpu_renderer;
 typedef struct gpu_renderer gpu_renderer_t;
+struct hw_gl_context;
+typedef struct hw_gl_context hw_gl_context_t;
 
 /* Video subsystem (libretro_video.c) */
 void video_init(void);
@@ -88,6 +90,9 @@ typedef struct {
     /* HW render */
     struct retro_hw_render_callback hw_render_callback;
     bool                            hw_render_enabled;
+
+    /* OpenGL HW render context (desktop only, NULL when not using GL HW render) */
+    hw_gl_context_t                *hw_gl_ctx;
 } libretro_core_t;
 
 /* Global core instance */
