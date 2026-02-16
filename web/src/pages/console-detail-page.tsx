@@ -52,7 +52,11 @@ export function ConsoleDetailPage() {
             style.gradient,
           )}
         >
-          <Icon className="h-7 w-7 text-white" />
+          {console?.iconUrl ? (
+            <img src={console.iconUrl} alt={`${consoleName} icon`} className="h-8 w-8 object-contain" />
+          ) : (
+            <Icon className="h-7 w-7 text-white" />
+          )}
         </div>
         <div>
           <h1 className="text-3xl font-bold text-surface-100">{consoleName}</h1>

@@ -19,7 +19,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	err = database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.SaveState{})
+	err = database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{}, &db.SaveState{})
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
@@ -354,4 +354,284 @@ func TestConsoleHasExtension(t *testing.T) {
 			assert.Equal(t, tt.want, result)
 		})
 	}
+}
+
+func TestParseM3U(t *testing.T) {
+	dir := t.TempDir()
+	m3uPath := filepath.Join(dir, "game.m3u")
+	content := "disc1.cue\n\ndisc2.cue\n# comment\n"
+	require.NoError(t, os.WriteFile(m3uPath, []byte(content), 0644))
+
+	paths, err := parseM3U(m3uPath)
+	require.NoError(t, err)
+	assert.Len(t, paths, 2)
+	assert.Equal(t, filepath.Join(dir, "disc1.cue"), paths[0])
+	assert.Equal(t, filepath.Join(dir, "disc2.cue"), paths[1])
+}
+
+func TestDiscPattern(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		matches bool
+	}{
+		{"Disc in parens", "Final Fantasy VII (Disc 1).cue", true},
+		{"Disk in parens", "Game (Disk 2).cue", true},
+		{"CD in brackets", "Game [CD 3].iso", true},
+		{"disc lowercase", "Game (disc 1).cue", true},
+		{"no disc marker", "Game.cue", false},
+		{"USA region tag", "Game (USA).cue", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := discPattern.MatchString(tt.input)
+			assert.Equal(t, tt.matches, result)
+		})
+	}
+}
+
+func TestDiscCompanionFiles_CueBin(t *testing.T) {
+	dir := t.TempDir()
+	binPath := filepath.Join(dir, "game.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary data here"), 0644))
+
+	cuePath := filepath.Join(dir, "game.cue")
+	cueContent := "FILE \"game.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	files, totalSize, err := DiscCompanionFiles(cuePath)
+	require.NoError(t, err)
+	assert.Len(t, files, 2)
+	assert.Contains(t, files, cuePath)
+	assert.Contains(t, files, binPath)
+
+	cueInfo, _ := os.Stat(cuePath)
+	binInfo, _ := os.Stat(binPath)
+	assert.Equal(t, cueInfo.Size()+binInfo.Size(), totalSize)
+}
+
+func TestDiscCompanionFiles_SingleFile(t *testing.T) {
+	dir := t.TempDir()
+	isoPath := filepath.Join(dir, "game.iso")
+	require.NoError(t, os.WriteFile(isoPath, []byte("iso data"), 0644))
+
+	files, totalSize, err := DiscCompanionFiles(isoPath)
+	require.NoError(t, err)
+	assert.Len(t, files, 1)
+	assert.Equal(t, isoPath, files[0])
+
+	info, _ := os.Stat(isoPath)
+	assert.Equal(t, info.Size(), totalSize)
+}
+
+func TestScan_M3UMultiDisc(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc files
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.cue"), []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.cue"), []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	// Create .m3u file
+	m3uContent := "disc1.cue\ndisc2.cue\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Final Fantasy VII.m3u"), []byte(m3uContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game")
+	assert.Equal(t, 1, result.TotalGames)
+
+	var game db.Game
+	require.NoError(t, database.First(&game).Error)
+	assert.Equal(t, "Final Fantasy VII", game.Title)
+	assert.Equal(t, 2, game.DiscCount)
+
+	var discs []db.GameDisc
+	database.Where("game_id = ?", game.ID).Order("disc_number").Find(&discs)
+	assert.Len(t, discs, 2)
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, 2, discs[1].DiscNumber)
+}
+
+func TestScan_PatternMultiDisc(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc 1 — companion .bin files use plain names (no disc marker)
+	// to avoid being independently matched by the disc pattern regex.
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game_d1.bin"), []byte("bin1"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Game (Disc 1).cue"), []byte("FILE \"game_d1.bin\" BINARY\n"), 0644))
+
+	// Create disc 2
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game_d2.bin"), []byte("bin2"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Game (Disc 2).cue"), []byte("FILE \"game_d2.bin\" BINARY\n"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game from disc pattern")
+	assert.Equal(t, 1, result.TotalGames)
+
+	// Verify an .m3u file was auto-generated
+	m3uPath := filepath.Join(psxDir, "Game.m3u")
+	_, err = os.Stat(m3uPath)
+	assert.NoError(t, err, "auto-generated .m3u file should exist")
+
+	var game db.Game
+	require.NoError(t, database.First(&game).Error)
+	assert.Equal(t, 2, game.DiscCount)
+}
+
+func TestScan_SingleDiscNotGrouped(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Use a single .iso file to avoid the .cue/.bin double-detection issue
+	// (both .cue and .bin are valid PSX extensions, so they each create a game)
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Crash Bandicoot.iso"), []byte("iso data"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1)
+	assert.Equal(t, 0, games[0].DiscCount, "single disc game should have DiscCount 0")
+
+	var discs []db.GameDisc
+	database.Where("game_id = ?", games[0].ID).Find(&discs)
+	assert.Len(t, discs, 0, "single disc game should have no GameDisc records")
+
+	assert.Equal(t, 1, result.TotalGames)
+}
+
+func TestScan_M3UClaimsFiles(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc files
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.cue"), []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.cue"), []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	// Create .m3u referencing the discs
+	m3uContent := "disc1.cue\ndisc2.cue\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "MyGame.m3u"), []byte(m3uContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// The .cue files should be claimed by the .m3u, not creating separate games
+	assert.Equal(t, 1, result.TotalGames, "m3u should claim disc files, preventing separate game entries")
+}
+
+func TestScan_RescanUpgradesOldEntries(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc files on disk
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1"), 0644))
+	cue1Path := filepath.Join(psxDir, "Metal Gear Solid (Disc 1).cue")
+	require.NoError(t, os.WriteFile(cue1Path, []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2"), 0644))
+	cue2Path := filepath.Join(psxDir, "Metal Gear Solid (Disc 2).cue")
+	require.NoError(t, os.WriteFile(cue2Path, []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	// Simulate pre-multi-disc scanner: manually insert standalone Game records
+	// for each disc file, as the old scanner would have done
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	oldGame1 := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Metal Gear Solid",
+		FileName:  "Metal Gear Solid (Disc 1).cue",
+		FilePath:  cue1Path,
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&oldGame1).Error)
+
+	oldGame2 := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Metal Gear Solid",
+		FileName:  "Metal Gear Solid (Disc 2).cue",
+		FilePath:  cue2Path,
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&oldGame2).Error)
+
+	// Verify 2 old standalone games exist
+	var count int64
+	database.Model(&db.Game{}).Count(&count)
+	require.Equal(t, int64(2), count, "should have 2 old standalone games before scan")
+
+	// Now scan — disc pattern detects the group, creates multi-disc game,
+	// and should remove the old standalone entries
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	var games []db.Game
+	database.Find(&games)
+	assert.Len(t, games, 1, "only the multi-disc game should remain after scan")
+	assert.Equal(t, 2, games[0].DiscCount, "remaining game should be multi-disc")
+	assert.Equal(t, 1, result.NewGames, "should have created 1 new multi-disc game")
+	assert.Equal(t, 2, result.RemovedGames, "should have removed 2 old standalone entries")
+	assert.Equal(t, 1, result.TotalGames)
+}
+
+func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.cue"), []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.cue"), []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	m3uContent := "disc1.cue\ndisc2.cue\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "MultiDiscGame.m3u"), []byte(m3uContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+
+	result1, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result1.NewGames)
+	assert.Equal(t, 1, result1.TotalGames)
+
+	result2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
+	assert.Equal(t, 1, result2.TotalGames)
+
+	var games []db.Game
+	database.Find(&games)
+	assert.Len(t, games, 1, "only 1 game should exist after two scans")
 }
