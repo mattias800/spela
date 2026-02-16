@@ -135,6 +135,7 @@ fun SpelaApp(
         }
 
         GamepadHandler(
+            enabled = !navState.showInGameOverlay,
             onBack = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,

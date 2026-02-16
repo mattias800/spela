@@ -24,7 +24,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -61,22 +60,18 @@ fun MetalOffscreenSurface(
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultMetalKeyMapping
     }
-    var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
-
     val frameBuffers = remember { MetalFrameBuffers() }
 
-    // Frame display loop: each Compose frame, read the latest pre-rendered BGRA pixels.
-    // The emulation thread does all Metal work (upload + shader render + readback),
-    // so no GPU blocking happens on the Compose thread.
+    // Tick counter read inside the Canvas draw lambda to trigger draw-phase invalidation
+    // each vsync. Reading state during draw avoids a recomposition round-trip, so the
+    // latest emulation frame is displayed in the SAME Compose frame (no extra frame delay).
+    val frameTick = remember { mutableStateOf(0L) }
+
     LaunchedEffect(controller) {
         while (true) {
             withFrameNanos { }
-            val frame = controller.latestRenderedFrame ?: continue
-
-            frameBuffers.ensureCapacity(frame.width, frame.height)
-            frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frame.data, frame.width * 4)
-            currentBitmap = frameBuffers.bitmap.asComposeImageBitmap()
+            frameTick.value++
         }
     }
 
@@ -118,7 +113,16 @@ fun MetalOffscreenSurface(
                     }
                 },
         ) {
-            val bitmap = currentBitmap ?: return@Canvas
+            // Read frameTick to create a draw-phase observation — the draw lambda
+            // re-executes each tick without a full recomposition cycle.
+            @Suppress("UNUSED_EXPRESSION")
+            frameTick.value
+
+            val frame = controller.latestRenderedFrame ?: return@Canvas
+
+            frameBuffers.ensureCapacity(frame.width, frame.height)
+            frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frame.data, frame.width * 4)
+            val bitmap = frameBuffers.bitmap.asComposeImageBitmap()
 
             val canvasWidth = size.width
             val canvasHeight = size.height

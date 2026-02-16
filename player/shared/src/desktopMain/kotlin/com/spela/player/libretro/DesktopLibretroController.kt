@@ -121,6 +121,10 @@ class DesktopLibretroController(
         netplayTransport?.disconnect()
         emulationThread?.join(2000)
         emulationThread = null
+        // GPU deinit AFTER emulation thread is dead — no Metal race
+        if (jni.nativeGpuIsActive()) {
+            jni.nativeGpuDeinit()
+        }
         clearNetplayMode()
         jni.nativeUnloadGame()
         jni.nativeDeinit()

@@ -383,8 +383,11 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
     if (!r || !r->surface_initialized) return;
 
     @autoreleasepool {
-        /* Wait for all in-flight frames to complete */
-        if (r->frame_semaphore) {
+        /* Wait for all in-flight frames to complete.
+         * In offscreen mode the semaphore is created with count 1 and is
+         * never acquired during rendering (render_to_bgra waits inline),
+         * so draining MAX_FRAMES_IN_FLIGHT slots would deadlock. */
+        if (r->frame_semaphore && !r->offscreen_mode) {
             for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
                 dispatch_semaphore_wait(r->frame_semaphore, DISPATCH_TIME_FOREVER);
             }

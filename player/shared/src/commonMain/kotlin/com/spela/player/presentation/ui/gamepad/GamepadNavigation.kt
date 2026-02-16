@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.theme.SpColor
  */
 @Composable
 fun GamepadHandler(
+    enabled: Boolean = true,
     onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -50,6 +51,7 @@ fun GamepadHandler(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
+                if (!enabled) return@onPreviewKeyEvent false
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
 
                 when (event.key) {

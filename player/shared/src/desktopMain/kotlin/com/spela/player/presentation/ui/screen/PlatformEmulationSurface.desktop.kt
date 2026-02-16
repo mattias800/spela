@@ -58,6 +58,8 @@ actual fun PlatformEmulationSurface(
     // and displayed via Compose Canvas (avoids Skia compositing conflicts).
     var gpuInitialized by remember { mutableStateOf(false) }
 
+    // GPU lifecycle: init here, deinit is handled by DesktopLibretroController.stop()
+    // which runs AFTER the emulation thread is joined (no Metal race).
     DisposableEffect(desktopController) {
         val success = desktopController.gpuInitOffscreen(256, 224)
         if (success) {
@@ -65,10 +67,7 @@ actual fun PlatformEmulationSurface(
             gpuInitialized = true
         }
         onDispose {
-            if (gpuInitialized) {
-                desktopController.gpuDeinit()
-                gpuInitialized = false
-            }
+            gpuInitialized = false
         }
     }
 
