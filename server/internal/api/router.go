@@ -33,6 +33,9 @@ type Config struct {
 func NewRouter(cfg Config) *gin.Engine {
 	r := gin.Default()
 
+	// Only trust proxies on private/loopback networks (Docker internal, localhost).
+	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "::1/128"})
+
 	// COOP/COEP headers — required for SharedArrayBuffer (EmulatorJS threaded cores)
 	r.Use(func(c *gin.Context) {
 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
@@ -149,6 +152,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games", gameHandler.ListGames)
 		api.GET("/games/:id", gameHandler.GetGame)
 		api.GET("/games/:id/download", gameHandler.DownloadGame)
+		api.GET("/games/:id/discs/:discNumber/download", gameHandler.DownloadDisc)
 		api.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
