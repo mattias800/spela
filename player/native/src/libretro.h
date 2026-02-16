@@ -111,6 +111,10 @@ struct retro_hw_render_callback {
     bool debug_context;
 };
 
+/* Sentinel value passed as data to video_refresh when the core has rendered
+ * to the hardware framebuffer (FBO) and the frontend should read it back. */
+#define RETRO_HW_FRAME_BUFFER_VALID ((const void *)(intptr_t)-1)
+
 /* Memory regions */
 #define RETRO_MEMORY_SAVE_RAM  0
 #define RETRO_MEMORY_RTC       1

@@ -11,8 +11,14 @@
 #include "libretro_bridge.h"
 #include "gpu_renderer.h"
 
+#ifdef __APPLE__
+#include "hw_render_gl.h"
+#include <OpenGL/gl3.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 static struct {
     void    *frame_buffer;
@@ -69,9 +75,65 @@ gpu_renderer_t *video_get_gpu_renderer(void) {
  * can read it safely (software fallback path).
  *
  * data = NULL means the frame is a duplicate (software framebuffer unchanged).
+ * data = RETRO_HW_FRAME_BUFFER_VALID means the core rendered to HW FBO.
  */
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
+
+#ifdef __APPLE__
+    /* HW render path: core rendered to our FBO, read pixels back */
+    if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        static int hw_frame_count = 0;
+        hw_frame_count++;
+
+        /* Resize FBO if geometry changed */
+        hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
+
+        /* Allocate enough for up to 4x the game resolution (core may use larger internal FBOs) */
+        size_t needed = (size_t)width * height * 4 * 4; /* XRGB8888, up to 2x each dimension */
+
+        /* Ensure CPU readback buffer is large enough */
+        if (needed > video_state.frame_buffer_size) {
+            void *new_buf = realloc(video_state.frame_buffer, needed);
+            if (!new_buf) return;
+            video_state.frame_buffer = new_buf;
+            video_state.frame_buffer_size = needed;
+        }
+
+        unsigned rb_w = 0, rb_h = 0;
+        unsigned pixels = hw_gl_read_pixels(g_core.hw_gl_ctx, video_state.frame_buffer,
+                                            video_state.frame_buffer_size, &rb_w, &rb_h);
+
+        /* Diagnostic logging at key frames */
+        if (hw_frame_count == 1 || hw_frame_count == 120) {
+            uint32_t *px = (uint32_t *)video_state.frame_buffer;
+            uint32_t first_nonzero = 0;
+            unsigned nonzero_count = 0;
+            for (unsigned i = 0; i < rb_w * rb_h && i < 1000000; i++) {
+                if (px[i] != 0) {
+                    if (!first_nonzero) first_nonzero = px[i];
+                    nonzero_count++;
+                }
+            }
+            fprintf(stderr, "[hw_video] frame %d: %ux%u pixels=%u nonzero=%u first=0x%08X\n",
+                    hw_frame_count, rb_w, rb_h, pixels, nonzero_count, first_nonzero);
+        }
+
+        if (pixels > 0) {
+            video_state.width = rb_w;
+            video_state.height = rb_h;
+            video_state.pitch = rb_w * 4;
+
+            /* Route to GPU renderer if active */
+            if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer)) {
+                gpu_renderer_upload_frame(video_state.gpu_renderer, video_state.frame_buffer,
+                    rb_w, rb_h, rb_w * 4, RETRO_PIXEL_FORMAT_XRGB8888);
+            }
+        }
+
+        return;
+    }
+#endif
 
     video_state.width = width;
     video_state.height = height;
