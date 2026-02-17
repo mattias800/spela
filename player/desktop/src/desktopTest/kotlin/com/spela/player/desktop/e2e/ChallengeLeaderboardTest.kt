@@ -38,25 +38,6 @@ class ChallengeLeaderboardTest {
         testDispatcher.scheduler.advanceUntilIdle()
     }
 
-    /**
-     * Navigate to ChallengeDetail by going through ChallengeList and clicking
-     * the challenge card. This avoids the SpShimmer skeleton hang that occurs
-     * with direct programmatic navigation to ChallengeDetail.
-     */
-    private fun ComposeUiTest.navigateToChallengeDetailViaList(
-        harness: SpelaTestHarness,
-        challengeName: String,
-        gameId: String = "1",
-        gameTitle: String = "Castlevania",
-    ) {
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ChallengeList(gameId, gameTitle))
-        )
-        advance(harness)
-        onNodeWithText(challengeName).performClick()
-        advance(harness)
-    }
-
     companion object {
         val SAMPLE_LEADERBOARD = listOf(
             ChallengeLeaderboardEntry(
@@ -94,14 +75,21 @@ class ChallengeLeaderboardTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         harness.challengeRepo.preSetLeaderboard(SAMPLE_LEADERBOARD)
+        harness.preLoadChallengeDetail("1")
 
         setContent { harness.App() }
-        navigateToChallengeDetailViaList(harness, "Beat Dracula")
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail("1"))
+        )
+        advance(harness)
 
         // All three entries should be visible (scroll to leaderboard area)
         onNodeWithText("speedking").performScrollTo().assertIsDisplayed()
         onNodeWithText("retro_master").performScrollTo().assertIsDisplayed()
-        onNodeWithText("player").performScrollTo().assertIsDisplayed()
+        // "player" appears as both creator and leaderboard entry; verify via rank semantics
+        onNodeWithContentDescription("Rank 3: player, 2:00.5")
+            .performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -109,9 +97,14 @@ class ChallengeLeaderboardTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         harness.challengeRepo.preSetLeaderboard(SAMPLE_LEADERBOARD)
+        harness.preLoadChallengeDetail("1")
 
         setContent { harness.App() }
-        navigateToChallengeDetailViaList(harness, "Beat Dracula")
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail("1"))
+        )
+        advance(harness)
 
         // Times should be formatted as M:SS.s
         // 62_300ms -> 1:02.3, 85_700ms -> 1:25.7, 120_500ms -> 2:00.5
@@ -125,9 +118,14 @@ class ChallengeLeaderboardTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         harness.challengeRepo.preSetLeaderboard(SAMPLE_LEADERBOARD)
+        harness.preLoadChallengeDetail("1")
 
         setContent { harness.App() }
-        navigateToChallengeDetailViaList(harness, "Beat Dracula")
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail("1"))
+        )
+        advance(harness)
 
         // Each leaderboard row has content description "Rank N: username, time"
         onNodeWithContentDescription("Rank 1: speedking, 1:02.3")
@@ -141,9 +139,14 @@ class ChallengeLeaderboardTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         harness.challengeRepo.preSetLeaderboard(emptyList())
+        harness.preLoadChallengeDetail("1")
 
         setContent { harness.App() }
-        navigateToChallengeDetailViaList(harness, "Beat Dracula")
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail("1"))
+        )
+        advance(harness)
 
         // SpEmptyStates.NoAttempts: "No attempts yet" + "Be the first..."
         onNodeWithText("No attempts yet", substring = true)

@@ -29,13 +29,19 @@ import kotlinx.coroutines.test.TestDispatcher
  *
  * Compose Multiplatform 1.7.x `waitForIdle()` hangs when the composition
  * contains infinite animations (`rememberInfiniteTransition`).  Disabling
- * `mainClock.autoAdvance` prevents this.
+ * `mainClock.autoAdvance` prevents this during the advance loop.
  *
  * We use bounded `advanceTimeBy` instead of `advanceUntilIdle()` on the
  * test dispatcher so that perpetual coroutine loops (e.g. the session
  * timer in EmulationViewModel) don't hang the scheduler.  Multiple
  * iterations handle cascading async chains (click → navigation → compose
  * effect → ViewModel coroutine → state update → recomposition).
+ *
+ * After the loop completes, `autoAdvance` is restored to `true` so that
+ * subsequent operations (`performScrollTo`, `assertIsDisplayed`, etc.)
+ * which internally call `waitForIdle()` can advance scroll/layout
+ * animations.  By the time the loop finishes, loading skeletons with
+ * infinite shimmer animations should be replaced by real content.
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 fun ComposeUiTest.advance(harness: SpelaTestHarness) {
@@ -46,6 +52,7 @@ fun ComposeUiTest.advance(harness: SpelaTestHarness) {
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
     }
+    mainClock.autoAdvance = true
 }
 
 fun createTestDispatchers(testDispatcher: TestDispatcher): DispatcherProvider {

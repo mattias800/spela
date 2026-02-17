@@ -168,11 +168,11 @@ class ChallengeBrowsingTest {
 
         // Leaderboard is at the bottom of a scrollable column; scroll to entries
         onNodeWithText("Leaderboard").performScrollTo().assertIsDisplayed()
-        onNodeWithText("speedrunner42").performScrollTo().assertIsDisplayed()
-        onNodeWithText("player").performScrollTo().assertIsDisplayed()
-        // 95_000ms = 1:35.0, 120_000ms = 2:00.0
-        onNodeWithText("1:35.0", substring = true).performScrollTo().assertIsDisplayed()
-        onNodeWithText("2:00.0", substring = true).performScrollTo().assertIsDisplayed()
+        // Each leaderboard row has contentDescription "Rank N: username, time"
+        onNodeWithContentDescription("Rank 1: speedrunner42, 1:35.0")
+            .performScrollTo().assertIsDisplayed()
+        onNodeWithContentDescription("Rank 2: player, 2:00.0")
+            .performScrollTo().assertIsDisplayed()
     }
 
     @Test

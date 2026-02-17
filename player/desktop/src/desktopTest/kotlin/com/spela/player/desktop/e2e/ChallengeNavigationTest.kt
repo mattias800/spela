@@ -82,7 +82,7 @@ class ChallengeNavigationTest {
         advance(harness)
 
         // Go back
-        onNodeWithContentDescription("Back", substring = true).performClick()
+        onNodeWithContentDescription("Go back").performClick()
         advance(harness)
 
         // Should be back on game detail (Castlevania title visible at top)
@@ -112,7 +112,7 @@ class ChallengeNavigationTest {
         onNodeWithText("Attempt Challenge").performScrollTo().assertIsDisplayed()
 
         // Go back
-        onNodeWithContentDescription("Back", substring = true).performClick()
+        onNodeWithContentDescription("Go back").performClick()
         advance(harness)
 
         // Should be back on challenge list showing the challenge card
