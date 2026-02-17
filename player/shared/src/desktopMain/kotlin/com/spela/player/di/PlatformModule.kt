@@ -4,8 +4,10 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.DesktopAchievementsController
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.libretro.DesktopScreenshotCapture
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
@@ -68,6 +70,7 @@ actual fun platformModule(): Module = module {
     single { LibretroJni() }
     single<LibretroController> { DesktopLibretroController(get(), get()) }
     single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
+    single<ScreenshotCapture> { DesktopScreenshotCapture(get<LibretroController>() as DesktopLibretroController) }
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
     single {
         HttpClient(CIO) {

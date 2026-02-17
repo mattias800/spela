@@ -13,6 +13,7 @@ import org.koin.core.qualifier.named
 import com.spela.player.util.DefaultDispatcherProvider
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.domain.controller.ScreenshotCapture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.Module
@@ -47,6 +48,7 @@ val commonModule = module {
     single<CollectionRepository> { CollectionRepositoryImpl(get()) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
+    single<ChallengeRepository> { ChallengeRepositoryImpl(get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 
@@ -134,6 +136,8 @@ val commonModule = module {
             secondaryDisplay = get(),
             presenceService = get(),
             relayRepository = get(),
+            challengeRepository = get(),
+            screenshotCapture = getOrNull<ScreenshotCapture>(),
             apiClient = get(),
             engineFactory = get(),
             dispatchers = get(),
@@ -179,6 +183,22 @@ val commonModule = module {
         NetplayLobbyViewModel(
             netplayRepository = get(),
             authRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        ChallengeListViewModel(
+            challengeRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        ChallengeDetailViewModel(
+            challengeRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

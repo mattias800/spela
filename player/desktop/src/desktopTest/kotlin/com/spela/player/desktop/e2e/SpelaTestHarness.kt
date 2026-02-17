@@ -115,6 +115,8 @@ class SpelaTestHarness(
 
     val relayRepo = FakeRelayRepository()
 
+    val challengeRepo = FakeChallengeRepository()
+
     val emulationViewModel = EmulationViewModel(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
@@ -127,6 +129,8 @@ class SpelaTestHarness(
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
         relayRepository = relayRepo,
+        challengeRepository = challengeRepo,
+        screenshotCapture = null,
         apiClient = fakeApiClient,
         engineFactory = stubEngineFactory,
         dispatchers = dispatchers,
@@ -206,6 +210,18 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val challengeListViewModel = ChallengeListViewModel(
+        challengeRepository = challengeRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val challengeDetailViewModel = ChallengeDetailViewModel(
+        challengeRepository = challengeRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val netplayRepo = FakeNetplayRepository()
 
     val netplayViewModel = NetplayViewModel(
@@ -241,6 +257,8 @@ class SpelaTestHarness(
             netplayLobbyViewModel = netplayLobbyViewModel,
             statsViewModel = statsViewModel,
             collectionsViewModel = collectionsViewModel,
+            challengeListViewModel = challengeListViewModel,
+            challengeDetailViewModel = challengeDetailViewModel,
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
         )

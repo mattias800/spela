@@ -86,6 +86,7 @@ export function GameAchievementLeaderboard({
 
   if (
     !leaderboard ||
+    !leaderboard.leaderboard ||
     leaderboard.leaderboard.length === 0 ||
     leaderboard.totalAchievements === 0
   ) {

@@ -634,6 +634,112 @@ class SpelaApiClient(
         }.body()
     }
 
+    // Challenges
+
+    suspend fun getChallenges(
+        gameId: String? = null,
+        consoleId: String? = null,
+        difficulty: String? = null,
+        sort: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): ChallengesResponse {
+        return client.get("$baseUrl/api/challenges") {
+            gameId?.let { parameter("gameId", it) }
+            consoleId?.let { parameter("consoleId", it) }
+            difficulty?.let { parameter("difficulty", it) }
+            sort?.let { parameter("sort", it) }
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getGameChallenges(gameId: String, page: Int = 1, pageSize: Int = 20): ChallengesResponse {
+        return client.get("$baseUrl/api/games/$gameId/challenges") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getMyChallenges(page: Int = 1, pageSize: Int = 20): ChallengesResponse {
+        return client.get("$baseUrl/api/user/challenges") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getChallenge(id: String): ChallengeDto {
+        return client.get("$baseUrl/api/challenges/$id").body()
+    }
+
+    suspend fun createChallenge(
+        gameId: String,
+        name: String,
+        description: String,
+        type: String,
+        difficulty: String,
+        coreName: String,
+        saveData: ByteArray,
+        screenshotData: ByteArray?,
+    ): ChallengeDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/challenges",
+            formData = formData {
+                append("gameId", gameId)
+                append("name", name)
+                append("description", description)
+                append("type", type)
+                append("difficulty", difficulty)
+                append("coreName", coreName)
+                append("save", saveData, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"challenge-save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshotData != null) {
+                    append("screenshot", screenshotData, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
+    suspend fun deleteChallenge(id: String) {
+        client.delete("$baseUrl/api/challenges/$id")
+    }
+
+    suspend fun downloadChallengeSave(challengeId: String): ByteArray {
+        return client.get("$baseUrl/api/challenges/$challengeId/save/download").body()
+    }
+
+    suspend fun startChallengeAttempt(challengeId: String): ChallengeAttemptDto {
+        return client.post("$baseUrl/api/challenges/$challengeId/attempts/start").body()
+    }
+
+    suspend fun completeChallengeAttempt(challengeId: String, attemptId: String): ChallengeAttemptDto {
+        return client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/complete").body()
+    }
+
+    suspend fun abandonChallengeAttempt(challengeId: String, attemptId: String) {
+        client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/abandon")
+    }
+
+    suspend fun getMyChallengeAttempts(challengeId: String): List<ChallengeAttemptDto> {
+        return client.get("$baseUrl/api/challenges/$challengeId/attempts/mine").body()
+    }
+
+    suspend fun getChallengeLeaderboard(
+        challengeId: String,
+        page: Int = 1,
+        pageSize: Int = 50,
+    ): ChallengeLeaderboardResponse {
+        return client.get("$baseUrl/api/challenges/$challengeId/leaderboard") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
     fun close() {
         client.close()
     }

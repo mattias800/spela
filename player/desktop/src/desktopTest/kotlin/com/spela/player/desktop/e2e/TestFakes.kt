@@ -723,6 +723,196 @@ class FakeNetplayRepository : NetplayRepository {
             ?: Result.failure(Exception("Session not found"))
 }
 
+class FakeChallengeRepository : ChallengeRepository {
+    var challenges: MutableList<Challenge> = mutableListOf()
+    var leaderboard: List<ChallengeLeaderboardEntry> = emptyList()
+    var myAttempts: List<ChallengeAttempt> = emptyList()
+    var shouldFail = false
+    private var nextAttemptId = 1
+
+    override suspend fun createChallenge(
+        gameId: String,
+        name: String,
+        description: String,
+        type: String,
+        difficulty: String,
+        coreName: String,
+        saveData: ByteArray,
+        screenshotData: ByteArray?,
+    ): Result<Challenge> {
+        if (shouldFail) return Result.failure(Exception("Create failed"))
+        val challenge = Challenge(
+            id = (challenges.size + 1).toString(),
+            creatorId = "1",
+            creatorUsername = "player",
+            creatorAvatarUrl = null,
+            gameId = gameId,
+            gameTitle = "Castlevania",
+            gameCoverUrl = null,
+            gameConsoleName = "NES",
+            name = name,
+            description = description,
+            type = ChallengeType.fromApiId(type),
+            difficulty = ChallengeDifficulty.fromApiId(difficulty),
+            status = "active",
+            screenshotUrl = null,
+            coreName = coreName,
+            saveFileSize = saveData.size.toLong(),
+            attemptCount = 0,
+            completionCount = 0,
+            bestTimeMs = null,
+            expiresAt = null,
+            createdAt = "2026-02-17T12:00:00Z",
+        )
+        challenges.add(challenge)
+        return Result.success(challenge)
+    }
+
+    override suspend fun getChallenges(
+        gameId: String?,
+        consoleId: String?,
+        difficulty: String?,
+        sort: String?,
+        page: Int,
+    ): Result<List<Challenge>> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        var result = challenges.toList()
+        if (gameId != null) result = result.filter { it.gameId == gameId }
+        return Result.success(result)
+    }
+
+    override suspend fun getChallengeDetail(challengeId: String): Result<Challenge> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        val challenge = challenges.find { it.id == challengeId }
+            ?: return Result.failure(Exception("Challenge not found"))
+        return Result.success(challenge)
+    }
+
+    override suspend fun deleteChallenge(challengeId: String): Result<Unit> {
+        if (shouldFail) return Result.failure(Exception("Delete failed"))
+        challenges.removeAll { it.id == challengeId }
+        return Result.success(Unit)
+    }
+
+    override suspend fun getGameChallenges(gameId: String, page: Int): Result<List<Challenge>> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        return Result.success(challenges.filter { it.gameId == gameId })
+    }
+
+    override suspend fun getMyChallenges(page: Int): Result<List<Challenge>> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        return Result.success(challenges.filter { it.creatorId == "1" })
+    }
+
+    override suspend fun startAttempt(challengeId: String): Result<ChallengeAttempt> {
+        if (shouldFail) return Result.failure(Exception("Start failed"))
+        val attempt = ChallengeAttempt(
+            id = (nextAttemptId++).toString(),
+            challengeId = challengeId,
+            userId = "1",
+            username = "player",
+            avatarUrl = null,
+            status = "in_progress",
+            startedAt = "2026-02-17T12:00:00Z",
+            completedAt = null,
+            durationMs = 0,
+            isBest = false,
+        )
+        return Result.success(attempt)
+    }
+
+    override suspend fun completeAttempt(
+        challengeId: String,
+        attemptId: String,
+    ): Result<ChallengeAttempt> {
+        if (shouldFail) return Result.failure(Exception("Complete failed"))
+        return Result.success(
+            ChallengeAttempt(
+                id = attemptId,
+                challengeId = challengeId,
+                userId = "1",
+                username = "player",
+                avatarUrl = null,
+                status = "completed",
+                startedAt = "2026-02-17T12:00:00Z",
+                completedAt = "2026-02-17T12:05:30Z",
+                durationMs = 330_000,
+                isBest = true,
+            )
+        )
+    }
+
+    override suspend fun abandonAttempt(challengeId: String, attemptId: String): Result<Unit> {
+        if (shouldFail) return Result.failure(Exception("Abandon failed"))
+        return Result.success(Unit)
+    }
+
+    override suspend fun getMyAttempts(challengeId: String): Result<List<ChallengeAttempt>> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        return Result.success(myAttempts.filter { it.challengeId == challengeId })
+    }
+
+    override suspend fun getLeaderboard(
+        challengeId: String,
+        page: Int,
+    ): Result<List<ChallengeLeaderboardEntry>> {
+        if (shouldFail) return Result.failure(Exception("Network error"))
+        return Result.success(leaderboard)
+    }
+
+    override suspend fun downloadChallengeSave(challengeId: String): Result<ByteArray> {
+        if (shouldFail) return Result.failure(Exception("Download failed"))
+        return Result.success(ByteArray(256) { it.toByte() })
+    }
+
+    // ── Test helpers ──
+
+    fun preAddChallenge(
+        id: String = "1",
+        gameId: String = "1",
+        name: String = "Beat Dracula",
+        type: ChallengeType = ChallengeType.COMPLETION,
+        difficulty: ChallengeDifficulty = ChallengeDifficulty.MEDIUM,
+        attemptCount: Int = 5,
+        completionCount: Int = 3,
+        bestTimeMs: Long? = 120_000,
+    ): Challenge {
+        val challenge = Challenge(
+            id = id,
+            creatorId = "1",
+            creatorUsername = "player",
+            creatorAvatarUrl = null,
+            gameId = gameId,
+            gameTitle = if (gameId == "1") "Castlevania" else "Super Mario Bros.",
+            gameCoverUrl = null,
+            gameConsoleName = "NES",
+            name = name,
+            description = "Complete this challenge!",
+            type = type,
+            difficulty = difficulty,
+            status = "active",
+            screenshotUrl = null,
+            coreName = "nestopia",
+            saveFileSize = 8192,
+            attemptCount = attemptCount,
+            completionCount = completionCount,
+            bestTimeMs = bestTimeMs,
+            expiresAt = null,
+            createdAt = "2026-02-17T12:00:00Z",
+        )
+        challenges.add(challenge)
+        return challenge
+    }
+
+    fun preSetLeaderboard(entries: List<ChallengeLeaderboardEntry>) {
+        leaderboard = entries
+    }
+
+    fun preSetMyAttempts(attempts: List<ChallengeAttempt>) {
+        myAttempts = attempts
+    }
+}
+
 private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineConfig> {
     override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
         return MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }

@@ -25,8 +25,9 @@ type Config struct {
 	Hub         *ws.Hub
 	NetplayHub  *ws.NetplayHub
 	CoreDir     string
-	CORSOrigins []string
-	RAClient    *retroachievements.RAClient // optional; defaults to production RA client
+	CORSOrigins                  []string
+	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
+	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
@@ -122,6 +123,8 @@ func NewRouter(cfg Config) *gin.Engine {
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 	biosHandler := &BiosHandler{Storage: cfg.Storage}
+	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
+	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -269,6 +272,22 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
 		api.GET("/users/search", socialHandler.SearchUsers)
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
+
+		// Challenges
+		api.POST("/challenges", challengeHandler.CreateChallenge)
+		api.GET("/challenges", challengeHandler.ListChallenges)
+		api.GET("/challenges/:id", challengeHandler.GetChallenge)
+		api.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
+		api.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
+		api.GET("/challenges/:id/save/download", challengeHandler.DownloadChallengeSave)
+		api.GET("/challenges/:id/screenshot", challengeHandler.GetChallengeScreenshot)
+		api.POST("/challenges/:id/attempts/start", challengeHandler.StartAttempt)
+		api.POST("/challenges/:id/attempts/:aid/complete", challengeHandler.CompleteAttempt)
+		api.POST("/challenges/:id/attempts/:aid/abandon", challengeHandler.AbandonAttempt)
+		api.GET("/challenges/:id/attempts/mine", challengeHandler.GetMyAttempts)
+		api.GET("/challenges/:id/leaderboard", challengeHandler.GetLeaderboard)
+		api.GET("/games/:id/challenges", challengeHandler.ListGameChallenges)
+		api.GET("/user/challenges", challengeHandler.ListMyChallenges)
 
 		// RetroAchievements
 		api.POST("/user/ra/link", raHandler.LinkAccount)

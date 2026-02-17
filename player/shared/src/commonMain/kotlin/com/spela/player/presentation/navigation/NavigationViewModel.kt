@@ -69,6 +69,7 @@ class NavigationViewModel(
                         overlayNetplayLocalPort = intent.netplayLocalPort,
                         overlayNetplayInputDelay = intent.netplayInputDelay,
                         overlayNetplayIsHost = intent.netplayIsHost,
+                        overlayChallengeId = intent.challengeId,
                         screenBehindOverlay = it.currentScreen,
                         backStackBehindOverlay = it.backStack,
                     )
@@ -87,6 +88,7 @@ class NavigationViewModel(
                             overlayNetplayLocalPort = 0,
                             overlayNetplayInputDelay = 3,
                             overlayNetplayIsHost = false,
+                            overlayChallengeId = null,
                             currentScreen = it.screenBehindOverlay,
                             backStack = it.backStackBehindOverlay,
                             screenBehindOverlay = null,
@@ -102,6 +104,7 @@ class NavigationViewModel(
                             overlayNetplayLocalPort = 0,
                             overlayNetplayInputDelay = 3,
                             overlayNetplayIsHost = false,
+                            overlayChallengeId = null,
                         )
                     }
                 }

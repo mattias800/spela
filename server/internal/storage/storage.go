@@ -236,6 +236,92 @@ func (s *Storage) DeleteRelaySave(filePath string) error {
 	return nil
 }
 
+// ChallengeSavePath returns the filesystem path for a challenge's starting save state.
+func (s *Storage) ChallengeSavePath(challengeID uint) string {
+	return filepath.Join(s.SaveDir, "challenges", fmt.Sprintf("challenge_%d", challengeID), "save")
+}
+
+// ChallengeScreenshotPath returns the filesystem path for a challenge's screenshot.
+func (s *Storage) ChallengeScreenshotPath(challengeID uint) string {
+	return filepath.Join(s.SaveDir, "challenges", fmt.Sprintf("challenge_%d", challengeID), "screenshot.png")
+}
+
+// WriteChallengeSave stores a challenge's starting save state file.
+func (s *Storage) WriteChallengeSave(challengeID uint, data io.Reader) (string, int64, error) {
+	path := s.ChallengeSavePath(challengeID)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving challenge save path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid challenge save path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", 0, fmt.Errorf("creating challenge save directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating challenge save file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return "", 0, fmt.Errorf("writing challenge save file: %w", err)
+	}
+
+	return path, n, nil
+}
+
+// WriteChallengeScreenshot stores a challenge's screenshot.
+func (s *Storage) WriteChallengeScreenshot(challengeID uint, data io.Reader) (string, error) {
+	path := s.ChallengeScreenshotPath(challengeID)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolving challenge screenshot path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid challenge screenshot path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", fmt.Errorf("creating challenge screenshot directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", fmt.Errorf("creating challenge screenshot file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, data); err != nil {
+		return "", fmt.Errorf("writing challenge screenshot file: %w", err)
+	}
+
+	return path, nil
+}
+
+// DeleteChallengeSave removes a challenge's save directory and all its contents.
+func (s *Storage) DeleteChallengeSave(challengeID uint) error {
+	dir := filepath.Join(s.SaveDir, "challenges", fmt.Sprintf("challenge_%d", challengeID))
+	if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("deleting challenge save directory: %w", err)
+	}
+	return nil
+}
+
 // ValidateROMPath checks that a ROM path is within allowed game directories.
 func ValidateROMPath(filePath string, allowedDirs []string) bool {
 	absPath, err := filepath.Abs(filePath)

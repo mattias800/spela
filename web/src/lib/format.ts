@@ -21,6 +21,13 @@ export function formatDate(dateString: string): string {
   });
 }
 
+export function formatChallengeDuration(ms: number): string {
+  const totalSeconds = ms / 1000;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toFixed(1).padStart(4, "0")}`;
+}
+
 export function formatRelativeTime(dateString: string): string {
   const now = Date.now();
   const then = new Date(dateString).getTime();

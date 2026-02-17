@@ -286,6 +286,30 @@ private fun ComposeRule.navigateBackToHome() {
                 continue
             }
 
+            // Challenge mode overlay — give up to exit
+            if (onAllNodesWithText("Give Up", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() &&
+                onAllNodesWithText("Exit Game", substring = true)
+                    .fetchSemanticsNodes().isEmpty()
+            ) {
+                try {
+                    onNodeWithText("Give Up").performClick()
+                    waitForIdle()
+                    Thread.sleep(500)
+                    // Confirm the give up dialog if it appeared
+                    if (onAllNodesWithText("Give Up Challenge?", substring = true)
+                            .fetchSemanticsNodes().isNotEmpty()
+                    ) {
+                        val nodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
+                        onAllNodesWithText("Give Up")[nodes.size - 1].performClick()
+                        waitForIdle()
+                    }
+                } catch (_: Exception) {
+                    // Best effort
+                }
+                continue
+            }
+
             pressBack()
             waitForIdle()
             // Let the screen transition settle before the next check
@@ -475,6 +499,10 @@ private fun ComposeRule.doLogin(username: String, password: String) {
 // ── Navigation helpers ──
 
 fun ComposeRule.navigateToCastlevania() {
+    // Navigate to Library tab (consoles are in the Library tab, not Home)
+    tapOn("Library")
+    waitForText("Consoles", TIMEOUT_MEDIUM)
+
     // Scroll to and tap the NES console card. We match on the card's content description
     // which contains both "Nintendo Entertainment System" and "games" — this distinguishes
     // it from game cards that also mention the console name.
@@ -672,5 +700,145 @@ fun ComposeRule.ensureOverlayOpen() {
         pressBack()
         waitForText("Exit Game", TIMEOUT_MEDIUM)
     }
+}
+
+// ── Challenge helpers ──
+
+/**
+ * Navigate from the game detail screen to the ChallengeListScreen.
+ * Scrolls to the "Challenges" section and taps "View Challenges" button.
+ * Assumes the test is on a game detail screen.
+ */
+fun ComposeRule.navigateToChallengeList() {
+    scrollToAndTapText("View Challenges")
+    waitForIdle()
+}
+
+/**
+ * Navigate from the home screen to a specific challenge by name.
+ * Goes through: Home → NES → Castlevania → View Challenges → ChallengeListScreen → detail.
+ */
+fun ComposeRule.navigateToChallenge(challengeName: String) {
+    navigateToCastlevania()
+    navigateToChallengeList()
+    waitForText(challengeName, TIMEOUT_LONG)
+    tapOn(challengeName)
+    waitForText("Attempt Challenge", TIMEOUT_MEDIUM)
+}
+
+/**
+ * Start a challenge attempt from the challenge detail screen.
+ * Assumes the test is on the challenge detail screen with "Attempt Challenge" visible.
+ * Waits for the game to load with the challenge save state.
+ */
+fun ComposeRule.startChallengeAttempt() {
+    tapOn("Attempt Challenge")
+    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+}
+
+/**
+ * Open the challenge overlay (same as pressing back during gameplay).
+ * Waits for challenge-specific controls: "Give Up" instead of "Exit Game".
+ */
+fun ComposeRule.openChallengeOverlay() {
+    pressBack()
+    waitForText("Give Up", TIMEOUT_MEDIUM)
+}
+
+/**
+ * Resume gameplay from the challenge overlay by tapping "Resume".
+ */
+fun ComposeRule.resumeChallengeFromOverlay() {
+    onNodeWithText("Resume").performClick()
+    waitForTextNotVisible("Give Up")
+    waitForIdle()
+}
+
+/**
+ * Abandon the current challenge attempt via the overlay.
+ * Opens overlay if needed, taps "Give Up" → confirmation dialog → confirms.
+ * Waits until back on the challenge detail screen (or game detail).
+ */
+fun ComposeRule.abandonChallenge() {
+    val hasOverlay = onAllNodesWithText("Give Up", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    if (!hasOverlay) {
+        openChallengeOverlay()
+    }
+    // Tap the Give Up action button to trigger confirmation dialog
+    tapOn("Give Up")
+    waitForText("Give Up Challenge?", TIMEOUT_MEDIUM)
+    // Tap the dialog's "Give Up" confirm button (last "Give Up" node in the tree)
+    val giveUpNodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
+    onAllNodesWithText("Give Up")[giveUpNodes.size - 1].performClick()
+    waitForIdle()
+}
+
+/**
+ * Complete the current challenge attempt via the overlay.
+ * Opens overlay if needed, taps "Complete", waits for result screen.
+ */
+fun ComposeRule.completeChallenge() {
+    val hasOverlay = onAllNodesWithContentDescription("Complete", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    if (!hasOverlay) {
+        openChallengeOverlay()
+    }
+    tapOn("Complete")
+    waitForText("Challenge Complete", TIMEOUT_LONG)
+}
+
+/**
+ * Dismiss the challenge completion result screen.
+ * Taps "Done" — this exits the game and returns to the previous navigation screen.
+ */
+fun ComposeRule.dismissChallengeResult() {
+    tapOn("Done")
+    waitForIdle()
+}
+
+/**
+ * Create a challenge from the in-game overlay during gameplay.
+ * Assumes the game is currently running with the overlay NOT open.
+ * Opens overlay, taps "Challenge", fills the form, and submits.
+ * Returns with the game still running after the "Challenge created!" toast.
+ */
+fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge") {
+    openOverlay()
+    tapOn("Challenge")
+    waitForText("Create Challenge", timeout = 5_000)
+
+    // Clear pre-filled title and enter custom title
+    clearTextField("Title")
+    onNode(hasText("Title") and hasSetTextAction())
+        .performTextInput(title)
+
+    tapOn("Create")
+    waitForText("Challenge created!", timeout = 8_000)
+
+    // Game resumes after toast
+    waitForVisible("Touch controls", timeout = 5_000)
+}
+
+/**
+ * Full setup: login, navigate to Castlevania, download if needed, play the game,
+ * create a challenge from overlay, then exit the game.
+ * Returns on the game detail screen with a challenge available on the server.
+ */
+fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
+    startLoggedIn()
+    navigateToGameAndPlay()
+    createChallengeFromOverlay(title)
+    openOverlayAndExit()
+    waitForText("About", TIMEOUT_LONG)
+}
+
+/**
+ * Clear a text field by its label. Uses performTextClearance on the field
+ * matched by label + hasSetTextAction.
+ */
+fun ComposeRule.clearTextField(label: String) {
+    onNode(hasText(label) and hasSetTextAction())
+        .performTextClearance()
 }
 

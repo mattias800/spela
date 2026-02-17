@@ -77,7 +77,7 @@ export function GameAchievements({ gameId }: GameAchievementsProps) {
     );
   }
 
-  if (!achievements || achievements.achievements.length === 0) {
+  if (!achievements || !achievements.achievements || achievements.achievements.length === 0) {
     return null;
   }
 

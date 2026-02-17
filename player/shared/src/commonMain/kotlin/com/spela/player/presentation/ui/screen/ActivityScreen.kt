@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -325,6 +327,9 @@ private fun formatActivityAction(event: ActivityEvent): String {
         "rated_game" -> "rated $gameName"
         "shared_save" -> "shared a save for $gameName"
         "queued_play_later" -> "added $gameName to Play Later"
+        "challenge_created" -> "created a challenge for $gameName"
+        "challenge_completed" -> "completed a challenge for $gameName"
+        "challenge_record" -> "set a new record on a challenge for $gameName"
         else -> "did something with $gameName"
     }
 }
@@ -336,6 +341,9 @@ private fun getEventIconAndColor(eventType: String): Pair<ImageVector, androidx.
         "rated_game" -> Icons.Filled.Star to SpColor.Warning
         "shared_save" -> Icons.Filled.Save to SpColor.Accent
         "queued_play_later" -> Icons.Filled.WatchLater to SpColor.Accent
+        "challenge_created" -> Icons.Filled.Flag to SpColor.Primary
+        "challenge_completed" -> Icons.Filled.Flag to SpColor.Success
+        "challenge_record" -> Icons.Filled.Timer to SpColor.Warning
         else -> Icons.Filled.PlayArrow to SpColor.OnBackgroundTertiary
     }
 }

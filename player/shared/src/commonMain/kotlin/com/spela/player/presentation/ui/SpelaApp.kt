@@ -61,6 +61,8 @@ import com.spela.player.presentation.ui.screen.PlayLaterScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
+import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
+import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -82,6 +84,8 @@ import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
+import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
+import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
@@ -105,6 +109,8 @@ fun SpelaApp(
     netplayLobbyViewModel: NetplayLobbyViewModel,
     statsViewModel: StatsViewModel,
     collectionsViewModel: CollectionsViewModel,
+    challengeListViewModel: ChallengeListViewModel,
+    challengeDetailViewModel: ChallengeDetailViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
 ) {
@@ -302,6 +308,11 @@ fun SpelaApp(
                                     onCreateNetplay = { gameId ->
                                         netplayViewModel.onIntent(
                                             NetplayIntent.CreateSession(gameId)
+                                        )
+                                    },
+                                    onNavigateToChallenges = { gameId, gameTitle ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ChallengeList(gameId, gameTitle))
                                         )
                                     },
                                 )
@@ -558,6 +569,50 @@ fun SpelaApp(
                                 )
                             }
 
+                            is SpScreen.ChallengeList -> {
+                                ChallengeListScreen(
+                                    viewModel = challengeListViewModel,
+                                    gameId = screen.gameId,
+                                    gameTitle = screen.gameTitle,
+                                    onChallengeSelected = { challengeId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail(challengeId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.ChallengeDetail -> {
+                                ChallengeDetailScreen(
+                                    viewModel = challengeDetailViewModel,
+                                    challengeId = screen.challengeId,
+                                    onAttempt = { challengeId, gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.ShowOverlay(
+                                                gameId = gameId,
+                                                challengeId = challengeId,
+                                            )
+                                        )
+                                    },
+                                    onUserSelected = { userId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
                             is SpScreen.Licenses -> {
                                 LicensesScreen(
                                     onBack = {
@@ -570,7 +625,7 @@ fun SpelaApp(
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
-                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
@@ -581,6 +636,7 @@ fun SpelaApp(
                                         netplayLocalPort = navState.overlayNetplayLocalPort,
                                         netplayInputDelay = navState.overlayNetplayInputDelay,
                                         netplayIsHost = navState.overlayNetplayIsHost,
+                                        challengeId = navState.overlayChallengeId,
                                     )
                                 )
                             }

@@ -33,8 +33,12 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +68,8 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
 import com.spela.player.presentation.ui.components.SpNetplayHud
+import com.spela.player.presentation.ui.components.challenge.ChallengeCreationPanel
+import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.components.pingColor
@@ -217,6 +223,64 @@ fun InGameOverlay(
                                 modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
                             )
                         }
+                    } else if (state.isChallengeMode) {
+                        // Challenge mode: restricted actions
+                        // Timer display
+                        Text(
+                            text = formatDuration(state.challengeElapsedMs),
+                            style = SpTypography.DisplaySmall,
+                            color = SpColor.Primary,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Challenge timer: ${formatDuration(state.challengeElapsedMs)}"
+                            },
+                        )
+                        if (state.challengeObjective.isNotBlank()) {
+                            Spacer(Modifier.height(SpSpacing.XSmall))
+                            Text(
+                                text = state.challengeObjective,
+                                style = SpTypography.LabelMedium,
+                                color = SpColor.OnBackgroundSecondary,
+                            )
+                        }
+
+                        Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            OverlayAction(
+                                label = "Mark Complete",
+                                icon = Icons.Filled.CheckCircle,
+                                onClick = { viewModel.onIntent(EmulationIntent.CompleteChallenge) },
+                            )
+                            OverlayAction(
+                                label = "Restart",
+                                icon = Icons.Filled.Replay,
+                                onClick = { viewModel.onIntent(EmulationIntent.RestartChallenge) },
+                            )
+                            OverlayAction(
+                                label = "Give Up",
+                                icon = Icons.Filled.Stop,
+                                onClick = { viewModel.onIntent(EmulationIntent.ShowGiveUpConfirm) },
+                            )
+                            OverlayAction(
+                                label = "Controls",
+                                icon = Icons.Filled.SportsEsports,
+                                onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+                            )
+                        }
+
+                        Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
+
+                        SpButton(
+                            text = "Resume",
+                            onClick = {
+                                viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                viewModel.onIntent(EmulationIntent.ResumeGame)
+                            },
+                            modifier = Modifier.fillMaxWidth().focusRequester(continueFocusRequester),
+                        )
                     } else {
                         // Normal mode: all action buttons
                         if (isLandscape) {
@@ -247,6 +311,13 @@ fun InGameOverlay(
                                     onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                                     isActive = state.isFastForward,
                                 )
+                                if (state.supportsSaveStates) {
+                                    OverlayAction(
+                                        label = "Challenge",
+                                        icon = Icons.Filled.Flag,
+                                        onClick = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
+                                    )
+                                }
                                 OverlayAction(
                                     label = "Controls",
                                     icon = Icons.Filled.SportsEsports,
@@ -304,6 +375,13 @@ fun InGameOverlay(
                                     onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                                     isActive = state.isFastForward,
                                 )
+                                if (state.supportsSaveStates) {
+                                    OverlayAction(
+                                        label = "Challenge",
+                                        icon = Icons.Filled.Flag,
+                                        onClick = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
+                                    )
+                                }
                                 OverlayAction(
                                     label = "Controls",
                                     icon = Icons.Filled.SportsEsports,
@@ -647,6 +725,193 @@ fun InGameOverlay(
                     text = message,
                     style = SpTypography.BodyMedium,
                     color = SpColor.Success,
+                )
+            }
+        }
+    }
+
+    // Challenge timer HUD (visible during challenge gameplay, top left)
+    if (state.isChallengeMode && state.isRunning && !state.showOverlay) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(SpSpacing.Default),
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(SpColor.Scrim)
+                    .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
+            ) {
+                Text(
+                    text = formatDuration(state.challengeElapsedMs),
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.Primary,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Challenge timer ${formatDuration(state.challengeElapsedMs)}"
+                    },
+                )
+            }
+        }
+    }
+
+    // Challenge give up confirmation dialog
+    if (state.showGiveUpConfirm) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { viewModel.onIntent(EmulationIntent.DismissGiveUpConfirm) },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SpColor.SurfaceElevated)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    )
+                    .padding(SpSpacing.XLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Give Up Challenge?",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "Your current attempt will be abandoned.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    SpButton(
+                        text = "Keep Playing",
+                        onClick = { viewModel.onIntent(EmulationIntent.DismissGiveUpConfirm) },
+                        style = SpButtonStyle.Outlined,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    SpButton(
+                        text = "Give Up",
+                        onClick = {
+                            viewModel.onIntent(EmulationIntent.ConfirmGiveUp)
+                            onExit()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+
+    // Challenge creation panel
+    if (state.showChallengeCreation) {
+        ChallengeCreationPanel(
+            gameTitle = state.gameTitle,
+            isSubmitting = state.isCreatingChallenge,
+            onSubmit = { name, description, type, difficulty ->
+                viewModel.onIntent(EmulationIntent.SubmitChallenge(name, description, type, difficulty))
+            },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissChallengeCreation) },
+        )
+    }
+
+    // Challenge creation success toast
+    if (state.challengeCreationSuccess) {
+        LaunchedEffect(Unit) {
+            delay(2000)
+            viewModel.onIntent(EmulationIntent.DismissChallengeCreation)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = SpSpacing.XXXLarge),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SpColor.SuccessContainer)
+                    .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
+            ) {
+                Text(
+                    text = "Challenge created!",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.Success,
+                )
+            }
+        }
+    }
+
+    // Challenge completed result dialog
+    state.challengeCompletedAttempt?.let { attempt ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Scrim)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.80f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SpColor.SurfaceElevated)
+                    .padding(SpSpacing.XLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Challenge Complete!",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.Success,
+                )
+                Spacer(Modifier.height(SpSpacing.Large))
+                Text(
+                    text = formatDuration(attempt.durationMs),
+                    style = SpTypography.DisplaySmall,
+                    color = SpColor.Primary,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "Your time",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                )
+                if (attempt.isBest) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Text(
+                        text = "New personal best!",
+                        style = SpTypography.TitleMedium,
+                        color = SpColor.Warning,
+                    )
+                }
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                SpButton(
+                    text = "Done",
+                    onClick = {
+                        viewModel.onIntent(EmulationIntent.DismissChallengeResult)
+                        onExit()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

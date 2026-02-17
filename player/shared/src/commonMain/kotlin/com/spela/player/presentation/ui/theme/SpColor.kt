@@ -49,6 +49,11 @@ object SpColor {
     val Error = Color(0xFFFF5252)
     val ErrorContainer = Color(0xFF3D1515)
 
+    // Medal colors (leaderboard)
+    val Gold = Color(0xFFFFD700)
+    val Silver = Color(0xFFC0C0C0)
+    val Bronze = Color(0xFFCD7F32)
+
     // Download states
     val DownloadIdle = OnBackgroundTertiary
     val DownloadQueued = Warning

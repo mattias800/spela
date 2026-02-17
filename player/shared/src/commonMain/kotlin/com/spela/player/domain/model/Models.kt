@@ -341,6 +341,77 @@ data class GameCollectionDetail(
     val games: List<Game> = emptyList(),
 )
 
+// Challenges
+
+data class Challenge(
+    val id: String,
+    val creatorId: String,
+    val creatorUsername: String,
+    val creatorAvatarUrl: String?,
+    val gameId: String,
+    val gameTitle: String,
+    val gameCoverUrl: String?,
+    val gameConsoleName: String,
+    val name: String,
+    val description: String,
+    val type: ChallengeType,
+    val difficulty: ChallengeDifficulty,
+    val status: String,
+    val screenshotUrl: String?,
+    val coreName: String,
+    val saveFileSize: Long,
+    val attemptCount: Int,
+    val completionCount: Int,
+    val bestTimeMs: Long?,
+    val expiresAt: String?,
+    val createdAt: String,
+)
+
+data class ChallengeAttempt(
+    val id: String,
+    val challengeId: String,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String?,
+    val status: String,
+    val startedAt: String,
+    val completedAt: String?,
+    val durationMs: Long,
+    val isBest: Boolean,
+)
+
+data class ChallengeLeaderboardEntry(
+    val rank: Int,
+    val userId: String,
+    val username: String,
+    val avatarUrl: String?,
+    val durationMs: Long,
+    val completedAt: String,
+    val isCurrentUser: Boolean,
+)
+
+enum class ChallengeType(val apiId: String, val displayName: String) {
+    COMPLETION("completion", "Completion"),
+    SPEEDRUN("speedrun", "Speedrun"),
+    SURVIVAL("survival", "Survival");
+
+    companion object {
+        fun fromApiId(id: String): ChallengeType =
+            entries.find { it.apiId == id } ?: COMPLETION
+    }
+}
+
+enum class ChallengeDifficulty(val apiId: String, val displayName: String) {
+    EASY("easy", "Easy"),
+    MEDIUM("medium", "Medium"),
+    HARD("hard", "Hard");
+
+    companion object {
+        fun fromApiId(id: String): ChallengeDifficulty =
+            entries.find { it.apiId == id } ?: MEDIUM
+    }
+}
+
 // Stats
 
 data class MostPlayedGame(

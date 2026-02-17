@@ -296,6 +296,55 @@ fun ActivePlayerDto.toDomain(): ActivePlayer = ActivePlayer(
     lastPlayed = lastPlayed,
 )
 
+// Challenge mappers
+
+fun ChallengeDto.toDomain(): Challenge = Challenge(
+    id = id,
+    creatorId = creatorId,
+    creatorUsername = creatorUsername,
+    creatorAvatarUrl = creatorAvatarUrl,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    gameConsoleName = gameConsoleName,
+    name = name,
+    description = description,
+    type = ChallengeType.fromApiId(type),
+    difficulty = ChallengeDifficulty.fromApiId(difficulty),
+    status = status,
+    screenshotUrl = screenshotUrl,
+    coreName = coreName,
+    saveFileSize = saveFileSize,
+    attemptCount = attemptCount,
+    completionCount = completionCount,
+    bestTimeMs = bestTimeMs,
+    expiresAt = expiresAt,
+    createdAt = createdAt,
+)
+
+fun ChallengeAttemptDto.toDomain(): ChallengeAttempt = ChallengeAttempt(
+    id = id,
+    challengeId = challengeId,
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    status = status,
+    startedAt = startedAt,
+    completedAt = completedAt,
+    durationMs = durationMs,
+    isBest = isBest,
+)
+
+fun ChallengeLeaderboardEntryDto.toDomain(): ChallengeLeaderboardEntry = ChallengeLeaderboardEntry(
+    rank = rank,
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    durationMs = durationMs,
+    completedAt = completedAt,
+    isCurrentUser = isCurrentUser,
+)
+
 // Netplay mappers
 
 fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(

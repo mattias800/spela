@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { Play, Heart, Star, Share2, Clock } from "lucide-react";
+import { Play, Heart, Star, Share2, Clock, Flag, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { formatRelativeTime } from "@/lib/format";
+import { formatRelativeTime, formatChallengeDuration } from "@/lib/format";
 import type { ActivityEvent } from "@/types/api";
 
 function eventIcon(eventType: ActivityEvent["eventType"]) {
@@ -17,6 +17,12 @@ function eventIcon(eventType: ActivityEvent["eventType"]) {
       return <Share2 className="h-3.5 w-3.5 text-green-400" />;
     case "queued_play_later":
       return <Clock className="h-3.5 w-3.5 text-brand-400" />;
+    case "challenge_created":
+      return <Flag className="h-3.5 w-3.5 text-amber-400" />;
+    case "challenge_completed":
+      return <Flag className="h-3.5 w-3.5 text-green-400" />;
+    case "challenge_record":
+      return <Trophy className="h-3.5 w-3.5 text-amber-400" />;
   }
 }
 
@@ -50,6 +56,69 @@ function eventDescription(event: ActivityEvent): React.ReactNode {
       return <>shared a save for {gameLink}</>;
     case "queued_play_later":
       return <>added {gameLink} to their Play Later queue</>;
+    case "challenge_created": {
+      const challengeName = (event.metadata?.challengeName as string) ?? "a challenge";
+      return (
+        <>
+          created a challenge for {gameLink}:{" "}
+          <Link
+            to={`/challenges/${event.metadata?.challengeId}`}
+            className="font-medium text-surface-200 hover:text-brand-400 transition-colors"
+          >
+            {challengeName}
+          </Link>
+        </>
+      );
+    }
+    case "challenge_completed": {
+      const name = (event.metadata?.challengeName as string) ?? "a challenge";
+      const duration = event.metadata?.durationMs as number | undefined;
+      return (
+        <>
+          completed{" "}
+          <Link
+            to={`/challenges/${event.metadata?.challengeId}`}
+            className="font-medium text-surface-200 hover:text-brand-400 transition-colors"
+          >
+            {name}
+          </Link>{" "}
+          on {gameLink}
+          {duration != null && (
+            <>
+              {" "}
+              in{" "}
+              <Badge variant="brand" className="text-[10px] px-1.5 py-0">
+                {formatChallengeDuration(duration)}
+              </Badge>
+            </>
+          )}
+        </>
+      );
+    }
+    case "challenge_record": {
+      const recordName = (event.metadata?.challengeName as string) ?? "a challenge";
+      const recordDuration = event.metadata?.durationMs as number | undefined;
+      return (
+        <>
+          set a new record on{" "}
+          <Link
+            to={`/challenges/${event.metadata?.challengeId}`}
+            className="font-medium text-surface-200 hover:text-brand-400 transition-colors"
+          >
+            {recordName}
+          </Link>{" "}
+          for {gameLink}
+          {recordDuration != null && (
+            <>
+              {" "}
+              <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+                {formatChallengeDuration(recordDuration)}
+              </Badge>
+            </>
+          )}
+        </>
+      );
+    }
   }
 }
 

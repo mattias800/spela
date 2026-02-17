@@ -1178,13 +1178,13 @@ static bool create_single_pipeline(gpu_renderer_t *r, const uint32_t *frag_code,
     VkPipelineShaderStageCreateInfo stages[] = {
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_VERTEX,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
             .module = vert_module,
             .pName = "main",
         },
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_FRAGMENT,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
             .module = frag_module,
             .pName = "main",
         },

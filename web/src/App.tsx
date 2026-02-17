@@ -29,6 +29,8 @@ import { RelayDetailPage } from "@/pages/relay-detail-page";
 import { NetplayPage } from "@/pages/netplay-page";
 import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
+import { ChallengesPage } from "@/pages/challenges-page";
+import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SetupPage } from "@/pages/setup-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -99,6 +101,11 @@ export function App() {
                     />
                     <Route path="stats" element={<StatsPage />} />
                     <Route path="activity" element={<ActivityPage />} />
+                    <Route path="challenges" element={<ChallengesPage />} />
+                    <Route
+                      path="challenges/:id"
+                      element={<ChallengeDetailPage />}
+                    />
                     <Route path="relays" element={<RelaysPage />} />
                     <Route path="relays/:id" element={<RelayDetailPage />} />
                     <Route path="netplay" element={<NetplayPage />} />

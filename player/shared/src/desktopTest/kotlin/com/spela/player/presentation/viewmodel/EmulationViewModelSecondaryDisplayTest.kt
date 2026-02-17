@@ -20,6 +20,7 @@ import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
@@ -115,6 +116,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            challengeRepository = StubChallengeRepository(),
+            screenshotCapture = null,
             apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
@@ -292,6 +295,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            challengeRepository = StubChallengeRepository(),
+            screenshotCapture = null,
             apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
@@ -321,6 +326,8 @@ class EmulationViewModelSecondaryDisplayTest {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
+            challengeRepository = StubChallengeRepository(),
+            screenshotCapture = null,
             apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
@@ -532,5 +539,29 @@ class EmulationViewModelSecondaryDisplayTest {
         override suspend fun downloadRelayAutoSave(relayId: String) = Result.success(byteArrayOf())
         override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray) =
             Result.success(com.spela.player.domain.model.RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
+    }
+
+    private class StubChallengeRepository : ChallengeRepository {
+        override suspend fun getChallenges(gameId: String?, consoleId: String?, difficulty: String?, sort: String?, page: Int) =
+            Result.success(emptyList<com.spela.player.domain.model.Challenge>())
+        override suspend fun getGameChallenges(gameId: String, page: Int) =
+            Result.success(emptyList<com.spela.player.domain.model.Challenge>())
+        override suspend fun getMyChallenges(page: Int) =
+            Result.success(emptyList<com.spela.player.domain.model.Challenge>())
+        override suspend fun getChallengeDetail(challengeId: String) =
+            Result.failure<com.spela.player.domain.model.Challenge>(Exception("stub"))
+        override suspend fun getLeaderboard(challengeId: String, page: Int) =
+            Result.success(emptyList<com.spela.player.domain.model.ChallengeLeaderboardEntry>())
+        override suspend fun createChallenge(gameId: String, name: String, description: String, type: String, difficulty: String, coreName: String, saveData: ByteArray, screenshotData: ByteArray?) =
+            Result.failure<com.spela.player.domain.model.Challenge>(Exception("stub"))
+        override suspend fun downloadChallengeSave(challengeId: String) = Result.success(byteArrayOf())
+        override suspend fun startAttempt(challengeId: String) =
+            Result.success(com.spela.player.domain.model.ChallengeAttempt(id = "1", challengeId = challengeId, userId = "1", username = "test", avatarUrl = null, status = "in_progress", startedAt = "", completedAt = null, durationMs = 0, isBest = false))
+        override suspend fun completeAttempt(challengeId: String, attemptId: String) =
+            Result.success(com.spela.player.domain.model.ChallengeAttempt(id = attemptId, challengeId = challengeId, userId = "1", username = "test", avatarUrl = null, status = "completed", startedAt = "", completedAt = "", durationMs = 1000, isBest = false))
+        override suspend fun abandonAttempt(challengeId: String, attemptId: String) = Result.success(Unit)
+        override suspend fun getMyAttempts(challengeId: String) =
+            Result.success(emptyList<com.spela.player.domain.model.ChallengeAttempt>())
+        override suspend fun deleteChallenge(challengeId: String) = Result.success(Unit)
     }
 }

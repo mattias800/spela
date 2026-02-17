@@ -1,0 +1,142 @@
+package com.spela.player.android
+
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * E2E tests for cross-feature challenge integration.
+ *
+ * Verifies that challenges integrate correctly with:
+ * - Activity feed (challenge_completed events)
+ * - App restart persistence
+ * - Normal overlay regression (existing features still work)
+ *
+ * Also serves as regression checks for existing features that challenges touch.
+ */
+@RunWith(AndroidJUnit4::class)
+class ChallengeIntegrationTest {
+
+    @get:Rule(order = 0)
+    val koinResetRule = KoinResetRule()
+
+    @get:Rule(order = 1)
+    val rule = createAndroidComposeRule<MainActivity>()
+
+    // ── Activity feed: challenge_completed event ──
+
+    @Test
+    fun completedChallengeAppearsInActivityFeed() {
+        // Create challenge
+        rule.startLoggedIn()
+        rule.navigateToGameAndPlay()
+        rule.createChallengeFromOverlay("Activity Feed Test")
+        rule.openOverlayAndExit()
+        rule.waitForText("About", timeout = 8_000)
+
+        // Navigate to challenge and attempt it
+        rule.navigateToChallengeList()
+        rule.waitForText("Activity Feed Test", timeout = 8_000)
+        rule.tapOn("Activity Feed Test")
+        rule.waitForText("Attempt Challenge", timeout = 5_000)
+
+        // Start and complete attempt
+        rule.tapOn("Attempt Challenge")
+        rule.waitForVisible("Touch controls", timeout = 15_000)
+        Thread.sleep(1_000)
+        rule.completeChallenge()
+        rule.waitForText("Challenge Complete", timeout = 8_000)
+        rule.tapOn("Done")
+        rule.waitForIdle()
+
+        // Navigate back to home
+        rule.pressBack() // challenge detail → challenge list
+        rule.pressBack() // challenge list → game detail
+        rule.pressBack() // game detail → console list
+        rule.pressBack() // console list → home
+
+        rule.waitForText("Spela", timeout = 8_000)
+
+        // Navigate to Activity tab
+        rule.tapOn("Activity")
+        rule.waitForText("Activity", timeout = 5_000)
+
+        // Activity feed should show challenge completion event
+        // Per spec: "player completed Activity Feed Test in {time}"
+        rule.scrollToAndTapText("completed")
+        rule.assertVisible("Activity Feed Test")
+
+        rule.pressBack()
+    }
+
+    // ── Challenges persist across app restart ──
+
+    @Test
+    fun challengesPersistAcrossRestart() {
+        // Create a challenge
+        rule.ensureChallengeExists("Persist Test")
+
+        // Verify challenges section exists on game detail
+        rule.scrollToAndTapText("View Challenges")
+        rule.waitForText("Persist Test", timeout = 8_000)
+
+        rule.pressBack() // back to game detail
+        rule.pressBack() // back to console list
+        rule.pressBack() // back to home
+
+        // Restart app
+        rule.restartApp()
+        rule.waitForText("Spela", timeout = 15_000)
+
+        // Navigate back to game detail
+        rule.navigateToCastlevania()
+
+        // Challenges should still be visible (fetched from server)
+        rule.navigateToChallengeList()
+        rule.waitForText("Persist Test", timeout = 8_000)
+
+        rule.pressBack()
+    }
+
+    // ── Normal overlay still works (regression) ──
+
+    @Test
+    fun normalOverlayUnaffectedByChallenge() {
+        rule.startLoggedIn()
+        rule.navigateToGameAndPlay()
+
+        // Normal overlay should still have all standard controls
+        rule.openOverlay()
+        rule.assertVisible("Save")
+        rule.assertVisible("Load")
+        rule.assertVisible("Screenshot")
+        rule.assertVisible("Fast")
+        rule.assertVisible("Controls")
+        rule.assertVisible("Challenge")
+        rule.assertVisible("Exit Game")
+        rule.assertVisible("Continue")
+
+        rule.exitGame()
+    }
+
+    // ── Game detail "Challenges" section coexists with existing sections ──
+
+    @Test
+    fun gameDetailLayoutIntactWithChallengesSection() {
+        rule.startLoggedIn()
+        rule.navigateToCastlevania()
+
+        // Existing game detail sections should still work
+        rule.assertVisible("About")
+        rule.scrollToAndTapText("Save States")
+        rule.scrollToAndTapText("Community Saves")
+
+        // Challenges section should exist alongside others
+        rule.scrollToAndTapText("Challenges")
+        rule.assertVisible("View Challenges")
+
+        rule.pressBack()
+    }
+}

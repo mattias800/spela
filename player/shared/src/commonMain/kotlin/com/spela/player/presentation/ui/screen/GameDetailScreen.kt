@@ -74,6 +74,7 @@ fun GameDetailScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
     onCreateNetplay: ((String) -> Unit)? = null,
+    onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -159,6 +160,19 @@ fun GameDetailScreen(
                                 viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
                             },
                         )
+                    }
+                }
+
+                if (onNavigateToChallenges != null) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            ChallengesSection(
+                                gameTitle = game.title,
+                                onViewAll = { onNavigateToChallenges(gameId, game.title) },
+                            )
+                        }
                     }
                 }
             },
@@ -527,4 +541,31 @@ private fun SaveStateItem(
             }
         }
     }
+}
+
+@Composable
+private fun ChallengesSection(
+    gameTitle: String,
+    onViewAll: () -> Unit,
+) {
+    Spacer(Modifier.height(SpSpacing.XLarge))
+    Text(
+        text = "Challenges",
+        style = SpTypography.HeadlineSmall,
+        color = SpColor.OnBackground,
+        modifier = Modifier.semantics { heading() },
+    )
+    Spacer(Modifier.height(SpSpacing.Small))
+    Text(
+        text = "Compete on community-created challenges for $gameTitle",
+        style = SpTypography.BodyMedium,
+        color = SpColor.OnBackgroundSecondary,
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+    SpButton(
+        text = "View Challenges",
+        onClick = onViewAll,
+        style = SpButtonStyle.Secondary,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

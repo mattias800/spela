@@ -33,6 +33,27 @@ object SpSpacing {
     val GridCellMinWidth = 140.dp
     val GridSpacing = 12.dp
 
+    // Icon sizes
+    val IconSmall = 14.dp
+    val IconDefault = 20.dp
+    val IconLarge = 28.dp
+    val IconXLarge = 32.dp
+    val IconHero = 48.dp
+
+    // Avatar sizes
+    val AvatarSmall = 16.dp
+    val AvatarMedium = 24.dp
+    val AvatarDefault = 32.dp
+
+    // Corner radii
+    val RadiusSmall = 4.dp
+    val RadiusMedium = 8.dp
+    val RadiusLarge = 12.dp
+    val RadiusXLarge = 24.dp
+
+    // Challenge grid (wider cards than game grid)
+    val ChallengeCellMinWidth = 180.dp
+
     // Top bar
     val TopBarHeight = 64.dp
 }

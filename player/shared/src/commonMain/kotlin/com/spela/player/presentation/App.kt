@@ -18,6 +18,8 @@ import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
+import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
+import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
@@ -46,6 +48,8 @@ fun App() {
     val netplayLobbyViewModel: NetplayLobbyViewModel = koinInject()
     val statsViewModel: StatsViewModel = koinInject()
     val collectionsViewModel: CollectionsViewModel = koinInject()
+    val challengeListViewModel: ChallengeListViewModel = koinInject()
+    val challengeDetailViewModel: ChallengeDetailViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
     val presenceService: PresenceService = koinInject()
 
@@ -67,6 +71,8 @@ fun App() {
         netplayLobbyViewModel = netplayLobbyViewModel,
         statsViewModel = statsViewModel,
         collectionsViewModel = collectionsViewModel,
+        challengeListViewModel = challengeListViewModel,
+        challengeDetailViewModel = challengeDetailViewModel,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
     )

@@ -60,6 +60,9 @@ export function Modal({
     >
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={cn(
           "relative w-full rounded-2xl bg-surface-900 border border-surface-800 shadow-2xl",
           "animate-in fade-in zoom-in-95 duration-200",

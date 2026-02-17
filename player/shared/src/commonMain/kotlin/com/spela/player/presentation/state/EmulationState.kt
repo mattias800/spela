@@ -52,6 +52,18 @@ data class EmulationState(
     val netplayShowLeaveConfirm: Boolean = false,
     val netplayPauseElapsedSeconds: Long = 0,
     val netplaySessionExpired: Boolean = false,
+
+    /** Challenge mode: set when playing a challenge attempt. */
+    val challengeId: String? = null,
+    val challengeAttemptId: String? = null,
+    val challengeObjective: String = "",
+    val challengeElapsedMs: Long = 0,
+    val showChallengeCreation: Boolean = false,
+    val isCreatingChallenge: Boolean = false,
+    val challengeCreationSuccess: Boolean = false,
+    val showGiveUpConfirm: Boolean = false,
+    val challengeCompletedAttempt: com.spela.player.domain.model.ChallengeAttempt? = null,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
+    val isChallengeMode: Boolean get() = challengeId != null
 }

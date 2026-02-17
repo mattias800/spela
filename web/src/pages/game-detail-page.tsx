@@ -33,6 +33,7 @@ import { RatingSummaryCard } from "@/components/game-detail/rating-summary";
 import { GameReviews } from "@/components/game-detail/game-reviews";
 import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
 import { GameActiveRelays } from "@/components/relays/game-active-relays";
+import { GameChallenges } from "@/components/challenges/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import type { Collection } from "@/types/api";
 
@@ -126,7 +127,7 @@ export function GameDetailPage() {
   const { data: gameAchievements } = useGameAchievements(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
-  const hasAchievements = (gameAchievements?.achievements.length ?? 0) > 0;
+  const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -207,6 +208,8 @@ export function GameDetailPage() {
       <SaveStatesList saves={saves} gameId={game.id} />
 
       <SharedSavesList gameId={game.id} />
+
+      <GameChallenges gameId={game.id} saves={saves} />
 
       <GameActiveRelays gameId={game.id} />
     </div>

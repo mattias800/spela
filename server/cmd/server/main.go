@@ -106,7 +106,8 @@ func main() {
 		Hub:         hub,
 		NetplayHub:  netplayHub,
 		CoreDir:     coreDir,
-		CORSOrigins: corsOrigins,
+		CORSOrigins:                  corsOrigins,
+		ChallengeAttemptRateLimitSec: 30,
 	})
 
 	slog.Info("server listening", "port", port)

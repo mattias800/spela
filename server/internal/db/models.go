@@ -410,6 +410,47 @@ type NetplaySession struct {
 	EndedAt      *time.Time     `json:"endedAt,omitempty"`
 }
 
+// Challenge represents a user-created game challenge.
+type Challenge struct {
+	ID              uint           `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	CreatorID       uint           `gorm:"index;not null" json:"creatorId"`
+	Creator         User           `gorm:"foreignKey:CreatorID" json:"-"`
+	GameID          uint           `gorm:"index;not null" json:"gameId"`
+	Game            Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name            string         `gorm:"size:255;not null" json:"name"`
+	Description     string         `gorm:"type:text" json:"description,omitempty"`
+	Type            string         `gorm:"size:32;not null;default:completion" json:"type"`       // "completion", "speedrun", "survival"
+	Difficulty      string         `gorm:"size:32;not null;default:medium" json:"difficulty"`     // "easy", "medium", "hard"
+	Status          string         `gorm:"size:32;not null;default:active;index" json:"status"`   // "active", "closed", "expired"
+	SaveFilePath    string         `gorm:"size:1024;not null" json:"-"`
+	SaveFileSize    int64          `json:"saveFileSize"`
+	ScreenshotPath  string         `gorm:"size:512" json:"-"`
+	CoreName        string         `gorm:"size:128" json:"coreName,omitempty"`
+	AttemptCount    int            `gorm:"default:0" json:"attemptCount"`
+	CompletionCount int            `gorm:"default:0" json:"completionCount"`
+	ExpiresAt       *time.Time     `json:"expiresAt,omitempty"`
+}
+
+// ChallengeAttempt represents a user's attempt at a challenge.
+type ChallengeAttempt struct {
+	ID          uint           `gorm:"primarykey" json:"id"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ChallengeID uint           `gorm:"index:idx_challenge_attempt;not null" json:"challengeId"`
+	Challenge   Challenge      `gorm:"foreignKey:ChallengeID" json:"-"`
+	UserID      uint           `gorm:"index:idx_challenge_attempt;not null" json:"userId"`
+	User        User           `gorm:"foreignKey:UserID" json:"-"`
+	Status      string         `gorm:"size:32;not null;default:in_progress" json:"status"` // "in_progress", "completed", "abandoned"
+	StartedAt   time.Time      `gorm:"not null" json:"startedAt"`
+	CompletedAt *time.Time     `json:"completedAt,omitempty"`
+	DurationMs  int64          `gorm:"default:0" json:"durationMs"`
+	IsBest      bool           `gorm:"default:false" json:"isBest"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

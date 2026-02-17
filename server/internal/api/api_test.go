@@ -51,6 +51,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.RelayInvite{},
 		&db.RelaySave{},
 		&db.NetplaySession{},
+		&db.Challenge{},
+		&db.ChallengeAttempt{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

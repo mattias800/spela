@@ -331,7 +331,10 @@ export interface ActivityEvent {
     | "favorited_game"
     | "rated_game"
     | "shared_save"
-    | "queued_play_later";
+    | "queued_play_later"
+    | "challenge_created"
+    | "challenge_completed"
+    | "challenge_record";
   gameId: string;
   gameTitle: string;
   gameCoverUrl?: string;
@@ -547,4 +550,93 @@ export interface NetplaySessionsResponse {
 export interface BiosFile {
   name: string;
   size: number;
+}
+
+// --- Challenges ---
+
+export type ChallengeType = "completion" | "speedrun" | "survival";
+export type ChallengeDifficulty = "easy" | "medium" | "hard";
+export type ChallengeStatus = "active" | "closed" | "expired";
+export type AttemptStatus = "in_progress" | "completed" | "abandoned";
+
+export interface Challenge {
+  id: string;
+  creatorId: string;
+  creatorUsername: string;
+  creatorAvatarUrl?: string;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  gameConsoleName: string;
+  name: string;
+  description?: string;
+  type: ChallengeType;
+  difficulty: ChallengeDifficulty;
+  status: ChallengeStatus;
+  screenshotUrl?: string;
+  coreName: string;
+  saveFileSize: number;
+  attemptCount: number;
+  completionCount: number;
+  expiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChallengesResponse {
+  data: Challenge[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ChallengeFilters {
+  gameId?: string;
+  consoleId?: string;
+  difficulty?: ChallengeDifficulty;
+  type?: ChallengeType;
+  status?: ChallengeStatus;
+  sortBy?: "newest" | "most_attempted" | "ending_soon";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ChallengeAttempt {
+  id: string;
+  challengeId: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  status: AttemptStatus;
+  startedAt: string;
+  completedAt?: string | null;
+  durationMs: number;
+  isBest: boolean;
+}
+
+export interface ChallengeLeaderboardEntry {
+  rank: number;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  durationMs: number;
+  completedAt: string;
+}
+
+export interface ChallengeLeaderboardResponse {
+  data: ChallengeLeaderboardEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface StartAttemptResponse {
+  attemptId: string;
+  startedAt: string;
+}
+
+export interface CompleteAttemptResponse {
+  attempt: ChallengeAttempt;
+  rank: number;
+  isNewBest: boolean;
 }

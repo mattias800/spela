@@ -554,6 +554,74 @@ data class MostActivePlayersResponse(
     val players: List<ActivePlayerDto> = emptyList(),
 )
 
+// Challenges
+
+@Serializable
+data class ChallengeDto(
+    val id: String,
+    val creatorId: String,
+    val creatorUsername: String = "",
+    val creatorAvatarUrl: String? = null,
+    val gameId: String,
+    val gameTitle: String = "",
+    val gameCoverUrl: String? = null,
+    val gameConsoleName: String = "",
+    val name: String,
+    val description: String = "",
+    val type: String = "completion",
+    val difficulty: String = "medium",
+    val status: String = "active",
+    val screenshotUrl: String? = null,
+    val coreName: String = "",
+    val saveFileSize: Long = 0,
+    val attemptCount: Int = 0,
+    val completionCount: Int = 0,
+    val bestTimeMs: Long? = null,
+    val expiresAt: String? = null,
+    val createdAt: String = "",
+)
+
+@Serializable
+data class ChallengesResponse(
+    val data: List<ChallengeDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+)
+
+@Serializable
+data class ChallengeAttemptDto(
+    val id: String,
+    val challengeId: String,
+    val userId: String,
+    val username: String = "",
+    val avatarUrl: String? = null,
+    val status: String = "in_progress",
+    val startedAt: String = "",
+    val completedAt: String? = null,
+    val durationMs: Long = 0,
+    val isBest: Boolean = false,
+)
+
+@Serializable
+data class ChallengeLeaderboardEntryDto(
+    val rank: Int,
+    val userId: String,
+    val username: String = "",
+    val avatarUrl: String? = null,
+    val durationMs: Long = 0,
+    val completedAt: String = "",
+    val isCurrentUser: Boolean = false,
+)
+
+@Serializable
+data class ChallengeLeaderboardResponse(
+    val data: List<ChallengeLeaderboardEntryDto> = emptyList(),
+    val total: Long = 0,
+    val page: Int = 1,
+    val pageSize: Int = 50,
+)
+
 // Netplay
 
 @Serializable

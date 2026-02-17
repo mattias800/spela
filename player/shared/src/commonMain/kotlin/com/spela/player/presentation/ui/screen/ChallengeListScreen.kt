@@ -1,0 +1,103 @@
+package com.spela.player.presentation.ui.screen
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.spela.player.presentation.intent.ChallengeIntent
+import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
+import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
+import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.viewmodel.ChallengeListViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChallengeListScreen(
+    viewModel: ChallengeListViewModel,
+    gameId: String,
+    gameTitle: String = "Challenges",
+    onChallengeSelected: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(gameId) {
+        viewModel.onIntent(ChallengeIntent.LoadGameChallenges(gameId))
+    }
+
+    PlatformBackHandler(onBack = onBack)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.Background),
+    ) {
+        SpTopBar(
+            title = gameTitle,
+            showBack = true,
+            onBack = onBack,
+        )
+
+        if (state.isLoadingGameChallenges && state.gameChallenges.isEmpty()) {
+            // Skeleton grid while loading
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                items(6) { SpChallengeCardSkeleton() }
+            }
+        } else {
+            PullToRefreshBox(
+                isRefreshing = state.isLoadingGameChallenges && state.gameChallenges.isNotEmpty(),
+                onRefresh = { viewModel.onIntent(ChallengeIntent.LoadGameChallenges(gameId)) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (state.gameChallenges.isEmpty()) {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SpEmptyStates.NoChallenges()
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    ) {
+                        items(
+                            state.gameChallenges,
+                            key = { it.id },
+                        ) { challenge ->
+                            SpChallengeCard(
+                                challenge = challenge,
+                                onClick = { onChallengeSelected(challenge.id) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

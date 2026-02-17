@@ -9,6 +9,8 @@ sealed interface EmulationIntent {
         val netplayLocalPort: Int = 0,
         val netplayInputDelay: Int = 3,
         val netplayIsHost: Boolean = false,
+        val challengeId: String? = null,
+        val challengeSaveData: ByteArray? = null,
     ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent
@@ -36,4 +38,20 @@ sealed interface EmulationIntent {
     data object ShowNetplayLeaveConfirm : EmulationIntent
     data object DismissNetplayLeaveConfirm : EmulationIntent
     data object ConfirmNetplayLeave : EmulationIntent
+
+    // Challenge-specific intents
+    data object CreateChallenge : EmulationIntent
+    data class SubmitChallenge(
+        val name: String,
+        val description: String,
+        val type: String,
+        val difficulty: String,
+    ) : EmulationIntent
+    data object DismissChallengeCreation : EmulationIntent
+    data object CompleteChallenge : EmulationIntent
+    data object RestartChallenge : EmulationIntent
+    data object ShowGiveUpConfirm : EmulationIntent
+    data object DismissGiveUpConfirm : EmulationIntent
+    data object ConfirmGiveUp : EmulationIntent
+    data object DismissChallengeResult : EmulationIntent
 }

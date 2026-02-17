@@ -1,6 +1,8 @@
 package com.spela.player.desktop
 
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -10,6 +12,7 @@ import com.spela.player.di.platformModule
 import com.spela.player.presentation.App
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
+import com.spela.player.presentation.viewmodel.EmulationViewModel
 import kotlinx.coroutines.delay
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
@@ -23,9 +26,20 @@ fun main(args: Array<String>) = application {
         modules(commonModule, platformModule())
     }
 
+    val emulationViewModel = getKoin().get<EmulationViewModel>()
+    val emulationState by emulationViewModel.state.collectAsState()
+
+    val windowTitle = when {
+        emulationState.isChallengeMode && emulationState.gameTitle.isNotBlank() ->
+            "Spela \u2014 Challenge: ${emulationState.gameTitle}"
+        emulationState.isRunning && emulationState.gameTitle.isNotBlank() ->
+            "Spela \u2014 ${emulationState.gameTitle}"
+        else -> "Spela"
+    }
+
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Spela",
+        title = windowTitle,
         state = rememberWindowState(width = 1280.dp, height = 720.dp),
     ) {
         App()

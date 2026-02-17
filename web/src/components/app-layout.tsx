@@ -4,6 +4,7 @@ import {
   Library,
   BarChart3,
   Activity,
+  Flag,
   Repeat,
   Wifi,
   SlidersHorizontal,
@@ -45,6 +46,12 @@ export function AppLayout() {
         },
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/activity", icon: Activity, label: "Activity" },
+        {
+          to: "/challenges",
+          icon: Flag,
+          label: "Challenges",
+          matchPaths: ["/challenges"],
+        },
         {
           to: "/relays",
           icon: Repeat,

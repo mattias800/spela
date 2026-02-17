@@ -23,6 +23,8 @@ sealed class SpScreen(val route: String) {
     data object NetplaySessions : SpScreen("netplay")
     data class NetplayLobby(val sessionId: String) : SpScreen("netplay/$sessionId")
     data object Licenses : SpScreen("licenses")
+    data class ChallengeList(val gameId: String, val gameTitle: String) : SpScreen("challenges/$gameId")
+    data class ChallengeDetail(val challengeId: String) : SpScreen("challenge/$challengeId")
 }
 
 data class NavigationState(
@@ -37,6 +39,7 @@ data class NavigationState(
     val overlayNetplayLocalPort: Int = 0,
     val overlayNetplayInputDelay: Int = 3,
     val overlayNetplayIsHost: Boolean = false,
+    val overlayChallengeId: String? = null,
     val screenBehindOverlay: SpScreen? = null,
     val backStackBehindOverlay: List<SpScreen> = emptyList(),
     val isRestoringSession: Boolean = true,
@@ -54,6 +57,7 @@ sealed interface NavigationIntent {
         val netplayLocalPort: Int = 0,
         val netplayInputDelay: Int = 3,
         val netplayIsHost: Boolean = false,
+        val challengeId: String? = null,
     ) : NavigationIntent
     data object HideOverlay : NavigationIntent
 }

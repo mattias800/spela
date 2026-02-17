@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
@@ -190,6 +191,26 @@ object SpEmptyStates {
             icon = Icons.Filled.SportsEsports,
             title = "No netplay sessions yet",
             message = "Create one to play with a friend.",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
+    fun NoChallenges(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.Filled.Flag,
+            title = "No challenges yet",
+            message = "Create a challenge while playing to test other players",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
+    fun NoAttempts(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.Filled.Flag,
+            title = "No attempts yet",
+            message = "Be the first to attempt this challenge!",
             modifier = modifier,
         )
     }

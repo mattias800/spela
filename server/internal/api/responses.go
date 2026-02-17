@@ -523,6 +523,56 @@ type NetplaySessionResponse struct {
 	EndedAt          *time.Time `json:"endedAt,omitempty"`
 }
 
+// ChallengeResponse is the API response for a game challenge.
+type ChallengeResponse struct {
+	ID              string     `json:"id"`
+	CreatorID       string     `json:"creatorId"`
+	CreatorUsername string     `json:"creatorUsername"`
+	CreatorAvatar   string     `json:"creatorAvatar,omitempty"`
+	GameID          string     `json:"gameId"`
+	GameTitle       string     `json:"gameTitle"`
+	GameCoverURL    string     `json:"gameCoverUrl,omitempty"`
+	ConsoleName     string     `json:"consoleName,omitempty"`
+	Name            string     `json:"name"`
+	Description     string     `json:"description,omitempty"`
+	Type            string     `json:"type"`
+	Difficulty      string     `json:"difficulty"`
+	Status          string     `json:"status"`
+	SaveFileSize    int64      `json:"saveFileSize"`
+	ScreenshotURL   string     `json:"screenshotUrl,omitempty"`
+	CoreName        string     `json:"coreName,omitempty"`
+	AttemptCount    int        `json:"attemptCount"`
+	CompletionCount int        `json:"completionCount"`
+	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+}
+
+// ChallengeAttemptResponse is the API response for a challenge attempt.
+type ChallengeAttemptResponse struct {
+	ID          string     `json:"id"`
+	ChallengeID string     `json:"challengeId"`
+	UserID      string     `json:"userId"`
+	Username    string     `json:"username"`
+	AvatarURL   string     `json:"avatarUrl,omitempty"`
+	Status      string     `json:"status"`
+	StartedAt   time.Time  `json:"startedAt"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	DurationMs  int64      `json:"durationMs"`
+	IsBest      bool       `json:"isBest"`
+}
+
+// ChallengeLeaderboardEntry is the API response for a leaderboard entry.
+type ChallengeLeaderboardEntry struct {
+	Rank       int        `json:"rank"`
+	UserID     string     `json:"userId"`
+	Username   string     `json:"username"`
+	AvatarURL  string     `json:"avatarUrl,omitempty"`
+	DurationMs int64      `json:"durationMs"`
+	AttemptID  string     `json:"attemptId"`
+	CompletedAt time.Time `json:"completedAt"`
+}
+
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
 func parseAspectRatio(aspect string) float64 {
 	parts := strings.SplitN(aspect, ":", 2)

@@ -7,6 +7,7 @@ import {
   Trophy,
   Activity,
   Users,
+  Flag,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
@@ -24,6 +25,8 @@ import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
 import { ActivityFeed } from "@/components/social/activity-feed";
 import { OnlineUsers } from "@/components/social/online-users";
+import { ChallengeCard } from "@/components/challenges/challenge-card";
+import { useChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
 import type { Game, RecentAchievement } from "@/types/api";
 
@@ -188,6 +191,54 @@ function RecentAchievementsSection() {
   );
 }
 
+function TrendingChallengesSection() {
+  const { data, isLoading } = useChallenges({
+    sortBy: "most_attempted",
+    pageSize: 4,
+    status: "active",
+  });
+
+  if (isLoading) {
+    return (
+      <section data-testid="trending-challenges-section">
+        <SectionHeader
+          title="Trending Challenges"
+          icon={Flag}
+          linkTo="/challenges"
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-[16/10] rounded-2xl" />
+              <div className="px-1 space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!data?.data || data.data.length === 0) return null;
+
+  return (
+    <section data-testid="trending-challenges-section">
+      <SectionHeader
+        title="Trending Challenges"
+        icon={Flag}
+        linkTo="/challenges"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+        {data.data.slice(0, 4).map((challenge) => (
+          <ChallengeCard key={challenge.id} challenge={challenge} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const recentGames = useRecentGames();
@@ -224,6 +275,8 @@ export function DashboardPage() {
       <PersonalStatsCard />
 
       <RecentAchievementsSection />
+
+      <TrendingChallengesSection />
 
       {showEmptyState && (
         <EmptyState

@@ -1,4 +1,5 @@
 const sizeClasses = {
+  xs: "h-5 w-5 text-[10px]",
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-20 w-20 text-2xl",
@@ -7,7 +8,7 @@ const sizeClasses = {
 interface PlayerAvatarProps {
   username: string;
   avatarUrl?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 export function PlayerAvatar({
