@@ -67,6 +67,14 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import kotlinx.coroutines.delay
 
+data class NetplayStartConfig(
+    val gameId: String,
+    val sessionId: String,
+    val localPort: Int,
+    val inputDelay: Int,
+    val isHost: Boolean,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NetplayLobbyScreen(
@@ -74,7 +82,7 @@ fun NetplayLobbyScreen(
     viewModel: NetplayLobbyViewModel,
     onBack: () -> Unit,
     currentUserId: String,
-    onStartGame: (gameId: String, sessionId: String, localPort: Int, inputDelay: Int, isHost: Boolean) -> Unit,
+    onStartGame: (NetplayStartConfig) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val clipboardManager = LocalClipboardManager.current
@@ -106,7 +114,13 @@ fun NetplayLobbyScreen(
             }
             val isHost = session.hostUserId == currentUserId
             val localPort = if (isHost) 0 else 1
-            onStartGame(session.gameId, session.id, localPort, session.inputDelay, isHost)
+            onStartGame(NetplayStartConfig(
+                gameId = session.gameId,
+                sessionId = session.id,
+                localPort = localPort,
+                inputDelay = session.inputDelay,
+                isHost = isHost,
+            ))
         } else {
             autoLaunchCountdown = 0
         }
@@ -312,7 +326,7 @@ private fun LobbyHeader(session: NetplaySession) {
             imageUrl = session.gameCoverUrl,
             contentDescription = "${session.gameTitle} cover",
             modifier = Modifier.width(80.dp),
-            cornerRadius = 12.dp,
+            cornerRadius = SpSpacing.RadiusLarge,
             aspectRatio = session.coverAspectRatio,
         )
         Spacer(Modifier.width(SpSpacing.Default))

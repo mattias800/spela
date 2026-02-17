@@ -99,7 +99,7 @@ fun RelayDetailScreen(
                     SpLoadingIndicator(message = "Loading relay...")
                 }
             } else if (state.relay != null) {
-                val relay = state.relay!!
+                val relay = state.relay ?: return
                 val isRefreshing = state.isLoadingRelay || state.isLoadingSaves
 
                 PullToRefreshBox(
@@ -248,7 +248,7 @@ private fun RelayHeader(
                 imageUrl = relay.gameCoverUrl,
                 contentDescription = "${relay.gameTitle} cover",
                 modifier = Modifier.size(width = 80.dp, height = 107.dp),
-                cornerRadius = 12.dp,
+                cornerRadius = SpSpacing.RadiusLarge,
             )
             Spacer(Modifier.width(SpSpacing.Default))
             Column(modifier = Modifier.weight(1f)) {

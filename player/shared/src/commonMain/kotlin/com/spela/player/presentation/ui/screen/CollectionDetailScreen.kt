@@ -65,7 +65,7 @@ fun CollectionDetailScreen(
                 SpLoadingIndicator(message = "Loading collection...")
             }
         } else if (state.selectedDetail != null) {
-            val detail = state.selectedDetail!!
+            val detail = state.selectedDetail ?: return
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                 modifier = Modifier.fillMaxSize(),

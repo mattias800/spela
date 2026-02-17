@@ -28,17 +28,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.spela.player.domain.model.DownloadState
+import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.intent.GameDetailIntent
+import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.WatchLater
@@ -128,8 +133,11 @@ fun GameDetailScreen(
                             game = game,
                             detail = detail,
                             state = state,
-                            viewModel = viewModel,
                             onPlay = onPlay,
+                            onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                            onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
+                            onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+                            onRate = { rating -> viewModel.onIntent(GameDetailIntent.RateGame(rating)) },
                             onCreateNetplay = onCreateNetplay,
                         )
                     }
@@ -197,11 +205,14 @@ fun GameDetailScreen(
 @Composable
 private fun GameInfoContent(
     gameId: String,
-    game: com.spela.player.domain.model.Game,
-    detail: com.spela.player.domain.model.GameDetail,
-    state: com.spela.player.presentation.state.GameDetailState,
-    viewModel: GameDetailViewModel,
+    game: Game,
+    detail: GameDetail,
+    state: GameDetailState,
     onPlay: (String) -> Unit,
+    onDownloadGame: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onTogglePlayLater: () -> Unit,
+    onRate: (Int) -> Unit,
     onCreateNetplay: ((String) -> Unit)? = null,
 ) {
     Text(
@@ -253,7 +264,7 @@ private fun GameInfoContent(
             val isDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
             SpButton(
                 text = if (isDownloading) "Downloading..." else "Download",
-                onClick = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                onClick = onDownloadGame,
                 modifier = Modifier
                     .weight(1f)
                     .semantics {
@@ -267,7 +278,7 @@ private fun GameInfoContent(
 
         SpButton(
             text = "",
-            onClick = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
+            onClick = onToggleFavorite,
             style = if (game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
                 contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites"
@@ -284,7 +295,7 @@ private fun GameInfoContent(
 
         SpButton(
             text = "",
-            onClick = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+            onClick = onTogglePlayLater,
             style = if (game.isInPlayLater) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
                 contentDescription = if (game.isInPlayLater) "Remove from Play Later" else "Add to Play Later"
@@ -379,7 +390,7 @@ private fun GameInfoContent(
         averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
         ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
         onRate = { rating ->
-            viewModel.onIntent(GameDetailIntent.RateGame(rating))
+            onRate(rating)
         },
     )
     Spacer(Modifier.height(SpSpacing.XLarge))
@@ -402,17 +413,17 @@ private fun ScreenshotsSection(screenshots: List<String>) {
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(screenshots) { screenshotUrl ->
+        items(screenshots, key = { it }) { screenshotUrl ->
             SpCard(
                 modifier = Modifier
                     .width(240.dp)
                     .height(160.dp),
             ) {
-                coil3.compose.AsyncImage(
+                AsyncImage(
                     model = screenshotUrl,
                     contentDescription = "Game screenshot",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    contentScale = ContentScale.Crop,
                 )
             }
         }

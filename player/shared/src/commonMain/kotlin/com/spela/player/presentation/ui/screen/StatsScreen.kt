@@ -238,7 +238,7 @@ private fun MostPlayedGameItem(
                 imageUrl = item.game.coverUrl,
                 contentDescription = "${item.game.title} cover",
                 modifier = Modifier.size(width = 48.dp, height = 64.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

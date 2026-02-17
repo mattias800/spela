@@ -215,7 +215,7 @@ private fun RelayItem(
                 imageUrl = relay.gameCoverUrl,
                 contentDescription = "${relay.gameTitle} cover",
                 modifier = Modifier.size(width = 48.dp, height = 64.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
@@ -280,7 +280,7 @@ private fun InvitationItem(
                 imageUrl = invitation.gameCoverUrl,
                 contentDescription = "${invitation.gameTitle} cover",
                 modifier = Modifier.size(width = 48.dp, height = 64.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

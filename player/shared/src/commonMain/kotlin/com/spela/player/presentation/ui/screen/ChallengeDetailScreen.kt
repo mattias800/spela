@@ -87,7 +87,7 @@ fun ChallengeDetailScreen(
         if (state.isLoading && state.challenge == null) {
             ChallengeDetailSkeleton()
         } else if (state.challenge != null) {
-            val challenge = state.challenge!!
+            val challenge = state.challenge ?: return
 
             Column(
                 modifier = Modifier

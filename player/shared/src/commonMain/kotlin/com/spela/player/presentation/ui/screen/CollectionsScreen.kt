@@ -170,7 +170,7 @@ private fun CollectionListItem(
                 imageUrl = collection.coverUrl,
                 contentDescription = "${collection.name} cover",
                 modifier = Modifier.size(width = 60.dp, height = 60.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

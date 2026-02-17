@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -283,135 +284,46 @@ fun InGameOverlay(
                         )
                     } else {
                         // Normal mode: all action buttons
-                        if (isLandscape) {
-                            // Landscape: horizontal row with resume/exit alongside actions
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                OverlayAction(
-                                    label = "Save",
-                                    icon = Icons.Filled.Save,
-                                    onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
-                                )
-                                OverlayAction(
-                                    label = "Load",
-                                    icon = Icons.Filled.FolderOpen,
-                                    onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
-                                )
-                                OverlayAction(
-                                    label = "Screenshot",
-                                    icon = Icons.Filled.CameraAlt,
-                                    onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                                )
-                                OverlayAction(
-                                    label = if (state.isFastForward) "Normal" else "Fast",
-                                    icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                                    onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                                    isActive = state.isFastForward,
-                                )
-                                if (state.supportsSaveStates) {
-                                    OverlayAction(
-                                        label = "Challenge",
-                                        icon = Icons.Filled.Flag,
-                                        onClick = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
-                                    )
-                                }
-                                OverlayAction(
-                                    label = "Controls",
-                                    icon = Icons.Filled.SportsEsports,
-                                    onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
-                                )
-                            }
+                        // Action buttons (shared between landscape/portrait)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = if (isLandscape) Alignment.CenterVertically else Alignment.Top,
+                        ) {
+                            OverlayActionButtons(
+                                isFastForward = state.isFastForward,
+                                supportsSaveStates = state.supportsSaveStates,
+                                onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
+                                onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
+                                onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                                onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
+                                onControls = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+                            )
+                        }
 
-                            Spacer(Modifier.height(SpSpacing.Medium))
+                        Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                            ) {
-                                SpButton(
-                                    text = "Exit Game",
-                                    onClick = {
-                                        viewModel.onIntent(EmulationIntent.ShowExitConfirm)
-                                    },
-                                    style = SpButtonStyle.Outlined,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                SpButton(
-                                    text = "Continue",
-                                    onClick = {
-                                        viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                                        viewModel.onIntent(EmulationIntent.ResumeGame)
-                                    },
-                                    modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
-                                )
-                            }
-                        } else {
-                            // Portrait: stacked layout
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                            ) {
-                                OverlayAction(
-                                    label = "Save",
-                                    icon = Icons.Filled.Save,
-                                    onClick = { viewModel.onIntent(EmulationIntent.SaveState) },
-                                )
-                                OverlayAction(
-                                    label = "Load",
-                                    icon = Icons.Filled.FolderOpen,
-                                    onClick = { viewModel.onIntent(EmulationIntent.LoadState) },
-                                )
-                                OverlayAction(
-                                    label = "Screenshot",
-                                    icon = Icons.Filled.CameraAlt,
-                                    onClick = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                                )
-                                OverlayAction(
-                                    label = if (state.isFastForward) "Normal" else "Fast",
-                                    icon = if (state.isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                                    onClick = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                                    isActive = state.isFastForward,
-                                )
-                                if (state.supportsSaveStates) {
-                                    OverlayAction(
-                                        label = "Challenge",
-                                        icon = Icons.Filled.Flag,
-                                        onClick = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
-                                    )
-                                }
-                                OverlayAction(
-                                    label = "Controls",
-                                    icon = Icons.Filled.SportsEsports,
-                                    onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
-                                )
-                            }
-
-                            Spacer(Modifier.height(SpSpacing.XLarge))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                            ) {
-                                SpButton(
-                                    text = "Exit Game",
-                                    onClick = {
-                                        viewModel.onIntent(EmulationIntent.ShowExitConfirm)
-                                    },
-                                    style = SpButtonStyle.Outlined,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                SpButton(
-                                    text = "Continue",
-                                    onClick = {
-                                        viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                                        viewModel.onIntent(EmulationIntent.ResumeGame)
-                                    },
-                                    modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
-                                )
-                            }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        ) {
+                            SpButton(
+                                text = "Exit Game",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.ShowExitConfirm)
+                                },
+                                style = SpButtonStyle.Outlined,
+                                modifier = Modifier.weight(1f),
+                            )
+                            SpButton(
+                                text = "Continue",
+                                onClick = {
+                                    viewModel.onIntent(EmulationIntent.ToggleOverlay)
+                                    viewModel.onIntent(EmulationIntent.ResumeGame)
+                                },
+                                modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
+                            )
                         }
                     }
                 }
@@ -796,6 +708,32 @@ private fun PerformanceBadge(
             color = SpColor.OnBackgroundTertiary,
         )
     }
+}
+
+@Composable
+private fun RowScope.OverlayActionButtons(
+    isFastForward: Boolean,
+    supportsSaveStates: Boolean,
+    onSave: () -> Unit,
+    onLoad: () -> Unit,
+    onScreenshot: () -> Unit,
+    onToggleFastForward: () -> Unit,
+    onChallenge: () -> Unit,
+    onControls: () -> Unit,
+) {
+    OverlayAction(label = "Save", icon = Icons.Filled.Save, onClick = onSave)
+    OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
+    OverlayAction(label = "Screenshot", icon = Icons.Filled.CameraAlt, onClick = onScreenshot)
+    OverlayAction(
+        label = if (isFastForward) "Normal" else "Fast",
+        icon = if (isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
+        onClick = onToggleFastForward,
+        isActive = isFastForward,
+    )
+    if (supportsSaveStates) {
+        OverlayAction(label = "Challenge", icon = Icons.Filled.Flag, onClick = onChallenge)
+    }
+    OverlayAction(label = "Controls", icon = Icons.Filled.SportsEsports, onClick = onControls)
 }
 
 @Composable

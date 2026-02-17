@@ -40,6 +40,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.formatBytes
 import com.spela.player.presentation.viewmodel.DownloadsIntent
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 
@@ -77,7 +78,7 @@ fun DownloadsScreen(
                             .fillMaxWidth()
                             .padding(SpSpacing.Default)
                             .semantics {
-                                contentDescription = "Local cache, ${formatCacheSize(state.cacheSize)}"
+                                    contentDescription = "Local cache, ${if (state.cacheSize <= 0) "0 B" else "${formatBytes(state.cacheSize)} used"}"
                             },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -89,7 +90,7 @@ fun DownloadsScreen(
                                 color = SpColor.OnCard,
                             )
                             Text(
-                                text = formatCacheSize(state.cacheSize),
+                                text = if (state.cacheSize <= 0) "0 B" else "${formatBytes(state.cacheSize)} used",
                                 style = SpTypography.BodySmall,
                                 color = SpColor.OnBackgroundTertiary,
                             )
@@ -206,16 +207,4 @@ private fun DownloadItem(
             }
         }
     }
-}
-
-private fun formatCacheSize(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = listOf("B", "KB", "MB", "GB")
-    var value = bytes.toDouble()
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.size - 1) {
-        value /= 1024
-        unitIndex++
-    }
-    return "%.1f %s used".format(value, units[unitIndex])
 }

@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -49,6 +52,7 @@ import com.spela.player.presentation.ui.screen.PlatformTouchControls
 
 import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
+import com.spela.player.presentation.ui.screen.NetplayStartConfig
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
@@ -118,6 +122,17 @@ fun SpelaApp(
 
     SpelaTheme(theme = currentTheme) {
         val navState by navigationViewModel.state.collectAsState()
+
+        // Hidden indicator for E2E tests: exposes whether the libretro core is running.
+        // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
+        val coreIdleState by emulationViewModel.state.collectAsState()
+        Box(
+            modifier = Modifier
+                .size(0.dp)
+                .semantics {
+                    contentDescription = if (coreIdleState.isRunning) "Core running" else "Core idle"
+                },
+        )
 
         // Show loading screen while session is being restored
         if (navState.isRestoringSession) {
@@ -434,14 +449,14 @@ fun SpelaApp(
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
-                                    onStartGame = { gameId, sessionId, localPort, inputDelay, isHost ->
+                                    onStartGame = { config ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.ShowOverlay(
-                                                gameId = gameId,
-                                                netplaySessionId = sessionId,
-                                                netplayLocalPort = localPort,
-                                                netplayInputDelay = inputDelay,
-                                                netplayIsHost = isHost,
+                                                gameId = config.gameId,
+                                                netplaySessionId = config.sessionId,
+                                                netplayLocalPort = config.localPort,
+                                                netplayInputDelay = config.inputDelay,
+                                                netplayIsHost = config.isHost,
                                             )
                                         )
                                     },

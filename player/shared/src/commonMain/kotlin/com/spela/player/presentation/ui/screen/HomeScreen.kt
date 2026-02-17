@@ -368,7 +368,7 @@ private fun ContinuePlayingCard(
                 imageUrl = game.coverUrl,
                 contentDescription = "${game.title} cover art",
                 modifier = Modifier.size(width = 60.dp, height = 84.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
@@ -591,7 +591,7 @@ private fun NetplaySessionCard(
                 imageUrl = session.gameCoverUrl,
                 contentDescription = "${session.gameTitle} cover",
                 modifier = Modifier.size(width = 48.dp, height = 64.dp),
-                cornerRadius = 8.dp,
+                cornerRadius = SpSpacing.RadiusMedium,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
