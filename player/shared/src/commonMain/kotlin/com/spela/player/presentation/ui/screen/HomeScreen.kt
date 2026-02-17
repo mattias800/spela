@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,24 +30,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.spela.player.domain.model.Console
-import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.NetplaySession
-import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.GameListIntent
-import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpCoverArt
-import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpGradientCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -60,13 +47,13 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
-import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
+import androidx.compose.foundation.focusable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -323,330 +310,5 @@ private fun SectionHeaderWithSeeAll(
                     role = Role.Button
                 },
         )
-    }
-}
-
-@Composable
-private fun ContinuePlayingRow(
-    games: List<Game>,
-    onGameSelected: (String) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        items(games, key = { it.id }) { game ->
-            ContinuePlayingCard(
-                game = game,
-                onClick = { onGameSelected(game.id) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun ContinuePlayingCard(
-    game: Game,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .width(280.dp)
-            .semantics {
-                contentDescription = "Continue playing ${game.title} on ${game.consoleName}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.size(width = 60.dp, height = 84.dp),
-                cornerRadius = SpSpacing.RadiusMedium,
-            )
-            Spacer(Modifier.width(SpSpacing.Medium))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
-            Spacer(Modifier.width(SpSpacing.Small))
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(SpColor.Primary)
-                    .semantics {
-                        contentDescription = "Play ${game.title}"
-                        role = Role.Button
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = SpColor.OnPrimary,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GameCarouselRow(
-    games: List<Game>,
-    onGameSelected: (String) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        items(games, key = { it.id }) { game ->
-            GameCoverCard(
-                game = game,
-                onClick = { onGameSelected(game.id) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun GameCoverCard(
-    game: Game,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun ConsolesGrid(
-    consoles: List<Console>,
-    onConsoleSelected: (String) -> Unit,
-    columnsPerRow: Int = 2,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        consoles.chunked(columnsPerRow).forEach { rowConsoles ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            ) {
-                rowConsoles.forEach { console ->
-                    ConsoleCard(
-                        console = console,
-                        onClick = { onConsoleSelected(console.id) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                repeat(columnsPerRow - rowConsoles.size) {
-                    Spacer(Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun ConsoleCard(
-    console: Console,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val consoleColor = getConsoleColor(console.colorTheme)
-
-    SpGradientCard(
-        modifier = modifier
-            .height(100.dp)
-            .semantics {
-                contentDescription = "${console.name}, ${console.gameCount} games"
-                role = Role.Button
-            },
-        onClick = onClick,
-        gradientColors = listOf(
-            consoleColor.copy(alpha = 0.3f),
-            consoleColor.copy(alpha = 0.1f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(SpSpacing.Default),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = console.name,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnBackground,
-                )
-                Text(
-                    text = "${console.gameCount} games",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundSecondary,
-                )
-            }
-            if (console.iconUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = console.iconUrl,
-                    contentDescription = "${console.name} icon",
-                    modifier = Modifier.size(56.dp),
-                    alpha = 0.7f,
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = "${console.name} icon",
-                    tint = SpColor.OnBackground.copy(alpha = 0.3f),
-                    modifier = Modifier.size(56.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NetplaySessionCard(
-    session: NetplaySession,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
-            .semantics {
-                contentDescription = when (session.status) {
-                    NetplaySessionStatus.WAITING -> "${session.gameTitle} netplay session, waiting for player"
-                    NetplaySessionStatus.IN_PROGRESS -> "${session.gameTitle} with ${session.clientUsername ?: "player"}, tap to rejoin"
-                    NetplaySessionStatus.ENDED -> "${session.gameTitle} session ended"
-                }
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Default),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpCoverArt(
-                imageUrl = session.gameCoverUrl,
-                contentDescription = "${session.gameTitle} cover",
-                modifier = Modifier.size(width = 48.dp, height = 64.dp),
-                cornerRadius = SpSpacing.RadiusMedium,
-            )
-            Spacer(Modifier.width(SpSpacing.Medium))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = session.gameTitle,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnCard,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                Text(
-                    text = when (session.status) {
-                        NetplaySessionStatus.WAITING -> "Waiting for player..."
-                        NetplaySessionStatus.IN_PROGRESS -> "With ${session.clientUsername ?: session.hostUsername} -- Tap to rejoin"
-                        NetplaySessionStatus.ENDED -> "Session ended"
-                    },
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-internal fun getConsoleColor(colorTheme: String?): Color {
-    if (colorTheme == null) return SpColor.Primary
-    // Try parsing as hex color first (backend sends "#e53e3e" format)
-    if (colorTheme.startsWith("#")) {
-        return try {
-            val hex = colorTheme.removePrefix("#")
-            val colorLong = when (hex.length) {
-                6 -> (0xFF000000 or hex.toLong(16))
-                8 -> hex.toLong(16)
-                else -> null
-            }
-            if (colorLong != null) Color(colorLong.toInt()) else SpColor.Primary
-        } catch (_: NumberFormatException) {
-            SpColor.Primary
-        }
-    }
-    // Fallback to name matching for backwards compatibility
-    return when (colorTheme.lowercase()) {
-        "nes" -> SpColor.ConsoleNes
-        "snes" -> SpColor.ConsoleSnes
-        "gameboy", "gb", "gbc" -> SpColor.ConsoleGameBoy
-        "gba" -> SpColor.ConsoleGba
-        "n64" -> SpColor.ConsoleN64
-        "nds" -> SpColor.ConsoleNds
-        "sega", "genesis", "megadrive" -> SpColor.ConsoleSega
-        "psx", "playstation" -> SpColor.ConsolePsx
-        "psp" -> SpColor.ConsolePsp
-        "arcade", "mame" -> SpColor.ConsoleArcade
-        else -> SpColor.Primary
     }
 }
