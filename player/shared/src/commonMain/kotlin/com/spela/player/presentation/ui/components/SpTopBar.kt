@@ -42,6 +42,7 @@ fun SpTopBar(
     modifier: Modifier = Modifier,
     showBack: Boolean = false,
     onBack: () -> Unit = {},
+    titleLeadingContent: @Composable (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
     Column(
@@ -80,6 +81,11 @@ fun SpTopBar(
                     )
                 }
                 Spacer(Modifier.width(SpSpacing.Medium))
+            }
+
+            if (titleLeadingContent != null) {
+                titleLeadingContent()
+                Spacer(Modifier.width(SpSpacing.Small))
             }
 
             Text(

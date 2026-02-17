@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -560,6 +561,13 @@ internal fun ConsoleCard(
                     contentDescription = "${console.name} icon",
                     modifier = Modifier.size(56.dp),
                     alpha = 0.7f,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.SportsEsports,
+                    contentDescription = "${console.name} icon",
+                    tint = SpColor.OnBackground.copy(alpha = 0.3f),
+                    modifier = Modifier.size(56.dp),
                 )
             }
         }

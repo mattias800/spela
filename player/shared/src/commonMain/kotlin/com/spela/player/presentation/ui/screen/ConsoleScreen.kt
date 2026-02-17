@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpCard
@@ -67,8 +68,8 @@ fun ConsoleScreen(
 
     val state by viewModel.state.collectAsState()
 
-    val consoleName = state.consoles
-        .firstOrNull { it.id == consoleId }?.name ?: "Games"
+    val console = state.consoles.firstOrNull { it.id == consoleId }
+    val consoleName = console?.name ?: "Games"
 
     LaunchedEffect(consoleId) {
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
@@ -84,6 +85,16 @@ fun ConsoleScreen(
             title = consoleName,
             showBack = true,
             onBack = onBack,
+            titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
+                {
+                    AsyncImage(
+                        model = console.iconUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(28.dp),
+                    )
+                }
+            } else null,
             actions = {
                 Box(
                     modifier = Modifier
