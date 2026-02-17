@@ -59,8 +59,8 @@ internal fun ShaderScopeTabs(
 
             Box(
                 modifier = Modifier
-                    .spFocusRing(shape = RoundedCornerShape(20.dp))
-                    .clip(RoundedCornerShape(20.dp))
+                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusPill))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                     .background(backgroundColor)
                     .clickable { onScopeChanged(scope) }
                     .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),

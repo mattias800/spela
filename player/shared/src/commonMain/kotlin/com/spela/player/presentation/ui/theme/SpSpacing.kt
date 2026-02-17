@@ -47,8 +47,10 @@ object SpSpacing {
 
     // Corner radii
     val RadiusSmall = 4.dp
+    val RadiusDefault = 6.dp
     val RadiusMedium = 8.dp
     val RadiusLarge = 12.dp
+    val RadiusPill = 20.dp
     val RadiusXLarge = 24.dp
 
     // Challenge grid (wider cards than game grid)

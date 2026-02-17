@@ -4,9 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,14 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ActivePlayer
@@ -40,9 +40,9 @@ import com.spela.player.util.formatPlayTime
 @Composable
 internal fun RankBadge(rank: Int) {
     val badgeColor = when (rank) {
-        1 -> Color(0xFFFFD700) // Gold
-        2 -> Color(0xFFC0C0C0) // Silver
-        3 -> Color(0xFFCD7F32) // Bronze
+        1 -> SpColor.Gold
+        2 -> SpColor.Silver
+        3 -> SpColor.Bronze
         else -> SpColor.OnBackgroundTertiary
     }
 
@@ -175,56 +175,6 @@ internal fun ActivePlayerItem(
 }
 
 @Composable
-internal fun PlayerAvatar(
-    avatarUrl: String?,
-    username: String,
-) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarUrl != null) {
-            SubcomposeAsyncImage(
-                model = avatarUrl,
-                contentDescription = "$username avatar",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                loading = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(SpColor.SurfaceVariant),
-                    )
-                },
-                error = {
-                    AvatarPlaceholder(username)
-                },
-            )
-        } else {
-            AvatarPlaceholder(username)
-        }
-    }
-}
-
-@Composable
-internal fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.PrimaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleLarge,
-            color = SpColor.PrimaryLight,
-        )
-    }
-}
-
-@Composable
 internal fun StatLabel(label: String, value: String) {
     Column {
         Text(
@@ -236,6 +186,39 @@ internal fun StatLabel(label: String, value: String) {
             text = label,
             style = SpTypography.LabelSmall,
             color = SpColor.OnBackgroundTertiary,
+        )
+    }
+}
+
+@Composable
+private fun PlayerAvatar(
+    avatarUrl: String?,
+    username: String,
+) {
+    SubcomposeAsyncImage(
+        model = avatarUrl,
+        contentDescription = "$username avatar",
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape),
+        contentScale = ContentScale.Crop,
+        error = { AvatarPlaceholder(username) },
+        loading = { AvatarPlaceholder(username) },
+    )
+}
+
+@Composable
+private fun AvatarPlaceholder(username: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.PrimaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = username.take(1).uppercase(),
+            style = SpTypography.TitleMedium,
+            color = SpColor.PrimaryLight,
         )
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,18 +20,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.intent.RelayDetailIntent
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.RelayDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,7 +98,7 @@ fun RelayDetailScreen(
 
                         // Members section
                         item {
-                            RelaySectionHeader(
+                            SpSectionHeader(
                                 title = "Members",
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
@@ -131,7 +128,7 @@ fun RelayDetailScreen(
 
                         // Saves section
                         item {
-                            RelaySectionHeader(
+                            SpSectionHeader(
                                 title = "Save States",
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
@@ -186,15 +183,3 @@ fun RelayDetailScreen(
     }
 }
 
-@Composable
-private fun RelaySectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = SpTypography.HeadlineLarge,
-        color = SpColor.OnBackground,
-        modifier = modifier.semantics { heading() },
-    )
-}

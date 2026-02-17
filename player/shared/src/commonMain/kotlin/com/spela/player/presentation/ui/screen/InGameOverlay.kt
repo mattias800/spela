@@ -61,9 +61,10 @@ fun InGameOverlay(
     }
 
     // Netplay pause attribution overlay
-    if (state.isNetplayMode && state.netplayPausedByUsername != null && !state.showOverlay) {
+    val pausedBy = state.netplayPausedByUsername
+    if (state.isNetplayMode && pausedBy != null && !state.showOverlay) {
         NetplayPauseOverlay(
-            pausedByUsername = state.netplayPausedByUsername!!,
+            pausedByUsername = pausedBy,
             pauseElapsedSeconds = state.netplayPauseElapsedSeconds,
             onResume = { viewModel.onIntent(EmulationIntent.ResumeGame) },
             onLeaveSession = { viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm) },

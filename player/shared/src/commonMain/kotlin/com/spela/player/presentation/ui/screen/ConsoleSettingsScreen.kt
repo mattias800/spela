@@ -6,6 +6,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +36,7 @@ import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreview
+import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -93,7 +95,7 @@ fun ConsoleSettingsScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Default,
             ),
@@ -282,14 +284,14 @@ fun ConsoleSettingsScreen(
                             .fillMaxWidth()
                             .padding(SpSpacing.Default),
                     ) {
-                        ConsoleInfoRow(label = "Console", value = consoleName)
+                        SettingsInfoRow(label = "Console", value = consoleName)
                         if (console?.defaultCore?.isNotEmpty() == true) {
                             Spacer(Modifier.height(SpSpacing.Small))
-                            ConsoleInfoRow(label = "Core", value = console.defaultCore)
+                            SettingsInfoRow(label = "Core", value = console.defaultCore)
                         }
                         if (console != null && console.gameCount > 0) {
                             Spacer(Modifier.height(SpSpacing.Small))
-                            ConsoleInfoRow(
+                            SettingsInfoRow(
                                 label = "Games",
                                 value = "${console.gameCount}",
                             )
@@ -306,7 +308,7 @@ fun ConsoleSettingsScreen(
     }
 
     // Shader fullscreen preview dialog
-    com.spela.player.presentation.ui.components.ShaderPreviewDialog(
+    ShaderPreviewDialog(
         visible = settingsState.fullscreenPreviewConsoleId == consoleId,
         imageUrl = "${settingsState.serverUrl}/api/consoles/${consoleId}/preview-screenshot",
         shader = effectiveShader,
@@ -314,21 +316,3 @@ fun ConsoleSettingsScreen(
     )
 }
 
-@Composable
-private fun ConsoleInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = SpTypography.BodyMedium,
-            color = SpColor.OnBackgroundSecondary,
-        )
-        Text(
-            text = value,
-            style = SpTypography.BodyMedium,
-            color = SpColor.OnCard,
-        )
-    }
-}

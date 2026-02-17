@@ -296,7 +296,7 @@ private fun ProfileGameItem(
                 imageUrl = game.coverUrl,
                 contentDescription = "${game.title} cover",
                 modifier = Modifier.size(width = 40.dp, height = 56.dp),
-                cornerRadius = 6.dp,
+                cornerRadius = SpSpacing.RadiusDefault,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

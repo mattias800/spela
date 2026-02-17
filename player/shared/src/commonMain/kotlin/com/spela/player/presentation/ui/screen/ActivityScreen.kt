@@ -56,6 +56,7 @@ import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -278,7 +279,7 @@ private fun ActivityFeedItem(
                 imageUrl = event.gameCoverUrl,
                 contentDescription = event.gameTitle?.let { "$it cover" } ?: "Game cover",
                 modifier = Modifier.size(width = 40.dp, height = 56.dp),
-                cornerRadius = 6.dp,
+                cornerRadius = SpSpacing.RadiusDefault,
             )
         }
     }
@@ -286,7 +287,7 @@ private fun ActivityFeedItem(
 
 @Composable
 private fun NoActivity() {
-    com.spela.player.presentation.ui.components.SpEmptyState(
+    SpEmptyState(
         icon = Icons.Filled.PlayArrow,
         title = "No activity yet",
         message = "Play some games to see activity here",

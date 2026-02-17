@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
-import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -248,18 +247,7 @@ private fun NetplaySessionItem(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SpChip(
-                        text = when (session.status) {
-                            NetplaySessionStatus.WAITING -> "Waiting"
-                            NetplaySessionStatus.IN_PROGRESS -> "In Progress"
-                            NetplaySessionStatus.ENDED -> "Ended"
-                        },
-                        color = when (session.status) {
-                            NetplaySessionStatus.WAITING -> SpColor.Warning
-                            NetplaySessionStatus.IN_PROGRESS -> SpColor.Success
-                            NetplaySessionStatus.ENDED -> SpColor.OnBackgroundTertiary
-                        },
-                    )
+                    NetplayStatusChip(status = session.status)
                     if (session.clientUserId != null) {
                         SpChip(text = "2 players")
                     } else {

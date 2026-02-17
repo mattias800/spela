@@ -167,7 +167,7 @@ private fun SaveStateItem(
             Box(
                 modifier = Modifier
                     .size(width = 64.dp, height = 48.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
                     .background(SpColor.SurfaceBright),
                 contentAlignment = Alignment.Center,
             ) {

@@ -35,6 +35,22 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 @Composable
+internal fun NetplayStatusChip(status: NetplaySessionStatus) {
+    SpChip(
+        text = when (status) {
+            NetplaySessionStatus.WAITING -> "Waiting"
+            NetplaySessionStatus.IN_PROGRESS -> "In Progress"
+            NetplaySessionStatus.ENDED -> "Ended"
+        },
+        color = when (status) {
+            NetplaySessionStatus.WAITING -> SpColor.Warning
+            NetplaySessionStatus.IN_PROGRESS -> SpColor.Success
+            NetplaySessionStatus.ENDED -> SpColor.OnBackgroundTertiary
+        },
+    )
+}
+
+@Composable
 internal fun LobbyHeader(session: NetplaySession) {
     Row(
         modifier = Modifier
@@ -66,18 +82,7 @@ internal fun LobbyHeader(session: NetplaySession) {
                 )
             }
             Spacer(Modifier.height(SpSpacing.Small))
-            SpChip(
-                text = when (session.status) {
-                    NetplaySessionStatus.WAITING -> "Waiting"
-                    NetplaySessionStatus.IN_PROGRESS -> "In Progress"
-                    NetplaySessionStatus.ENDED -> "Ended"
-                },
-                color = when (session.status) {
-                    NetplaySessionStatus.WAITING -> SpColor.Warning
-                    NetplaySessionStatus.IN_PROGRESS -> SpColor.Success
-                    NetplaySessionStatus.ENDED -> SpColor.OnBackgroundTertiary
-                },
-            )
+            NetplayStatusChip(status = session.status)
         }
     }
 }
