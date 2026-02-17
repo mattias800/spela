@@ -232,6 +232,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
 
 		// Relays
+		api.GET("/games/:id/relays", relayHandler.ListGameRelays)
 		api.POST("/relays", relayHandler.CreateRelay)
 		api.GET("/relays", relayHandler.ListRelays)
 		api.GET("/relays/:id", relayHandler.GetRelay)

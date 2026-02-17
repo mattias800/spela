@@ -89,6 +89,34 @@ func (h *RelayHandler) CreateRelay(c *gin.Context) {
 	c.JSON(http.StatusCreated, h.toRelayDetailResponse(relay))
 }
 
+// ListGameRelays returns all active relays for a specific game.
+func (h *RelayHandler) ListGameRelays(c *gin.Context) {
+	gameID := c.Param("id")
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+
+	var relays []db.Relay
+	if err := h.DB.Where("game_id = ? AND status = ?", gid, "active").
+		Preload("Members").Preload("Members.User").
+		Preload("Game").Preload("Game.Console").
+		Preload("Owner").
+		Order("updated_at DESC").
+		Find(&relays).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch relays"})
+		return
+	}
+
+	result := make([]RelayResponse, 0, len(relays))
+	for _, r := range relays {
+		result = append(result, h.toRelayResponse(r))
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // ListRelays returns relays where the current user is a member.
 func (h *RelayHandler) ListRelays(c *gin.Context) {
 	uid := getUserID(c)

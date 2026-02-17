@@ -13,7 +13,7 @@ function mockSession(overrides?: Record<string, unknown>) {
     gameId: "g1",
     gameTitle: "Super Mario World",
     gameCoverUrl: "https://example.com/cover.png",
-    gameConsoleName: "SNES",
+    consoleName: "SNES",
     status: "waiting",
     endReason: null,
     inputDelay: 3,
@@ -35,7 +35,7 @@ const mockSessions = [
     gameId: "g2",
     gameTitle: "Mega Man 2",
     gameCoverUrl: null,
-    gameConsoleName: "NES",
+    consoleName: "NES",
     status: "in_progress",
     clientId: "u3",
     clientUsername: "charlie",
@@ -50,7 +50,7 @@ const mockSessions = [
     gameId: "g3",
     gameTitle: "Sonic the Hedgehog",
     gameCoverUrl: null,
-    gameConsoleName: "Genesis",
+    consoleName: "Genesis",
     status: "ended",
     endReason: "completed",
     clientId: "u2",
@@ -274,7 +274,7 @@ test.describe("Netplay Session Detail Page", () => {
     await expect(
       page.getByRole("heading", { name: "Players" }),
     ).toBeVisible();
-    await expect(page.getByText("alice")).toBeVisible();
+    await expect(page.getByText("alice").first()).toBeVisible();
   });
 
   test("shows empty player slot for waiting session", async ({ page }) => {
@@ -317,9 +317,9 @@ test.describe("Netplay Session Detail Page", () => {
       page.getByRole("heading", { name: "Super Mario World" }),
     ).toBeVisible({ timeout: 10_000 });
 
-    await expect(page.getByText("In Progress")).toBeVisible();
-    await expect(page.getByText("alice")).toBeVisible();
-    await expect(page.getByText("bob")).toBeVisible();
+    await expect(page.getByText("In Progress", { exact: true })).toBeVisible();
+    await expect(page.getByText("alice").first()).toBeVisible();
+    await expect(page.getByText("bob").first()).toBeVisible();
   });
 
   test("renders ended session with end reason and create button", async ({
@@ -348,7 +348,7 @@ test.describe("Netplay Session Detail Page", () => {
       page.getByRole("heading", { name: "Super Mario World" }),
     ).toBeVisible({ timeout: 10_000 });
 
-    await expect(page.getByText("Ended")).toBeVisible();
+    await expect(page.getByText("Ended", { exact: true })).toBeVisible();
     await expect(page.getByText("Host left")).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Create New Session/ }),
@@ -462,8 +462,11 @@ test.describe("Netplay Create Session Flow", () => {
     // Search for a game
     await page.getByPlaceholder("Search for a game...").fill("Mario");
 
-    // Select the game
-    await page.getByText("Super Mario World").click();
+    // Select the game from dropdown results
+    await page
+      .locator("button", { hasText: "Super Mario World" })
+      .first()
+      .click();
 
     // Should show selected game with Change button
     await expect(page.getByText("Change")).toBeVisible();
@@ -530,7 +533,7 @@ test.describe("Netplay Delete Session", () => {
     let deleteCalled = false;
 
     // Mock auth with user who is the host
-    await page.route("**/api/auth/me", (route) => {
+    await page.route("**/api/user/profile", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
