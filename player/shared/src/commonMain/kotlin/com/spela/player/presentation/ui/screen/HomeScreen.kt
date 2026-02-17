@@ -49,6 +49,7 @@ import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpGradientCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -166,7 +167,7 @@ fun HomeScreen(
                         // Netplay section (AC-15)
                         if (activeNetplaySessions.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SpSectionHeader(
                                     title = "Netplay",
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
@@ -189,7 +190,7 @@ fun HomeScreen(
                         // Continue Playing section
                         if (state.recentGames.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SpSectionHeader(
                                     title = "Continue Playing",
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
@@ -222,7 +223,7 @@ fun HomeScreen(
                         // Online Now section
                         if (socialState.onlineUsers.isNotEmpty()) {
                             item {
-                                SectionHeader(
+                                SpSectionHeader(
                                     title = "Online Now",
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
@@ -290,19 +291,6 @@ fun HomeScreen(
         modifier = Modifier.align(Alignment.BottomCenter),
     )
     } // outer Box
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = SpTypography.HeadlineLarge,
-        color = SpColor.OnBackground,
-        modifier = modifier.semantics { contentDescription = "$title section" },
-    )
 }
 
 @Composable

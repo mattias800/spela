@@ -76,20 +76,11 @@ fun KeyMappingWizard(
     val successBg by animateColorAsState(
         targetValue = if (showSuccess) SpColor.Success.copy(alpha = 0.15f) else SpColor.SurfaceElevated,
         animationSpec = tween(200),
+        label = "wizardSuccessBg",
     )
 
     // Build button states for the controller visual
-    val buttonStates = buildMap {
-        layout.buttons.forEach { btn ->
-            val isMapped = state.currentBindings.containsKey(btn.retroButtonId)
-            val isCurrentTarget = state.currentMappingButton == btn.retroButtonId
-            put(btn.retroButtonId, when {
-                isCurrentTarget -> ButtonVisualState.HIGHLIGHTED
-                isMapped -> ButtonVisualState.MAPPED
-                else -> ButtonVisualState.UNMAPPED
-            })
-        }
-    }
+    val buttonStates = buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
 
     val mappingLabels = state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
 

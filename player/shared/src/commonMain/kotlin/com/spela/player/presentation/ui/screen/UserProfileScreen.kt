@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,15 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.model.PublicProfileGame
 import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -40,6 +38,7 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.SocialViewModel
+import com.spela.player.util.formatPlayTime
 
 @Composable
 fun UserProfileScreen(
@@ -115,20 +114,12 @@ private fun ProfileContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(modifier = Modifier.size(64.dp)) {
-                    if (profile.avatarUrl != null) {
-                        SubcomposeAsyncImage(
-                            model = profile.avatarUrl,
-                            contentDescription = "${profile.username} avatar",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                            loading = { AvatarPlaceholder(profile.username) },
-                            error = { AvatarPlaceholder(profile.username) },
-                        )
-                    } else {
-                        AvatarPlaceholder(profile.username)
-                    }
+                    SpAvatar(
+                        username = profile.username,
+                        avatarUrl = profile.avatarUrl,
+                        size = 64.dp,
+                        placeholderTextStyle = SpTypography.HeadlineLarge,
+                    )
                     if (profile.isOnline) {
                         Box(
                             modifier = Modifier
@@ -221,23 +212,6 @@ private fun ProfileContent(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(CircleShape)
-            .background(SpColor.SurfaceElevated),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.HeadlineLarge,
-            color = SpColor.OnBackgroundTertiary,
-        )
     }
 }
 
@@ -348,9 +322,3 @@ private fun ProfileGameItem(
     }
 }
 
-private fun formatPlayTime(seconds: Long): String {
-    if (seconds < 60) return "< 1 min"
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}

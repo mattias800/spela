@@ -17,11 +17,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.screen.drawShaderOverlay
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
 
 @Composable
 fun ShaderPreview(
@@ -34,7 +34,7 @@ fun ShaderPreview(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(4f / 3f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Shader preview" }
             .testTag("shader-preview")

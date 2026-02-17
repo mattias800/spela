@@ -45,17 +45,7 @@ fun KeyMappingScreen(
     onResetToDefaults: () -> Unit,
     keyNameResolver: (Int) -> String = { "Key $it" },
 ) {
-    val buttonStates = buildMap {
-        layout.buttons.forEach { btn ->
-            val isMapped = state.currentBindings.containsKey(btn.retroButtonId)
-            val isListening = state.currentMappingButton == btn.retroButtonId
-            put(btn.retroButtonId, when {
-                isListening -> ButtonVisualState.HIGHLIGHTED
-                isMapped -> ButtonVisualState.MAPPED
-                else -> ButtonVisualState.UNMAPPED
-            })
-        }
-    }
+    val buttonStates = buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
 
     val mappingLabels = state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
 

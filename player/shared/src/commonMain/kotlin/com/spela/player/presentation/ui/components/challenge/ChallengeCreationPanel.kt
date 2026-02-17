@@ -1,10 +1,5 @@
 package com.spela.player.presentation.ui.components.challenge
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +32,7 @@ import com.spela.player.domain.model.ChallengeType
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -66,147 +60,124 @@ fun ChallengeCreationPanel(
             ),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = SpSpacing.RadiusXLarge, topEnd = SpSpacing.RadiusXLarge))
+                .background(SpColor.SurfaceElevated)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+                .padding(SpSpacing.XLarge)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = SpSpacing.RadiusXLarge, topEnd = SpSpacing.RadiusXLarge))
-                    .background(SpColor.SurfaceElevated)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {},
-                    )
-                    .padding(SpSpacing.XLarge)
-                    .navigationBarsPadding()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Text(
+                text = "Create Challenge",
+                style = SpTypography.HeadlineMedium,
+                color = SpColor.OnBackground,
+                modifier = Modifier.semantics { heading() },
+            )
+
+            Spacer(Modifier.height(SpSpacing.XLarge))
+
+            // Title field
+            SpTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = "Title",
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(SpSpacing.Medium))
+
+            // Description field
+            SpTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = "Description (optional)",
+                singleLine = false,
+                minLines = 2,
+                maxLines = 4,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(SpSpacing.Large))
+
+            // Type selector
+            Text(
+                text = "Type",
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnBackgroundSecondary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(SpSpacing.Small))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                Text(
-                    text = "Create Challenge",
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                    modifier = Modifier.semantics { heading() },
-                )
-
-                Spacer(Modifier.height(SpSpacing.XLarge))
-
-                // Title field
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Title") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SpColor.Primary,
-                        unfocusedBorderColor = SpColor.SurfaceBright,
-                        focusedLabelColor = SpColor.Primary,
-                        unfocusedLabelColor = SpColor.OnBackgroundTertiary,
-                        cursorColor = SpColor.Primary,
-                        focusedTextColor = SpColor.OnBackground,
-                        unfocusedTextColor = SpColor.OnBackground,
-                    ),
-                )
-
-                Spacer(Modifier.height(SpSpacing.Medium))
-
-                // Description field
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description (optional)") },
-                    minLines = 2,
-                    maxLines = 4,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SpColor.Primary,
-                        unfocusedBorderColor = SpColor.SurfaceBright,
-                        focusedLabelColor = SpColor.Primary,
-                        unfocusedLabelColor = SpColor.OnBackgroundTertiary,
-                        cursorColor = SpColor.Primary,
-                        focusedTextColor = SpColor.OnBackground,
-                        unfocusedTextColor = SpColor.OnBackground,
-                    ),
-                )
-
-                Spacer(Modifier.height(SpSpacing.Large))
-
-                // Type selector
-                Text(
-                    text = "Type",
-                    style = SpTypography.LabelMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    ChallengeType.entries.forEach { type ->
-                        SpChip(
-                            text = type.displayName,
-                            isSelected = type == selectedType,
-                            onClick = { selectedType = type },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(SpSpacing.Large))
-
-                // Difficulty selector
-                Text(
-                    text = "Difficulty",
-                    style = SpTypography.LabelMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    ChallengeDifficulty.entries.forEach { diff ->
-                        SpChip(
-                            text = diff.displayName,
-                            isSelected = diff == selectedDifficulty,
-                            onClick = { selectedDifficulty = diff },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(SpSpacing.XLarge))
-
-                // Action buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                ) {
-                    SpButton(
-                        text = "Cancel",
-                        onClick = onDismiss,
-                        style = SpButtonStyle.Outlined,
-                        enabled = !isSubmitting,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SpButton(
-                        text = if (isSubmitting) "Creating..." else "Create",
-                        onClick = {
-                            if (name.isNotBlank()) {
-                                onSubmit(name, description, selectedType.apiId, selectedDifficulty.apiId)
-                            }
-                        },
-                        enabled = name.isNotBlank() && !isSubmitting,
+                ChallengeType.entries.forEach { type ->
+                    SpChip(
+                        text = type.displayName,
+                        isSelected = type == selectedType,
+                        onClick = { selectedType = type },
                         modifier = Modifier.weight(1f),
                     )
                 }
+            }
+
+            Spacer(Modifier.height(SpSpacing.Large))
+
+            // Difficulty selector
+            Text(
+                text = "Difficulty",
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnBackgroundSecondary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(SpSpacing.Small))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                ChallengeDifficulty.entries.forEach { diff ->
+                    SpChip(
+                        text = diff.displayName,
+                        isSelected = diff == selectedDifficulty,
+                        onClick = { selectedDifficulty = diff },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(SpSpacing.XLarge))
+
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                SpButton(
+                    text = "Cancel",
+                    onClick = onDismiss,
+                    style = SpButtonStyle.Outlined,
+                    enabled = !isSubmitting,
+                    modifier = Modifier.weight(1f),
+                )
+                SpButton(
+                    text = if (isSubmitting) "Creating..." else "Create",
+                    onClick = {
+                        if (name.isNotBlank()) {
+                            onSubmit(name, description, selectedType.apiId, selectedDifficulty.apiId)
+                        }
+                    },
+                    enabled = name.isNotBlank() && !isSubmitting,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

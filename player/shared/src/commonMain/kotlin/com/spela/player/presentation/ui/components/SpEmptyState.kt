@@ -55,7 +55,7 @@ fun SpEmptyState(
         Box(
             modifier = Modifier
                 .size(80.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
                 .background(SpColor.SurfaceVariant),
             contentAlignment = Alignment.Center,
         ) {

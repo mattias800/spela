@@ -9,8 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +19,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -33,7 +29,7 @@ fun SpCoverArt(
     imageUrl: String?,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 12.dp,
+    cornerRadius: Dp = SpSpacing.RadiusLarge,
     aspectRatio: Float = 0.714f,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -90,7 +86,6 @@ fun SpHeroCover(
         // Gradient overlay at the bottom for text readability
         Box(
             modifier = Modifier
-                .fillMaxWidth()
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
@@ -109,7 +104,7 @@ fun SpHeroCover(
 
 @Composable
 private fun CoverShimmer() {
-    val transition = rememberInfiniteTransition()
+    val transition = rememberInfiniteTransition(label = "coverShimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.15f,
         targetValue = 0.35f,
@@ -117,6 +112,7 @@ private fun CoverShimmer() {
             animation = tween(800),
             repeatMode = RepeatMode.Reverse,
         ),
+        label = "coverShimmerAlpha",
     )
     Box(
         modifier = Modifier

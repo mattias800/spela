@@ -40,6 +40,9 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import kotlinx.coroutines.delay
 
+/** Latency above this threshold triggers the high-latency warning icon and prevents HUD fade-out. */
+private const val LATENCY_WARNING_MS = 200
+
 @Composable
 fun SpNetplayHud(
     peerUsername: String,
@@ -56,7 +59,7 @@ fun SpNetplayHud(
         stable = true
     }
 
-    val targetAlpha = if (stable && latencyMs < 200) 0.3f else 1f
+    val targetAlpha = if (stable && latencyMs < LATENCY_WARNING_MS) 0.3f else 1f
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
         animationSpec = tween(1000),
@@ -71,7 +74,7 @@ fun SpNetplayHud(
         Row(
             modifier = modifier
                 .alpha(alpha)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
                 .background(SpColor.Scrim)
                 .clickable(onClick = onClick)
                 .focusable()
@@ -103,8 +106,8 @@ fun SpNetplayHud(
                 color = pingColor(latencyMs),
             )
 
-            // Warning icon at > 200ms
-            if (latencyMs > 200) {
+            // Warning icon at high latency
+            if (latencyMs > LATENCY_WARNING_MS) {
                 Icon(
                     imageVector = Icons.Filled.Warning,
                     contentDescription = "High latency warning",

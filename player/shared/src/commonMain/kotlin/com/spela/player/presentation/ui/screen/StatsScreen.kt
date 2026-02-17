@@ -45,6 +45,7 @@ import com.spela.player.presentation.intent.StatsIntent
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -54,6 +55,7 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.StatsViewModel
+import com.spela.player.util.formatPlayTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,7 +117,7 @@ fun StatsScreen(
                             // Most Played Games section
                             if (state.mostPlayedGames.isNotEmpty()) {
                                 item {
-                                    SectionHeader(
+                                    SpSectionHeader(
                                         title = "Most Played Games",
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     )
@@ -141,7 +143,7 @@ fun StatsScreen(
                             // Most Active Players section
                             if (state.activePlayers.isNotEmpty()) {
                                 item {
-                                    SectionHeader(
+                                    SpSectionHeader(
                                         title = "Most Active Players",
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     )
@@ -179,19 +181,6 @@ fun StatsScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = SpTypography.HeadlineLarge,
-        color = SpColor.OnBackground,
-        modifier = modifier.semantics { contentDescription = "$title section" },
-    )
 }
 
 @Composable
@@ -397,9 +386,3 @@ private fun StatLabel(label: String, value: String) {
     }
 }
 
-private fun formatPlayTime(seconds: Long): String {
-    if (seconds < 60) return "< 1 min"
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}

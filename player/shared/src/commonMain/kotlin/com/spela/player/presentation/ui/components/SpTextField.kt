@@ -32,6 +32,8 @@ fun SpTextField(
     errorMessage: String? = null,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     onImeAction: () -> Unit = {},
@@ -45,6 +47,8 @@ fun SpTextField(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = singleLine,
+            minLines = minLines,
+            maxLines = maxLines,
             label = if (label.isNotEmpty()) {
                 { Text(label, style = SpTypography.LabelMedium) }
             } else null,
@@ -66,7 +70,7 @@ fun SpTextField(
             isError = isError || errorMessage != null,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(SpSpacing.RadiusLarge),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = SpColor.OnBackground,
                 unfocusedTextColor = SpColor.OnBackground,

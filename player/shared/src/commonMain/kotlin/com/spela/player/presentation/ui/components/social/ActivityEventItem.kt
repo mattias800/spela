@@ -1,17 +1,12 @@
 package com.spela.player.presentation.ui.components.social
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
@@ -23,17 +18,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ActivityEvent
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -59,22 +52,11 @@ fun ActivityEventItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // User avatar
-        Box(modifier = Modifier.size(36.dp)) {
-            if (event.userAvatarUrl != null) {
-                SubcomposeAsyncImage(
-                    model = event.userAvatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    loading = { SmallAvatarPlaceholder(event.username) },
-                    error = { SmallAvatarPlaceholder(event.username) },
-                )
-            } else {
-                SmallAvatarPlaceholder(event.username)
-            }
-        }
+        SpAvatar(
+            username = event.username,
+            avatarUrl = event.userAvatarUrl,
+            size = 36.dp,
+        )
 
         Spacer(Modifier.width(SpSpacing.Medium))
 
@@ -112,23 +94,6 @@ fun ActivityEventItem(
                 modifier = Modifier.padding(top = SpSpacing.XXSmall),
             )
         }
-    }
-}
-
-@Composable
-private fun SmallAvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(CircleShape)
-            .background(SpColor.SurfaceElevated),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleSmall,
-            color = SpColor.OnBackgroundTertiary,
-        )
     }
 }
 

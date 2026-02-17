@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.AchievementEventType
 import com.spela.player.presentation.ui.theme.SpColor
@@ -51,7 +50,7 @@ fun AchievementPopup(
             ) {
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
                         .background(SpColor.PrimaryContainer)
                         .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
                     verticalAlignment = Alignment.CenterVertically,

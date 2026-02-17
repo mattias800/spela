@@ -60,7 +60,7 @@ fun SpPulseDots(
     color: Color = SpColor.Primary,
     dotSize: Dp = 10.dp,
 ) {
-    val transition = rememberInfiniteTransition()
+    val transition = rememberInfiniteTransition(label = "pulseDots")
 
     Row(
         modifier = modifier,
@@ -75,6 +75,7 @@ fun SpPulseDots(
                     animation = tween(600, delayMillis = index * 200),
                     repeatMode = RepeatMode.Reverse,
                 ),
+                label = "pulseDotAlpha$index",
             )
             Box(
                 modifier = Modifier
@@ -93,7 +94,7 @@ fun SpShimmer(
     width: Dp = 100.dp,
     height: Dp = 16.dp,
 ) {
-    val transition = rememberInfiniteTransition()
+    val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.2f,
         targetValue = 0.5f,
@@ -101,12 +102,13 @@ fun SpShimmer(
             animation = tween(800),
             repeatMode = RepeatMode.Reverse,
         ),
+        label = "shimmerAlpha",
     )
 
     Box(
         modifier = modifier
             .size(width, height)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
             .background(SpColor.SurfaceBright.copy(alpha = alpha)),
     )
 }

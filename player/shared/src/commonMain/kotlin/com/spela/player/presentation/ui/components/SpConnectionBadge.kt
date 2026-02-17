@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.InfiniteTransition
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -104,14 +103,20 @@ private fun PulsingDot(color: Color) {
     )
 }
 
+/** Latency below this threshold is considered good (green). */
+const val LATENCY_GOOD_MS = 50
+
+/** Latency below this threshold is considered moderate (yellow); above is bad (red). */
+const val LATENCY_MODERATE_MS = 150
+
 /**
  * Returns the appropriate ping color based on latency thresholds:
- * - Green: < 50ms
- * - Yellow: 50-150ms
- * - Red: > 150ms
+ * - Green: < [LATENCY_GOOD_MS]
+ * - Yellow: [LATENCY_GOOD_MS]-[LATENCY_MODERATE_MS]
+ * - Red: > [LATENCY_MODERATE_MS]
  */
 fun pingColor(latencyMs: Int): Color = when {
-    latencyMs < 50 -> SpColor.Success
-    latencyMs < 150 -> SpColor.Warning
+    latencyMs < LATENCY_GOOD_MS -> SpColor.Success
+    latencyMs < LATENCY_MODERATE_MS -> SpColor.Warning
     else -> SpColor.Error
 }

@@ -127,7 +127,7 @@ private fun VisibilityBadge(isPublic: Boolean) {
         style = SpTypography.LabelSmall,
         color = SpColor.OnBackgroundSecondary,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
             .background(bgColor)
             .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XXSmall),
     )

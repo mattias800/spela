@@ -117,7 +117,7 @@ fun LoginScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
                         .background(SpColor.SurfaceVariant)
                         .clickable { onChangeServer() }
                         .padding(SpSpacing.Medium),

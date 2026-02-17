@@ -52,9 +52,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -207,24 +207,15 @@ private fun ActivityFeedItem(
         // User avatar
         Box(
             modifier = Modifier
-                .size(40.dp)
                 .clip(CircleShape)
                 .clickable { onUserSelected(event.userId) },
         ) {
-            if (event.userAvatarUrl != null) {
-                SubcomposeAsyncImage(
-                    model = event.userAvatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    loading = { AvatarPlaceholder(event.username) },
-                    error = { AvatarPlaceholder(event.username) },
-                )
-            } else {
-                AvatarPlaceholder(event.username)
-            }
+            SpAvatar(
+                username = event.username,
+                avatarUrl = event.userAvatarUrl,
+                size = 40.dp,
+                placeholderTextStyle = SpTypography.TitleMedium,
+            )
         }
 
         Spacer(Modifier.width(SpSpacing.Medium))
@@ -266,7 +257,7 @@ private fun ActivityFeedItem(
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
                             .background(SpColor.SurfaceVariant)
                             .padding(horizontal = SpSpacing.XSmall, vertical = SpSpacing.XXSmall),
                     )
@@ -290,23 +281,6 @@ private fun ActivityFeedItem(
                 cornerRadius = 6.dp,
             )
         }
-    }
-}
-
-@Composable
-private fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(CircleShape)
-            .background(SpColor.SurfaceElevated),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleMedium,
-            color = SpColor.OnBackgroundTertiary,
-        )
     }
 }
 

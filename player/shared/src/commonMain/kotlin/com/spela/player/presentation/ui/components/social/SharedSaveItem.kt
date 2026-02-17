@@ -1,17 +1,12 @@
 package com.spela.player.presentation.ui.components.social
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -21,18 +16,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.SharedSaveState
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.formatBytes
 
 @Composable
 fun SharedSaveItem(
@@ -52,22 +46,11 @@ fun SharedSaveItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // User avatar
-            Box(modifier = Modifier.size(40.dp)) {
-                if (sharedSave.userAvatarUrl != null) {
-                    SubcomposeAsyncImage(
-                        model = sharedSave.userAvatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop,
-                        loading = { AvatarPlaceholder(sharedSave.username) },
-                        error = { AvatarPlaceholder(sharedSave.username) },
-                    )
-                } else {
-                    AvatarPlaceholder(sharedSave.username)
-                }
-            }
+            SpAvatar(
+                username = sharedSave.username,
+                avatarUrl = sharedSave.userAvatarUrl,
+                size = 40.dp,
+            )
 
             Spacer(Modifier.width(SpSpacing.Medium))
 
@@ -109,7 +92,7 @@ fun SharedSaveItem(
                         color = SpColor.OnBackgroundTertiary,
                     )
                     Text(
-                        text = formatFileSize(sharedSave.fileSize),
+                        text = formatBytes(sharedSave.fileSize),
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                     )
@@ -141,27 +124,3 @@ fun SharedSaveItem(
     }
 }
 
-@Composable
-private fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(CircleShape)
-            .background(SpColor.SurfaceElevated),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleSmall,
-            color = SpColor.OnBackgroundTertiary,
-        )
-    }
-}
-
-private fun formatFileSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        else -> "${"%.1f".format(bytes / (1024.0 * 1024.0))} MB"
-    }
-}

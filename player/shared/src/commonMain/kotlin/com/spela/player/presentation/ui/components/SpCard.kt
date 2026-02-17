@@ -48,6 +48,7 @@ fun SpCard(
             else -> 1f
         },
         animationSpec = tween(150),
+        label = "cardScale",
     )
 
     val shape = RoundedCornerShape(cornerRadius)

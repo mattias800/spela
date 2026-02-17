@@ -17,10 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 @Composable
@@ -44,7 +44,7 @@ fun ShaderPreviewDialog(
                     indication = null,
                     onClick = onDismiss,
                 )
-                .padding(24.dp),
+                .padding(SpSpacing.XLarge),
             contentAlignment = Alignment.Center,
         ) {
             // Constrain preview to fit within available space while maintaining 4:3 aspect ratio
@@ -63,7 +63,7 @@ fun ShaderPreviewDialog(
                 color = SpColor.OnBackgroundTertiary,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = SpSpacing.XLarge),
             )
         }
     }

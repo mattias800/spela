@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,12 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.domain.model.ShaderPreset
@@ -43,6 +38,7 @@ import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
@@ -117,8 +113,9 @@ fun ConsoleSettingsScreen(
                     ) {
                         // Shader options
                         ShaderPreset.entries.forEachIndexed { index, shader ->
-                            ShaderOption(
-                                shader = shader,
+                            SpRadioOption(
+                                title = shader.displayName,
+                                description = shader.description,
                                 isSelected = currentShader == shader,
                                 onClick = {
                                     settingsViewModel.onIntent(
@@ -159,7 +156,7 @@ fun ConsoleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .spFocusRing(shape = RoundedCornerShape(12.dp))
+                                .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
                                 .clickable {
                                     if (hasDeviceOverride) {
                                         settingsViewModel.onIntent(
@@ -218,8 +215,9 @@ fun ConsoleSettingsScreen(
                                     ),
                                 )
                                 ShaderPreset.entries.forEachIndexed { index, shader ->
-                                    ShaderOption(
-                                        shader = shader,
+                                    SpRadioOption(
+                                        title = shader.displayName,
+                                        description = shader.description,
                                         isSelected = deviceOverrideShader == shader,
                                         onClick = {
                                             settingsViewModel.onIntent(

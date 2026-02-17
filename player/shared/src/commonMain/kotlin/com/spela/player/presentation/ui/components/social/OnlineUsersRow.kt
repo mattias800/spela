@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,14 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.OnlineUser
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -69,20 +67,11 @@ private fun OnlineUserItem(
     ) {
         Box(modifier = Modifier.size(48.dp)) {
             // Avatar
-            if (user.avatarUrl != null) {
-                SubcomposeAsyncImage(
-                    model = user.avatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    loading = { AvatarPlaceholder(user.username) },
-                    error = { AvatarPlaceholder(user.username) },
-                )
-            } else {
-                AvatarPlaceholder(user.username)
-            }
+            SpAvatar(
+                username = user.username,
+                avatarUrl = user.avatarUrl,
+                size = 48.dp,
+            )
 
             // Online indicator dot
             Box(
@@ -121,19 +110,3 @@ private fun OnlineUserItem(
     }
 }
 
-@Composable
-private fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(CircleShape)
-            .background(SpColor.SurfaceElevated),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleLarge,
-            color = SpColor.OnBackgroundTertiary,
-        )
-    }
-}

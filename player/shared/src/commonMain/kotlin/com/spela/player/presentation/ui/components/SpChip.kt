@@ -67,7 +67,7 @@ fun SpConsoleChip(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
             .background(consoleColor.copy(alpha = 0.15f))
             .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
         contentAlignment = Alignment.Center,

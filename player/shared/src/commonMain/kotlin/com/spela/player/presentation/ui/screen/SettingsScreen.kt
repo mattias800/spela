@@ -1,8 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -23,13 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -50,7 +41,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
-import com.spela.player.domain.model.Console
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.components.ShaderPreview
@@ -59,6 +49,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpConfirmDialog
+import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpDialog
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -66,9 +57,9 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.SettingsIntent
-import com.spela.player.presentation.viewmodel.SettingsState
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.presentation.viewmodel.ShaderScope
+import com.spela.player.util.formatBytes
 
 @Composable
 fun SettingsScreen(
@@ -225,8 +216,9 @@ fun SettingsScreen(
                             .padding(vertical = SpSpacing.Small),
                     ) {
                         ThemeOption.entries.forEachIndexed { index, option ->
-                            ThemeOptionRow(
-                                option = option,
+                            SpRadioOption(
+                                title = option.displayName,
+                                description = option.description,
                                 isSelected = state.selectedTheme == option.apiId,
                                 onClick = { viewModel.onIntent(SettingsIntent.SelectTheme(option.apiId)) },
                             )
@@ -347,8 +339,9 @@ fun SettingsScreen(
                                     .padding(vertical = SpSpacing.Small),
                             ) {
                                 ShaderPreset.entries.forEachIndexed { index, shader ->
-                                    ShaderOption(
-                                        shader = shader,
+                                    SpRadioOption(
+                                        title = shader.displayName,
+                                        description = shader.description,
                                         isSelected = state.selectedShader == shader,
                                         onClick = { viewModel.onIntent(SettingsIntent.SelectShader(shader)) },
                                     )
@@ -454,7 +447,7 @@ fun SettingsScreen(
                                 color = SpColor.OnCard,
                             )
                             Text(
-                                text = formatSettingsCacheSize(state.cacheSize),
+                                text = if (state.cacheSize <= 0) "Empty" else "${formatBytes(state.cacheSize)} used",
                                 style = SpTypography.BodySmall,
                                 color = SpColor.OnBackgroundTertiary,
                             )
@@ -576,205 +569,6 @@ private fun ShaderScopeTabs(
 }
 
 @Composable
-private fun ConsoleShaderCard(
-    console: Console,
-    currentShader: ShaderPreset,
-    isExpanded: Boolean,
-    hasDeviceOverride: Boolean,
-    deviceOverrideShader: ShaderPreset?,
-    globalDefault: ShaderPreset,
-    previewUrl: String?,
-    onExpand: () -> Unit,
-    onSelectShader: (ShaderPreset) -> Unit,
-    onToggleDeviceOverride: (Boolean) -> Unit,
-    onSelectDeviceShader: (ShaderPreset) -> Unit,
-    onPreviewClick: () -> Unit,
-) {
-    val effectiveShader = deviceOverrideShader ?: currentShader
-
-    SpCard {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            // Console header row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onExpand)
-                    .semantics { contentDescription = console.name }
-                    .padding(SpSpacing.Default),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = console.name,
-                        style = SpTypography.TitleMedium,
-                        color = SpColor.OnCard,
-                    )
-                    Text(
-                        text = effectiveShader.displayName +
-                            if (hasDeviceOverride) " (device)" else "",
-                        style = SpTypography.BodySmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-
-            // Expanded shader picker
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(),
-                exit = shrinkVertically(),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    SettingsDivider()
-
-                    // "Use Default" option
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .spFocusRing(shape = RoundedCornerShape(0.dp))
-                            .clickable { onSelectShader(globalDefault) }
-                            .focusable()
-                            .semantics {
-                                contentDescription = "Use Default (${globalDefault.displayName})"
-                                role = Role.RadioButton
-                                stateDescription = if (currentShader == globalDefault && !hasDeviceOverride) {
-                                    "Selected"
-                                } else {
-                                    "Not selected"
-                                }
-                            }
-                            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Use Default",
-                                style = SpTypography.TitleMedium,
-                                color = SpColor.Accent,
-                            )
-                            Text(
-                                text = "Currently: ${globalDefault.displayName}",
-                                style = SpTypography.BodySmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                    }
-
-                    SettingsDivider()
-
-                    // Shader options
-                    ShaderPreset.entries.forEachIndexed { index, shader ->
-                        ShaderOption(
-                            shader = shader,
-                            isSelected = currentShader == shader,
-                            onClick = { onSelectShader(shader) },
-                        )
-                        if (index < ShaderPreset.entries.size - 1) {
-                            SettingsDivider()
-                        }
-                    }
-
-                    // Shader preview
-                    if (previewUrl != null) {
-                        Spacer(Modifier.height(SpSpacing.Small))
-                        ShaderPreview(
-                            imageUrl = previewUrl,
-                            shader = effectiveShader,
-                            onClick = onPreviewClick,
-                            modifier = Modifier
-                                .padding(horizontal = SpSpacing.Default)
-                                .widthIn(max = 360.dp),
-                        )
-                        Spacer(Modifier.height(SpSpacing.Small))
-                    }
-
-                    SettingsDivider()
-
-                    // Device override checkbox
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .spFocusRing(shape = RoundedCornerShape(0.dp))
-                            .clickable { onToggleDeviceOverride(!hasDeviceOverride) }
-                            .semantics { contentDescription = "Override on this device only" }
-                            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Override on this device only",
-                                style = SpTypography.TitleMedium,
-                                color = SpColor.OnCard,
-                            )
-                            Text(
-                                text = "Uses a local override instead of the server setting",
-                                style = SpTypography.BodySmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                        Spacer(Modifier.width(SpSpacing.Medium))
-                        Checkbox(
-                            checked = hasDeviceOverride,
-                            onCheckedChange = null,
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = SpColor.Primary,
-                                uncheckedColor = SpColor.OnBackgroundTertiary,
-                                checkmarkColor = SpColor.OnPrimary,
-                            ),
-                        )
-                    }
-
-                    // Device override shader picker (shown when device override is active)
-                    AnimatedVisibility(
-                        visible = hasDeviceOverride,
-                        enter = expandVertically(),
-                        exit = shrinkVertically(),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(SpColor.SurfaceVariant.copy(alpha = 0.5f)),
-                        ) {
-                            Text(
-                                text = "Device Shader",
-                                style = SpTypography.LabelMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                                modifier = Modifier.padding(
-                                    start = SpSpacing.Default,
-                                    top = SpSpacing.Medium,
-                                    bottom = SpSpacing.XSmall,
-                                ),
-                            )
-                            ShaderPreset.entries.forEachIndexed { index, shader ->
-                                ShaderOption(
-                                    shader = shader,
-                                    isSelected = deviceOverrideShader == shader,
-                                    onClick = { onSelectDeviceShader(shader) },
-                                )
-                                if (index < ShaderPreset.entries.size - 1) {
-                                    SettingsDivider()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 internal fun SettingsSectionHeader(title: String) {
     Text(
         text = title,
@@ -796,7 +590,7 @@ private fun SettingsToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(12.dp))
+            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .clickable(onClick = onToggle)
             .focusable()
             .semantics {
@@ -863,50 +657,6 @@ private fun SettingsInfoRow(label: String, value: String) {
     }
 }
 
-@Composable
-internal fun ShaderOption(
-    shader: ShaderPreset,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .focusable()
-            .semantics {
-                contentDescription = shader.displayName
-                role = Role.RadioButton
-                stateDescription = if (isSelected) "Selected" else "Not selected"
-            }
-            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = shader.displayName,
-                style = SpTypography.TitleMedium,
-                color = SpColor.OnCard,
-            )
-            Text(
-                text = shader.description,
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
-        Spacer(Modifier.width(SpSpacing.Medium))
-        RadioButton(
-            selected = isSelected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = SpColor.Primary,
-                unselectedColor = SpColor.OnBackgroundTertiary,
-            ),
-        )
-    }
-}
-
 private enum class ThemeOption(
     val apiId: String,
     val displayName: String,
@@ -919,58 +669,4 @@ private enum class ThemeOption(
     SUNSET_WARM("sunset-warm", "Sunset Warm", "Warm amber light theme"),
 }
 
-@Composable
-private fun ThemeOptionRow(
-    option: ThemeOption,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .focusable()
-            .semantics {
-                contentDescription = option.displayName
-                role = Role.RadioButton
-                stateDescription = if (isSelected) "Selected" else "Not selected"
-            }
-            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = option.displayName,
-                style = SpTypography.TitleMedium,
-                color = SpColor.OnCard,
-            )
-            Text(
-                text = option.description,
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
-        Spacer(Modifier.width(SpSpacing.Medium))
-        RadioButton(
-            selected = isSelected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = SpColor.Primary,
-                unselectedColor = SpColor.OnBackgroundTertiary,
-            ),
-        )
-    }
-}
 
-private fun formatSettingsCacheSize(bytes: Long): String {
-    if (bytes <= 0) return "Empty"
-    val units = listOf("B", "KB", "MB", "GB")
-    var value = bytes.toDouble()
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.size - 1) {
-        value /= 1024
-        unitIndex++
-    }
-    return "%.1f %s used".format(value, units[unitIndex])
-}

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.formatBytes
 
 @Composable
 fun SpProgressBar(
@@ -38,6 +39,7 @@ fun SpProgressBar(
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = tween(300),
+        label = "progressBarAnimation",
     )
 
     Column(modifier = modifier) {
@@ -112,14 +114,3 @@ fun SpDownloadProgressBar(
     }
 }
 
-private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = listOf("B", "KB", "MB", "GB")
-    var value = bytes.toDouble()
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.size - 1) {
-        value /= 1024
-        unitIndex++
-    }
-    return "%.1f %s".format(value, units[unitIndex])
-}

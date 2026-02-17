@@ -46,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -116,7 +117,7 @@ fun RelaysScreen(
                             // Invitations section
                             if (state.invitations.isNotEmpty()) {
                                 item {
-                                    SectionHeader(
+                                    SpSectionHeader(
                                         title = "Invitations",
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     )
@@ -140,7 +141,7 @@ fun RelaysScreen(
                             // My Relays section
                             if (state.relays.isNotEmpty()) {
                                 item {
-                                    SectionHeader(
+                                    SpSectionHeader(
                                         title = "My Relays",
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     )
@@ -187,19 +188,6 @@ fun RelaysScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = SpTypography.HeadlineLarge,
-        color = SpColor.OnBackground,
-        modifier = modifier.semantics { contentDescription = "$title section" },
-    )
 }
 
 @Composable

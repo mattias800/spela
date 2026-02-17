@@ -40,7 +40,7 @@ fun SpButton(
     isLoading: Boolean = false,
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(SpSpacing.RadiusLarge)
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val focusBorder = Modifier.border(
@@ -54,6 +54,7 @@ fun SpButton(
             val containerColor by animateColorAsState(
                 targetValue = if (enabled) SpColor.Primary else SpColor.SurfaceBright,
                 animationSpec = tween(200),
+                label = "primaryContainerColor",
             )
             Button(
                 onClick = { if (!isLoading) onClick() },

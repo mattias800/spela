@@ -115,7 +115,7 @@ fun InGameOverlay(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth(panelWidth)
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
                         .background(SpColor.SurfaceElevated)
                         .padding(SpSpacing.XLarge)
                         .clickable(
@@ -432,7 +432,7 @@ fun InGameOverlay(
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
                     .background(SpColor.Scrim)
                     .clickable { viewModel.onIntent(EmulationIntent.ToggleOverlay) }
                     .focusable()
@@ -581,126 +581,32 @@ fun InGameOverlay(
 
     // Netplay leave confirmation dialog
     if (state.netplayShowLeaveConfirm) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Scrim)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = { viewModel.onIntent(EmulationIntent.DismissNetplayLeaveConfirm) },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SpColor.SurfaceElevated)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {},
-                    )
-                    .padding(SpSpacing.XLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Leave Netplay Session?",
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = "The other player will be disconnected.",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(SpSpacing.XLarge))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    SpButton(
-                        text = "Keep Playing",
-                        onClick = { viewModel.onIntent(EmulationIntent.DismissNetplayLeaveConfirm) },
-                        style = SpButtonStyle.Outlined,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    SpButton(
-                        text = "Leave Session",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
-                            onExit()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
+        OverlayConfirmDialog(
+            title = "Leave Netplay Session?",
+            message = "The other player will be disconnected.",
+            cancelText = "Keep Playing",
+            confirmText = "Leave Session",
+            onCancel = { viewModel.onIntent(EmulationIntent.DismissNetplayLeaveConfirm) },
+            onConfirm = {
+                viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
+                onExit()
+            },
+        )
     }
 
     // Exit confirmation dialog (non-netplay)
     if (state.showExitConfirm && !state.isNetplayMode) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Scrim)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SpColor.SurfaceElevated)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {},
-                    )
-                    .padding(SpSpacing.XLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Exit without saving?",
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = "This game doesn't support save states. Any unsaved progress will be lost.",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(SpSpacing.XLarge))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    SpButton(
-                        text = "Keep Playing",
-                        onClick = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
-                        style = SpButtonStyle.Outlined,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    SpButton(
-                        text = "Exit Anyway",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.ConfirmExit)
-                            onExit()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
+        OverlayConfirmDialog(
+            title = "Exit without saving?",
+            message = "This game doesn't support save states. Any unsaved progress will be lost.",
+            cancelText = "Keep Playing",
+            confirmText = "Exit Anyway",
+            onCancel = { viewModel.onIntent(EmulationIntent.DismissExitConfirm) },
+            onConfirm = {
+                viewModel.onIntent(EmulationIntent.ConfirmExit)
+                onExit()
+            },
+        )
     }
 
     // Status message toast (auto-dismisses after 2 seconds)
@@ -709,25 +615,7 @@ fun InGameOverlay(
             delay(2000)
             viewModel.onIntent(EmulationIntent.DismissStatus)
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = SpSpacing.XXXLarge),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(SpColor.SuccessContainer)
-                    .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
-            ) {
-                Text(
-                    text = message,
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.Success,
-                )
-            }
-        }
+        OverlayToast(message = message)
     }
 
     // Challenge timer HUD (visible during challenge gameplay, top left)
@@ -741,7 +629,7 @@ fun InGameOverlay(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
                     .background(SpColor.Scrim)
                     .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
             ) {
@@ -759,64 +647,17 @@ fun InGameOverlay(
 
     // Challenge give up confirmation dialog
     if (state.showGiveUpConfirm) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Scrim)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = { viewModel.onIntent(EmulationIntent.DismissGiveUpConfirm) },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SpColor.SurfaceElevated)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {},
-                    )
-                    .padding(SpSpacing.XLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Give Up Challenge?",
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = "Your current attempt will be abandoned.",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(SpSpacing.XLarge))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    SpButton(
-                        text = "Keep Playing",
-                        onClick = { viewModel.onIntent(EmulationIntent.DismissGiveUpConfirm) },
-                        style = SpButtonStyle.Outlined,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    SpButton(
-                        text = "Give Up",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.ConfirmGiveUp)
-                            onExit()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
+        OverlayConfirmDialog(
+            title = "Give Up Challenge?",
+            message = "Your current attempt will be abandoned.",
+            cancelText = "Keep Playing",
+            confirmText = "Give Up",
+            onCancel = { viewModel.onIntent(EmulationIntent.DismissGiveUpConfirm) },
+            onConfirm = {
+                viewModel.onIntent(EmulationIntent.ConfirmGiveUp)
+                onExit()
+            },
+        )
     }
 
     // Challenge creation panel
@@ -837,25 +678,7 @@ fun InGameOverlay(
             delay(2000)
             viewModel.onIntent(EmulationIntent.DismissChallengeCreation)
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = SpSpacing.XXXLarge),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(SpColor.SuccessContainer)
-                    .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
-            ) {
-                Text(
-                    text = "Challenge created!",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.Success,
-                )
-            }
-        }
+        OverlayToast(message = "Challenge created!")
     }
 
     // Challenge completed result dialog
@@ -874,7 +697,7 @@ fun InGameOverlay(
             Column(
                 modifier = Modifier
                     .fillMaxWidth(0.80f)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
                     .background(SpColor.SurfaceElevated)
                     .padding(SpSpacing.XLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1016,5 +839,94 @@ private fun OverlayAction(
             style = SpTypography.LabelSmall,
             color = if (isActive) SpColor.Primary else SpColor.OnBackgroundSecondary,
         )
+    }
+}
+
+@Composable
+private fun OverlayConfirmDialog(
+    title: String,
+    message: String,
+    cancelText: String,
+    confirmText: String,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.Scrim)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onCancel,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.75f)
+                .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
+                .background(SpColor.SurfaceElevated)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+                .padding(SpSpacing.XLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = title,
+                style = SpTypography.HeadlineMedium,
+                color = SpColor.OnBackground,
+            )
+            Spacer(Modifier.height(SpSpacing.Small))
+            Text(
+                text = message,
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(SpSpacing.XLarge))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                SpButton(
+                    text = cancelText,
+                    onClick = onCancel,
+                    style = SpButtonStyle.Outlined,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SpButton(
+                    text = confirmText,
+                    onClick = onConfirm,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverlayToast(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = SpSpacing.XXXLarge),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
+                .background(SpColor.SuccessContainer)
+                .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
+        ) {
+            Text(
+                text = message,
+                style = SpTypography.BodyMedium,
+                color = SpColor.Success,
+            )
+        }
     }
 }

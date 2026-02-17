@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ButtonInfo
 import com.spela.player.domain.model.ConsoleButtonLayout
-import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -89,7 +88,7 @@ fun ConsoleControllerVisual(
 ) {
     val regions = remember(layout.consoleId) { getButtonRegions(layout) }
 
-    val pulseTransition = rememberInfiniteTransition()
+    val pulseTransition = rememberInfiniteTransition(label = "controllerPulse")
     val pulseAlpha by pulseTransition.animateFloat(
         initialValue = 0.4f,
         targetValue = 1f,
@@ -97,6 +96,7 @@ fun ConsoleControllerVisual(
             animation = tween(600),
             repeatMode = RepeatMode.Reverse,
         ),
+        label = "controllerPulseAlpha",
     )
 
     Box(modifier = modifier) {
@@ -122,10 +122,12 @@ fun ConsoleControllerVisual(
                     else -> SpColor.DividerLight
                 },
                 animationSpec = tween(150),
+                label = "buttonBorderColor",
             )
             val bgColor by animateColorAsState(
                 targetValue = targetColor,
                 animationSpec = tween(150),
+                label = "buttonBgColor",
             )
             val label = mappingLabels[region.info.retroButtonId]
 
@@ -256,6 +258,27 @@ private fun DrawScope.drawControllerBody(consoleId: String) {
     }
     drawPath(rightGripPath, bodyColor)
     drawPath(rightGripPath, outlineColor, style = Stroke(width = 1.5f))
+}
+
+/**
+ * Builds a map of button visual states from a layout and mapping state.
+ * Used by both KeyMappingScreen and KeyMappingWizard to determine which
+ * buttons are mapped, highlighted, or unmapped.
+ */
+internal fun buildButtonStates(
+    layout: ConsoleButtonLayout,
+    currentBindings: Map<Int, Int>,
+    currentMappingButton: Int?,
+): Map<Int, ButtonVisualState> = buildMap {
+    layout.buttons.forEach { btn ->
+        val isMapped = currentBindings.containsKey(btn.retroButtonId)
+        val isHighlighted = currentMappingButton == btn.retroButtonId
+        put(btn.retroButtonId, when {
+            isHighlighted -> ButtonVisualState.HIGHLIGHTED
+            isMapped -> ButtonVisualState.MAPPED
+            else -> ButtonVisualState.UNMAPPED
+        })
+    }
 }
 
 /**

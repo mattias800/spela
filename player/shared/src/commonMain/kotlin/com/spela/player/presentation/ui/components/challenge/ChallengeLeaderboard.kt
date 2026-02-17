@@ -139,7 +139,7 @@ private fun LeaderboardRow(
     }
 }
 
-fun formatDuration(durationMs: Long): String {
+internal fun formatDuration(durationMs: Long): String {
     val totalSeconds = durationMs / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

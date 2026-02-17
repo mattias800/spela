@@ -25,8 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -87,7 +85,7 @@ fun SpSnackbar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
                     .background(backgroundColor)
                     .padding(SpSpacing.Default),
             ) {
