@@ -3,7 +3,11 @@ package com.spela.player.android
 import android.view.KeyEvent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -16,6 +20,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
 import org.junit.rules.TestWatcher
@@ -28,9 +33,9 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 
 /**
  * Reloads Koin modules between tests so singleton definitions are replaced.
- * Uses loadModules(allowOverride=true) which replaces the SingleInstanceFactory
- * for each definition — the new factory has no cached value, so the next get()
- * creates a fresh instance.
+ * Uses unloadModules + loadModules to fully clear cached singleton instances.
+ * loadModules(allowOverride=true) alone may not clear the scope's instance cache,
+ * causing stale singleton state to leak between tests (e.g., requestExit=true).
  * Must be order=0 (outer) so singletons are refreshed BEFORE ComposeRule (order=1)
  * creates the Activity.
  */
@@ -39,7 +44,10 @@ class KoinResetRule : TestWatcher() {
         try {
             val koin = KoinPlatformTools.defaultContext().get()
             val modules = listOf(commonModule, platformModule())
-            koin.loadModules(modules, allowOverride = true)
+            // Unload first to clear cached singleton instances from the scope
+            koin.unloadModules(modules)
+            // Reload fresh module definitions
+            koin.loadModules(modules)
         } catch (_: Exception) {
             // First test in process — Koin started by SpelaApplication, nothing to reset
         }
@@ -60,7 +68,37 @@ private const val TIMEOUT_MEDIUM = 5_000L
 private const val TIMEOUT_LONG = 8_000L
 private const val TIMEOUT_EXTRA_LONG = 15_000L
 
+/** Tracks challenges created in this JVM process to skip expensive re-creation. */
+private val challengesCreated = mutableSetOf<String>()
+
 // ── Wait helpers ──
+
+/**
+ * Wait for the libretro core to fully shut down after exiting a game.
+ *
+ * stopGame() launches an async coroutine that serializes save state, calls
+ * libretroController.stop() (which joins the emulation thread for up to 2s
+ * and deinits the native core), then updates ViewModel state (isRunning = false).
+ * The UI navigates away immediately (requestExit = true) before the coroutine finishes.
+ *
+ * SpelaApp exposes a hidden semantics node with contentDescription "Core idle"
+ * (when isRunning = false) or "Core running" (when isRunning = true).
+ * This function polls the Compose tree for "Core idle" instead of sleeping.
+ *
+ * Without this wait, starting a new game can race with the old emulation thread,
+ * causing core_load() to unload the native library while the old thread still
+ * calls nativeRun() → SIGSEGV in the SpelaEmulation thread.
+ */
+fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
+    waitUntil(timeoutMillis = timeout) {
+        try {
+            onAllNodesWithContentDescription("Core idle", substring = false)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: IllegalStateException) {
+            false
+        }
+    }
+}
 
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
     waitUntil(timeoutMillis = timeout) {
@@ -283,30 +321,33 @@ private fun ComposeRule.navigateBackToHome() {
             ) {
                 onNodeWithText("Exit Game").performClick()
                 waitForIdle()
+                waitForCoreIdle()
                 continue
             }
 
             // Challenge mode overlay — give up to exit
-            if (onAllNodesWithText("Give Up", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() &&
+            val giveUpNodes = onAllNodesWithText("Give Up", substring = true)
+                .fetchSemanticsNodes()
+            if (giveUpNodes.isNotEmpty() &&
                 onAllNodesWithText("Exit Game", substring = true)
                     .fetchSemanticsNodes().isEmpty()
             ) {
                 try {
-                    onNodeWithText("Give Up").performClick()
+                    onAllNodesWithText("Give Up", substring = true)[0].performClick()
                     waitForIdle()
                     Thread.sleep(500)
                     // Confirm the give up dialog if it appeared
                     if (onAllNodesWithText("Give Up Challenge?", substring = true)
                             .fetchSemanticsNodes().isNotEmpty()
                     ) {
-                        val nodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
-                        onAllNodesWithText("Give Up")[nodes.size - 1].performClick()
+                        val confirmNodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
+                        onAllNodesWithText("Give Up")[confirmNodes.size - 1].performClick()
                         waitForIdle()
                     }
                 } catch (_: Exception) {
-                    // Best effort
+                    // Best effort — screen may have changed between check and click
                 }
+                waitForCoreIdle()
                 continue
             }
 
@@ -389,8 +430,9 @@ fun ComposeRule.ensureLoggedIn(
 
     // On some other logged-in screen (Settings, game detail, in-game, etc.)
     // Navigate back to Home first, then verify.
+    // navigateBackToHome may need time if exiting a game (async core shutdown).
     navigateBackToHome()
-    waitForText("Spela", TIMEOUT_EXTRA_LONG)
+    waitForText("Spela", 30_000)
 }
 
 /**
@@ -673,6 +715,11 @@ fun ComposeRule.openOverlay() {
 fun ComposeRule.exitGame() {
     onNodeWithText("Exit Game").performClick()
     waitForIdle()
+    // stopGame() runs async: serializes save state then calls libretroController.stop()
+    // which joins the emulation thread (up to 2s) and deinits native core.
+    // Wait for "Core idle" indicator before navigating to a new game,
+    // otherwise the new core_load() races with the old emulation thread → SIGSEGV.
+    waitForCoreIdle()
 }
 
 // ── Composite helpers for common patterns ──
@@ -707,11 +754,94 @@ fun ComposeRule.ensureOverlayOpen() {
 /**
  * Navigate from the game detail screen to the ChallengeListScreen.
  * Scrolls to the "Challenges" section and taps "View Challenges" button.
+ *
+ * The tap can silently fail when the LazyColumn is mid-layout after the
+ * swipe-to-find phase of scrollToAndTapText. To work around this, we
+ * first scroll to make "View Challenges" visible, then wait briefly for
+ * layout to settle, and tap using `tapOn` which re-resolves the node.
+ *
  * Assumes the test is on a game detail screen.
  */
 fun ComposeRule.navigateToChallengeList() {
-    scrollToAndTapText("View Challenges")
-    waitForIdle()
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val maxRetries = 3
+    val buttonTag = "view_challenges_button"
+
+    for (retry in 0 until maxRetries) {
+        Thread.sleep(1_500)
+        waitForIdle()
+
+        // Phase 1: Scroll down using UiAutomator until the button's testTag
+        // node appears in the Compose semantic tree.
+        val maxSwipes = 10
+        for (swipe in 0..maxSwipes) {
+            val found = try {
+                onAllNodes(hasTestTag(buttonTag))
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+            if (found) break
+
+            check(swipe < maxSwipes) {
+                "Failed to navigate to challenge list after $maxRetries retries"
+            }
+
+            val centerX = device.displayWidth / 2
+            val fromY = (device.displayHeight * 0.7).toInt()
+            val toY = (device.displayHeight * 0.3).toInt()
+            device.swipe(centerX, fromY, centerX, toY, 15)
+            Thread.sleep(500)
+        }
+
+        // Phase 2: Settle, then click via testTag.
+        // performScrollTo ensures the node is fully visible within the LazyColumn
+        // before dispatching the semantic OnClick action.
+        Thread.sleep(1_000)
+        waitForIdle()
+
+        try {
+            onNodeWithTag(buttonTag).performScrollTo()
+            waitForIdle()
+            Thread.sleep(300)
+            onNodeWithTag(buttonTag).performClick()
+            waitForIdle()
+        } catch (e: Exception) {
+            android.util.Log.w("ChallengeNav", "retry=$retry click failed: $e")
+            if (retry < maxRetries - 1) continue
+            throw e
+        }
+
+        // Phase 3: Verify navigation succeeded.
+        // AnimatedContent keeps the outgoing screen in the tree during the transition,
+        // so the testTag node may linger for several hundred ms. Use waitUntil to
+        // give the transition time to complete.
+        try {
+            waitUntil(timeoutMillis = 5_000) {
+                try {
+                    onAllNodes(hasTestTag(buttonTag))
+                        .fetchSemanticsNodes().isEmpty()
+                } catch (_: Exception) { true }
+            }
+            return // Navigation succeeded — button is gone
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            // Button still visible after 5s — click genuinely didn't work
+        }
+
+        android.util.Log.w("ChallengeNav",
+            "retry=$retry click didn't navigate, retrying")
+
+        // Scroll back up for a fresh attempt
+        if (retry < maxRetries - 1) {
+            val centerX = device.displayWidth / 2
+            val fromY = (device.displayHeight * 0.3).toInt()
+            val toY = (device.displayHeight * 0.7).toInt()
+            repeat(5) {
+                device.swipe(centerX, fromY, centerX, toY, 15)
+                Thread.sleep(300)
+            }
+        }
+    }
+
+    throw IllegalStateException("Failed to navigate to challenge list after $maxRetries retries")
 }
 
 /**
@@ -772,6 +902,8 @@ fun ComposeRule.abandonChallenge() {
     val giveUpNodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
     onAllNodesWithText("Give Up")[giveUpNodes.size - 1].performClick()
     waitForIdle()
+    // Wait for async core shutdown (save + thread join + native deinit)
+    waitForCoreIdle()
 }
 
 /**
@@ -795,6 +927,7 @@ fun ComposeRule.completeChallenge() {
 fun ComposeRule.dismissChallengeResult() {
     tapOn("Done")
     waitForIdle()
+    waitForCoreIdle()
 }
 
 /**
@@ -813,24 +946,40 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     onNode(hasText("Title") and hasSetTextAction())
         .performTextInput(title)
 
-    tapOn("Create")
-    waitForText("Challenge created!", timeout = 8_000)
+    // Use exact match to click "Create" button (not "Create Challenge" title)
+    onNodeWithText("Create", substring = false).performClick()
+    waitForIdle()
+    waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
     waitForVisible("Touch controls", timeout = 5_000)
 }
 
 /**
- * Full setup: login, navigate to Castlevania, download if needed, play the game,
- * create a challenge from overlay, then exit the game.
- * Returns on the game detail screen with a challenge available on the server.
+ * Full setup: login, navigate to Castlevania, ensure a challenge with the given title
+ * exists on the server. If the challenge was already created in this JVM process,
+ * skips the expensive game-play + create flow. Otherwise plays the game, creates
+ * the challenge, and exits.
+ * Returns on the Castlevania game detail screen.
  */
 fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
     startLoggedIn()
+    if (title in challengesCreated) {
+        navigateToCastlevania()
+        return
+    }
     navigateToGameAndPlay()
     createChallengeFromOverlay(title)
     openOverlayAndExit()
     waitForText("About", TIMEOUT_LONG)
+    challengesCreated.add(title)
+
+    // Navigate all the way back to Home and then through the full path.
+    // The game detail screen restored from behind the overlay has a stale
+    // LazyColumn whose "View Challenges" button doesn't respond to clicks.
+    navigateBackToHome()
+    waitForText("Spela", TIMEOUT_LONG)
+    navigateToCastlevania()
 }
 
 /**

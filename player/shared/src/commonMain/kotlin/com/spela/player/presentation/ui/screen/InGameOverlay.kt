@@ -189,6 +189,7 @@ fun InGameOverlay(
             isBest = attempt.isBest,
             onDone = {
                 viewModel.onIntent(EmulationIntent.DismissChallengeResult)
+                viewModel.onIntent(EmulationIntent.StopGame)
                 onExit()
             },
         )

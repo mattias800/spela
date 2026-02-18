@@ -19,6 +19,7 @@ services:
       - SPELA_IMAGE_DIR=/app/images
       - SPELA_CORS_ORIGINS=http://localhost:5173
       - SPELA_SEED=true
+      - SPELA_CHALLENGE_RATE_LIMIT_SEC=0
       - GIN_MODE=debug
 
   web:

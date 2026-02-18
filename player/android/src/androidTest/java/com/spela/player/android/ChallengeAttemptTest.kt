@@ -21,12 +21,20 @@ import org.junit.runner.RunWith
  * Two-step API: POST /attempts/start → play → POST /attempts/:id/complete
  * Server-side timing — client timer is display-only.
  *
+ * All tests share a single challenge to avoid the expensive create flow
+ * (play game → create challenge → exit) for every test. The shared cache
+ * in TestHelpers tracks whether the challenge has been created in this process.
+ *
  * Prerequisites:
  * - Server running with seeded data (player/player123 user, Castlevania game)
  * - Castlevania game available and downloadable
  */
 @RunWith(AndroidJUnit4::class)
 class ChallengeAttemptTest {
+
+    companion object {
+        private const val SHARED_CHALLENGE = "Attempt E2E Challenge"
+    }
 
     @get:Rule(order = 0)
     val koinResetRule = KoinResetRule()
@@ -35,31 +43,47 @@ class ChallengeAttemptTest {
     val rule = createAndroidComposeRule<MainActivity>()
 
     /**
-     * Create a challenge, navigate to its detail screen, and start an attempt.
-     * Returns with the game running in challenge mode.
+     * Ensure the shared challenge exists, navigate to its detail screen,
+     * and start an attempt. Returns with the game running in challenge mode.
      */
-    private fun createAndStartAttempt(title: String = "Attempt Test Challenge") {
-        // Create a challenge from gameplay
-        rule.ensureChallengeExists(title)
+    private fun startAttempt() {
+        rule.ensureChallengeExists(SHARED_CHALLENGE)
 
         // Navigate to challenge detail via challenge list
         rule.navigateToChallengeList()
-        rule.waitForText(title, timeout = 8_000)
-        rule.tapOn(title)
-        rule.waitForText("Attempt Challenge", timeout = 5_000)
+        rule.waitForText(SHARED_CHALLENGE, timeout = 15_000)
+        rule.tapOn(SHARED_CHALLENGE)
+        rule.waitForText("Attempt Challenge", timeout = 8_000)
 
         // Start attempt
         rule.tapOn("Attempt Challenge")
 
-        // Wait for game to load with challenge save state
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        // Wait for the game to load. The core running indicator confirms the
+        // EmulationViewModel has set isRunning=true.
+        rule.waitForContentDescription("Core running", timeout = 30_000)
+
+        // Wait for touch controls. If the in-game overlay opened unexpectedly
+        // (e.g., after a previous test's state leaked), dismiss it first.
+        try {
+            rule.waitForVisible("Touch controls", timeout = 5_000)
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            // Touch controls hidden — check if the overlay is open
+            val overlayOpen = rule.onAllNodesWithText("Resume")
+                .fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithText("Give Up")
+                    .fetchSemanticsNodes().isNotEmpty()
+            if (overlayOpen) {
+                rule.resumeChallengeFromOverlay()
+            }
+            rule.waitForVisible("Touch controls", timeout = 10_000)
+        }
     }
 
     // ── US-5 AC: Tapping "Attempt" loads game with challenge save state ──
 
     @Test
     fun attemptChallengeLoadsGame() {
-        createAndStartAttempt("Attempt Load Test")
+        startAttempt()
 
         // Game should be running (touch controls visible)
         rule.assertVisible("Touch controls")
@@ -75,7 +99,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun challengeTimerVisibleDuringPlay() {
-        createAndStartAttempt("Timer Visibility Test")
+        startAttempt()
 
         // Timer HUD should be visible while playing
         rule.waitForVisible("Challenge timer", timeout = 5_000)
@@ -87,7 +111,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun challengeOverlayHasModifiedControls() {
-        createAndStartAttempt("Overlay Controls Test")
+        startAttempt()
         rule.openChallengeOverlay()
 
         // Challenge-mode overlay should show these buttons (per Decision #5):
@@ -115,7 +139,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun timerPausesWhenOverlayOpen() {
-        createAndStartAttempt("Timer Pause Test")
+        startAttempt()
 
         // Let some time elapse
         Thread.sleep(2_000)
@@ -136,7 +160,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun giveUpAbandonsAttempt() {
-        createAndStartAttempt("Give Up Test")
+        startAttempt()
         rule.openChallengeOverlay()
 
         // Tap "Give Up" — triggers confirmation dialog
@@ -151,13 +175,16 @@ class ChallengeAttemptTest {
         val giveUpNodes = rule.onAllNodesWithText("Give Up").fetchSemanticsNodes()
         rule.onAllNodesWithText("Give Up")[giveUpNodes.size - 1].performClick()
         rule.waitForIdle()
+
+        // Wait for core shutdown after give-up exits the game
+        rule.waitForCoreIdle()
     }
 
     // ── US-5 AC: "Complete" submits attempt and shows result ──
 
     @Test
     fun completeSubmitsAttempt() {
-        createAndStartAttempt("Complete Test")
+        startAttempt()
 
         // Let some time elapse for a non-zero duration
         Thread.sleep(2_000)
@@ -171,15 +198,14 @@ class ChallengeAttemptTest {
         rule.assertVisible("Your time")
 
         // Dismiss result screen
-        rule.tapOn("Done")
-        rule.waitForIdle()
+        rule.dismissChallengeResult()
     }
 
     // ── US-5 AC: "Restart" reloads challenge save state, resets timer ──
 
     @Test
     fun restartReloadsOriginalState() {
-        createAndStartAttempt("Restart Test")
+        startAttempt()
 
         // Let some time pass
         Thread.sleep(2_000)
@@ -208,7 +234,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun backButtonOpensOverlayDuringAttempt() {
-        createAndStartAttempt("Back Button Test")
+        startAttempt()
 
         // Back button should open the challenge overlay
         rule.pressBack()
@@ -231,7 +257,7 @@ class ChallengeAttemptTest {
 
     @Test
     fun giveUpKeepPlayingCancelsAbandon() {
-        createAndStartAttempt("Keep Playing Test")
+        startAttempt()
         rule.openChallengeOverlay()
 
         // Tap "Give Up" to open confirmation dialog

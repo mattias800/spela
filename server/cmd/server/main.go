@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spela/server/internal/api"
@@ -27,6 +28,7 @@ func main() {
 	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
 	corsOriginsRaw := getEnv("SPELA_CORS_ORIGINS", "")
+	challengeRateLimitRaw := getEnv("SPELA_CHALLENGE_RATE_LIMIT_SEC", "30")
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
 	var wsOrigins []string
@@ -36,6 +38,10 @@ func main() {
 	var corsOrigins []string
 	if corsOriginsRaw != "" {
 		corsOrigins = strings.Split(corsOriginsRaw, ",")
+	}
+	challengeRateLimit, err := strconv.Atoi(challengeRateLimitRaw)
+	if err != nil {
+		challengeRateLimit = 30
 	}
 
 	// Initialize structured logging
@@ -107,7 +113,7 @@ func main() {
 		NetplayHub:  netplayHub,
 		CoreDir:     coreDir,
 		CORSOrigins:                  corsOrigins,
-		ChallengeAttemptRateLimitSec: 30,
+		ChallengeAttemptRateLimitSec: challengeRateLimit,
 	})
 
 	slog.Info("server listening", "port", port)
