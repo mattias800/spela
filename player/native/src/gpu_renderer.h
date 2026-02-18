@@ -53,6 +53,11 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 /* Source rect for DS dual-screen: render a sub-region of the framebuffer */
 void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h);
 
+/* Vulkan context negotiation — call before init_surface to let core create VkDevice */
+struct retro_hw_render_context_negotiation_interface_vulkan;
+void gpu_renderer_set_vk_negotiation(gpu_renderer_t *r,
+    const struct retro_hw_render_context_negotiation_interface_vulkan *iface);
+
 /* Vulkan HW render support (Phase 4) */
 bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r);
 void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);

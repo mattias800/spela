@@ -15,7 +15,10 @@ set(COMMON_SOURCES
 
 # Platform-specific GPU renderer sources
 if(ANDROID)
-    list(APPEND COMMON_SOURCES src/gpu_renderer_vulkan.c)
+    list(APPEND COMMON_SOURCES
+        src/gpu_renderer_vulkan.c
+        src/hw_render_gl_android.c
+    )
 elseif(APPLE)
     # macOS: Metal renderer (Objective-C) + OpenGL HW render support
     enable_language(OBJC)
@@ -44,12 +47,16 @@ if(ANDROID)
     find_library(log-lib log)
     find_library(android-lib android)
     find_library(GLESv2-lib GLESv2)
+    find_library(GLESv3-lib GLESv3)
+    find_library(EGL-lib EGL)
     find_library(OpenSLES-lib OpenSLES)
     find_library(vulkan-lib vulkan)
     target_link_libraries(spela-libretro
         ${log-lib}
         ${android-lib}
         ${GLESv2-lib}
+        ${GLESv3-lib}
+        ${EGL-lib}
         ${OpenSLES-lib}
         ${vulkan-lib}
         dl

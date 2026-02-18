@@ -11,8 +11,10 @@
 #include "libretro_bridge.h"
 #include "gpu_renderer.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__ANDROID__)
 #include "hw_render_gl.h"
+#endif
+#ifdef __APPLE__
 #include <OpenGL/gl3.h>
 #endif
 
@@ -81,13 +83,40 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
     if (!data) return;
 
 #ifdef __ANDROID__
-    /* Vulkan HW render path: core rendered to its own VkImage, present through our shader */
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
+        /* Vulkan HW render path: core rendered to its own VkImage */
         if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer) &&
             gpu_renderer_is_hw_render_active(video_state.gpu_renderer)) {
             gpu_renderer_hw_render_frame(video_state.gpu_renderer, width, height);
+            return;
         }
-        return;
+        /* GLES HW render path: readback from pbuffer, upload through Vulkan pipeline */
+        if (g_core.hw_gl_ctx) {
+            hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
+
+            size_t needed = (size_t)width * height * 4;
+            if (needed > video_state.frame_buffer_size) {
+                void *new_buf = realloc(video_state.frame_buffer, needed);
+                if (!new_buf) return;
+                video_state.frame_buffer = new_buf;
+                video_state.frame_buffer_size = needed;
+            }
+
+            unsigned rb_w = 0, rb_h = 0;
+            unsigned pixels = hw_gl_read_pixels(g_core.hw_gl_ctx, video_state.frame_buffer,
+                                                video_state.frame_buffer_size, &rb_w, &rb_h);
+            if (pixels > 0) {
+                video_state.width = rb_w;
+                video_state.height = rb_h;
+                video_state.pitch = rb_w * 4;
+
+                if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer)) {
+                    gpu_renderer_upload_frame(video_state.gpu_renderer, video_state.frame_buffer,
+                        rb_w, rb_h, rb_w * 4, RETRO_PIXEL_FORMAT_XRGB8888);
+                }
+            }
+            return;
+        }
     }
 #endif
 

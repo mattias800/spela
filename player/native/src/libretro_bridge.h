@@ -91,7 +91,12 @@ typedef struct {
     struct retro_hw_render_callback hw_render_callback;
     bool                            hw_render_enabled;
 
-    /* OpenGL HW render context (desktop only, NULL when not using GL HW render) */
+#ifdef __ANDROID__
+    /* Vulkan context negotiation (set by core via env cmd 43) */
+    const struct retro_hw_render_context_negotiation_interface_vulkan *hw_vk_negotiation;
+#endif
+
+    /* OpenGL HW render context (NULL when not using GL HW render) */
     hw_gl_context_t                *hw_gl_ctx;
 } libretro_core_t;
 

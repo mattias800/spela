@@ -41,6 +41,7 @@ extern "C" {
 #define RETRO_ENVIRONMENT_SET_GEOMETRY         37
 #define RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION 52
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE 41
+#define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE 43
 
 /* Input device types */
 #define RETRO_DEVICE_NONE     0
@@ -125,8 +126,7 @@ struct retro_hw_render_callback {
 struct retro_vulkan_image {
     VkImageView image_view;
     VkImageLayout image_layout;
-    VkDeviceSize create_info_swapchain_width;
-    VkDeviceSize create_info_swapchain_height;
+    VkImageViewCreateInfo create_info;
 };
 
 typedef void (*retro_vulkan_set_image_t)(void *handle,
@@ -145,22 +145,97 @@ typedef void (*retro_vulkan_set_signal_semaphore_t)(void *handle, VkSemaphore se
 struct retro_hw_render_interface_vulkan {
     unsigned interface_type;
     unsigned interface_version;
-    PFN_vkGetInstanceProcAddr get_instance_proc_addr;
+    void *handle;
     VkInstance instance;
     VkPhysicalDevice gpu;
     VkDevice device;
     PFN_vkGetDeviceProcAddr get_device_proc_addr;
-    uint32_t queue_index;
+    PFN_vkGetInstanceProcAddr get_instance_proc_addr;
     VkQueue queue;
-    void *handle;
+    unsigned queue_index;
     retro_vulkan_set_image_t set_image;
     retro_vulkan_get_sync_index_t get_sync_index;
     retro_vulkan_get_sync_index_mask_t get_sync_index_mask;
-    retro_vulkan_wait_sync_index_t wait_sync_index;
     retro_vulkan_set_command_buffers_t set_command_buffers;
+    retro_vulkan_wait_sync_index_t wait_sync_index;
     retro_vulkan_lock_queue_t lock_queue;
     retro_vulkan_unlock_queue_t unlock_queue;
     retro_vulkan_set_signal_semaphore_t set_signal_semaphore;
+};
+
+/* Context negotiation interface type */
+#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN 0
+
+/* Vulkan context — filled by core's create_device callback */
+struct retro_vulkan_context {
+    VkPhysicalDevice gpu;
+    VkDevice device;
+    VkQueue queue;
+    uint32_t queue_family_index;
+    VkQueue presentation_queue;
+    uint32_t presentation_queue_family_index;
+};
+
+/* Context negotiation: lets cores participate in VkDevice creation.
+ * The core provides this via SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE.
+ * Version 1: get_application_info + create_device (v1 signature).
+ * Version 2+: adds create_instance + create_device2 (wrapper-based signature). */
+typedef const VkApplicationInfo *(*retro_vulkan_get_application_info_t)(void);
+
+/* v1 create_device — core creates device directly */
+typedef bool (*retro_vulkan_create_device_t)(
+    struct retro_vulkan_context *context,
+    VkInstance instance,
+    VkPhysicalDevice gpu,
+    VkSurfaceKHR surface,
+    PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+    const char **required_device_extensions,
+    unsigned num_required_device_extensions,
+    const char **required_device_layers,
+    unsigned num_required_device_layers,
+    const VkPhysicalDeviceFeatures *required_features);
+
+typedef void (*retro_vulkan_destroy_device_t)(void);
+
+/* v2 device wrapper — frontend callback that core calls to create the actual device.
+ * Returns VkDevice (or VK_NULL_HANDLE on failure). */
+typedef VkDevice (*retro_vulkan_create_device_wrapper_t)(
+    VkPhysicalDevice gpu,
+    void *opaque,
+    const VkDeviceCreateInfo *create_info);
+
+/* v2 instance wrapper — frontend callback that core calls to create VkInstance.
+ * Returns VkInstance (or VK_NULL_HANDLE on failure). */
+typedef VkInstance (*retro_vulkan_create_instance_wrapper_t)(
+    void *opaque,
+    const VkInstanceCreateInfo *create_info);
+
+/* v2 create_device2 — core prepares create_info, calls wrapper to create device */
+typedef bool (*retro_vulkan_create_device2_t)(
+    struct retro_vulkan_context *context,
+    VkInstance instance,
+    VkPhysicalDevice gpu,
+    VkSurfaceKHR surface,
+    PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+    retro_vulkan_create_device_wrapper_t create_device_wrapper,
+    void *opaque);
+
+/* v2 create_instance — core creates VkInstance (optional) */
+typedef VkInstance (*retro_vulkan_create_instance_t)(
+    PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+    const VkApplicationInfo *app,
+    retro_vulkan_create_instance_wrapper_t create_instance_wrapper,
+    void *opaque);
+
+struct retro_hw_render_context_negotiation_interface_vulkan {
+    unsigned interface_type;
+    unsigned interface_version;
+    retro_vulkan_get_application_info_t get_application_info;
+    retro_vulkan_create_device_t create_device;   /* v1 */
+    retro_vulkan_destroy_device_t destroy_device;
+    /* v2 additions (only valid when interface_version >= 2) */
+    retro_vulkan_create_instance_t create_instance;
+    retro_vulkan_create_device2_t create_device2;
 };
 
 #endif /* VK_VERSION_1_0 */

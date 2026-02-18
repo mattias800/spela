@@ -15,15 +15,14 @@
 #include "libretro_achievements.h"
 #include "gpu_renderer.h"
 
-#ifndef __ANDROID__
 #include "hw_render_gl.h"
-#endif
 
 #include <jni.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #ifdef __ANDROID__
 #include <android/native_window_jni.h>
 #else
@@ -120,21 +119,14 @@ static void core_log(enum retro_log_level level, const char *fmt, ...) {
 
 /* HW render callbacks wired into retro_hw_render_callback */
 static uintptr_t hw_get_current_framebuffer(void) {
-#ifndef __ANDROID__
     if (g_core.hw_gl_ctx) {
         return hw_gl_get_framebuffer(g_core.hw_gl_ctx);
     }
-#endif
     return 0;
 }
 
 static void *hw_get_proc_address(const char *sym) {
-#ifndef __ANDROID__
     return hw_gl_get_proc_address(sym);
-#else
-    (void)sym;
-    return NULL;
-#endif
 }
 
 /*
@@ -142,7 +134,10 @@ static void *hw_get_proc_address(const char *sym) {
  * We handle the subset of environment commands needed for basic operation.
  */
 static bool environment_callback(unsigned cmd, void *data) {
-    switch (cmd) {
+    /* Mask off RETRO_ENVIRONMENT_EXPERIMENTAL (0x10000) so experimental
+     * commands like GET_HW_RENDER_INTERFACE match our case labels. */
+    unsigned base_cmd = cmd & 0xFFFF;
+    switch (base_cmd) {
         case RETRO_ENVIRONMENT_GET_CAN_DUPE: {
             *(bool *)data = true;
             return true;
@@ -237,16 +232,15 @@ static bool environment_callback(unsigned cmd, void *data) {
                 }
                 LOGI("Parsed SET_VARIABLES: %d variables stored", core_variable_count);
 
-                /* N64: Use Angrylion software renderer instead of GLideN64.
-                 * GLideN64 has GL_INVALID_OPERATION on macOS when compositing to
-                 * custom FBOs, causing z-ordering issues. Angrylion renders entirely
-                 * in software with pixel-perfect N64 accuracy and no GL dependency. */
+                /* N64 renderer selection per platform:
+                 * - macOS: Angrylion (software) — avoids GL compositing issues with GLideN64
+                 * - Android: paraLLEl-RDP (Vulkan) — triggers our Vulkan HW render pipeline
+                 * - Other: leave core defaults (GLideN64 / GLES3) */
                 {
                     const struct retro_variable *v3 = (const struct retro_variable *)data;
-                    bool has_rdp_plugin = false;
                     for (; v3->key; v3++) {
                         if (v3->key && strstr(v3->key, "rdp-plugin")) {
-                            has_rdp_plugin = true;
+#ifdef __APPLE__
                             if (strstr(v3->value, "angrylion")) {
                                 LOGI("N64 core detected with Angrylion support, switching to software renderer");
                                 core_variables_set("mupen64plus-rdp-plugin", "angrylion");
@@ -256,6 +250,11 @@ static bool environment_callback(unsigned cmd, void *data) {
                             } else {
                                 LOGI("N64 core detected but Angrylion NOT available in this build");
                             }
+#elif defined(__ANDROID__)
+                            LOGI("N64 core detected, selecting GLideN64 (GLES) renderer");
+                            core_variables_set("mupen64plus-rdp-plugin", "gliden64");
+                            core_variables_set("mupen64plus-rsp-plugin", "hle");
+#endif
                             break;
                         }
                     }
@@ -305,6 +304,23 @@ static bool environment_callback(unsigned cmd, void *data) {
             return true;
         }
 
+        case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE: {
+#ifdef __ANDROID__
+            /* Core provides context negotiation interface so it can participate
+             * in VkDevice creation (request extensions, features, or create the
+             * device itself). Required by paraLLEl-RDP in mupen64plus-next. */
+            const struct retro_hw_render_context_negotiation_interface_vulkan *iface =
+                (const struct retro_hw_render_context_negotiation_interface_vulkan *)data;
+            if (iface && iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN) {
+                g_core.hw_vk_negotiation = iface;
+                LOGI("Accepted Vulkan context negotiation interface (version=%u)",
+                     iface->interface_version);
+                return true;
+            }
+#endif
+            return false;
+        }
+
         case RETRO_ENVIRONMENT_SET_HW_RENDER: {
             struct retro_hw_render_callback *cb = (struct retro_hw_render_callback *)data;
             LOGI("Core requests HW render context type: %u (v%u.%u)",
@@ -321,6 +337,21 @@ static bool environment_callback(unsigned cmd, void *data) {
                 g_core.hw_render_enabled = true;
                 LOGI("Accepted Vulkan HW render (type=%u, depth=%d, stencil=%d)",
                      cb->context_type, cb->depth, cb->stencil);
+                return true;
+            }
+            /* Accept GLES context types on Android (e.g. GLideN64) */
+            if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ||
+                cb->context_type == RETRO_HW_CONTEXT_OPENGLES3 ||
+                cb->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION) {
+                g_core.hw_render_callback = *cb;
+                g_core.hw_render_callback.get_current_framebuffer = hw_get_current_framebuffer;
+                g_core.hw_render_callback.get_proc_address = hw_get_proc_address;
+                cb->get_current_framebuffer = hw_get_current_framebuffer;
+                cb->get_proc_address = hw_get_proc_address;
+                g_core.hw_render_enabled = true;
+                LOGI("Accepted GLES HW render (type=%u, v%u.%u, depth=%d, stencil=%d, bottom_left_origin=%d)",
+                     cb->context_type, cb->version_major, cb->version_minor,
+                     cb->depth, cb->stencil, cb->bottom_left_origin);
                 return true;
             }
 #else
@@ -526,14 +557,24 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
              g_core.av_info.timing.fps,
              g_core.av_info.timing.sample_rate);
 
-#ifndef __ANDROID__
-        /* Initialize OpenGL HW render context if the core requested it */
+        /* Initialize OpenGL/GLES HW render context if the core requested it.
+         * On Android, this only applies to GLES context types (GLideN64);
+         * Vulkan HW render (paraLLEl-RDP) is initialized later in gpuInit. */
+#ifdef __ANDROID__
+        if (g_core.hw_render_enabled &&
+            g_core.hw_render_callback.context_type != RETRO_HW_CONTEXT_VULKAN) {
+#else
         if (g_core.hw_render_enabled) {
+#endif
             g_core.hw_gl_ctx = hw_gl_create();
             if (g_core.hw_gl_ctx) {
                 unsigned vmaj = g_core.hw_render_callback.version_major;
                 unsigned vmin = g_core.hw_render_callback.version_minor;
-                if (vmaj == 0) { vmaj = 3; vmin = 2; } /* default to 3.2 */
+#ifndef __ANDROID__
+                if (vmaj == 0) { vmaj = 3; vmin = 2; } /* desktop default: GL 3.2 */
+#else
+                if (vmaj == 0) { vmaj = 3; vmin = 0; } /* Android default: GLES 3.0 */
+#endif
                 if (hw_gl_init(g_core.hw_gl_ctx, vmaj, vmin,
                                g_core.hw_render_callback.depth,
                                g_core.hw_render_callback.stencil)) {
@@ -562,6 +603,12 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
                      * that are directly linked, not going through rglgen. */
                     hw_gl_rebind_gl_symbols();
 
+                    /* Release context so the emulation thread can acquire it.
+                     * On Android, nativeLoadGame runs on the UI/loading thread
+                     * but retro_run() executes on SpelaEmulation thread.
+                     * EGL requires releasing before another thread can bind. */
+                    hw_gl_release_current(g_core.hw_gl_ctx);
+
                     LOGI("OpenGL HW render context initialized for core");
                 } else {
                     LOGE("Failed to init OpenGL HW render context");
@@ -574,7 +621,6 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
                 g_core.hw_render_enabled = false;
             }
         }
-#endif
     } else {
         LOGE("retro_load_game failed");
     }
@@ -584,20 +630,29 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 
 JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+    /* Vulkan HW render: skip frames until Vulkan HW context is ready */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
+        (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer))) {
+        return;
+    }
+    /* GLES HW render: make context current before retro_run */
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+    }
+#else
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         hw_gl_make_current(g_core.hw_gl_ctx);
         hw_gl_debug_reset_frame();
     }
 #endif
     g_core.retro_run();
-#ifndef __ANDROID__
     /* Release GL context after retro_run() so subsequent GPU operations
      * (nativeGpuRenderToBgra) aren't affected by an active GL context */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         hw_gl_release_current(g_core.hw_gl_ctx);
     }
-#endif
     achievements_do_frame();
 }
 
@@ -617,12 +672,17 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
         if (g_core.hw_render_callback.context_destroy) {
             g_core.hw_render_callback.context_destroy();
         }
+        /* Granite's background threads (DefaultDispatch) may still be compiling
+         * pipelines. context_destroy signals them to stop but doesn't join them.
+         * Wait for the device to go idle, then give threads time to exit. */
+        gpu_renderer_wait_idle(g_gpu_renderer);
+        usleep(200000); /* 200ms grace period for background thread shutdown */
         gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
         g_core.hw_render_enabled = false;
         LOGI("Vulkan HW render context destroyed");
     }
-#else
-    /* Tear down OpenGL HW render context before unloading game */
+#endif
+    /* Tear down OpenGL/GLES HW render context before unloading game */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         if (g_core.hw_render_callback.context_destroy) {
             hw_gl_make_current(g_core.hw_gl_ctx);
@@ -633,7 +693,6 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
         g_core.hw_render_enabled = false;
         LOGI("OpenGL HW render context destroyed");
     }
-#endif
     g_core.retro_unload_game();
     g_core.game_loaded = false;
     audio_deinit();
@@ -651,11 +710,13 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
             if (g_core.hw_render_callback.context_destroy) {
                 g_core.hw_render_callback.context_destroy();
             }
+            gpu_renderer_wait_idle(g_gpu_renderer);
+            usleep(200000); /* 200ms grace for Granite background threads */
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             g_core.hw_render_enabled = false;
         }
-#else
-        /* Clean up GL HW render if still active */
+#endif
+        /* Clean up GL/GLES HW render if still active */
         if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
             if (g_core.hw_render_callback.context_destroy) {
                 hw_gl_make_current(g_core.hw_gl_ctx);
@@ -665,7 +726,6 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
             g_core.hw_gl_ctx = NULL;
             g_core.hw_render_enabled = false;
         }
-#endif
         g_core.retro_unload_game();
         g_core.game_loaded = false;
     }
@@ -674,6 +734,11 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     video_deinit();
     input_deinit();
     audio_deinit();
+
+    /* Clear pointers into core's memory before dlclose */
+    g_core.hw_vk_negotiation = NULL;
+    g_core.hw_render_enabled = false;
+    memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 
     if (g_core.handle) {
         dlclose(g_core.handle);
@@ -885,6 +950,11 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
         return JNI_FALSE;
     }
 
+    /* Pass context negotiation interface to GPU renderer before device creation */
+    if (g_core.hw_vk_negotiation) {
+        gpu_renderer_set_vk_negotiation(g_gpu_renderer, g_core.hw_vk_negotiation);
+    }
+
     if (!gpu_renderer_init_surface(g_gpu_renderer, window)) {
         LOGE("Failed to init GPU renderer surface");
         ANativeWindow_release(window);
@@ -1022,6 +1092,10 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
             if (g_core.hw_render_callback.context_destroy) {
                 g_core.hw_render_callback.context_destroy();
             }
+            /* Granite's DefaultDispatch threads may still be compiling pipelines.
+             * Wait for device idle + grace period before destroying resources. */
+            gpu_renderer_wait_idle(g_gpu_renderer);
+            usleep(200000); /* 200ms grace for Granite background threads */
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             LOGI("Vulkan HW render context destroyed (surface deinit)");
         }
@@ -1081,6 +1155,10 @@ JNI_FUNC(jint, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray outD
 
 JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {
     return (g_gpu_renderer && gpu_renderer_is_active(g_gpu_renderer)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNI_FUNC(jboolean, nativeIsHwRenderEnabled)(JNIEnv *env, jobject thiz) {
+    return g_core.hw_render_enabled ? JNI_TRUE : JNI_FALSE;
 }
 
 JNI_FUNC(void, nativeGpuSetSourceRect)(JNIEnv *env, jobject thiz,

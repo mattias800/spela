@@ -58,6 +58,11 @@
 #define NUM_SHADERS 6
 #define MAX_HW_SEMAPHORES 8
 
+/* The core's Granite library replaces the handle in our HW render interface
+ * with its own opaque pointer. We use a global to access our renderer
+ * in HW render callbacks instead of the handle parameter. */
+static struct gpu_renderer *g_hw_renderer = NULL;
+
 /* Push constant data passed to fragment shaders */
 typedef struct {
     float texture_size[2];
@@ -152,6 +157,9 @@ struct gpu_renderer {
     int source_x, source_y, source_w, source_h;
     bool source_rect_set;
 
+    /* Context negotiation (set by core before device creation) */
+    const struct retro_hw_render_context_negotiation_interface_vulkan *vk_negotiation;
+
     /* Vulkan HW render state (Phase 4) */
     bool hw_render_active;
     struct retro_hw_render_interface_vulkan hw_vk_interface;
@@ -212,17 +220,24 @@ gpu_renderer_t *gpu_renderer_create(int backend) {
     if (!r) return NULL;
     r->backend = backend;
     r->current_shader = GPU_SHADER_NONE;
+    VK_LOGI("gpu_renderer_create: r=%p, sizeof=%zu, mutex_offset=%zu",
+            (void *)r, sizeof(gpu_renderer_t),
+            (size_t)((char *)&r->queue_mutex - (char *)r));
     return r;
 }
 
 void gpu_renderer_destroy(gpu_renderer_t *r) {
     if (!r) return;
+    if (g_hw_renderer == r) g_hw_renderer = NULL;
     if (r->device) {
         vkDeviceWaitIdle(r->device);
     }
     gpu_renderer_deinit_surface(r);
 
     if (r->device) {
+        if (r->vk_negotiation && r->vk_negotiation->destroy_device) {
+            r->vk_negotiation->destroy_device();
+        }
         vkDestroyDevice(r->device, NULL);
     }
     if (r->surface) {
@@ -658,12 +673,25 @@ void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h)
 
 /* ===== Vulkan HW render callbacks (Phase 4) ===== */
 
+static int hw_set_image_count = 0;
+
 static void hw_vulkan_set_image(void *handle,
     const struct retro_vulkan_image *image,
     uint32_t num_semaphores, const VkSemaphore *semaphores,
     uint32_t src_queue_family) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
+    hw_set_image_count++;
+    if (hw_set_image_count <= 5 || (hw_set_image_count % 60) == 0) {
+        VK_LOGI("set_image #%d: view=%p layout=%d sems=%u qf=%u fmt=%d image=%p",
+                hw_set_image_count,
+                image ? (void *)(uintptr_t)image->image_view : NULL,
+                image ? (int)image->image_layout : -1,
+                num_semaphores, src_queue_family,
+                image ? (int)image->create_info.format : -1,
+                image ? (void *)(uintptr_t)image->create_info.image : NULL);
+    }
     if (image) {
         r->hw_current_image = *image;
     }
@@ -676,7 +704,8 @@ static void hw_vulkan_set_image(void *handle,
 }
 
 static uint32_t hw_vulkan_get_sync_index(void *handle) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
     return r ? r->current_frame : 0;
 }
 
@@ -685,16 +714,31 @@ static uint32_t hw_vulkan_get_sync_index_mask(void *handle) {
     return (1u << MAX_FRAMES_IN_FLIGHT) - 1;
 }
 
+static int hw_wait_sync_count = 0;
 static void hw_vulkan_wait_sync_index(void *handle) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
+    hw_wait_sync_count++;
+    if (hw_wait_sync_count <= 5 || (hw_wait_sync_count % 60) == 0) {
+        VK_LOGI("wait_sync_index #%d (frame=%d)", hw_wait_sync_count,
+                r ? r->current_frame : -1);
+    }
     if (!r || !r->device) return;
     vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
                     VK_TRUE, UINT64_MAX);
 }
 
+static int hw_set_cmd_count = 0;
 static void hw_vulkan_set_command_buffers(void *handle,
     uint32_t num_cmd, const VkCommandBuffer *cmd) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
+    hw_set_cmd_count++;
+    if (hw_set_cmd_count <= 5 || (hw_set_cmd_count % 60) == 0) {
+        VK_LOGI("set_command_buffers #%d: num_cmd=%u cmd[0]=%p",
+                hw_set_cmd_count, num_cmd,
+                (num_cmd > 0 && cmd) ? (void *)cmd[0] : NULL);
+    }
     if (!r) return;
     r->hw_core_cmd_count = num_cmd < MAX_FRAMES_IN_FLIGHT ?
         num_cmd : MAX_FRAMES_IN_FLIGHT;
@@ -703,30 +747,59 @@ static void hw_vulkan_set_command_buffers(void *handle,
     }
 }
 
+static int hw_lock_count = 0;
 static void hw_vulkan_lock_queue(void *handle) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
+    hw_lock_count++;
+    if (hw_lock_count <= 5 || (hw_lock_count % 60) == 0) {
+        VK_LOGI("lock_queue #%d", hw_lock_count);
+    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_lock(&r->queue_mutex);
     }
 }
 
+static int hw_unlock_count = 0;
 static void hw_vulkan_unlock_queue(void *handle) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
+    hw_unlock_count++;
+    if (hw_unlock_count <= 5 || (hw_unlock_count % 60) == 0) {
+        VK_LOGI("unlock_queue #%d", hw_unlock_count);
+    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_unlock(&r->queue_mutex);
     }
 }
 
+static int hw_signal_sem_count = 0;
 static void hw_vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore) {
-    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    (void)handle;
+    gpu_renderer_t *r = g_hw_renderer;
+    hw_signal_sem_count++;
+    if (hw_signal_sem_count <= 5 || (hw_signal_sem_count % 60) == 0) {
+        VK_LOGI("set_signal_semaphore #%d: sem=%p", hw_signal_sem_count,
+                (void *)(uintptr_t)semaphore);
+    }
     if (!r) return;
     r->hw_signal_semaphores[r->current_frame] = semaphore;
 }
 
 /* ===== Vulkan HW render public API ===== */
 
+void gpu_renderer_set_vk_negotiation(gpu_renderer_t *r,
+    const struct retro_hw_render_context_negotiation_interface_vulkan *iface) {
+    if (r) r->vk_negotiation = iface;
+}
+
 bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
     if (!r || !r->device) return false;
+
+    /* Set global renderer pointer for HW render callbacks.
+     * The core's Granite library replaces the interface handle with its own
+     * opaque pointer, so callbacks can't use the handle to find our renderer. */
+    g_hw_renderer = r;
 
     /* Initialize queue mutex */
     if (!r->queue_mutex_initialized) {
@@ -810,9 +883,22 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
     return &r->hw_vk_interface;
 }
 
+static int hw_render_frame_count = 0;
+
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
     if (!r || !r->active || !r->hw_render_active) return;
-    if (!r->hw_current_image.image_view) return;
+    if (!r->hw_current_image.image_view) {
+        static int no_image_count = 0;
+        if (++no_image_count <= 3) {
+            VK_LOGW("hw_render_frame: no image_view (set_image not called yet?) #%d", no_image_count);
+        }
+        return;
+    }
+    hw_render_frame_count++;
+    if (hw_render_frame_count <= 5 || (hw_render_frame_count % 60) == 0) {
+        VK_LOGI("hw_render_frame #%d: %ux%u view=%p", hw_render_frame_count, width, height,
+                (void *)(uintptr_t)r->hw_current_image.image_view);
+    }
 
     r->frame_width = width;
     r->frame_height = height;
@@ -858,19 +944,6 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
     };
     vkUpdateDescriptorSets(r->device, 1, &desc_write, 0, NULL);
 
-    /* Submit core command buffers if the core provided them */
-    if (r->hw_core_cmd_count > 0) {
-        VkSubmitInfo core_submit = {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .commandBufferCount = r->hw_core_cmd_count,
-            .pCommandBuffers = r->hw_core_cmd_buffers,
-        };
-        pthread_mutex_lock(&r->queue_mutex);
-        vkQueueSubmit(r->graphics_queue, 1, &core_submit, VK_NULL_HANDLE);
-        pthread_mutex_unlock(&r->queue_mutex);
-        r->hw_core_cmd_count = 0;
-    }
-
     /* Record our shader pass command buffer */
     VkCommandBuffer cmd = r->command_buffers[r->current_frame];
     vkResetCommandBuffer(cmd, 0);
@@ -898,6 +971,16 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
     int shader_idx = r->current_shader;
     if (shader_idx < 0 || shader_idx >= NUM_SHADERS || !r->pipelines[shader_idx]) {
         shader_idx = GPU_SHADER_NONE;
+    }
+    if (!r->pipelines[shader_idx]) {
+        VK_LOGE("HW render: pipeline[%d] is NULL (all %d pipelines: %p %p %p %p %p %p), skipping frame",
+                shader_idx, NUM_SHADERS,
+                (void *)(uintptr_t)r->pipelines[0], (void *)(uintptr_t)r->pipelines[1],
+                (void *)(uintptr_t)r->pipelines[2], (void *)(uintptr_t)r->pipelines[3],
+                (void *)(uintptr_t)r->pipelines[4], (void *)(uintptr_t)r->pipelines[5]);
+        vkCmdEndRenderPass(cmd);
+        vkEndCommandBuffer(cmd);
+        return;
     }
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[shader_idx]);
 
@@ -961,13 +1044,24 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         signal_sems[signal_count++] = r->hw_signal_semaphores[r->current_frame];
     }
 
+    /* Batch core command buffers + ours in a single vkQueueSubmit.
+     * Like RetroArch: core's CBs come first (contain rendering + barriers),
+     * then our presentation CB. This ensures correct execution ordering. */
+    VkCommandBuffer submit_cmds[MAX_FRAMES_IN_FLIGHT + 1];
+    uint32_t submit_cmd_count = 0;
+    for (uint32_t i = 0; i < r->hw_core_cmd_count; i++) {
+        submit_cmds[submit_cmd_count++] = r->hw_core_cmd_buffers[i];
+    }
+    submit_cmds[submit_cmd_count++] = cmd;
+    r->hw_core_cmd_count = 0;
+
     VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = wait_count,
         .pWaitSemaphores = wait_sems,
         .pWaitDstStageMask = wait_stages,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmd,
+        .commandBufferCount = submit_cmd_count,
+        .pCommandBuffers = submit_cmds,
         .signalSemaphoreCount = signal_count,
         .pSignalSemaphores = signal_sems,
     };
@@ -1257,6 +1351,58 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 
 /* ===== Internal implementation ===== */
 
+/* Instance wrapper callback for context negotiation v2.
+ * The core's create_instance calls this to let the frontend add surface extensions. */
+static VkInstance vulkan_create_instance_wrapper(
+    void *opaque,
+    const VkInstanceCreateInfo *create_info)
+{
+    gpu_renderer_t *r = (gpu_renderer_t *)opaque;
+
+    /* Add surface extensions that the frontend needs */
+    static const char *surface_extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+#ifdef __ANDROID__
+        VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#endif
+    };
+    uint32_t num_surface_ext = r->offscreen_mode ? 0 :
+        (sizeof(surface_extensions) / sizeof(surface_extensions[0]));
+
+    VkInstanceCreateInfo patched_info = *create_info;
+    const char **ext_list = NULL;
+
+    if (num_surface_ext > 0) {
+        uint32_t new_count = create_info->enabledExtensionCount + num_surface_ext;
+        ext_list = (const char **)malloc(new_count * sizeof(const char *));
+        if (ext_list) {
+            if (create_info->enabledExtensionCount > 0) {
+                memcpy(ext_list, create_info->ppEnabledExtensionNames,
+                       create_info->enabledExtensionCount * sizeof(const char *));
+            }
+            for (uint32_t i = 0; i < num_surface_ext; i++) {
+                ext_list[create_info->enabledExtensionCount + i] = surface_extensions[i];
+            }
+            patched_info.enabledExtensionCount = new_count;
+            patched_info.ppEnabledExtensionNames = ext_list;
+        }
+    }
+
+    VK_LOGI("Instance wrapper: creating VkInstance with %u extensions",
+             patched_info.enabledExtensionCount);
+
+    VkInstance instance = VK_NULL_HANDLE;
+    VkResult result = vkCreateInstance(&patched_info, NULL, &instance);
+    free(ext_list);
+
+    if (result != VK_SUCCESS) {
+        VK_LOGE("Instance wrapper: vkCreateInstance failed: %d", result);
+        return VK_NULL_HANDLE;
+    }
+    VK_LOGI("Instance wrapper: VkInstance created successfully");
+    return instance;
+}
+
 static bool create_instance(gpu_renderer_t *r) {
     VkApplicationInfo app_info = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -1264,8 +1410,49 @@ static bool create_instance(gpu_renderer_t *r) {
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "Spela GPU Renderer",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = VK_API_VERSION_1_0,
+        .apiVersion = VK_API_VERSION_1_1,
     };
+
+    /* If the core provided get_application_info, copy the ENTIRE struct.
+     * RetroArch does `app = *app_info` — a full copy, not just apiVersion.
+     * This is critical because Qualcomm/Adreno drivers apply per-application
+     * shader compiler workarounds based on pApplicationName/pEngineName.
+     * Granite sets these fields to identify itself, and the Adreno driver may
+     * enable compatibility paths that prevent compute shader compilation failures. */
+    if (r->vk_negotiation && r->vk_negotiation->get_application_info) {
+        const VkApplicationInfo *core_app_info = r->vk_negotiation->get_application_info();
+        if (core_app_info) {
+            app_info = *core_app_info;  /* Full struct copy (like RetroArch) */
+            app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;  /* Ensure sType */
+            VK_LOGI("Using core VkApplicationInfo: app='%s' engine='%s' apiVersion=%u.%u.%u",
+                     app_info.pApplicationName ? app_info.pApplicationName : "(null)",
+                     app_info.pEngineName ? app_info.pEngineName : "(null)",
+                     VK_API_VERSION_MAJOR(app_info.apiVersion),
+                     VK_API_VERSION_MINOR(app_info.apiVersion),
+                     VK_API_VERSION_PATCH(app_info.apiVersion));
+            /* Ensure minimum Vulkan 1.1 for VkPhysicalDeviceFeatures2 etc. */
+            if (app_info.apiVersion < VK_API_VERSION_1_1) {
+                app_info.apiVersion = VK_API_VERSION_1_1;
+                VK_LOGI("Upgraded core API version to 1.1 (minimum required)");
+            }
+        }
+    }
+
+    /* Context negotiation v2: let core create instance if it wants to */
+    if (r->vk_negotiation && r->vk_negotiation->interface_version >= 2 &&
+        r->vk_negotiation->create_instance) {
+        VK_LOGI("Calling core create_instance (v2 negotiation)");
+        r->instance = r->vk_negotiation->create_instance(
+            vkGetInstanceProcAddr,
+            &app_info,
+            vulkan_create_instance_wrapper,
+            r);
+        if (r->instance) {
+            VK_LOGI("Vulkan instance created by core via create_instance");
+            return true;
+        }
+        VK_LOGW("Core's create_instance returned NULL, creating instance ourselves");
+    }
 
     VkInstanceCreateInfo create_info = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -1305,7 +1492,10 @@ static bool select_physical_device(gpu_renderer_t *r) {
     VkPhysicalDevice *devices = (VkPhysicalDevice *)malloc(device_count * sizeof(VkPhysicalDevice));
     vkEnumeratePhysicalDevices(r->instance, &device_count, devices);
 
-    /* Pick first device with a graphics queue (and presentation support if on-screen) */
+    /* Pick first device with a graphics+compute queue (and presentation support if on-screen).
+     * RetroArch requires VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT — compute is needed
+     * by HW render cores like paraLLEl-RDP that use compute shaders for rendering. */
+    const VkQueueFlags required_flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
     for (uint32_t i = 0; i < device_count; i++) {
         uint32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &queue_family_count, NULL);
@@ -1314,7 +1504,7 @@ static bool select_physical_device(gpu_renderer_t *r) {
         vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &queue_family_count, queue_families);
 
         for (uint32_t j = 0; j < queue_family_count; j++) {
-            if (queue_families[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            if ((queue_families[j].queueFlags & required_flags) == required_flags) {
                 if (r->offscreen_mode) {
                     /* Offscreen: just need graphics, no present */
                     r->physical_device = devices[i];
@@ -1350,7 +1540,226 @@ static bool select_physical_device(gpu_renderer_t *r) {
     return false;
 }
 
+/* Device wrapper callback for context negotiation v2.
+ * The core prepares a VkDeviceCreateInfo with its required extensions/features,
+ * then calls this wrapper so the frontend can add its own extensions (e.g. swapchain)
+ * before creating the actual VkDevice. Returns VkDevice or VK_NULL_HANDLE. */
+static VkDevice vulkan_create_device_wrapper(
+    VkPhysicalDevice gpu,
+    void *opaque,
+    const VkDeviceCreateInfo *create_info)
+{
+    gpu_renderer_t *r = (gpu_renderer_t *)opaque;
+    (void)gpu; /* already r->physical_device */
+
+    /* Check if the core already requested VK_KHR_swapchain */
+    bool has_swapchain = false;
+    for (uint32_t i = 0; i < create_info->enabledExtensionCount; i++) {
+        if (strcmp(create_info->ppEnabledExtensionNames[i],
+                   VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
+            has_swapchain = true;
+            break;
+        }
+    }
+
+    VkDeviceCreateInfo patched_info = *create_info;
+    const char **ext_list = NULL;
+
+    if (!has_swapchain && !r->offscreen_mode) {
+        /* Add swapchain extension to the core's list */
+        uint32_t new_count = create_info->enabledExtensionCount + 1;
+        ext_list = (const char **)malloc(new_count * sizeof(const char *));
+        if (ext_list) {
+            memcpy(ext_list, create_info->ppEnabledExtensionNames,
+                   create_info->enabledExtensionCount * sizeof(const char *));
+            ext_list[create_info->enabledExtensionCount] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+            patched_info.enabledExtensionCount = new_count;
+            patched_info.ppEnabledExtensionNames = ext_list;
+        }
+    }
+
+    VK_LOGI("Device wrapper: creating VkDevice with %u extensions",
+             patched_info.enabledExtensionCount);
+
+    VkDevice device = VK_NULL_HANDLE;
+    VkResult result = vkCreateDevice(r->physical_device, &patched_info, NULL, &device);
+    free(ext_list);
+
+    if (result != VK_SUCCESS) {
+        VK_LOGE("Device wrapper: vkCreateDevice failed: %d", result);
+        return VK_NULL_HANDLE;
+    }
+    VK_LOGI("Device wrapper: VkDevice created successfully");
+    return device;
+}
+
+/* ===== Extension filter for core's device creation =====
+ * VK_EXT_subgroup_size_control causes compute pipeline failures on Adreno GPUs.
+ * Granite (in paraLLEl-RDP) enables this extension and uses it for compute shaders,
+ * but Adreno drivers return errors for certain shader permutations, corrupting
+ * Granite's state and eventually crashing the DefaultDispatch thread.
+ *
+ * We intercept vkGetInstanceProcAddr to hide this extension from the core,
+ * forcing Granite to use fallback shader permutations that work on Adreno. */
+
+/* Extensions to hide from the core during device creation */
+static const char *filtered_extensions[] = {
+    "VK_EXT_subgroup_size_control",
+};
+static const int num_filtered_extensions =
+    sizeof(filtered_extensions) / sizeof(filtered_extensions[0]);
+
+static bool is_filtered_extension(const char *name) {
+    for (int i = 0; i < num_filtered_extensions; i++) {
+        if (strcmp(name, filtered_extensions[i]) == 0)
+            return true;
+    }
+    return false;
+}
+
+/* Wrapped vkEnumerateDeviceExtensionProperties that hides problematic extensions */
+static VKAPI_ATTR VkResult VKAPI_CALL wrapped_vkEnumerateDeviceExtensionProperties(
+    VkPhysicalDevice physicalDevice,
+    const char *pLayerName,
+    uint32_t *pPropertyCount,
+    VkExtensionProperties *pProperties)
+{
+    VkResult result = vkEnumerateDeviceExtensionProperties(
+        physicalDevice, pLayerName, pPropertyCount, pProperties);
+
+    if (result != VK_SUCCESS || !pProperties)
+        return result;
+
+    /* Filter out problematic extensions */
+    uint32_t write_idx = 0;
+    for (uint32_t i = 0; i < *pPropertyCount; i++) {
+        if (!is_filtered_extension(pProperties[i].extensionName)) {
+            if (write_idx != i) {
+                pProperties[write_idx] = pProperties[i];
+            }
+            write_idx++;
+        } else {
+            VK_LOGI("Hiding extension from core: %s", pProperties[i].extensionName);
+        }
+    }
+    *pPropertyCount = write_idx;
+    return result;
+}
+
+/* Wrapped vkGetInstanceProcAddr that returns our filtered functions */
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
+    VkInstance instance, const char *pName)
+{
+    if (strcmp(pName, "vkEnumerateDeviceExtensionProperties") == 0) {
+        return (PFN_vkVoidFunction)wrapped_vkEnumerateDeviceExtensionProperties;
+    }
+    return vkGetInstanceProcAddr(instance, pName);
+}
+
 static bool create_device(gpu_renderer_t *r) {
+    /* Log negotiation state for diagnostics */
+    if (r->vk_negotiation) {
+        VK_LOGI("Context negotiation: type=%u version=%u get_app_info=%p "
+                 "create_device=%p destroy_device=%p create_instance=%p create_device2=%p",
+                 r->vk_negotiation->interface_type,
+                 r->vk_negotiation->interface_version,
+                 (void *)(uintptr_t)r->vk_negotiation->get_application_info,
+                 (void *)(uintptr_t)r->vk_negotiation->create_device,
+                 (void *)(uintptr_t)r->vk_negotiation->destroy_device,
+                 (void *)(uintptr_t)r->vk_negotiation->create_instance,
+                 (void *)(uintptr_t)r->vk_negotiation->create_device2);
+    }
+
+    /* Context negotiation v2: core prepares VkDeviceCreateInfo,
+     * calls our wrapper to create VkDevice. This is what RetroArch does
+     * and what paraLLEl-RDP in mupen64plus-next expects. */
+    if (r->vk_negotiation && r->vk_negotiation->interface_version >= 2 &&
+        r->vk_negotiation->create_device2) {
+        struct retro_vulkan_context vk_context = {0};
+
+        VK_LOGI("Calling core create_device2 v%u (instance=%p, gpu=%p, surface=%p)",
+                r->vk_negotiation->interface_version,
+                (void *)r->instance, (void *)r->physical_device, (void *)r->surface);
+
+        bool ok = r->vk_negotiation->create_device2(
+            &vk_context,
+            r->instance,
+            r->physical_device,
+            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            vkGetInstanceProcAddr,
+            vulkan_create_device_wrapper,
+            r);  /* opaque = renderer, so wrapper can add swapchain ext */
+
+        if (ok && vk_context.device) {
+            r->device = vk_context.device;
+            r->graphics_queue = vk_context.queue;
+            r->queue_family_index = vk_context.queue_family_index;
+            VK_LOGI("Vulkan device created by core via create_device2 (queue_family=%u)",
+                    r->queue_family_index);
+            return true;
+        }
+
+        /* RetroArch retries with VK_NULL_HANDLE to let the core pick its own GPU */
+        VK_LOGW("create_device2 failed on provided GPU, retrying with VK_NULL_HANDLE");
+        memset(&vk_context, 0, sizeof(vk_context));
+        ok = r->vk_negotiation->create_device2(
+            &vk_context,
+            r->instance,
+            VK_NULL_HANDLE,  /* let core choose GPU */
+            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            vkGetInstanceProcAddr,
+            vulkan_create_device_wrapper,
+            r);
+        if (ok && vk_context.device) {
+            r->device = vk_context.device;
+            r->graphics_queue = vk_context.queue;
+            r->queue_family_index = vk_context.queue_family_index;
+            if (vk_context.gpu) r->physical_device = vk_context.gpu;
+            VK_LOGI("Vulkan device created by core via create_device2 retry (queue_family=%u)",
+                    r->queue_family_index);
+            return true;
+        }
+        VK_LOGE("Core's create_device2 callback failed (both attempts), trying v1 create_device");
+    }
+
+    /* Context negotiation v1: core creates device directly.
+     * IMPORTANT: The required_features parameter must NOT be NULL — the core
+     * dereferences it without checking (crash at offset 0x1c = dualSrcBlend). */
+    if (r->vk_negotiation && r->vk_negotiation->create_device) {
+        struct retro_vulkan_context vk_context = {0};
+        const char *required_ext = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+        /* Pass all-zeros features (like RetroArch). This tells the core "no
+         * specific features are required by the frontend". The core unions these
+         * with its own requirements. Passing all-supported-features could trigger
+         * unintended driver behavior by enabling features the core doesn't need. */
+        VkPhysicalDeviceFeatures features = {0};
+
+        VK_LOGI("Calling core create_device v1 (instance=%p, gpu=%p, surface=%p)",
+                (void *)r->instance, (void *)r->physical_device, (void *)r->surface);
+
+        bool ok = r->vk_negotiation->create_device(
+            &vk_context,
+            r->instance,
+            r->physical_device,
+            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            vkGetInstanceProcAddr,
+            r->offscreen_mode ? NULL : &required_ext,
+            r->offscreen_mode ? 0 : 1,
+            NULL, 0,       /* no required layers */
+            &features);    /* zeros (no required features) — core needs this non-NULL */
+
+        if (ok && vk_context.device) {
+            r->device = vk_context.device;
+            r->graphics_queue = vk_context.queue;
+            r->queue_family_index = vk_context.queue_family_index;
+            VK_LOGI("Vulkan device created by core via v1 create_device");
+            return true;
+        }
+        VK_LOGE("Core's create_device v1 callback failed, creating device ourselves");
+    }
+
+    /* Fallback: create device ourselves with all supported extensions/features */
     float queue_priority = 1.0f;
     VkDeviceQueueCreateInfo queue_info = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -1359,26 +1768,77 @@ static bool create_device(gpu_renderer_t *r) {
         .pQueuePriorities = &queue_priority,
     };
 
-    const char *device_extensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
+    /* vkGetPhysicalDeviceFeatures2 is Vulkan 1.1+. The NDK links against Vulkan 1.0,
+     * so we must load it dynamically. If unavailable, fall back to Vulkan 1.0 features. */
+    PFN_vkGetPhysicalDeviceFeatures2 pfnGetFeatures2 =
+        (PFN_vkGetPhysicalDeviceFeatures2)vkGetInstanceProcAddr(
+            r->instance, "vkGetPhysicalDeviceFeatures2");
+
+    /* Enumerate ALL supported device extensions and enable them.
+     * HW render cores (paraLLEl-RDP) need various extensions and without context
+     * negotiation, we can't know which ones. Enabling all is safe. */
+    uint32_t ext_count = 0;
+    vkEnumerateDeviceExtensionProperties(r->physical_device, NULL, &ext_count, NULL);
+    VkExtensionProperties *ext_props = NULL;
+    const char **all_extensions = NULL;
+    uint32_t enabled_ext_count = 0;
+
+    if (ext_count > 0) {
+        ext_props = (VkExtensionProperties *)malloc(ext_count * sizeof(VkExtensionProperties));
+        all_extensions = (const char **)malloc(ext_count * sizeof(const char *));
+        vkEnumerateDeviceExtensionProperties(r->physical_device, NULL, &ext_count, ext_props);
+        for (uint32_t i = 0; i < ext_count; i++) {
+            all_extensions[enabled_ext_count++] = ext_props[i].extensionName;
+        }
+        VK_LOGI("Enabling %u/%u device extensions", enabled_ext_count, ext_count);
+    }
 
     VkDeviceCreateInfo create_info = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = &queue_info,
+        .enabledExtensionCount = enabled_ext_count,
+        .ppEnabledExtensionNames = all_extensions,
     };
 
-    if (!r->offscreen_mode) {
-        create_info.enabledExtensionCount = 1;
-        create_info.ppEnabledExtensionNames = device_extensions;
-    }
-    /* Offscreen: no swapchain extension needed */
+    /* Vulkan 1.1+ path: use VkPhysicalDeviceFeatures2 pNext chain */
+    VkPhysicalDevice16BitStorageFeatures storage16 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
+    };
+    VkPhysicalDevice8BitStorageFeatures storage8 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES,
+        .pNext = &storage16,
+    };
+    VkPhysicalDeviceShaderFloat16Int8Features float16int8 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES,
+        .pNext = &storage8,
+    };
+    VkPhysicalDeviceFeatures2 features2 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = &float16int8,
+    };
+    VkPhysicalDeviceFeatures features1 = {0};
 
-    VK_CHECK(vkCreateDevice(r->physical_device, &create_info, NULL, &r->device));
+    if (pfnGetFeatures2) {
+        pfnGetFeatures2(r->physical_device, &features2);
+        create_info.pNext = &features2;
+        VK_LOGI("Vulkan 1.1+ features enabled (16-bit storage, 8-bit storage, float16/int8)");
+    } else {
+        vkGetPhysicalDeviceFeatures(r->physical_device, &features1);
+        create_info.pEnabledFeatures = &features1;
+        VK_LOGI("Vulkan 1.0 features only (vkGetPhysicalDeviceFeatures2 unavailable)");
+    }
+
+    VkResult dev_result = vkCreateDevice(r->physical_device, &create_info, NULL, &r->device);
+    free(ext_props);
+    free(all_extensions);
+    if (dev_result != VK_SUCCESS) {
+        VK_LOGE("vkCreateDevice failed: %d", dev_result);
+        return false;
+    }
     vkGetDeviceQueue(r->device, r->queue_family_index, 0, &r->graphics_queue);
 
-    VK_LOGI("Vulkan device created");
+    VK_LOGI("Vulkan device created (fallback, no context negotiation)");
     return true;
 }
 
@@ -1429,7 +1889,7 @@ static bool create_swapchain(gpu_renderer_t *r) {
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .preTransform = capabilities.currentTransform,
+        .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
         .compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
         .presentMode = present_mode,
         .clipped = VK_TRUE,
@@ -1478,7 +1938,9 @@ static bool create_swapchain(gpu_renderer_t *r) {
         VK_CHECK(vkCreateImageView(r->device, &view_info, NULL, &r->swapchain_image_views[i]));
     }
 
-    VK_LOGI("Swapchain created: %ux%u, %u images", extent.width, extent.height, r->swapchain_image_count);
+    VK_LOGI("Swapchain created: %ux%u, %u images, preTransform=0x%x (currentTransform=0x%x)",
+            extent.width, extent.height, r->swapchain_image_count,
+            create_info.preTransform, capabilities.currentTransform);
     return true;
 }
 
