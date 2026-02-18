@@ -40,6 +40,12 @@ import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
+import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
+import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
+import com.spela.player.presentation.ui.feature.gamedetail.InfoColumn
+import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
+import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
+import com.spela.player.presentation.ui.feature.library.getConsoleColor
 import com.spela.player.presentation.ui.components.GameDetailLayout
 import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton

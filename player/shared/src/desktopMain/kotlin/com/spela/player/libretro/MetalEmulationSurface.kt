@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.screen.gpuShaderId
+import com.spela.player.presentation.ui.feature.shader.gpuShaderId
 import java.awt.Canvas
 import java.awt.Graphics
 import java.awt.event.ComponentAdapter

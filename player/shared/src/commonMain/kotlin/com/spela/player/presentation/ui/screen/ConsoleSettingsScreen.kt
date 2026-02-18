@@ -48,6 +48,10 @@ import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.feature.settings.SettingsDivider
+import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
+import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
+import com.spela.player.presentation.ui.feature.settings.SettingsToggle
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel

@@ -1,4 +1,4 @@
-package com.spela.player.presentation.ui.screen
+package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

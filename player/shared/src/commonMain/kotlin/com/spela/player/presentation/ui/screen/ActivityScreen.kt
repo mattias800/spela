@@ -58,6 +58,7 @@ import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -88,25 +89,11 @@ fun ActivityScreen(
         SpTopBar(
             title = "Activity",
             actions = {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(SpColor.SurfaceVariant)
-                        .clickable(onClick = onNavigateToStats)
-                        .semantics {
-                            contentDescription = "Stats"
-                            role = Role.Button
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.BarChart,
-                        contentDescription = null,
-                        tint = SpColor.OnSurface,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                SpIconButton(
+                    icon = Icons.Filled.BarChart,
+                    contentDescription = "Stats",
+                    onClick = onNavigateToStats,
+                )
             },
         )
 

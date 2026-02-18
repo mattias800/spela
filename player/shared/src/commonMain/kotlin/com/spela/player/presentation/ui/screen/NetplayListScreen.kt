@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.presentation.intent.NetplayIntent
+import com.spela.player.presentation.ui.feature.netplay.NetplayStatusChip
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard

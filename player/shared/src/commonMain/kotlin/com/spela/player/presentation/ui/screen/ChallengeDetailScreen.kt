@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,11 +30,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpEmptyStates
@@ -150,28 +148,11 @@ fun ChallengeDetailScreen(
                             contentDescription = "Created by ${challenge.creatorUsername}"
                         },
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(SpSpacing.AvatarMedium)
-                                .clip(CircleShape)
-                                .background(SpColor.SurfaceVariant),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (challenge.creatorAvatarUrl != null) {
-                                SubcomposeAsyncImage(
-                                    model = challenge.creatorAvatarUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.matchParentSize().clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            } else {
-                                Text(
-                                    text = challenge.creatorUsername.take(1).uppercase(),
-                                    style = SpTypography.LabelSmall,
-                                    color = SpColor.OnBackgroundTertiary,
-                                )
-                            }
-                        }
+                        SpAvatar(
+                            username = challenge.creatorUsername,
+                            avatarUrl = challenge.creatorAvatarUrl,
+                            size = SpSpacing.AvatarMedium,
+                        )
                         Spacer(Modifier.width(SpSpacing.Small))
                         Text(
                             text = challenge.creatorUsername,

@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.screen.drawShaderOverlay
-import com.spela.player.presentation.ui.screen.filterQuality
+import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
+import com.spela.player.presentation.ui.feature.shader.filterQuality
 import kotlin.math.min
 import kotlin.math.roundToInt
 

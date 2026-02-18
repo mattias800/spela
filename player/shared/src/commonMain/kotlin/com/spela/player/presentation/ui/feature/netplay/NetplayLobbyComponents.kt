@@ -1,4 +1,4 @@
-package com.spela.player.presentation.ui.screen
+package com.spela.player.presentation.ui.feature.netplay
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
+import com.spela.player.presentation.ui.feature.library.getConsoleColor
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard

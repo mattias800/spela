@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.screen.drawShaderOverlay
-import com.spela.player.presentation.ui.screen.filterQuality
+import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
+import com.spela.player.presentation.ui.feature.shader.filterQuality
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroPixelFormat
 import kotlinx.coroutines.delay

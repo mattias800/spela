@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.screen.drawShaderOverlay
+import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 

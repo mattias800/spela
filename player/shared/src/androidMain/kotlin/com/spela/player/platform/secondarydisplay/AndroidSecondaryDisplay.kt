@@ -5,7 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
-import com.spela.player.presentation.ui.screen.SecondaryScreenContent
+import com.spela.player.presentation.ui.feature.ingame.SecondaryScreenContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

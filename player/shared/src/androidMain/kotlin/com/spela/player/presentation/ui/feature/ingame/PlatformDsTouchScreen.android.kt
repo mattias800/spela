@@ -1,4 +1,4 @@
-package com.spela.player.presentation.ui.screen
+package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
+import com.spela.player.presentation.ui.feature.shader.filterQuality
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.presentation.viewmodel.LibretroController
 import kotlin.math.min

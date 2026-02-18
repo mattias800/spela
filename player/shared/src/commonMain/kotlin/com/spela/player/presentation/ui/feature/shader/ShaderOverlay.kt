@@ -1,4 +1,4 @@
-package com.spela.player.presentation.ui.screen
+package com.spela.player.presentation.ui.feature.shader
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size

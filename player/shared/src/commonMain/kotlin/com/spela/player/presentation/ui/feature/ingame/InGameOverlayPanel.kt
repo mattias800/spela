@@ -1,4 +1,4 @@
-package com.spela.player.presentation.ui.screen
+package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle

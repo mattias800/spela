@@ -21,6 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.StatsIntent
+import com.spela.player.presentation.ui.feature.stats.ActivePlayerItem
+import com.spela.player.presentation.ui.feature.stats.MostPlayedGameItem
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpLoadingIndicator

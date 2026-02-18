@@ -47,8 +47,8 @@ import com.spela.player.presentation.ui.screen.GameDetailScreen
 import com.spela.player.presentation.ui.screen.HomeScreen
 import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.screen.LoginScreen
-import com.spela.player.presentation.ui.screen.PlatformEmulationSurface
-import com.spela.player.presentation.ui.screen.PlatformTouchControls
+import com.spela.player.presentation.ui.feature.ingame.PlatformEmulationSurface
+import com.spela.player.presentation.ui.feature.ingame.PlatformTouchControls
 
 import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen

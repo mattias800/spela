@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.screen.gpuShaderId
+import com.spela.player.presentation.ui.feature.shader.gpuShaderId
 
 /**
  * Composable that renders emulation video via Vulkan GPU rendering.

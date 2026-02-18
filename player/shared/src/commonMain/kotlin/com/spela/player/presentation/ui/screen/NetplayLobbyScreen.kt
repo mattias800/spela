@@ -38,6 +38,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.NetplayLobbyIntent
+import com.spela.player.presentation.ui.feature.netplay.InputDelaySection
+import com.spela.player.presentation.ui.feature.netplay.LobbyHeader
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpLoadingIndicator

@@ -13,14 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -29,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -42,6 +37,7 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -49,7 +45,6 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -96,27 +91,11 @@ fun ConsoleScreen(
                 }
             } else null,
             actions = {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .spFocusRing(shape = CircleShape)
-                        .clip(CircleShape)
-                        .background(SpColor.SurfaceVariant)
-                        .clickable(onClick = onNavigateToConsoleSettings)
-                        .focusable()
-                        .semantics {
-                            contentDescription = "Console settings"
-                            role = Role.Button
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = null,
-                        tint = SpColor.OnSurface,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                SpIconButton(
+                    icon = Icons.Filled.Settings,
+                    contentDescription = "Console settings",
+                    onClick = onNavigateToConsoleSettings,
+                )
             },
         )
 

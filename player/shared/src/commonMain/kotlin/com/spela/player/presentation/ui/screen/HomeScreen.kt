@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -38,22 +37,24 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
+import com.spela.player.presentation.ui.feature.home.GameCarouselRow
+import com.spela.player.presentation.ui.feature.home.NetplaySessionCard
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
-import androidx.compose.foundation.focusable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,38 +86,22 @@ fun HomeScreen(
             .background(SpColor.Background),
     ) {
         SpTopBar(title = "Spela") {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .spFocusRing(shape = CircleShape)
-                        .clip(CircleShape)
-                        .background(SpColor.SurfaceVariant)
-                        .clickable(onClick = onNavigateToDownloads)
-                        .focusable()
-                        .semantics {
-                            contentDescription = "Downloads"
-                            role = Role.Button
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Download,
-                        contentDescription = null,
-                        tint = SpColor.OnSurface,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                if (hasActiveDownloads) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .align(Alignment.TopEnd)
-                            .clip(CircleShape)
-                            .background(SpColor.Primary),
-                    )
-                }
-            }
+            SpIconButton(
+                icon = Icons.Filled.Download,
+                contentDescription = "Downloads",
+                onClick = onNavigateToDownloads,
+                badge = if (hasActiveDownloads) {
+                    {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .clip(CircleShape)
+                                .background(SpColor.Primary),
+                        )
+                    }
+                } else null,
+            )
         }
 
         if (state.isLoading && state.recentGames.isEmpty() && state.favoriteGames.isEmpty()) {
