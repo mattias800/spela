@@ -349,9 +349,9 @@ static bool environment_callback(unsigned cmd, void *data) {
                 cb->get_current_framebuffer = hw_get_current_framebuffer;
                 cb->get_proc_address = hw_get_proc_address;
                 g_core.hw_render_enabled = true;
-                LOGI("Accepted GLES HW render (type=%u, v%u.%u, depth=%d, stencil=%d, bottom_left_origin=%d)",
+                LOGI("Accepted GLES HW render (type=%u, v%u.%u, depth=%d, stencil=%d)",
                      cb->context_type, cb->version_major, cb->version_minor,
-                     cb->depth, cb->stencil, cb->bottom_left_origin);
+                     cb->depth, cb->stencil);
                 return true;
             }
 #else

@@ -220,9 +220,6 @@ gpu_renderer_t *gpu_renderer_create(int backend) {
     if (!r) return NULL;
     r->backend = backend;
     r->current_shader = GPU_SHADER_NONE;
-    VK_LOGI("gpu_renderer_create: r=%p, sizeof=%zu, mutex_offset=%zu",
-            (void *)r, sizeof(gpu_renderer_t),
-            (size_t)((char *)&r->queue_mutex - (char *)r));
     return r;
 }
 
@@ -673,8 +670,6 @@ void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h)
 
 /* ===== Vulkan HW render callbacks (Phase 4) ===== */
 
-static int hw_set_image_count = 0;
-
 static void hw_vulkan_set_image(void *handle,
     const struct retro_vulkan_image *image,
     uint32_t num_semaphores, const VkSemaphore *semaphores,
@@ -682,16 +677,6 @@ static void hw_vulkan_set_image(void *handle,
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
-    hw_set_image_count++;
-    if (hw_set_image_count <= 5 || (hw_set_image_count % 60) == 0) {
-        VK_LOGI("set_image #%d: view=%p layout=%d sems=%u qf=%u fmt=%d image=%p",
-                hw_set_image_count,
-                image ? (void *)(uintptr_t)image->image_view : NULL,
-                image ? (int)image->image_layout : -1,
-                num_semaphores, src_queue_family,
-                image ? (int)image->create_info.format : -1,
-                image ? (void *)(uintptr_t)image->create_info.image : NULL);
-    }
     if (image) {
         r->hw_current_image = *image;
     }
@@ -714,31 +699,18 @@ static uint32_t hw_vulkan_get_sync_index_mask(void *handle) {
     return (1u << MAX_FRAMES_IN_FLIGHT) - 1;
 }
 
-static int hw_wait_sync_count = 0;
 static void hw_vulkan_wait_sync_index(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    hw_wait_sync_count++;
-    if (hw_wait_sync_count <= 5 || (hw_wait_sync_count % 60) == 0) {
-        VK_LOGI("wait_sync_index #%d (frame=%d)", hw_wait_sync_count,
-                r ? r->current_frame : -1);
-    }
     if (!r || !r->device) return;
     vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
                     VK_TRUE, UINT64_MAX);
 }
 
-static int hw_set_cmd_count = 0;
 static void hw_vulkan_set_command_buffers(void *handle,
     uint32_t num_cmd, const VkCommandBuffer *cmd) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    hw_set_cmd_count++;
-    if (hw_set_cmd_count <= 5 || (hw_set_cmd_count % 60) == 0) {
-        VK_LOGI("set_command_buffers #%d: num_cmd=%u cmd[0]=%p",
-                hw_set_cmd_count, num_cmd,
-                (num_cmd > 0 && cmd) ? (void *)cmd[0] : NULL);
-    }
     if (!r) return;
     r->hw_core_cmd_count = num_cmd < MAX_FRAMES_IN_FLIGHT ?
         num_cmd : MAX_FRAMES_IN_FLIGHT;
@@ -747,41 +719,25 @@ static void hw_vulkan_set_command_buffers(void *handle,
     }
 }
 
-static int hw_lock_count = 0;
 static void hw_vulkan_lock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    hw_lock_count++;
-    if (hw_lock_count <= 5 || (hw_lock_count % 60) == 0) {
-        VK_LOGI("lock_queue #%d", hw_lock_count);
-    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_lock(&r->queue_mutex);
     }
 }
 
-static int hw_unlock_count = 0;
 static void hw_vulkan_unlock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    hw_unlock_count++;
-    if (hw_unlock_count <= 5 || (hw_unlock_count % 60) == 0) {
-        VK_LOGI("unlock_queue #%d", hw_unlock_count);
-    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_unlock(&r->queue_mutex);
     }
 }
 
-static int hw_signal_sem_count = 0;
 static void hw_vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    hw_signal_sem_count++;
-    if (hw_signal_sem_count <= 5 || (hw_signal_sem_count % 60) == 0) {
-        VK_LOGI("set_signal_semaphore #%d: sem=%p", hw_signal_sem_count,
-                (void *)(uintptr_t)semaphore);
-    }
     if (!r) return;
     r->hw_signal_semaphores[r->current_frame] = semaphore;
 }
@@ -883,8 +839,6 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
     return &r->hw_vk_interface;
 }
 
-static int hw_render_frame_count = 0;
-
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
     if (!r || !r->active || !r->hw_render_active) return;
     if (!r->hw_current_image.image_view) {
@@ -893,11 +847,6 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
             VK_LOGW("hw_render_frame: no image_view (set_image not called yet?) #%d", no_image_count);
         }
         return;
-    }
-    hw_render_frame_count++;
-    if (hw_render_frame_count <= 5 || (hw_render_frame_count % 60) == 0) {
-        VK_LOGI("hw_render_frame #%d: %ux%u view=%p", hw_render_frame_count, width, height,
-                (void *)(uintptr_t)r->hw_current_image.image_view);
     }
 
     r->frame_width = width;
@@ -1938,9 +1887,8 @@ static bool create_swapchain(gpu_renderer_t *r) {
         VK_CHECK(vkCreateImageView(r->device, &view_info, NULL, &r->swapchain_image_views[i]));
     }
 
-    VK_LOGI("Swapchain created: %ux%u, %u images, preTransform=0x%x (currentTransform=0x%x)",
-            extent.width, extent.height, r->swapchain_image_count,
-            create_info.preTransform, capabilities.currentTransform);
+    VK_LOGI("Swapchain created: %ux%u, %u images",
+            extent.width, extent.height, r->swapchain_image_count);
     return true;
 }
 

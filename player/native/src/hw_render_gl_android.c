@@ -145,12 +145,6 @@ bool hw_gl_init(hw_gl_context_t *ctx, unsigned version_major, unsigned version_m
 
     eglMakeCurrent(ctx->egl_display, ctx->egl_surface, ctx->egl_surface, ctx->egl_context);
 
-    /* Verify actual pbuffer dimensions (driver may swap them) */
-    EGLint actual_w = 0, actual_h = 0;
-    eglQuerySurface(ctx->egl_display, ctx->egl_surface, EGL_WIDTH, &actual_w);
-    eglQuerySurface(ctx->egl_display, ctx->egl_surface, EGL_HEIGHT, &actual_h);
-    GL_LOGI("Pbuffer requested %ux%u, actual EGL reports %dx%d", init_w, init_h, actual_w, actual_h);
-
     ctx->initialized = true;
     GL_LOGI("GLES3 HW render context initialised (GLES %u.%u, pbuffer %ux%u, depth=%d stencil=%d)",
             version_major, version_minor, init_w, init_h, depth, stencil);
@@ -264,20 +258,6 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     }
 
     hw_gl_make_current(ctx);
-
-    /* Diagnostic: check GL viewport and actual surface dimensions */
-    {
-        static int diag_count = 0;
-        if (diag_count++ < 5) {
-            GLint vp[4] = {0};
-            glGetIntegerv(GL_VIEWPORT, vp);
-            EGLint surf_w = 0, surf_h = 0;
-            eglQuerySurface(ctx->egl_display, ctx->egl_surface, EGL_WIDTH, &surf_w);
-            eglQuerySurface(ctx->egl_display, ctx->egl_surface, EGL_HEIGHT, &surf_h);
-            GL_LOGI("readback diag: GL viewport=(%d,%d,%d,%d), EGL surface=%dx%d, reading %ux%u",
-                    vp[0], vp[1], vp[2], vp[3], surf_w, surf_h, w, h);
-        }
-    }
 
     /* Read from FBO 0 (the default framebuffer = pbuffer surface) */
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
