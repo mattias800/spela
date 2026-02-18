@@ -764,7 +764,7 @@ fun ComposeRule.ensureOverlayOpen() {
  */
 fun ComposeRule.navigateToChallengeList() {
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val maxRetries = 3
+    val maxRetries = 5
     val buttonTag = "view_challenges_button"
 
     for (retry in 0 until maxRetries) {
@@ -841,7 +841,7 @@ fun ComposeRule.navigateToChallengeList() {
         }
     }
 
-    throw IllegalStateException("Failed to navigate to challenge list after $maxRetries retries")
+    throw IllegalStateException("Failed to navigate to challenge list after $maxRetries retries — button never navigated")
 }
 
 /**

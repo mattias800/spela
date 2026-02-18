@@ -24,13 +24,30 @@ test.describe("Emulator Save State Sync", () => {
    * Helper: simulate the emulator entering the "playing" state.
    * Since EmulatorJS runs in an iframe and may not have real assets in E2E,
    * we post a game-started message to unblock UI controls.
+   *
+   * There is a race condition: the PlayPage useEffect calls initEmulator()
+   * which resets status to "loading" after our game-started message may have
+   * already set it to "playing". To handle this, we repeatedly send
+   * game-started messages until the Save State button becomes enabled,
+   * ensuring the final message arrives after init has settled.
    */
   async function simulatePlaying(page: import("@playwright/test").Page) {
-    await page.evaluate(() => {
-      window.postMessage({ type: "game-started" }, window.location.origin);
-    });
-    // Wait for the Save button to become enabled as a signal that status is "playing"
-    await expect(page.getByTitle("Save State")).toBeEnabled({ timeout: 5_000 });
+    const saveButton = page.getByTitle("Save State");
+
+    await expect
+      .poll(
+        async () => {
+          await page.evaluate(() => {
+            window.postMessage(
+              { type: "game-started" },
+              window.location.origin,
+            );
+          });
+          return saveButton.isEnabled().catch(() => false);
+        },
+        { timeout: 15_000, intervals: [200, 500, 500, 1000] },
+      )
+      .toBe(true);
   }
 
   test.describe("Auto-Save on Navigation", () => {

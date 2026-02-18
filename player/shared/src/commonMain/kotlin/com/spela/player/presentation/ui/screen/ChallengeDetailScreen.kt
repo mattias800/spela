@@ -129,6 +129,15 @@ fun ChallengeDetailScreen(
                         modifier = Modifier.semantics { heading() },
                     )
 
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+
+                    // Game title
+                    Text(
+                        text = challenge.gameTitle,
+                        style = SpTypography.BodyMedium,
+                        color = SpColor.OnBackgroundSecondary,
+                    )
+
                     Spacer(Modifier.height(SpSpacing.Small))
 
                     // Chips
