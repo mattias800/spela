@@ -213,10 +213,11 @@ delightful across every screen.
 **Shared component discipline (web):**
 
 Pages (`web/src/pages/`) should be composed almost entirely from shared
-components (`web/src/components/ui/`) and feature components
-(`web/src/components/`). Raw HTML elements with custom Tailwind classes in
-page files are a code smell — they usually mean a reusable component is
-missing.
+components (`web/src/components/ui/`), shared domain components
+(`web/src/components/`), and feature components
+(`web/src/features/{name}/components/`). Raw HTML elements with custom
+Tailwind classes in page files are a code smell — they usually mean a
+reusable component is missing.
 
 Specifically, watch for:
 - **Raw `<button>` elements** — should use `Button` (or a variant like
@@ -240,10 +241,11 @@ be a shared component?"
 **Shared component discipline (player app):**
 
 Screen composables (`presentation/ui/screen/`) should be composed from
-`Sp*` design system components (`presentation/ui/components/`) and theme
-tokens (`SpColor`, `SpSpacing`, `SpTypography`). Screens that build
-interactive elements from raw `Box`/`Row`/`Column` + `Modifier.clickable`
-with hardcoded colors and sizes are a code smell — they usually mean a
+`Sp*` design system components (`presentation/ui/components/`), feature
+components (`presentation/ui/feature/{name}/`), and theme tokens
+(`SpColor`, `SpSpacing`, `SpTypography`). Screens that build interactive
+elements from raw `Box`/`Row`/`Column` + `Modifier.clickable` with
+hardcoded colors and sizes are a code smell — they usually mean a
 reusable `Sp*` component is missing.
 
 Specifically, watch for:
@@ -264,8 +266,8 @@ Specifically, watch for:
   shows up in more than one screen, extract it into a shared component.
 - **Screen file size** — Compose screens are prone to bloat. When a screen
   grows beyond ~300 lines, look for private composables or sections that
-  can be extracted into standalone `Sp*` components or feature-specific
-  component files.
+  can be extracted into `feature/{name}/` files (if feature-specific) or
+  standalone `Sp*` components in `components/` (if shared).
 - **Empty states** — must use `SpEmptyStates` factory methods (e.g.
   `SpEmptyStates.NoGamesDownloaded()`), not ad-hoc `Text` composables.
 
@@ -353,6 +355,83 @@ The KMP shared module (`player/shared/src/commonMain/`) contains domain
 models, repositories, use cases, ViewModels, and shared Compose UI. This
 code is jointly owned by the **Android Developer** and **macOS Developer**.
 Changes here require agreement from both, since they affect all platforms.
+
+## UI Architecture — Features, Screens, and Shared Components
+
+Both the player app and web frontend follow a **feature-based folder structure**.
+Code is organized into three tiers: **shared design system**, **feature components**,
+and **screens/pages** (thin orchestrators). When extracting code, the key question is:
+"Is this shared across features, or specific to one feature?"
+
+### Player App (Kotlin Multiplatform + Compose)
+
+```
+player/shared/src/commonMain/kotlin/com/spela/player/presentation/ui/
+├── components/       # Shared Sp* design system (SpButton, SpCard, SpAvatar, etc.)
+├── feature/          # Feature-specific composables
+│   ├── ingame/       # InGameOverlayPanel, InGameOverlayDialogs, PlatformTouchControls, etc.
+│   ├── settings/     # SettingsComponents, SettingsShaderSection
+│   ├── home/         # HomeScreenCards
+│   ├── gamedetail/   # GameDetailSections
+│   ├── relay/        # RelayDetailComponents
+│   ├── netplay/      # NetplayLobbyComponents
+│   ├── stats/        # StatsComponents
+│   ├── library/      # ConsoleComponents, LibraryConsolesTab
+│   └── shader/       # ShaderOverlay
+├── screen/           # Screen composables — thin orchestrators only
+└── theme/            # SpColor, SpSpacing, SpTypography tokens
+```
+
+**Rules:**
+- **`components/`** — Shared `Sp*` components used across 2+ features. Prefixed with `Sp`.
+- **`feature/{name}/`** — Composables specific to one feature. Not prefixed with `Sp`. Can use `internal` visibility since they're only consumed by their corresponding screen.
+- **`screen/`** — Screen-level composables (`*Screen.kt`). Thin orchestrators that compose features and shared components together. Should not contain large private composable functions — extract those to `feature/{name}/` instead.
+- **`theme/`** — Design tokens only. No composables.
+
+**When to extract to `feature/`:**
+- A screen file exceeds ~300 lines
+- A private composable in a screen file is large enough to be its own file
+- A group of related composables serves one screen or one logical feature
+
+**When to promote to `components/`:**
+- A composable is used by 2+ features
+- It represents a reusable UI pattern (buttons, cards, inputs, empty states)
+
+### Web Frontend (React + TypeScript)
+
+```
+web/src/
+├── components/       # Shared design system and cross-feature components
+│   ├── ui/           # Primitive UI components (Button, Card, Input, Badge, etc.)
+│   ├── game-card.tsx # Shared across 5+ pages
+│   ├── game-grid.tsx
+│   ├── pagination.tsx
+│   └── ...
+├── features/         # Feature-specific components
+│   ├── admin/components/
+│   ├── challenges/components/
+│   ├── dashboard/components/
+│   ├── game-detail/components/
+│   ├── games/components/
+│   ├── netplay/components/
+│   ├── play/components/
+│   ├── preferences/components/
+│   ├── relays/components/
+│   └── social/components/
+├── pages/            # Page components — thin orchestrators
+├── hooks/            # Shared hooks (TanStack Query wrappers, utilities)
+└── lib/              # Shared utilities
+```
+
+**Rules:**
+- **`components/ui/`** — Primitive design system components. Reusable across everything.
+- **`components/`** (top-level) — Shared domain components used by 2+ features (e.g., `game-card.tsx`, `player-avatar.tsx`).
+- **`features/{name}/components/`** — Components specific to one feature. Tests live alongside in `__tests__/`.
+- **`pages/`** — Page components that compose features together. Should be thin — mostly imports and layout.
+
+**Same extraction rules apply:** extract to `features/` when a page gets large or has feature-specific sub-components. Promote to `components/` when used across 2+ features.
+
+---
 
 ## Definition of Done
 
