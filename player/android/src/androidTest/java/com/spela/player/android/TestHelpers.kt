@@ -560,6 +560,30 @@ fun ComposeRule.navigateToCastlevania() {
     waitForText("About", TIMEOUT_SHORT)
 }
 
+fun ComposeRule.navigateToN64Game() {
+    tapOn("Library")
+    waitForText("Consoles", TIMEOUT_MEDIUM)
+
+    scrollToAndTapMatchingBoth("Nintendo 64", "games")
+
+    // "Banjo-Kazooie" is first alphabetically in the N64 game list,
+    // so it's visible immediately without scrolling in the LazyColumn.
+    waitForText("Banjo-Kazooie", TIMEOUT_LONG)
+    scrollToAndTapText("Banjo-Kazooie")
+
+    waitForText("About", TIMEOUT_LONG)
+}
+
+fun ComposeRule.navigateToN64GameAndPlay() {
+    navigateToN64Game()
+    downloadGameIfNeeded()
+    // N64 core (mupen64plus_next) takes longer to initialize than NES (nestopia).
+    // It needs to download the core binary, set up GL/Vulkan context, and load a larger ROM.
+    // On emulators this can take 60+ seconds for the first run (core download + init).
+    onNodeWithText("Play").performClick()
+    waitForVisible("Touch controls", 120_000)
+}
+
 /**
  * Scroll to and tap a node whose text contains BOTH text1 AND text2.
  * Useful for disambiguating when multiple nodes share partial text.
