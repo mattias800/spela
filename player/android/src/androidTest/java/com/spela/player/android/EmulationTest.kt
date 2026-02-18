@@ -1,6 +1,7 @@
 package com.spela.player.android
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -105,11 +106,17 @@ class EmulationTest {
         rule.openOverlayAndExit()
 
         rule.waitForText("About", timeout = 8_000)
-        rule.waitForText("Play", timeout = 3_000)
 
-        // Second play session
-        rule.onNodeWithText("Play").performClick()
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        // Second play session — button may be "Resume" if saves exist
+        val hasResume = rule.onAllNodesWithText("Resume", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+        if (hasResume) {
+            rule.onNodeWithText("Resume").performClick()
+        } else {
+            rule.waitForText("Play", timeout = 3_000)
+            rule.onNodeWithText("Play").performClick()
+        }
+        rule.waitForVisible("Game running", timeout = 15_000)
 
         rule.openOverlay()
         rule.assertTextVisible("Continue")

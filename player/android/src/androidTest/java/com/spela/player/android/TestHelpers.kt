@@ -57,7 +57,7 @@ class KoinResetRule : TestWatcher() {
 // ── Constants ──
 
 private const val SERVER_NAME = "Local"
-private const val SERVER_URL = "http://10.0.2.2:8080"
+private const val SERVER_URL = "http://127.0.0.1:8080"
 private const val PLAYER_USERNAME = "player"
 private const val PLAYER_PASSWORD = "player123"
 private const val ADMIN_USERNAME = "admin"
@@ -390,9 +390,11 @@ fun ComposeRule.ensureLoggedIn(
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Play", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Resume", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("About", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithContentDescription("Touch controls", substring = true)
+                onAllNodesWithContentDescription("Game running", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Account", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -580,8 +582,17 @@ fun ComposeRule.navigateToN64GameAndPlay() {
     // N64 core (mupen64plus_next) takes longer to initialize than NES (nestopia).
     // It needs to download the core binary, set up GL/Vulkan context, and load a larger ROM.
     // On emulators this can take 60+ seconds for the first run (core download + init).
-    onNodeWithText("Play").performClick()
-    waitForVisible("Touch controls", 120_000)
+    // If saves exist, the button is "Resume"; otherwise "Play"
+    val hasResume = onAllNodesWithText("Resume", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    if (hasResume) {
+        onNodeWithText("Resume").performClick()
+    } else {
+        onNodeWithText("Play").performClick()
+    }
+    // Wait for the "Game running" semantic marker which is always on the primary display,
+    // regardless of touch controls visibility, physical controller, or dual-screen mode.
+    waitForVisible("Game running", 120_000)
 }
 
 /**
@@ -722,18 +733,43 @@ fun ComposeRule.downloadGameIfNeeded() {
     val downloadNodes = onAllNodesWithText("Download").fetchSemanticsNodes()
     if (downloadNodes.isNotEmpty()) {
         onNodeWithText("Download").performClick()
-        waitForText("Play", TIMEOUT_EXTRA_LONG)
+        // After download, button becomes "Play", "Resume", or "New Game"
+        waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+            try {
+                onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
     }
 }
 
 fun ComposeRule.startGameAndWait() {
-    onNodeWithText("Play").performClick()
-    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+    // If saves exist, the button is "Resume"; otherwise "Play"
+    val hasResume = onAllNodesWithText("Resume", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    if (hasResume) {
+        onNodeWithText("Resume").performClick()
+    } else {
+        onNodeWithText("Play").performClick()
+    }
+    // Wait for the "Game running" semantic marker which is always on the primary display,
+    // regardless of touch controls visibility, physical controller, or dual-screen mode.
+    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
 fun ComposeRule.openOverlay() {
     pressBack()
     waitForText("Exit Game", TIMEOUT_MEDIUM)
+    // AnimatedVisibility slide-in: node exists in tree before animation completes.
+    // Wait until the overlay is actually displayed on screen.
+    waitUntil(timeoutMillis = TIMEOUT_SHORT) {
+        try {
+            onNodeWithText("Exit Game", substring = true).assertIsDisplayed()
+            true
+        } catch (_: AssertionError) {
+            false
+        }
+    }
 }
 
 fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
@@ -753,6 +789,24 @@ fun ComposeRule.navigateToGameAndPlay() {
     navigateToCastlevania()
     downloadGameIfNeeded()
     startGameAndWait()
+}
+
+/**
+ * Navigate to Castlevania and start a fresh game (skip auto-load).
+ * Taps "New Game" if saves exist (Resume/New Game split), or "Play" if no saves.
+ */
+fun ComposeRule.navigateToGameAndPlayFresh() {
+    navigateToCastlevania()
+    downloadGameIfNeeded()
+    // If saves exist, the button is "New Game"; otherwise it's "Play"
+    val hasNewGame = onAllNodesWithText("New Game", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    if (hasNewGame) {
+        onNodeWithText("New Game").performClick()
+    } else {
+        onNodeWithText("Play").performClick()
+    }
+    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
 fun ComposeRule.openOverlayAndExit() {
@@ -888,7 +942,7 @@ fun ComposeRule.navigateToChallenge(challengeName: String) {
  */
 fun ComposeRule.startChallengeAttempt() {
     tapOn("Attempt Challenge")
-    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
 /**
@@ -977,7 +1031,7 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
-    waitForVisible("Touch controls", timeout = 5_000)
+    waitForVisible("Game running", timeout = 5_000)
 }
 
 /**

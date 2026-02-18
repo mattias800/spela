@@ -79,7 +79,7 @@ class EmulationViewModel(
             is EmulationIntent.StartGame -> startGame(
                 intent.gameId, intent.relayId, intent.turnToken,
                 intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
-                intent.challengeId, intent.challengeSaveData,
+                intent.challengeId, intent.challengeSaveData, intent.skipAutoLoad,
             )
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
@@ -152,6 +152,7 @@ class EmulationViewModel(
         netplayIsHost: Boolean = false,
         challengeId: String? = null,
         challengeSaveDataArg: ByteArray? = null,
+        skipAutoLoad: Boolean = false,
     ) {
         _state.update {
             it.copy(
@@ -216,6 +217,17 @@ class EmulationViewModel(
                         }
 
                         libretroController.loadCore(corePath)
+
+                        // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
+                        // because SwiftShader doesn't support required compute features.
+                        // Fall back to Angrylion software renderer for compatibility.
+                        if (com.spela.player.util.isEmulator() && corePath.contains("mupen64plus")) {
+                            libretroController.setCoreVariable("mupen64plus-rdp-plugin", "angrylion")
+                            libretroController.setCoreVariable("mupen64plus-rsp-plugin", "parallel")
+                            libretroController.setCoreVariable("mupen64plus-angrylion-multithread", "all threads")
+                            libretroController.setCoreVariable("mupen64plus-angrylion-sync", "Low")
+                        }
+
                         libretroController.loadGame(gamePath)
 
                         // Store the core name for challenge creation
@@ -242,7 +254,7 @@ class EmulationViewModel(
                             relayRepository.downloadRelayAutoSave(relayId).onSuccess { saveData ->
                                 libretroController.unserialize(saveData)
                             }
-                        } else if (currentPreferences.autoLoadSaveEnabled) {
+                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad) {
                             loadGameStateUseCase(gameId).onSuccess { saveData ->
                                 libretroController.unserialize(saveData)
                             }

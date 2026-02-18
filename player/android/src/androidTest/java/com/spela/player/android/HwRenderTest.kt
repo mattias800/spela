@@ -1,6 +1,7 @@
 package com.spela.player.android
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -64,11 +65,17 @@ class HwRenderTest {
 
         // Verify we returned to game detail screen
         rule.waitForVisible("Banjo-Kazooie", timeout = 8_000)
-        rule.waitForText("Play", timeout = 3_000)
 
-        // Second play session
-        rule.onNodeWithText("Play").performClick()
-        rule.waitForVisible("Touch controls", timeout = 30_000)
+        // Second play session — button may be "Resume" if saves exist
+        val hasResume = rule.onAllNodesWithText("Resume", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+        if (hasResume) {
+            rule.onNodeWithText("Resume").performClick()
+        } else {
+            rule.waitForText("Play", timeout = 3_000)
+            rule.onNodeWithText("Play").performClick()
+        }
+        rule.waitForVisible("Game running", timeout = 30_000)
 
         rule.openOverlay()
         rule.assertTextVisible("Continue")
@@ -85,8 +92,8 @@ class HwRenderTest {
     fun n64GameplayAndSaveLoad() {
         setupN64Game()
 
-        // Verify FPS overlay is visible during gameplay
-        rule.waitForContentDescription("FPS", timeout = 15_000)
+        // Verify game is running
+        rule.waitForVisible("Game running", timeout = 15_000)
 
         rule.openOverlay()
 
@@ -116,14 +123,20 @@ class HwRenderTest {
         // Exit and verify return to game detail
         exitN64Game()
         rule.waitForVisible("Banjo-Kazooie", timeout = 8_000)
-        rule.waitForText("Play", timeout = 3_000)
+        // After exit, button shows "Resume" (save exists) or "Play"
+        rule.waitUntil(timeoutMillis = 3_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
     }
 
     // ── NES backward-compatibility tests (software render path) ──
 
     private fun setupNesGame() {
         rule.startLoggedIn()
-        rule.navigateToGameAndPlay()
+        rule.navigateToGameAndPlayFresh()
     }
 
     @Test
@@ -146,10 +159,17 @@ class HwRenderTest {
         rule.openOverlayAndExit()
 
         rule.waitForText("About", timeout = 8_000)
-        rule.waitForText("Play", timeout = 3_000)
 
-        rule.onNodeWithText("Play").performClick()
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        // After exiting, game has a save → "New Game" button appears (fresh start, skip auto-load)
+        val hasNewGame = rule.onAllNodesWithText("New Game", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+        if (hasNewGame) {
+            rule.onNodeWithText("New Game").performClick()
+        } else {
+            rule.waitForText("Play", timeout = 3_000)
+            rule.onNodeWithText("Play").performClick()
+        }
+        rule.waitForVisible("Game running", timeout = 15_000)
 
         rule.openOverlay()
         rule.assertTextVisible("Continue")

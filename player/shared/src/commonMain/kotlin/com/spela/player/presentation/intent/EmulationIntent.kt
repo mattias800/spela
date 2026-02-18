@@ -11,6 +11,7 @@ sealed interface EmulationIntent {
         val netplayIsHost: Boolean = false,
         val challengeId: String? = null,
         val challengeSaveData: ByteArray? = null,
+        val skipAutoLoad: Boolean = false,
     ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent

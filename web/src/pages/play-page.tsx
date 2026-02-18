@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button, Skeleton } from "@/components/ui";
@@ -23,6 +23,8 @@ import type { EmulatorPreferences } from "@/lib/emulator-protocol";
 export function PlayPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isFreshStart = searchParams.get("fresh") === "true";
   const { toast } = useToast();
 
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
@@ -115,7 +117,7 @@ export function PlayPage() {
         ? `?token=${encodeURIComponent(token)}`
         : "";
       const romUrl = `/api/games/${game!.id}/download${tokenSuffix}`;
-      const saveStateData = await saveManager.loadInitialSave();
+      const saveStateData = await saveManager.loadInitialSave(isFreshStart);
 
       // Build authenticated BIOS file URLs
       const biosUrls =

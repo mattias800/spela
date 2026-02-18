@@ -70,6 +70,7 @@ class NavigationViewModel(
                         overlayNetplayInputDelay = intent.netplayInputDelay,
                         overlayNetplayIsHost = intent.netplayIsHost,
                         overlayChallengeId = intent.challengeId,
+                        overlaySkipAutoLoad = intent.skipAutoLoad,
                         screenBehindOverlay = it.currentScreen,
                         backStackBehindOverlay = it.backStack,
                     )
@@ -89,6 +90,7 @@ class NavigationViewModel(
                             overlayNetplayInputDelay = 3,
                             overlayNetplayIsHost = false,
                             overlayChallengeId = null,
+                            overlaySkipAutoLoad = false,
                             currentScreen = it.screenBehindOverlay,
                             backStack = it.backStackBehindOverlay,
                             screenBehindOverlay = null,
@@ -105,6 +107,7 @@ class NavigationViewModel(
                             overlayNetplayInputDelay = 3,
                             overlayNetplayIsHost = false,
                             overlayChallengeId = null,
+                            overlaySkipAutoLoad = false,
                         )
                     }
                 }

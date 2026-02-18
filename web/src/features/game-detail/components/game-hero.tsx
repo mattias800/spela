@@ -33,9 +33,11 @@ interface GameHeroProps {
   isPlayLaterPending?: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
+  hasSaves?: boolean;
   extraButtons?: ReactNode;
   extraMenuButtons?: ReactNode;
   onPlay: () => void;
+  onPlayFresh?: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
   onTogglePlayLater: () => void;
@@ -129,9 +131,11 @@ export function GameHero({
   isPlayLaterPending,
   isScraping,
   hasAchievements,
+  hasSaves,
   extraButtons,
   extraMenuButtons,
   onPlay,
+  onPlayFresh,
   onScrape,
   onToggleFavorite,
   onTogglePlayLater,
@@ -187,21 +191,52 @@ export function GameHero({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onPlay}
-              disabled={!canPlayInBrowser}
-              title={
-                canPlayInBrowser
-                  ? "Play in Browser"
-                  : `${game.consoleName} is not supported for browser play`
-              }
-              data-testid="play-in-browser-btn"
-            >
-              <Play className="h-5 w-5" />
-              Play in Browser
-            </Button>
+            {hasSaves ? (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onPlay}
+                  disabled={!canPlayInBrowser}
+                  title={
+                    canPlayInBrowser
+                      ? "Resume game with latest save"
+                      : `${game.consoleName} is not supported for browser play`
+                  }
+                  data-testid="resume-btn"
+                >
+                  <Play className="h-5 w-5" />
+                  Resume
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onPlayFresh}
+                  disabled={!canPlayInBrowser}
+                  title="Start a new game without loading saves"
+                  data-testid="new-game-btn"
+                >
+                  <Play className="h-5 w-5" />
+                  New Game
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onPlay}
+                disabled={!canPlayInBrowser}
+                title={
+                  canPlayInBrowser
+                    ? "Play in Browser"
+                    : `${game.consoleName} is not supported for browser play`
+                }
+                data-testid="play-in-browser-btn"
+              >
+                <Play className="h-5 w-5" />
+                Play in Browser
+              </Button>
+            )}
             {/* Desktop: show all buttons inline */}
             <div className="hidden lg:contents">
               {isAdmin && (

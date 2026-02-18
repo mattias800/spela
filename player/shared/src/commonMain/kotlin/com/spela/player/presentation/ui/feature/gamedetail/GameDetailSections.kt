@@ -28,6 +28,16 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.ui.components.SpButton
@@ -75,7 +85,10 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
 }
 
 @Composable
-internal fun SaveStatesSection(saveStates: List<SaveState>) {
+internal fun SaveStatesSection(
+    saveStates: List<SaveState>,
+    onDelete: ((Long) -> Unit)? = null,
+) {
     Text(
         text = "Save States",
         style = SpTypography.HeadlineSmall,
@@ -90,6 +103,7 @@ internal fun SaveStatesSection(saveStates: List<SaveState>) {
         saveStates.forEach { save ->
             SaveStateItem(
                 saveState = save,
+                onDelete = onDelete?.let { { it(save.id) } },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = SpSpacing.XSmall),
@@ -153,8 +167,32 @@ internal fun CommunitySharesSection(
 @Composable
 private fun SaveStateItem(
     saveState: SaveState,
+    onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Save State") },
+            text = { Text("Are you sure you want to delete \"${saveState.name}\"? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) {
+                    Text("Delete", color = SpColor.Error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
     SpCard(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -192,6 +230,21 @@ private fun SaveStateItem(
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )
+            }
+
+            if (onDelete != null) {
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier.semantics {
+                        contentDescription = "Delete ${saveState.name}"
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = SpColor.OnBackgroundTertiary,
+                    )
+                }
             }
         }
     }

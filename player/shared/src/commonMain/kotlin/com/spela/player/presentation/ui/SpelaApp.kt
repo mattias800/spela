@@ -27,6 +27,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.domain.model.NetplaySessionStatus
@@ -318,6 +320,11 @@ fun SpelaApp(
                                     onPlay = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.ShowOverlay(gameId)
+                                        )
+                                    },
+                                    onPlayFresh = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.ShowOverlay(gameId, skipAutoLoad = true)
                                         )
                                     },
                                     onCreateNetplay = { gameId ->
@@ -652,6 +659,7 @@ fun SpelaApp(
                                         netplayInputDelay = navState.overlayNetplayInputDelay,
                                         netplayIsHost = navState.overlayNetplayIsHost,
                                         challengeId = navState.overlayChallengeId,
+                                        skipAutoLoad = navState.overlaySkipAutoLoad,
                                     )
                                 )
                             }
@@ -724,6 +732,14 @@ fun SpelaApp(
                             ) {
                                 CircularProgressIndicator(color = Color.White)
                             }
+                        }
+
+                        // Invisible semantic marker for E2E tests to detect that a game is running.
+                        // Always on the primary display, regardless of dual-screen or controller type.
+                        if (emulationState.isRunning) {
+                            Box(modifier = Modifier.semantics {
+                                contentDescription = "Game running"
+                            })
                         }
 
                         // Touch gamepad controls (Android only, no-op on desktop)

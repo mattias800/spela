@@ -50,6 +50,7 @@ class GameDetailViewModel(
             is GameDetailIntent.ShareSave -> shareSave(intent.saveId, intent.name, intent.description)
             is GameDetailIntent.DownloadSharedSave -> downloadSharedSave(intent.saveId)
             is GameDetailIntent.DeleteSharedSave -> deleteSharedSave(intent.saveId)
+            is GameDetailIntent.DeleteSave -> deleteSave(intent.saveId)
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
         }
     }
@@ -300,6 +301,22 @@ class GameDetailViewModel(
                 onSuccess = {
                     _state.update {
                         it.copy(sharedSaves = it.sharedSaves.filter { s -> s.id != saveId })
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun deleteSave(saveId: Long) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            saveRepository.deleteSaveState(gameId, saveId.toString()).fold(
+                onSuccess = {
+                    _state.update {
+                        it.copy(saveStates = it.saveStates.filter { s -> s.id != saveId })
                     }
                 },
                 onFailure = { error ->

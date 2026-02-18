@@ -71,6 +71,7 @@ fun GameDetailScreen(
     viewModel: GameDetailViewModel,
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
+    onPlayFresh: ((String) -> Unit)? = null,
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
 ) {
@@ -126,7 +127,9 @@ fun GameDetailScreen(
                             game = game,
                             detail = detail,
                             state = state,
+                            hasSaves = state.saveStates.isNotEmpty(),
                             onPlay = onPlay,
+                            onPlayFresh = onPlayFresh,
                             onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
                             onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                             onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
@@ -144,7 +147,12 @@ fun GameDetailScreen(
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
-                        SaveStatesSection(state.saveStates)
+                        SaveStatesSection(
+                            saveStates = state.saveStates,
+                            onDelete = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
+                            },
+                        )
                     }
                 }
 
@@ -201,7 +209,9 @@ private fun GameInfoContent(
     game: Game,
     detail: GameDetail,
     state: GameDetailState,
+    hasSaves: Boolean,
     onPlay: (String) -> Unit,
+    onPlayFresh: ((String) -> Unit)? = null,
     onDownloadGame: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
@@ -245,7 +255,23 @@ private fun GameInfoContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        if (state.isGameCached) {
+        if (state.isGameCached && hasSaves && onPlayFresh != null) {
+            SpButton(
+                text = "Resume",
+                onClick = { onPlay(gameId) },
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = "Resume ${game.title}" },
+            )
+            SpButton(
+                text = "New Game",
+                onClick = { onPlayFresh(gameId) },
+                style = SpButtonStyle.Secondary,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = "New Game ${game.title}" },
+            )
+        } else if (state.isGameCached) {
             SpButton(
                 text = "Play",
                 onClick = { onPlay(gameId) },

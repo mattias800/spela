@@ -171,9 +171,11 @@ export function GameDetailPage() {
         isPlayLaterPending={togglePlayLater.isPending}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
+        hasSaves={(saves?.length ?? 0) > 0}
         extraButtons={<AddToCollectionButton gameId={game.id} />}
         extraMenuButtons={<AddToCollectionButton gameId={game.id} menuItem />}
         onPlay={() => navigate(`/games/${game.id}/play`)}
+        onPlayFresh={() => navigate(`/games/${game.id}/play?fresh=true`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
           toggleFavorite.mutate({ gameId: game.id, isFavorite })

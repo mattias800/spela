@@ -105,8 +105,8 @@ export function useEmulatorSaves({
     });
   }, [gameId, preferences?.autoSaveEnabled, requestSaveState]);
 
-  const loadInitialSave = useCallback(async (): Promise<string | undefined> => {
-    if (!gameId || !preferences?.autoLoadSaveEnabled) return undefined;
+  const loadInitialSave = useCallback(async (skipAutoLoad?: boolean): Promise<string | undefined> => {
+    if (!gameId || !preferences?.autoLoadSaveEnabled || skipAutoLoad) return undefined;
 
     setIsLoadingInitialSave(true);
     try {
