@@ -96,8 +96,7 @@ export function VideoFiltersCard({
                             {console.name}
                           </td>
                           <td className="px-3 py-2">
-                            <select
-                              className="rounded-lg bg-surface-900 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                            <Select
                               value={
                                 preferences?.consoleShaders[console.id] ?? ""
                               }
@@ -107,14 +106,11 @@ export function VideoFiltersCard({
                                   e.target.value,
                                 )
                               }
-                            >
-                              <option value="">Use global default</option>
-                              {SHADER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                              options={[
+                                { value: "", label: "Use global default" },
+                                ...SHADER_OPTIONS,
+                              ]}
+                            />
                           </td>
                           <td className="px-3 py-2">
                             <button

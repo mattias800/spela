@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Share2, Download, Trash2 } from "lucide-react";
-import { Button, Skeleton, EmptyState, Modal } from "@/components/ui";
+import { Button, Skeleton, EmptyState, ConfirmDeleteModal } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
@@ -105,6 +105,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                     download
                     className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/50 transition-colors"
                     title="Download save"
+                    aria-label="Download save"
                   >
                     <Download className="h-4 w-4" />
                   </a>
@@ -113,6 +114,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                       onClick={() => setDeleteTarget(save.id)}
                       className="p-2 rounded-lg text-surface-400 hover:text-danger-500 hover:bg-danger-500/10 transition-colors"
                       title="Delete shared save"
+                      aria-label="Delete shared save"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -149,36 +151,21 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
       )}
 
       {/* Delete confirm modal */}
-      <Modal
+      <ConfirmDeleteModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Delete Shared Save"
-        size="sm"
-      >
-        <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to delete this shared save? Others will no
-          longer be able to download it.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            loading={deleteSharedSave.isPending}
-            onClick={() => {
-              if (deleteTarget !== null) {
-                deleteSharedSave.mutate(
-                  { gameId, saveId: deleteTarget },
-                  { onSuccess: () => setDeleteTarget(null) },
-                );
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </Modal>
+        message="Are you sure you want to delete this shared save? Others will no longer be able to download it."
+        isPending={deleteSharedSave.isPending}
+        onConfirm={() => {
+          if (deleteTarget !== null) {
+            deleteSharedSave.mutate(
+              { gameId, saveId: deleteTarget },
+              { onSuccess: () => setDeleteTarget(null) },
+            );
+          }
+        }}
+      />
     </section>
   );
 }

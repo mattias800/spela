@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { cn } from "@/lib/cn";
 import { createWebGLRenderer, type WebGLRenderer } from "../lib/webgl-renderer";
 import {
   applyShaderOverlay,
@@ -145,7 +146,7 @@ export function ShaderPreview({
   return (
     <div
       ref={containerRef}
-      className={`relative ${onClick ? "cursor-pointer" : ""} ${className ?? ""}`}
+      className={cn("relative", onClick && "cursor-pointer", className)}
       onClick={onClick}
       onMouseEnter={() => onClick && setHovering(true)}
       onMouseLeave={() => setHovering(false)}
@@ -158,7 +159,7 @@ export function ShaderPreview({
       )}
       <canvas
         ref={canvasRef}
-        className={`rounded-lg w-full ${loaded ? "block" : "hidden"}`}
+        className={cn("rounded-lg w-full", loaded ? "block" : "hidden")}
         style={{ aspectRatio: "4/3" }}
       />
       {hovering && loaded && (

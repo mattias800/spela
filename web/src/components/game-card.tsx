@@ -63,6 +63,7 @@ export function GameCard({
                 ? "bg-danger-500/20 text-danger-500 opacity-100"
                 : "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
             )}
+            aria-label={game.isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className={cn("h-4 w-4", game.isFavorite && "fill-current")}
@@ -83,6 +84,7 @@ export function GameCard({
               "opacity-0 group-hover:opacity-100",
               "bg-black/40 text-white/70 hover:text-white hover:bg-black/60",
             )}
+            aria-label="Add to play later"
           >
             <Clock className="h-4 w-4" />
           </button>

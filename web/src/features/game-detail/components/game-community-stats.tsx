@@ -1,46 +1,15 @@
 import { Activity, Clock } from "lucide-react";
-import { Skeleton, EmptyState } from "@/components/ui";
-import { PlayerAvatar } from "@/components/player-avatar";
+import { Skeleton, EmptyState, StatCard, LeaderboardRow } from "@/components/ui";
 import { useGameStats } from "@/hooks/use-game-stats";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { rankColor } from "@/lib/rank-utils";
 import type { Game } from "@/types/api";
 
 interface GameCommunityStatsProps {
   gameId: string;
   game: Game;
-}
-
-function StatCard({
-  value,
-  label,
-  highlight,
-}: {
-  value: string;
-  label: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="bg-surface-800/30 rounded-xl p-4">
-      <p
-        className={cn(
-          "text-lg font-bold",
-          highlight ? "text-brand-400" : "text-surface-100",
-        )}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-surface-500 mt-0.5">{label}</p>
-    </div>
-  );
-}
-
-function rankColor(rank: number): string {
-  if (rank === 1) return "text-amber-400";
-  if (rank === 2) return "text-surface-300";
-  if (rank === 3) return "text-amber-700";
-  return "text-surface-500";
 }
 
 function CommunityStatsSkeleton() {
@@ -161,35 +130,22 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
                 maxPlayTime > 0 ? (player.playTime / maxPlayTime) * 100 : 0;
 
               return (
-                <div
+                <LeaderboardRow
                   key={player.userId}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5",
-                    isCurrentUser
-                      ? "bg-brand-500/5 border-l-2 border-brand-400"
-                      : "bg-surface-900/50",
-                  )}
+                  isCurrentUser={isCurrentUser}
+                  username={player.username}
+                  avatarUrl={player.avatarUrl}
+                  rank={
+                    <span
+                      className={cn(
+                        "text-sm font-bold w-5 text-right",
+                        rankColor(rank),
+                      )}
+                    >
+                      {rank}
+                    </span>
+                  }
                 >
-                  <span
-                    className={cn(
-                      "text-sm font-bold w-5 text-right",
-                      rankColor(rank),
-                    )}
-                  >
-                    {rank}
-                  </span>
-                  <PlayerAvatar
-                    username={player.username}
-                    avatarUrl={player.avatarUrl}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm font-medium flex-shrink-0 w-28 truncate",
-                      isCurrentUser ? "text-brand-400" : "text-surface-200",
-                    )}
-                  >
-                    {player.username}
-                  </span>
                   <div className="flex-1 h-3 rounded-full bg-brand-500/15 overflow-hidden">
                     <div
                       className="h-full bg-brand-500 rounded-full transition-all duration-700 ease-out"
@@ -199,7 +155,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
                   <span className="text-sm text-surface-400 whitespace-nowrap w-16 text-right">
                     {formatPlayTime(player.playTime)}
                   </span>
-                </div>
+                </LeaderboardRow>
               );
             })}
           </div>

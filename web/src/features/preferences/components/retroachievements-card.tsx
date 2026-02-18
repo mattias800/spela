@@ -69,7 +69,7 @@ export function RetroAchievementsCard() {
             <Skeleton className="h-12 w-full rounded-lg" />
           </div>
         ) : isError ? (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-danger-500">
             Failed to load RetroAchievements status.
           </p>
         ) : status?.linked ? (
@@ -125,7 +125,7 @@ export function RetroAchievementsCard() {
                 data-testid="ra-password-input"
               />
             </div>
-            {linkError && <p className="text-sm text-red-400">{linkError}</p>}
+            {linkError && <p className="text-sm text-danger-500">{linkError}</p>}
             <p className="text-xs text-surface-500">
               Your password is only used to obtain a token and is never stored.
             </p>

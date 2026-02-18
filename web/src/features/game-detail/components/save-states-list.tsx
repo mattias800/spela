@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trash2, Download, Share2 } from "lucide-react";
-import { Button, Badge, Card, CardContent, Modal } from "@/components/ui";
+import { Button, Badge, Card, CardContent, ConfirmDeleteModal } from "@/components/ui";
 import { useDeleteSave } from "@/hooks/use-games";
 import { ShareSaveModal } from "@/features/game-detail/components/share-save-modal";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
@@ -52,6 +52,7 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                     onClick={() => setShareTarget(save)}
                     className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-brand-400 hover:bg-surface-800/50 transition-colors"
                     title="Share save"
+                    aria-label="Share save"
                   >
                     <Share2 className="h-4 w-4" />
                   </button>
@@ -59,6 +60,7 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                     href={`/api/games/${gameId}/saves/${save.id}`}
                     download
                     className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/50 transition-colors"
+                    aria-label="Download save"
                   >
                     <Download className="h-4 w-4" />
                   </a>
@@ -66,6 +68,7 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteTarget(save.id)}
+                    aria-label="Delete save"
                   >
                     <Trash2 className="h-4 w-4 text-danger-500" />
                   </Button>
@@ -77,36 +80,21 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
       )}
 
       {/* Delete confirm modal */}
-      <Modal
+      <ConfirmDeleteModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Delete Save State"
-        size="sm"
-      >
-        <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to delete this save state? This action cannot be
-          undone.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            loading={deleteSave.isPending}
-            onClick={() => {
-              if (deleteTarget !== null) {
-                deleteSave.mutate(
-                  { gameId, saveId: deleteTarget },
-                  { onSuccess: () => setDeleteTarget(null) },
-                );
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </Modal>
+        message="Are you sure you want to delete this save state? This action cannot be undone."
+        isPending={deleteSave.isPending}
+        onConfirm={() => {
+          if (deleteTarget !== null) {
+            deleteSave.mutate(
+              { gameId, saveId: deleteTarget },
+              { onSuccess: () => setDeleteTarget(null) },
+            );
+          }
+        }}
+      />
 
       {/* Share save modal */}
       <ShareSaveModal

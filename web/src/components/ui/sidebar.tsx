@@ -112,6 +112,7 @@ export function Sidebar({ links, user, onLogout }: SidebarProps) {
                 onClick={onLogout}
                 className="p-2 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/50 transition-colors cursor-pointer"
                 title="Logout"
+                aria-label="Logout"
               >
                 <LogOut className="h-4 w-4" />
               </button>

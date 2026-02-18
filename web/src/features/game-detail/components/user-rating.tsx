@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Star, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, Textarea } from "@/components/ui";
 import { StarRating } from "@/features/game-detail/components/star-rating";
 import { useMyRating, useRateGame, useDeleteRating } from "@/hooks/use-ratings";
 
@@ -88,11 +88,10 @@ export function UserRating({ gameId }: UserRatingProps) {
 
       {showReviewInput && (
         <div className="mt-3 space-y-2">
-          <textarea
+          <Textarea
             value={review}
             onChange={(e) => setReview(e.target.value)}
             placeholder="Write a review..."
-            className="w-full rounded-lg bg-surface-800 border border-surface-700 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
             rows={3}
           />
           <div className="flex gap-2">

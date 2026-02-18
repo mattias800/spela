@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Modal, Select } from "@/components/ui";
+import { Button, Input, Modal, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useCreateChallenge } from "@/hooks/use-challenges";
 import { formatRelativeTime, formatFileSize } from "@/lib/format";
@@ -109,22 +109,14 @@ export function CreateChallengeModal({
           required
         />
 
-        <div className="space-y-1.5">
-          <label
-            htmlFor="challenge-description"
-            className="block text-sm font-medium text-surface-300"
-          >
-            Description
-          </label>
-          <textarea
-            id="challenge-description"
-            placeholder="Describe the goal of this challenge..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg bg-surface-900 border border-surface-700 hover:border-surface-600 px-3.5 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 resize-none"
-          />
-        </div>
+        <Textarea
+          id="challenge-description"
+          label="Description"
+          placeholder="Describe the goal of this challenge..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <Select

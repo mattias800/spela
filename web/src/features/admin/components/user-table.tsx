@@ -8,6 +8,7 @@ import {
 } from "@/components/ui";
 import { Users } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import type { User } from "@/types/api";
 
 interface UserTableProps {
@@ -99,7 +100,10 @@ export function UserTable({
               users.map((user) => (
                 <tr
                   key={user.id}
-                  className={`border-b border-surface-800/50 hover:bg-surface-800/20 transition-colors ${user.id === currentUser?.id ? "bg-surface-800/10" : ""}`}
+                  className={cn(
+                    "border-b border-surface-800/50 hover:bg-surface-800/20 transition-colors",
+                    user.id === currentUser?.id && "bg-surface-800/10",
+                  )}
                 >
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">

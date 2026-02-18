@@ -1,6 +1,5 @@
 import { Trophy } from "lucide-react";
-import { Skeleton, EmptyState } from "@/components/ui";
-import { PlayerAvatar } from "@/components/player-avatar";
+import { Skeleton, EmptyState, LeaderboardSkeleton, LeaderboardRow } from "@/components/ui";
 import { RankBadge } from "@/features/challenges/components/rank-badge";
 import {
   useChallengeLeaderboard,
@@ -8,30 +7,9 @@ import {
 } from "@/hooks/use-challenges";
 import { useAuth } from "@/hooks/use-auth";
 import { formatChallengeDuration, formatRelativeTime } from "@/lib/format";
-import { cn } from "@/lib/cn";
 
 interface ChallengeLeaderboardProps {
   challengeId: string;
-}
-
-function LeaderboardSkeleton() {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }, (_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-surface-900/50"
-        >
-          <Skeleton className="h-7 w-7 rounded-full" />
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-4 w-28" />
-          <div className="flex-1" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function ChallengeLeaderboard({
@@ -77,36 +55,22 @@ export function ChallengeLeaderboard({
           {data.data.map((entry) => {
             const isCurrentUser = entry.userId === user?.id;
             return (
-              <div
+              <LeaderboardRow
                 key={entry.userId}
                 data-testid={`leaderboard-entry-${entry.userId}`}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5",
-                  isCurrentUser
-                    ? "bg-brand-500/5 border-l-2 border-brand-400"
-                    : "bg-surface-900/50",
-                )}
+                isCurrentUser={isCurrentUser}
+                username={entry.username}
+                avatarUrl={entry.avatarUrl}
+                rank={<RankBadge rank={entry.rank} />}
+                usernameClassName="flex-1 min-w-0"
               >
-                <RankBadge rank={entry.rank} />
-                <PlayerAvatar
-                  username={entry.username}
-                  avatarUrl={entry.avatarUrl}
-                />
-                <span
-                  className={cn(
-                    "text-sm font-medium truncate flex-1 min-w-0",
-                    isCurrentUser ? "text-brand-400" : "text-surface-200",
-                  )}
-                >
-                  {entry.username}
-                </span>
                 <span className="text-sm font-mono text-surface-300 whitespace-nowrap">
                   {formatChallengeDuration(entry.durationMs)}
                 </span>
                 <span className="text-xs text-surface-500 whitespace-nowrap">
                   {formatRelativeTime(entry.completedAt)}
                 </span>
-              </div>
+              </LeaderboardRow>
             );
           })}
         </div>

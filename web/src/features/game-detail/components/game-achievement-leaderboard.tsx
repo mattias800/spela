@@ -1,19 +1,12 @@
 import { Trophy } from "lucide-react";
-import { Badge, Skeleton } from "@/components/ui";
-import { PlayerAvatar } from "@/components/player-avatar";
+import { Badge, Skeleton, LeaderboardSkeleton, LeaderboardRow } from "@/components/ui";
 import { useAchievementLeaderboard } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/cn";
+import { rankColor } from "@/lib/rank-utils";
 
 interface GameAchievementLeaderboardProps {
   gameId: string;
-}
-
-function rankColor(rank: number): string {
-  if (rank === 1) return "text-amber-400";
-  if (rank === 2) return "text-surface-300";
-  if (rank === 3) return "text-amber-700";
-  return "text-surface-500";
 }
 
 function rankBg(rank: number): string {
@@ -44,25 +37,6 @@ function RankBadge({ rank }: { rank: number }) {
     <span className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
       {rank}
     </span>
-  );
-}
-
-function LeaderboardSkeleton() {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }, (_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-surface-900/50"
-        >
-          <Skeleton className="h-7 w-7 rounded-full" />
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-4 w-28 flex-shrink-0" />
-          <Skeleton className="h-3 flex-1" />
-          <Skeleton className="h-4 w-14" />
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -114,29 +88,14 @@ export function GameAchievementLeaderboard({
               : 0;
 
           return (
-            <div
+            <LeaderboardRow
               key={entry.userId}
               data-testid={`leaderboard-entry-${entry.userId}`}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5",
-                isCurrentUser
-                  ? "bg-brand-500/5 border-l-2 border-brand-400"
-                  : "bg-surface-900/50",
-              )}
+              isCurrentUser={isCurrentUser}
+              username={entry.username}
+              avatarUrl={entry.avatarUrl}
+              rank={<RankBadge rank={rank} />}
             >
-              <RankBadge rank={rank} />
-              <PlayerAvatar
-                username={entry.username}
-                avatarUrl={entry.avatarUrl}
-              />
-              <span
-                className={cn(
-                  "text-sm font-medium flex-shrink-0 w-28 truncate",
-                  isCurrentUser ? "text-brand-400" : "text-surface-200",
-                )}
-              >
-                {entry.username}
-              </span>
               <span className="text-xs text-surface-500 flex-shrink-0">
                 {entry.unlockedCount} / {leaderboard.totalAchievements}
               </span>
@@ -157,7 +116,7 @@ export function GameAchievementLeaderboard({
                   Complete!
                 </Badge>
               )}
-            </div>
+            </LeaderboardRow>
           );
         })}
       </div>

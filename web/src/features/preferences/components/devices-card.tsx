@@ -14,6 +14,7 @@ import {
   CardContent,
   Badge,
   EmptyState,
+  Select,
   Skeleton,
 } from "@/components/ui";
 import { formatRelativeTime } from "@/lib/format";
@@ -107,12 +108,14 @@ export function DevicesCard({
                           <button
                             onClick={saveDeviceName}
                             className="p-1 text-brand-400 hover:text-brand-300"
+                            aria-label="Save name"
                           >
                             <Check className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setEditingDeviceId(null)}
                             className="p-1 text-surface-400 hover:text-surface-300"
+                            aria-label="Cancel editing"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -138,6 +141,7 @@ export function DevicesCard({
                             onClick={() => startEditDevice(device)}
                             className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                             title="Rename device"
+                            aria-label="Rename device"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -147,6 +151,7 @@ export function DevicesCard({
                             }
                             className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                             title="Shader overrides"
+                            aria-label="Shader overrides"
                           >
                             {isExpanded ? (
                               <ChevronDown className="h-4 w-4" />
@@ -158,6 +163,7 @@ export function DevicesCard({
                             onClick={() => onDelete(device)}
                             className="p-1.5 rounded-lg text-surface-400 hover:text-danger-400 hover:bg-surface-800 transition-colors"
                             title="Delete device"
+                            aria-label="Delete device"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -180,8 +186,7 @@ export function DevicesCard({
                             <span className="text-sm text-surface-300">
                               {console.name}
                             </span>
-                            <select
-                              className="rounded-lg bg-surface-800 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                            <Select
                               value={device.consoleShaders[console.id] ?? ""}
                               onChange={(e) =>
                                 onDeviceShaderChange(
@@ -190,14 +195,11 @@ export function DevicesCard({
                                   e.target.value,
                                 )
                               }
-                            >
-                              <option value="">Use account default</option>
-                              {SHADER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                              options={[
+                                { value: "", label: "Use account default" },
+                                ...SHADER_OPTIONS,
+                              ]}
+                            />
                           </div>
                         ))}
                       </div>

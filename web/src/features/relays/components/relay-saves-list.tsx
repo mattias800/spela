@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Save, Trash2, Download } from "lucide-react";
-import { Button, Badge, Card, CardContent, Modal, EmptyState } from "@/components/ui";
+import { Button, Badge, Card, CardContent, ConfirmDeleteModal, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { useDeleteRelaySave } from "@/hooks/use-relays";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
@@ -72,6 +72,7 @@ export function RelaySavesList({
                       download
                       className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
                       title="Download save"
+                      aria-label="Download save"
                     >
                       <Download className="h-4 w-4" />
                     </a>
@@ -80,6 +81,7 @@ export function RelaySavesList({
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeleteTarget(save.id)}
+                        aria-label="Delete save"
                       >
                         <Trash2 className="h-4 w-4 text-danger-500" />
                       </Button>
@@ -93,36 +95,21 @@ export function RelaySavesList({
       )}
 
       {/* Delete confirm modal */}
-      <Modal
+      <ConfirmDeleteModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Delete Save State"
-        size="sm"
-      >
-        <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to delete this save state? All relay members
-          will lose access to it.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            loading={deleteSave.isPending}
-            onClick={() => {
-              if (deleteTarget !== null) {
-                deleteSave.mutate(
-                  { relayId, saveId: deleteTarget },
-                  { onSuccess: () => setDeleteTarget(null) },
-                );
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </Modal>
+        message="Are you sure you want to delete this save state? All relay members will lose access to it."
+        isPending={deleteSave.isPending}
+        onConfirm={() => {
+          if (deleteTarget !== null) {
+            deleteSave.mutate(
+              { relayId, saveId: deleteTarget },
+              { onSuccess: () => setDeleteTarget(null) },
+            );
+          }
+        }}
+      />
     </section>
   );
 }

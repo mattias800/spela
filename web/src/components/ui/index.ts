@@ -20,3 +20,7 @@ export { Switch } from "./switch";
 export { DropdownMenu } from "./dropdown-menu";
 export { TabNav, TabItem, StateTabNav, StateTabItem } from "./tab-nav";
 export { Textarea } from "./textarea";
+export { StatCard } from "./stat-card";
+export { LeaderboardSkeleton } from "./leaderboard-skeleton";
+export { ConfirmDeleteModal } from "./confirm-delete-modal";
+export { LeaderboardRow } from "./leaderboard-row";

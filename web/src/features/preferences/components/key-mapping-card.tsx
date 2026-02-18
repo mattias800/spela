@@ -1,4 +1,5 @@
-import { Card, CardHeader, CardContent, Skeleton } from "@/components/ui";
+import { Card, CardHeader, CardContent, Select, Skeleton } from "@/components/ui";
+import { cn } from "@/lib/cn";
 import { ControllerVisual } from "@/features/preferences/components/controller-visual";
 import { CustomKeyMappingEditor } from "@/features/preferences/components/custom-key-mapping-editor";
 import {
@@ -60,14 +61,12 @@ export function KeyMappingCard({
                     key={mode.value}
                     type="button"
                     onClick={() => onKeyMappingChange(mode.value)}
-                    className={`
-                      px-4 py-2 rounded-lg text-sm font-medium transition-all
-                      ${
-                        selectedMode === mode.value
-                          ? "bg-brand-500/20 text-brand-300 ring-2 ring-brand-400"
-                          : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-surface-100"
-                      }
-                    `}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                      selectedMode === mode.value
+                        ? "bg-brand-500/20 text-brand-300 ring-2 ring-brand-400"
+                        : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-surface-100",
+                    )}
                   >
                     {mode.label}
                   </button>
@@ -116,8 +115,7 @@ export function KeyMappingCard({
                               {console.name}
                             </td>
                             <td className="px-3 py-2">
-                              <select
-                                className="rounded-lg bg-surface-900 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                              <Select
                                 value={consoleKM?.selectedMapping ?? ""}
                                 onChange={(e) =>
                                   onConsoleKeyMappingChange(
@@ -125,14 +123,11 @@ export function KeyMappingCard({
                                     e.target.value,
                                   )
                                 }
-                              >
-                                <option value="">Use global default</option>
-                                {KEY_MAPPING_MODES.map((mode) => (
-                                  <option key={mode.value} value={mode.value}>
-                                    {mode.label}
-                                  </option>
-                                ))}
-                              </select>
+                                options={[
+                                  { value: "", label: "Use global default" },
+                                  ...KEY_MAPPING_MODES,
+                                ]}
+                              />
                             </td>
                           </tr>
                         );

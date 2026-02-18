@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Users, UserPlus, Crown, X } from "lucide-react";
-import { Button, Badge, Modal } from "@/components/ui";
+import { Button, Badge, ConfirmDeleteModal } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useRemoveRelayMember } from "@/hooks/use-relays";
@@ -109,39 +109,22 @@ export function RelayMembersList({
       />
 
       {/* Remove member confirm modal */}
-      <Modal
+      <ConfirmDeleteModal
         open={!!removeTarget}
         onClose={() => setRemoveTarget(null)}
         title="Remove Member"
-        size="sm"
-      >
-        <p className="text-sm text-surface-300 mb-6">
-          Are you sure you want to remove{" "}
-          <span className="font-medium text-surface-100">
-            {removeTarget?.username}
-          </span>{" "}
-          from this relay?
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setRemoveTarget(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            loading={removeMember.isPending}
-            onClick={() => {
-              if (removeTarget) {
-                removeMember.mutate(
-                  { relayId, userId: removeTarget.userId },
-                  { onSuccess: () => setRemoveTarget(null) },
-                );
-              }
-            }}
-          >
-            Remove
-          </Button>
-        </div>
-      </Modal>
+        message={`Are you sure you want to remove ${removeTarget?.username ?? ""} from this relay?`}
+        isPending={removeMember.isPending}
+        actionLabel="Remove"
+        onConfirm={() => {
+          if (removeTarget) {
+            removeMember.mutate(
+              { relayId, userId: removeTarget.userId },
+              { onSuccess: () => setRemoveTarget(null) },
+            );
+          }
+        }}
+      />
     </section>
   );
 }
