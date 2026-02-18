@@ -32,6 +32,7 @@ fun InGameOverlay(
 ) {
     val state by viewModel.state.collectAsState()
     val continueFocusRequester = remember { FocusRequester() }
+    val keyMappingViewModel: KeyMappingViewModel = koinInject()
 
     AnimatedVisibility(
         visible = state.showOverlay,
@@ -197,7 +198,6 @@ fun InGameOverlay(
 
     // Key mapping dialog
     if (state.showKeyMapping) {
-        val keyMappingViewModel: KeyMappingViewModel = koinInject()
         val keyMappingState by keyMappingViewModel.state.collectAsState()
         val consoleId = state.consoleId
         val layout = remember(consoleId) { DefaultKeyMappings.getLayoutForConsole(consoleId) }

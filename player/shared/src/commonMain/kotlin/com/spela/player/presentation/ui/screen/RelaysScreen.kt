@@ -52,6 +52,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -64,6 +65,8 @@ fun RelaysScreen(
     onRelaySelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -239,14 +242,7 @@ private fun RelayItem(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SpChip(
-                        text = relay.status.replaceFirstChar { it.uppercase() },
-                        color = when (relay.status) {
-                            "active" -> SpColor.Success
-                            "paused" -> SpColor.Warning
-                            else -> SpColor.OnBackgroundTertiary
-                        },
-                    )
+                    RelayStatusChip(status = relay.status)
                     SpChip(
                         text = "${relay.memberCount} members",
                     )

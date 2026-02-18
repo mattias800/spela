@@ -51,6 +51,7 @@ import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.challenge.formatDuration
+import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.components.pingColor
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
@@ -137,11 +138,7 @@ internal fun InGameOverlayPanel(
                         PerformanceBadge(
                             label = "FPS",
                             value = "%.0f".format(state.fps),
-                            color = when {
-                                state.fps >= 55f -> SpColor.Success
-                                state.fps >= 30f -> SpColor.Warning
-                                else -> SpColor.Error
-                            },
+                            color = fpsColor(state.fps),
                         )
                         PerformanceBadge(
                             label = "Frame",

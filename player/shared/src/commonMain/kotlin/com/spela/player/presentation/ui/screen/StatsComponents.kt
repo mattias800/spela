@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,14 +21,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ActivePlayer
 import com.spela.player.domain.model.MostPlayedGame
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.theme.SpColor
@@ -149,9 +146,10 @@ internal fun ActivePlayerItem(
         ) {
             RankBadge(rank)
             Spacer(Modifier.width(SpSpacing.Medium))
-            PlayerAvatar(
-                avatarUrl = item.avatarUrl,
+            SpAvatar(
                 username = item.username,
+                avatarUrl = item.avatarUrl,
+                size = 48.dp,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
@@ -190,35 +188,3 @@ internal fun StatLabel(label: String, value: String) {
     }
 }
 
-@Composable
-private fun PlayerAvatar(
-    avatarUrl: String?,
-    username: String,
-) {
-    SubcomposeAsyncImage(
-        model = avatarUrl,
-        contentDescription = "$username avatar",
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape),
-        contentScale = ContentScale.Crop,
-        error = { AvatarPlaceholder(username) },
-        loading = { AvatarPlaceholder(username) },
-    )
-}
-
-@Composable
-private fun AvatarPlaceholder(username: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.PrimaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = username.take(1).uppercase(),
-            style = SpTypography.TitleMedium,
-            color = SpColor.PrimaryLight,
-        )
-    }
-}

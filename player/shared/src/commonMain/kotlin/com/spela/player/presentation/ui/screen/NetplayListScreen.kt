@@ -48,6 +48,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -60,6 +61,8 @@ fun NetplayListScreen(
     onSessionSelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
     var showJoinDialog by remember { mutableStateOf(false) }
     var inviteCode by remember { mutableStateOf("") }

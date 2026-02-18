@@ -120,3 +120,15 @@ fun pingColor(latencyMs: Int): Color = when {
     latencyMs < LATENCY_MODERATE_MS -> SpColor.Warning
     else -> SpColor.Error
 }
+
+/**
+ * Returns the appropriate FPS color based on performance thresholds:
+ * - Green: >= 55 FPS (near full speed)
+ * - Yellow: >= 30 FPS (playable)
+ * - Red: < 30 FPS (poor performance)
+ */
+fun fpsColor(fps: Float): Color = when {
+    fps >= 55f -> SpColor.Success
+    fps >= 30f -> SpColor.Warning
+    else -> SpColor.Error
+}

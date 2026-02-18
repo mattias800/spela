@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpNetplayHud
 import com.spela.player.presentation.ui.components.challenge.formatDuration
+import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -71,11 +72,7 @@ internal fun FpsHud(
             Text(
                 text = "%.0f FPS".format(fps),
                 style = SpTypography.LabelSmall,
-                color = when {
-                    fps >= 55f -> SpColor.Success
-                    fps >= 30f -> SpColor.Warning
-                    else -> SpColor.Error
-                },
+                color = fpsColor(fps),
                 modifier = Modifier.semantics {
                     contentDescription = "FPS counter %.0f".format(fps)
                 },

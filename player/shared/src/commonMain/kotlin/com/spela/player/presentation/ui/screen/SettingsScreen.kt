@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -51,6 +52,8 @@ fun SettingsScreen(
     onNavigateToConsoleSettings: (String) -> Unit = {},
     onNavigateToLicenses: () -> Unit = {},
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {

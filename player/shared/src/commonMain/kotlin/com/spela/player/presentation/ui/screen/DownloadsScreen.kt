@@ -42,6 +42,7 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.util.formatBytes
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.viewmodel.DownloadsIntent
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 
@@ -50,6 +51,8 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel,
     onBack: () -> Unit = {},
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {

@@ -85,14 +85,7 @@ internal fun RelayHeader(
                 }
                 Spacer(Modifier.height(SpSpacing.Small))
                 Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
-                    SpChip(
-                        text = relay.status.replaceFirstChar { it.uppercase() },
-                        color = when (relay.status) {
-                            "active" -> SpColor.Success
-                            "paused" -> SpColor.Warning
-                            else -> SpColor.OnBackgroundTertiary
-                        },
-                    )
+                    RelayStatusChip(status = relay.status)
                     SpChip(text = "${relay.memberCount} members")
                 }
             }
@@ -174,6 +167,18 @@ internal fun RelayHeader(
             )
         }
     }
+}
+
+@Composable
+internal fun RelayStatusChip(status: String) {
+    SpChip(
+        text = status.replaceFirstChar { it.uppercase() },
+        color = when (status) {
+            "active" -> SpColor.Success
+            "paused" -> SpColor.Warning
+            else -> SpColor.OnBackgroundTertiary
+        },
+    )
 }
 
 @Composable

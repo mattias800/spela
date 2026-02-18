@@ -28,6 +28,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.RelayDetailViewModel
@@ -40,6 +41,8 @@ fun RelayDetailScreen(
     onBack: () -> Unit,
     onPlay: (gameId: String, relayId: String) -> Unit,
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(relayId) {
