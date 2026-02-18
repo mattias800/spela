@@ -1037,6 +1037,11 @@ bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r) {
     return r && r->hw_render_active;
 }
 
+void gpu_renderer_wait_idle(gpu_renderer_t *r) {
+    if (!r || !r->device) return;
+    vkDeviceWaitIdle(r->device);
+}
+
 bool gpu_renderer_is_active(gpu_renderer_t *r) {
     return r && r->active;
 }

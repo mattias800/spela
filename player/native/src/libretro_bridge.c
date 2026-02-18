@@ -612,6 +612,8 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     /* Tear down Vulkan HW render context before unloading game */
     if (g_core.hw_render_enabled && g_gpu_renderer &&
         gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+        /* Wait for all GPU work to finish before core destroys its resources */
+        gpu_renderer_wait_idle(g_gpu_renderer);
         if (g_core.hw_render_callback.context_destroy) {
             g_core.hw_render_callback.context_destroy();
         }
@@ -645,6 +647,7 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
         /* Clean up Vulkan HW render if still active */
         if (g_core.hw_render_enabled && g_gpu_renderer &&
             gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+            gpu_renderer_wait_idle(g_gpu_renderer);
             if (g_core.hw_render_callback.context_destroy) {
                 g_core.hw_render_callback.context_destroy();
             }
@@ -1015,6 +1018,7 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
 #ifdef __ANDROID__
         /* Destroy Vulkan HW render context before releasing surface */
         if (g_core.hw_render_enabled && gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+            gpu_renderer_wait_idle(g_gpu_renderer);
             if (g_core.hw_render_callback.context_destroy) {
                 g_core.hw_render_callback.context_destroy();
             }

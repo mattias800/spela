@@ -146,7 +146,11 @@ class AndroidLibretroController(
     override fun stop() {
         running = false
         netplayTransport?.disconnect()
-        emulationThread?.join(2000)
+        // No timeout: we MUST wait for retro_run() to return before calling
+        // nativeUnloadGame(). Heavy cores (N64 Angrylion) may take 10-30s per
+        // frame on slow devices. Calling unload while retro_run() is active
+        // causes SIGSEGV in the core.
+        emulationThread?.join()
         emulationThread = null
         audioOutput?.stop()
         audioOutput = null

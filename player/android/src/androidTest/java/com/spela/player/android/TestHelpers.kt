@@ -736,14 +736,15 @@ fun ComposeRule.openOverlay() {
     waitForText("Exit Game", TIMEOUT_MEDIUM)
 }
 
-fun ComposeRule.exitGame() {
+fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
     onNodeWithText("Exit Game").performClick()
     waitForIdle()
     // stopGame() runs async: serializes save state then calls libretroController.stop()
     // which joins the emulation thread (up to 2s) and deinits native core.
     // Wait for "Core idle" indicator before navigating to a new game,
     // otherwise the new core_load() races with the old emulation thread → SIGSEGV.
-    waitForCoreIdle()
+    // Heavier cores (N64, PSX) need longer shutdown time than NES.
+    waitForCoreIdle(coreIdleTimeout)
 }
 
 // ── Composite helpers for common patterns ──

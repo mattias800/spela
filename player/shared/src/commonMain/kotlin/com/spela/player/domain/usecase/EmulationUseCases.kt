@@ -13,6 +13,14 @@ private val MACOS_CORE_SUBSTITUTIONS = mapOf(
     "beetle_psx_hw" to "mednafen_psx",
 )
 
+/**
+ * The libretro buildbot hosts Android N64 cores under variant-specific names
+ * (e.g. mupen64plus_next_gles3) rather than the base name. Map accordingly.
+ */
+private val ANDROID_CORE_SUBSTITUTIONS = mapOf(
+    "mupen64plus_next" to "mupen64plus_next_gles3",
+)
+
 class PrepareGameUseCase(
     private val downloadRepository: DownloadRepository,
     private val coreRepository: CoreRepository,
@@ -56,9 +64,13 @@ class PrepareGameUseCase(
      * where the HW cores don't work (e.g. macOS Metal-backed GL).
      */
     private fun platformCoreSubstitution(coreName: String): String {
-        if (currentPlatform() != "macos") return coreName
-        val substitute = MACOS_CORE_SUBSTITUTIONS[coreName] ?: return coreName
-        println("[PrepareGame] macOS: substituting $coreName -> $substitute (HW core incompatible)")
+        val substitutions = when (currentPlatform()) {
+            "macos" -> MACOS_CORE_SUBSTITUTIONS
+            "android" -> ANDROID_CORE_SUBSTITUTIONS
+            else -> return coreName
+        }
+        val substitute = substitutions[coreName] ?: return coreName
+        println("[PrepareGame] ${currentPlatform()}: substituting $coreName -> $substitute")
         return substitute
     }
 }

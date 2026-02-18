@@ -59,6 +59,8 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height);
 void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r);
 bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r);
+/* Wait for GPU to finish all pending work (call before context_destroy) */
+void gpu_renderer_wait_idle(gpu_renderer_t *r);
 
 /* Query state */
 bool gpu_renderer_is_active(gpu_renderer_t *r);

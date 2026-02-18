@@ -119,7 +119,10 @@ class DesktopLibretroController(
     override fun stop() {
         running = false
         netplayTransport?.disconnect()
-        emulationThread?.join(2000)
+        // No timeout: we MUST wait for retro_run() to return before calling
+        // nativeUnloadGame(). Calling unload while retro_run() is active causes
+        // a crash in the core.
+        emulationThread?.join()
         emulationThread = null
         // GPU deinit AFTER emulation thread is dead — no Metal race
         if (jni.nativeGpuIsActive()) {
