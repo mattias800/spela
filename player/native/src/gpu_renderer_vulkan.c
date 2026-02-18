@@ -11,14 +11,16 @@
  *   - All Vulkan commands are single-threaded (emulation thread owns the context)
  */
 
-#include "gpu_renderer.h"
-#include "gpu_shaders_spirv.h"
-
 #ifdef __ANDROID__
 #define VK_USE_PLATFORM_ANDROID_KHR
 #endif
 
 #include <vulkan/vulkan.h>
+#include <pthread.h>
+
+#include "gpu_renderer.h"
+#include "gpu_shaders_spirv.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -54,6 +56,7 @@
 
 #define MAX_FRAMES_IN_FLIGHT 3
 #define NUM_SHADERS 6
+#define MAX_HW_SEMAPHORES 8
 
 /* Push constant data passed to fragment shaders */
 typedef struct {
@@ -148,6 +151,20 @@ struct gpu_renderer {
     /* Source rect for DS dual-screen */
     int source_x, source_y, source_w, source_h;
     bool source_rect_set;
+
+    /* Vulkan HW render state (Phase 4) */
+    bool hw_render_active;
+    struct retro_hw_render_interface_vulkan hw_vk_interface;
+    struct retro_vulkan_image hw_current_image;
+    VkSemaphore hw_wait_semaphores[MAX_HW_SEMAPHORES];
+    uint32_t hw_wait_semaphore_count;
+    VkSemaphore hw_signal_semaphores[MAX_FRAMES_IN_FLIGHT];
+    VkCommandBuffer hw_core_cmd_buffers[MAX_FRAMES_IN_FLIGHT];
+    uint32_t hw_core_cmd_count;
+    VkDescriptorPool hw_descriptor_pool;
+    VkDescriptorSet hw_descriptor_sets[MAX_FRAMES_IN_FLIGHT];
+    pthread_mutex_t queue_mutex;
+    bool queue_mutex_initialized;
 
     /* Native window handle */
 #ifdef __ANDROID__
@@ -278,6 +295,15 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
     if (!r || !r->surface_initialized) return;
     if (r->device) {
         vkDeviceWaitIdle(r->device);
+    }
+
+    /* Clean up HW render state if active */
+    if (r->hw_render_active) {
+        gpu_renderer_hw_vulkan_deinit(r);
+    }
+    if (r->queue_mutex_initialized) {
+        pthread_mutex_destroy(&r->queue_mutex);
+        r->queue_mutex_initialized = false;
     }
 
     if (r->offscreen_mode) {
@@ -630,10 +656,385 @@ void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h)
     r->source_rect_set = true;
 }
 
-struct retro_hw_render_callback *gpu_renderer_get_hw_callback(gpu_renderer_t *r) {
-    /* Phase 4: will return HW render interface */
-    (void)r;
-    return NULL;
+/* ===== Vulkan HW render callbacks (Phase 4) ===== */
+
+static void hw_vulkan_set_image(void *handle,
+    const struct retro_vulkan_image *image,
+    uint32_t num_semaphores, const VkSemaphore *semaphores,
+    uint32_t src_queue_family) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (!r) return;
+    if (image) {
+        r->hw_current_image = *image;
+    }
+    r->hw_wait_semaphore_count = num_semaphores < MAX_HW_SEMAPHORES ?
+        num_semaphores : MAX_HW_SEMAPHORES;
+    for (uint32_t i = 0; i < r->hw_wait_semaphore_count; i++) {
+        r->hw_wait_semaphores[i] = semaphores[i];
+    }
+    (void)src_queue_family;
+}
+
+static uint32_t hw_vulkan_get_sync_index(void *handle) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    return r ? r->current_frame : 0;
+}
+
+static uint32_t hw_vulkan_get_sync_index_mask(void *handle) {
+    (void)handle;
+    return (1u << MAX_FRAMES_IN_FLIGHT) - 1;
+}
+
+static void hw_vulkan_wait_sync_index(void *handle) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (!r || !r->device) return;
+    vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
+                    VK_TRUE, UINT64_MAX);
+}
+
+static void hw_vulkan_set_command_buffers(void *handle,
+    uint32_t num_cmd, const VkCommandBuffer *cmd) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (!r) return;
+    r->hw_core_cmd_count = num_cmd < MAX_FRAMES_IN_FLIGHT ?
+        num_cmd : MAX_FRAMES_IN_FLIGHT;
+    for (uint32_t i = 0; i < r->hw_core_cmd_count; i++) {
+        r->hw_core_cmd_buffers[i] = cmd[i];
+    }
+}
+
+static void hw_vulkan_lock_queue(void *handle) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (r && r->queue_mutex_initialized) {
+        pthread_mutex_lock(&r->queue_mutex);
+    }
+}
+
+static void hw_vulkan_unlock_queue(void *handle) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (r && r->queue_mutex_initialized) {
+        pthread_mutex_unlock(&r->queue_mutex);
+    }
+}
+
+static void hw_vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore) {
+    gpu_renderer_t *r = (gpu_renderer_t *)handle;
+    if (!r) return;
+    r->hw_signal_semaphores[r->current_frame] = semaphore;
+}
+
+/* ===== Vulkan HW render public API ===== */
+
+bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
+    if (!r || !r->device) return false;
+
+    /* Initialize queue mutex */
+    if (!r->queue_mutex_initialized) {
+        if (pthread_mutex_init(&r->queue_mutex, NULL) != 0) {
+            VK_LOGE("Failed to init queue mutex");
+            return false;
+        }
+        r->queue_mutex_initialized = true;
+    }
+
+    /* Create per-frame descriptor pool and sets for HW render */
+    VkDescriptorPoolSize pool_size = {
+        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+    };
+    VkDescriptorPoolCreateInfo pool_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = MAX_FRAMES_IN_FLIGHT,
+        .poolSizeCount = 1,
+        .pPoolSizes = &pool_size,
+    };
+    if (vkCreateDescriptorPool(r->device, &pool_info, NULL, &r->hw_descriptor_pool) != VK_SUCCESS) {
+        VK_LOGE("Failed to create HW render descriptor pool");
+        return false;
+    }
+
+    VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        layouts[i] = r->descriptor_set_layout;
+    }
+    VkDescriptorSetAllocateInfo alloc_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = r->hw_descriptor_pool,
+        .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+        .pSetLayouts = layouts,
+    };
+    if (vkAllocateDescriptorSets(r->device, &alloc_info, r->hw_descriptor_sets) != VK_SUCCESS) {
+        VK_LOGE("Failed to allocate HW render descriptor sets");
+        vkDestroyDescriptorPool(r->device, r->hw_descriptor_pool, NULL);
+        r->hw_descriptor_pool = VK_NULL_HANDLE;
+        return false;
+    }
+
+    /* Populate the interface struct with our Vulkan handles */
+    r->hw_vk_interface = (struct retro_hw_render_interface_vulkan){
+        .interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN,
+        .interface_version = 5,
+        .get_instance_proc_addr = vkGetInstanceProcAddr,
+        .instance = r->instance,
+        .gpu = r->physical_device,
+        .device = r->device,
+        .get_device_proc_addr = vkGetDeviceProcAddr,
+        .queue_index = r->queue_family_index,
+        .queue = r->graphics_queue,
+        .handle = r,
+        .set_image = hw_vulkan_set_image,
+        .get_sync_index = hw_vulkan_get_sync_index,
+        .get_sync_index_mask = hw_vulkan_get_sync_index_mask,
+        .wait_sync_index = hw_vulkan_wait_sync_index,
+        .set_command_buffers = hw_vulkan_set_command_buffers,
+        .lock_queue = hw_vulkan_lock_queue,
+        .unlock_queue = hw_vulkan_unlock_queue,
+        .set_signal_semaphore = hw_vulkan_set_signal_semaphore,
+    };
+
+    /* Clear per-frame state */
+    memset(&r->hw_current_image, 0, sizeof(r->hw_current_image));
+    memset(r->hw_signal_semaphores, 0, sizeof(r->hw_signal_semaphores));
+    memset(r->hw_core_cmd_buffers, 0, sizeof(r->hw_core_cmd_buffers));
+    r->hw_wait_semaphore_count = 0;
+    r->hw_core_cmd_count = 0;
+
+    r->hw_render_active = true;
+    VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x)",
+            r->queue_family_index, (1u << MAX_FRAMES_IN_FLIGHT) - 1);
+    return true;
+}
+
+void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
+    if (!r || !r->hw_render_active) return NULL;
+    return &r->hw_vk_interface;
+}
+
+void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
+    if (!r || !r->active || !r->hw_render_active) return;
+    if (!r->hw_current_image.image_view) return;
+
+    r->frame_width = width;
+    r->frame_height = height;
+
+    /* Wait for the previous frame using this slot to finish */
+    vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
+                    VK_TRUE, UINT64_MAX);
+
+    /* Acquire next swapchain image */
+    uint32_t image_index;
+    VkResult result = vkAcquireNextImageKHR(r->device, r->swapchain, UINT64_MAX,
+        r->image_available_semaphores[r->current_frame], VK_NULL_HANDLE, &image_index);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreate_swapchain(r);
+        return;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        VK_LOGE("HW render: vkAcquireNextImageKHR failed: %d", result);
+        return;
+    }
+
+    vkResetFences(r->device, 1, &r->in_flight_fences[r->current_frame]);
+
+    /* Update per-frame descriptor set to sample from core's VkImageView */
+    VkSampler sampler = r->sampler_nearest;
+    if (r->current_shader == GPU_SHADER_BILINEAR ||
+        r->current_shader == GPU_SHADER_SHARP_BILINEAR) {
+        sampler = r->sampler_linear;
+    }
+
+    VkDescriptorImageInfo desc_image_info = {
+        .sampler = sampler,
+        .imageView = r->hw_current_image.image_view,
+        .imageLayout = r->hw_current_image.image_layout,
+    };
+    VkWriteDescriptorSet desc_write = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = r->hw_descriptor_sets[r->current_frame],
+        .dstBinding = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &desc_image_info,
+    };
+    vkUpdateDescriptorSets(r->device, 1, &desc_write, 0, NULL);
+
+    /* Submit core command buffers if the core provided them */
+    if (r->hw_core_cmd_count > 0) {
+        VkSubmitInfo core_submit = {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .commandBufferCount = r->hw_core_cmd_count,
+            .pCommandBuffers = r->hw_core_cmd_buffers,
+        };
+        pthread_mutex_lock(&r->queue_mutex);
+        vkQueueSubmit(r->graphics_queue, 1, &core_submit, VK_NULL_HANDLE);
+        pthread_mutex_unlock(&r->queue_mutex);
+        r->hw_core_cmd_count = 0;
+    }
+
+    /* Record our shader pass command buffer */
+    VkCommandBuffer cmd = r->command_buffers[r->current_frame];
+    vkResetCommandBuffer(cmd, 0);
+
+    VkCommandBufferBeginInfo begin_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    vkBeginCommandBuffer(cmd, &begin_info);
+
+    VkClearValue clear_value = { .color = { .float32 = { 0.0f, 0.0f, 0.0f, 1.0f } } };
+    VkRenderPassBeginInfo rp_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = r->render_pass,
+        .framebuffer = r->framebuffers[image_index],
+        .renderArea = {
+            .offset = { 0, 0 },
+            .extent = r->swapchain_extent,
+        },
+        .clearValueCount = 1,
+        .pClearValues = &clear_value,
+    };
+    vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    int shader_idx = r->current_shader;
+    if (shader_idx < 0 || shader_idx >= NUM_SHADERS || !r->pipelines[shader_idx]) {
+        shader_idx = GPU_SHADER_NONE;
+    }
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[shader_idx]);
+
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        r->pipeline_layout, 0, 1, &r->hw_descriptor_sets[r->current_frame], 0, NULL);
+
+    push_constants_t pc = {
+        .texture_size = { (float)width, (float)height },
+    };
+    vkCmdPushConstants(cmd, r->pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(push_constants_t), &pc);
+
+    /* Viewport with aspect ratio */
+    float src_w = r->source_rect_set ? (float)r->source_w : (float)width;
+    float src_h = r->source_rect_set ? (float)r->source_h : (float)height;
+    float dst_w = (float)r->swapchain_extent.width;
+    float dst_h = (float)r->swapchain_extent.height;
+    float scale_x = dst_w / src_w;
+    float scale_y = dst_h / src_h;
+    float scale = scale_x < scale_y ? scale_x : scale_y;
+    float vp_w = src_w * scale;
+    float vp_h = src_h * scale;
+    float vp_x = (dst_w - vp_w) / 2.0f;
+    float vp_y = (dst_h - vp_h) / 2.0f;
+
+    VkViewport viewport = {
+        .x = vp_x, .y = vp_y,
+        .width = vp_w, .height = vp_h,
+        .minDepth = 0.0f, .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor = {
+        .offset = { (int32_t)vp_x, (int32_t)vp_y },
+        .extent = { (uint32_t)vp_w, (uint32_t)vp_h },
+    };
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+    vkCmdEndRenderPass(cmd);
+    vkEndCommandBuffer(cmd);
+
+    /* Build wait semaphore list: image_available + core's semaphores */
+    uint32_t wait_count = 1;
+    VkSemaphore wait_sems[MAX_HW_SEMAPHORES + 1];
+    VkPipelineStageFlags wait_stages[MAX_HW_SEMAPHORES + 1];
+    wait_sems[0] = r->image_available_semaphores[r->current_frame];
+    wait_stages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    for (uint32_t i = 0; i < r->hw_wait_semaphore_count; i++) {
+        wait_sems[wait_count] = r->hw_wait_semaphores[i];
+        wait_stages[wait_count] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        wait_count++;
+    }
+
+    /* Build signal semaphore list: render_finished + core's signal semaphore */
+    uint32_t signal_count = 1;
+    VkSemaphore signal_sems[2];
+    signal_sems[0] = r->render_finished_semaphores[r->current_frame];
+    if (r->hw_signal_semaphores[r->current_frame]) {
+        signal_sems[signal_count++] = r->hw_signal_semaphores[r->current_frame];
+    }
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = wait_count,
+        .pWaitSemaphores = wait_sems,
+        .pWaitDstStageMask = wait_stages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd,
+        .signalSemaphoreCount = signal_count,
+        .pSignalSemaphores = signal_sems,
+    };
+
+    pthread_mutex_lock(&r->queue_mutex);
+    result = vkQueueSubmit(r->graphics_queue, 1, &submit_info,
+                           r->in_flight_fences[r->current_frame]);
+    pthread_mutex_unlock(&r->queue_mutex);
+
+    if (result != VK_SUCCESS) {
+        VK_LOGE("HW render: vkQueueSubmit failed: %d", result);
+    }
+
+    /* Present */
+    VkSemaphore present_wait[] = { r->render_finished_semaphores[r->current_frame] };
+    VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = present_wait,
+        .swapchainCount = 1,
+        .pSwapchains = &r->swapchain,
+        .pImageIndices = &image_index,
+    };
+
+    pthread_mutex_lock(&r->queue_mutex);
+    result = vkQueuePresentKHR(r->graphics_queue, &present_info);
+    pthread_mutex_unlock(&r->queue_mutex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        recreate_swapchain(r);
+    } else if (result != VK_SUCCESS) {
+        VK_LOGE("HW render: vkQueuePresentKHR failed: %d", result);
+    }
+
+    /* Reset per-frame HW state */
+    r->hw_current_image.image_view = VK_NULL_HANDLE;
+    r->hw_wait_semaphore_count = 0;
+    r->hw_signal_semaphores[r->current_frame] = VK_NULL_HANDLE;
+
+    r->current_frame = (r->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r) {
+    if (!r) return;
+
+    if (r->device) {
+        vkDeviceWaitIdle(r->device);
+    }
+
+    if (r->hw_descriptor_pool) {
+        vkDestroyDescriptorPool(r->device, r->hw_descriptor_pool, NULL);
+        r->hw_descriptor_pool = VK_NULL_HANDLE;
+    }
+    memset(r->hw_descriptor_sets, 0, sizeof(r->hw_descriptor_sets));
+
+    memset(&r->hw_current_image, 0, sizeof(r->hw_current_image));
+    memset(r->hw_signal_semaphores, 0, sizeof(r->hw_signal_semaphores));
+    memset(r->hw_core_cmd_buffers, 0, sizeof(r->hw_core_cmd_buffers));
+    r->hw_wait_semaphore_count = 0;
+    r->hw_core_cmd_count = 0;
+    r->hw_render_active = false;
+
+    VK_LOGI("Vulkan HW render deinitialized");
+}
+
+bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r) {
+    return r && r->hw_render_active;
 }
 
 bool gpu_renderer_is_active(gpu_renderer_t *r) {

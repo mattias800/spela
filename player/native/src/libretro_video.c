@@ -80,6 +80,17 @@ gpu_renderer_t *video_get_gpu_renderer(void) {
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
 
+#ifdef __ANDROID__
+    /* Vulkan HW render path: core rendered to its own VkImage, present through our shader */
+    if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
+        if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer) &&
+            gpu_renderer_is_hw_render_active(video_state.gpu_renderer)) {
+            gpu_renderer_hw_render_frame(video_state.gpu_renderer, width, height);
+        }
+        return;
+    }
+#endif
+
 #ifdef __APPLE__
     /* HW render path: core rendered to our FBO, read pixels back */
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled && g_core.hw_gl_ctx) {

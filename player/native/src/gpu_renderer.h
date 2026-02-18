@@ -53,8 +53,12 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 /* Source rect for DS dual-screen: render a sub-region of the framebuffer */
 void gpu_renderer_set_source_rect(gpu_renderer_t *r, int x, int y, int w, int h);
 
-/* HW render support (Phase 4) */
-struct retro_hw_render_callback *gpu_renderer_get_hw_callback(gpu_renderer_t *r);
+/* Vulkan HW render support (Phase 4) */
+bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r);
+void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);
+void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height);
+void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r);
+bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r);
 
 /* Query state */
 bool gpu_renderer_is_active(gpu_renderer_t *r);

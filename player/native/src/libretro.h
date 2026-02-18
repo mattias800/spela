@@ -115,6 +115,56 @@ struct retro_hw_render_callback {
  * to the hardware framebuffer (FBO) and the frontend should read it back. */
 #define RETRO_HW_FRAME_BUFFER_VALID ((const void *)(intptr_t)-1)
 
+/* HW render interface types */
+#define RETRO_HW_RENDER_INTERFACE_VULKAN 0
+
+/* Vulkan HW render interface structs.
+ * Only available when <vulkan/vulkan.h> is included before this header. */
+#ifdef VK_VERSION_1_0
+
+struct retro_vulkan_image {
+    VkImageView image_view;
+    VkImageLayout image_layout;
+    VkDeviceSize create_info_swapchain_width;
+    VkDeviceSize create_info_swapchain_height;
+};
+
+typedef void (*retro_vulkan_set_image_t)(void *handle,
+    const struct retro_vulkan_image *image,
+    uint32_t num_semaphores, const VkSemaphore *semaphores,
+    uint32_t src_queue_family);
+typedef uint32_t (*retro_vulkan_get_sync_index_t)(void *handle);
+typedef uint32_t (*retro_vulkan_get_sync_index_mask_t)(void *handle);
+typedef void (*retro_vulkan_set_command_buffers_t)(void *handle,
+    uint32_t num_cmd, const VkCommandBuffer *cmd);
+typedef void (*retro_vulkan_wait_sync_index_t)(void *handle);
+typedef void (*retro_vulkan_lock_queue_t)(void *handle);
+typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
+typedef void (*retro_vulkan_set_signal_semaphore_t)(void *handle, VkSemaphore semaphore);
+
+struct retro_hw_render_interface_vulkan {
+    unsigned interface_type;
+    unsigned interface_version;
+    PFN_vkGetInstanceProcAddr get_instance_proc_addr;
+    VkInstance instance;
+    VkPhysicalDevice gpu;
+    VkDevice device;
+    PFN_vkGetDeviceProcAddr get_device_proc_addr;
+    uint32_t queue_index;
+    VkQueue queue;
+    void *handle;
+    retro_vulkan_set_image_t set_image;
+    retro_vulkan_get_sync_index_t get_sync_index;
+    retro_vulkan_get_sync_index_mask_t get_sync_index_mask;
+    retro_vulkan_wait_sync_index_t wait_sync_index;
+    retro_vulkan_set_command_buffers_t set_command_buffers;
+    retro_vulkan_lock_queue_t lock_queue;
+    retro_vulkan_unlock_queue_t unlock_queue;
+    retro_vulkan_set_signal_semaphore_t set_signal_semaphore;
+};
+
+#endif /* VK_VERSION_1_0 */
+
 /* Memory regions */
 #define RETRO_MEMORY_SAVE_RAM  0
 #define RETRO_MEMORY_RTC       1

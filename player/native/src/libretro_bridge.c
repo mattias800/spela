@@ -7,6 +7,10 @@
  * Reference: RetroArch's core_ctl.c and runloop.c
  */
 
+#ifdef __ANDROID__
+#include <vulkan/vulkan.h>
+#endif
+
 #include "libretro_bridge.h"
 #include "libretro_achievements.h"
 #include "gpu_renderer.h"
@@ -49,6 +53,9 @@ static FILE *bridge_log_get(void) {
 
 /* Global core instance */
 libretro_core_t g_core = {0};
+
+/* GPU renderer instance - used by both env callbacks and JNI methods */
+static gpu_renderer_t *g_gpu_renderer = NULL;
 
 /* Core variable storage for RETRO_ENVIRONMENT_GET_VARIABLE */
 #define MAX_CORE_VARIABLES 256
@@ -302,7 +309,21 @@ static bool environment_callback(unsigned cmd, void *data) {
             struct retro_hw_render_callback *cb = (struct retro_hw_render_callback *)data;
             LOGI("Core requests HW render context type: %u (v%u.%u)",
                  cb->context_type, cb->version_major, cb->version_minor);
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+            /* Accept Vulkan context type on Android */
+            if (cb->context_type == RETRO_HW_CONTEXT_VULKAN) {
+                g_core.hw_render_callback = *cb;
+                /* Vulkan does not use get_current_framebuffer or get_proc_address */
+                g_core.hw_render_callback.get_current_framebuffer = NULL;
+                g_core.hw_render_callback.get_proc_address = NULL;
+                cb->get_current_framebuffer = NULL;
+                cb->get_proc_address = NULL;
+                g_core.hw_render_enabled = true;
+                LOGI("Accepted Vulkan HW render (type=%u, depth=%d, stencil=%d)",
+                     cb->context_type, cb->depth, cb->stencil);
+                return true;
+            }
+#else
             /* Accept OpenGL context types on desktop (macOS, Linux, Windows) */
             if (cb->context_type == RETRO_HW_CONTEXT_OPENGL ||
                 cb->context_type == RETRO_HW_CONTEXT_OPENGL_CORE) {
@@ -322,6 +343,22 @@ static bool environment_callback(unsigned cmd, void *data) {
             /* Unsupported context type */
             g_core.hw_render_callback = *cb;
             g_core.hw_render_enabled = false;
+            return false;
+        }
+
+        case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE: {
+#ifdef __ANDROID__
+            if (g_core.hw_render_enabled &&
+                g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
+                g_gpu_renderer) {
+                void *iface = gpu_renderer_hw_vulkan_get_interface(g_gpu_renderer);
+                if (iface) {
+                    *(const struct retro_hw_render_interface_vulkan **)data = iface;
+                    LOGI("Returning Vulkan HW render interface to core");
+                    return true;
+                }
+            }
+#endif
             return false;
         }
 
@@ -571,7 +608,18 @@ JNI_FUNC(void, nativeReset)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+    /* Tear down Vulkan HW render context before unloading game */
+    if (g_core.hw_render_enabled && g_gpu_renderer &&
+        gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+        if (g_core.hw_render_callback.context_destroy) {
+            g_core.hw_render_callback.context_destroy();
+        }
+        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
+        g_core.hw_render_enabled = false;
+        LOGI("Vulkan HW render context destroyed");
+    }
+#else
     /* Tear down OpenGL HW render context before unloading game */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         if (g_core.hw_render_callback.context_destroy) {
@@ -593,7 +641,17 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
 JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     if (!g_core.initialized) return;
     if (g_core.game_loaded) {
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+        /* Clean up Vulkan HW render if still active */
+        if (g_core.hw_render_enabled && g_gpu_renderer &&
+            gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_destroy) {
+                g_core.hw_render_callback.context_destroy();
+            }
+            gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
+            g_core.hw_render_enabled = false;
+        }
+#else
         /* Clean up GL HW render if still active */
         if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
             if (g_core.hw_render_callback.context_destroy) {
@@ -797,7 +855,7 @@ JNI_FUNC(void, nativeSetInputPointer)(JNIEnv *env, jobject thiz,
 
 /* === GPU Renderer JNI Methods === */
 
-static gpu_renderer_t *g_gpu_renderer = NULL;
+/* g_gpu_renderer is forward-declared near the top of this file */
 
 JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
     if (g_gpu_renderer) {
@@ -913,6 +971,23 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
 
     /* Wire up the GPU renderer to the video subsystem */
     video_set_gpu_renderer(g_gpu_renderer);
+
+#ifdef __ANDROID__
+    /* Initialize Vulkan HW render if core requested it */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN) {
+        if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_reset) {
+                g_core.hw_render_callback.context_reset();
+            }
+            LOGI("Vulkan HW render context initialized for core");
+        } else {
+            LOGE("Failed to init Vulkan HW render context");
+            g_core.hw_render_enabled = false;
+        }
+    }
+#endif
+
     LOGI("GPU renderer initialized successfully");
     return JNI_TRUE;
 }
@@ -937,6 +1012,16 @@ JNI_FUNC(void, nativeGpuResize)(JNIEnv *env, jobject thiz, jint width, jint heig
 
 JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
     if (g_gpu_renderer) {
+#ifdef __ANDROID__
+        /* Destroy Vulkan HW render context before releasing surface */
+        if (g_core.hw_render_enabled && gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_destroy) {
+                g_core.hw_render_callback.context_destroy();
+            }
+            gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
+            LOGI("Vulkan HW render context destroyed (surface deinit)");
+        }
+#endif
         video_set_gpu_renderer(NULL);
         gpu_renderer_deinit_surface(g_gpu_renderer);
         gpu_renderer_destroy(g_gpu_renderer);
