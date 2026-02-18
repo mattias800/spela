@@ -16,7 +16,7 @@ import {
   usePublicCollections,
   useCreateCollection,
 } from "@/hooks/use-collections";
-import { Pagination } from "@/components/games/pagination";
+import { Pagination } from "@/components/pagination";
 import type { Collection } from "@/types/api";
 
 type Tab = "mine" | "public";

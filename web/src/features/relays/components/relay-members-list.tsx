@@ -5,7 +5,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useRemoveRelayMember } from "@/hooks/use-relays";
 import { formatRelativeTime } from "@/lib/format";
-import { RelayInviteModal } from "@/components/relays/relay-invite-modal";
+import { RelayInviteModal } from "@/features/relays/components/relay-invite-modal";
 import type { RelayMember } from "@/types/api";
 
 interface RelayMembersListProps {

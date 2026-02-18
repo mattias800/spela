@@ -6,7 +6,7 @@ import {
   netplayStatusVariant,
   netplayStatusLabel,
   endReasonLabel,
-} from "@/components/netplay/netplay-status";
+} from "@/features/netplay/components/netplay-status";
 import { formatRelativeTime } from "@/lib/format";
 import type { NetplaySession } from "@/types/api";
 

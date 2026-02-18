@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { Users, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui";
-import { MemberAvatars } from "@/components/relays/member-avatars";
-import { relayStatusVariant } from "@/components/relays/relay-status";
+import { MemberAvatars } from "@/features/relays/components/member-avatars";
+import { relayStatusVariant } from "@/features/relays/components/relay-status";
 import { formatRelativeTime } from "@/lib/format";
 import type { Relay } from "@/types/api";
 

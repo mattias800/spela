@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Activity, ChevronRight } from "lucide-react";
 import { Skeleton, EmptyState } from "@/components/ui";
-import { ActivityEventItem } from "@/components/social/activity-event-item";
+import { ActivityEventItem } from "@/features/social/components/activity-event-item";
 import { useActivityFeed, useActivityRealtime } from "@/hooks/use-social";
 
 function ActivityFeedSkeleton({ count = 5 }: { count?: number }) {

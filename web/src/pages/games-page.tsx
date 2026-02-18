@@ -6,9 +6,9 @@ import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useConsoles } from "@/hooks/use-consoles";
-import { GamesFilterBar } from "@/components/games/games-filter-bar";
-import { GameListRow } from "@/components/games/game-list-row";
-import { Pagination } from "@/components/games/pagination";
+import { GamesFilterBar } from "@/features/games/components/games-filter-bar";
+import { GameListRow } from "@/features/games/components/game-list-row";
+import { Pagination } from "@/components/pagination";
 import type { GameFilters } from "@/types/api";
 
 type ViewMode = "grid" | "list";

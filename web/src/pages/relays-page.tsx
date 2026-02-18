@@ -18,10 +18,10 @@ import {
   useRejectRelayInvitation,
   useRelayRealtime,
 } from "@/hooks/use-relays";
-import { RelayCard } from "@/components/relays/relay-card";
-import { RelayCreateModal } from "@/components/relays/relay-create-modal";
-import { InvitationCard } from "@/components/relays/invitation-card";
-import { Pagination } from "@/components/games/pagination";
+import { RelayCard } from "@/features/relays/components/relay-card";
+import { RelayCreateModal } from "@/features/relays/components/relay-create-modal";
+import { InvitationCard } from "@/features/relays/components/invitation-card";
+import { Pagination } from "@/components/pagination";
 
 type Tab = "mine" | "invitations";
 

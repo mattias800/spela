@@ -9,7 +9,7 @@ import {
   StateTabItem,
 } from "@/components/ui";
 import { Button } from "@/components/ui";
-import { ChallengeCard } from "@/components/challenges/challenge-card";
+import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { useChallenges, useMyChallenges } from "@/hooks/use-challenges";
 import { useConsoles } from "@/hooks/use-consoles";
 import type { ChallengeFilters, ChallengeDifficulty } from "@/types/api";

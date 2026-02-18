@@ -19,9 +19,9 @@ import {
   netplayStatusVariant,
   netplayStatusLabel,
   endReasonLabel,
-} from "@/components/netplay/netplay-status";
-import { SessionCode } from "@/components/netplay/session-code";
-import { NetplayPlayerList } from "@/components/netplay/netplay-player-list";
+} from "@/features/netplay/components/netplay-status";
+import { SessionCode } from "@/features/netplay/components/session-code";
+import { NetplayPlayerList } from "@/features/netplay/components/netplay-player-list";
 import { formatDate } from "@/lib/format";
 
 function NetplaySessionSkeleton() {

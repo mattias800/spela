@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
-import { ThemeCard } from "@/components/preferences/theme-card";
-import { EmulationSettingsCard } from "@/components/preferences/emulation-settings-card";
-import { VideoFiltersCard } from "@/components/preferences/video-filters-card";
-import { KeyMappingCard } from "@/components/preferences/key-mapping-card";
-import { DevicesCard } from "@/components/preferences/devices-card";
-import { DeleteDeviceModal } from "@/components/preferences/delete-device-modal";
-import { RetroAchievementsCard } from "@/components/preferences/retroachievements-card";
+import { ThemeCard } from "@/features/preferences/components/theme-card";
+import { EmulationSettingsCard } from "@/features/preferences/components/emulation-settings-card";
+import { VideoFiltersCard } from "@/features/preferences/components/video-filters-card";
+import { KeyMappingCard } from "@/features/preferences/components/key-mapping-card";
+import { DevicesCard } from "@/features/preferences/components/devices-card";
+import { DeleteDeviceModal } from "@/features/preferences/components/delete-device-modal";
+import { RetroAchievementsCard } from "@/features/preferences/components/retroachievements-card";
 import {
   useUserPreferences,
   useUpdatePreferences,

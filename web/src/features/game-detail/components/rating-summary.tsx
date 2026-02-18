@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { Skeleton, EmptyState } from "@/components/ui";
-import { StarRating } from "@/components/game-detail/star-rating";
+import { StarRating } from "@/features/game-detail/components/star-rating";
 import { useGameRatingSummary } from "@/hooks/use-ratings";
 
 function DistributionBar({

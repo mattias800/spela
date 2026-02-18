@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Trash2, Download, Share2 } from "lucide-react";
 import { Button, Badge, Card, CardContent, Modal } from "@/components/ui";
 import { useDeleteSave } from "@/hooks/use-games";
-import { ShareSaveModal } from "@/components/game-detail/share-save-modal";
+import { ShareSaveModal } from "@/features/game-detail/components/share-save-modal";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import type { SaveState } from "@/types/api";
 

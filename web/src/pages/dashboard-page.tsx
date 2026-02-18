@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
-import { PersonalStatsCard } from "@/components/dashboard/personal-stats-card";
+import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
   useFavoriteGames,
@@ -23,9 +23,9 @@ import {
 import { usePlayLaterGames, useTogglePlayLater } from "@/hooks/use-play-later";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
-import { ActivityFeed } from "@/components/social/activity-feed";
-import { OnlineUsers } from "@/components/social/online-users";
-import { ChallengeCard } from "@/components/challenges/challenge-card";
+import { ActivityFeed } from "@/features/social/components/activity-feed";
+import { OnlineUsers } from "@/features/social/components/online-users";
+import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { useChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
 import type { Game, RecentAchievement } from "@/types/api";

@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { Users } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { ChallengeDifficultyBadge } from "@/components/challenges/challenge-difficulty-badge";
-import { ChallengeTypeIcon } from "@/components/challenges/challenge-type-icon";
+import { ChallengeDifficultyBadge } from "@/features/challenges/components/challenge-difficulty-badge";
+import { ChallengeTypeIcon } from "@/features/challenges/components/challenge-type-icon";
 import { formatRelativeTime } from "@/lib/format";
 import type { Challenge } from "@/types/api";
 

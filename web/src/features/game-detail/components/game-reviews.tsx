@@ -2,7 +2,7 @@ import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button, Skeleton, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { StarRating } from "@/components/game-detail/star-rating";
+import { StarRating } from "@/features/game-detail/components/star-rating";
 import { formatRelativeTime } from "@/lib/format";
 import { useGameRatings } from "@/hooks/use-ratings";
 

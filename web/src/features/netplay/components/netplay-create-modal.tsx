@@ -4,7 +4,7 @@ import { Button, Modal, SearchInput } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useGames } from "@/hooks/use-games";
 import { useCreateNetplaySession } from "@/hooks/use-netplay";
-import { NETPLAY_SUPPORTED_CONSOLES } from "@/components/netplay/netplay-consoles";
+import { NETPLAY_SUPPORTED_CONSOLES } from "@/features/netplay/components/netplay-consoles";
 import type { Game } from "@/types/api";
 
 interface NetplayCreateModalProps {

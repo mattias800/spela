@@ -10,10 +10,10 @@ import {
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { ChallengeDifficultyBadge } from "@/components/challenges/challenge-difficulty-badge";
-import { ChallengeStatusBadge } from "@/components/challenges/challenge-status-badge";
-import { ChallengeTypeIcon } from "@/components/challenges/challenge-type-icon";
-import { ChallengeLeaderboard } from "@/components/challenges/challenge-leaderboard";
+import { ChallengeDifficultyBadge } from "@/features/challenges/components/challenge-difficulty-badge";
+import { ChallengeStatusBadge } from "@/features/challenges/components/challenge-status-badge";
+import { ChallengeTypeIcon } from "@/features/challenges/components/challenge-type-icon";
+import { ChallengeLeaderboard } from "@/features/challenges/components/challenge-leaderboard";
 import { useChallenge, useDeleteChallenge } from "@/hooks/use-challenges";
 import { useAuth } from "@/hooks/use-auth";
 import {

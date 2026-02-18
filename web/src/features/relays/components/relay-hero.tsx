@@ -1,7 +1,7 @@
 import { Play, LogOut, Trash2, Repeat } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
-import { MemberAvatars } from "@/components/relays/member-avatars";
-import { relayStatusVariant } from "@/components/relays/relay-status";
+import { MemberAvatars } from "@/features/relays/components/member-avatars";
+import { relayStatusVariant } from "@/features/relays/components/relay-status";
 import { formatRelativeTime } from "@/lib/format";
 import type { RelayDetail } from "@/types/api";
 

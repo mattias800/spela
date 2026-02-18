@@ -2,7 +2,7 @@ import { Users } from "lucide-react";
 import {
   NetplayPlayerSlot,
   NetplayEmptySlot,
-} from "@/components/netplay/netplay-player-slot";
+} from "@/features/netplay/components/netplay-player-slot";
 import type { NetplaySession } from "@/types/api";
 
 interface NetplayPlayerListProps {

@@ -14,9 +14,9 @@ import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
 import { api } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
-import { PlayToolbar } from "@/components/play/play-toolbar";
-import { EmulatorOverlay } from "@/components/play/emulator-overlay";
-import { LoadSaveModal } from "@/components/play/load-save-modal";
+import { PlayToolbar } from "@/features/play/components/play-toolbar";
+import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
+import { LoadSaveModal } from "@/features/play/components/load-save-modal";
 import type { SaveState } from "@/types/api";
 import type { EmulatorPreferences } from "@/lib/emulator-protocol";
 

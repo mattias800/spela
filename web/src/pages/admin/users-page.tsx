@@ -3,12 +3,12 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminUsers, useAdminStats } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
-import { UserStatsGrid } from "@/components/admin/user-stats-grid";
-import { UserTable } from "@/components/admin/user-table";
-import { EditUserModal } from "@/components/admin/edit-user-modal";
-import { CreateUserModal } from "@/components/admin/create-user-modal";
-import { DeleteUserModal } from "@/components/admin/delete-user-modal";
-import { AdminDevicesModal } from "@/components/admin/admin-devices-modal";
+import { UserStatsGrid } from "@/features/admin/components/user-stats-grid";
+import { UserTable } from "@/features/admin/components/user-table";
+import { EditUserModal } from "@/features/admin/components/edit-user-modal";
+import { CreateUserModal } from "@/features/admin/components/create-user-modal";
+import { DeleteUserModal } from "@/features/admin/components/delete-user-modal";
+import { AdminDevicesModal } from "@/features/admin/components/admin-devices-modal";
 import type { User } from "@/types/api";
 
 export function AdminUsersPage() {

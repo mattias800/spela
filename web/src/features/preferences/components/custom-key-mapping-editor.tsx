@@ -1,4 +1,4 @@
-import { KeyCaptureButton } from "@/components/preferences/key-capture-button";
+import { KeyCaptureButton } from "@/features/preferences/components/key-capture-button";
 import { BUTTONS } from "@/lib/key-mapping-constants";
 
 interface CustomKeyMappingEditorProps {

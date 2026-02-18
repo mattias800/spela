@@ -12,9 +12,9 @@ import {
 } from "@/hooks/use-relays";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useAuth } from "@/hooks/use-auth";
-import { RelayHero } from "@/components/relays/relay-hero";
-import { RelayMembersList } from "@/components/relays/relay-members-list";
-import { RelaySavesList } from "@/components/relays/relay-saves-list";
+import { RelayHero } from "@/features/relays/components/relay-hero";
+import { RelayMembersList } from "@/features/relays/components/relay-members-list";
+import { RelaySavesList } from "@/features/relays/components/relay-saves-list";
 
 function RelayDetailSkeleton() {
   return (

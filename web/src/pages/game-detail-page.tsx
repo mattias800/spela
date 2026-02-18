@@ -22,18 +22,18 @@ import {
   useMyCollections,
   useAddGameToCollection,
 } from "@/hooks/use-collections";
-import { GameHero } from "@/components/game-detail/game-hero";
-import { GameScreenshots } from "@/components/game-detail/game-screenshots";
-import { GameCommunityStats } from "@/components/game-detail/game-community-stats";
-import { SaveStatesList } from "@/components/game-detail/save-states-list";
-import { GameAchievements } from "@/components/game-detail/game-achievements";
-import { GameAchievementLeaderboard } from "@/components/game-detail/game-achievement-leaderboard";
-import { UserRating } from "@/components/game-detail/user-rating";
-import { RatingSummaryCard } from "@/components/game-detail/rating-summary";
-import { GameReviews } from "@/components/game-detail/game-reviews";
-import { SharedSavesList } from "@/components/game-detail/shared-saves-list";
-import { GameActiveRelays } from "@/components/relays/game-active-relays";
-import { GameChallenges } from "@/components/challenges/game-challenges";
+import { GameHero } from "@/features/game-detail/components/game-hero";
+import { GameScreenshots } from "@/features/game-detail/components/game-screenshots";
+import { GameCommunityStats } from "@/features/game-detail/components/game-community-stats";
+import { SaveStatesList } from "@/features/game-detail/components/save-states-list";
+import { GameAchievements } from "@/features/game-detail/components/game-achievements";
+import { GameAchievementLeaderboard } from "@/features/game-detail/components/game-achievement-leaderboard";
+import { UserRating } from "@/features/game-detail/components/user-rating";
+import { RatingSummaryCard } from "@/features/game-detail/components/rating-summary";
+import { GameReviews } from "@/features/game-detail/components/game-reviews";
+import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
+import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
+import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import type { Collection } from "@/types/api";
 

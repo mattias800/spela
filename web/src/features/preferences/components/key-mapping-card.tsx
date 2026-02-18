@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardContent, Skeleton } from "@/components/ui";
-import { ControllerVisual } from "@/components/preferences/controller-visual";
-import { CustomKeyMappingEditor } from "@/components/preferences/custom-key-mapping-editor";
+import { ControllerVisual } from "@/features/preferences/components/controller-visual";
+import { CustomKeyMappingEditor } from "@/features/preferences/components/custom-key-mapping-editor";
 import {
   KEY_MAPPING_MODES,
   getPresetMapping,

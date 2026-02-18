@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { StarRating } from "@/components/game-detail/star-rating";
+import { StarRating } from "@/features/game-detail/components/star-rating";
 import { useMyRating, useRateGame, useDeleteRating } from "@/hooks/use-ratings";
 
 interface UserRatingProps {

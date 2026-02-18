@@ -1,7 +1,7 @@
 import { Trophy } from "lucide-react";
 import { Skeleton, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
-import { RankBadge } from "@/components/challenges/rank-badge";
+import { RankBadge } from "@/features/challenges/components/rank-badge";
 import {
   useChallengeLeaderboard,
   useChallengeLeaderboardRealtime,

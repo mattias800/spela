@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Activity } from "lucide-react";
 import { Button, Skeleton, EmptyState } from "@/components/ui";
-import { ActivityEventItem } from "@/components/social/activity-event-item";
+import { ActivityEventItem } from "@/features/social/components/activity-event-item";
 import { useActivityFeed, useActivityRealtime } from "@/hooks/use-social";
-import { OnlineUsers } from "@/components/social/online-users";
+import { OnlineUsers } from "@/features/social/components/online-users";
 
 function ActivityPageSkeleton() {
   return (

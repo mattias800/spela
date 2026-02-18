@@ -12,9 +12,9 @@ import {
   useNetplaySessions,
   useJoinNetplaySession,
 } from "@/hooks/use-netplay";
-import { NetplaySessionRow } from "@/components/netplay/netplay-session-row";
-import { NetplayCreateModal } from "@/components/netplay/netplay-create-modal";
-import { Pagination } from "@/components/games/pagination";
+import { NetplaySessionRow } from "@/features/netplay/components/netplay-session-row";
+import { NetplayCreateModal } from "@/features/netplay/components/netplay-create-modal";
+import { Pagination } from "@/components/pagination";
 
 function SessionListSkeleton() {
   return (
