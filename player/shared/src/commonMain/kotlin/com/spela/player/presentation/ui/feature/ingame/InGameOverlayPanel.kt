@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -30,7 +26,6 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -40,21 +35,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.state.EmulationState
+import com.spela.player.presentation.ui.components.EmulationActionButton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.components.pingColor
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -349,39 +341,10 @@ internal fun OverlayAction(
     onClick: () -> Unit,
     isActive: Boolean = false,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .spFocusRing(shape = RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .focusable()
-            .semantics {
-                contentDescription = label
-                role = Role.Button
-            },
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isActive) SpColor.Primary.copy(alpha = 0.2f) else SpColor.SurfaceBright
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isActive) SpColor.Primary else SpColor.OnBackground,
-                modifier = Modifier.size(28.dp),
-            )
-        }
-        Spacer(Modifier.height(SpSpacing.XSmall))
-        Text(
-            text = label,
-            style = SpTypography.LabelSmall,
-            color = if (isActive) SpColor.Primary else SpColor.OnBackgroundSecondary,
-        )
-    }
+    EmulationActionButton(
+        icon = icon,
+        label = label,
+        onClick = onClick,
+        isActive = isActive,
+    )
 }

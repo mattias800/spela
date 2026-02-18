@@ -57,7 +57,7 @@ fun SpConnectionBadge(
 
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(SpSpacing.RadiusPill))
             .background(SpColor.SurfaceVariant)
             .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall)
             .semantics { contentDescription = "Connection status: $statusText" },

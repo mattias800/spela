@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Stop
@@ -34,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.RelayDetail
 import com.spela.player.domain.model.RelayMember
 import com.spela.player.domain.model.RelaySave
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -196,21 +195,12 @@ internal fun MemberItem(
             },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Avatar placeholder
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(if (member.isOnline) SpColor.Success.copy(alpha = 0.2f) else SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = null,
-                tint = if (member.isOnline) SpColor.Success else SpColor.OnBackgroundTertiary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
+        // Avatar
+        SpAvatar(
+            username = member.username,
+            avatarUrl = member.avatarUrl,
+            size = 40.dp,
+        )
         Spacer(Modifier.width(SpSpacing.Medium))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

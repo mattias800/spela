@@ -24,7 +24,7 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryConsolesTab(
+internal fun LibraryConsolesTab(
     viewModel: GameListViewModel,
     onConsoleSelected: (String) -> Unit,
 ) {

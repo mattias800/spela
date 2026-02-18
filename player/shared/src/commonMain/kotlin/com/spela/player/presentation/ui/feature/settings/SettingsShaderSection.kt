@@ -1,9 +1,6 @@
 package com.spela.player.presentation.ui.feature.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -20,13 +16,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpRadioOption
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -50,28 +45,12 @@ internal fun ShaderScopeTabs(
                 ShaderScope.DEFAULT -> "Default"
                 ShaderScope.PER_CONSOLE -> "Per Console"
             }
-            val backgroundColor = if (isSelected) {
-                SpColor.Primary.copy(alpha = 0.2f)
-            } else {
-                SpColor.SurfaceVariant
-            }
-            val textColor = if (isSelected) SpColor.Primary else SpColor.OnBackgroundSecondary
 
-            Box(
-                modifier = Modifier
-                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusPill))
-                    .clip(RoundedCornerShape(SpSpacing.RadiusPill))
-                    .background(backgroundColor)
-                    .clickable { onScopeChanged(scope) }
-                    .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    style = SpTypography.LabelMedium,
-                    color = textColor,
-                )
-            }
+            SpChip(
+                text = label,
+                isSelected = isSelected,
+                onClick = { onScopeChanged(scope) },
+            )
         }
     }
 }

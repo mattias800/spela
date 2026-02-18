@@ -25,6 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -106,9 +109,11 @@ fun SpSnackbar(
                             text = snackData.actionLabel,
                             style = SpTypography.LabelLarge,
                             color = accentColor,
-                            modifier = Modifier.clickable {
-                                snackData.onAction?.invoke()
-                            },
+                            modifier = Modifier
+                                .semantics { role = Role.Button }
+                                .clickable {
+                                    snackData.onAction?.invoke()
+                                },
                         )
                     }
                 }

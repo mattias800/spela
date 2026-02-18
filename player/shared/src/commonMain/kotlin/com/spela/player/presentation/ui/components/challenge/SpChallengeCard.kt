@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.Challenge
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -111,28 +111,11 @@ fun SpChallengeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Creator avatar
-                Box(
-                    modifier = Modifier
-                        .size(SpSpacing.AvatarSmall)
-                        .clip(CircleShape)
-                        .background(SpColor.SurfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (challenge.creatorAvatarUrl != null) {
-                        SubcomposeAsyncImage(
-                            model = challenge.creatorAvatarUrl,
-                            contentDescription = null,
-                            modifier = Modifier.matchParentSize().clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Text(
-                            text = challenge.creatorUsername.take(1).uppercase(),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
+                SpAvatar(
+                    username = challenge.creatorUsername,
+                    avatarUrl = challenge.creatorAvatarUrl,
+                    size = SpSpacing.AvatarSmall,
+                )
 
                 Spacer(Modifier.width(SpSpacing.XXSmall))
 

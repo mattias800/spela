@@ -71,20 +71,28 @@ fun SpNetplayPlayerSlot(
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Avatar placeholder
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(if (isFilled) SpColor.Primary.copy(alpha = 0.2f) else SpColor.SurfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = if (isFilled) SpColor.Primary else SpColor.OnBackgroundTertiary,
-                    modifier = Modifier.size(24.dp),
+            // Avatar
+            if (isFilled) {
+                SpAvatar(
+                    username = username!!,
+                    avatarUrl = avatarUrl,
+                    size = 40.dp,
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(SpColor.SurfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.width(SpSpacing.Medium))

@@ -29,7 +29,7 @@ fun SpChip(
     color: Color = SpColor.Primary,
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(SpSpacing.RadiusPill)
     val backgroundColor = if (isSelected) color.copy(alpha = 0.2f) else Color.Transparent
     val borderColor = if (isSelected) color else SpColor.Divider
     val textColor = if (isSelected) color else SpColor.OnBackgroundSecondary

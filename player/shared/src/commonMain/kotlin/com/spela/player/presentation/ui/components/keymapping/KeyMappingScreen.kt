@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -45,9 +46,13 @@ fun KeyMappingScreen(
     onResetToDefaults: () -> Unit,
     keyNameResolver: (Int) -> String = { "Key $it" },
 ) {
-    val buttonStates = buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
+    val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
+        buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
+    }
 
-    val mappingLabels = state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
+    val mappingLabels = remember(state.currentBindings) {
+        state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
+    }
 
     Column(
         modifier = Modifier

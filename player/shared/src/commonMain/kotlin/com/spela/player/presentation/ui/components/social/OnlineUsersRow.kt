@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,8 +63,11 @@ private fun OnlineUserItem(
     Column(
         modifier = modifier
             .width(64.dp)
-            .clickable { onUserSelected(user.id) }
-            .semantics { contentDescription = description },
+            .semantics {
+                contentDescription = description
+                role = Role.Button
+            }
+            .clickable { onUserSelected(user.id) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.size(48.dp)) {

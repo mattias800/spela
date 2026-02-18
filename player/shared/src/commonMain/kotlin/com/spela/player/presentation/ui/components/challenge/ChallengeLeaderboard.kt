@@ -11,21 +11,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ChallengeLeaderboardEntry
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -95,28 +92,11 @@ private fun LeaderboardRow(
         Spacer(Modifier.width(SpSpacing.Medium))
 
         // Avatar
-        Box(
-            modifier = Modifier
-                .size(SpSpacing.AvatarDefault)
-                .clip(CircleShape)
-                .background(SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (entry.avatarUrl != null) {
-                SubcomposeAsyncImage(
-                    model = entry.avatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier.matchParentSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Text(
-                    text = entry.username.take(1).uppercase(),
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
-        }
+        SpAvatar(
+            username = entry.username,
+            avatarUrl = entry.avatarUrl,
+            size = SpSpacing.AvatarDefault,
+        )
 
         Spacer(Modifier.width(SpSpacing.Small))
 

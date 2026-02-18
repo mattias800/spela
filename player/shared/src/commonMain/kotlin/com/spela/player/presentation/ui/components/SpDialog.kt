@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.spela.player.presentation.ui.theme.SpColor
@@ -40,7 +39,7 @@ fun SpDialog(
         Column(
             modifier = modifier
                 .fillMaxWidth(0.85f)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                 .background(SpColor.SurfaceElevated)
                 .padding(SpSpacing.XLarge),
         ) {

@@ -80,9 +80,13 @@ fun KeyMappingWizard(
     )
 
     // Build button states for the controller visual
-    val buttonStates = buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
+    val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
+        buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
+    }
 
-    val mappingLabels = state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
+    val mappingLabels = remember(state.currentBindings) {
+        state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
+    }
 
     val currentButton: ButtonInfo? = layout.buttons.find { it.retroButtonId == state.currentMappingButton }
 
@@ -100,7 +104,7 @@ fun KeyMappingWizard(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .widthIn(max = 600.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                     .background(successBg)
                     .padding(SpSpacing.XLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,

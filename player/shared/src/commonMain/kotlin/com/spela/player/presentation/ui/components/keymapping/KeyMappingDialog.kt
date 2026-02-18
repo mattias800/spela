@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.spela.player.domain.model.ConsoleButtonLayout
@@ -53,7 +52,7 @@ fun KeyMappingDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                     .background(SpColor.SurfaceElevated)
                     .padding(SpSpacing.Default),
             ) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 enum class BottomNavTab(
@@ -77,7 +78,7 @@ fun SpBottomNavBar(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
                     ) {
                         Icon(
                             imageVector = tab.icon,
