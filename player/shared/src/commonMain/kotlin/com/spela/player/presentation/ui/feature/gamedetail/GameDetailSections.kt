@@ -254,6 +254,7 @@ private fun SaveStateItem(
 internal fun ChallengesSection(
     gameTitle: String,
     onViewAll: () -> Unit,
+    onCreateChallenge: (() -> Unit)? = null,
 ) {
     Spacer(Modifier.height(SpSpacing.XLarge))
     Text(
@@ -269,10 +270,22 @@ internal fun ChallengesSection(
         color = SpColor.OnBackgroundSecondary,
     )
     Spacer(Modifier.height(SpSpacing.Medium))
-    SpButton(
-        text = "View Challenges",
-        onClick = onViewAll,
-        style = SpButtonStyle.Secondary,
-        modifier = Modifier.fillMaxWidth().testTag("view_challenges_button"),
-    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        SpButton(
+            text = "View Challenges",
+            onClick = onViewAll,
+            style = SpButtonStyle.Secondary,
+            modifier = Modifier.weight(1f).testTag("view_challenges_button"),
+        )
+        if (onCreateChallenge != null) {
+            SpButton(
+                text = "Create New",
+                onClick = onCreateChallenge,
+                modifier = Modifier.weight(1f).testTag("create_challenge_button"),
+            )
+        }
+    }
 }

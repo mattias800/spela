@@ -33,6 +33,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.intent.GameDetailIntent
+import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -43,7 +44,12 @@ import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
+import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.InfoColumn
 import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
@@ -76,6 +82,7 @@ fun GameDetailScreen(
     onPlayFresh: ((String) -> Unit)? = null,
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
+    onNavigateToRelay: ((relayId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -183,12 +190,98 @@ fun GameDetailScreen(
                             ChallengesSection(
                                 gameTitle = game.title,
                                 onViewAll = { onNavigateToChallenges(gameId, game.title) },
+                                onCreateChallenge = {
+                                    viewModel.onIntent(GameDetailIntent.ShowCreateChallengeDialog)
+                                },
                             )
                         }
                     }
                 }
+
+                // Community Stats
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameCommunityStatsSection(
+                            stats = state.gameStats,
+                            isLoading = state.isLoadingStats,
+                        )
+                    }
+                }
+
+                // Achievements
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameAchievementsSection(
+                            achievements = state.achievements,
+                            progress = state.achievementProgress,
+                            timeline = state.achievementTimeline,
+                            leaderboard = state.achievementLeaderboard,
+                            viewMode = state.achievementsView,
+                            isLoading = state.isLoadingAchievements,
+                            onToggleView = { mode ->
+                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
+                            },
+                        )
+                    }
+                }
+
+                // Reviews
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameReviewsSection(
+                            reviews = state.reviews,
+                            reviewsTotal = state.reviewsTotal,
+                            reviewsPage = state.reviewsPage,
+                            isLoading = state.isLoadingReviews,
+                            onLoadMore = {
+                                viewModel.onIntent(GameDetailIntent.LoadMoreReviews(gameId))
+                            },
+                        )
+                    }
+                }
+
+                // Active Relays
+                if (onNavigateToRelay != null) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            GameRelaysSection(
+                                relays = state.gameRelays,
+                                isLoading = state.isLoadingRelays,
+                                onRelayClick = { relayId -> onNavigateToRelay(relayId) },
+                            )
+                        }
+                    }
+                }
+
+                // Bottom spacing
+                item {
+                    Spacer(Modifier.height(SpSpacing.XXLarge))
+                }
             },
         )
+
+        // Create Challenge dialog
+        if (state.showCreateChallengeDialog) {
+            CreateChallengeDialog(
+                gameTitle = game.title,
+                saveStates = state.saveStates,
+                isSubmitting = state.isCreatingChallenge,
+                onSubmit = { saveStateId, name, description, type, difficulty ->
+                    viewModel.onIntent(
+                        GameDetailIntent.CreateChallenge(saveStateId, name, description, type, difficulty)
+                    )
+                },
+                onDismiss = { viewModel.onIntent(GameDetailIntent.DismissCreateChallengeDialog) },
+            )
+        }
 
         // Collection picker dialog
         if (state.showAddToCollectionDialog) {

@@ -24,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +37,7 @@ import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -105,6 +109,16 @@ fun CollectionDetailScreen(
                 }
             } else if (state.selectedDetail != null) {
                 val detail = state.selectedDetail ?: return
+                var searchQuery by rememberSaveable { mutableStateOf("") }
+                val showSearch = detail.games.size > 5
+                val filteredGames = if (searchQuery.isBlank()) {
+                    detail.games
+                } else {
+                    detail.games.filter {
+                        it.title.contains(searchQuery, ignoreCase = true)
+                    }
+                }
+
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                     modifier = Modifier.fillMaxSize(),
@@ -134,17 +148,35 @@ fun CollectionDetailScreen(
                         }
                     }
 
-                    if (detail.games.isEmpty()) {
+                    // Search field for collections with >5 games
+                    if (showSearch) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SpSearchField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = SpSpacing.Small),
+                                placeholder = "Search in collection...",
+                            )
+                        }
+                    }
+
+                    if (filteredGames.isEmpty()) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(300.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                SpEmptyStates.EmptyLibrary()
+                                if (searchQuery.isNotBlank()) {
+                                    SpEmptyStates.NoSearchResults(query = searchQuery)
+                                } else {
+                                    SpEmptyStates.EmptyLibrary()
+                                }
                             }
                         }
                     } else {
-                        items(detail.games, key = { it.id }) { game ->
+                        items(filteredGames, key = { it.id }) { game ->
                             CollectionGameGridItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },

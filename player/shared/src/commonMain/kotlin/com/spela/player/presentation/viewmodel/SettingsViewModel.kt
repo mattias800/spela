@@ -1,6 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.DeviceDto
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.RAStatus
 import com.spela.player.domain.model.ShaderPreset
@@ -48,6 +50,9 @@ data class SettingsState(
     val showRALinkDialog: Boolean = false,
     val raLinkLoading: Boolean = false,
     val raLinkError: String? = null,
+    val devices: List<DeviceDto> = emptyList(),
+    val isLoadingDevices: Boolean = false,
+    val showDeleteDeviceConfirm: Long? = null,
 )
 
 sealed interface SettingsIntent {
@@ -76,6 +81,11 @@ sealed interface SettingsIntent {
     data class LinkRA(val username: String, val password: String) : SettingsIntent
     data object UnlinkRA : SettingsIntent
     data object ToggleRAHardcore : SettingsIntent
+    data object LoadDevices : SettingsIntent
+    data class RenameDevice(val deviceId: Long, val newName: String) : SettingsIntent
+    data class DeleteDevice(val deviceId: Long) : SettingsIntent
+    data class ShowDeleteDeviceConfirm(val deviceId: Long) : SettingsIntent
+    data object DismissDeleteDeviceConfirm : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -86,6 +96,7 @@ class SettingsViewModel(
     private val serverRepository: ServerRepository,
     private val achievementsRepository: AchievementsRepository,
     private val deviceManager: DeviceManager,
+    private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -152,6 +163,13 @@ class SettingsViewModel(
             is SettingsIntent.LinkRA -> linkRA(intent.username, intent.password)
             SettingsIntent.UnlinkRA -> unlinkRA()
             SettingsIntent.ToggleRAHardcore -> toggleRAHardcore()
+            SettingsIntent.LoadDevices -> loadDevices()
+            is SettingsIntent.RenameDevice -> renameDevice(intent.deviceId, intent.newName)
+            is SettingsIntent.DeleteDevice -> deleteDevice(intent.deviceId)
+            is SettingsIntent.ShowDeleteDeviceConfirm ->
+                _state.update { it.copy(showDeleteDeviceConfirm = intent.deviceId) }
+            SettingsIntent.DismissDeleteDeviceConfirm ->
+                _state.update { it.copy(showDeleteDeviceConfirm = null) }
         }
     }
 
@@ -211,6 +229,8 @@ class SettingsViewModel(
             achievementsRepository.getRAStatus().onSuccess { status ->
                 _state.update { it.copy(raStatus = status) }
             }
+
+            loadDevices()
         }
     }
 
@@ -329,6 +349,37 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             achievementsRepository.updateRASettings(newValue).onFailure {
                 _state.update { it.copy(raStatus = current) }
+            }
+        }
+    }
+
+    private fun loadDevices() {
+        _state.update { it.copy(isLoadingDevices = true) }
+        scope.launch(dispatchers.io) {
+            runCatching { apiClient.getDevices() }.fold(
+                onSuccess = { devices ->
+                    _state.update { it.copy(devices = devices, isLoadingDevices = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingDevices = false) }
+                },
+            )
+        }
+    }
+
+    private fun renameDevice(deviceId: Long, newName: String) {
+        scope.launch(dispatchers.io) {
+            runCatching { apiClient.updateDevice(deviceId, newName) }.onSuccess {
+                loadDevices()
+            }
+        }
+    }
+
+    private fun deleteDevice(deviceId: Long) {
+        _state.update { it.copy(showDeleteDeviceConfirm = null) }
+        scope.launch(dispatchers.io) {
+            runCatching { apiClient.deleteDevice(deviceId) }.onSuccess {
+                loadDevices()
             }
         }
     }

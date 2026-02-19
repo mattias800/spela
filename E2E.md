@@ -36,17 +36,35 @@ adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted
 # Should show: mInputRestricted=false
 ```
 
+## Testing Strategy: Desktop-Primary, Android-Smoke
+
+The player app uses Compose Multiplatform — all UI composables, ViewModels,
+and navigation are 100% shared code. **Do not write the same UI assertion
+on both platforms.** Each suite has a distinct purpose:
+
+- **Desktop tests** = Primary UI test suite. Every feature gets thorough
+  desktop tests. Fast, no device needed, uses fake repos.
+- **Android tests** = Integration smoke tests. Focused on real API
+  round-trips, auth flows, platform-specific behavior. Smaller set.
+
+See CLAUDE.md "Player App Testing Strategy" for the full decision matrix.
+
 ## Test Suite Structure
 
-### Android E2E Tests (`player/android/src/androidTest/`)
-- 8 test classes using Espresso + Compose UI Test + JUnit4
-- `EstablishSessionTest` handles login session setup
-- `TestHelpers.kt` provides shared test utilities
-
-### Desktop E2E Tests (`player/desktop/src/desktopTest/.../e2e/`)
-- 15 test files using Compose UI Test with `SpelaTestHarness`
+### Desktop E2E Tests — Primary UI Suite (`player/desktop/src/desktopTest/.../e2e/`)
+- Compose UI Test with `SpelaTestHarness` (fake backend injection)
 - `SpelaTestHarness.kt` provides fake backend injection for isolated testing
 - `TestFakes.kt` provides test doubles for repositories
+- **All feature-level UI tests go here**: rendering, interactions, state, navigation, empty/error states
+- Run with: `player/run-desktop-tests.sh`
+
+### Android E2E Tests — Integration Smoke Suite (`player/android/src/androidTest/`)
+- Espresso + Compose UI Test + JUnit4 on real device/emulator
+- `EstablishSessionTest` handles login session setup
+- `TestHelpers.kt` provides shared test utilities
+- **Focused on**: real API integration, auth flow, platform-specific behavior, critical flow smoke tests
+- **Not for**: duplicating desktop UI assertions on shared composables
+- Run with: `player/run-e2e.sh` (requires backend via `docker-compose.e2e.yml`)
 
 ## Using the Emulator in Landscape Mode
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -23,14 +24,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
@@ -59,6 +67,7 @@ fun ChallengeDetailScreen(
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(challengeId) {
         viewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
@@ -71,27 +80,28 @@ fun ChallengeDetailScreen(
 
     PlatformBackHandler(onBack = onBack)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(
-            title = state.challenge?.name ?: "Challenge",
-            showBack = true,
-            onBack = onBack,
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Background),
+        ) {
+            SpTopBar(
+                title = state.challenge?.name ?: "Challenge",
+                showBack = true,
+                onBack = onBack,
+            )
 
-        if (state.isLoading && state.challenge == null) {
-            ChallengeDetailSkeleton()
-        } else if (state.challenge != null) {
-            val challenge = state.challenge ?: return
+            if (state.isLoading && state.challenge == null) {
+                ChallengeDetailSkeleton()
+            } else if (state.challenge != null) {
+                val challenge = state.challenge ?: return
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                ) {
                 // Screenshot hero
                 Box(
                     modifier = Modifier
@@ -212,6 +222,24 @@ fun ChallengeDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
+                    // Delete button (visible for challenge creator)
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    SpButton(
+                        text = "Delete Challenge",
+                        onClick = { showDeleteConfirm = true },
+                        style = SpButtonStyle.Ghost,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("delete_challenge_button"),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+
                     Spacer(Modifier.height(SpSpacing.XXLarge))
 
                     // Leaderboard section
@@ -245,6 +273,83 @@ fun ChallengeDetailScreen(
 
                     Spacer(Modifier.height(SpSpacing.XXLarge))
                 }
+            }
+        }
+        }
+
+        // Delete confirmation dialog
+        if (showDeleteConfirm) {
+            DeleteChallengeConfirmDialog(
+                onConfirm = {
+                    showDeleteConfirm = false
+                    viewModel.onIntent(ChallengeIntent.DeleteChallenge(challengeId))
+                },
+                onDismiss = { showDeleteConfirm = false },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeleteChallengeConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpColor.Scrim)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss,
+            )
+            .testTag("delete_challenge_confirm"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SpSpacing.XLarge)
+                .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
+                .background(SpColor.SurfaceElevated)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+                .padding(SpSpacing.XLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Delete Challenge?",
+                style = SpTypography.HeadlineSmall,
+                color = SpColor.OnBackground,
+            )
+            Spacer(Modifier.height(SpSpacing.Medium))
+            Text(
+                text = "This action cannot be undone. All attempts and leaderboard data will be lost.",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+            )
+            Spacer(Modifier.height(SpSpacing.XLarge))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                SpButton(
+                    text = "Cancel",
+                    onClick = onDismiss,
+                    style = SpButtonStyle.Outlined,
+                    modifier = Modifier.weight(1f),
+                )
+                SpButton(
+                    text = "Delete",
+                    onClick = onConfirm,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("confirm_delete_button"),
+                )
             }
         }
     }

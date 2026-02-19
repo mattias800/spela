@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.usecase.GetMostActivePlayersUseCase
 import com.spela.player.domain.usecase.GetMostPlayedGamesUseCase
+import com.spela.player.domain.usecase.GetUserStatsUseCase
 import com.spela.player.presentation.intent.StatsIntent
 import com.spela.player.presentation.state.StatsState
 import com.spela.player.util.DispatcherProvider
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 class StatsViewModel(
     private val getMostPlayedGamesUseCase: GetMostPlayedGamesUseCase,
     private val getMostActivePlayersUseCase: GetMostActivePlayersUseCase,
+    private val getUserStatsUseCase: GetUserStatsUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -29,16 +31,19 @@ class StatsViewModel(
     }
 
     private fun loadStats() {
-        _state.update { it.copy(isLoading = true) }
+        _state.update { it.copy(isLoading = true, isLoadingPersonalStats = true) }
         scope.launch(dispatchers.io) {
             val games = getMostPlayedGamesUseCase().getOrDefault(emptyList())
             val players = getMostActivePlayersUseCase().getOrDefault(emptyList())
+            val personal = getUserStatsUseCase().getOrNull()
             _state.update {
                 it.copy(
                     mostPlayedGames = games,
                     activePlayers = players,
+                    personalStats = personal,
                     isLoading = false,
-                    error = if (games.isEmpty() && players.isEmpty()) "Failed to load stats" else null,
+                    isLoadingPersonalStats = false,
+                    error = if (games.isEmpty() && players.isEmpty() && personal == null) "Failed to load stats" else null,
                 )
             }
         }

@@ -3,14 +3,19 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.domain.usecase.GetGameStatsUseCase
 import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
+import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.RatingRepository
+import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.repository.SharedSaveRepository
+import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
+import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +36,10 @@ class GameDetailViewModel(
     private val sharedSaveRepository: SharedSaveRepository,
     private val getMyCollectionsUseCase: GetMyCollectionsUseCase,
     private val addGameToCollectionUseCase: AddGameToCollectionUseCase,
+    private val getGameStatsUseCase: GetGameStatsUseCase,
+    private val gameStatsRepository: GameStatsRepository,
+    private val challengeRepository: ChallengeRepository,
+    private val relayRepository: RelayRepository,
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -60,6 +69,23 @@ class GameDetailViewModel(
                 it.copy(showAddToCollectionDialog = false)
             }
             is GameDetailIntent.AddToCollection -> addToCollection(intent.collectionId)
+            GameDetailIntent.ShowCreateChallengeDialog -> _state.update {
+                it.copy(showCreateChallengeDialog = true)
+            }
+            GameDetailIntent.DismissCreateChallengeDialog -> _state.update {
+                it.copy(showCreateChallengeDialog = false)
+            }
+            is GameDetailIntent.CreateChallenge -> createChallenge(
+                intent.saveStateId, intent.name, intent.description, intent.type, intent.difficulty,
+            )
+            is GameDetailIntent.LoadGameStats -> loadGameStats(intent.gameId)
+            is GameDetailIntent.LoadReviews -> loadReviews(intent.gameId)
+            is GameDetailIntent.LoadMoreReviews -> loadMoreReviews(intent.gameId)
+            is GameDetailIntent.LoadGameRelays -> loadGameRelays(intent.gameId)
+            is GameDetailIntent.LoadAchievements -> loadAchievements(intent.gameId)
+            is GameDetailIntent.LoadAchievementTimeline -> loadAchievementTimeline(intent.gameId)
+            is GameDetailIntent.LoadAchievementLeaderboard -> loadAchievementLeaderboard(intent.gameId)
+            is GameDetailIntent.ToggleAchievementsView -> toggleAchievementsView(intent.mode)
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
@@ -103,6 +129,12 @@ class GameDetailViewModel(
                 _state.update { it.copy(downloadProgress = progress) }
             }
         }
+
+        // Load community data in parallel
+        loadGameStats(gameId)
+        loadReviews(gameId)
+        loadGameRelays(gameId)
+        loadAchievements(gameId)
     }
 
     private fun scrapeAndRefresh(gameId: String) {
@@ -373,6 +405,177 @@ class GameDetailViewModel(
                 onFailure = { error ->
                     _state.update {
                         it.copy(error = error.message ?: "Failed to add to collection")
+                    }
+                },
+            )
+        }
+    }
+
+    private fun loadGameStats(gameId: String) {
+        _state.update { it.copy(isLoadingStats = true) }
+        scope.launch(dispatchers.io) {
+            getGameStatsUseCase(gameId).fold(
+                onSuccess = { stats ->
+                    _state.update { it.copy(gameStats = stats, isLoadingStats = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingStats = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadReviews(gameId: String) {
+        _state.update { it.copy(isLoadingReviews = true, reviewsPage = 1) }
+        scope.launch(dispatchers.io) {
+            ratingRepository.getGameRatings(gameId, page = 1, pageSize = 10).fold(
+                onSuccess = { ratings ->
+                    val total = ratingRepository.getRatingSummary(gameId).getOrNull()?.totalRatings ?: 0
+                    _state.update {
+                        it.copy(
+                            reviews = ratings,
+                            reviewsTotal = total,
+                            reviewsPage = 1,
+                            isLoadingReviews = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingReviews = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadMoreReviews(gameId: String) {
+        val nextPage = _state.value.reviewsPage + 1
+        _state.update { it.copy(isLoadingReviews = true) }
+        scope.launch(dispatchers.io) {
+            ratingRepository.getGameRatings(gameId, page = nextPage, pageSize = 10).fold(
+                onSuccess = { ratings ->
+                    _state.update {
+                        it.copy(
+                            reviews = it.reviews + ratings,
+                            reviewsPage = nextPage,
+                            isLoadingReviews = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingReviews = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadGameRelays(gameId: String) {
+        _state.update { it.copy(isLoadingRelays = true) }
+        scope.launch(dispatchers.io) {
+            relayRepository.getGameRelays(gameId).fold(
+                onSuccess = { relays ->
+                    _state.update { it.copy(gameRelays = relays, isLoadingRelays = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingRelays = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadAchievements(gameId: String) {
+        _state.update { it.copy(isLoadingAchievements = true) }
+        scope.launch(dispatchers.io) {
+            val achievements = gameStatsRepository.getGameAchievements(gameId).getOrDefault(emptyList())
+            val progress = gameStatsRepository.getAchievementProgress(gameId).getOrDefault(emptyList())
+            _state.update {
+                it.copy(
+                    achievements = achievements,
+                    achievementProgress = progress,
+                    isLoadingAchievements = false,
+                )
+            }
+        }
+    }
+
+    private fun loadAchievementTimeline(gameId: String) {
+        if (_state.value.achievementTimeline != null) return
+        _state.update { it.copy(isLoadingAchievements = true) }
+        scope.launch(dispatchers.io) {
+            gameStatsRepository.getAchievementTimeline(gameId).fold(
+                onSuccess = { timeline ->
+                    _state.update { it.copy(achievementTimeline = timeline, isLoadingAchievements = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingAchievements = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadAchievementLeaderboard(gameId: String) {
+        if (_state.value.achievementLeaderboard.isNotEmpty()) return
+        _state.update { it.copy(isLoadingAchievements = true) }
+        scope.launch(dispatchers.io) {
+            gameStatsRepository.getAchievementLeaderboard(gameId).fold(
+                onSuccess = { leaderboard ->
+                    _state.update { it.copy(achievementLeaderboard = leaderboard, isLoadingAchievements = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingAchievements = false) }
+                },
+            )
+        }
+    }
+
+    private fun toggleAchievementsView(mode: AchievementsViewMode) {
+        _state.update { it.copy(achievementsView = mode) }
+        val gameId = currentGameId ?: return
+        when (mode) {
+            AchievementsViewMode.TIMELINE -> loadAchievementTimeline(gameId)
+            AchievementsViewMode.LEADERBOARD -> loadAchievementLeaderboard(gameId)
+            AchievementsViewMode.GRID -> { /* Already loaded */ }
+        }
+    }
+
+    private fun createChallenge(
+        saveStateId: String,
+        name: String,
+        description: String,
+        type: String,
+        difficulty: String,
+    ) {
+        val gameId = currentGameId ?: return
+        val consoleName = _state.value.gameDetail?.game?.consoleName ?: "unknown"
+        _state.update { it.copy(isCreatingChallenge = true) }
+        scope.launch(dispatchers.io) {
+            val saveData = saveRepository.downloadSaveState(gameId, saveStateId).getOrElse {
+                _state.update {
+                    it.copy(error = "Failed to download save state", isCreatingChallenge = false)
+                }
+                return@launch
+            }
+            challengeRepository.createChallenge(
+                gameId = gameId,
+                name = name,
+                description = description,
+                type = type,
+                difficulty = difficulty,
+                coreName = consoleName,
+                saveData = saveData,
+                screenshotData = null,
+            ).fold(
+                onSuccess = { challenge ->
+                    _state.update {
+                        it.copy(
+                            showCreateChallengeDialog = false,
+                            isCreatingChallenge = false,
+                            successMessage = "Challenge \"${challenge.name}\" created!",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(error = error.message, isCreatingChallenge = false)
                     }
                 },
             )

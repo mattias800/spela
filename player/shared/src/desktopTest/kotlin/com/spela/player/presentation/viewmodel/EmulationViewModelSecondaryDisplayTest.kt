@@ -362,7 +362,7 @@ class EmulationViewModelSecondaryDisplayTest {
             Result.success(emptyList())
         override suspend fun getAllGames(): Result<List<Game>> =
             Result.success(emptyList())
-        override suspend fun searchGames(query: String): Result<List<Game>> =
+        override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> =
             Result.success(emptyList())
         override suspend fun getGameDetail(gameId: String): Result<GameDetail> =
             Result.success(
@@ -432,7 +432,7 @@ class EmulationViewModelSecondaryDisplayTest {
             Result.success(emptyList())
         override suspend fun getAllGames(): Result<List<Game>> =
             Result.success(emptyList())
-        override suspend fun searchGames(query: String): Result<List<Game>> =
+        override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> =
             Result.success(emptyList())
         override suspend fun getGameDetail(gameId: String): Result<GameDetail> =
             Result.success(

@@ -8,7 +8,12 @@ interface GameRepository {
     suspend fun getConsoles(): Result<List<Console>>
     suspend fun getGamesForConsole(consoleId: String): Result<List<Game>>
     suspend fun getAllGames(): Result<List<Game>>
-    suspend fun searchGames(query: String): Result<List<Game>>
+    suspend fun searchGames(
+        query: String,
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+    ): Result<List<Game>>
     suspend fun getGameDetail(gameId: String): Result<GameDetail>
     suspend fun getRecentGames(): Result<List<Game>>
     suspend fun getFavoriteGames(): Result<List<Game>>

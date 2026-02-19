@@ -126,57 +126,66 @@ KMP module when changes affect desktop behavior.
 ### 6. Android QA Engineer
 
 **Name:** `android-qa`
-**Role:** Android test and verification specialist
+**Role:** Android integration test and verification specialist
 
-Responsible for verifying the Android app is fully working and feature
-complete. Writes Espresso + Compose UI Test E2E tests for every user-facing
-behavior. Runs the full E2E suite after changes and reports regressions.
+Responsible for verifying the Android app works correctly against the
+real backend. Writes **integration smoke tests** — not feature-by-feature
+UI tests (those belong in the desktop suite). Focuses on what desktop
+tests can't cover: real API round-trips, auth flows, platform-specific
+behavior, and critical end-to-end user journeys.
 
-**A task is not done until it has a passing E2E test that covers the
-changed behavior.** No exceptions. If a feature cannot be E2E tested,
-the QA engineer must flag it and explain why before the task can close.
+**Important:** The player app uses Compose Multiplatform — all UI code is
+shared between Android and desktop. **Do not duplicate desktop UI tests
+on Android.** See CLAUDE.md "Player App Testing Strategy" for the full
+policy on what goes where.
 
 **Owns:** `player/android/src/androidTest/`
 
 **Running E2E tests:** See `E2E.md` for full instructions. Use `player/run-e2e.sh` to run the suite. Check if a physical Android device is connected via `adb devices` — if available, use it (it's faster and more reliable). If no device is connected, fall back to an Android emulator.
 
 **Responsibilities:**
-- Write Espresso + Compose UI Test E2E tests for all user-facing Android behavior
-- Reject any task that lacks E2E test coverage
-- Maintain the E2E test suite and CI configuration
+- Write integration smoke tests for critical flows (login → browse → detail → play)
+- Test real API integration: network requests, JSON serialization, auth token refresh
+- Test platform-specific Android behavior: touch input, keyboard dismiss, back gesture, lifecycle
+- Reject any task that lacks appropriate test coverage (desktop UI tests + Android smoke where needed)
 - Run the FULL suite after every change and report results — zero regressions allowed
 - File detailed bug reports with reproduction steps
-- Verify bug fixes with regression tests (failing test first)
+
+**What NOT to write:**
+- Feature-level UI assertions that duplicate desktop tests (e.g., "section shows 3 cards with correct titles")
+- Tests for pure shared composable logic that has no Android-specific behavior
 
 **Tech:** Espresso, Compose UI Test, JUnit4, ADB, shell scripting
 
 ---
 
-### 7. macOS QA Engineer
+### 7. Desktop QA Engineer
 
 **Name:** `macos-qa`
-**Role:** macOS test and verification specialist
+**Role:** Desktop test and verification specialist (primary UI test suite)
 
-Responsible for verifying the macOS/desktop app is fully working and
-feature complete. There is no E2E test framework set up for desktop yet
-— evaluating and adding one is a key early task.
+Responsible for the **primary E2E test suite** for the player app. Since
+all UI code is shared via Compose Multiplatform, desktop tests cover
+composable rendering, state management, navigation, and user interactions
+for both platforms. Uses `SpelaTestHarness` with fake repositories — fast,
+no device or backend needed, CI-friendly.
 
-**A task is not done until it has a passing E2E test that covers the
-changed behavior.** No exceptions. If the E2E framework is not yet set
-up, setting it up becomes the blocking first task before anything else
-can be marked complete.
+**A task is not done until it has passing desktop E2E tests that cover
+the changed behavior.** No exceptions. This is the primary test suite.
 
-**Owns:** Desktop E2E test directory (to be created)
+**Owns:** `player/desktop/src/desktopTest/`, `player/shared/src/desktopTest/`
+
+**Running tests:** `player/run-desktop-tests.sh`
 
 **Responsibilities:**
-- Evaluate and set up an E2E test framework for desktop (e.g., Compose UI testing, or a desktop automation tool)
-- Write E2E tests for all user-facing desktop behavior
-- Reject any task that lacks E2E test coverage
-- Run the full suite after every change and report results
+- Write Compose UI tests for ALL user-facing feature behavior (screens, sections, dialogs, interactions)
+- Maintain `SpelaTestHarness.kt` and `TestFakes.kt` with fake repos for all domains
+- Ensure every new screen/section has thorough test coverage: rendering, interactions, empty states, error states
+- Run the FULL suite after every change and report results — zero regressions allowed
 - File detailed bug reports with reproduction steps
 - Verify bug fixes with regression tests (failing test first)
 
-**Tech:** Kotlin test, Compose UI testing, desktop automation tools
+**Tech:** Kotlin test, Compose UI Test, SpelaTestHarness
 
 ---
 
@@ -442,6 +451,20 @@ A task is **not done** until:
 3. No regressions have been introduced
 
 Run the entire test suite after every change. A feature with passing new tests but broken existing tests is **not done**.
+
+### Parallel Test Writing
+
+When multiple agents are writing tests concurrently for the same test suite
+(e.g., two agents both adding desktop E2E tests), **do not have each agent
+run the full suite independently**. Instead:
+
+1. Each agent writes their tests and verifies they **compile** (build check only).
+2. Once **all** agents are done writing tests, run the full suite **once**.
+3. The team lead (or a dedicated QA agent) owns the final full-suite run.
+
+This avoids redundant long test runs and prevents agents from tripping over
+each other's incomplete work mid-suite. The full-suite run is a gate at the
+end, not a per-agent step during parallel test writing.
 
 ## Workflow
 

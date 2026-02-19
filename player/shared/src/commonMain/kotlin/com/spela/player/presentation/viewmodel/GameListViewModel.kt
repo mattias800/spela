@@ -1,8 +1,10 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.state.GameListState
+import com.spela.player.presentation.state.ViewMode
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,9 @@ class GameListViewModel(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val getPlayLaterGamesUseCase: GetPlayLaterGamesUseCase,
     private val togglePlayLaterUseCase: TogglePlayLaterUseCase,
+    private val getUserStatsUseCase: GetUserStatsUseCase,
+    private val getRecentAchievementsUseCase: GetRecentAchievementsUseCase,
+    private val challengeRepository: ChallengeRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -29,12 +34,17 @@ class GameListViewModel(
     fun onIntent(intent: GameListIntent) {
         when (intent) {
             GameListIntent.LoadDashboard -> loadDashboard()
+            GameListIntent.LoadDashboardWidgets -> loadDashboardWidgets()
             GameListIntent.LoadConsoles -> loadConsoles()
             is GameListIntent.SelectConsole -> loadGamesForConsole(intent.consoleId)
             is GameListIntent.Search -> searchGames(intent.query)
             is GameListIntent.ToggleFavorite -> toggleFavorite(intent.gameId, intent.isFavorite)
             is GameListIntent.TogglePlayLater -> togglePlayLater(intent.gameId, intent.isInPlayLater)
             GameListIntent.DismissError -> _state.update { it.copy(error = null) }
+            is GameListIntent.FilterByConsole -> filterByConsole(intent.consoleId)
+            is GameListIntent.SetSortBy -> setSortBy(intent.sortBy)
+            is GameListIntent.SetSortOrder -> setSortOrder(intent.order)
+            GameListIntent.ToggleViewMode -> toggleViewMode()
         }
     }
 
@@ -54,6 +64,46 @@ class GameListViewModel(
                     isLoading = false,
                 )
             }
+        }
+        loadDashboardWidgets()
+    }
+
+    private fun loadDashboardWidgets() {
+        // Personal stats
+        scope.launch(dispatchers.io) {
+            _state.update { it.copy(isLoadingPersonalStats = true) }
+            getUserStatsUseCase().fold(
+                onSuccess = { stats ->
+                    _state.update { it.copy(personalStats = stats, isLoadingPersonalStats = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingPersonalStats = false) }
+                },
+            )
+        }
+        // Recent achievements
+        scope.launch(dispatchers.io) {
+            _state.update { it.copy(isLoadingAchievements = true) }
+            getRecentAchievementsUseCase().fold(
+                onSuccess = { achievements ->
+                    _state.update { it.copy(recentAchievements = achievements, isLoadingAchievements = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingAchievements = false) }
+                },
+            )
+        }
+        // Trending challenges
+        scope.launch(dispatchers.io) {
+            _state.update { it.copy(isLoadingTrendingChallenges = true) }
+            challengeRepository.getChallenges(sort = "most_attempted", page = 1).fold(
+                onSuccess = { challenges ->
+                    _state.update { it.copy(trendingChallenges = challenges.take(4), isLoadingTrendingChallenges = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingTrendingChallenges = false) }
+                },
+            )
         }
     }
 
@@ -86,9 +136,58 @@ class GameListViewModel(
     }
 
     private fun searchGames(query: String) {
+        val current = _state.value
         _state.update { it.copy(searchQuery = query, isLoading = true) }
         scope.launch(dispatchers.io) {
-            searchGamesUseCase(query).fold(
+            searchGamesUseCase(
+                query = query,
+                consoleId = current.selectedConsoleFilter,
+                sortBy = current.sortBy,
+                sortOrder = current.sortOrder,
+            ).fold(
+                onSuccess = { games ->
+                    _state.update { it.copy(games = games, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isLoading = false) }
+                },
+            )
+        }
+    }
+
+    private fun filterByConsole(consoleId: String?) {
+        _state.update { it.copy(selectedConsoleFilter = consoleId) }
+        reloadGames()
+    }
+
+    private fun setSortBy(sortBy: String) {
+        _state.update { it.copy(sortBy = sortBy) }
+        reloadGames()
+    }
+
+    private fun setSortOrder(order: String) {
+        _state.update { it.copy(sortOrder = order) }
+        reloadGames()
+    }
+
+    private fun toggleViewMode() {
+        _state.update {
+            it.copy(
+                viewMode = if (it.viewMode == ViewMode.GRID) ViewMode.LIST else ViewMode.GRID,
+            )
+        }
+    }
+
+    private fun reloadGames() {
+        val current = _state.value
+        _state.update { it.copy(isLoading = true) }
+        scope.launch(dispatchers.io) {
+            searchGamesUseCase(
+                query = current.searchQuery,
+                consoleId = current.selectedConsoleFilter,
+                sortBy = current.sortBy,
+                sortOrder = current.sortOrder,
+            ).fold(
                 onSuccess = { games ->
                     _state.update { it.copy(games = games, isLoading = false) }
                 },

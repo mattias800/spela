@@ -47,6 +47,9 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.home.GameCarouselRow
 import com.spela.player.presentation.ui.feature.home.NetplaySessionCard
+import com.spela.player.presentation.ui.feature.home.PersonalStatsCard
+import com.spela.player.presentation.ui.feature.home.RecentAchievementsRow
+import com.spela.player.presentation.ui.feature.home.TrendingChallengesRow
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
@@ -66,6 +69,9 @@ fun HomeScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToPlayLater: () -> Unit = {},
     onNavigateToActivity: () -> Unit = {},
+    onNavigateToStats: () -> Unit = {},
+    onNavigateToChallenges: () -> Unit = {},
+    onChallengeSelected: (String) -> Unit = {},
     onNetplaySessionSelected: (String) -> Unit = {},
     onUserSelected: (String) -> Unit = {},
     hasActiveDownloads: Boolean = false,
@@ -170,6 +176,51 @@ fun HomeScreen(
                                 ContinuePlayingRow(
                                     games = state.recentGames.take(10),
                                     onGameSelected = onGameSelected,
+                                )
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Personal Stats section
+                        if (state.personalStats != null) {
+                            item {
+                                SectionHeaderWithSeeAll(
+                                    title = "Your Stats",
+                                    onSeeAll = onNavigateToStats,
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                PersonalStatsCard(stats = state.personalStats!!)
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Recent Achievements section
+                        if (state.recentAchievements.isNotEmpty()) {
+                            item {
+                                SectionHeaderWithSeeAll(
+                                    title = "Recent Achievements",
+                                    onSeeAll = onNavigateToStats,
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                RecentAchievementsRow(achievements = state.recentAchievements)
+                                Spacer(Modifier.height(SpSpacing.XLarge))
+                            }
+                        }
+
+                        // Trending Challenges section
+                        if (state.trendingChallenges.isNotEmpty()) {
+                            item {
+                                SectionHeaderWithSeeAll(
+                                    title = "Trending Challenges",
+                                    onSeeAll = onNavigateToChallenges,
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                                Spacer(Modifier.height(SpSpacing.Medium))
+                                TrendingChallengesRow(
+                                    challenges = state.trendingChallenges,
+                                    onChallengeSelected = onChallengeSelected,
                                 )
                                 Spacer(Modifier.height(SpSpacing.XLarge))
                             }

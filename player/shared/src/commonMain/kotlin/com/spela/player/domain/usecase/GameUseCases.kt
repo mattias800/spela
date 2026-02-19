@@ -19,8 +19,13 @@ class GetAllGamesUseCase(private val gameRepository: GameRepository) {
 }
 
 class SearchGamesUseCase(private val gameRepository: GameRepository) {
-    suspend operator fun invoke(query: String): Result<List<Game>> =
-        gameRepository.searchGames(query)
+    suspend operator fun invoke(
+        query: String,
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+    ): Result<List<Game>> =
+        gameRepository.searchGames(query, consoleId, sortBy, sortOrder)
 }
 
 class GetGameDetailUseCase(private val gameRepository: GameRepository) {

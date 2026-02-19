@@ -8,6 +8,7 @@ import com.spela.player.domain.usecase.AddGameToCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
+import com.spela.player.domain.usecase.GetGameStatsUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.test.NoOpMockEngineFactory
@@ -64,6 +65,10 @@ class GameDetailSharedSaveTest {
             sharedSaveRepository = fakeSharedSaveRepo,
             getMyCollectionsUseCase = GetMyCollectionsUseCase(TestCollectionRepository()),
             addGameToCollectionUseCase = AddGameToCollectionUseCase(TestCollectionRepository()),
+            getGameStatsUseCase = GetGameStatsUseCase(SharedSaveTestGameStatsRepository()),
+            gameStatsRepository = SharedSaveTestGameStatsRepository(),
+            challengeRepository = SharedSaveTestChallengeRepository(),
+            relayRepository = SharedSaveTestRelayRepository(),
             apiClient = apiClient,
             dispatchers = testDispatchers,
             scope = scope,
@@ -200,7 +205,7 @@ private class TestGameRepository : GameRepository {
     override suspend fun getConsoles(): Result<List<Console>> = Result.success(emptyList())
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> = Result.success(emptyList())
     override suspend fun getAllGames(): Result<List<Game>> = Result.success(emptyList())
-    override suspend fun searchGames(query: String): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> = Result.success(emptyList())
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> =
         Result.success(GameDetail(game))
     override suspend fun getRecentGames(): Result<List<Game>> = Result.success(emptyList())
@@ -266,4 +271,61 @@ private class TestSaveRepository : SaveRepository {
     override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> =
         Result.success(SaveState(1, 1, "auto"))
     override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
+}
+
+private class SharedSaveTestGameStatsRepository : GameStatsRepository {
+    override suspend fun getGameStats(gameId: String) = Result.success(GameStats(0, 0L, 0L, emptyList()))
+    override suspend fun getGameAchievements(gameId: String) = Result.success(emptyList<GameAchievement>())
+    override suspend fun getAchievementProgress(gameId: String) = Result.success(emptyList<AchievementProgress>())
+    override suspend fun getAchievementTimeline(gameId: String) = Result.success(
+        AchievementTimelineData(null, "", 0L, emptyList(), 0, 0, 0, 0)
+    )
+    override suspend fun getAchievementLeaderboard(gameId: String) = Result.success(emptyList<AchievementPlayerRanking>())
+    override suspend fun getUserStats() = Result.success(UserStats(0L, 0L, 0, 0, null, 0L, null))
+    override suspend fun getRecentAchievements() = Result.success(emptyList<RecentAchievement>())
+}
+
+private class SharedSaveTestRelayRepository : RelayRepository {
+    override suspend fun getMyRelays(page: Int, pageSize: Int) = Result.success(emptyList<Relay>())
+    override suspend fun getRelay(relayId: String) = Result.failure<RelayDetail>(Exception("stub"))
+    override suspend fun getRelayInvitations() = Result.success(emptyList<RelayInvitation>())
+    override suspend fun getPendingInvitationCount() = Result.success(0)
+    override suspend fun createRelay(name: String, gameId: String, description: String) = Result.failure<RelayDetail>(Exception("stub"))
+    override suspend fun deleteRelay(relayId: String) = Result.success(Unit)
+    override suspend fun inviteUser(relayId: String, username: String) = Result.success(Unit)
+    override suspend fun acceptInvitation(invitationId: String) = Result.success(Unit)
+    override suspend fun rejectInvitation(invitationId: String) = Result.success(Unit)
+    override suspend fun leaveRelay(relayId: String) = Result.success(Unit)
+    override suspend fun removeMember(relayId: String, userId: String) = Result.success(Unit)
+    override suspend fun getGameRelays(gameId: String) = Result.success(emptyList<Relay>())
+    override suspend fun getRelaySaves(relayId: String) = Result.success(emptyList<RelaySave>())
+    override suspend fun deleteRelaySave(relayId: String, saveId: Long) = Result.success(Unit)
+    override suspend fun takeTurn(relayId: String) = Result.success("stub-token")
+    override suspend fun releaseTurn(relayId: String) = Result.success(Unit)
+    override suspend fun heartbeat(relayId: String) = Result.success(Unit)
+    override suspend fun uploadRelaySave(relayId: String, name: String, turnToken: String, data: ByteArray) =
+        Result.success(RelaySave(id = 1, relayId = relayId, name = name))
+    override suspend fun downloadRelaySave(relayId: String, saveId: Long) = Result.success(byteArrayOf())
+    override suspend fun downloadRelayAutoSave(relayId: String) = Result.success(byteArrayOf())
+    override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray) =
+        Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
+}
+
+private class SharedSaveTestChallengeRepository : ChallengeRepository {
+    override suspend fun getChallenges(gameId: String?, consoleId: String?, difficulty: String?, sort: String?, page: Int) =
+        Result.success(emptyList<Challenge>())
+    override suspend fun getGameChallenges(gameId: String, page: Int) = Result.success(emptyList<Challenge>())
+    override suspend fun getMyChallenges(page: Int) = Result.success(emptyList<Challenge>())
+    override suspend fun getChallengeDetail(challengeId: String) = Result.failure<Challenge>(Exception("stub"))
+    override suspend fun getLeaderboard(challengeId: String, page: Int) = Result.success(emptyList<ChallengeLeaderboardEntry>())
+    override suspend fun createChallenge(gameId: String, name: String, description: String, type: String, difficulty: String, coreName: String, saveData: ByteArray, screenshotData: ByteArray?) =
+        Result.failure<Challenge>(Exception("stub"))
+    override suspend fun downloadChallengeSave(challengeId: String) = Result.success(byteArrayOf())
+    override suspend fun startAttempt(challengeId: String) =
+        Result.success(ChallengeAttempt("1", challengeId, "1", "test", null, "in_progress", "", null, 0, false))
+    override suspend fun completeAttempt(challengeId: String, attemptId: String) =
+        Result.success(ChallengeAttempt(attemptId, challengeId, "1", "test", null, "completed", "", "", 1000, false))
+    override suspend fun abandonAttempt(challengeId: String, attemptId: String) = Result.success(Unit)
+    override suspend fun getMyAttempts(challengeId: String) = Result.success(emptyList<ChallengeAttempt>())
+    override suspend fun deleteChallenge(challengeId: String) = Result.success(Unit)
 }

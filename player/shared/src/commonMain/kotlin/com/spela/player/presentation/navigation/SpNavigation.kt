@@ -23,6 +23,7 @@ sealed class SpScreen(val route: String) {
     data object NetplaySessions : SpScreen("netplay")
     data class NetplayLobby(val sessionId: String) : SpScreen("netplay/$sessionId")
     data object Licenses : SpScreen("licenses")
+    data object GlobalChallenges : SpScreen("challenges")
     data class ChallengeList(val gameId: String, val gameTitle: String) : SpScreen("challenges/$gameId")
     data class ChallengeDetail(val challengeId: String) : SpScreen("challenge/$challengeId")
 }

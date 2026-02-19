@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.StatsIntent
 import com.spela.player.presentation.ui.feature.stats.ActivePlayerItem
 import com.spela.player.presentation.ui.feature.stats.MostPlayedGameItem
+import com.spela.player.presentation.ui.feature.stats.PersonalStatsSection
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -71,7 +72,7 @@ fun StatsScreen(
                     SpLoadingIndicator(message = "Loading stats...")
                 }
             } else {
-                val isEmpty = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty()
+                val isEmpty = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty() && state.personalStats == null
 
                 PullToRefreshBox(
                     isRefreshing = state.isLoading,
@@ -94,6 +95,14 @@ fun StatsScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = SpSpacing.Default),
                         ) {
+                            // Personal Stats section
+                            if (state.personalStats != null) {
+                                item {
+                                    PersonalStatsSection(stats = state.personalStats!!)
+                                    Spacer(Modifier.height(SpSpacing.XXLarge))
+                                }
+                            }
+
                             // Most Played Games section
                             if (state.mostPlayedGames.isNotEmpty()) {
                                 item {

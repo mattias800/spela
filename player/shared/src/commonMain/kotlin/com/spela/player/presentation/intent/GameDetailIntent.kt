@@ -20,6 +20,29 @@ sealed interface GameDetailIntent {
     data object DismissAddToCollectionDialog : GameDetailIntent
     data class AddToCollection(val collectionId: String) : GameDetailIntent
 
+    // Community Stats, Reviews, Relays
+    data class LoadGameStats(val gameId: String) : GameDetailIntent
+    data class LoadReviews(val gameId: String) : GameDetailIntent
+    data class LoadMoreReviews(val gameId: String) : GameDetailIntent
+    data class LoadGameRelays(val gameId: String) : GameDetailIntent
+
+    // Create Challenge
+    data object ShowCreateChallengeDialog : GameDetailIntent
+    data object DismissCreateChallengeDialog : GameDetailIntent
+    data class CreateChallenge(
+        val saveStateId: String,
+        val name: String,
+        val description: String,
+        val type: String,
+        val difficulty: String,
+    ) : GameDetailIntent
+
+    // Achievements
+    data class LoadAchievements(val gameId: String) : GameDetailIntent
+    data class LoadAchievementTimeline(val gameId: String) : GameDetailIntent
+    data class LoadAchievementLeaderboard(val gameId: String) : GameDetailIntent
+    data class ToggleAchievementsView(val mode: com.spela.player.presentation.state.AchievementsViewMode) : GameDetailIntent
+
     data object DismissError : GameDetailIntent
     data object DismissSuccess : GameDetailIntent
 }

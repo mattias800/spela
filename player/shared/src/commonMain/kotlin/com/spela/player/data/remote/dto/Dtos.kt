@@ -670,3 +670,141 @@ data class JoinByInviteCodeRequest(
 data class UpdateNetplaySettingsRequest(
     val inputDelay: Int,
 )
+
+// Game Stats
+
+@Serializable
+data class TopPlayerDto(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val playTime: Long = 0,
+)
+
+@Serializable
+data class GameStatsDto(
+    val totalPlayers: Int = 0,
+    val totalPlayTime: Long = 0,
+    val averagePlayTime: Long = 0,
+    val topPlayers: List<TopPlayerDto> = emptyList(),
+)
+
+// Game Achievements (RetroAchievements)
+
+@Serializable
+data class GameAchievementDto(
+    val id: Long = 0,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val type: String? = null,
+    val displayOrder: Int? = null,
+)
+
+@Serializable
+data class GameAchievementsResponse(
+    val raGameId: Long? = null,
+    val title: String = "",
+    val achievements: List<GameAchievementDto> = emptyList(),
+    val totalCount: Int = 0,
+    val totalPoints: Int = 0,
+)
+
+// Achievement Progress
+
+@Serializable
+data class AchievementProgressEntryDto(
+    val achievementId: Long = 0,
+    val unlockedAt: String? = null,
+    val isHardcore: Boolean = false,
+    val playTimeAtUnlock: Long? = null,
+)
+
+@Serializable
+data class AchievementProgressResponse(
+    val raGameId: Long? = null,
+    val progress: List<AchievementProgressEntryDto> = emptyList(),
+)
+
+// Achievement Timeline
+
+@Serializable
+data class AchievementTimelineEntryDto(
+    val achievementRaId: Long = 0,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val unlockedAt: String = "",
+    val isHardcore: Boolean = false,
+    val playTimeAtUnlock: Long? = null,
+)
+
+@Serializable
+data class AchievementTimelineResponse(
+    val raGameId: Long? = null,
+    val gameTitle: String = "",
+    val totalPlayTime: Long = 0,
+    val timeline: List<AchievementTimelineEntryDto> = emptyList(),
+    val totalAchievements: Int = 0,
+    val unlockedCount: Int = 0,
+    val totalPoints: Int = 0,
+    val earnedPoints: Int = 0,
+)
+
+// Achievement Leaderboard
+
+@Serializable
+data class AchievementLeaderboardEntryDto(
+    val userId: String = "",
+    val username: String = "",
+    val avatarUrl: String? = null,
+    val unlockedCount: Int = 0,
+    val earnedPoints: Int = 0,
+    val firstUnlockedAt: String? = null,
+    val lastUnlockedAt: String? = null,
+)
+
+@Serializable
+data class AchievementLeaderboardResponse(
+    val raGameId: Long? = null,
+    val totalAchievements: Int = 0,
+    val leaderboard: List<AchievementLeaderboardEntryDto> = emptyList(),
+)
+
+// User Stats
+
+@Serializable
+data class UserStatsDto(
+    val totalPlayTime: Long = 0,
+    val gamesPlayed: Long = 0,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val mostPlayedGame: GameDto? = null,
+    val mostPlayedGameTime: Long = 0,
+    val lastPlayedAt: String? = null,
+)
+
+// Recent Achievements
+
+@Serializable
+data class RecentAchievementDto(
+    val achievementRaId: Long = 0,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val unlockedAt: String = "",
+    val isHardcore: Boolean = false,
+    val playTimeAtUnlock: Long? = null,
+    val gameId: String = "",
+    val gameTitle: String = "",
+    val consoleName: String = "",
+    val coverUrl: String? = null,
+)
+
+@Serializable
+data class RecentAchievementsResponse(
+    val achievements: List<RecentAchievementDto> = emptyList(),
+)

@@ -69,6 +69,7 @@ import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
+import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -267,6 +268,21 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.Activity)
                                         )
                                     },
+                                    onNavigateToStats = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.Stats)
+                                        )
+                                    },
+                                    onNavigateToChallenges = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GlobalChallenges)
+                                        )
+                                    },
+                                    onChallengeSelected = { challengeId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail(challengeId))
+                                        )
+                                    },
                                     onNetplaySessionSelected = { sessionId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.NetplayLobby(sessionId))
@@ -335,6 +351,11 @@ fun SpelaApp(
                                     onNavigateToChallenges = { gameId, gameTitle ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.ChallengeList(gameId, gameTitle))
+                                        )
+                                    },
+                                    onNavigateToRelay = { relayId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
                                         )
                                     },
                                 )
@@ -591,6 +612,20 @@ fun SpelaApp(
                                 )
                             }
 
+                            is SpScreen.GlobalChallenges -> {
+                                GlobalChallengesScreen(
+                                    viewModel = challengeListViewModel,
+                                    onChallengeSelected = { challengeId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ChallengeDetail(challengeId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
                             is SpScreen.ChallengeList -> {
                                 ChallengeListScreen(
                                     viewModel = challengeListViewModel,
@@ -756,6 +791,7 @@ fun SpelaApp(
 
                         InGameOverlay(
                             viewModel = emulationViewModel,
+                            keyMappingViewModel = keyMappingViewModel,
                             onExit = {
                                 navigationViewModel.onIntent(NavigationIntent.HideOverlay)
                             },

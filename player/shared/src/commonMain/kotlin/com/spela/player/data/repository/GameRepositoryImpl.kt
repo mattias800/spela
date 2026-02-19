@@ -24,8 +24,13 @@ class GameRepositoryImpl(
         apiClient.getAllGames().data.map { it.toDomain().resolveImageUrls() }
     }
 
-    override suspend fun searchGames(query: String): Result<List<Game>> = runCatching {
-        apiClient.searchGames(query).data.map { it.toDomain().resolveImageUrls() }
+    override suspend fun searchGames(
+        query: String,
+        consoleId: String?,
+        sortBy: String?,
+        sortOrder: String?,
+    ): Result<List<Game>> = runCatching {
+        apiClient.searchGames(query, consoleId, sortBy, sortOrder).data.map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> = runCatching {

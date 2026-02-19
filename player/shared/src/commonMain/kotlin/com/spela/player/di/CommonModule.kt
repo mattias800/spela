@@ -49,6 +49,7 @@ val commonModule = module {
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
     single<ChallengeRepository> { ChallengeRepositoryImpl(get()) }
+    single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 
@@ -85,6 +86,13 @@ val commonModule = module {
     factory { RemoveGameFromCollectionUseCase(get()) }
     factory { GetMostPlayedGamesUseCase(get()) }
     factory { GetMostActivePlayersUseCase(get()) }
+    factory { GetGameStatsUseCase(get()) }
+    factory { GetGameAchievementsUseCase(get()) }
+    factory { GetAchievementProgressUseCase(get()) }
+    factory { GetAchievementTimelineUseCase(get()) }
+    factory { GetAchievementLeaderboardUseCase(get()) }
+    factory { GetUserStatsUseCase(get()) }
+    factory { GetRecentAchievementsUseCase(get()) }
 
     /* ViewModels */
     factory {
@@ -105,6 +113,9 @@ val commonModule = module {
             toggleFavoriteUseCase = get(),
             getPlayLaterGamesUseCase = get(),
             togglePlayLaterUseCase = get(),
+            getUserStatsUseCase = get(),
+            getRecentAchievementsUseCase = get(),
+            challengeRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -120,6 +131,10 @@ val commonModule = module {
             sharedSaveRepository = get(),
             getMyCollectionsUseCase = get(),
             addGameToCollectionUseCase = get(),
+            getGameStatsUseCase = get(),
+            gameStatsRepository = get(),
+            challengeRepository = get(),
+            relayRepository = get(),
             apiClient = get(),
             dispatchers = get(),
             scope = get(),
@@ -193,6 +208,7 @@ val commonModule = module {
     factory {
         ChallengeListViewModel(
             challengeRepository = get(),
+            getConsolesUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -210,6 +226,7 @@ val commonModule = module {
         StatsViewModel(
             getMostPlayedGamesUseCase = get(),
             getMostActivePlayersUseCase = get(),
+            getUserStatsUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -268,6 +285,7 @@ val commonModule = module {
             serverRepository = get(),
             achievementsRepository = get(),
             deviceManager = get(),
+            apiClient = get(),
             dispatchers = get(),
             scope = get(),
         )

@@ -1,9 +1,9 @@
 package com.spela.player.presentation.viewmodel
 
-import com.spela.player.domain.model.Console
-import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.*
+import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.GameRepository
+import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.util.DispatcherProvider
@@ -42,6 +42,7 @@ class GameListViewModelTest {
 
     private fun createViewModel(): GameListViewModel {
         val scope = CoroutineScope(testDispatcher)
+        val stubStatsRepo = GameListTestGameStatsRepository()
         return GameListViewModel(
             getConsolesUseCase = GetConsolesUseCase(fakeGameRepo),
             getGamesForConsoleUseCase = GetGamesForConsoleUseCase(fakeGameRepo),
@@ -51,6 +52,9 @@ class GameListViewModelTest {
             toggleFavoriteUseCase = ToggleFavoriteUseCase(fakeGameRepo),
             getPlayLaterGamesUseCase = GetPlayLaterGamesUseCase(fakeGameRepo),
             togglePlayLaterUseCase = TogglePlayLaterUseCase(fakeGameRepo),
+            getUserStatsUseCase = GetUserStatsUseCase(stubStatsRepo),
+            getRecentAchievementsUseCase = GetRecentAchievementsUseCase(stubStatsRepo),
+            challengeRepository = GameListTestChallengeRepository(),
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -164,7 +168,7 @@ class FakeGameRepository : GameRepository {
         return if (shouldFail) Result.failure(Exception("Network error")) else Result.success(games)
     }
 
-    override suspend fun searchGames(query: String): Result<List<Game>> {
+    override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(games.filter { it.title.contains(query, ignoreCase = true) })
     }
@@ -189,4 +193,33 @@ class FakeGameRepository : GameRepository {
     override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+}
+
+private class GameListTestGameStatsRepository : GameStatsRepository {
+    override suspend fun getGameStats(gameId: String) = Result.success(GameStats(0, 0L, 0L, emptyList()))
+    override suspend fun getGameAchievements(gameId: String) = Result.success(emptyList<GameAchievement>())
+    override suspend fun getAchievementProgress(gameId: String) = Result.success(emptyList<AchievementProgress>())
+    override suspend fun getAchievementTimeline(gameId: String) = Result.success(
+        AchievementTimelineData(null, "", 0L, emptyList(), 0, 0, 0, 0)
+    )
+    override suspend fun getAchievementLeaderboard(gameId: String) = Result.success(emptyList<AchievementPlayerRanking>())
+    override suspend fun getUserStats() = Result.success(UserStats(0L, 0L, 0, 0, null, 0L, null))
+    override suspend fun getRecentAchievements() = Result.success(emptyList<RecentAchievement>())
+}
+
+private class GameListTestChallengeRepository : ChallengeRepository {
+    override suspend fun getChallenges(gameId: String?, consoleId: String?, difficulty: String?, sort: String?, page: Int) =
+        Result.success(emptyList<Challenge>())
+    override suspend fun getGameChallenges(gameId: String, page: Int) = Result.success(emptyList<Challenge>())
+    override suspend fun getMyChallenges(page: Int) = Result.success(emptyList<Challenge>())
+    override suspend fun getChallengeDetail(challengeId: String) = Result.failure<Challenge>(Exception("stub"))
+    override suspend fun getLeaderboard(challengeId: String, page: Int) = Result.success(emptyList<ChallengeLeaderboardEntry>())
+    override suspend fun createChallenge(gameId: String, name: String, description: String, type: String, difficulty: String, coreName: String, saveData: ByteArray, screenshotData: ByteArray?) =
+        Result.failure<Challenge>(Exception("stub"))
+    override suspend fun downloadChallengeSave(challengeId: String) = Result.success(byteArrayOf())
+    override suspend fun startAttempt(challengeId: String) = Result.failure<ChallengeAttempt>(Exception("stub"))
+    override suspend fun completeAttempt(challengeId: String, attemptId: String) = Result.failure<ChallengeAttempt>(Exception("stub"))
+    override suspend fun abandonAttempt(challengeId: String, attemptId: String) = Result.success(Unit)
+    override suspend fun getMyAttempts(challengeId: String) = Result.success(emptyList<ChallengeAttempt>())
+    override suspend fun deleteChallenge(challengeId: String) = Result.success(Unit)
 }

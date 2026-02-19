@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
@@ -39,6 +40,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.feature.settings.DeviceManagementSection
 import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
 import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
@@ -144,7 +146,9 @@ fun SettingsScreen(
         SpTopBar(title = "Settings", showBack = true, onBack = onBack)
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("settings_list"),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Default,
@@ -366,6 +370,31 @@ fun SettingsScreen(
                         )
                     }
                 }
+            }
+
+            // Devices section
+            item {
+                SettingsSectionHeader(title = "Devices")
+            }
+
+            item {
+                DeviceManagementSection(
+                    devices = state.devices,
+                    isLoading = state.isLoadingDevices,
+                    showDeleteConfirmId = state.showDeleteDeviceConfirm,
+                    onRename = { deviceId, newName ->
+                        viewModel.onIntent(SettingsIntent.RenameDevice(deviceId, newName))
+                    },
+                    onDelete = { deviceId ->
+                        viewModel.onIntent(SettingsIntent.DeleteDevice(deviceId))
+                    },
+                    onShowDeleteConfirm = { deviceId ->
+                        viewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(deviceId))
+                    },
+                    onDismissDeleteConfirm = {
+                        viewModel.onIntent(SettingsIntent.DismissDeleteDeviceConfirm)
+                    },
+                )
             }
 
             // About section

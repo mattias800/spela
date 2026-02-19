@@ -77,6 +77,13 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val ratingRepo = FakeRatingRepository()
+    val sharedSaveRepo = FakeSharedSaveRepository()
+    val collectionRepo = FakeCollectionRepository()
+
+    val gameStatsRepo = FakeGameStatsRepository()
+    val challengeRepo = FakeChallengeRepository()
+
     val gameListViewModel = GameListViewModel(
         getConsolesUseCase = GetConsolesUseCase(gameRepo),
         getGamesForConsoleUseCase = GetGamesForConsoleUseCase(gameRepo),
@@ -86,13 +93,13 @@ class SpelaTestHarness(
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
         getPlayLaterGamesUseCase = GetPlayLaterGamesUseCase(gameRepo),
         togglePlayLaterUseCase = TogglePlayLaterUseCase(gameRepo),
+        getUserStatsUseCase = GetUserStatsUseCase(gameStatsRepo),
+        getRecentAchievementsUseCase = GetRecentAchievementsUseCase(gameStatsRepo),
+        challengeRepository = challengeRepo,
         dispatchers = dispatchers,
         scope = scope,
     )
-
-    val ratingRepo = FakeRatingRepository()
-    val sharedSaveRepo = FakeSharedSaveRepository()
-    val collectionRepo = FakeCollectionRepository()
+    val relayRepo = FakeRelayRepository()
 
     val gameDetailViewModel = GameDetailViewModel(
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
@@ -104,6 +111,10 @@ class SpelaTestHarness(
         sharedSaveRepository = sharedSaveRepo,
         getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
         addGameToCollectionUseCase = AddGameToCollectionUseCase(collectionRepo),
+        getGameStatsUseCase = GetGameStatsUseCase(gameStatsRepo),
+        gameStatsRepository = gameStatsRepo,
+        challengeRepository = challengeRepo,
+        relayRepository = relayRepo,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
@@ -115,10 +126,6 @@ class SpelaTestHarness(
         }
     }
     val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
-
-    val relayRepo = FakeRelayRepository()
-
-    val challengeRepo = FakeChallengeRepository()
 
     val emulationViewModel = EmulationViewModel(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
@@ -154,6 +161,7 @@ class SpelaTestHarness(
         serverRepository = serverRepo,
         achievementsRepository = FakeAchievementsRepository(),
         deviceManager = deviceManager,
+        apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -199,6 +207,7 @@ class SpelaTestHarness(
     val statsViewModel = StatsViewModel(
         getMostPlayedGamesUseCase = GetMostPlayedGamesUseCase(statsRepo),
         getMostActivePlayersUseCase = GetMostActivePlayersUseCase(statsRepo),
+        getUserStatsUseCase = GetUserStatsUseCase(gameStatsRepo),
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -218,6 +227,7 @@ class SpelaTestHarness(
 
     val challengeListViewModel = ChallengeListViewModel(
         challengeRepository = challengeRepo,
+        getConsolesUseCase = GetConsolesUseCase(gameRepo),
         dispatchers = dispatchers,
         scope = scope,
     )

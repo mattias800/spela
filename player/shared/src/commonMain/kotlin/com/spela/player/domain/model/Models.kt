@@ -412,6 +412,96 @@ enum class ChallengeDifficulty(val apiId: String, val displayName: String) {
     }
 }
 
+// Game Stats
+
+data class GameStats(
+    val totalPlayers: Int,
+    val totalPlayTime: Long,
+    val averagePlayTime: Long,
+    val topPlayers: List<TopPlayer>,
+)
+
+data class TopPlayer(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String?,
+    val playTime: Long,
+)
+
+data class GameAchievement(
+    val id: Long,
+    val title: String,
+    val description: String,
+    val points: Int,
+    val badgeUrl: String?,
+    val type: String?,
+    val displayOrder: Int?,
+)
+
+data class AchievementProgress(
+    val achievementId: Long,
+    val unlockedAt: String?,
+    val isHardcore: Boolean,
+    val playTimeAtUnlock: Long?,
+)
+
+data class AchievementTimelineEntry(
+    val achievementRaId: Long,
+    val title: String,
+    val description: String,
+    val points: Int,
+    val badgeUrl: String?,
+    val unlockedAt: String,
+    val isHardcore: Boolean,
+    val playTimeAtUnlock: Long?,
+)
+
+data class AchievementTimelineData(
+    val raGameId: Long?,
+    val gameTitle: String,
+    val totalPlayTime: Long,
+    val timeline: List<AchievementTimelineEntry>,
+    val totalAchievements: Int,
+    val unlockedCount: Int,
+    val totalPoints: Int,
+    val earnedPoints: Int,
+)
+
+data class AchievementPlayerRanking(
+    val userId: String,
+    val username: String,
+    val avatarUrl: String?,
+    val unlockedCount: Int,
+    val earnedPoints: Int,
+    val firstUnlockedAt: String?,
+    val lastUnlockedAt: String?,
+)
+
+data class UserStats(
+    val totalPlayTime: Long,
+    val gamesPlayed: Long,
+    val currentStreak: Int,
+    val longestStreak: Int,
+    val mostPlayedGame: Game?,
+    val mostPlayedGameTime: Long,
+    val lastPlayedAt: String?,
+)
+
+data class RecentAchievement(
+    val achievementRaId: Long,
+    val title: String,
+    val description: String,
+    val points: Int,
+    val badgeUrl: String?,
+    val unlockedAt: String,
+    val isHardcore: Boolean,
+    val playTimeAtUnlock: Long?,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val coverUrl: String?,
+)
+
 // Stats
 
 data class MostPlayedGame(

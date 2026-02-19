@@ -270,7 +270,7 @@ class FakeGameRepository : GameRepository {
         else Result.success(games)
     }
 
-    override suspend fun searchGames(query: String): Result<List<Game>> {
+    override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(games.filter { it.title.contains(query, ignoreCase = true) })
     }
@@ -352,7 +352,7 @@ class FakeDownloadRepository : DownloadRepository {
 }
 
 class FakeSaveRepository : SaveRepository {
-    private val saves = mutableMapOf<String, MutableList<SaveState>>()
+    var saves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
 
     override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> {
@@ -548,11 +548,12 @@ class FakeAchievementsController : com.spela.player.domain.controller.Achievemen
 class FakeRatingRepository : RatingRepository {
     var ratingSummary: RatingSummary = RatingSummary(0.0, 0, emptyMap())
     var myRating: GameRating? = null
+    var gameRatings: List<GameRating> = emptyList()
 
     override suspend fun rateGame(gameId: String, rating: Int, review: String): Result<GameRating> =
         Result.success(GameRating("1", "1", "player", null, gameId, rating, review, ""))
     override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> =
-        Result.success(emptyList())
+        Result.success(gameRatings)
     override suspend fun getRatingSummary(gameId: String): Result<RatingSummary> =
         Result.success(ratingSummary)
     override suspend fun getMyRating(gameId: String): Result<GameRating?> =
@@ -655,6 +656,26 @@ class FakeStatsRepository : StatsRepository {
         Result.success(mostPlayedGames)
     override suspend fun getMostActivePlayers(): Result<List<ActivePlayer>> =
         Result.success(activePlayers)
+}
+
+class FakeGameStatsRepository : GameStatsRepository {
+    var gameStats: GameStats = GameStats(totalPlayers = 0, totalPlayTime = 0, averagePlayTime = 0, topPlayers = emptyList())
+    var userStats: UserStats = UserStats(totalPlayTime = 0, gamesPlayed = 0, currentStreak = 0, longestStreak = 0, mostPlayedGame = null, mostPlayedGameTime = 0, lastPlayedAt = null)
+    var recentAchievements: List<RecentAchievement> = emptyList()
+    var achievements: List<GameAchievement> = emptyList()
+    var achievementProgress: List<AchievementProgress> = emptyList()
+    var achievementTimeline: AchievementTimelineData? = null
+    var achievementLeaderboard: List<AchievementPlayerRanking> = emptyList()
+
+    override suspend fun getGameStats(gameId: String): Result<GameStats> = Result.success(gameStats)
+    override suspend fun getGameAchievements(gameId: String): Result<List<GameAchievement>> = Result.success(achievements)
+    override suspend fun getAchievementProgress(gameId: String): Result<List<AchievementProgress>> = Result.success(achievementProgress)
+    override suspend fun getAchievementTimeline(gameId: String): Result<AchievementTimelineData> =
+        achievementTimeline?.let { Result.success(it) }
+            ?: Result.success(AchievementTimelineData(raGameId = null, gameTitle = "", totalPlayTime = 0, timeline = emptyList(), totalAchievements = 0, unlockedCount = 0, totalPoints = 0, earnedPoints = 0))
+    override suspend fun getAchievementLeaderboard(gameId: String): Result<List<AchievementPlayerRanking>> = Result.success(achievementLeaderboard)
+    override suspend fun getUserStats(): Result<UserStats> = Result.success(userStats)
+    override suspend fun getRecentAchievements(): Result<List<RecentAchievement>> = Result.success(recentAchievements)
 }
 
 class FakeSocialRepository : SocialRepository {

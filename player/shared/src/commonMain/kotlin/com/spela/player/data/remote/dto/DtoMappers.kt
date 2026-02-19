@@ -279,6 +279,96 @@ fun CollectionDetailDto.toDomain(): GameCollectionDetail = GameCollectionDetail(
     games = games.map { it.toDomain() },
 )
 
+// Game Stats mappers
+
+fun TopPlayerDto.toDomain(): TopPlayer = TopPlayer(
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    playTime = playTime,
+)
+
+fun GameStatsDto.toDomain(): GameStats = GameStats(
+    totalPlayers = totalPlayers,
+    totalPlayTime = totalPlayTime,
+    averagePlayTime = averagePlayTime,
+    topPlayers = topPlayers.map { it.toDomain() },
+)
+
+fun GameAchievementDto.toDomain(): GameAchievement = GameAchievement(
+    id = id,
+    title = title,
+    description = description,
+    points = points,
+    badgeUrl = badgeUrl,
+    type = type,
+    displayOrder = displayOrder,
+)
+
+fun AchievementProgressEntryDto.toDomain(): AchievementProgress = AchievementProgress(
+    achievementId = achievementId,
+    unlockedAt = unlockedAt,
+    isHardcore = isHardcore,
+    playTimeAtUnlock = playTimeAtUnlock,
+)
+
+fun AchievementTimelineEntryDto.toDomain(): AchievementTimelineEntry = AchievementTimelineEntry(
+    achievementRaId = achievementRaId,
+    title = title,
+    description = description,
+    points = points,
+    badgeUrl = badgeUrl,
+    unlockedAt = unlockedAt,
+    isHardcore = isHardcore,
+    playTimeAtUnlock = playTimeAtUnlock,
+)
+
+fun AchievementTimelineResponse.toDomain(): AchievementTimelineData = AchievementTimelineData(
+    raGameId = raGameId,
+    gameTitle = gameTitle,
+    totalPlayTime = totalPlayTime,
+    timeline = timeline.map { it.toDomain() },
+    totalAchievements = totalAchievements,
+    unlockedCount = unlockedCount,
+    totalPoints = totalPoints,
+    earnedPoints = earnedPoints,
+)
+
+fun AchievementLeaderboardEntryDto.toDomain(): AchievementPlayerRanking = AchievementPlayerRanking(
+    userId = userId,
+    username = username,
+    avatarUrl = avatarUrl,
+    unlockedCount = unlockedCount,
+    earnedPoints = earnedPoints,
+    firstUnlockedAt = firstUnlockedAt,
+    lastUnlockedAt = lastUnlockedAt,
+)
+
+fun UserStatsDto.toDomain(): UserStats = UserStats(
+    totalPlayTime = totalPlayTime,
+    gamesPlayed = gamesPlayed,
+    currentStreak = currentStreak,
+    longestStreak = longestStreak,
+    mostPlayedGame = mostPlayedGame?.toDomain(),
+    mostPlayedGameTime = mostPlayedGameTime,
+    lastPlayedAt = lastPlayedAt,
+)
+
+fun RecentAchievementDto.toDomain(): RecentAchievement = RecentAchievement(
+    achievementRaId = achievementRaId,
+    title = title,
+    description = description,
+    points = points,
+    badgeUrl = badgeUrl,
+    unlockedAt = unlockedAt,
+    isHardcore = isHardcore,
+    playTimeAtUnlock = playTimeAtUnlock,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+    coverUrl = coverUrl,
+)
+
 // Stats mappers
 
 fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(

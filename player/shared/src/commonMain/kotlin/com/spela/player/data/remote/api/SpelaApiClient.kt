@@ -99,14 +99,34 @@ class SpelaApiClient(
     }
 
     /** Returns {data, total, page, pageSize} paginated wrapper */
-    suspend fun getAllGames(): GameListResponse {
-        return client.get("$baseUrl/api/games").body()
+    suspend fun getAllGames(
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+        page: Int? = null,
+        pageSize: Int? = null,
+    ): GameListResponse {
+        return client.get("$baseUrl/api/games") {
+            consoleId?.let { parameter("consoleId", it) }
+            sortBy?.let { parameter("sortBy", it) }
+            sortOrder?.let { parameter("sortOrder", it) }
+            page?.let { parameter("page", it) }
+            pageSize?.let { parameter("pageSize", it) }
+        }.body()
     }
 
     /** Returns {data, total, page, pageSize} paginated wrapper with search filter */
-    suspend fun searchGames(query: String): GameListResponse {
+    suspend fun searchGames(
+        query: String,
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+    ): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("search", query)
+            consoleId?.let { parameter("consoleId", it) }
+            sortBy?.let { parameter("sortBy", it) }
+            sortOrder?.let { parameter("sortOrder", it) }
         }.body()
     }
 
@@ -163,7 +183,45 @@ class SpelaApiClient(
         }.body()
     }
 
+    // Game Stats
+
+    suspend fun getGameStats(gameId: String): GameStatsDto {
+        return client.get("$baseUrl/api/games/$gameId/stats").body()
+    }
+
+    // Game Achievements
+
+    suspend fun getGameAchievements(gameId: String): GameAchievementsResponse {
+        return client.get("$baseUrl/api/games/$gameId/achievements").body()
+    }
+
+    suspend fun getAchievementProgress(gameId: String): AchievementProgressResponse {
+        return client.get("$baseUrl/api/games/$gameId/achievements/progress").body()
+    }
+
+    suspend fun getAchievementTimeline(gameId: String): AchievementTimelineResponse {
+        return client.get("$baseUrl/api/games/$gameId/achievements/timeline").body()
+    }
+
+    suspend fun getAchievementLeaderboard(gameId: String): AchievementLeaderboardResponse {
+        return client.get("$baseUrl/api/games/$gameId/achievements/leaderboard").body()
+    }
+
+    // User Stats & Achievements
+
+    suspend fun getUserStats(): UserStatsDto {
+        return client.get("$baseUrl/api/user/stats").body()
+    }
+
+    suspend fun getRecentAchievements(): RecentAchievementsResponse {
+        return client.get("$baseUrl/api/user/achievements/recent").body()
+    }
+
     // Devices
+
+    suspend fun deleteDevice(deviceId: Long) {
+        client.delete("$baseUrl/api/user/devices/$deviceId")
+    }
 
     suspend fun registerDevice(request: RegisterDeviceRequest): DeviceDto {
         return client.post("$baseUrl/api/user/devices") {

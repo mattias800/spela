@@ -12,10 +12,40 @@ Spela is a self-hosted game emulation service with three components:
 3. **Automated tests whenever reasonable** - For bugs: write failing test first, then fix.
 4. **libretro only** - No custom emulation code. All emulation via libretro cores.
 5. **A feature is not done until all tests pass** - Every change must have appropriate test coverage (E2E and/or unit tests), and the ENTIRE test suite must pass before a task is considered complete. No regressions allowed.
-   - **Player app**: Espresso + Compose UI Test E2E tests (`player/run-e2e.sh` for Android, `player/run-desktop-tests.sh` for desktop) + unit tests. Any user-facing behavior change requires a corresponding E2E test. See `E2E.md` for device setup and test execution instructions. Prefer a physical device if connected (`adb devices`), fall back to emulator.
+   - **Player app**: See "Player App Testing Strategy" below for the desktop-primary / Android-smoke approach.
    - **Web frontend**: Playwright E2E tests + Vitest unit tests.
    - **Backend**: Go unit tests (`go test ./...`).
    - Run the full suite, not just the new tests. Catching regressions early is critical.
+
+### Player App Testing Strategy
+
+The player app uses **Compose Multiplatform** — all UI composables, ViewModels, state, and navigation are 100% shared code in `player/shared/src/commonMain/`. This means the same composable renders identically on Android and desktop. **Do not duplicate the same UI assertions on both platforms.** Each platform's test suite has a distinct purpose:
+
+**Desktop tests = Primary UI test suite** (`player/run-desktop-tests.sh`)
+- Uses `SpelaTestHarness` with fake repositories — fast, no device/backend needed, CI-friendly.
+- **This is where all feature-level UI tests go.** Every new screen, section, dialog, toggle, and interaction gets a desktop E2E test.
+- Tests verify: composable rendering, state transitions, navigation, user interactions, empty states, error states, loading states.
+- Run after every change. This is the fast feedback loop.
+
+**Android tests = Integration smoke tests** (`player/run-e2e.sh`)
+- Runs on a real device/emulator against the real backend (`docker-compose.e2e.yml`).
+- **Do NOT mirror desktop UI tests.** Instead, focus on what desktop tests can't cover:
+  - Real API round-trips (network, JSON serialization, auth token flow)
+  - Login/session establishment end-to-end
+  - Platform-specific behavior (touch input, keyboard dismiss, back gesture, Android lifecycle)
+  - Smoke tests for critical flows (login → browse → game detail → play) to catch integration issues
+- A smaller, focused set. Quality over quantity.
+
+**When to write which:**
+| What changed | Desktop test? | Android test? |
+|---|---|---|
+| New UI section/screen (shared composable) | Yes — thorough | No (unless it has platform-specific behavior) |
+| New API integration (new endpoint wired up) | Yes (with fake repo) | Yes — smoke test with real API |
+| Bug fix in shared UI logic | Yes — regression test | No |
+| Platform-specific behavior (Android-only) | No | Yes |
+| Critical user flow (login, play game) | Yes | Yes — smoke test |
+
+**Rule of thumb:** If the code is in `commonMain/`, test it on desktop. If it touches platform-specific code or real network, add an Android smoke test. Never write the same assertion in both suites.
 
 ## Code Style
 
@@ -39,7 +69,9 @@ Spela is a self-hosted game emulation service with three components:
 - Compose Multiplatform for all UI
 - Clean Architecture: data → domain → presentation
 - Unit tests with kotlin.test + JUnit5
-- E2E tests with Espresso + Compose UI Test (see player/README.md for details)
+- Desktop E2E tests (primary): Compose UI Test + SpelaTestHarness with fake repos
+- Android E2E tests (smoke): Espresso + Compose UI Test on real device/backend
+- See "Player App Testing Strategy" above for what goes where
 
 ## Data Persistence & User Preferences
 

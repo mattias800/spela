@@ -31,16 +31,15 @@ import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
-import org.koin.compose.koinInject
 
 @Composable
 fun InGameOverlay(
     viewModel: EmulationViewModel,
+    keyMappingViewModel: KeyMappingViewModel,
     onExit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val continueFocusRequester = remember { FocusRequester() }
-    val keyMappingViewModel: KeyMappingViewModel = koinInject()
 
     AnimatedVisibility(
         visible = state.showOverlay,
