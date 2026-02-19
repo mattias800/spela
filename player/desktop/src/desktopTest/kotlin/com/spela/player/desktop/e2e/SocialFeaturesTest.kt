@@ -129,8 +129,9 @@ class SocialFeaturesTest {
         )
         advance(harness)
 
-        // Community Saves renders in the LazyColumn - verify it exists in the tree
-        onNodeWithText("Community Saves").assertExists()
+        // Community Saves is deep in the LazyColumn — scroll to bring it into composition
+        onNodeWithTag("game_detail_content").performScrollToNode(hasText("Community Saves"))
+        onNodeWithText("Community Saves").assertIsDisplayed()
         onNodeWithText("No community saves yet. Be the first to share!").assertExists()
     }
 
@@ -152,8 +153,9 @@ class SocialFeaturesTest {
         )
         advance(harness)
 
-        // Community Saves section with shared save data exists in the tree
-        onNodeWithText("Community Saves").assertExists()
+        // Community Saves is deep in the LazyColumn — scroll to bring it into composition
+        onNodeWithTag("game_detail_content").performScrollToNode(hasText("Community Saves"))
+        onNodeWithText("Community Saves").assertIsDisplayed()
         // The empty state text should NOT be present since we have saves
         onNodeWithText("No community saves yet. Be the first to share!").assertDoesNotExist()
         onNodeWithContentDescription("Boss Rush Save by bob").assertExists()
