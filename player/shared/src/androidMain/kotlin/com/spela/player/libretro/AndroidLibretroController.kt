@@ -227,6 +227,7 @@ class AndroidLibretroController(
     fun gpuDeinit() = jni.nativeGpuDeinit()
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
+    fun isHwRenderEnabled(): Boolean = jni.nativeIsHwRenderEnabled()
 
     /**
      * Notify that physical controller input was received.

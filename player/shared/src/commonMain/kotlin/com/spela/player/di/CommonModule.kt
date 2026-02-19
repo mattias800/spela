@@ -2,6 +2,7 @@ package com.spela.player.di
 
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
@@ -28,8 +29,11 @@ val commonModule = module {
     /* Device */
     single { DeviceManager(get(), get()) }
 
+    /* Scraping */
+    single { ScrapeService(get(), get(), get()) }
+
     /* Presence */
-    single { PresenceService(get(), get(), get(), get()) }
+    single { PresenceService(get(), get(), get(), get(), get()) }
 
     /* Repositories */
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
@@ -116,6 +120,7 @@ val commonModule = module {
             getUserStatsUseCase = get(),
             getRecentAchievementsUseCase = get(),
             challengeRepository = get(),
+            scrapeService = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -131,6 +136,7 @@ val commonModule = module {
             sharedSaveRepository = get(),
             getMyCollectionsUseCase = get(),
             addGameToCollectionUseCase = get(),
+            createCollectionUseCase = get(),
             getGameStatsUseCase = get(),
             gameStatsRepository = get(),
             challengeRepository = get(),
@@ -242,6 +248,7 @@ val commonModule = module {
             deleteCollectionUseCase = get(),
             removeGameFromCollectionUseCase = get(),
             authRepository = get(),
+            scrapeService = get(),
             dispatchers = get(),
             scope = get(),
         )

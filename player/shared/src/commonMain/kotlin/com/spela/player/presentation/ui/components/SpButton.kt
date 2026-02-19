@@ -48,6 +48,9 @@ fun SpButton(
         color = if (isFocused) SpColor.PrimaryLight else Color.Transparent,
         shape = shape,
     )
+    val isIconOnly = text.isEmpty() && leadingIcon != null
+    val defaultPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium)
+    val iconOnlyPadding = PaddingValues(SpSpacing.Medium)
 
     when (style) {
         SpButtonStyle.Primary -> {
@@ -68,7 +71,7 @@ fun SpButton(
                     disabledContainerColor = SpColor.SurfaceBright,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
-                contentPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium),
+                contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon)
             }
@@ -87,7 +90,7 @@ fun SpButton(
                     disabledContainerColor = SpColor.SurfaceBright,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
-                contentPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium),
+                contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon)
             }
@@ -105,7 +108,7 @@ fun SpButton(
                     contentColor = SpColor.Primary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
-                contentPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium),
+                contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon, SpColor.Primary)
             }
@@ -122,7 +125,7 @@ fun SpButton(
                     contentColor = SpColor.Primary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
-                contentPadding = PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
+                contentPadding = if (isIconOnly) iconOnlyPadding else PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
             ) {
                 ButtonContent(text, isLoading, leadingIcon, SpColor.Primary)
             }
@@ -143,13 +146,19 @@ private fun ButtonContent(
             color = indicatorColor,
             strokeWidth = 2.dp,
         )
-        Spacer(Modifier.width(SpSpacing.Small))
+        if (text.isNotEmpty()) {
+            Spacer(Modifier.width(SpSpacing.Small))
+        }
     } else if (leadingIcon != null) {
         leadingIcon()
-        Spacer(Modifier.width(SpSpacing.Small))
+        if (text.isNotEmpty()) {
+            Spacer(Modifier.width(SpSpacing.Small))
+        }
     }
-    Text(
-        text = text,
-        style = SpTypography.LabelLarge,
-    )
+    if (text.isNotEmpty()) {
+        Text(
+            text = text,
+            style = SpTypography.LabelLarge,
+        )
+    }
 }

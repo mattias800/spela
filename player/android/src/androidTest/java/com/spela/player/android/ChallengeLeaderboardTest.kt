@@ -83,7 +83,7 @@ class ChallengeLeaderboardTest {
         rule.waitForText("Attempt Challenge", timeout = 5_000)
 
         rule.tapOn("Attempt Challenge")
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        rule.waitForVisible("Game running", timeout = 15_000)
 
         // Let some time pass, then complete
         Thread.sleep(1_500)

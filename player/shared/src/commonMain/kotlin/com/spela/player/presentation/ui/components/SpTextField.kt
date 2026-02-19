@@ -105,6 +105,7 @@ fun SpSearchField(
     placeholder: String = "Search games...",
     onSearch: () -> Unit = {},
     leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     SpTextField(
         value = value,
@@ -115,5 +116,6 @@ fun SpSearchField(
         imeAction = ImeAction.Search,
         onImeAction = onSearch,
         leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
     )
 }

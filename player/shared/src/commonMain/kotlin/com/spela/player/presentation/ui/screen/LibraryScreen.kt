@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,64 +37,72 @@ fun LibraryScreen(
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize(),
     ) {
-        SpTopBar(title = "Library")
+        val isLandscape = maxWidth > maxHeight
 
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = SpColor.Surface,
-            contentColor = SpColor.OnSurface,
-            indicator = { tabPositions ->
-                if (selectedTabIndex < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = SpColor.Primary,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Background),
+        ) {
+            if (!isLandscape) {
+                SpTopBar(title = "Library")
+            }
+
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = SpColor.Surface,
+                contentColor = SpColor.OnSurface,
+                indicator = { tabPositions ->
+                    if (selectedTabIndex < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            color = SpColor.Primary,
+                        )
+                    }
+                },
+            ) {
+                libraryTabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = {
+                            Text(
+                                text = title,
+                                style = SpTypography.LabelMedium,
+                                color = if (selectedTabIndex == index) SpColor.Primary else SpColor.OnBackgroundTertiary,
+                            )
+                        },
                     )
                 }
-            },
-        ) {
-            libraryTabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = {
-                        Text(
-                            text = title,
-                            style = SpTypography.LabelMedium,
-                            color = if (selectedTabIndex == index) SpColor.Primary else SpColor.OnBackgroundTertiary,
-                        )
-                    },
-                )
             }
-        }
 
-        Box(modifier = Modifier.weight(1f)) {
-            when (selectedTabIndex) {
-                0 -> LibraryConsolesTab(
-                    viewModel = gameListViewModel,
-                    onConsoleSelected = onConsoleSelected,
-                )
-                1 -> AllGamesScreen(
-                    viewModel = gameListViewModel,
-                    onGameSelected = onGameSelected,
-                )
-                2 -> FavoritesScreen(
-                    viewModel = gameListViewModel,
-                    onGameSelected = onGameSelected,
-                )
-                3 -> PlayLaterScreen(
-                    viewModel = gameListViewModel,
-                    onGameSelected = onGameSelected,
-                )
-                4 -> CollectionsScreen(
-                    viewModel = collectionsViewModel,
-                    onCollectionSelected = onCollectionSelected,
-                )
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTabIndex) {
+                    0 -> LibraryConsolesTab(
+                        viewModel = gameListViewModel,
+                        onConsoleSelected = onConsoleSelected,
+                    )
+                    1 -> AllGamesScreen(
+                        viewModel = gameListViewModel,
+                        onGameSelected = onGameSelected,
+                    )
+                    2 -> FavoritesScreen(
+                        viewModel = gameListViewModel,
+                        onGameSelected = onGameSelected,
+                    )
+                    3 -> PlayLaterScreen(
+                        viewModel = gameListViewModel,
+                        onGameSelected = onGameSelected,
+                    )
+                    4 -> CollectionsScreen(
+                        viewModel = collectionsViewModel,
+                        onCollectionSelected = onCollectionSelected,
+                    )
+                }
             }
         }
     }

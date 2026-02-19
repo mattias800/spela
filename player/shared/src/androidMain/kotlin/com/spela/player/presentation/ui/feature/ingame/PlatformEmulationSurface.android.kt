@@ -25,8 +25,16 @@ actual fun PlatformEmulationSurface(
 
     val isDualScreenSplit = emulationState.isDualScreenConsole && emulationState.secondaryDisplayActive
 
-    // Use GPU-accelerated Vulkan surface when available, fall back to software
-    if (androidController.gpuIsActive() && !isDualScreenSplit) {
+    // Use Vulkan surface for HW render cores (Vulkan init happens in surfaceCreated),
+    // or when the GPU renderer is already active. Fall back to software otherwise.
+    // On emulators, HW render is overridden to Angrylion (SwiftShader can't run
+    // paraLLEl-RDP), so only trust gpuIsActive() — not isHwRenderEnabled().
+    val useVulkanSurface = if (com.spela.player.util.isEmulator()) {
+        androidController.gpuIsActive()
+    } else {
+        androidController.isHwRenderEnabled() || androidController.gpuIsActive()
+    }
+    if (useVulkanSurface && !isDualScreenSplit) {
         VulkanEmulationSurface(
             controller = androidController,
             selectedShader = selectedShader,

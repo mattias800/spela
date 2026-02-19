@@ -84,6 +84,8 @@ class SpelaTestHarness(
     val gameStatsRepo = FakeGameStatsRepository()
     val challengeRepo = FakeChallengeRepository()
 
+    private val scrapeService = com.spela.player.data.remote.ScrapeService(fakeApiClient, dispatchers, scope)
+
     val gameListViewModel = GameListViewModel(
         getConsolesUseCase = GetConsolesUseCase(gameRepo),
         getGamesForConsoleUseCase = GetGamesForConsoleUseCase(gameRepo),
@@ -96,6 +98,7 @@ class SpelaTestHarness(
         getUserStatsUseCase = GetUserStatsUseCase(gameStatsRepo),
         getRecentAchievementsUseCase = GetRecentAchievementsUseCase(gameStatsRepo),
         challengeRepository = challengeRepo,
+        scrapeService = scrapeService,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -111,6 +114,7 @@ class SpelaTestHarness(
         sharedSaveRepository = sharedSaveRepo,
         getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
         addGameToCollectionUseCase = AddGameToCollectionUseCase(collectionRepo),
+        createCollectionUseCase = CreateCollectionUseCase(collectionRepo),
         getGameStatsUseCase = GetGameStatsUseCase(gameStatsRepo),
         gameStatsRepository = gameStatsRepo,
         challengeRepository = challengeRepo,
@@ -221,6 +225,7 @@ class SpelaTestHarness(
         deleteCollectionUseCase = DeleteCollectionUseCase(collectionRepo),
         removeGameFromCollectionUseCase = RemoveGameFromCollectionUseCase(collectionRepo),
         authRepository = authRepo,
+        scrapeService = scrapeService,
         dispatchers = dispatchers,
         scope = scope,
     )

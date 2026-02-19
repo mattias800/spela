@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
+import com.spela.player.domain.usecase.CreateCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.GetGameStatsUseCase
 import com.spela.player.domain.usecase.GetMyCollectionsUseCase
@@ -36,6 +37,7 @@ class GameDetailViewModel(
     private val sharedSaveRepository: SharedSaveRepository,
     private val getMyCollectionsUseCase: GetMyCollectionsUseCase,
     private val addGameToCollectionUseCase: AddGameToCollectionUseCase,
+    private val createCollectionUseCase: CreateCollectionUseCase,
     private val getGameStatsUseCase: GetGameStatsUseCase,
     private val gameStatsRepository: GameStatsRepository,
     private val challengeRepository: ChallengeRepository,
@@ -69,6 +71,7 @@ class GameDetailViewModel(
                 it.copy(showAddToCollectionDialog = false)
             }
             is GameDetailIntent.AddToCollection -> addToCollection(intent.collectionId)
+            is GameDetailIntent.CreateCollectionAndAddGame -> createCollectionAndAddGame(intent.name)
             GameDetailIntent.ShowCreateChallengeDialog -> _state.update {
                 it.copy(showCreateChallengeDialog = true)
             }
@@ -405,6 +408,45 @@ class GameDetailViewModel(
                 onFailure = { error ->
                     _state.update {
                         it.copy(error = error.message ?: "Failed to add to collection")
+                    }
+                },
+            )
+        }
+    }
+
+    private fun createCollectionAndAddGame(name: String) {
+        val gameId = currentGameId ?: return
+        _state.update { it.copy(isCreatingCollection = true, collectionCreationError = null) }
+        scope.launch(dispatchers.io) {
+            createCollectionUseCase(name = name).fold(
+                onSuccess = { collection ->
+                    addGameToCollectionUseCase(collection.id, gameId).fold(
+                        onSuccess = {
+                            _state.update {
+                                it.copy(
+                                    showAddToCollectionDialog = false,
+                                    isCreatingCollection = false,
+                                    collectionCreationError = null,
+                                    successMessage = "Created \"${collection.name}\" and added game",
+                                )
+                            }
+                        },
+                        onFailure = { error ->
+                            _state.update {
+                                it.copy(
+                                    isCreatingCollection = false,
+                                    collectionCreationError = error.message ?: "Failed to add game to collection",
+                                )
+                            }
+                        },
+                    )
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            isCreatingCollection = false,
+                            collectionCreationError = error.message ?: "Failed to create collection",
+                        )
                     }
                 },
             )

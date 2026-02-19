@@ -9,6 +9,7 @@ import com.spela.player.domain.model.ChallengeAttempt
 import com.spela.player.domain.model.ChallengeLeaderboardEntry
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
+import com.spela.player.domain.usecase.CreateCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
@@ -72,6 +73,7 @@ class GameDetailRatingTest {
             sharedSaveRepository = StubSharedSaveRepository(),
             getMyCollectionsUseCase = GetMyCollectionsUseCase(StubCollectionRepository()),
             addGameToCollectionUseCase = AddGameToCollectionUseCase(StubCollectionRepository()),
+            createCollectionUseCase = CreateCollectionUseCase(StubCollectionRepository()),
             getGameStatsUseCase = GetGameStatsUseCase(StubGameStatsRepository()),
             gameStatsRepository = StubGameStatsRepository(),
             challengeRepository = StubChallengeRepository(),

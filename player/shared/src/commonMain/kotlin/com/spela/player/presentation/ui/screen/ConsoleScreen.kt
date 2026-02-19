@@ -1,20 +1,26 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -23,17 +29,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.intent.GameListIntent
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
@@ -44,7 +57,6 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
-import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -59,115 +71,172 @@ fun ConsoleScreen(
     onBack: () -> Unit,
     onNavigateToConsoleSettings: () -> Unit = {},
 ) {
-    PlatformBackHandler { onBack() }
-
     val state by viewModel.state.collectAsState()
 
     val console = state.consoles.firstOrNull { it.id == consoleId }
     val consoleName = console?.name ?: "Games"
 
+    var isSearchVisible by rememberSaveable { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+
+    // Back handler: close search first, then navigate back
+    PlatformBackHandler {
+        if (isSearchVisible) {
+            viewModel.onIntent(GameListIntent.Search(""))
+            isSearchVisible = false
+        } else {
+            onBack()
+        }
+    }
+
     LaunchedEffect(consoleId) {
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
     }
 
+    // Auto-focus search field when it becomes visible
+    LaunchedEffect(isSearchVisible) {
+        if (isSearchVisible) {
+            focusRequester.requestFocus()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(
-            title = consoleName,
-            showBack = true,
-            onBack = onBack,
-            titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
-                {
-                    AsyncImage(
-                        model = console.iconUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(28.dp),
-                    )
-                }
-            } else null,
-            actions = {
-                SpIconButton(
-                    icon = Icons.Filled.Settings,
-                    contentDescription = "Console settings",
-                    onClick = onNavigateToConsoleSettings,
-                )
-            },
-        )
-
-        SpSearchField(
-            value = state.searchQuery,
-            onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
-            placeholder = "Search $consoleName games...",
-        )
-
-        if (state.isLoading && state.games.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                SpLoadingIndicator(message = "Loading games...")
-            }
-        } else {
-            PullToRefreshBox(
-                isRefreshing = state.isLoading,
-                onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                if (state.games.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (state.searchQuery.length >= 2) {
-                            SpEmptyStates.NoSearchResults(query = state.searchQuery)
-                        } else {
-                            SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
-                        }
+                .fillMaxSize()
+                .background(SpColor.Background),
+        ) {
+            SpTopBar(
+                title = consoleName,
+                showBack = true,
+                onBack = {
+                    if (isSearchVisible) {
+                        viewModel.onIntent(GameListIntent.Search(""))
+                        isSearchVisible = false
+                    } else {
+                        onBack()
                     }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            horizontal = SpSpacing.ScreenHorizontal,
-                            vertical = SpSpacing.Default,
-                        ),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-                    ) {
-                        items(state.games, key = { it.id }) { game ->
-                            GameGridItem(
-                                game = game,
-                                onClick = { onGameSelected(game.id) },
-                            )
+                },
+                titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
+                    {
+                        AsyncImage(
+                            model = console.iconUrl,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                } else null,
+                actions = {
+                    SpIconButton(
+                        icon = Icons.Filled.Search,
+                        contentDescription = "Search games",
+                        onClick = { isSearchVisible = !isSearchVisible },
+                        badge = if (!isSearchVisible && state.searchQuery.isNotEmpty()) {
+                            {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .align(Alignment.TopEnd)
+                                        .background(SpColor.Primary, shape = CircleShape),
+                                )
+                            }
+                        } else null,
+                    )
+                    SpIconButton(
+                        icon = Icons.Filled.Settings,
+                        contentDescription = "Console settings",
+                        onClick = onNavigateToConsoleSettings,
+                    )
+                },
+            )
+
+            AnimatedVisibility(
+                visible = isSearchVisible,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SpSearchField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small)
+                        .focusRequester(focusRequester),
+                    placeholder = "Search $consoleName games...",
+                    trailingIcon = {
+                        SpIconButton(
+                            icon = Icons.Filled.Close,
+                            contentDescription = "Close search",
+                            onClick = {
+                                viewModel.onIntent(GameListIntent.Search(""))
+                                isSearchVisible = false
+                            },
+                        )
+                    },
+                )
+            }
+
+            if (state.isLoading && state.games.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SpLoadingIndicator(message = "Loading games...")
+                }
+            } else {
+                PullToRefreshBox(
+                    isRefreshing = state.isLoading,
+                    onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    if (state.games.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (state.searchQuery.length >= 2) {
+                                SpEmptyStates.NoSearchResults(query = state.searchQuery)
+                            } else {
+                                SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
+                            }
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                horizontal = SpSpacing.ScreenHorizontal,
+                                vertical = SpSpacing.Default,
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                            verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                        ) {
+                            items(state.games, key = { it.id }) { game ->
+                                GameGridItem(
+                                    game = game,
+                                    onClick = { onGameSelected(game.id) },
+                                    onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    // Error snackbar
-    SpSnackbar(
-        data = state.error?.let {
-            SpSnackbarData(
-                message = it,
-                type = SpSnackbarType.Error,
-                actionLabel = "Dismiss",
-                onAction = { viewModel.onIntent(GameListIntent.DismissError) },
-            )
-        },
-        onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
-        modifier = Modifier.align(Alignment.BottomCenter),
-    )
+        // Error snackbar
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(GameListIntent.DismissError) },
+                )
+            },
+            onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     } // outer Box
 }
 
@@ -175,7 +244,15 @@ fun ConsoleScreen(
 internal fun GameGridItem(
     game: Game,
     onClick: () -> Unit,
+    onRequestScrape: ((Game) -> Unit)? = null,
 ) {
+    // Trigger scrape for games with no cover art that haven't been scraped
+    if (onRequestScrape != null && game.coverUrl == null && game.scrapeAttempts == 0) {
+        LaunchedEffect(game.id) {
+            onRequestScrape(game)
+        }
+    }
+
     SpCard(
         onClick = onClick,
         modifier = Modifier.semantics {

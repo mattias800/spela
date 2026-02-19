@@ -65,7 +65,7 @@ class ChallengeAttemptTest {
         // Wait for touch controls. If the in-game overlay opened unexpectedly
         // (e.g., after a previous test's state leaked), dismiss it first.
         try {
-            rule.waitForVisible("Touch controls", timeout = 5_000)
+            rule.waitForVisible("Game running", timeout = 5_000)
         } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
             // Touch controls hidden — check if the overlay is open
             val overlayOpen = rule.onAllNodesWithText("Resume")
@@ -75,7 +75,7 @@ class ChallengeAttemptTest {
             if (overlayOpen) {
                 rule.resumeChallengeFromOverlay()
             }
-            rule.waitForVisible("Touch controls", timeout = 10_000)
+            rule.waitForVisible("Game running", timeout = 10_000)
         }
     }
 
@@ -85,8 +85,8 @@ class ChallengeAttemptTest {
     fun attemptChallengeLoadsGame() {
         startAttempt()
 
-        // Game should be running (touch controls visible)
-        rule.assertVisible("Touch controls")
+        // Game should be running
+        rule.assertVisible("Game running")
 
         // Timer should be visible during gameplay
         rule.waitForVisible("Challenge timer", timeout = 5_000)
@@ -213,8 +213,8 @@ class ChallengeAttemptTest {
         rule.openChallengeOverlay()
         rule.tapOn("Restart")
 
-        // Game should reload — touch controls visible again
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        // Game should reload — game running indicator visible again
+        rule.waitForVisible("Game running", timeout = 15_000)
 
         // Timer should have reset (new attempt started server-side)
         rule.waitForVisible("Challenge timer", timeout = 5_000)
@@ -248,7 +248,7 @@ class ChallengeAttemptTest {
         rule.resumeChallengeFromOverlay()
 
         // Game still running
-        rule.assertVisible("Touch controls")
+        rule.assertVisible("Game running")
 
         rule.abandonChallenge()
     }

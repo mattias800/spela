@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ScrapeService
+import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameCollection
 import com.spela.player.domain.model.GameCollectionDetail
 import com.spela.player.domain.repository.AuthRepository
@@ -81,6 +83,7 @@ class CollectionsViewModel(
     private val deleteCollectionUseCase: DeleteCollectionUseCase,
     private val removeGameFromCollectionUseCase: RemoveGameFromCollectionUseCase,
     private val authRepository: AuthRepository,
+    private val scrapeService: ScrapeService,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -308,6 +311,12 @@ class CollectionsViewModel(
                     }
                 },
             )
+        }
+    }
+
+    fun requestScrapeIfNeeded(game: Game) {
+        if (game.coverUrl == null && game.scrapeAttempts == 0) {
+            scrapeService.enqueueScrape(game.id)
         }
     }
 }

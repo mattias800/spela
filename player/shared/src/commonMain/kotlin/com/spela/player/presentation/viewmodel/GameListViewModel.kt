@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ScrapeService
+import com.spela.player.domain.model.Game
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.intent.GameListIntent
@@ -25,11 +27,60 @@ class GameListViewModel(
     private val getUserStatsUseCase: GetUserStatsUseCase,
     private val getRecentAchievementsUseCase: GetRecentAchievementsUseCase,
     private val challengeRepository: ChallengeRepository,
+    private val scrapeService: ScrapeService,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(GameListState())
     val state: StateFlow<GameListState> = _state.asStateFlow()
+
+    init {
+        // Observe scrape completions and update games in state
+        scope.launch(dispatchers.io) {
+            scrapeService.scrapedGames.collect { scrapedGame ->
+                _state.update { state ->
+                    state.copy(
+                        games = updateGameInList(state.games, scrapedGame),
+                        recentGames = updateGameInList(state.recentGames, scrapedGame),
+                        favoriteGames = updateGameInList(state.favoriteGames, scrapedGame),
+                        playLaterGames = updateGameInList(state.playLaterGames, scrapedGame),
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Enqueue a game for scraping if it has no cover art and hasn't been scraped yet.
+     */
+    fun requestScrapeIfNeeded(game: Game) {
+        if (game.coverUrl == null && game.scrapeAttempts == 0) {
+            scrapeService.enqueueScrape(game.id)
+        }
+    }
+
+    private fun updateGameInList(games: List<Game>, scraped: Game): List<Game> {
+        var changed = false
+        val result = games.map { existing ->
+            if (existing.id == scraped.id) {
+                changed = true
+                existing.copy(
+                    coverUrl = scraped.coverUrl,
+                    description = scraped.description,
+                    developer = scraped.developer,
+                    publisher = scraped.publisher,
+                    releaseDate = scraped.releaseDate,
+                    genre = scraped.genre,
+                    players = scraped.players,
+                    rating = scraped.rating,
+                    scrapeAttempts = scraped.scrapeAttempts,
+                )
+            } else {
+                existing
+            }
+        }
+        return if (changed) result else games
+    }
 
     fun onIntent(intent: GameListIntent) {
         when (intent) {

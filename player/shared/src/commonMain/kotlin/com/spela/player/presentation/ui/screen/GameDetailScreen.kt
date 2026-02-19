@@ -292,6 +292,11 @@ fun GameDetailScreen(
                 onSelectCollection = { collectionId ->
                     viewModel.onIntent(GameDetailIntent.AddToCollection(collectionId))
                 },
+                onCreateCollectionAndAddGame = { name ->
+                    viewModel.onIntent(GameDetailIntent.CreateCollectionAndAddGame(name))
+                },
+                isCreatingCollection = state.isCreatingCollection,
+                collectionCreationError = state.collectionCreationError,
             )
         }
 
@@ -356,8 +361,8 @@ private fun GameInfoContent(
             consoleName = game.consoleName,
             consoleColor = getConsoleColor(game.consoleName),
         )
-        game.genre?.let { SpChip(text = it) }
-        game.releaseDate?.let { SpChip(text = it) }
+        game.genre?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
+        game.releaseDate?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
     }
 
     if (state.isScraping) {
@@ -371,7 +376,8 @@ private fun GameInfoContent(
 
     Spacer(Modifier.height(SpSpacing.XLarge))
 
-    // Action buttons
+    // Action buttons - two-row layout
+    // Row 1: Play buttons
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -415,7 +421,14 @@ private fun GameInfoContent(
                 enabled = !isDownloading,
             )
         }
+    }
 
+    Spacer(Modifier.height(SpSpacing.Small))
+
+    // Row 2: Icon action buttons
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
         SpButton(
             text = "",
             onClick = onToggleFavorite,

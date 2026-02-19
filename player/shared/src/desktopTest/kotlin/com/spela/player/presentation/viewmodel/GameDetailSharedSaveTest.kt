@@ -5,6 +5,7 @@ import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
+import com.spela.player.domain.usecase.CreateCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
@@ -65,6 +66,7 @@ class GameDetailSharedSaveTest {
             sharedSaveRepository = fakeSharedSaveRepo,
             getMyCollectionsUseCase = GetMyCollectionsUseCase(TestCollectionRepository()),
             addGameToCollectionUseCase = AddGameToCollectionUseCase(TestCollectionRepository()),
+            createCollectionUseCase = CreateCollectionUseCase(TestCollectionRepository()),
             getGameStatsUseCase = GetGameStatsUseCase(SharedSaveTestGameStatsRepository()),
             gameStatsRepository = SharedSaveTestGameStatsRepository(),
             challengeRepository = SharedSaveTestChallengeRepository(),

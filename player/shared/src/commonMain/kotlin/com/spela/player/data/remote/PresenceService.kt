@@ -1,6 +1,8 @@
 package com.spela.player.data.remote
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.GameDto
+import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
@@ -10,6 +12,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Manages WebSocket connection for online presence and periodic play-time heartbeats.
@@ -22,10 +28,16 @@ class PresenceService(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val scrapeService: ScrapeService? = null,
 ) {
     private var wsJob: Job? = null
     private var heartbeatJob: Job? = null
     private var currentGameId: String? = null
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
@@ -50,9 +62,10 @@ class PresenceService(
                         install(WebSockets)
                     }
                     wsClient.webSocket(wsUrl) {
-                        // Keep connection alive by reading frames
                         for (frame in incoming) {
-                            // Server sends events; we just need to stay connected
+                            if (frame is Frame.Text) {
+                                handleFrame(frame.readText())
+                            }
                         }
                     }
                     wsClient.close()
@@ -111,5 +124,22 @@ class PresenceService(
         heartbeatJob?.cancel()
         heartbeatJob = null
         currentGameId = null
+    }
+
+    private fun handleFrame(text: String) {
+        try {
+            val event = json.parseToJsonElement(text).jsonObject
+            val type = event["type"]?.jsonPrimitive?.content ?: return
+            val payload = event["payload"]?.jsonObject ?: return
+
+            when (type) {
+                "game_scraped" -> {
+                    val gameDto = json.decodeFromJsonElement<GameDto>(payload)
+                    scrapeService?.onGameScraped(gameDto.toDomain())
+                }
+            }
+        } catch (_: Exception) {
+            // Malformed frame, ignore
+        }
     }
 }

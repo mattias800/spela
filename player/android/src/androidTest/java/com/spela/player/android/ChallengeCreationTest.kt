@@ -135,8 +135,8 @@ class ChallengeCreationTest {
         rule.assertTextNotVisible("Create Challenge")
         rule.assertTextNotVisible("Exit Game")
 
-        // Game still running (touch controls visible)
-        rule.waitForVisible("Touch controls", timeout = 5_000)
+        // Game still running
+        rule.waitForVisible("Game running", timeout = 5_000)
 
         rule.openOverlayAndExit()
     }

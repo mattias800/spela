@@ -19,6 +19,7 @@ sealed interface GameDetailIntent {
     data object ShowAddToCollectionDialog : GameDetailIntent
     data object DismissAddToCollectionDialog : GameDetailIntent
     data class AddToCollection(val collectionId: String) : GameDetailIntent
+    data class CreateCollectionAndAddGame(val name: String) : GameDetailIntent
 
     // Community Stats, Reviews, Relays
     data class LoadGameStats(val gameId: String) : GameDetailIntent

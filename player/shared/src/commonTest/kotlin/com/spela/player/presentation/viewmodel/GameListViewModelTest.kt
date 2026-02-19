@@ -1,5 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ScrapeService
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.GameRepository
@@ -7,6 +10,9 @@ import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.util.DispatcherProvider
+import io.ktor.client.engine.*
+import io.ktor.client.engine.mock.*
+import io.ktor.http.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,9 +46,19 @@ class GameListViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val noOpEngineFactory = object : HttpClientEngineFactory<MockEngineConfig> {
+        override fun create(block: MockEngineConfig.() -> Unit): HttpClientEngine {
+            return MockEngine(MockEngineConfig().apply {
+                addHandler { respond("", HttpStatusCode.OK) }
+                block()
+            })
+        }
+    }
+
     private fun createViewModel(): GameListViewModel {
         val scope = CoroutineScope(testDispatcher)
         val stubStatsRepo = GameListTestGameStatsRepository()
+        val apiClient = SpelaApiClient(noOpEngineFactory, TokenManager())
         return GameListViewModel(
             getConsolesUseCase = GetConsolesUseCase(fakeGameRepo),
             getGamesForConsoleUseCase = GetGamesForConsoleUseCase(fakeGameRepo),
@@ -55,6 +71,7 @@ class GameListViewModelTest {
             getUserStatsUseCase = GetUserStatsUseCase(stubStatsRepo),
             getRecentAchievementsUseCase = GetRecentAchievementsUseCase(stubStatsRepo),
             challengeRepository = GameListTestChallengeRepository(),
+            scrapeService = ScrapeService(apiClient, testDispatchers, scope),
             dispatchers = testDispatchers,
             scope = scope,
         )

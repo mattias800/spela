@@ -44,7 +44,7 @@ class ChallengeIntegrationTest {
 
         // Start and complete attempt
         rule.tapOn("Attempt Challenge")
-        rule.waitForVisible("Touch controls", timeout = 15_000)
+        rule.waitForVisible("Game running", timeout = 15_000)
         Thread.sleep(1_000)
         rule.completeChallenge()
         rule.waitForText("Challenge Complete", timeout = 8_000)

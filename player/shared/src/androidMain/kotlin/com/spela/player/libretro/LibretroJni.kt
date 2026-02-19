@@ -67,6 +67,7 @@ class LibretroJni {
     external fun nativeGpuDeinit()
     external fun nativeGpuIsActive(): Boolean
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
+    external fun nativeIsHwRenderEnabled(): Boolean
 
     /* Achievements */
     external fun nativeAchievementsInit()

@@ -187,6 +187,7 @@ fun CollectionDetailScreen(
                                         )
                                     }
                                 } else null,
+                                onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                             )
                         }
                     }
@@ -261,9 +262,10 @@ private fun CollectionGameGridItem(
     game: Game,
     onClick: () -> Unit,
     onRemove: (() -> Unit)?,
+    onRequestScrape: ((Game) -> Unit)? = null,
 ) {
     Box {
-        GameGridItem(game = game, onClick = onClick)
+        GameGridItem(game = game, onClick = onClick, onRequestScrape = onRequestScrape)
         if (onRemove != null) {
             SpIconButton(
                 icon = Icons.Filled.Close,

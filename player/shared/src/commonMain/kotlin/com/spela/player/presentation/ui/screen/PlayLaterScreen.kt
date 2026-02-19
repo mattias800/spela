@@ -68,6 +68,7 @@ fun PlayLaterScreen(
                         GameGridItem(
                             game = game,
                             onClick = { onGameSelected(game.id) },
+                            onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                         )
                     }
                 }

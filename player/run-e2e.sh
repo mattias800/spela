@@ -29,6 +29,30 @@ else
   echo "Device is already unlocked."
 fi
 
+# ── Set up reverse port forwarding (device localhost:8080 → host localhost:8080) ──
+# This works on both emulators and physical devices, so tests can use 127.0.0.1:8080.
+adb -s "$ADB_SERIAL" reverse tcp:8080 tcp:8080
+echo "Reverse port forwarding set up (device:8080 → host:8080)."
+
+# ── Keep screen on during tests ──
+# The Gradle build can take 1-2 minutes. Without this, physical devices go back
+# to sleep before the test APK is installed, causing the Activity to pause immediately.
+PREV_TIMEOUT=$(adb -s "$ADB_SERIAL" shell settings get system screen_off_timeout 2>/dev/null || echo "")
+adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout 600000
+echo "Screen timeout set to 10 minutes for test duration."
+adb -s "$ADB_SERIAL" shell input keyevent KEYCODE_WAKEUP
+
+cleanup_after_tests() {
+  if [ -n "$PREV_TIMEOUT" ] && [ "$PREV_TIMEOUT" != "null" ]; then
+    adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout "$PREV_TIMEOUT" 2>/dev/null || true
+    echo "Screen timeout restored to ${PREV_TIMEOUT}ms."
+  fi
+  # Turn off screen after tests to protect OLED from burn-in
+  adb -s "$ADB_SERIAL" shell input keyevent KEYCODE_SLEEP 2>/dev/null || true
+  echo "Screen turned off to protect OLED."
+}
+trap cleanup_after_tests EXIT
+
 # ── Run Compose instrumented tests ──
 
 if [ $# -gt 0 ]; then

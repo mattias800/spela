@@ -31,6 +31,8 @@ data class GameDetailState(
     val showAddToCollectionDialog: Boolean = false,
     val userCollections: List<GameCollection> = emptyList(),
     val isLoadingCollections: Boolean = false,
+    val isCreatingCollection: Boolean = false,
+    val collectionCreationError: String? = null,
     // Community Stats
     val gameStats: GameStats? = null,
     val isLoadingStats: Boolean = false,

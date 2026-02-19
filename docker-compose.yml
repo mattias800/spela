@@ -7,13 +7,16 @@ services:
       - "8080:8080"
     volumes:
       - spela-data:/app/data
-      - ./games:/app/games:ro
+      - ${SPELA_GAMES_PATH:-./games}:/app/games:ro
       - spela-saves:/app/saves
       - spela-cores:/app/cores
+      - spela-images:/app/images
     environment:
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:-change-me-in-production}
       - SPELA_GAME_DIRS=/app/games
+      - SPELA_CORS_ORIGINS=${SPELA_CORS_ORIGINS:-*}
+      - SPELA_WS_ORIGINS=${SPELA_WS_ORIGINS:-}
       - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
       - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
       - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
@@ -24,3 +27,4 @@ volumes:
   spela-data:
   spela-saves:
   spela-cores:
+  spela-images:

@@ -51,8 +51,15 @@ fun GameDetailLayout(
         val isLandscape = maxWidth > maxHeight
 
         if (isLandscape) {
+            val isSmallLandscape = maxHeight < 500.dp
+            val coverWidth = if (isSmallLandscape) {
+                constraintsMaxWidth * 0.3f
+            } else {
+                constraintsMaxWidth * 0.4f
+            }
             LandscapeLayout(
-                coverWidth = constraintsMaxWidth * 0.4f,
+                coverWidth = coverWidth,
+                isCompact = isSmallLandscape,
                 topBar = topBar,
                 cover = cover,
                 sections = sections,
@@ -70,6 +77,7 @@ fun GameDetailLayout(
 @Composable
 private fun LandscapeLayout(
     coverWidth: androidx.compose.ui.unit.Dp,
+    isCompact: Boolean,
     topBar: @Composable () -> Unit,
     cover: @Composable (Modifier) -> Unit,
     sections: LazyListScope.() -> Unit,
@@ -90,7 +98,11 @@ private fun LandscapeLayout(
                 .weight(1f)
                 .fillMaxHeight()
                 .testTag("game_detail_content"),
-            contentPadding = PaddingValues(SpSpacing.XLarge),
+            contentPadding = if (isCompact) {
+                PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium)
+            } else {
+                PaddingValues(SpSpacing.XLarge)
+            },
         ) {
             sections()
         }
