@@ -38,8 +38,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
+import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
 import com.spela.player.presentation.ui.feature.gamedetail.InfoColumn
@@ -133,6 +135,7 @@ fun GameDetailScreen(
                             onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
                             onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                             onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+                            onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
                             onRate = { rating -> viewModel.onIntent(GameDetailIntent.RateGame(rating)) },
                             onCreateNetplay = onCreateNetplay,
                         )
@@ -187,6 +190,30 @@ fun GameDetailScreen(
             },
         )
 
+        // Collection picker dialog
+        if (state.showAddToCollectionDialog) {
+            CollectionPickerDialog(
+                collections = state.userCollections,
+                isLoading = state.isLoadingCollections,
+                onDismiss = { viewModel.onIntent(GameDetailIntent.DismissAddToCollectionDialog) },
+                onSelectCollection = { collectionId ->
+                    viewModel.onIntent(GameDetailIntent.AddToCollection(collectionId))
+                },
+            )
+        }
+
+        // Success snackbar
+        SpSnackbar(
+            data = state.successMessage?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Success,
+                )
+            },
+            onDismiss = { viewModel.onIntent(GameDetailIntent.DismissSuccess) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
         // Error snackbar
         SpSnackbar(
             data = state.error?.let {
@@ -215,6 +242,7 @@ private fun GameInfoContent(
     onDownloadGame: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
+    onAddToCollection: () -> Unit,
     onRate: (Int) -> Unit,
     onCreateNetplay: ((String) -> Unit)? = null,
 ) {
@@ -323,6 +351,23 @@ private fun GameInfoContent(
             leadingIcon = {
                 Icon(
                     imageVector = if (game.isInPlayLater) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        SpButton(
+            text = "",
+            onClick = onAddToCollection,
+            style = SpButtonStyle.Outlined,
+            modifier = Modifier.semantics {
+                contentDescription = "Add to collection"
+                role = Role.Button
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.LibraryAdd,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )

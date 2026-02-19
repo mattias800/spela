@@ -4,7 +4,9 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
+import com.spela.player.domain.usecase.AddGameToCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.presentation.intent.GameDetailIntent
@@ -60,6 +62,8 @@ class GameDetailSharedSaveTest {
             saveRepository = fakeSaveRepo,
             ratingRepository = TestRatingRepository(),
             sharedSaveRepository = fakeSharedSaveRepo,
+            getMyCollectionsUseCase = GetMyCollectionsUseCase(TestCollectionRepository()),
+            addGameToCollectionUseCase = AddGameToCollectionUseCase(TestCollectionRepository()),
             apiClient = apiClient,
             dispatchers = testDispatchers,
             scope = scope,
@@ -232,6 +236,22 @@ private class TestDownloadRepository : DownloadRepository {
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize(): Long = 0
     override suspend fun clearCache() {}
+}
+
+private class TestCollectionRepository : CollectionRepository {
+    override suspend fun getMyCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
+        Result.success(emptyList())
+    override suspend fun getPublicCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
+        Result.success(emptyList())
+    override suspend fun getCollection(id: String): Result<GameCollectionDetail> =
+        Result.failure(Exception("not found"))
+    override suspend fun createCollection(name: String, description: String?, isPublic: Boolean): Result<GameCollection> =
+        Result.success(GameCollection("1", "1", "user", name = name, description = description, isPublic = isPublic))
+    override suspend fun updateCollection(id: String, name: String?, description: String?, isPublic: Boolean?): Result<GameCollection> =
+        Result.success(GameCollection(id, "1", "user", name = name ?: "", description = description, isPublic = isPublic ?: false))
+    override suspend fun deleteCollection(id: String): Result<Unit> = Result.success(Unit)
+    override suspend fun addGameToCollection(collectionId: String, gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun removeGameFromCollection(collectionId: String, gameId: String): Result<Unit> = Result.success(Unit)
 }
 
 private class TestSaveRepository : SaveRepository {

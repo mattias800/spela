@@ -1,6 +1,7 @@
 package com.spela.player.presentation.state
 
 import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.GameCollection
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.SaveState
@@ -18,5 +19,9 @@ data class GameDetailState(
     val myRating: Int? = null,
     val ratingSummary: RatingSummary? = null,
     val isRating: Boolean = false,
+    val showAddToCollectionDialog: Boolean = false,
+    val userCollections: List<GameCollection> = emptyList(),
+    val isLoadingCollections: Boolean = false,
+    val successMessage: String? = null,
     val error: String? = null,
 )

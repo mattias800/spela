@@ -176,12 +176,25 @@ object SpEmptyStates {
     }
 
     @Composable
-    fun NoCollections(modifier: Modifier = Modifier) {
+    fun NoCollections(
+        modifier: Modifier = Modifier,
+        onCreateCollection: (() -> Unit)? = null,
+    ) {
         SpEmptyState(
             icon = Icons.AutoMirrored.Filled.LibraryBooks,
             title = "No collections yet",
             message = "Create a collection to organize your favorite games",
             modifier = modifier,
+            action = if (onCreateCollection != null) {
+                {
+                    SpButton(
+                        text = "Create Collection",
+                        onClick = onCreateCollection,
+                    )
+                }
+            } else {
+                null
+            },
         )
     }
 

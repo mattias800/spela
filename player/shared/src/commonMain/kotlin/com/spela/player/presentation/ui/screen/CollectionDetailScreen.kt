@@ -15,6 +15,10 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,10 +28,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
-import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpConfirmDialog
+import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpIconButton
+import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.collections.CollectionFormDialog
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -44,78 +55,190 @@ fun CollectionDetailScreen(
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
+    val isOwner = state.currentUserId.isNotEmpty() &&
+        state.selectedDetail?.userId == state.currentUserId
 
     LaunchedEffect(collectionId) {
         viewModel.onIntent(CollectionsIntent.LoadCollectionDetail(collectionId))
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(
-            title = state.selectedDetail?.name ?: "Collection",
-            showBack = true,
-            onBack = onBack,
-        )
+    // Navigate back after successful delete
+    LaunchedEffect(state.collectionDeleted) {
+        if (state.collectionDeleted) {
+            onBack()
+            viewModel.onIntent(CollectionsIntent.DismissCollectionDeleted)
+        }
+    }
 
-        if (state.isDetailLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                SpLoadingIndicator(message = "Loading collection...")
-            }
-        } else if (state.selectedDetail != null) {
-            val detail = state.selectedDetail ?: return
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    horizontal = SpSpacing.ScreenHorizontal,
-                    vertical = SpSpacing.Default,
-                ),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-                verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-            ) {
-                // Collection info header
-                if (!detail.description.isNullOrBlank()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = SpSpacing.Medium),
-                        ) {
-                            Text(
-                                text = detail.description,
-                                style = SpTypography.BodyMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                            Spacer(Modifier.height(SpSpacing.Small))
-                            VisibilityBadge(isPublic = detail.isPublic)
-                        }
-                    }
-                }
-
-                if (detail.games.isEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(300.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            SpEmptyStates.EmptyLibrary()
-                        }
-                    }
-                } else {
-                    items(detail.games, key = { it.id }) { game ->
-                        GameGridItem(
-                            game = game,
-                            onClick = { onGameSelected(game.id) },
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Background),
+        ) {
+            SpTopBar(
+                title = state.selectedDetail?.name ?: "Collection",
+                showBack = true,
+                onBack = onBack,
+                actions = {
+                    if (isOwner) {
+                        SpIconButton(
+                            icon = Icons.Outlined.Edit,
+                            contentDescription = "Edit collection",
+                            onClick = { viewModel.onIntent(CollectionsIntent.ShowEditDialog) },
+                        )
+                        SpIconButton(
+                            icon = Icons.Outlined.Delete,
+                            contentDescription = "Delete collection",
+                            onClick = { viewModel.onIntent(CollectionsIntent.ShowDeleteDialog) },
                         )
                     }
+                },
+            )
+
+            if (state.isDetailLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SpLoadingIndicator(message = "Loading collection...")
+                }
+            } else if (state.selectedDetail != null) {
+                val detail = state.selectedDetail ?: return
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        horizontal = SpSpacing.ScreenHorizontal,
+                        vertical = SpSpacing.Default,
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                ) {
+                    // Collection info header
+                    if (!detail.description.isNullOrBlank()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = SpSpacing.Medium),
+                            ) {
+                                Text(
+                                    text = detail.description,
+                                    style = SpTypography.BodyMedium,
+                                    color = SpColor.OnBackgroundSecondary,
+                                )
+                                Spacer(Modifier.height(SpSpacing.Small))
+                                VisibilityBadge(isPublic = detail.isPublic)
+                            }
+                        }
+                    }
+
+                    if (detail.games.isEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(300.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                SpEmptyStates.EmptyLibrary()
+                            }
+                        }
+                    } else {
+                        items(detail.games, key = { it.id }) { game ->
+                            CollectionGameGridItem(
+                                game = game,
+                                onClick = { onGameSelected(game.id) },
+                                onRemove = if (isOwner) {
+                                    {
+                                        viewModel.onIntent(
+                                            CollectionsIntent.RemoveGameFromCollection(game.id)
+                                        )
+                                    }
+                                } else null,
+                            )
+                        }
+                    }
                 }
             }
+        }
+
+        // Edit Collection dialog
+        if (state.showEditDialog) {
+            state.selectedDetail?.let { detail ->
+                CollectionFormDialog(
+                    title = "Edit Collection",
+                    confirmText = "Save",
+                    isLoading = state.isUpdating,
+                    initialName = detail.name,
+                    initialDescription = detail.description ?: "",
+                    initialIsPublic = detail.isPublic,
+                    onDismiss = { viewModel.onIntent(CollectionsIntent.DismissEditDialog) },
+                    onConfirm = { name, description, isPublic ->
+                        viewModel.onIntent(
+                            CollectionsIntent.UpdateCollection(name, description, isPublic)
+                        )
+                    },
+                )
+            }
+        }
+
+        // Delete Collection confirmation dialog
+        if (state.showDeleteDialog) {
+            state.selectedDetail?.let { detail ->
+                SpConfirmDialog(
+                    title = "Delete Collection",
+                    message = "Are you sure you want to delete \"${detail.name}\"? This action cannot be undone.",
+                    onDismiss = { viewModel.onIntent(CollectionsIntent.DismissDeleteDialog) },
+                    onConfirm = {
+                        viewModel.onIntent(CollectionsIntent.DismissDeleteDialog)
+                        viewModel.onIntent(CollectionsIntent.DeleteCollection)
+                    },
+                    confirmText = "Delete",
+                    isDestructive = true,
+                )
+            }
+        }
+
+        // Success snackbar
+        SpSnackbar(
+            data = state.successMessage?.let {
+                SpSnackbarData(message = it, type = SpSnackbarType.Success)
+            },
+            onDismiss = { viewModel.onIntent(CollectionsIntent.DismissSuccess) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        // Error snackbar
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(CollectionsIntent.DismissError) },
+                )
+            },
+            onDismiss = { viewModel.onIntent(CollectionsIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun CollectionGameGridItem(
+    game: Game,
+    onClick: () -> Unit,
+    onRemove: (() -> Unit)?,
+) {
+    Box {
+        GameGridItem(game = game, onClick = onClick)
+        if (onRemove != null) {
+            SpIconButton(
+                icon = Icons.Filled.Close,
+                contentDescription = "Remove ${game.title} from collection",
+                onClick = onRemove,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
         }
     }
 }

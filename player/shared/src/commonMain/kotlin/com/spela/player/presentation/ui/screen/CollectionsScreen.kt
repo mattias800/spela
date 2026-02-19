@@ -14,7 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -41,6 +46,10 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.feature.collections.CollectionFormDialog
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -66,83 +75,151 @@ fun CollectionsScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = SpColor.Surface,
-            contentColor = SpColor.OnSurface,
-            indicator = { tabPositions ->
-                if (selectedTab < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = SpColor.Primary,
-                    )
-                }
+    // Create Collection dialog
+    if (state.showCreateDialog) {
+        CollectionFormDialog(
+            title = "Create Collection",
+            confirmText = "Create",
+            isLoading = state.isCreating,
+            onDismiss = { viewModel.onIntent(CollectionsIntent.DismissCreateDialog) },
+            onConfirm = { name, description, isPublic ->
+                viewModel.onIntent(CollectionsIntent.CreateCollection(name, description, isPublic))
             },
-        ) {
-            collectionTabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = {
-                        Text(
-                            text = title,
-                            style = SpTypography.LabelMedium,
-                            color = if (selectedTab == index) SpColor.Primary else SpColor.OnBackgroundTertiary,
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = SpColor.Surface,
+                contentColor = SpColor.OnSurface,
+                indicator = { tabPositions ->
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = SpColor.Primary,
                         )
-                    },
-                )
-            }
-        }
-
-        val collections = if (selectedTab == 0) state.myCollections else state.publicCollections
-
-        if (state.isLoading && collections.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                SpLoadingIndicator(message = "Loading collections...")
-            }
-        } else {
-            PullToRefreshBox(
-                isRefreshing = state.isLoading,
-                onRefresh = {
-                    if (selectedTab == 0) {
-                        viewModel.onIntent(CollectionsIntent.LoadMyCollections)
-                    } else {
-                        viewModel.onIntent(CollectionsIntent.LoadPublicCollections)
                     }
                 },
-                modifier = Modifier.fillMaxSize(),
             ) {
-                if (collections.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        SpEmptyStates.NoCollections()
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            horizontal = SpSpacing.ScreenHorizontal,
-                            vertical = SpSpacing.Default,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        items(collections, key = { it.id }) { collection ->
-                            CollectionListItem(
-                                collection = collection,
-                                onClick = { onCollectionSelected(collection.id) },
+                collectionTabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = {
+                            Text(
+                                text = title,
+                                style = SpTypography.LabelMedium,
+                                color = if (selectedTab == index) SpColor.Primary else SpColor.OnBackgroundTertiary,
                             )
+                        },
+                    )
+                }
+            }
+
+            val collections = if (selectedTab == 0) state.myCollections else state.publicCollections
+
+            if (state.isLoading && collections.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SpLoadingIndicator(message = "Loading collections...")
+                }
+            } else {
+                PullToRefreshBox(
+                    isRefreshing = state.isLoading,
+                    onRefresh = {
+                        if (selectedTab == 0) {
+                            viewModel.onIntent(CollectionsIntent.LoadMyCollections)
+                        } else {
+                            viewModel.onIntent(CollectionsIntent.LoadPublicCollections)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    if (collections.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (selectedTab == 0) {
+                                SpEmptyStates.NoCollections(
+                                    onCreateCollection = {
+                                        viewModel.onIntent(CollectionsIntent.ShowCreateDialog)
+                                    },
+                                )
+                            } else {
+                                SpEmptyStates.NoCollections()
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                horizontal = SpSpacing.ScreenHorizontal,
+                                vertical = SpSpacing.Default,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        ) {
+                            items(collections, key = { it.id }) { collection ->
+                                CollectionListItem(
+                                    collection = collection,
+                                    onClick = { onCollectionSelected(collection.id) },
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+
+        // FAB — only on "My Collections" tab
+        if (selectedTab == 0) {
+            FloatingActionButton(
+                onClick = { viewModel.onIntent(CollectionsIntent.ShowCreateDialog) },
+                containerColor = SpColor.Primary,
+                contentColor = SpColor.OnPrimary,
+                shape = RoundedCornerShape(SpSpacing.RadiusXLarge),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(SpSpacing.Default)
+                    .semantics { contentDescription = "Create collection" },
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                )
+            }
+        }
+
+        // Success snackbar
+        SpSnackbar(
+            data = state.successMessage?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Success,
+                )
+            },
+            onDismiss = { viewModel.onIntent(CollectionsIntent.DismissSuccess) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        // Error snackbar
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(CollectionsIntent.DismissError) },
+                )
+            },
+            onDismiss = { viewModel.onIntent(CollectionsIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 

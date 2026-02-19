@@ -12,3 +12,17 @@ actual fun currentArch(): String {
         else -> abis.firstOrNull() ?: "arm64-v8a"
     }
 }
+
+actual fun isEmulator(): Boolean {
+    return android.os.Build.FINGERPRINT.startsWith("generic") ||
+        android.os.Build.FINGERPRINT.startsWith("unknown") ||
+        android.os.Build.MODEL.contains("google_sdk") ||
+        android.os.Build.MODEL.contains("Emulator") ||
+        android.os.Build.MODEL.contains("Android SDK built for x86") ||
+        android.os.Build.MANUFACTURER.contains("Genymotion") ||
+        android.os.Build.BRAND.startsWith("generic") ||
+        android.os.Build.DEVICE.startsWith("generic") ||
+        android.os.Build.PRODUCT.contains("sdk") ||
+        android.os.Build.HARDWARE.contains("goldfish") ||
+        android.os.Build.HARDWARE.contains("ranchu")
+}

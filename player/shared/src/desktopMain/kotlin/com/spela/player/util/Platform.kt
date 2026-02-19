@@ -17,3 +17,5 @@ actual fun currentArch(): String {
         else -> "x86_64"
     }
 }
+
+actual fun isEmulator(): Boolean = false

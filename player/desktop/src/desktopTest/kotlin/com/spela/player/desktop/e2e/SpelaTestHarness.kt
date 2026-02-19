@@ -92,6 +92,7 @@ class SpelaTestHarness(
 
     val ratingRepo = FakeRatingRepository()
     val sharedSaveRepo = FakeSharedSaveRepository()
+    val collectionRepo = FakeCollectionRepository()
 
     val gameDetailViewModel = GameDetailViewModel(
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
@@ -101,6 +102,8 @@ class SpelaTestHarness(
         saveRepository = saveRepo,
         ratingRepository = ratingRepo,
         sharedSaveRepository = sharedSaveRepo,
+        getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
+        addGameToCollectionUseCase = AddGameToCollectionUseCase(collectionRepo),
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
@@ -200,12 +203,15 @@ class SpelaTestHarness(
         scope = scope,
     )
 
-    val collectionRepo = FakeCollectionRepository()
-
     val collectionsViewModel = CollectionsViewModel(
         getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
         getPublicCollectionsUseCase = GetPublicCollectionsUseCase(collectionRepo),
         getCollectionDetailUseCase = GetCollectionDetailUseCase(collectionRepo),
+        createCollectionUseCase = CreateCollectionUseCase(collectionRepo),
+        updateCollectionUseCase = UpdateCollectionUseCase(collectionRepo),
+        deleteCollectionUseCase = DeleteCollectionUseCase(collectionRepo),
+        removeGameFromCollectionUseCase = RemoveGameFromCollectionUseCase(collectionRepo),
+        authRepository = authRepo,
         dispatchers = dispatchers,
         scope = scope,
     )

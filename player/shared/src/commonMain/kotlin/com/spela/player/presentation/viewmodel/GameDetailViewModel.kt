@@ -1,7 +1,9 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.domain.usecase.AddGameToCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.domain.usecase.GetMyCollectionsUseCase
 import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.domain.repository.DownloadRepository
@@ -27,6 +29,8 @@ class GameDetailViewModel(
     private val saveRepository: SaveRepository,
     private val ratingRepository: RatingRepository,
     private val sharedSaveRepository: SharedSaveRepository,
+    private val getMyCollectionsUseCase: GetMyCollectionsUseCase,
+    private val addGameToCollectionUseCase: AddGameToCollectionUseCase,
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -51,7 +55,13 @@ class GameDetailViewModel(
             is GameDetailIntent.DownloadSharedSave -> downloadSharedSave(intent.saveId)
             is GameDetailIntent.DeleteSharedSave -> deleteSharedSave(intent.saveId)
             is GameDetailIntent.DeleteSave -> deleteSave(intent.saveId)
+            GameDetailIntent.ShowAddToCollectionDialog -> showAddToCollectionDialog()
+            GameDetailIntent.DismissAddToCollectionDialog -> _state.update {
+                it.copy(showAddToCollectionDialog = false)
+            }
+            is GameDetailIntent.AddToCollection -> addToCollection(intent.collectionId)
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
+            GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
     }
 
@@ -321,6 +331,49 @@ class GameDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun showAddToCollectionDialog() {
+        _state.update { it.copy(showAddToCollectionDialog = true, isLoadingCollections = true) }
+        scope.launch(dispatchers.io) {
+            getMyCollectionsUseCase().fold(
+                onSuccess = { collections ->
+                    _state.update {
+                        it.copy(userCollections = collections, isLoadingCollections = false)
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            isLoadingCollections = false,
+                            error = error.message ?: "Failed to load collections",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun addToCollection(collectionId: String) {
+        val gameId = currentGameId ?: return
+        val collectionName = _state.value.userCollections
+            .find { it.id == collectionId }?.name ?: "collection"
+
+        _state.update { it.copy(showAddToCollectionDialog = false) }
+        scope.launch(dispatchers.io) {
+            addGameToCollectionUseCase(collectionId, gameId).fold(
+                onSuccess = {
+                    _state.update {
+                        it.copy(successMessage = "Added to $collectionName")
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(error = error.message ?: "Failed to add to collection")
+                    }
                 },
             )
         }

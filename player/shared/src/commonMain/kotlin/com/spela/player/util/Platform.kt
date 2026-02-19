@@ -11,3 +11,9 @@ expect fun currentPlatform(): String
  * Values: "arm64-v8a" (Android), "arm64" / "x86_64" (macOS), "x86_64" (Linux/Windows)
  */
 expect fun currentArch(): String
+
+/**
+ * Returns true when running on an emulator/simulator rather than physical hardware.
+ * Used to apply compatibility workarounds (e.g., software renderer fallback).
+ */
+expect fun isEmulator(): Boolean
