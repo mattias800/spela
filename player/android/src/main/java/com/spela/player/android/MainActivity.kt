@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -38,6 +39,14 @@ class MainActivity : ComponentActivity() {
             val navState = navigationViewModel.state.value
             val emuState = emulationViewModel.state.value
             return navState.showInGameOverlay && emuState.isRunning && !emuState.showOverlay
+        }
+
+    /** True when a game is running (regardless of overlay state). */
+    private val isGameRunning: Boolean
+        get() {
+            val navState = navigationViewModel.state.value
+            val emuState = emulationViewModel.state.value
+            return navState.showInGameOverlay && emuState.isRunning
         }
 
     // Track analog-to-dpad state for UI navigation
@@ -104,12 +113,15 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // State 1: Game running, overlay hidden — send buttons to emulation core
         if (isEmulationConsuming && event != null) {
             val deviceId = event.deviceId
             val port = ensureDeviceConnected(deviceId)
             if (port < 0) return super.onKeyDown(keyCode, event)
 
+            // Use port mapping with fallback to default mapping (avoids async loading race)
             val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
+                ?: GamepadMapping.mapKeyToLibretro(keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, true)
@@ -120,7 +132,24 @@ class MainActivity : ComponentActivity() {
             return super.onKeyDown(keyCode, event)
         }
 
-        // UI mode: remap gamepad buttons for Compose navigation
+        // State 2: Game running, overlay shown — navigate the overlay
+        if (isGameRunning) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_BUTTON_B -> {
+                    emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+                    return true
+                }
+                KeyEvent.KEYCODE_BUTTON_A -> {
+                    val now = SystemClock.uptimeMillis()
+                    val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
+                    return super.dispatchKeyEvent(remapped)
+                }
+            }
+            // Let D-pad propagate to Compose for overlay navigation
+            return super.onKeyDown(keyCode, event)
+        }
+
+        // State 3: Not in game — UI mode: remap gamepad buttons for Compose navigation
         when (keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> {
                 val now = SystemClock.uptimeMillis()
@@ -138,12 +167,14 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // State 1: Game running, overlay hidden — release button in core
         if (isEmulationConsuming && event != null) {
             val deviceId = event.deviceId
             val port = gamepadPortManager.getPort(deviceId)
             if (port < 0) return super.onKeyUp(keyCode, event)
 
             val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
+                ?: GamepadMapping.mapKeyToLibretro(keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, false)
@@ -154,7 +185,20 @@ class MainActivity : ComponentActivity() {
             return super.onKeyUp(keyCode, event)
         }
 
-        // UI mode: consume gamepad buttons we handled in onKeyDown
+        // State 2: Game running, overlay shown — consume B/A events
+        if (isGameRunning) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_BUTTON_B -> return true
+                KeyEvent.KEYCODE_BUTTON_A -> {
+                    val now = SystemClock.uptimeMillis()
+                    val remapped = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER, 0)
+                    return super.dispatchKeyEvent(remapped)
+                }
+            }
+            return super.onKeyUp(keyCode, event)
+        }
+
+        // State 3: Not in game — UI mode: consume gamepad buttons we handled in onKeyDown
         when (keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> {
                 val now = SystemClock.uptimeMillis()

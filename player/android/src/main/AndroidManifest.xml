@@ -9,6 +9,7 @@
     <application
         android:name=".SpelaApplication"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Spela"
         android:networkSecurityConfig="@xml/network_security_config"
