@@ -103,7 +103,7 @@ class PlayLaterTest {
 
         // Click the toggle button
         onNodeWithContentDescription("Add to Play Later").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // After toggling, should show "Remove from Play Later"
         onNodeWithContentDescription("Remove from Play Later").assertIsDisplayed()

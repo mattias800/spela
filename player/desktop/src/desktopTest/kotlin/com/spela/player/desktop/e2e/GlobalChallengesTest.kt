@@ -65,12 +65,12 @@ class GlobalChallengesTest {
 
         // Switch to Recent tab
         onNodeWithText("Recent").performClick()
-        advance(harness)
+        advanceQuick(harness)
         assertEquals(ChallengeTab.RECENT, harness.challengeListViewModel.state.value.selectedTab)
 
         // Switch to My Challenges tab
         onNodeWithText("My Challenges").performClick()
-        advance(harness)
+        advanceQuick(harness)
         assertEquals(ChallengeTab.MINE, harness.challengeListViewModel.state.value.selectedTab)
     }
 
@@ -90,9 +90,9 @@ class GlobalChallengesTest {
 
         // Open dropdown and select NES
         onNodeWithContentDescription("Console: All Consoles").performClick()
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Nintendo Entertainment System").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Verify filter applied in ViewModel state
         assertEquals("1", harness.challengeListViewModel.state.value.selectedConsoleFilter)
@@ -114,9 +114,9 @@ class GlobalChallengesTest {
 
         // Open dropdown and select Hard
         onNodeWithContentDescription("Difficulty: All Difficulties").performClick()
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Hard").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Verify filter applied
         assertEquals("hard", harness.challengeListViewModel.state.value.selectedDifficultyFilter)
@@ -186,7 +186,7 @@ class GlobalChallengesTest {
 
         // Switch to My Challenges
         onNodeWithText("My Challenges").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Filters should be hidden on My Challenges tab
         onNodeWithContentDescription("Console: All Consoles").assertDoesNotExist()

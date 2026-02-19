@@ -51,7 +51,7 @@ class PauseHintTest {
 
         // Toggle overlay to verify it works
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Continue").assertIsDisplayed()
         onNodeWithText("Exit Game").assertIsDisplayed()
@@ -109,7 +109,7 @@ class PauseHintTest {
 
         // Toggle overlay to show it
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay is showing - the hint should NOT be visible simultaneously
         onNodeWithText("Continue").assertIsDisplayed()
@@ -153,7 +153,7 @@ class PauseHintTest {
 
         // Open overlay via ViewModel
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay should be showing
         onNodeWithText("Continue").assertIsDisplayed()
@@ -161,7 +161,7 @@ class PauseHintTest {
 
         // Dismiss overlay
         onNodeWithText("Continue").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Game should continue running normally
         assertTrue(harness.libretroController.isRunning, "Game should still be running")

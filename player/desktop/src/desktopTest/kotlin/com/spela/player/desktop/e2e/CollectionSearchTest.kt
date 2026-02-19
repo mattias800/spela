@@ -127,7 +127,7 @@ class CollectionSearchTest {
 
         // Type in the search field
         onNode(hasSetTextAction() and hasText("Search in collection...")).performTextInput("Castle")
-        advance(harness)
+        advanceQuick(harness)
 
         // Only Castlevania and Castlevania III should remain
         onNodeWithText("Castlevania").assertExists()
@@ -161,7 +161,7 @@ class CollectionSearchTest {
 
         // Search for something that doesn't exist
         onNode(hasSetTextAction() and hasText("Search in collection...")).performTextInput("ZZZZZ")
-        advance(harness)
+        advanceQuick(harness)
 
         // Should show "No results" empty state
         onNodeWithText("No results", substring = true).assertExists()

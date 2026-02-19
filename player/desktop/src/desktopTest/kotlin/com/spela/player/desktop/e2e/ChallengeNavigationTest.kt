@@ -171,7 +171,7 @@ class ChallengeNavigationTest {
         harness.emulationViewModel.onIntent(
             com.spela.player.presentation.intent.EmulationIntent.ToggleOverlay
         )
-        advance(harness)
+        advanceQuick(harness)
 
         // Challenge button should NOT exist in netplay mode overlay
         onNodeWithContentDescription("Challenge").assertDoesNotExist()

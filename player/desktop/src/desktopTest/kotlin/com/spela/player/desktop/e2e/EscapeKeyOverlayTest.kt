@@ -53,7 +53,7 @@ class EscapeKeyOverlayTest {
 
         // Simulate what Escape key handler does: toggle overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay should now be visible with Resume and Exit Game
         onNodeWithText("Continue").assertIsDisplayed()
@@ -67,7 +67,7 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Game title should be shown in overlay (multiple nodes may match due to merged semantics)
         onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()
@@ -80,13 +80,13 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Exit Game").assertIsDisplayed()
 
         // Toggle overlay again (simulates second Escape press)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay should be hidden
         onNodeWithText("Exit Game").assertDoesNotExist()
@@ -99,7 +99,7 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // All overlay action buttons should be present
         onNodeWithContentDescription("Save").assertIsDisplayed()
@@ -115,13 +115,13 @@ class EscapeKeyOverlayTest {
 
         // Open overlay via toggle
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Continue").assertIsDisplayed()
 
         // Click Resume
         onNodeWithText("Continue").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay should be hidden, game should be running
         onNodeWithText("Exit Game").assertDoesNotExist()
@@ -138,7 +138,7 @@ class EscapeKeyOverlayTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Click Exit Game
         onNodeWithText("Exit Game").performClick()
@@ -156,20 +156,20 @@ class EscapeKeyOverlayTest {
 
         // Cycle 1: open and close
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Continue").assertIsDisplayed()
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Exit Game").assertDoesNotExist()
 
         // Cycle 2: open and close
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Continue").assertIsDisplayed()
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Exit Game").assertDoesNotExist()
 
         // Game should still be running throughout
@@ -185,13 +185,13 @@ class EscapeKeyOverlayTest {
         assertFalse(state1.showOverlay, "Overlay should initially be hidden")
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         val state2 = harness.emulationViewModel.state.value
         assertTrue(state2.showOverlay, "Overlay should be shown after toggle")
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         val state3 = harness.emulationViewModel.state.value
         assertFalse(state3.showOverlay, "Overlay should be hidden after second toggle")

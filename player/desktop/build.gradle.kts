@@ -103,6 +103,13 @@ compose.desktop {
     }
 }
 
+// Parallel test execution — each test class gets its own SpelaTestHarness with
+// in-memory SQLite and isolated Compose/Skia surface, so they are safe to fork.
+tasks.withType<Test> {
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
+    jvmArgs("-Xmx1024m")
+}
+
 // Make the run task depend on building the native library.
 tasks.matching { it.name == "run" || it.name == "desktopRun" }.configureEach {
     dependsOn(buildNativeLibrary)

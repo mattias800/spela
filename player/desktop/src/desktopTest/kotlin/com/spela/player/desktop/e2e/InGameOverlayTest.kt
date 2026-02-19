@@ -38,7 +38,7 @@ class InGameOverlayTest {
 
         // Open overlay (hidden by default on game start)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
     }
 
     @Test
@@ -102,13 +102,13 @@ class InGameOverlayTest {
 
         // Tap Fast Forward button (labeled "Fast" initially)
         onNodeWithContentDescription("Fast").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         assertTrue(harness.libretroController.isFastForward, "Fast forward should be on")
 
         // Tap again to toggle off (now labeled "Normal")
         onNodeWithContentDescription("Normal").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         assertFalse(harness.libretroController.isFastForward, "Fast forward should be off again")
     }
@@ -123,7 +123,7 @@ class InGameOverlayTest {
 
         // Tap Resume
         onNodeWithText("Continue").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay panel should be hidden (Exit Game text should no longer be visible)
         onNodeWithText("Exit Game").assertDoesNotExist()

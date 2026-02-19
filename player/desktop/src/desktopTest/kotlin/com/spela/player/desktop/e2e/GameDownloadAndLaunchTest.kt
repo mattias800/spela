@@ -63,7 +63,7 @@ class GameDownloadAndLaunchTest {
 
         // Open overlay (hidden by default) and verify controls
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Exit Game").assertIsDisplayed()
         onNodeWithText("Continue").assertIsDisplayed()
@@ -112,7 +112,7 @@ class GameDownloadAndLaunchTest {
 
         // Open overlay to see game title
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // The overlay should show the game title (multiple nodes may match due to merged semantics)
         onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()

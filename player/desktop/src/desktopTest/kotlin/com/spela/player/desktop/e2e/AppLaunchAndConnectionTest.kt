@@ -42,7 +42,7 @@ class AppLaunchAndConnectionTest {
 
         // Tap "Add Server" to reveal form
         onNodeWithText("Add Server").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Server Name").assertIsDisplayed()
         onNodeWithText("Server URL").assertIsDisplayed()
@@ -88,7 +88,7 @@ class AppLaunchAndConnectionTest {
         // Toggle to register mode
         onNodeWithText("Don't have an account? Register").assertIsDisplayed()
         onNodeWithText("Don't have an account? Register").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // "Create Account" appears as both heading and button - verify both exist
         onAllNodesWithText("Create Account").assertCountEquals(2)
@@ -131,7 +131,7 @@ class AppLaunchAndConnectionTest {
 
         // Click the first remove button (removes Server A)
         onAllNodesWithContentDescription("Remove server").onFirst().performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Server A should be gone, Server B remains
         onNodeWithText("Server A").assertDoesNotExist()

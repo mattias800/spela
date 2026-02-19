@@ -27,18 +27,8 @@ class GameDetailCommunitySectionsTest {
         return harness
     }
 
-    private fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness) {
-        advance(harness)
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
-        )
-        advance(harness)
-        advance(harness)
-        advance(harness)
-        // Extra idle pass for recomposition to pick up async state changes
-        mainClock.advanceTimeBy(100)
-        waitForIdle()
-    }
+    private fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness) =
+        navigateToGameDetail(harness, "1")
 
     /**
      * Scroll the game detail LazyColumn until the node matching [matcher] is visible.

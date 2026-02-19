@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.TestDispatcher
+import com.spela.player.presentation.navigation.NavigationIntent
+import com.spela.player.presentation.navigation.SpScreen
 
 /**
  * Advance both the test dispatcher and Compose clock in bounded steps.
@@ -42,17 +44,47 @@ import kotlinx.coroutines.test.TestDispatcher
  * which internally call `waitForIdle()` can advance scroll/layout
  * animations.  By the time the loop finishes, loading skeletons with
  * infinite shimmer animations should be replaced by real content.
+ *
+ * Tiered variants:
+ * - [advanceQuick]: 2 iterations — for simple click-then-assert patterns
+ * - [advance]: 4 iterations — standard default for navigation and data loads
+ * - [advanceFully]: 6 iterations — for complex multi-source navigation chains
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
-fun ComposeUiTest.advance(harness: SpelaTestHarness) {
+private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
     mainClock.autoAdvance = false
-    repeat(8) {
+    repeat(iterations) {
         harness.testDispatcher.scheduler.advanceTimeBy(1_000)
         harness.testDispatcher.scheduler.runCurrent()
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
     }
     mainClock.autoAdvance = true
+}
+
+/** 2 iterations — for simple click-then-assert (toggle, button tap, immediate state). */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.advanceQuick(harness: SpelaTestHarness) = advanceN(harness, 2)
+
+/** 4 iterations — standard default for navigation and single data loads. */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.advance(harness: SpelaTestHarness) = advanceN(harness, 4)
+
+/** 6 iterations — for complex navigation chains that load multiple data sources. */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.advanceFully(harness: SpelaTestHarness) = advanceN(harness, 6)
+
+/**
+ * Navigate to the GameDetail screen for [gameId] and wait for all data to load.
+ * Replaces the per-test-file private helpers that called advance() 4 times.
+ */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness, gameId: String = "1") {
+    advance(harness) // settle initial composition
+    harness.navigationViewModel.onIntent(
+        NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+    )
+    advanceFully(harness) // handle full navigation + data load chain
 }
 
 fun createTestDispatchers(testDispatcher: TestDispatcher): DispatcherProvider {

@@ -36,17 +36,8 @@ class GameDetailAchievementsTest {
         return harness
     }
 
-    private fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness) {
-        advance(harness)
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
-        )
-        advance(harness)
-        advance(harness)
-        advance(harness)
-        mainClock.advanceTimeBy(100)
-        waitForIdle()
-    }
+    private fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness) =
+        navigateToGameDetail(harness, "1")
 
     private fun ComposeUiTest.scrollToSection(matcher: SemanticsMatcher) {
         onNodeWithTag("game_detail_content").performScrollToNode(matcher)

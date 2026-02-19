@@ -94,7 +94,7 @@ class EmulationVerificationTest {
 
         // Open overlay to access Exit Game button
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Exit Game").performClick()
         advance(harness)
@@ -132,7 +132,7 @@ class EmulationVerificationTest {
 
         // Open overlay and exit first game
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Exit Game").performClick()
         advance(harness)
 

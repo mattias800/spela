@@ -39,7 +39,7 @@ class SaveLoadStateTest {
 
         // Open overlay to access Save button
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Tap Save
         onNodeWithContentDescription("Save").performClick()
@@ -65,7 +65,7 @@ class SaveLoadStateTest {
 
         // Open overlay to access Save/Load buttons
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // First save, then load
         onNodeWithContentDescription("Save").performClick()
@@ -97,7 +97,7 @@ class SaveLoadStateTest {
 
         // Open overlay to access Exit Game button
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Exit game (should auto-save)
         onNodeWithText("Exit Game").performClick()

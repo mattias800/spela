@@ -83,6 +83,12 @@ kotlin {
     }
 }
 
+// Parallel test execution for shared unit tests.
+tasks.withType<Test> {
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
+    jvmArgs("-Xmx1024m")
+}
+
 android {
     namespace = "com.spela.player.shared"
     compileSdk = 35

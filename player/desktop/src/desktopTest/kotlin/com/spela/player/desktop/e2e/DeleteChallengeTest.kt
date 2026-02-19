@@ -56,11 +56,7 @@ class DeleteChallengeTest {
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.ChallengeDetail("c1"))
         )
-        advance(harness)
-        advance(harness)
-        advance(harness)
-        mainClock.advanceTimeBy(100)
-        waitForIdle()
+        advanceFully(harness)
     }
 
     @Test
@@ -84,7 +80,7 @@ class DeleteChallengeTest {
 
         onNodeWithTag("delete_challenge_button").performScrollTo()
         onNodeWithTag("delete_challenge_button").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Delete Challenge?").assertIsDisplayed()
     }
@@ -98,11 +94,11 @@ class DeleteChallengeTest {
 
         onNodeWithTag("delete_challenge_button").performScrollTo()
         onNodeWithTag("delete_challenge_button").performClick()
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("Delete Challenge?").assertIsDisplayed()
 
         onNodeWithText("Cancel").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Delete Challenge?").assertDoesNotExist()
     }
@@ -116,7 +112,7 @@ class DeleteChallengeTest {
 
         onNodeWithTag("delete_challenge_button").performScrollTo()
         onNodeWithTag("delete_challenge_button").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithTag("confirm_delete_button").performClick()
         advance(harness)

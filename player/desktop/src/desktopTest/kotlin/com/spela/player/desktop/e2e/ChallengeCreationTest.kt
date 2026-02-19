@@ -41,7 +41,7 @@ class ChallengeCreationTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // "Challenge" button should be visible in overlay
         onNodeWithContentDescription("Challenge").assertIsDisplayed()
@@ -59,9 +59,9 @@ class ChallengeCreationTest {
         onNodeWithContentDescription("Play Castlevania").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Challenge").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Creation form should appear with expected fields
         onNodeWithText("Create Challenge").assertIsDisplayed()
@@ -83,9 +83,9 @@ class ChallengeCreationTest {
         onNodeWithContentDescription("Play Castlevania").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Challenge").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Title is pre-filled with "Castlevania Challenge", submit it
         onNodeWithText("Create").performClick()
@@ -116,9 +116,9 @@ class ChallengeCreationTest {
         onNodeWithContentDescription("Play Castlevania").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Challenge").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Title should be pre-filled with game title
         onNodeWithText("Castlevania Challenge").assertIsDisplayed()
@@ -136,13 +136,13 @@ class ChallengeCreationTest {
         onNodeWithContentDescription("Play Castlevania").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Challenge").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Cancel
         onNodeWithText("Cancel").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Form should be dismissed, game should be running
         onNodeWithText("Create Challenge").assertDoesNotExist()

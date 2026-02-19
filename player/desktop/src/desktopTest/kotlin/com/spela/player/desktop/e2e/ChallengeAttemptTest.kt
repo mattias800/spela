@@ -78,7 +78,7 @@ class ChallengeAttemptTest {
 
         // Open overlay during challenge attempt
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Challenge-specific overlay buttons should appear
         onNodeWithContentDescription("Mark Complete").assertIsDisplayed()
@@ -97,7 +97,7 @@ class ChallengeAttemptTest {
 
         // Open overlay -> complete challenge
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Mark Complete").performClick()
         advance(harness)
 
@@ -117,9 +117,9 @@ class ChallengeAttemptTest {
 
         // Open overlay -> give up
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Give Up").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Confirmation dialog should appear
         onNodeWithText("Give Up Challenge?", substring = true).assertIsDisplayed()
@@ -138,12 +138,12 @@ class ChallengeAttemptTest {
 
         // Open overlay -> give up -> keep playing
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithContentDescription("Give Up").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         onNodeWithText("Keep Playing").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Dialog should be dismissed
         onNodeWithText("Give Up Challenge?").assertDoesNotExist()
@@ -171,7 +171,7 @@ class ChallengeAttemptTest {
 
         // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advance(harness)
+        advanceQuick(harness)
 
         // Overlay should show challenge timer in display format
         onNodeWithContentDescription("Challenge timer:", substring = true).assertIsDisplayed()

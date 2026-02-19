@@ -58,7 +58,7 @@ class GameLibraryFiltersTest {
 
         // Tap "Super Nintendo" filter chip
         onNodeWithContentDescription("Super Nintendo filter").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // ViewModel state should reflect the console filter
         val filteredState = harness.gameListViewModel.state.value
@@ -97,11 +97,11 @@ class GameLibraryFiltersTest {
 
         // Click the sort dropdown
         onNodeWithContentDescription("Sort by Title").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Select "File Size" from dropdown
         onNodeWithText("File Size").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // ViewModel state should reflect new sort
         val state = harness.gameListViewModel.state.value
@@ -124,7 +124,7 @@ class GameLibraryFiltersTest {
 
         // Toggle to descending
         onNodeWithContentDescription("Sort ascending").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Should now be descending
         val state = harness.gameListViewModel.state.value
@@ -150,7 +150,7 @@ class GameLibraryFiltersTest {
 
         // Toggle to list view
         onNodeWithContentDescription("List view").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Should now be in list view
         assertEquals(ViewMode.LIST, harness.gameListViewModel.state.value.viewMode)
@@ -170,7 +170,7 @@ class GameLibraryFiltersTest {
 
         // Switch to list view
         harness.gameListViewModel.onIntent(GameListIntent.ToggleViewMode)
-        advance(harness)
+        advanceQuick(harness)
 
         // Game rows should show title and console name via content description
         onNodeWithContentDescription("Castlevania, NES").assertIsDisplayed()
@@ -191,13 +191,13 @@ class GameLibraryFiltersTest {
 
         // Select NES console filter
         onNodeWithContentDescription("Nintendo Entertainment System filter").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Change sort to File Size
         onNodeWithContentDescription("Sort by Title").performClick()
-        advance(harness)
+        advanceQuick(harness)
         onNodeWithText("File Size").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Verify both filters are applied in ViewModel state
         val state = harness.gameListViewModel.state.value
@@ -218,12 +218,12 @@ class GameLibraryFiltersTest {
 
         // Select NES filter first
         onNodeWithContentDescription("Nintendo Entertainment System filter").performClick()
-        advance(harness)
+        advanceQuick(harness)
         assertEquals("1", harness.gameListViewModel.state.value.selectedConsoleFilter)
 
         // Go back to All Consoles
         onNodeWithContentDescription("All Consoles filter").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         assertEquals(null, harness.gameListViewModel.state.value.selectedConsoleFilter)
     }

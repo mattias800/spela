@@ -87,14 +87,14 @@ class CollectionsWriteTest {
 
         // Tap FAB to open create dialog
         onNodeWithContentDescription("Create collection").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Verify dialog appears — check for Name text field
         onNode(hasSetTextAction() and hasText("Name")).assertIsDisplayed()
 
         // Type collection name into the Name text field
         onNode(hasSetTextAction() and hasText("Name")).performTextInput("Best NES Games")
-        advance(harness)
+        advanceQuick(harness)
 
         // Submit
         onNodeWithText("Create").performClick()
@@ -126,7 +126,7 @@ class CollectionsWriteTest {
 
         // Open edit dialog
         onNodeWithContentDescription("Edit collection").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Verify edit dialog appears
         onNodeWithText("Edit Collection").assertIsDisplayed()
@@ -134,7 +134,7 @@ class CollectionsWriteTest {
         // Replace the pre-filled name in the text field (not the top bar heading)
         onNode(hasSetTextAction() and hasText("Best NES Games"))
             .performTextReplacement("Top SNES RPGs")
-        advance(harness)
+        advanceQuick(harness)
 
         // Save
         onNodeWithText("Save").performClick()
@@ -164,7 +164,7 @@ class CollectionsWriteTest {
 
         // Tap delete button
         onNodeWithContentDescription("Delete collection").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Confirm dialog should appear — verify title
         onNodeWithText("Delete Collection").assertIsDisplayed()
@@ -204,7 +204,7 @@ class CollectionsWriteTest {
 
         // Tap "Add to collection" button
         onNodeWithContentDescription("Add to collection").performClick()
-        advance(harness)
+        advanceQuick(harness)
 
         // Collection picker dialog should appear
         onNodeWithText("Add to Collection").assertIsDisplayed()
