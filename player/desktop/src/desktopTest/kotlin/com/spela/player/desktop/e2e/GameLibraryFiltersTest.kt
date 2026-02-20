@@ -62,7 +62,7 @@ class GameLibraryFiltersTest {
 
         // ViewModel state should reflect the console filter
         val filteredState = harness.gameListViewModel.state.value
-        assertEquals("2", filteredState.selectedConsoleFilter)
+        assertEquals("snes", filteredState.selectedConsoleFilter)
 
         // SNES games should be visible
         onNodeWithText("Chrono Trigger").assertExists()
@@ -201,7 +201,7 @@ class GameLibraryFiltersTest {
 
         // Verify both filters are applied in ViewModel state
         val state = harness.gameListViewModel.state.value
-        assertEquals("1", state.selectedConsoleFilter)
+        assertEquals("nes", state.selectedConsoleFilter)
         assertEquals("file_size", state.sortBy)
     }
 
@@ -219,7 +219,7 @@ class GameLibraryFiltersTest {
         // Select NES filter first
         onNodeWithContentDescription("Nintendo Entertainment System filter").performClick()
         advanceQuick(harness)
-        assertEquals("1", harness.gameListViewModel.state.value.selectedConsoleFilter)
+        assertEquals("nes", harness.gameListViewModel.state.value.selectedConsoleFilter)
 
         // Go back to All Consoles
         onNodeWithContentDescription("All Consoles filter").performClick()

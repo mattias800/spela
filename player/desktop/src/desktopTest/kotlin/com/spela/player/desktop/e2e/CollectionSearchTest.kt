@@ -28,7 +28,7 @@ class CollectionSearchTest {
             Game(
                 id = "game-$i",
                 title = "Game $i",
-                consoleId = "1",
+                consoleId = "nes",
                 consoleName = "NES",
                 fileName = "game$i.nes",
                 fileSize = 40960L * i,
@@ -95,12 +95,12 @@ class CollectionSearchTest {
     fun searchFiltersGamesByTitle() = runComposeUiTest {
         val harness = createLoggedInHarness()
         val games = listOf(
-            Game(id = "1", title = "Castlevania", consoleId = "1", consoleName = "NES", fileName = "cv.nes", fileSize = 131072),
-            Game(id = "2", title = "Super Mario Bros.", consoleId = "1", consoleName = "NES", fileName = "smb.nes", fileSize = 40960),
-            Game(id = "3", title = "Mega Man 2", consoleId = "1", consoleName = "NES", fileName = "mm2.nes", fileSize = 262144),
-            Game(id = "4", title = "Castlevania III", consoleId = "1", consoleName = "NES", fileName = "cv3.nes", fileSize = 262144),
-            Game(id = "5", title = "Contra", consoleId = "1", consoleName = "NES", fileName = "contra.nes", fileSize = 131072),
-            Game(id = "6", title = "Zelda", consoleId = "1", consoleName = "NES", fileName = "zelda.nes", fileSize = 262144),
+            Game(id = "1", title = "Castlevania", consoleId = "nes", consoleName = "NES", fileName = "cv.nes", fileSize = 131072),
+            Game(id = "2", title = "Super Mario Bros.", consoleId = "nes", consoleName = "NES", fileName = "smb.nes", fileSize = 40960),
+            Game(id = "3", title = "Mega Man 2", consoleId = "nes", consoleName = "NES", fileName = "mm2.nes", fileSize = 262144),
+            Game(id = "4", title = "Castlevania III", consoleId = "nes", consoleName = "NES", fileName = "cv3.nes", fileSize = 262144),
+            Game(id = "5", title = "Contra", consoleId = "nes", consoleName = "NES", fileName = "contra.nes", fileSize = 131072),
+            Game(id = "6", title = "Zelda", consoleId = "nes", consoleName = "NES", fileName = "zelda.nes", fileSize = 262144),
         )
         harness.collectionRepo.collectionDetail = GameCollectionDetail(
             id = "1",

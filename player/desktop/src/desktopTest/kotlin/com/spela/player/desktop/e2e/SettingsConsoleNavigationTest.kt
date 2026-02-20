@@ -52,7 +52,7 @@ class SettingsConsoleNavigationTest {
 
         // Scroll to the first console row — if it's in the list, the section exists
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_1")
+            .performScrollToKey("console_nes")
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
     }
 
@@ -65,11 +65,11 @@ class SettingsConsoleNavigationTest {
 
         // Scroll to console items — the fake game repo has NES and SNES
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_1")
+            .performScrollToKey("console_nes")
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
 
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_2")
+            .performScrollToKey("console_snes")
         onNodeWithText("Super Nintendo").assertIsDisplayed()
     }
 
@@ -82,7 +82,7 @@ class SettingsConsoleNavigationTest {
 
         // Scroll to and click a console
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_1")
+            .performScrollToKey("console_nes")
         onNodeWithText("Nintendo Entertainment System").performClick()
         advance(harness)
 
@@ -90,9 +90,9 @@ class SettingsConsoleNavigationTest {
         // the navigation state shows ConsoleSettings
         val currentScreen = harness.navigationViewModel.state.value.currentScreen
         assertEquals(
-            SpScreen.ConsoleSettings("1"),
+            SpScreen.ConsoleSettings("nes"),
             currentScreen,
-            "Clicking NES should navigate to ConsoleSettings(\"1\")",
+            "Clicking NES should navigate to ConsoleSettings(\"nes\")",
         )
     }
 
@@ -104,15 +104,15 @@ class SettingsConsoleNavigationTest {
         navigateToSettings(harness)
 
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_2")
+            .performScrollToKey("console_snes")
         onNodeWithText("Super Nintendo").performClick()
         advance(harness)
 
         val currentScreen = harness.navigationViewModel.state.value.currentScreen
         assertEquals(
-            SpScreen.ConsoleSettings("2"),
+            SpScreen.ConsoleSettings("snes"),
             currentScreen,
-            "Clicking SNES should navigate to ConsoleSettings(\"2\")",
+            "Clicking SNES should navigate to ConsoleSettings(\"snes\")",
         )
     }
 
@@ -164,7 +164,7 @@ class SettingsConsoleNavigationTest {
 
         // Scroll to NES console row
         onNodeWithTag("settings_list")
-            .performScrollToKey("console_1")
+            .performScrollToKey("console_nes")
 
         // Each console row has an arrow icon with content description
         onNodeWithContentDescription("Open Nintendo Entertainment System settings")

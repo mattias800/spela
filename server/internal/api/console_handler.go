@@ -93,13 +93,13 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	consoleID := c.Param("id")
 
 	var console db.Console
-	if err := h.DB.First(&console, consoleID).Error; err != nil {
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
 		return
 	}
 
 	var games []db.Game
-	if err := h.DB.Where("console_id = ?", consoleID).
+	if err := h.DB.Where("console_id = ?", console.ID).
 		Preload("Console").
 		Order("title asc").
 		Find(&games).Error; err != nil {
@@ -118,7 +118,7 @@ func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 	consoleID := c.Param("id")
 
 	var console db.Console
-	if err := h.DB.First(&console, consoleID).Error; err != nil {
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
 		return
 	}
@@ -186,7 +186,7 @@ func (h *ConsoleHandler) GetConsoleIcon(c *gin.Context) {
 	consoleID := c.Param("id")
 
 	var console db.Console
-	if err := h.DB.First(&console, consoleID).Error; err != nil {
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
 		return
 	}

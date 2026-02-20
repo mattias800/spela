@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -113,7 +113,7 @@ func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
 	_, _, router := setupConsoleTestEnv(t)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/consoles/9999/preview-screenshot", nil)
+	req := httptest.NewRequest("GET", "/api/consoles/nonexistent/preview-screenshot", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -141,11 +141,11 @@ func TestGetPreviewScreenshot_CachedPreview(t *testing.T) {
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
+	req := httptest.NewRequest("GET", "/api/consoles/" + strings.ToLower(console.Abbreviation) + "/preview-screenshot", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusFound, w.Code)
-	expectedLocation := fmt.Sprintf("/api/images/previews/%s/preview.png", console.Abbreviation)
+	expectedLocation := "/api/images/previews/" + console.Abbreviation + "/preview.png"
 	assert.Equal(t, expectedLocation, w.Header().Get("Location"))
 	assert.Equal(t, "public, max-age=86400", w.Header().Get("Cache-Control"))
 }
@@ -164,7 +164,7 @@ func TestGetPreviewScreenshot_NoPreviewAvailable(t *testing.T) {
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", unknownConsole.ID), nil)
+	req := httptest.NewRequest("GET", "/api/consoles/" + strings.ToLower(unknownConsole.Abbreviation) + "/preview-screenshot", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -202,12 +202,12 @@ func TestGetPreviewScreenshot_IgnoresLocalGames(t *testing.T) {
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
+	req := httptest.NewRequest("GET", "/api/consoles/" + strings.ToLower(console.Abbreviation) + "/preview-screenshot", nil)
 	router.ServeHTTP(w, req)
 
 	// Should serve the CDN preview, NOT the local game screenshot.
 	assert.Equal(t, http.StatusFound, w.Code)
-	expectedLocation := fmt.Sprintf("/api/images/previews/%s/preview.png", console.Abbreviation)
+	expectedLocation := "/api/images/previews/" + console.Abbreviation + "/preview.png"
 	assert.Equal(t, expectedLocation, w.Header().Get("Location"))
 }
 
@@ -226,10 +226,10 @@ func TestGetPreviewScreenshot_WorksWithNoLocalGames(t *testing.T) {
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/api/consoles/%d/preview-screenshot", console.ID), nil)
+	req := httptest.NewRequest("GET", "/api/consoles/" + strings.ToLower(console.Abbreviation) + "/preview-screenshot", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusFound, w.Code)
-	expectedLocation := fmt.Sprintf("/api/images/previews/%s/preview.png", console.Abbreviation)
+	expectedLocation := "/api/images/previews/" + console.Abbreviation + "/preview.png"
 	assert.Equal(t, expectedLocation, w.Header().Get("Location"))
 }

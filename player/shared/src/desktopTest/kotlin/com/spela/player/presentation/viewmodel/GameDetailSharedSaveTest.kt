@@ -199,7 +199,7 @@ private class TestGameRepository : GameRepository {
     private val game = Game(
         id = "1",
         title = "Test Game",
-        consoleId = "1",
+        consoleId = "nes",
         consoleName = "NES",
         scrapeAttempts = 1,
     )

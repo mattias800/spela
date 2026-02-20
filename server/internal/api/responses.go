@@ -85,8 +85,9 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 
 	ratio := parseAspectRatio(c.CoverAspect)
 
+	abbr := strings.ToLower(c.Abbreviation)
 	return ConsoleResponse{
-		ID:               strconv.FormatUint(uint64(c.ID), 10),
+		ID:               abbr,
 		CreatedAt:        c.CreatedAt,
 		UpdatedAt:        c.UpdatedAt,
 		Name:             c.Name,
@@ -96,7 +97,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		EmulatorJSCore:   c.EmulatorJSCore,
 		CoverAspectRatio: ratio,
 		ColorTheme:       c.ColorTheme,
-		IconURL:          "/api/consoles/" + strconv.FormatUint(uint64(c.ID), 10) + "/icon",
+		IconURL:          "/api/consoles/" + abbr + "/icon",
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		BrowserPlayable:  c.EmulatorJSCore != "",
@@ -224,11 +225,16 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		})
 	}
 
+	consoleAbbr := ""
+	if g.Console.ID != 0 {
+		consoleAbbr = strings.ToLower(g.Console.Abbreviation)
+	}
+
 	resp := GameResponse{
 		ID:             strconv.FormatUint(uint64(g.ID), 10),
 		CreatedAt:      g.CreatedAt,
 		UpdatedAt:      g.UpdatedAt,
-		ConsoleID:      strconv.FormatUint(uint64(g.ConsoleID), 10),
+		ConsoleID:      consoleAbbr,
 		ConsoleName:    consoleName,
 		Title:          g.Title,
 		FileName:       g.FileName,

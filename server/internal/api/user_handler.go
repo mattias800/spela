@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sort"
 	"time"
@@ -181,27 +180,27 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		return
 	}
 
-	// Process per-console shader updates
+	// Process per-console shader updates (keys are console abbreviations)
 	if req.ConsoleShaders != nil {
-		for consoleIDStr, shader := range req.ConsoleShaders {
-			var consoleID uint
-			if _, err := fmt.Sscanf(consoleIDStr, "%d", &consoleID); err != nil {
+		for consoleAbbr, shader := range req.ConsoleShaders {
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 				continue
 			}
 			if shader == "" || shader == "none" {
 				// Delete the row to revert to global default
-				h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).
+				h.DB.Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleShaderPreference{})
 			} else {
 				// Upsert: update if exists, create if not
 				var existing db.ConsoleShaderPreference
-				result := h.DB.Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
+				result := h.DB.Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
 				if result.Error == nil {
 					h.DB.Model(&existing).Update("shader", shader)
 				} else {
 					h.DB.Create(&db.ConsoleShaderPreference{
 						UserID:    uid,
-						ConsoleID: consoleID,
+						ConsoleID: console.ID,
 						Shader:    shader,
 					})
 				}
@@ -209,16 +208,16 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		}
 	}
 
-	// Process per-console key mapping updates
+	// Process per-console key mapping updates (keys are console abbreviations)
 	if req.ConsoleKeyMappings != nil {
-		for consoleIDStr, km := range req.ConsoleKeyMappings {
-			var consoleID uint
-			if _, err := fmt.Sscanf(consoleIDStr, "%d", &consoleID); err != nil {
+		for consoleAbbr, km := range req.ConsoleKeyMappings {
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 				continue
 			}
 			if km.SelectedMapping == "" {
 				// Hard delete to avoid soft-delete + unique constraint conflict
-				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, consoleID).
+				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleKeyMappingPreference{})
 			} else {
 				customJSON := ""
@@ -228,7 +227,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 				}
 				// Upsert: use Unscoped to find soft-deleted rows and avoid unique constraint conflict
 				var existing db.ConsoleKeyMappingPreference
-				result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, consoleID).First(&existing)
+				result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
 				if result.Error == nil {
 					existing.SelectedMapping = km.SelectedMapping
 					existing.CustomMapping = customJSON
@@ -237,7 +236,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 				} else {
 					h.DB.Create(&db.ConsoleKeyMappingPreference{
 						UserID:          uid,
-						ConsoleID:       consoleID,
+						ConsoleID:       console.ID,
 						SelectedMapping: km.SelectedMapping,
 						CustomMapping:   customJSON,
 					})
@@ -280,27 +279,47 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 }
 
 // buildConsoleShaderMap queries all ConsoleShaderPreference rows for the user
-// and returns a map keyed by console ID string.
+// and returns a map keyed by console abbreviation (lowercase).
 func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 	var prefs []db.ConsoleShaderPreference
 	h.DB.Where("user_id = ?", userID).Find(&prefs)
+
+	// Batch-load console abbreviations for all referenced console IDs
+	consoleIDs := make([]uint, 0, len(prefs))
+	for _, p := range prefs {
+		consoleIDs = append(consoleIDs, p.ConsoleID)
+	}
+	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
+
 	m := make(map[string]string, len(prefs))
 	for _, p := range prefs {
-		m[fmt.Sprintf("%d", p.ConsoleID)] = p.Shader
+		if abbr, ok := abbrMap[p.ConsoleID]; ok {
+			m[abbr] = p.Shader
+		}
 	}
 	return m
 }
 
 // buildConsoleKeyMappingMap queries all ConsoleKeyMappingPreference rows for the user
-// and returns a map keyed by console ID string.
+// and returns a map keyed by console abbreviation (lowercase).
 func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]consoleKeyMappingDTO {
 	var prefs []db.ConsoleKeyMappingPreference
 	h.DB.Where("user_id = ?", userID).Find(&prefs)
+
+	// Batch-load console abbreviations for all referenced console IDs
+	consoleIDs := make([]uint, 0, len(prefs))
+	for _, p := range prefs {
+		consoleIDs = append(consoleIDs, p.ConsoleID)
+	}
+	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
+
 	m := make(map[string]consoleKeyMappingDTO, len(prefs))
 	for _, p := range prefs {
-		m[fmt.Sprintf("%d", p.ConsoleID)] = consoleKeyMappingDTO{
-			SelectedMapping: p.SelectedMapping,
-			CustomMapping:   parseJSONMap(p.CustomMapping),
+		if abbr, ok := abbrMap[p.ConsoleID]; ok {
+			m[abbr] = consoleKeyMappingDTO{
+				SelectedMapping: p.SelectedMapping,
+				CustomMapping:   parseJSONMap(p.CustomMapping),
+			}
 		}
 	}
 	return m

@@ -95,7 +95,7 @@ class GlobalChallengesTest {
         advanceQuick(harness)
 
         // Verify filter applied in ViewModel state
-        assertEquals("1", harness.challengeListViewModel.state.value.selectedConsoleFilter)
+        assertEquals("nes", harness.challengeListViewModel.state.value.selectedConsoleFilter)
     }
 
     @Test

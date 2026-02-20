@@ -1,8 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -187,25 +187,25 @@ func (h *DeviceHandler) UpdateDevicePreferences(c *gin.Context) {
 		return
 	}
 
-	for consoleIDStr, shader := range req.ConsoleShaders {
-		var consoleID uint
-		if _, err := fmt.Sscanf(consoleIDStr, "%d", &consoleID); err != nil {
+	for consoleAbbr, shader := range req.ConsoleShaders {
+		var console db.Console
+		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 			continue
 		}
 		if shader == "" || shader == "none" {
 			// Delete the override to revert to user/global default
-			h.DB.Where("device_id = ? AND console_id = ?", device.ID, consoleID).
+			h.DB.Where("device_id = ? AND console_id = ?", device.ID, console.ID).
 				Delete(&db.DeviceShaderPreference{})
 		} else {
 			// Upsert: update if exists, create if not
 			var existing db.DeviceShaderPreference
-			result := h.DB.Where("device_id = ? AND console_id = ?", device.ID, consoleID).First(&existing)
+			result := h.DB.Where("device_id = ? AND console_id = ?", device.ID, console.ID).First(&existing)
 			if result.Error == nil {
 				h.DB.Model(&existing).Update("shader", shader)
 			} else {
 				h.DB.Create(&db.DeviceShaderPreference{
 					DeviceID:  device.ID,
-					ConsoleID: consoleID,
+					ConsoleID: console.ID,
 					Shader:    shader,
 				})
 			}
@@ -243,13 +243,37 @@ func (h *DeviceHandler) AdminGetUserDevices(c *gin.Context) {
 }
 
 // buildDeviceShaderMap queries all DeviceShaderPreference rows for a device
-// and returns a map keyed by console ID string.
+// and returns a map keyed by console abbreviation (lowercase).
 func (h *DeviceHandler) buildDeviceShaderMap(deviceID uint) map[string]string {
 	var prefs []db.DeviceShaderPreference
 	h.DB.Where("device_id = ?", deviceID).Find(&prefs)
+
+	// Batch-load console abbreviations
+	consoleIDs := make([]uint, 0, len(prefs))
+	for _, p := range prefs {
+		consoleIDs = append(consoleIDs, p.ConsoleID)
+	}
+	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
+
 	m := make(map[string]string, len(prefs))
 	for _, p := range prefs {
-		m[fmt.Sprintf("%d", p.ConsoleID)] = p.Shader
+		if abbr, ok := abbrMap[p.ConsoleID]; ok {
+			m[abbr] = p.Shader
+		}
+	}
+	return m
+}
+
+// resolveConsoleAbbrs batch-loads console abbreviations for a set of console IDs.
+func resolveConsoleAbbrs(database *gorm.DB, consoleIDs []uint) map[uint]string {
+	if len(consoleIDs) == 0 {
+		return nil
+	}
+	var consoles []db.Console
+	database.Where("id IN ?", consoleIDs).Select("id, abbreviation").Find(&consoles)
+	m := make(map[uint]string, len(consoles))
+	for _, c := range consoles {
+		m[c.ID] = strings.ToLower(c.Abbreviation)
 	}
 	return m
 }

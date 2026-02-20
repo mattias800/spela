@@ -630,7 +630,7 @@ func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-royale"},
+		"consoleShaders": map[string]string{"nes": "crt-royale"},
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
@@ -642,7 +642,7 @@ func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 	var prefs map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-royale", consoleShaders["1"])
+	assert.Equal(t, "crt-royale", consoleShaders["nes"])
 
 	// GET to verify persistence
 	w = httptest.NewRecorder()
@@ -653,7 +653,7 @@ func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	consoleShaders = prefs["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-royale", consoleShaders["1"])
+	assert.Equal(t, "crt-royale", consoleShaders["nes"])
 }
 
 func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
@@ -663,7 +663,7 @@ func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 
 	// First set a console shader
 	body, _ := json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-royale"},
+		"consoleShaders": map[string]string{"nes": "crt-royale"},
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
@@ -674,7 +674,7 @@ func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 
 	// Remove by setting to "none"
 	body, _ = json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "none"},
+		"consoleShaders": map[string]string{"nes": "none"},
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
@@ -686,7 +686,7 @@ func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 	var prefs map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
-	_, exists := consoleShaders["1"]
+	_, exists := consoleShaders["nes"]
 	assert.False(t, exists, "console shader should be removed after setting to 'none'")
 }
 
@@ -697,7 +697,7 @@ func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
 
 	// Set a per-console shader
 	body, _ := json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-royale"},
+		"consoleShaders": map[string]string{"nes": "crt-royale"},
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
@@ -712,7 +712,7 @@ func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
 	assert.Equal(t, "none", prefs["selectedShader"])
 	// Per-console should be set
 	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-royale", consoleShaders["1"])
+	assert.Equal(t, "crt-royale", consoleShaders["nes"])
 
 	// Now set global shader — per-console should not change
 	body, _ = json.Marshal(map[string]interface{}{
@@ -728,7 +728,7 @@ func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	assert.Equal(t, "crt-simple", prefs["selectedShader"])
 	consoleShaders = prefs["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-royale", consoleShaders["1"])
+	assert.Equal(t, "crt-royale", consoleShaders["nes"])
 }
 
 func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
@@ -738,7 +738,7 @@ func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 
 	// Set a per-console shader
 	body, _ := json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"2": "lcd-grid"},
+		"consoleShaders": map[string]string{"snes": "lcd-grid"},
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
@@ -762,7 +762,7 @@ func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &prefs)
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 	consoleShaders := prefs["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "lcd-grid", consoleShaders["2"], "console shader should be preserved after partial update")
+	assert.Equal(t, "lcd-grid", consoleShaders["snes"], "console shader should be preserved after partial update")
 }
 
 func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {

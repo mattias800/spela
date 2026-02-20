@@ -70,15 +70,14 @@ fun ConsoleSettingsScreen(
 
     val console = settingsState.consoles.firstOrNull { it.id == consoleId }
     val consoleName = console?.name ?: "Console"
-    val consoleAbbrev = console?.abbreviation?.lowercase() ?: consoleId
-    val layout = remember(consoleAbbrev) { DefaultKeyMappings.getLayoutForConsole(consoleAbbrev) }
+    val layout = remember(consoleId) { DefaultKeyMappings.getLayoutForConsole(consoleId) }
 
     LaunchedEffect(Unit) {
         settingsViewModel.onIntent(SettingsIntent.LoadSettings)
     }
 
-    LaunchedEffect(consoleAbbrev) {
-        keyMappingViewModel.onIntent(KeyMappingIntent.LoadMapping(consoleAbbrev))
+    LaunchedEffect(consoleId) {
+        keyMappingViewModel.onIntent(KeyMappingIntent.LoadMapping(consoleId))
     }
 
     val currentShader = settingsState.consoleShaders[consoleId]

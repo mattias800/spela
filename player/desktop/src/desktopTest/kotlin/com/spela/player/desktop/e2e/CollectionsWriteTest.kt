@@ -36,7 +36,7 @@ class CollectionsWriteTest {
             Game(
                 id = "1",
                 title = "Castlevania",
-                consoleId = "1",
+                consoleId = "nes",
                 consoleName = "NES",
                 fileName = "castlevania.nes",
                 fileSize = 131072,
@@ -44,7 +44,7 @@ class CollectionsWriteTest {
             Game(
                 id = "2",
                 title = "Super Mario Bros.",
-                consoleId = "1",
+                consoleId = "nes",
                 consoleName = "NES",
                 fileName = "smb.nes",
                 fileSize = 40960,

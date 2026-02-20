@@ -391,7 +391,7 @@ func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 
 	// Add shaders
 	body, _ = json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-royale", "2": "lcd-grid"},
+		"consoleShaders": map[string]string{"nes": "crt-royale", "snes": "lcd-grid"},
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("PUT", "/api/user/devices/"+deviceID+"/preferences", bytes.NewReader(body))
@@ -403,12 +403,12 @@ func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	shaders := resp["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-royale", shaders["1"])
-	assert.Equal(t, "lcd-grid", shaders["2"])
+	assert.Equal(t, "crt-royale", shaders["nes"])
+	assert.Equal(t, "lcd-grid", shaders["snes"])
 
 	// Update one shader
 	body, _ = json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-simple"},
+		"consoleShaders": map[string]string{"nes": "crt-simple"},
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("PUT", "/api/user/devices/"+deviceID+"/preferences", bytes.NewReader(body))
@@ -419,12 +419,12 @@ func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	shaders = resp["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-simple", shaders["1"])
-	assert.Equal(t, "lcd-grid", shaders["2"])
+	assert.Equal(t, "crt-simple", shaders["nes"])
+	assert.Equal(t, "lcd-grid", shaders["snes"])
 
 	// Delete one shader
 	body, _ = json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"2": "none"},
+		"consoleShaders": map[string]string{"snes": "none"},
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("PUT", "/api/user/devices/"+deviceID+"/preferences", bytes.NewReader(body))
@@ -435,8 +435,8 @@ func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	shaders = resp["consoleShaders"].(map[string]interface{})
-	assert.Equal(t, "crt-simple", shaders["1"])
-	_, exists := shaders["2"]
+	assert.Equal(t, "crt-simple", shaders["nes"])
+	_, exists := shaders["snes"]
 	assert.False(t, exists, "shader for console 2 should be removed")
 }
 
@@ -453,7 +453,7 @@ func TestUpdateDevicePreferences_Unauthorized(t *testing.T) {
 	database.Where("device_uuid = ?", "other-uuid-4").First(&otherDevice)
 
 	body, _ := json.Marshal(map[string]interface{}{
-		"consoleShaders": map[string]string{"1": "crt-royale"},
+		"consoleShaders": map[string]string{"nes": "crt-royale"},
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/devices/%d/preferences", otherDevice.ID), bytes.NewReader(body))

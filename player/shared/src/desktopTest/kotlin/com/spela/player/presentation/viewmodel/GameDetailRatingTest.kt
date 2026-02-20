@@ -145,7 +145,7 @@ private class StubGameRepository : GameRepository {
     private val game = Game(
         id = "1",
         title = "Test Game",
-        consoleId = "1",
+        consoleId = "nes",
         consoleName = "NES",
         scrapeAttempts = 1,
         userRating = null,

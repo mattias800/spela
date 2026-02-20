@@ -210,15 +210,15 @@ class FakeGameRepository : GameRepository {
     var shouldFail = false
 
     val consoles = listOf(
-        Console("1", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
-        Console("2", "Super Nintendo", "SNES", 2, "#3182ce"),
+        Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
+        Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
     )
 
     var games: List<Game> = listOf(
         Game(
             id = "1",
             title = "Castlevania",
-            consoleId = "1",
+            consoleId = "nes",
             consoleName = "NES",
             description = "A classic action platformer.",
             developer = "Konami",
@@ -232,7 +232,7 @@ class FakeGameRepository : GameRepository {
         Game(
             id = "2",
             title = "Super Mario Bros.",
-            consoleId = "1",
+            consoleId = "nes",
             consoleName = "NES",
             description = "The original platformer.",
             developer = "Nintendo",
@@ -246,7 +246,7 @@ class FakeGameRepository : GameRepository {
         Game(
             id = "3",
             title = "Mega Man 2",
-            consoleId = "1",
+            consoleId = "nes",
             consoleName = "NES",
             description = "Fight the Robot Masters.",
             developer = "Capcom",
@@ -260,7 +260,7 @@ class FakeGameRepository : GameRepository {
         Game(
             id = "4",
             title = "Chrono Trigger",
-            consoleId = "2",
+            consoleId = "snes",
             consoleName = "SNES",
             description = "Time-travel RPG masterpiece.",
             developer = "Square",
@@ -274,7 +274,7 @@ class FakeGameRepository : GameRepository {
         Game(
             id = "5",
             title = "Super Metroid",
-            consoleId = "2",
+            consoleId = "snes",
             consoleName = "SNES",
             description = "Explore planet Zebes.",
             developer = "Nintendo R&D1",

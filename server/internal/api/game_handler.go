@@ -35,8 +35,15 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 	var games []db.Game
 	query := h.DB.Preload("Console").Preload("Discs")
 
-	if consoleID := c.Query("consoleId"); consoleID != "" {
-		query = query.Where("console_id = ?", consoleID)
+	if consoleAbbr := c.Query("consoleId"); consoleAbbr != "" {
+		var console db.Console
+		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err == nil {
+			query = query.Where("console_id = ?", console.ID)
+		} else {
+			// Unknown console abbreviation — return empty list
+			c.JSON(http.StatusOK, []GameResponse{})
+			return
+		}
 	}
 	if search := c.Query("search"); search != "" {
 		query = query.Where("title LIKE ?", "%"+search+"%")
