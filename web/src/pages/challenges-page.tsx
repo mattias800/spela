@@ -3,7 +3,6 @@ import { Flag } from "lucide-react";
 import {
   EmptyState,
   Skeleton,
-  SearchInput,
   Select,
   StateTabNav,
   StateTabItem,

@@ -15,16 +15,17 @@ export interface WebGLRenderer {
 export function createWebGLRenderer(
   canvas: HTMLCanvasElement,
 ): WebGLRenderer | null {
-  let gl: WebGL2RenderingContext | null;
+  let maybeGl: WebGL2RenderingContext | null;
   try {
-    gl = canvas.getContext("webgl2", {
+    maybeGl = canvas.getContext("webgl2", {
       alpha: false,
       preserveDrawingBuffer: true,
     });
   } catch {
     return null;
   }
-  if (!gl || typeof gl.createVertexArray !== "function") return null;
+  if (!maybeGl || typeof maybeGl.createVertexArray !== "function") return null;
+  const gl = maybeGl;
 
   const programCache = new Map<string, WebGLProgram>();
   let activeProgram: WebGLProgram | null = null;

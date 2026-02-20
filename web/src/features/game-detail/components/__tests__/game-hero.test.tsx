@@ -12,6 +12,7 @@ function makeGame(overrides: Partial<Game> = {}): Game {
     consoleName: "NES",
     fileName: "test.nes",
     fileSize: 1024,
+    discCount: 1,
     screenshotUrls: [],
     scrapeAttempts: 1,
     isFavorite: false,

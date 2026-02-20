@@ -6,7 +6,7 @@ import type { User } from "@/types/api";
 
 interface EditUserModalProps {
   user: User | null;
-  currentUser: User | undefined;
+  currentUser: User | null | undefined;
   onClose: () => void;
 }
 

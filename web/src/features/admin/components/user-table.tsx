@@ -13,7 +13,7 @@ import type { User } from "@/types/api";
 
 interface UserTableProps {
   users: User[] | undefined;
-  currentUser: User | undefined;
+  currentUser: User | null | undefined;
   isLoading: boolean;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;

@@ -5,8 +5,6 @@ import {
   ChevronRight,
   Gamepad2,
   Trophy,
-  Activity,
-  Users,
   Flag,
 } from "lucide-react";
 import { Link } from "react-router-dom";
