@@ -5,6 +5,11 @@ test.describe("Emulator Page", () => {
     test("shows enabled Play in Browser button for NES game", async ({
       page,
     }) => {
+      // Mock saves endpoint so hasSaves=false and play-in-browser-btn is shown
+      await page.route("**/api/games/*/saves", (route) =>
+        route.fulfill({ json: [] }),
+      );
+
       // Navigate to games list, find Castlevania (NES — has emulatorJsCore)
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
@@ -23,6 +28,11 @@ test.describe("Emulator Page", () => {
     test("navigates to play page when Play in Browser is clicked", async ({
       page,
     }) => {
+      // Mock saves endpoint so hasSaves=false and play-in-browser-btn is shown
+      await page.route("**/api/games/*/saves", (route) =>
+        route.fulfill({ json: [] }),
+      );
+
       await page.goto("/games");
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
@@ -204,6 +214,11 @@ test.describe("Emulator Page", () => {
     test("Play in Browser button is disabled for unsupported console", async ({
       page,
     }) => {
+      // Mock saves endpoint so hasSaves=false and play-in-browser-btn is shown
+      await page.route("**/api/games/*/saves", (route) =>
+        route.fulfill({ json: [] }),
+      );
+
       // Intercept consoles API to remove emulatorJsCore
       await page.route("**/api/consoles", async (route) => {
         try {

@@ -81,6 +81,11 @@ test.describe("EmulatorJS Real Integration", () => {
   }) => {
     const monitor = monitorPageErrors(page);
 
+    // Mock saves endpoint so hasSaves=false and play-in-browser-btn is shown
+    await page.route("**/api/games/*/saves", (route) =>
+      route.fulfill({ json: [] }),
+    );
+
     // Navigate to the games list and find a playable game
     await page.goto("/games");
     await page.getByPlaceholder(/search/i).fill("Castlevania");
@@ -201,6 +206,13 @@ test.describe("EmulatorJS Real Integration", () => {
     page,
   }) => {
     const monitor = monitorPageErrors(page);
+
+    // Mock saves list so hasSaves=false and play-in-browser-btn is shown.
+    // Only intercept GET to the saves list; POST to /saves/auto has a different
+    // path and won't be caught by this pattern.
+    await page.route("**/api/games/*/saves", (route) =>
+      route.fulfill({ json: [] }),
+    );
 
     // Navigate to a playable game
     await page.goto("/games");
