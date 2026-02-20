@@ -2,9 +2,12 @@
 
 package com.spela.player.desktop
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.loadSvgPainter
 import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Density
@@ -21,6 +24,8 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 import kotlinx.coroutines.delay
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
+
+private val isMacOS = System.getProperty("os.name").orEmpty().contains("Mac", ignoreCase = true)
 
 fun main(args: Array<String>) = application {
     val autoStartGameId = args.indexOf("--game").let { idx ->
@@ -50,7 +55,23 @@ fun main(args: Array<String>) = application {
         state = rememberWindowState(width = 1280.dp, height = 720.dp),
         icon = icon,
     ) {
-        App()
+        // macOS: transparent title bar blending with app background.
+        // Uses official OpenJDK client properties (JDK 12+/17+).
+        if (isMacOS) {
+            LaunchedEffect(Unit) {
+                val bg = java.awt.Color(10, 10, 16) // #0A0A10
+                window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
+                window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
+                window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
+                window.background = bg
+                window.rootPane.background = bg
+                window.contentPane.background = bg
+            }
+        }
+
+        Box(modifier = if (isMacOS) Modifier.padding(top = 28.dp) else Modifier) {
+            App()
+        }
 
         // Auto-start a game when --game <gameId> is passed on the command line.
         // Waits for the app to initialize and connect to the server first.
