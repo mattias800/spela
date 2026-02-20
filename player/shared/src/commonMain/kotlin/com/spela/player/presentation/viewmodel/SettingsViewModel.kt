@@ -10,6 +10,7 @@ import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
+import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.ServerRepository
 import com.spela.player.util.DispatcherProvider
@@ -95,6 +96,7 @@ class SettingsViewModel(
     private val gameRepository: GameRepository,
     private val serverRepository: ServerRepository,
     private val achievementsRepository: AchievementsRepository,
+    private val keyMappingRepository: KeyMappingRepository,
     private val deviceManager: DeviceManager,
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
@@ -220,6 +222,11 @@ class SettingsViewModel(
             gameRepository.getConsoles().onSuccess { consoles ->
                 _state.update { it.copy(consoles = consoles) }
             }
+
+            // Sync key mappings from server (populates local DB on first device)
+            preferencesRepository.syncKeyMappingsFromServer()
+            // Auto-detect and apply defaults if no mappings exist yet
+            keyMappingRepository.ensureDefaultsApplied()
 
             // Sync device shader overrides from server, then load local
             preferencesRepository.syncDeviceShaderOverrides()

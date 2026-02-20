@@ -3,17 +3,23 @@ package com.spela.player.data.repository
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.ConsoleKeyMappingDto
 import com.spela.player.data.remote.dto.UpdateDevicePreferencesRequest
 import com.spela.player.data.remote.dto.UpdatePreferencesRequest
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class PreferencesRepositoryImpl(
     private val apiClient: SpelaApiClient,
     private val database: SpelaDatabase,
     private val deviceManager: DeviceManager,
+    private val keyMappingRepository: KeyMappingRepository,
 ) : PreferencesRepository {
 
     override suspend fun getPreferences(): Result<UserPreferences> = runCatching {
@@ -103,5 +109,76 @@ class PreferencesRepositoryImpl(
 
         // 4. Final fallback
         return ShaderPreset.NONE
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun syncKeyMappingsFromServer() {
+        runCatching {
+            val prefs = apiClient.getPreferences()
+
+            // Only populate local DB if it's empty (first-device experience)
+            val localMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()
+            if (localMappings.isNotEmpty()) return
+
+            // Import global default mapping from server
+            for ((retroButtonStr, keyCodeStr) in prefs.customKeyMapping) {
+                val retroButton = retroButtonStr.toIntOrNull() ?: continue
+                val keyCode = keyCodeStr.toIntOrNull() ?: continue
+                database.spelaDatabaseQueries.insertKeyMapping(
+                    id = Uuid.random().toString(),
+                    console_id = DEFAULT_CONSOLE_ID,
+                    port = 0,
+                    platform_key_code = keyCode.toLong(),
+                    libretro_button_id = retroButton.toLong(),
+                )
+            }
+
+            // Import per-console mappings from server
+            for ((consoleId, mapping) in prefs.consoleKeyMappings) {
+                for ((retroButtonStr, keyCodeStr) in mapping.customMapping) {
+                    val retroButton = retroButtonStr.toIntOrNull() ?: continue
+                    val keyCode = keyCodeStr.toIntOrNull() ?: continue
+                    database.spelaDatabaseQueries.insertKeyMapping(
+                        id = Uuid.random().toString(),
+                        console_id = consoleId,
+                        port = 0,
+                        platform_key_code = keyCode.toLong(),
+                        libretro_button_id = retroButton.toLong(),
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun pushKeyMappingsToServer() {
+        runCatching {
+            val allMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()
+
+            // Build global default mapping (consoleId == __default__)
+            val globalMapping = allMappings
+                .filter { it.console_id == DEFAULT_CONSOLE_ID }
+                .associate { it.libretro_button_id.toString() to it.platform_key_code.toString() }
+
+            // Build per-console mappings
+            val consoleGroups = allMappings
+                .filter { it.console_id != DEFAULT_CONSOLE_ID }
+                .groupBy { it.console_id }
+
+            val consoleMappings = consoleGroups.mapValues { (_, entities) ->
+                ConsoleKeyMappingDto(
+                    selectedMapping = "",
+                    customMapping = entities.associate {
+                        it.libretro_button_id.toString() to it.platform_key_code.toString()
+                    },
+                )
+            }
+
+            apiClient.updatePreferences(
+                UpdatePreferencesRequest(
+                    customKeyMapping = globalMapping,
+                    consoleKeyMappings = consoleMappings,
+                )
+            )
+        }
     }
 }

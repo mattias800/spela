@@ -45,9 +45,16 @@ import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
 import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
 import com.spela.player.presentation.ui.feature.settings.SettingsToggle
+import com.spela.player.presentation.ui.feature.settings.ControlsScope
+import com.spela.player.presentation.ui.feature.settings.ControlsScopeTabs
 import com.spela.player.presentation.ui.feature.settings.ShaderScopeTabs
+import com.spela.player.presentation.ui.feature.settings.controlsDefaultScopeItems
+import com.spela.player.presentation.ui.feature.settings.controlsPerConsoleScopeItems
 import com.spela.player.presentation.ui.feature.settings.shaderDefaultScopeItems
 import com.spela.player.presentation.ui.feature.settings.shaderPerConsoleScopeItems
+import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
+import com.spela.player.presentation.intent.KeyMappingIntent
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.presentation.viewmodel.ShaderScope
@@ -56,6 +63,7 @@ import com.spela.player.util.formatBytes
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    keyMappingViewModel: KeyMappingViewModel? = null,
     onBack: () -> Unit = {},
     onLogout: () -> Unit,
     onNavigateToConsoleSettings: (String) -> Unit = {},
@@ -64,9 +72,12 @@ fun SettingsScreen(
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
+    var controlsScope by remember { mutableStateOf(ControlsScope.DEFAULT) }
+    val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(SettingsIntent.LoadSettings)
+        keyMappingViewModel?.onIntent(KeyMappingIntent.LoadMapping("__default__"))
     }
 
     // Dialogs
@@ -262,6 +273,41 @@ fun SettingsScreen(
                 }
             }
 
+            // Controls section
+            if (keyMappingViewModel != null && keyMappingState != null) {
+                item {
+                    SettingsSectionHeader(title = "Controls")
+                }
+
+                item {
+                    ControlsScopeTabs(
+                        selectedScope = controlsScope,
+                        onScopeChanged = { controlsScope = it },
+                    )
+                }
+
+                when (controlsScope) {
+                    ControlsScope.DEFAULT -> {
+                        controlsDefaultScopeItems(
+                            presets = keyMappingState.value.availablePresets,
+                            activePresetId = keyMappingState.value.activePresetId,
+                            onSelectPreset = { presetId ->
+                                keyMappingViewModel.onIntent(KeyMappingIntent.ApplyPreset(presetId))
+                            },
+                            onOpenFullMapping = {
+                                keyMappingViewModel.onIntent(KeyMappingIntent.ShowPresetPicker)
+                            },
+                        )
+                    }
+                    ControlsScope.PER_CONSOLE -> {
+                        controlsPerConsoleScopeItems(
+                            consoles = state.consoles,
+                            onNavigateToConsoleSettings = onNavigateToConsoleSettings,
+                        )
+                    }
+                }
+            }
+
             // RetroAchievements section
             item {
                 SettingsSectionHeader(title = "RetroAchievements")
@@ -447,6 +493,20 @@ fun SettingsScreen(
                 Spacer(Modifier.height(SpSpacing.XXXLarge))
             }
         }
+    }
+
+    // Preset picker dialog for controls section
+    if (keyMappingState?.value?.showPresetPicker == true && keyMappingViewModel != null) {
+        PresetPickerDialog(
+            presets = keyMappingState.value.availablePresets,
+            activePresetId = keyMappingState.value.activePresetId,
+            onSelectPreset = { presetId ->
+                keyMappingViewModel.onIntent(KeyMappingIntent.ApplyPreset(presetId))
+            },
+            onDismiss = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.DismissPresetPicker)
+            },
+        )
     }
 
     ShaderPreviewDialog(

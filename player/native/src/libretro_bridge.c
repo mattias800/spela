@@ -736,7 +736,9 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     audio_deinit();
 
     /* Clear pointers into core's memory before dlclose */
+#ifdef __ANDROID__
     g_core.hw_vk_negotiation = NULL;
+#endif
     g_core.hw_render_enabled = false;
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 

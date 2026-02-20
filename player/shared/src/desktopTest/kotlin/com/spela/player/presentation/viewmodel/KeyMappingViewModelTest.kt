@@ -2,8 +2,12 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
 import com.spela.player.domain.model.DefaultKeyMappings
+import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.domain.model.KeyMappingProfile
+import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -35,11 +39,13 @@ class KeyMappingViewModelTest {
     }
 
     private lateinit var fakeRepo: FakeKeyMappingRepository
+    private lateinit var fakePrefsRepo: FakePreferencesRepository
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeKeyMappingRepository()
+        fakePrefsRepo = FakePreferencesRepository()
     }
 
     @AfterTest
@@ -51,6 +57,7 @@ class KeyMappingViewModelTest {
         val scope = CoroutineScope(testDispatcher)
         return KeyMappingViewModel(
             keyMappingRepository = fakeRepo,
+            preferencesRepository = fakePrefsRepo,
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -222,6 +229,31 @@ class KeyMappingViewModelTest {
     }
 
     @Test
+    fun captureButtonTriggersServerPush() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+        vm.onIntent(KeyMappingIntent.CaptureButton(777))
+        advanceUntilIdle()
+
+        assertTrue(fakePrefsRepo.pushKeyMappingsCalled)
+    }
+
+    @Test
+    fun resetAllTriggersServerPush() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.ResetAll)
+        advanceUntilIdle()
+
+        assertTrue(fakePrefsRepo.pushKeyMappingsCalled)
+    }
+
+    @Test
     fun loadMappingWithUnknownConsoleUsesFullLayout() = runTest(testDispatcher) {
         val vm = createViewModel()
         vm.onIntent(KeyMappingIntent.LoadMapping("unknown_console"))
@@ -231,10 +263,28 @@ class KeyMappingViewModelTest {
         assertEquals(DefaultKeyMappings.FULL.buttons.size, state.buttonsForConsole.size)
     }
 
-    // Fake repository for testing
+    // Fake repositories for testing
+
+    private class FakePreferencesRepository : PreferencesRepository {
+        var pushKeyMappingsCalled = false
+        override suspend fun getPreferences(): Result<UserPreferences> = Result.success(UserPreferences())
+        override suspend fun updatePreferences(
+            showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?,
+            selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?,
+        ): Result<UserPreferences> = Result.success(UserPreferences())
+        override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
+        override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
+        override fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset> = emptyMap()
+        override suspend fun syncDeviceShaderOverrides() {}
+        override suspend fun resolveShader(consoleId: String): ShaderPreset = ShaderPreset.NONE
+        override suspend fun pushDeviceShaderOverridesToServer() {}
+        override suspend fun syncKeyMappingsFromServer() {}
+        override suspend fun pushKeyMappingsToServer() { pushKeyMappingsCalled = true }
+    }
 
     private class FakeKeyMappingRepository : KeyMappingRepository {
         private val storage = mutableMapOf<String, MutableMap<Int, Int>>() // "consoleId:port" -> bindings
+        private val gameMappings = mutableMapOf<String, MutableMap<Int, Int>>()
 
         private val defaults = mapOf(
             LibretroButtons.UP to 100,
@@ -268,5 +318,16 @@ class KeyMappingViewModelTest {
         }
 
         override fun getDefaultMapping(): Map<Int, Int> = defaults
+        override fun getAvailablePresets(): List<KeyMappingPreset> = emptyList()
+        override suspend fun applyPreset(presetId: String) {}
+        override suspend fun ensureDefaultsApplied() {}
+        override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> {
+            return gameMappings[gameId] ?: getEffectiveMapping(consoleId, port)
+        }
+        override suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>) {
+            gameMappings[gameId] = bindings.toMutableMap()
+        }
+        override suspend fun clearGameMapping(gameId: String) { gameMappings.remove(gameId) }
+        override suspend fun hasGameMapping(gameId: String): Boolean = gameMappings.containsKey(gameId)
     }
 }

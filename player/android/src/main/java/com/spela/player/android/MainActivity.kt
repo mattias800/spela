@@ -72,12 +72,16 @@ class MainActivity : ComponentActivity() {
     private fun observeGameMappingChanges() {
         lifecycleScope.launch {
             emulationViewModel.state
-                .map { it.consoleId }
+                .map { Pair(it.gameId, it.consoleId) }
                 .distinctUntilChanged()
-                .collect { consoleId ->
+                .collect { (gameId, consoleId) ->
                     if (consoleId.isNotEmpty()) {
                         try {
-                            gamepadPortManager.loadAllMappings(consoleId)
+                            if (gameId.isNotEmpty()) {
+                                gamepadPortManager.loadAllGameMappings(gameId, consoleId)
+                            } else {
+                                gamepadPortManager.loadAllMappings(consoleId)
+                            }
                         } catch (_: Exception) {
                             // Best effort - defaults will be used
                         }
@@ -119,9 +123,7 @@ class MainActivity : ComponentActivity() {
             val port = ensureDeviceConnected(deviceId)
             if (port < 0) return super.onKeyDown(keyCode, event)
 
-            // Use port mapping with fallback to default mapping (avoids async loading race)
             val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
-                ?: GamepadMapping.mapKeyToLibretro(keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, true)
@@ -174,7 +176,6 @@ class MainActivity : ComponentActivity() {
             if (port < 0) return super.onKeyUp(keyCode, event)
 
             val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
-                ?: GamepadMapping.mapKeyToLibretro(keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, false)

@@ -51,6 +51,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&NetplaySession{},
 		&Challenge{},
 		&ChallengeAttempt{},
+		&GameKeyMappingPreference{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

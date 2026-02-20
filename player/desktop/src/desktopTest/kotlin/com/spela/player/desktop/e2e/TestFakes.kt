@@ -540,6 +540,9 @@ class FakeFileStorage : FileStorage {
 }
 
 class FakePreferencesRepository : PreferencesRepository {
+    var syncKeyMappingsCalled = false
+    var pushKeyMappingsCalled = false
+
     override suspend fun getPreferences(): Result<UserPreferences> = Result.success(UserPreferences())
     override suspend fun updatePreferences(
         showPerformanceOverlay: Boolean?,
@@ -555,6 +558,8 @@ class FakePreferencesRepository : PreferencesRepository {
     override suspend fun syncDeviceShaderOverrides() {}
     override suspend fun resolveShader(consoleId: String): ShaderPreset = ShaderPreset.NONE
     override suspend fun pushDeviceShaderOverridesToServer() {}
+    override suspend fun syncKeyMappingsFromServer() { syncKeyMappingsCalled = true }
+    override suspend fun pushKeyMappingsToServer() { pushKeyMappingsCalled = true }
 }
 
 class FakeAchievementsRepository : AchievementsRepository {
@@ -723,6 +728,9 @@ class FakeSocialRepository : SocialRepository {
 
 class FakeKeyMappingRepository : KeyMappingRepository {
     private val mappings = mutableMapOf<String, MutableMap<Int, Int>>()
+    private val gameMappings = mutableMapOf<String, MutableMap<Int, Int>>()
+    var applyPresetCalled: String? = null
+    var ensureDefaultsCalled = false
 
     private fun key(consoleId: String, port: Int) = "$consoleId:$port"
 
@@ -748,6 +756,34 @@ class FakeKeyMappingRepository : KeyMappingRepository {
     }
 
     override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
+
+    override fun getAvailablePresets(): List<KeyMappingPreset> = listOf(
+        KeyMappingPreset("test-preset", "Test Preset", "A test preset", emptyMap()),
+    )
+
+    override suspend fun applyPreset(presetId: String) {
+        applyPresetCalled = presetId
+    }
+
+    override suspend fun ensureDefaultsApplied() {
+        ensureDefaultsCalled = true
+    }
+
+    override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> {
+        return gameMappings[gameId] ?: getEffectiveMapping(consoleId, port)
+    }
+
+    override suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>) {
+        gameMappings[gameId] = bindings.toMutableMap()
+    }
+
+    override suspend fun clearGameMapping(gameId: String) {
+        gameMappings.remove(gameId)
+    }
+
+    override suspend fun hasGameMapping(gameId: String): Boolean {
+        return gameMappings.containsKey(gameId)
+    }
 }
 
 class FakeNetplayRepository : NetplayRepository {

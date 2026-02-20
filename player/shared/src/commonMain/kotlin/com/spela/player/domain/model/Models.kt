@@ -111,6 +111,11 @@ enum class ShaderPreset(val apiId: String, val displayName: String, val descript
     }
 }
 
+data class ConsoleKeyMappingPref(
+    val selectedMapping: String,
+    val customMapping: Map<String, String> = emptyMap(),
+)
+
 data class UserPreferences(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
@@ -118,6 +123,8 @@ data class UserPreferences(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
+    val selectedKeyMapping: String = "default",
+    val consoleKeyMappings: Map<String, ConsoleKeyMappingPref> = emptyMap(),
 )
 
 enum class DownloadState {

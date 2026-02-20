@@ -123,6 +123,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 	biosHandler := &BiosHandler{Storage: cfg.Storage}
+	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 
@@ -206,6 +207,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
 		api.DELETE("/user/favorites/:gameId", userHandler.RemoveFavorite)
+
+		// Per-game key mappings
+		api.GET("/user/games/:gameId/keymapping", gameKeyMappingHandler.GetGameKeyMapping)
+		api.PUT("/user/games/:gameId/keymapping", gameKeyMappingHandler.UpdateGameKeyMapping)
+		api.DELETE("/user/games/:gameId/keymapping", gameKeyMappingHandler.DeleteGameKeyMapping)
 
 		// Play Later
 		api.GET("/user/play-later", playLaterHandler.ListPlayLater)

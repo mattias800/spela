@@ -27,4 +27,22 @@ sealed interface KeyMappingIntent {
 
     /** Dismiss error message. */
     data object DismissError : KeyMappingIntent
+
+    /** Show the preset picker dialog. */
+    data object ShowPresetPicker : KeyMappingIntent
+
+    /** Dismiss the preset picker dialog. */
+    data object DismissPresetPicker : KeyMappingIntent
+
+    /** Apply a preset by its ID. */
+    data class ApplyPreset(val presetId: String) : KeyMappingIntent
+
+    /** Load per-game mapping override. */
+    data class LoadGameMapping(val gameId: String, val consoleId: String) : KeyMappingIntent
+
+    /** Save current bindings as a per-game override. */
+    data class SaveAsGameOverride(val gameId: String) : KeyMappingIntent
+
+    /** Clear per-game mapping override, reverting to console/global defaults. */
+    data class ClearGameOverride(val gameId: String) : KeyMappingIntent
 }

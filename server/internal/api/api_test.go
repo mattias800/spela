@@ -53,6 +53,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.NetplaySession{},
 		&db.Challenge{},
 		&db.ChallengeAttempt{},
+		&db.GameKeyMappingPreference{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

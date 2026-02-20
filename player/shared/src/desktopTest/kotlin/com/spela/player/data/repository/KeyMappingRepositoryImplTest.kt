@@ -8,8 +8,10 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class KeyMappingRepositoryImplTest {
 
@@ -190,5 +192,86 @@ class KeyMappingRepositoryImplTest {
         val mapping = repo2.getMappingForConsole("nes")
         assertNotNull(mapping)
         assertEquals(999, mapping.bindings[LibretroButtons.A])
+    }
+
+    @Test
+    fun ensureDefaultsAppliedNoOpsWithExistingMappings() = runTest {
+        val repo = createRepo()
+        // Add a mapping first
+        repo.setBinding("nes", 0, LibretroButtons.A, 999)
+
+        // ensureDefaultsApplied should not overwrite
+        repo.ensureDefaultsApplied()
+
+        val mapping = repo.getMappingForConsole("nes")
+        assertNotNull(mapping)
+        assertEquals(999, mapping.bindings[LibretroButtons.A])
+    }
+
+    @Test
+    fun ensureDefaultsAppliedAppliesPresetWhenEmpty() = runTest {
+        val repo = createRepo()
+        // DB is empty, ensureDefaultsApplied should apply a preset
+        repo.ensureDefaultsApplied()
+
+        // Should have some mappings now (applied by detectDevicePreset())
+        val effective = repo.getEffectiveMapping(DEFAULT_CONSOLE_ID)
+        assertTrue(effective.isNotEmpty())
+    }
+
+    @Test
+    fun gameKeyMappingOverride() = runTest {
+        val repo = createRepo()
+
+        // No game override initially
+        assertFalse(repo.hasGameMapping("game1"))
+
+        // Set per-game override
+        val gameBindings = mapOf(LibretroButtons.A to 777, LibretroButtons.B to 778)
+        repo.setGameMapping("game1", gameBindings)
+        assertTrue(repo.hasGameMapping("game1"))
+
+        // getEffectiveMappingForGame should return the override
+        val effective = repo.getEffectiveMappingForGame("game1", "nes")
+        assertEquals(777, effective[LibretroButtons.A])
+        assertEquals(778, effective[LibretroButtons.B])
+    }
+
+    @Test
+    fun getEffectiveMappingForGameFallsBackWithNoOverride() = runTest {
+        val repo = createRepo()
+        repo.setBinding("nes", 0, LibretroButtons.A, 999)
+
+        // No game override → should fall back to console mapping
+        val effective = repo.getEffectiveMappingForGame("game1", "nes")
+        assertEquals(999, effective[LibretroButtons.A])
+    }
+
+    @Test
+    fun clearGameMappingRemovesOverride() = runTest {
+        val repo = createRepo()
+        repo.setGameMapping("game1", mapOf(LibretroButtons.A to 777))
+        assertTrue(repo.hasGameMapping("game1"))
+
+        repo.clearGameMapping("game1")
+        assertFalse(repo.hasGameMapping("game1"))
+
+        // Should fall back to hardcoded defaults
+        val effective = repo.getEffectiveMappingForGame("game1", "nes")
+        assertEquals(platformDefaults, effective)
+    }
+
+    @Test
+    fun applyPresetWritesToGlobalDefault() = runTest {
+        val repo = createRepo()
+        val presets = repo.getAvailablePresets()
+        assertTrue(presets.isNotEmpty())
+
+        repo.applyPreset(presets.first().id)
+
+        // Global default should now contain the preset bindings
+        val mapping = repo.getMappingForConsole(DEFAULT_CONSOLE_ID)
+        assertNotNull(mapping)
+        assertEquals(presets.first().bindings, mapping.bindings)
     }
 }

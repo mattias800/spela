@@ -179,5 +179,14 @@ class GamepadPortManagerTest {
             return effectiveMappings["$consoleId:$port"] ?: emptyMap()
         }
         override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
+        override fun getAvailablePresets(): List<com.spela.player.domain.model.KeyMappingPreset> = emptyList()
+        override suspend fun applyPreset(presetId: String) {}
+        override suspend fun ensureDefaultsApplied() {}
+        override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> {
+            return getEffectiveMapping(consoleId, port)
+        }
+        override suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>) {}
+        override suspend fun clearGameMapping(gameId: String) {}
+        override suspend fun hasGameMapping(gameId: String): Boolean = false
     }
 }

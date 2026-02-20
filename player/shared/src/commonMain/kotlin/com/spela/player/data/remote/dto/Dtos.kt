@@ -131,6 +131,22 @@ data class LibretroCoreDto(
 )
 
 @Serializable
+data class ConsoleKeyMappingDto(
+    val selectedMapping: String = "",
+    val customMapping: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+data class GameKeyMappingDto(
+    val customMapping: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+data class UpdateGameKeyMappingRequest(
+    val customMapping: Map<String, String>,
+)
+
+@Serializable
 data class UserPreferencesDto(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
@@ -141,6 +157,9 @@ data class UserPreferencesDto(
     val raLinked: Boolean = false,
     val raUsername: String = "",
     val raHardcoreEnabled: Boolean = false,
+    val selectedKeyMapping: String = "default",
+    val customKeyMapping: Map<String, String> = emptyMap(),
+    val consoleKeyMappings: Map<String, ConsoleKeyMappingDto> = emptyMap(),
 )
 
 @Serializable
@@ -151,6 +170,9 @@ data class UpdatePreferencesRequest(
     val selectedShader: String? = null,
     val selectedTheme: String? = null,
     val consoleShaders: Map<String, String>? = null,
+    val selectedKeyMapping: String? = null,
+    val customKeyMapping: Map<String, String>? = null,
+    val consoleKeyMappings: Map<String, ConsoleKeyMappingDto>? = null,
 )
 
 // Devices

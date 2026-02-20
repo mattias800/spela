@@ -1,5 +1,6 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.domain.model.KeyMappingProfile
 
 interface KeyMappingRepository {
@@ -32,4 +33,31 @@ interface KeyMappingRepository {
      * This is platform-specific and provided by the platform module.
      */
     fun getDefaultMapping(): Map<Int, Int>
+
+    /** Returns the available presets for the current platform. */
+    fun getAvailablePresets(): List<KeyMappingPreset>
+
+    /** Applies a preset's bindings to the global default (__default__) console ID. */
+    suspend fun applyPreset(presetId: String)
+
+    /**
+     * On first launch with no existing mappings, detects the device and applies
+     * an appropriate preset. No-op if local DB already has mappings.
+     */
+    suspend fun ensureDefaultsApplied()
+
+    /**
+     * Returns the effective mapping for a specific game, with fallback chain:
+     * per-game -> per-console -> global default -> hardcoded defaults.
+     */
+    suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int = 0): Map<Int, Int>
+
+    /** Sets a per-game key mapping override. */
+    suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>)
+
+    /** Clears per-game key mapping override. */
+    suspend fun clearGameMapping(gameId: String)
+
+    /** Returns whether a game has a custom key mapping override. */
+    suspend fun hasGameMapping(gameId: String): Boolean
 }

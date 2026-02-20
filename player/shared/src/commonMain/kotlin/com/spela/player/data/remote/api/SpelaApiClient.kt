@@ -183,6 +183,22 @@ class SpelaApiClient(
         }.body()
     }
 
+    // Game Key Mapping
+
+    suspend fun getGameKeyMapping(gameId: String): GameKeyMappingDto {
+        return client.get("$baseUrl/api/user/games/$gameId/keymapping").body()
+    }
+
+    suspend fun updateGameKeyMapping(gameId: String, request: UpdateGameKeyMappingRequest): GameKeyMappingDto {
+        return client.put("$baseUrl/api/user/games/$gameId/keymapping") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun deleteGameKeyMapping(gameId: String) {
+        client.delete("$baseUrl/api/user/games/$gameId/keymapping")
+    }
+
     // Game Stats
 
     suspend fun getGameStats(gameId: String): GameStatsDto {

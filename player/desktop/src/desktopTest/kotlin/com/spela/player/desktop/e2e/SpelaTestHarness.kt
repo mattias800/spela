@@ -6,8 +6,6 @@ import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.domain.usecase.*
-import com.spela.player.domain.model.KeyMappingProfile
-import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
@@ -77,6 +75,7 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val preferencesRepo = FakePreferencesRepository()
     val ratingRepo = FakeRatingRepository()
     val sharedSaveRepo = FakeSharedSaveRepository()
     val collectionRepo = FakeCollectionRepository()
@@ -136,7 +135,7 @@ class SpelaTestHarness(
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
         loadGameStateUseCase = LoadGameStateUseCase(saveRepo),
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
-        preferencesRepository = FakePreferencesRepository(),
+        preferencesRepository = preferencesRepo,
         achievementsRepository = FakeAchievementsRepository(),
         achievementsController = FakeAchievementsController(),
         libretroController = libretroController,
@@ -157,29 +156,25 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val keyMappingRepo = FakeKeyMappingRepository()
+
     val settingsViewModel = SettingsViewModel(
         authRepository = authRepo,
         downloadRepository = downloadRepo,
-        preferencesRepository = FakePreferencesRepository(),
+        preferencesRepository = preferencesRepo,
         gameRepository = gameRepo,
         serverRepository = serverRepo,
         achievementsRepository = FakeAchievementsRepository(),
+        keyMappingRepository = keyMappingRepo,
         deviceManager = deviceManager,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
     )
 
-    val keyMappingRepo = object : KeyMappingRepository {
-        override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? = null
-        override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> = emptyMap()
-        override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {}
-        override suspend fun resetToDefault(consoleId: String, port: Int) {}
-        override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
-    }
-
     val keyMappingViewModel = KeyMappingViewModel(
         keyMappingRepository = keyMappingRepo,
+        preferencesRepository = preferencesRepo,
         dispatchers = dispatchers,
         scope = scope,
     )

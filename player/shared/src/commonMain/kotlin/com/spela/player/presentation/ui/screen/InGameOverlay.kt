@@ -28,6 +28,7 @@ import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
 import com.spela.player.presentation.ui.components.challenge.ChallengeCreationPanel
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
+import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
@@ -209,8 +210,13 @@ fun InGameOverlay(
         val consoleId = state.consoleId
         val layout = remember(consoleId) { DefaultKeyMappings.getLayoutForConsole(consoleId) }
 
-        LaunchedEffect(consoleId) {
-            keyMappingViewModel.onIntent(KeyMappingIntent.LoadMapping(consoleId))
+        val gameId = state.gameId
+        LaunchedEffect(gameId, consoleId) {
+            if (gameId.isNotEmpty()) {
+                keyMappingViewModel.onIntent(KeyMappingIntent.LoadGameMapping(gameId, consoleId))
+            } else {
+                keyMappingViewModel.onIntent(KeyMappingIntent.LoadMapping(consoleId))
+            }
         }
 
         KeyMappingDialog(
@@ -225,12 +231,28 @@ fun InGameOverlay(
             onResetToDefaults = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
             },
+            onLoadPreset = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.ShowPresetPicker)
+            },
             onDismiss = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.FinishMapping)
                 viewModel.onIntent(EmulationIntent.HideKeyMapping)
             },
             keyNameResolver = ::platformKeyName,
         )
+
+        if (keyMappingState.showPresetPicker) {
+            PresetPickerDialog(
+                presets = keyMappingState.availablePresets,
+                activePresetId = keyMappingState.activePresetId,
+                onSelectPreset = { presetId ->
+                    keyMappingViewModel.onIntent(KeyMappingIntent.ApplyPreset(presetId))
+                },
+                onDismiss = {
+                    keyMappingViewModel.onIntent(KeyMappingIntent.DismissPresetPicker)
+                },
+            )
+        }
     }
 }
 

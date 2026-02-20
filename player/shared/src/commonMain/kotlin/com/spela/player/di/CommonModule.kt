@@ -42,7 +42,7 @@ val commonModule = module {
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get()) }
-    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get()) }
+    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get(), get()) }
     single<KeyMappingRepository> { KeyMappingRepositoryImpl(get(), get(named("platformDefaultMapping"))) }
     single<AchievementsRepository> { AchievementsRepositoryImpl(get()) }
     single<SocialRepository> { SocialRepositoryImpl(get()) }
@@ -279,6 +279,7 @@ val commonModule = module {
     factory {
         KeyMappingViewModel(
             keyMappingRepository = get(),
+            preferencesRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -291,6 +292,7 @@ val commonModule = module {
             gameRepository = get(),
             serverRepository = get(),
             achievementsRepository = get(),
+            keyMappingRepository = get(),
             deviceManager = get(),
             apiClient = get(),
             dispatchers = get(),

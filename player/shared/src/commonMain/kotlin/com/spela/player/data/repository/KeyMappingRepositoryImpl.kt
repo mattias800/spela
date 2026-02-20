@@ -2,7 +2,10 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.domain.model.KeyMappingProfile
+import com.spela.player.domain.model.detectDevicePreset
+import com.spela.player.domain.model.getPlatformPresets
 import com.spela.player.domain.repository.KeyMappingRepository
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -62,4 +65,63 @@ class KeyMappingRepositoryImpl(
     }
 
     override fun getDefaultMapping(): Map<Int, Int> = platformDefaultMapping
+
+    override fun getAvailablePresets(): List<KeyMappingPreset> = getPlatformPresets()
+
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun applyPreset(presetId: String) {
+        val preset = getPlatformPresets().find { it.id == presetId } ?: return
+        // Clear existing global default mappings
+        queries.deleteKeyMappingsForConsole(DEFAULT_CONSOLE_ID, 0)
+        // Write all preset bindings
+        for ((retroButtonId, platformKeyCode) in preset.bindings) {
+            queries.insertKeyMapping(
+                id = Uuid.random().toString(),
+                console_id = DEFAULT_CONSOLE_ID,
+                port = 0,
+                platform_key_code = platformKeyCode.toLong(),
+                libretro_button_id = retroButtonId.toLong(),
+            )
+        }
+    }
+
+    override suspend fun ensureDefaultsApplied() {
+        val localMappings = queries.getAllKeyMappings().executeAsList()
+        if (localMappings.isNotEmpty()) return
+
+        val presetId = detectDevicePreset() ?: return
+        applyPreset(presetId)
+    }
+
+    override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> {
+        // 1. Per-game override
+        val gameEntities = queries.getGameKeyMappings(gameId).executeAsList()
+        if (gameEntities.isNotEmpty()) {
+            return gameEntities.associate { it.libretro_button_id.toInt() to it.platform_key_code.toInt() }
+        }
+
+        // 2. Fall back to console/global/hardcoded chain
+        return getEffectiveMapping(consoleId, port)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>) {
+        queries.deleteGameKeyMappings(gameId)
+        for ((retroButtonId, platformKeyCode) in bindings) {
+            queries.insertGameKeyMapping(
+                id = Uuid.random().toString(),
+                game_id = gameId,
+                libretro_button_id = retroButtonId.toLong(),
+                platform_key_code = platformKeyCode.toLong(),
+            )
+        }
+    }
+
+    override suspend fun clearGameMapping(gameId: String) {
+        queries.deleteGameKeyMappings(gameId)
+    }
+
+    override suspend fun hasGameMapping(gameId: String): Boolean {
+        return queries.hasGameKeyMappings(gameId).executeAsOne() > 0
+    }
 }

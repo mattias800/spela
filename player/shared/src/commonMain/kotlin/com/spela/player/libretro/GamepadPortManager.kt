@@ -39,6 +39,9 @@ class GamepadPortManager(
     /** Per-port key mapping: keyCode -> retroButtonId. Loaded from repository. */
     private val portKeyMappings = Array<Map<Int, Int>?>(MAX_PORTS) { null }
 
+    /** Fallback mapping used when a port-specific mapping hasn't been loaded yet. */
+    private var fallbackKeyMapping: Map<Int, Int>? = null
+
     /** Observable list of current port assignments. */
     private val _assignments = MutableStateFlow<List<PortAssignment>>(emptyList())
     val assignments: StateFlow<List<PortAssignment>> = _assignments.asStateFlow()
@@ -112,8 +115,17 @@ class GamepadPortManager(
 
     /**
      * Loads the key mapping for all currently assigned ports.
+     * Also loads a fallback mapping (for port 0) used when a device connects
+     * before its port-specific mapping is ready.
      */
     suspend fun loadAllMappings(consoleId: String) {
+        // Always load fallback so it's available for newly-connected devices
+        val retroToKey = keyMappingRepository.getEffectiveMapping(consoleId, 0)
+        val keyToRetro = retroToKey.entries.associate { (retro, key) -> key to retro }
+        synchronized(this) {
+            fallbackKeyMapping = keyToRetro
+        }
+
         val ports = synchronized(this) {
             deviceToPort.values.map { it.port }
         }
@@ -123,13 +135,55 @@ class GamepadPortManager(
     }
 
     /**
+     * Loads per-game key mapping for a specific port, with fallback chain:
+     * per-game -> per-console -> global default -> hardcoded defaults.
+     */
+    suspend fun loadGameMappingForPort(port: Int, gameId: String, consoleId: String) {
+        if (port < 0 || port >= MAX_PORTS) return
+        val retroToKey = keyMappingRepository.getEffectiveMappingForGame(gameId, consoleId, port)
+        val keyToRetro = retroToKey.entries.associate { (retro, key) -> key to retro }
+        synchronized(this) {
+            portKeyMappings[port] = keyToRetro
+        }
+    }
+
+    /**
+     * Loads per-game key mapping for all currently assigned ports.
+     * Also loads a fallback mapping (for port 0) used when a device connects
+     * before its port-specific mapping is ready.
+     */
+    suspend fun loadAllGameMappings(gameId: String, consoleId: String) {
+        // Always load fallback so it's available for newly-connected devices
+        val retroToKey = keyMappingRepository.getEffectiveMappingForGame(gameId, consoleId, 0)
+        val keyToRetro = retroToKey.entries.associate { (retro, key) -> key to retro }
+        synchronized(this) {
+            fallbackKeyMapping = keyToRetro
+        }
+
+        val ports = synchronized(this) {
+            deviceToPort.values.map { it.port }
+        }
+        for (port in ports) {
+            loadGameMappingForPort(port, gameId, consoleId)
+        }
+    }
+
+    /**
      * Maps a platform key code to a libretro button ID for a given port.
-     * Returns null if the key is not mapped.
+     * If the port has a loaded mapping, uses it exclusively.
+     * Falls back to the general fallback mapping only when no port-specific
+     * mapping has been loaded yet (covers the race between device connection
+     * and async mapping load).
      */
     @Synchronized
     fun mapKeyToLibretro(port: Int, keyCode: Int): Int? {
         if (port < 0 || port >= MAX_PORTS) return null
-        return portKeyMappings[port]?.get(keyCode)
+        val portMapping = portKeyMappings[port]
+        return if (portMapping != null) {
+            portMapping[keyCode]
+        } else {
+            fallbackKeyMapping?.get(keyCode)
+        }
     }
 
     /**
@@ -146,6 +200,7 @@ class GamepadPortManager(
         deviceToPort.clear()
         occupiedPorts.fill(false)
         portKeyMappings.fill(null)
+        fallbackKeyMapping = null
         _assignments.value = emptyList()
     }
 }

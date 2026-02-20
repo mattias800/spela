@@ -451,6 +451,14 @@ type ChallengeAttempt struct {
 	IsBest      bool           `gorm:"default:false" json:"isBest"`
 }
 
+// GameKeyMappingPreference stores a user's per-game key mapping override.
+type GameKeyMappingPreference struct {
+	gorm.Model
+	UserID        uint   `json:"userId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
+	GameID        uint   `json:"gameId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
+	CustomMapping string `json:"customMapping" gorm:"type:text"` // JSON string of map[string]string
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

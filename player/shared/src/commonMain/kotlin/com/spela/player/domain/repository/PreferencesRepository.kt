@@ -19,4 +19,6 @@ interface PreferencesRepository {
     suspend fun syncDeviceShaderOverrides()
     suspend fun resolveShader(consoleId: String): ShaderPreset
     suspend fun pushDeviceShaderOverridesToServer()
+    suspend fun syncKeyMappingsFromServer()
+    suspend fun pushKeyMappingsToServer()
 }

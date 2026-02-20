@@ -91,6 +91,13 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     selectedShader = ShaderPreset.fromApiId(selectedShader),
     selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },
+    selectedKeyMapping = selectedKeyMapping,
+    consoleKeyMappings = consoleKeyMappings.mapValues {
+        ConsoleKeyMappingPref(
+            selectedMapping = it.value.selectedMapping,
+            customMapping = it.value.customMapping,
+        )
+    },
 )
 
 fun SharedSaveStateDto.toDomain(): SharedSaveState = SharedSaveState(

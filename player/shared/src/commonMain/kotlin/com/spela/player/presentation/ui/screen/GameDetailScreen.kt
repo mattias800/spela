@@ -43,10 +43,12 @@ import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
+import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
@@ -72,11 +74,13 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 
 @Composable
 fun GameDetailScreen(
     gameId: String,
     viewModel: GameDetailViewModel,
+    keyMappingViewModel: KeyMappingViewModel? = null,
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
     onPlayFresh: ((String) -> Unit)? = null,
@@ -87,6 +91,7 @@ fun GameDetailScreen(
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
+    val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
     LaunchedEffect(gameId) {
         viewModel.onIntent(GameDetailIntent.LoadGame(gameId))
@@ -179,6 +184,43 @@ fun GameDetailScreen(
                                 viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
                             },
                         )
+                    }
+                }
+
+                // Controls section (per-game key mapping override)
+                if (keyMappingViewModel != null && keyMappingState != null) {
+                    item {
+                        val consoleId = game.consoleId
+                        LaunchedEffect(gameId, consoleId) {
+                            keyMappingViewModel.onIntent(
+                                KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            GameControlsSection(
+                                gameId = gameId,
+                                hasGameOverride = keyMappingState.value.hasGameOverride,
+                                onEnableOverride = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.SaveAsGameOverride(gameId)
+                                    )
+                                },
+                                onClearOverride = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.ClearGameOverride(gameId)
+                                    )
+                                },
+                                onEditMapping = {
+                                    // For now, re-load the mapping so user can see it
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                                    )
+                                },
+                            )
+                        }
                     }
                 }
 

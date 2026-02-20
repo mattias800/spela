@@ -89,6 +89,7 @@ class GameDetailViewModel(
             is GameDetailIntent.LoadAchievementTimeline -> loadAchievementTimeline(intent.gameId)
             is GameDetailIntent.LoadAchievementLeaderboard -> loadAchievementLeaderboard(intent.gameId)
             is GameDetailIntent.ToggleAchievementsView -> toggleAchievementsView(intent.mode)
+            GameDetailIntent.RefreshSaves -> refreshSaves()
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
@@ -138,6 +139,15 @@ class GameDetailViewModel(
         loadReviews(gameId)
         loadGameRelays(gameId)
         loadAchievements(gameId)
+    }
+
+    private fun refreshSaves() {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            val saves = saveRepository.getSaveStates(gameId).getOrDefault(emptyList())
+            val isCached = downloadRepository.isGameCached(gameId)
+            _state.update { it.copy(saveStates = saves, isGameCached = isCached) }
+        }
     }
 
     private fun scrapeAndRefresh(gameId: String) {

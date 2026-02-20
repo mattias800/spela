@@ -7,9 +7,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -26,13 +28,17 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ButtonInfo
@@ -69,6 +75,8 @@ data class ButtonRegion(
 
 /**
  * Draws a stylized controller outline for a given console with interactive button regions.
+ * Uses console-specific icons from controllercons when available, falling back to a
+ * generic controller outline for unknown consoles.
  *
  * @param layout The console button layout defining which buttons exist
  * @param buttonStates Map of retroButtonId to visual state
@@ -86,7 +94,12 @@ fun ConsoleControllerVisual(
     onButtonClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val regions = remember(layout.consoleId) { getButtonRegions(layout) }
+    val regions = remember(layout.consoleId) {
+        ControllerButtonPositions.getRegions(layout)
+    }
+    val controllerIcon = remember(layout.consoleId) {
+        ControllerIcons.forConsole(layout.consoleId)
+    }
 
     val pulseTransition = rememberInfiniteTransition(label = "controllerPulse")
     val pulseAlpha by pulseTransition.animateFloat(
@@ -99,10 +112,23 @@ fun ConsoleControllerVisual(
         label = "controllerPulseAlpha",
     )
 
-    Box(modifier = modifier) {
-        // Controller body outline
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawControllerBody(layout.consoleId)
+    BoxWithConstraints(modifier = modifier) {
+        val containerWidth = maxWidth
+        val containerHeight = maxHeight
+
+        // Controller body: icon or generic canvas
+        if (controllerIcon != null) {
+            Image(
+                imageVector = controllerIcon,
+                contentDescription = "${layout.displayName} controller",
+                colorFilter = ColorFilter.tint(SpColor.SurfaceVariant),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawControllerBody()
+            }
         }
 
         // Interactive button regions
@@ -133,6 +159,8 @@ fun ConsoleControllerVisual(
 
             ControllerButton(
                 region = region,
+                containerWidth = containerWidth,
+                containerHeight = containerHeight,
                 label = region.info.label,
                 mappedKeyLabel = label,
                 backgroundColor = bgColor,
@@ -147,6 +175,8 @@ fun ConsoleControllerVisual(
 @Composable
 private fun ControllerButton(
     region: ButtonRegion,
+    containerWidth: Dp,
+    containerHeight: Dp,
     label: String,
     mappedKeyLabel: String?,
     backgroundColor: Color,
@@ -154,17 +184,17 @@ private fun ControllerButton(
     isHighlighted: Boolean,
     onClick: () -> Unit,
 ) {
-    // Position relative to parent Box via fractional coordinates
     val shape = if (region.isRound) CircleShape else RoundedCornerShape(4.dp)
-    val buttonWidth = (region.widthFraction * 400).dp
-    val buttonHeight = (region.heightFraction * 300).dp
+    val buttonWidth = containerWidth * region.widthFraction
+    val buttonHeight = containerHeight * region.heightFraction
+    val density = LocalDensity.current
 
     Box(
         modifier = Modifier
             .offset {
                 IntOffset(
-                    x = ((region.cx - region.widthFraction / 2) * 400).dp.roundToPx(),
-                    y = ((region.cy - region.heightFraction / 2) * 300).dp.roundToPx(),
+                    x = with(density) { (containerWidth * (region.cx - region.widthFraction / 2)).roundToPx() },
+                    y = with(density) { (containerHeight * (region.cy - region.heightFraction / 2)).roundToPx() },
                 )
             }
             .size(width = buttonWidth, height = buttonHeight)
@@ -202,10 +232,10 @@ private fun ControllerButton(
 }
 
 /**
- * Draws the controller body outline.
- * Uses a simplified rounded rectangle with grip extensions.
+ * Draws the generic controller body outline.
+ * Used as fallback when no console-specific icon is available.
  */
-private fun DrawScope.drawControllerBody(consoleId: String) {
+private fun DrawScope.drawControllerBody() {
     val w = size.width
     val h = size.height
     val bodyColor = SpColor.SurfaceVariant
@@ -278,96 +308,5 @@ internal fun buildButtonStates(
             isMapped -> ButtonVisualState.MAPPED
             else -> ButtonVisualState.UNMAPPED
         })
-    }
-}
-
-/**
- * Returns button regions positioned on a standard controller layout.
- * The layout adapts based on which buttons the console uses.
- */
-private fun getButtonRegions(layout: ConsoleButtonLayout): List<ButtonRegion> {
-    val buttonIds = layout.buttons.map { it.retroButtonId }.toSet()
-    val buttonMap = layout.buttons.associateBy { it.retroButtonId }
-
-    return buildList {
-        // D-pad: left side of controller
-        if (LibretroButtons.UP in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.UP]!!, 0.25f, 0.30f))
-        if (LibretroButtons.DOWN in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.DOWN]!!, 0.25f, 0.50f))
-        if (LibretroButtons.LEFT in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.LEFT]!!, 0.17f, 0.40f))
-        if (LibretroButtons.RIGHT in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.RIGHT]!!, 0.33f, 0.40f))
-
-        // Face buttons: right side of controller (diamond pattern)
-        if (LibretroButtons.A in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.A]!!, 0.83f, 0.40f))
-        if (LibretroButtons.B in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.B]!!, 0.75f, 0.50f))
-        if (LibretroButtons.X in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.X]!!, 0.75f, 0.30f))
-        if (LibretroButtons.Y in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.Y]!!, 0.67f, 0.40f))
-
-        // Start/Select: center of controller
-        if (LibretroButtons.START in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.START]!!,
-                0.55f, 0.55f,
-                isRound = false,
-                widthFraction = 0.10f,
-                heightFraction = 0.05f,
-            ))
-        if (LibretroButtons.SELECT in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.SELECT]!!,
-                0.42f, 0.55f,
-                isRound = false,
-                widthFraction = 0.10f,
-                heightFraction = 0.05f,
-            ))
-
-        // Shoulder buttons: top of controller
-        if (LibretroButtons.L in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.L]!!,
-                0.20f, 0.18f,
-                isRound = false,
-                widthFraction = 0.12f,
-                heightFraction = 0.06f,
-            ))
-        if (LibretroButtons.R in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.R]!!,
-                0.80f, 0.18f,
-                isRound = false,
-                widthFraction = 0.12f,
-                heightFraction = 0.06f,
-            ))
-
-        // L2/R2 triggers
-        if (LibretroButtons.L2 in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.L2]!!,
-                0.20f, 0.10f,
-                isRound = false,
-                widthFraction = 0.10f,
-                heightFraction = 0.05f,
-            ))
-        if (LibretroButtons.R2 in buttonIds)
-            add(ButtonRegion(
-                buttonMap[LibretroButtons.R2]!!,
-                0.80f, 0.10f,
-                isRound = false,
-                widthFraction = 0.10f,
-                heightFraction = 0.05f,
-            ))
-
-        // L3/R3 sticks
-        if (LibretroButtons.L3 in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.L3]!!, 0.35f, 0.65f))
-        if (LibretroButtons.R3 in buttonIds)
-            add(ButtonRegion(buttonMap[LibretroButtons.R3]!!, 0.65f, 0.65f))
     }
 }

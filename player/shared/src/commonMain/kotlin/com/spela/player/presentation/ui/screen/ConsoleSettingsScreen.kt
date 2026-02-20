@@ -251,7 +251,7 @@ fun ConsoleSettingsScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(420.dp)
+                            .height(560.dp)
                             .padding(SpSpacing.Small),
                     ) {
                         KeyMappingScreen(

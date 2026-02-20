@@ -475,6 +475,8 @@ class EmulationViewModelSecondaryDisplayTest {
         override suspend fun syncDeviceShaderOverrides() {}
         override suspend fun resolveShader(consoleId: String): ShaderPreset = ShaderPreset.NONE
         override suspend fun pushDeviceShaderOverridesToServer() {}
+        override suspend fun syncKeyMappingsFromServer() {}
+        override suspend fun pushKeyMappingsToServer() {}
     }
 
     private class StubAchievementsRepository : AchievementsRepository {

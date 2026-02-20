@@ -157,7 +157,20 @@ fun KeyMappingWizard(
                     )
                 }
 
-                Spacer(Modifier.height(SpSpacing.XLarge))
+                Spacer(Modifier.height(SpSpacing.Default))
+
+                // Condensed mapping progress list
+                MappingListCondensed(
+                    layout = layout,
+                    currentBindings = state.currentBindings,
+                    highlightedButton = state.currentMappingButton,
+                    keyNameResolver = keyNameResolver,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                )
+
+                Spacer(Modifier.height(SpSpacing.Small))
 
                 // Progress indicator
                 Text(
@@ -166,7 +179,7 @@ fun KeyMappingWizard(
                     color = SpColor.OnBackgroundTertiary,
                 )
 
-                Spacer(Modifier.height(SpSpacing.Large))
+                Spacer(Modifier.height(SpSpacing.Medium))
 
                 // Action buttons
                 Row(

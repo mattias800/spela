@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
@@ -319,6 +320,12 @@ fun SpelaApp(
                             }
 
                             is SpScreen.GameDetail -> {
+                                // Refresh save states when returning from emulation overlay
+                                LaunchedEffect(navState.showInGameOverlay) {
+                                    if (!navState.showInGameOverlay && gameDetailViewModel.state.value.gameDetail != null) {
+                                        gameDetailViewModel.onIntent(GameDetailIntent.RefreshSaves)
+                                    }
+                                }
                                 val netplayState by netplayViewModel.state.collectAsState()
                                 LaunchedEffect(netplayState.joinedSession) {
                                     netplayState.joinedSession?.let { session ->
@@ -330,6 +337,7 @@ fun SpelaApp(
                                 GameDetailScreen(
                                     gameId = screen.gameId,
                                     viewModel = gameDetailViewModel,
+                                    keyMappingViewModel = keyMappingViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
@@ -373,6 +381,7 @@ fun SpelaApp(
                             is SpScreen.Settings -> {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
+                                    keyMappingViewModel = keyMappingViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },

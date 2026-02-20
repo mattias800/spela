@@ -40,16 +40,21 @@ actual fun PlatformEmulationSurface(
         }
     }
 
-    // Load key mapping from repository based on current console
+    // Load key mapping from repository based on current game/console
     val keyMappingRepo: KeyMappingRepository = koinInject()
     val emulationViewModel: EmulationViewModel = koinInject()
+    val gameId = emulationViewModel.state.value.gameId
     val consoleId = emulationViewModel.state.value.consoleId
 
     var keyMapping by remember { mutableStateOf<Map<Int, Int>?>(null) }
 
-    LaunchedEffect(consoleId) {
+    LaunchedEffect(gameId, consoleId) {
         if (consoleId.isNotEmpty()) {
-            val retroMapping = keyMappingRepo.getEffectiveMapping(consoleId)
+            val retroMapping = if (gameId.isNotEmpty()) {
+                keyMappingRepo.getEffectiveMappingForGame(gameId, consoleId)
+            } else {
+                keyMappingRepo.getEffectiveMapping(consoleId)
+            }
             keyMapping = retroMapping.entries.associate { (retro, platform) -> platform to retro }
         }
     }

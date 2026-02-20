@@ -126,6 +126,28 @@ DELETE FROM KeyMappingEntity WHERE id = ?;
 getAllKeyMappings:
 SELECT * FROM KeyMappingEntity;
 
+-- Per-game key mapping overrides (device-local cache, synced to server)
+CREATE TABLE GameKeyMappingEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    libretro_button_id INTEGER NOT NULL,
+    platform_key_code INTEGER NOT NULL,
+    UNIQUE(game_id, libretro_button_id)
+);
+
+insertGameKeyMapping:
+INSERT OR REPLACE INTO GameKeyMappingEntity(id, game_id, libretro_button_id, platform_key_code)
+VALUES (?, ?, ?, ?);
+
+getGameKeyMappings:
+SELECT * FROM GameKeyMappingEntity WHERE game_id = ?;
+
+deleteGameKeyMappings:
+DELETE FROM GameKeyMappingEntity WHERE game_id = ?;
+
+hasGameKeyMappings:
+SELECT COUNT(*) FROM GameKeyMappingEntity WHERE game_id = ?;
+
 -- Device info (singleton row for this device's identity)
 CREATE TABLE DeviceInfoEntity (
     id INTEGER PRIMARY KEY DEFAULT 1,
