@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -45,19 +46,13 @@ import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
 import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
 import com.spela.player.presentation.ui.feature.settings.SettingsToggle
-import com.spela.player.presentation.ui.feature.settings.ControlsScope
-import com.spela.player.presentation.ui.feature.settings.ControlsScopeTabs
-import com.spela.player.presentation.ui.feature.settings.ShaderScopeTabs
 import com.spela.player.presentation.ui.feature.settings.controlsDefaultScopeItems
-import com.spela.player.presentation.ui.feature.settings.controlsPerConsoleScopeItems
 import com.spela.player.presentation.ui.feature.settings.shaderDefaultScopeItems
-import com.spela.player.presentation.ui.feature.settings.shaderPerConsoleScopeItems
 import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel
-import com.spela.player.presentation.viewmodel.ShaderScope
 import com.spela.player.util.formatBytes
 
 @Composable
@@ -72,7 +67,6 @@ fun SettingsScreen(
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
-    var controlsScope by remember { mutableStateOf(ControlsScope.DEFAULT) }
     val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -279,31 +273,50 @@ fun SettingsScreen(
                     SettingsSectionHeader(title = "Controls")
                 }
 
+                controlsDefaultScopeItems(
+                    presets = keyMappingState.value.availablePresets,
+                    activePresetId = keyMappingState.value.activePresetId,
+                    onSelectPreset = { presetId ->
+                        keyMappingViewModel.onIntent(KeyMappingIntent.ApplyPreset(presetId))
+                    },
+                    onOpenFullMapping = {
+                        keyMappingViewModel.onIntent(KeyMappingIntent.ShowPresetPicker)
+                    },
+                )
+            }
+
+            // Console settings section
+            if (state.consoles.isNotEmpty()) {
                 item {
-                    ControlsScopeTabs(
-                        selectedScope = controlsScope,
-                        onScopeChanged = { controlsScope = it },
-                    )
+                    SettingsSectionHeader(title = "Consoles")
                 }
 
-                when (controlsScope) {
-                    ControlsScope.DEFAULT -> {
-                        controlsDefaultScopeItems(
-                            presets = keyMappingState.value.availablePresets,
-                            activePresetId = keyMappingState.value.activePresetId,
-                            onSelectPreset = { presetId ->
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ApplyPreset(presetId))
-                            },
-                            onOpenFullMapping = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ShowPresetPicker)
-                            },
-                        )
-                    }
-                    ControlsScope.PER_CONSOLE -> {
-                        controlsPerConsoleScopeItems(
-                            consoles = state.consoles,
-                            onNavigateToConsoleSettings = onNavigateToConsoleSettings,
-                        )
+                items(
+                    items = state.consoles,
+                    key = { "console_${it.id}" },
+                ) { console ->
+                    SpCard(
+                        onClick = { onNavigateToConsoleSettings(console.id) },
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(SpSpacing.Default),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = console.name,
+                                style = SpTypography.TitleMedium,
+                                color = SpColor.OnCard,
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Open ${console.name} settings",
+                                tint = SpColor.OnBackgroundTertiary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -364,24 +377,7 @@ fun SettingsScreen(
                 SettingsSectionHeader(title = "Video Filter")
             }
 
-            item {
-                ShaderScopeTabs(
-                    selectedScope = state.shaderScope,
-                    onScopeChanged = { viewModel.onIntent(SettingsIntent.SwitchShaderScope(it)) },
-                )
-            }
-
-            when (state.shaderScope) {
-                ShaderScope.DEFAULT -> {
-                    shaderDefaultScopeItems(state = state, viewModel = viewModel)
-                }
-                ShaderScope.PER_CONSOLE -> {
-                    shaderPerConsoleScopeItems(
-                        state = state,
-                        onNavigateToConsoleSettings = onNavigateToConsoleSettings,
-                    )
-                }
-            }
+            shaderDefaultScopeItems(state = state, viewModel = viewModel)
 
             // Storage section
             item {

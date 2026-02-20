@@ -26,8 +26,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class ShaderScope { DEFAULT, PER_CONSOLE }
-
 data class SettingsState(
     val userId: String = "",
     val username: String = "",
@@ -42,8 +40,6 @@ data class SettingsState(
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
     val deviceShaderOverrides: Map<String, ShaderPreset> = emptyMap(),
     val consoles: List<Console> = emptyList(),
-    val shaderScope: ShaderScope = ShaderScope.DEFAULT,
-    val expandedConsoleId: String? = null,
     val showLogoutConfirm: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
     val fullscreenPreviewConsoleId: String? = null,
@@ -63,10 +59,8 @@ sealed interface SettingsIntent {
     data object ToggleAutoLoadSave : SettingsIntent
     data class SelectShader(val shader: ShaderPreset) : SettingsIntent
     data class SelectTheme(val theme: String) : SettingsIntent
-    data class SwitchShaderScope(val scope: ShaderScope) : SettingsIntent
     data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
     data class SetDeviceOverride(val consoleId: String, val shader: ShaderPreset?) : SettingsIntent
-    data class ExpandConsole(val consoleId: String?) : SettingsIntent
     data class UpdateDeviceName(val name: String) : SettingsIntent
     data object ShowLogoutConfirm : SettingsIntent
     data object DismissLogoutConfirm : SettingsIntent
@@ -132,16 +126,10 @@ class SettingsViewModel(
             )
             is SettingsIntent.SelectShader -> selectShader(intent.shader)
             is SettingsIntent.SelectTheme -> selectTheme(intent.theme)
-            is SettingsIntent.SwitchShaderScope ->
-                _state.update { it.copy(shaderScope = intent.scope) }
             is SettingsIntent.SelectConsoleShader ->
                 selectConsoleShader(intent.consoleId, intent.shader)
             is SettingsIntent.SetDeviceOverride ->
                 setDeviceOverride(intent.consoleId, intent.shader)
-            is SettingsIntent.ExpandConsole ->
-                _state.update {
-                    it.copy(expandedConsoleId = if (it.expandedConsoleId == intent.consoleId) null else intent.consoleId)
-                }
             is SettingsIntent.UpdateDeviceName -> updateDeviceName(intent.name)
             SettingsIntent.ShowLogoutConfirm ->
                 _state.update { it.copy(showLogoutConfirm = true) }

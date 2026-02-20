@@ -1,59 +1,20 @@
 package com.spela.player.presentation.ui.feature.settings
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpRadioOption
-import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel
-import com.spela.player.presentation.viewmodel.ShaderScope
 import com.spela.player.presentation.viewmodel.SettingsState
-
-@Composable
-internal fun ShaderScopeTabs(
-    selectedScope: ShaderScope,
-    onScopeChanged: (ShaderScope) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        ShaderScope.entries.forEach { scope ->
-            val isSelected = scope == selectedScope
-            val label = when (scope) {
-                ShaderScope.DEFAULT -> "Default"
-                ShaderScope.PER_CONSOLE -> "Per Console"
-            }
-
-            SpChip(
-                text = label,
-                isSelected = isSelected,
-                onClick = { onScopeChanged(scope) },
-            )
-        }
-    }
-}
 
 internal fun LazyListScope.shaderDefaultScopeItems(
     state: SettingsState,
@@ -96,63 +57,3 @@ internal fun LazyListScope.shaderDefaultScopeItems(
     }
 }
 
-internal fun LazyListScope.shaderPerConsoleScopeItems(
-    state: SettingsState,
-    onNavigateToConsoleSettings: (String) -> Unit,
-) {
-    if (state.consoles.isEmpty()) {
-        item {
-            SpCard {
-                Text(
-                    text = "No consoles available",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier.padding(SpSpacing.Default),
-                )
-            }
-        }
-    } else {
-        items(
-            items = state.consoles,
-            key = { it.id },
-        ) { console ->
-            val consoleShader = state.consoleShaders[console.id]
-                ?: state.selectedShader
-            val hasOverride = state.deviceShaderOverrides.containsKey(console.id)
-            val effectiveShader = state.deviceShaderOverrides[console.id]
-                ?: consoleShader
-
-            SpCard(
-                onClick = { onNavigateToConsoleSettings(console.id) },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(SpSpacing.Default),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = console.name,
-                            style = SpTypography.TitleMedium,
-                            color = SpColor.OnCard,
-                        )
-                        Text(
-                            text = effectiveShader.displayName +
-                                if (hasOverride) " (device)" else "",
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open console settings",
-                        tint = SpColor.OnBackgroundTertiary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-        }
-    }
-}
