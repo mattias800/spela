@@ -25,12 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -46,7 +42,6 @@ import com.spela.player.domain.model.ConsoleButtonLayout
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.viewmodel.LibretroButtons
 
 /**
  * State for a button on the controller visual.
@@ -116,20 +111,14 @@ fun ConsoleControllerVisual(
         val containerWidth = maxWidth
         val containerHeight = maxHeight
 
-        // Controller body: icon or generic canvas
-        if (controllerIcon != null) {
-            Image(
-                imageVector = controllerIcon,
-                contentDescription = "${layout.displayName} controller",
-                colorFilter = ColorFilter.tint(SpColor.SurfaceVariant),
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawControllerBody()
-            }
-        }
+        // Controller body icon
+        Image(
+            imageVector = controllerIcon,
+            contentDescription = "${layout.displayName} controller",
+            colorFilter = ColorFilter.tint(SpColor.SurfaceVariant),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+        )
 
         // Interactive button regions
         regions.forEach { region ->
@@ -229,65 +218,6 @@ private fun ControllerButton(
             color = if (isHighlighted) SpColor.OnPrimary else SpColor.OnSurface,
         )
     }
-}
-
-/**
- * Draws the generic controller body outline.
- * Used as fallback when no console-specific icon is available.
- */
-private fun DrawScope.drawControllerBody() {
-    val w = size.width
-    val h = size.height
-    val bodyColor = SpColor.SurfaceVariant
-    val outlineColor = SpColor.Divider
-
-    // Main body rounded rect
-    val bodyLeft = w * 0.1f
-    val bodyTop = h * 0.15f
-    val bodyWidth = w * 0.8f
-    val bodyHeight = h * 0.55f
-    drawRoundRect(
-        color = bodyColor,
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(bodyWidth, bodyHeight),
-        cornerRadius = CornerRadius(20f, 20f),
-    )
-    drawRoundRect(
-        color = outlineColor,
-        topLeft = Offset(bodyLeft, bodyTop),
-        size = Size(bodyWidth, bodyHeight),
-        cornerRadius = CornerRadius(20f, 20f),
-        style = Stroke(width = 1.5f),
-    )
-
-    // Left grip
-    val gripPath = Path().apply {
-        moveTo(bodyLeft + 10f, bodyTop + bodyHeight - 10f)
-        lineTo(bodyLeft - 5f, bodyTop + bodyHeight + h * 0.15f)
-        quadraticTo(
-            bodyLeft - 8f, bodyTop + bodyHeight + h * 0.2f,
-            bodyLeft + 20f, bodyTop + bodyHeight + h * 0.18f,
-        )
-        lineTo(bodyLeft + w * 0.15f, bodyTop + bodyHeight - 5f)
-        close()
-    }
-    drawPath(gripPath, bodyColor)
-    drawPath(gripPath, outlineColor, style = Stroke(width = 1.5f))
-
-    // Right grip (mirrored)
-    val rightGripPath = Path().apply {
-        val rightEdge = bodyLeft + bodyWidth
-        moveTo(rightEdge - 10f, bodyTop + bodyHeight - 10f)
-        lineTo(rightEdge + 5f, bodyTop + bodyHeight + h * 0.15f)
-        quadraticTo(
-            rightEdge + 8f, bodyTop + bodyHeight + h * 0.2f,
-            rightEdge - 20f, bodyTop + bodyHeight + h * 0.18f,
-        )
-        lineTo(rightEdge - w * 0.15f, bodyTop + bodyHeight - 5f)
-        close()
-    }
-    drawPath(rightGripPath, bodyColor)
-    drawPath(rightGripPath, outlineColor, style = Stroke(width = 1.5f))
 }
 
 /**

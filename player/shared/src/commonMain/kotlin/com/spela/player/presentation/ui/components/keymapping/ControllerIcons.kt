@@ -1312,16 +1312,16 @@ object ControllerIcons {
     }
 
     /**
-     * Returns the controller icon for a given console ID, or null if no icon is available.
-     * Consoles without a specific icon (gb, gba, nds) fall back to the generic controller visual.
+     * Returns the controller icon for a given console ID.
+     * Consoles without a specific icon use SNES as a generic fallback.
      */
-    fun forConsole(consoleId: String): ImageVector? = when (consoleId.lowercase()) {
+    fun forConsole(consoleId: String): ImageVector = when (consoleId.lowercase()) {
         "nes" -> Nes
         "snes" -> Snes
         "n64" -> N64
         "genesis" -> Genesis
-        "psx" -> Psx
-        "psp" -> Psx  // closest visual match
-        else -> null   // gb, gba, nds -> fallback to generic
+        "psx", "psp" -> Psx
+        "gb", "gba", "gbc" -> Snes   // closest match for handheld button layout
+        else -> Snes                   // generic fallback
     }
 }

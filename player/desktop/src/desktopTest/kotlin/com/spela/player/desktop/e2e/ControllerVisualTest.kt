@@ -8,7 +8,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -165,10 +164,10 @@ class ControllerVisualTest {
             com.spela.player.presentation.ui.components.keymapping.ControllerIcons.forConsole("psx"),
             "PSX should have an icon",
         )
-        // Game Boy doesn't have a dedicated icon
-        assertNull(
+        // Game Boy uses SNES as fallback
+        assertNotNull(
             com.spela.player.presentation.ui.components.keymapping.ControllerIcons.forConsole("gb"),
-            "Game Boy should not have a specific icon (uses generic)",
+            "Game Boy should have an icon (SNES fallback)",
         )
     }
 
