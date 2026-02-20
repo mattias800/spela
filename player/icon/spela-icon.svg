@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Dark rounded-rectangle background -->
+  <rect x="0" y="0" width="512" height="512" rx="90" ry="90" fill="#0A0A10"/>
+
+  <!-- Retro pixel-art "S" in app purple (#6C5CE7) -->
+  <!-- Grid: each pixel block is 40x40, the S is drawn on a ~8x10 grid, centered -->
+  <!-- Origin offset: x=96, y=56 to center an 8-wide, 10-tall grid -->
+  <g fill="#6C5CE7">
+    <!-- Row 0: top bar (cols 1-6) -->
+    <rect x="136" y="56" width="40" height="40"/>
+    <rect x="176" y="56" width="40" height="40"/>
+    <rect x="216" y="56" width="40" height="40"/>
+    <rect x="256" y="56" width="40" height="40"/>
+    <rect x="296" y="56" width="40" height="40"/>
+    <rect x="336" y="56" width="40" height="40"/>
+
+    <!-- Row 1: left side (cols 0-1) + right cap (col 6) -->
+    <rect x="96" y="96" width="40" height="40"/>
+    <rect x="136" y="96" width="40" height="40"/>
+    <rect x="336" y="96" width="40" height="40"/>
+
+    <!-- Row 2: left side (cols 0-1) -->
+    <rect x="96" y="136" width="40" height="40"/>
+    <rect x="136" y="136" width="40" height="40"/>
+
+    <!-- Row 3: left block closing (cols 0-1) + middle bar start (cols 2-3) -->
+    <rect x="96" y="176" width="40" height="40"/>
+    <rect x="136" y="176" width="40" height="40"/>
+    <rect x="176" y="176" width="40" height="40"/>
+    <rect x="216" y="176" width="40" height="40"/>
+
+    <!-- Row 4: middle bar (cols 2-5) -->
+    <rect x="176" y="216" width="40" height="40"/>
+    <rect x="216" y="216" width="40" height="40"/>
+    <rect x="256" y="216" width="40" height="40"/>
+    <rect x="296" y="216" width="40" height="40"/>
+
+    <!-- Row 5: middle bar end (cols 4-6) + right side start -->
+    <rect x="256" y="256" width="40" height="40"/>
+    <rect x="296" y="256" width="40" height="40"/>
+    <rect x="336" y="256" width="40" height="40"/>
+    <rect x="376" y="256" width="40" height="40"/>
+
+    <!-- Row 6: right side (cols 6-7) -->
+    <rect x="336" y="296" width="40" height="40"/>
+    <rect x="376" y="296" width="40" height="40"/>
+
+    <!-- Row 7: right side (cols 6-7) -->
+    <rect x="336" y="336" width="40" height="40"/>
+    <rect x="376" y="336" width="40" height="40"/>
+
+    <!-- Row 8: left cap (col 1) + right side (cols 6-7) -->
+    <rect x="136" y="376" width="40" height="40"/>
+    <rect x="336" y="376" width="40" height="40"/>
+    <rect x="376" y="376" width="40" height="40"/>
+
+    <!-- Row 9: bottom bar (cols 1-6) -->
+    <rect x="136" y="416" width="40" height="40"/>
+    <rect x="176" y="416" width="40" height="40"/>
+    <rect x="216" y="416" width="40" height="40"/>
+    <rect x="256" y="416" width="40" height="40"/>
+    <rect x="296" y="416" width="40" height="40"/>
+    <rect x="336" y="416" width="40" height="40"/>
+  </g>
+</svg>

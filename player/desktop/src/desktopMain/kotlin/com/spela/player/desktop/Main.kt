@@ -1,8 +1,13 @@
+@file:Suppress("DEPRECATION")
+
 package com.spela.player.desktop
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.loadSvgPainter
+import androidx.compose.ui.res.useResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -37,10 +42,13 @@ fun main(args: Array<String>) = application {
         else -> "Spela"
     }
 
+    val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
+
     Window(
         onCloseRequest = ::exitApplication,
         title = windowTitle,
         state = rememberWindowState(width = 1280.dp, height = 720.dp),
+        icon = icon,
     ) {
         App()
 
