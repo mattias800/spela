@@ -45,6 +45,7 @@ fun CollectionFormDialog(
         title = title,
         onDismiss = onDismiss,
         confirmText = if (isLoading) "$confirmText..." else confirmText,
+        isLoading = isLoading,
         onConfirm = {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) {

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { UserPlus, Check, Search } from "lucide-react";
+import { UserPlus, Check, Search, Loader2 } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useInviteToRelay } from "@/hooks/use-relays";
 import { useSearchUsers } from "@/hooks/use-social";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { UserSearchResult } from "@/types/api";
 
 interface RelayInviteModalProps {
@@ -25,8 +26,9 @@ export function RelayInviteModal({
   const [showDropdown, setShowDropdown] = useState(false);
   const inviteUser = useInviteToRelay();
   const { toast } = useToast();
+  const debouncedQuery = useDebouncedValue(query, 300);
   const { data: searchResults, isLoading: isSearching } =
-    useSearchUsers(query);
+    useSearchUsers(debouncedQuery);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +129,8 @@ export function RelayInviteModal({
           {showDropdown && query.length >= 2 && (
             <div className="absolute z-50 mt-1 w-full rounded-lg border border-surface-700 bg-surface-800 shadow-lg max-h-48 overflow-y-auto">
               {isSearching ? (
-                <div className="px-3 py-2 text-sm text-surface-500">
+                <div className="flex items-center gap-2 px-3 py-2 text-sm text-surface-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Searching...
                 </div>
               ) : filteredResults.length > 0 ? (

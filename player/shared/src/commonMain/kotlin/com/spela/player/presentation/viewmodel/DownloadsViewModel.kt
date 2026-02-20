@@ -14,6 +14,8 @@ data class DownloadsState(
     val activeDownloads: List<DownloadProgress> = emptyList(),
     val cacheSize: Long = 0,
     val isLoading: Boolean = false,
+    val isClearingCache: Boolean = false,
+    val cancellingGameIds: Set<String> = emptySet(),
 )
 
 sealed interface DownloadsIntent {
@@ -54,8 +56,10 @@ class DownloadsViewModel(
     }
 
     private fun cancelDownload(gameId: String) {
+        _state.update { it.copy(cancellingGameIds = it.cancellingGameIds + gameId) }
         scope.launch(dispatchers.io) {
             downloadRepository.cancelDownload(gameId)
+            _state.update { it.copy(cancellingGameIds = it.cancellingGameIds - gameId) }
         }
     }
 
@@ -68,9 +72,10 @@ class DownloadsViewModel(
     }
 
     private fun clearCache() {
+        _state.update { it.copy(isClearingCache = true) }
         scope.launch(dispatchers.io) {
             downloadRepository.clearCache()
-            _state.update { it.copy(cacheSize = 0) }
+            _state.update { it.copy(cacheSize = 0, isClearingCache = false) }
         }
     }
 }

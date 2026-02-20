@@ -23,6 +23,7 @@ data class GameDetailState(
     val downloadProgress: DownloadProgress? = null,
     val isGameCached: Boolean = false,
     val isLoading: Boolean = false,
+    val isDownloading: Boolean = false,
     val isScraping: Boolean = false,
     val isSharing: Boolean = false,
     val myRating: Int? = null,

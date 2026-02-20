@@ -30,10 +30,11 @@ fun SpDialog(
     dismissText: String = "Cancel",
     onConfirm: () -> Unit = {},
     isDestructive: Boolean = false,
+    isLoading: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isLoading) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Column(
@@ -64,12 +65,15 @@ fun SpDialog(
                     onClick = onConfirm,
                     style = if (isDestructive) SpButtonStyle.Secondary else SpButtonStyle.Primary,
                     modifier = Modifier.fillMaxWidth(),
+                    isLoading = isLoading,
+                    enabled = !isLoading,
                 )
                 SpButton(
                     text = dismissText,
                     onClick = onDismiss,
                     style = SpButtonStyle.Ghost,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading,
                 )
             }
         }
@@ -84,6 +88,7 @@ fun SpConfirmDialog(
     onConfirm: () -> Unit,
     confirmText: String = "Confirm",
     isDestructive: Boolean = false,
+    isLoading: Boolean = false,
 ) {
     SpDialog(
         title = title,
@@ -91,6 +96,7 @@ fun SpConfirmDialog(
         onConfirm = onConfirm,
         confirmText = confirmText,
         isDestructive = isDestructive,
+        isLoading = isLoading,
     ) {
         Text(
             text = message,

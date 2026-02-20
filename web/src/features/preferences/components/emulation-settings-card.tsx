@@ -10,6 +10,7 @@ import type { UserPreferences } from "@/types/api";
 interface EmulationSettingsCardProps {
   preferences: UserPreferences | undefined;
   isLoading: boolean;
+  isSaving?: boolean;
   onToggle: (
     key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled",
   ) => void;
@@ -41,6 +42,7 @@ const TOGGLES: Array<{
 export function EmulationSettingsCard({
   preferences,
   isLoading,
+  isSaving,
   onToggle,
 }: EmulationSettingsCardProps) {
   return (
@@ -73,6 +75,7 @@ export function EmulationSettingsCard({
                 <Switch
                   checked={preferences?.[key] ?? false}
                   onChange={() => onToggle(key)}
+                  disabled={isSaving}
                 />
               </label>
             ))}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { GameCardSkeleton, EmptyState } from "@/components/ui";
+import { GameCardSkeleton, GameListRowSkeleton, EmptyState } from "@/components/ui";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -56,12 +56,9 @@ export function GamesPage() {
             ))}
           </GameGrid>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {Array.from({ length: 10 }, (_, i) => (
-              <div
-                key={i}
-                className="h-16 rounded-xl bg-surface-900/50 animate-pulse"
-              />
+              <GameListRowSkeleton key={i} />
             ))}
           </div>
         )

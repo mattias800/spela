@@ -449,18 +449,19 @@ private fun GameInfoContent(
                     .semantics { contentDescription = "Play ${game.title}" },
             )
         } else {
-            val isDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+            val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+            val isBusy = state.isDownloading || isActivelyDownloading
             SpButton(
-                text = if (isDownloading) "Downloading..." else "Download",
+                text = if (isActivelyDownloading) "Downloading..." else "Download",
                 onClick = onDownloadGame,
                 modifier = Modifier
                     .weight(1f)
                     .semantics {
-                        contentDescription = if (isDownloading) "Downloading ${game.title}"
+                        contentDescription = if (isActivelyDownloading) "Downloading ${game.title}"
                         else "Download ${game.title}"
                     },
-                isLoading = isDownloading,
-                enabled = !isDownloading,
+                isLoading = isBusy,
+                enabled = !isBusy,
             )
         }
     }

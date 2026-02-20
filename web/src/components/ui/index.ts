@@ -6,6 +6,7 @@ export { Badge } from "./badge";
 export {
   Skeleton,
   GameCardSkeleton,
+  GameListRowSkeleton,
   ConsoleCardSkeleton,
   GameDetailSkeleton,
   TableRowSkeleton,

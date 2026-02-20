@@ -183,13 +183,14 @@ class GameDetailViewModel(
     private fun downloadGame() {
         val gameId = currentGameId ?: return
         val gameTitle = _state.value.gameDetail?.game?.title ?: ""
+        _state.update { it.copy(isDownloading = true) }
         scope.launch(dispatchers.io) {
             downloadRepository.downloadGame(gameId, gameTitle).fold(
                 onSuccess = {
-                    _state.update { it.copy(isGameCached = true) }
+                    _state.update { it.copy(isGameCached = true, isDownloading = false) }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = error.message) }
+                    _state.update { it.copy(error = error.message, isDownloading = false) }
                 },
             )
         }

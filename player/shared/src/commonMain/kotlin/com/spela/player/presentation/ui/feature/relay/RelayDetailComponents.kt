@@ -142,6 +142,7 @@ internal fun RelayHeader(
                     onClick = onReleaseTurn,
                     style = SpButtonStyle.Outlined,
                     isLoading = isReleasingTurn,
+                    enabled = !isReleasingTurn,
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Stop,
@@ -156,6 +157,7 @@ internal fun RelayHeader(
                 text = "Take Turn",
                 onClick = onTakeTurn,
                 isLoading = isTakingTurn,
+                enabled = !isTakingTurn,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,

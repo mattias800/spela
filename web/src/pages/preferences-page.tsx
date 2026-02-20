@@ -140,6 +140,7 @@ export function PreferencesPage() {
       <EmulationSettingsCard
         preferences={preferences}
         isLoading={prefsLoading}
+        isSaving={updatePreferences.isPending}
         onToggle={handleToggle}
       />
 

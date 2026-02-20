@@ -127,6 +127,7 @@ fun SettingsScreen(
             onDismiss = { viewModel.onIntent(SettingsIntent.DismissRALinkDialog) },
             onConfirm = { viewModel.onIntent(SettingsIntent.LinkRA(raUsername, raPassword)) },
             confirmText = if (state.raLinkLoading) "Linking..." else "Link",
+            isLoading = state.raLinkLoading,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
                 SpTextField(

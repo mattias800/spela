@@ -103,6 +103,8 @@ fun DownloadsScreen(
                             text = "Clear",
                             onClick = { viewModel.onIntent(DownloadsIntent.ClearCache) },
                             style = SpButtonStyle.Outlined,
+                            isLoading = state.isClearingCache,
+                            enabled = !state.isClearingCache && state.cacheSize > 0,
                         )
                     }
                 }
@@ -122,6 +124,7 @@ fun DownloadsScreen(
                 items(state.activeDownloads, key = { it.gameId }) { download ->
                     DownloadItem(
                         download = download,
+                        isCancelling = download.gameId in state.cancellingGameIds,
                         onCancel = { viewModel.onIntent(DownloadsIntent.CancelDownload(download.gameId)) },
                     )
                 }
@@ -140,6 +143,7 @@ fun DownloadsScreen(
 @Composable
 private fun DownloadItem(
     download: DownloadProgress,
+    isCancelling: Boolean = false,
     onCancel: () -> Unit,
 ) {
     val statusText = download.state.name.lowercase().replaceFirstChar { it.uppercase() }
@@ -194,9 +198,11 @@ private fun DownloadItem(
 
                 if (download.state == DownloadState.DOWNLOADING || download.state == DownloadState.QUEUED) {
                     SpButton(
-                        text = "Cancel",
+                        text = if (isCancelling) "Cancelling..." else "Cancel",
                         onClick = onCancel,
                         style = SpButtonStyle.Ghost,
+                        isLoading = isCancelling,
+                        enabled = !isCancelling,
                     )
                 }
             }
