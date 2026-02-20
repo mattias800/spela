@@ -42,6 +42,23 @@ internal fun SettingsSectionHeader(title: String) {
     )
 }
 
+/**
+ * Groups a section header with its content, adding consistent spacing
+ * between groups and between the header and its content.
+ */
+@Composable
+internal fun SettingsGroup(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Column(modifier = modifier) {
+        SettingsSectionHeader(title = title)
+        Spacer(Modifier.height(SpSpacing.Medium))
+        content()
+    }
+}
+
 @Composable
 internal fun SettingsToggle(
     title: String,

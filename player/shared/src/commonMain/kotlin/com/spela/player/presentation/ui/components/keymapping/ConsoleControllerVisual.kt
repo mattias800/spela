@@ -115,7 +115,7 @@ fun ConsoleControllerVisual(
         Image(
             imageVector = controllerIcon,
             contentDescription = "${layout.displayName} controller",
-            colorFilter = ColorFilter.tint(SpColor.SurfaceVariant),
+            colorFilter = ColorFilter.tint(SpColor.OnBackgroundTertiary),
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),
         )

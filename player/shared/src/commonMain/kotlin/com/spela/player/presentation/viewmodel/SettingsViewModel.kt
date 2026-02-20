@@ -50,6 +50,8 @@ data class SettingsState(
     val devices: List<DeviceDto> = emptyList(),
     val isLoadingDevices: Boolean = false,
     val showDeleteDeviceConfirm: Long? = null,
+    val scrollIndex: Int = 0,
+    val scrollOffset: Int = 0,
 )
 
 sealed interface SettingsIntent {
@@ -81,6 +83,7 @@ sealed interface SettingsIntent {
     data class DeleteDevice(val deviceId: Long) : SettingsIntent
     data class ShowDeleteDeviceConfirm(val deviceId: Long) : SettingsIntent
     data object DismissDeleteDeviceConfirm : SettingsIntent
+    data class SaveScrollPosition(val index: Int, val offset: Int) : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -160,6 +163,8 @@ class SettingsViewModel(
                 _state.update { it.copy(showDeleteDeviceConfirm = intent.deviceId) }
             SettingsIntent.DismissDeleteDeviceConfirm ->
                 _state.update { it.copy(showDeleteDeviceConfirm = null) }
+            is SettingsIntent.SaveScrollPosition ->
+                _state.update { it.copy(scrollIndex = intent.index, scrollOffset = intent.offset) }
         }
     }
 

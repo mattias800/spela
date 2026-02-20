@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpButton
@@ -68,6 +72,20 @@ fun SettingsScreen(
 
     val state by viewModel.state.collectAsState()
     val keyMappingState = keyMappingViewModel?.state?.collectAsState()
+
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = state.scrollIndex,
+        initialFirstVisibleItemScrollOffset = state.scrollOffset,
+    )
+
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        viewModel.onIntent(
+            SettingsIntent.SaveScrollPosition(
+                index = listState.firstVisibleItemIndex,
+                offset = listState.firstVisibleItemScrollOffset,
+            )
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(SettingsIntent.LoadSettings)
@@ -151,6 +169,7 @@ fun SettingsScreen(
         SpTopBar(title = "Settings", showBack = true, onBack = onBack)
 
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .testTag("settings_list"),
@@ -158,12 +177,10 @@ fun SettingsScreen(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Default,
             ),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             // Account section
-            item {
-                SettingsSectionHeader(title = "Account")
-            }
+            item { SettingsSectionHeader(title = "Account") }
 
             item {
                 SpCard {
@@ -205,9 +222,8 @@ fun SettingsScreen(
             }
 
             // Color Theme section
-            item {
-                SettingsSectionHeader(title = "Color Theme")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Color Theme") }
 
             item {
                 SpCard {
@@ -232,9 +248,8 @@ fun SettingsScreen(
             }
 
             // Emulation section
-            item {
-                SettingsSectionHeader(title = "Emulation")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Emulation") }
 
             item {
                 SpCard {
@@ -269,9 +284,8 @@ fun SettingsScreen(
 
             // Controls section
             if (keyMappingViewModel != null && keyMappingState != null) {
-                item {
-                    SettingsSectionHeader(title = "Controls")
-                }
+                item { Spacer(Modifier.height(SpSpacing.Medium)) }
+                item { SettingsSectionHeader(title = "Controls") }
 
                 controlsDefaultScopeItems(
                     presets = keyMappingState.value.availablePresets,
@@ -287,9 +301,8 @@ fun SettingsScreen(
 
             // Console settings section
             if (state.consoles.isNotEmpty()) {
-                item {
-                    SettingsSectionHeader(title = "Consoles")
-                }
+                item { Spacer(Modifier.height(SpSpacing.Medium)) }
+                item { SettingsSectionHeader(title = "Per-console settings") }
 
                 items(
                     items = state.consoles,
@@ -301,14 +314,33 @@ fun SettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(SpSpacing.Default),
+                                .padding(
+                                    horizontal = SpSpacing.Default,
+                                    vertical = SpSpacing.Medium,
+                                ),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
+                            if (console.iconUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = console.iconUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                    alpha = 0.7f,
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.SportsEsports,
+                                    contentDescription = null,
+                                    tint = SpColor.OnBackground.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+                            Spacer(Modifier.width(SpSpacing.Medium))
                             Text(
                                 text = console.name,
                                 style = SpTypography.TitleMedium,
                                 color = SpColor.OnCard,
+                                modifier = Modifier.weight(1f),
                             )
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -322,9 +354,8 @@ fun SettingsScreen(
             }
 
             // RetroAchievements section
-            item {
-                SettingsSectionHeader(title = "RetroAchievements")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "RetroAchievements") }
 
             item {
                 val raStatus = state.raStatus
@@ -373,16 +404,14 @@ fun SettingsScreen(
             }
 
             // Shader section
-            item {
-                SettingsSectionHeader(title = "Video Filter")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Video Filter") }
 
             shaderDefaultScopeItems(state = state, viewModel = viewModel)
 
             // Storage section
-            item {
-                SettingsSectionHeader(title = "Storage")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Storage") }
 
             item {
                 SpCard {
@@ -415,9 +444,8 @@ fun SettingsScreen(
             }
 
             // Devices section
-            item {
-                SettingsSectionHeader(title = "Devices")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Devices") }
 
             item {
                 DeviceManagementSection(
@@ -440,9 +468,8 @@ fun SettingsScreen(
             }
 
             // About section
-            item {
-                SettingsSectionHeader(title = "About")
-            }
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "About") }
 
             item {
                 SpCard {
