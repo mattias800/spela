@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.feature.shader.filterQuality
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroPixelFormat
 import kotlinx.coroutines.delay
@@ -68,6 +69,7 @@ fun DesktopEmulationSurface(
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultKeyMapping
     }
+    val analogTracker = remember { AnalogAxisTracker() }
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
 
@@ -124,7 +126,12 @@ fun DesktopEmulationSurface(
                     val buttonId = effectiveMapping[keyCode]
                     if (buttonId != null) {
                         val pressed = event.type == KeyEventType.KeyDown
-                        controller.setButton(0, buttonId, pressed)
+                        val axisUpdate = analogTracker.update(buttonId, pressed)
+                        if (axisUpdate != null) {
+                            controller.setAnalog(0, axisUpdate.stickIndex, axisUpdate.axisId, axisUpdate.value)
+                        } else {
+                            controller.setButton(0, buttonId, pressed)
+                        }
                         true
                     } else {
                         false
@@ -316,6 +323,15 @@ private val defaultKeyMapping: Map<Int, Int> = mapOf(
     Key.W.keyCode.toInt() to LibretroButtons.R,
     Key.One.keyCode.toInt() to LibretroButtons.L2,
     Key.Two.keyCode.toInt() to LibretroButtons.R2,
+    // Analog sticks
+    Key.T.keyCode.toInt() to LibretroAnalog.LEFT_STICK_UP,
+    Key.G.keyCode.toInt() to LibretroAnalog.LEFT_STICK_DOWN,
+    Key.F.keyCode.toInt() to LibretroAnalog.LEFT_STICK_LEFT,
+    Key.H.keyCode.toInt() to LibretroAnalog.LEFT_STICK_RIGHT,
+    Key.I.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_UP,
+    Key.K.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_DOWN,
+    Key.J.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_LEFT,
+    Key.L.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_RIGHT,
 )
 
 /**
@@ -337,4 +353,13 @@ val desktopDefaultRetroMapping: Map<Int, Int> = mapOf(
     LibretroButtons.R to Key.W.keyCode.toInt(),
     LibretroButtons.L2 to Key.One.keyCode.toInt(),
     LibretroButtons.R2 to Key.Two.keyCode.toInt(),
+    // Analog sticks
+    LibretroAnalog.LEFT_STICK_UP to Key.T.keyCode.toInt(),
+    LibretroAnalog.LEFT_STICK_DOWN to Key.G.keyCode.toInt(),
+    LibretroAnalog.LEFT_STICK_LEFT to Key.F.keyCode.toInt(),
+    LibretroAnalog.LEFT_STICK_RIGHT to Key.H.keyCode.toInt(),
+    LibretroAnalog.RIGHT_STICK_UP to Key.I.keyCode.toInt(),
+    LibretroAnalog.RIGHT_STICK_DOWN to Key.K.keyCode.toInt(),
+    LibretroAnalog.RIGHT_STICK_LEFT to Key.J.keyCode.toInt(),
+    LibretroAnalog.RIGHT_STICK_RIGHT to Key.L.keyCode.toInt(),
 )

@@ -188,11 +188,65 @@ class ControllerVisualTest {
             "SNES should have 12 button regions but got ${snesRegions.size}",
         )
 
+        // PSX: 16 digital buttons + 4 left stick + 4 right stick = 24
         val psxLayout = com.spela.player.domain.model.DefaultKeyMappings.PSX
         val psxRegions = com.spela.player.presentation.ui.components.keymapping.ControllerButtonPositions.getRegions(psxLayout)
         assertTrue(
-            psxRegions.size == 16,
-            "PSX should have 16 button regions but got ${psxRegions.size}",
+            psxRegions.size == 24,
+            "PSX should have 24 button regions (16 digital + 8 analog) but got ${psxRegions.size}",
         )
+    }
+
+    @Test
+    fun n64LayoutIncludesAnalogStickButtons() {
+        // Unit test: verify N64 layout now includes left stick directions
+        val n64Layout = com.spela.player.domain.model.DefaultKeyMappings.N64
+        val labels = n64Layout.buttons.map { it.label }
+        assertTrue("L-Stick Up" in labels, "N64 layout should include L-Stick Up")
+        assertTrue("L-Stick Down" in labels, "N64 layout should include L-Stick Down")
+        assertTrue("L-Stick Left" in labels, "N64 layout should include L-Stick Left")
+        assertTrue("L-Stick Right" in labels, "N64 layout should include L-Stick Right")
+        // N64 has 14 digital + 4 analog = 18 total
+        assertTrue(
+            n64Layout.buttons.size == 18,
+            "N64 should have 18 buttons but got ${n64Layout.buttons.size}",
+        )
+    }
+
+    @Test
+    fun psxLayoutIncludesBothStickDirections() {
+        // Unit test: verify PSX layout includes both L-Stick and R-Stick
+        val psxLayout = com.spela.player.domain.model.DefaultKeyMappings.PSX
+        val labels = psxLayout.buttons.map { it.label }
+        assertTrue("L-Stick Up" in labels, "PSX layout should include L-Stick Up")
+        assertTrue("R-Stick Up" in labels, "PSX layout should include R-Stick Up")
+        assertTrue("L-Stick Down" in labels, "PSX layout should include L-Stick Down")
+        assertTrue("R-Stick Down" in labels, "PSX layout should include R-Stick Down")
+        // PSX has 16 digital + 4 left + 4 right = 24 total
+        assertTrue(
+            psxLayout.buttons.size == 24,
+            "PSX should have 24 buttons but got ${psxLayout.buttons.size}",
+        )
+    }
+
+    @Test
+    fun nesLayoutDoesNotIncludeAnalogButtons() {
+        // Unit test: NES should NOT have any analog stick buttons
+        val nesLayout = com.spela.player.domain.model.DefaultKeyMappings.NES
+        val labels = nesLayout.buttons.map { it.label }
+        assertTrue("L-Stick Up" !in labels, "NES layout should not include L-Stick Up")
+        assertTrue("R-Stick Up" !in labels, "NES layout should not include R-Stick Up")
+    }
+
+    @Test
+    fun n64ConsoleSettingsShowsAnalogOnVisual() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToConsoleSettings(harness, "n64")
+
+        // Verify that the visual controller overlay shows analog stick buttons
+        // (These should be visible since they're positioned in the controller visual, not in the LazyColumn)
+        onNodeWithContentDescription("L-Stick Up, unmapped").assertExists()
     }
 }

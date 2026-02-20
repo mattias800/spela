@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components.keymapping
 
 import com.spela.player.domain.model.ConsoleButtonLayout
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
 
 /**
@@ -45,7 +46,10 @@ object ControllerButtonPositions {
         "n64" to n64Positions(),
         "genesis" to genesisPositions(),
         "psx" to psxPositions(),
-        "psp" to psxPositions(), // reuse PSX layout
+        "psp" to pspPositions(),
+        "3ds" to threedsPositions(),
+        "dc" to dreamcastPositions(),
+        "sat" to saturnPositions(),
     )
 
     // ─── NES ────────────────────────────────────────────────────────────
@@ -126,6 +130,11 @@ object ControllerButtonPositions {
         LibretroButtons.Y to ButtonPositionSpec(0.88f, 0.35f, widthFraction = 0.05f, heightFraction = 0.05f),  // C-Down
         LibretroButtons.L3 to ButtonPositionSpec(0.88f, 0.22f, widthFraction = 0.05f, heightFraction = 0.05f), // C-Up
         LibretroButtons.R3 to ButtonPositionSpec(0.94f, 0.28f, widthFraction = 0.05f, heightFraction = 0.05f), // C-Right
+        // Analog stick (center prong)
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.38f, 0.38f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.38f, 0.50f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.32f, 0.44f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.44f, 0.44f, widthFraction = 0.04f, heightFraction = 0.04f),
     )
 
     // ─── Genesis / Mega Drive ───────────────────────────────────────────
@@ -187,6 +196,147 @@ object ControllerButtonPositions {
         ),
         LibretroButtons.L3 to ButtonPositionSpec(0.35f, 0.62f, widthFraction = 0.06f, heightFraction = 0.06f),
         LibretroButtons.R3 to ButtonPositionSpec(0.65f, 0.62f, widthFraction = 0.06f, heightFraction = 0.06f),
+        // Left analog stick cluster
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.35f, 0.70f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.35f, 0.82f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.29f, 0.76f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.41f, 0.76f, widthFraction = 0.04f, heightFraction = 0.04f),
+        // Right analog stick cluster
+        LibretroAnalog.RIGHT_STICK_UP to ButtonPositionSpec(0.65f, 0.70f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.RIGHT_STICK_DOWN to ButtonPositionSpec(0.65f, 0.82f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.RIGHT_STICK_LEFT to ButtonPositionSpec(0.59f, 0.76f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.RIGHT_STICK_RIGHT to ButtonPositionSpec(0.71f, 0.76f, widthFraction = 0.04f, heightFraction = 0.04f),
+    )
+
+    // ─── PSP ────────────────────────────────────────────────────────────
+    // Similar to PSX but without R-stick, L3/R3. Left stick on the left side.
+    private fun pspPositions() = mapOf(
+        LibretroButtons.UP to ButtonPositionSpec(0.20f, 0.34f),
+        LibretroButtons.DOWN to ButtonPositionSpec(0.20f, 0.50f),
+        LibretroButtons.LEFT to ButtonPositionSpec(0.13f, 0.42f),
+        LibretroButtons.RIGHT to ButtonPositionSpec(0.27f, 0.42f),
+        LibretroButtons.B to ButtonPositionSpec(0.81f, 0.50f),    // Cross
+        LibretroButtons.A to ButtonPositionSpec(0.89f, 0.42f),    // Circle
+        LibretroButtons.Y to ButtonPositionSpec(0.73f, 0.42f),    // Square
+        LibretroButtons.X to ButtonPositionSpec(0.81f, 0.34f),    // Triangle
+        LibretroButtons.L to ButtonPositionSpec(
+            0.14f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.05f,
+        ),
+        LibretroButtons.R to ButtonPositionSpec(
+            0.86f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.05f,
+        ),
+        LibretroButtons.SELECT to ButtonPositionSpec(
+            0.42f, 0.42f, isRound = false,
+            widthFraction = 0.08f, heightFraction = 0.04f,
+        ),
+        LibretroButtons.START to ButtonPositionSpec(
+            0.58f, 0.42f, isRound = false,
+            widthFraction = 0.08f, heightFraction = 0.04f,
+        ),
+        // Left analog stick cluster
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.25f, 0.57f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.25f, 0.69f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.19f, 0.63f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.31f, 0.63f, widthFraction = 0.04f, heightFraction = 0.04f),
+    )
+
+    // ─── 3DS ────────────────────────────────────────────────────────────
+    // Clamshell handheld. D-pad left, face buttons right, circle pad (left stick).
+    private fun threedsPositions() = mapOf(
+        LibretroButtons.UP to ButtonPositionSpec(0.20f, 0.34f),
+        LibretroButtons.DOWN to ButtonPositionSpec(0.20f, 0.50f),
+        LibretroButtons.LEFT to ButtonPositionSpec(0.13f, 0.42f),
+        LibretroButtons.RIGHT to ButtonPositionSpec(0.27f, 0.42f),
+        LibretroButtons.A to ButtonPositionSpec(0.83f, 0.42f),
+        LibretroButtons.B to ButtonPositionSpec(0.75f, 0.50f),
+        LibretroButtons.X to ButtonPositionSpec(0.83f, 0.34f),
+        LibretroButtons.Y to ButtonPositionSpec(0.75f, 0.34f),
+        LibretroButtons.L to ButtonPositionSpec(
+            0.14f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.R to ButtonPositionSpec(
+            0.86f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.SELECT to ButtonPositionSpec(
+            0.42f, 0.55f, isRound = false,
+            widthFraction = 0.08f, heightFraction = 0.04f,
+        ),
+        LibretroButtons.START to ButtonPositionSpec(
+            0.58f, 0.55f, isRound = false,
+            widthFraction = 0.08f, heightFraction = 0.04f,
+        ),
+        // Circle pad (left stick)
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.35f, 0.32f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.35f, 0.44f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.29f, 0.38f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.41f, 0.38f, widthFraction = 0.04f, heightFraction = 0.04f),
+    )
+
+    // ─── Dreamcast ──────────────────────────────────────────────────────
+    // Winged controller with D-pad left, face buttons right, analog stick left side.
+    private fun dreamcastPositions() = mapOf(
+        LibretroButtons.UP to ButtonPositionSpec(0.22f, 0.38f),
+        LibretroButtons.DOWN to ButtonPositionSpec(0.22f, 0.58f),
+        LibretroButtons.LEFT to ButtonPositionSpec(0.14f, 0.48f),
+        LibretroButtons.RIGHT to ButtonPositionSpec(0.30f, 0.48f),
+        LibretroButtons.A to ButtonPositionSpec(0.75f, 0.50f),
+        LibretroButtons.B to ButtonPositionSpec(0.83f, 0.42f),
+        LibretroButtons.X to ButtonPositionSpec(0.75f, 0.34f),
+        LibretroButtons.Y to ButtonPositionSpec(0.83f, 0.26f),
+        LibretroButtons.L to ButtonPositionSpec(
+            0.14f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.R to ButtonPositionSpec(
+            0.86f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.START to ButtonPositionSpec(
+            0.50f, 0.48f, isRound = false,
+            widthFraction = 0.10f, heightFraction = 0.05f,
+        ),
+        // Analog stick
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.35f, 0.62f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.35f, 0.74f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.29f, 0.68f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.41f, 0.68f, widthFraction = 0.04f, heightFraction = 0.04f),
+    )
+
+    // ─── Saturn ─────────────────────────────────────────────────────────
+    // Rounded controller with D-pad left, A/B/C + X/Y/Z right, L/R triggers.
+    // 3D pad variant has analog stick.
+    private fun saturnPositions() = mapOf(
+        LibretroButtons.UP to ButtonPositionSpec(0.22f, 0.38f),
+        LibretroButtons.DOWN to ButtonPositionSpec(0.22f, 0.58f),
+        LibretroButtons.LEFT to ButtonPositionSpec(0.14f, 0.48f),
+        LibretroButtons.RIGHT to ButtonPositionSpec(0.30f, 0.48f),
+        LibretroButtons.A to ButtonPositionSpec(0.67f, 0.55f),
+        LibretroButtons.B to ButtonPositionSpec(0.77f, 0.48f),
+        LibretroButtons.Y to ButtonPositionSpec(0.87f, 0.41f), // C
+        LibretroButtons.X to ButtonPositionSpec(0.67f, 0.38f, widthFraction = 0.05f, heightFraction = 0.05f),
+        LibretroButtons.L to ButtonPositionSpec(0.77f, 0.31f, widthFraction = 0.05f, heightFraction = 0.05f), // Y
+        LibretroButtons.R to ButtonPositionSpec(0.87f, 0.24f, widthFraction = 0.05f, heightFraction = 0.05f), // Z
+        LibretroButtons.L2 to ButtonPositionSpec(
+            0.14f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.R2 to ButtonPositionSpec(
+            0.86f, 0.20f, isRound = false,
+            widthFraction = 0.12f, heightFraction = 0.06f,
+        ),
+        LibretroButtons.START to ButtonPositionSpec(
+            0.50f, 0.48f, isRound = false,
+            widthFraction = 0.10f, heightFraction = 0.05f,
+        ),
+        // Analog stick (3D pad)
+        LibretroAnalog.LEFT_STICK_UP to ButtonPositionSpec(0.35f, 0.62f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_DOWN to ButtonPositionSpec(0.35f, 0.74f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_LEFT to ButtonPositionSpec(0.29f, 0.68f, widthFraction = 0.04f, heightFraction = 0.04f),
+        LibretroAnalog.LEFT_STICK_RIGHT to ButtonPositionSpec(0.41f, 0.68f, widthFraction = 0.04f, heightFraction = 0.04f),
     )
 
     /**
@@ -277,6 +427,26 @@ object ControllerButtonPositions {
                 add(ButtonRegion(buttonMap[LibretroButtons.L3]!!, 0.35f, 0.65f))
             if (LibretroButtons.R3 in buttonIds)
                 add(ButtonRegion(buttonMap[LibretroButtons.R3]!!, 0.65f, 0.65f))
+
+            // Left analog stick directions
+            if (LibretroAnalog.LEFT_STICK_UP in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.LEFT_STICK_UP]!!, 0.35f, 0.73f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.LEFT_STICK_DOWN in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.LEFT_STICK_DOWN]!!, 0.35f, 0.85f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.LEFT_STICK_LEFT in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.LEFT_STICK_LEFT]!!, 0.29f, 0.79f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.LEFT_STICK_RIGHT in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.LEFT_STICK_RIGHT]!!, 0.41f, 0.79f, widthFraction = 0.04f, heightFraction = 0.04f))
+
+            // Right analog stick directions
+            if (LibretroAnalog.RIGHT_STICK_UP in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.RIGHT_STICK_UP]!!, 0.65f, 0.73f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.RIGHT_STICK_DOWN in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.RIGHT_STICK_DOWN]!!, 0.65f, 0.85f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.RIGHT_STICK_LEFT in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.RIGHT_STICK_LEFT]!!, 0.59f, 0.79f, widthFraction = 0.04f, heightFraction = 0.04f))
+            if (LibretroAnalog.RIGHT_STICK_RIGHT in buttonIds)
+                add(ButtonRegion(buttonMap[LibretroAnalog.RIGHT_STICK_RIGHT]!!, 0.71f, 0.79f, widthFraction = 0.04f, heightFraction = 0.04f))
         }
     }
 }

@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -259,6 +260,30 @@ class KeyMappingRepositoryImplTest {
         // Should fall back to hardcoded defaults
         val effective = repo.getEffectiveMappingForGame("game1", "nes")
         assertEquals(platformDefaults, effective)
+    }
+
+    @Test
+    fun virtualAnalogIdStoresAndRetrievesCorrectly() = runTest {
+        val repo = createRepo()
+        repo.setBinding("psx", 0, LibretroAnalog.LEFT_STICK_UP, 500)
+        repo.setBinding("psx", 0, LibretroAnalog.RIGHT_STICK_LEFT, 501)
+
+        val mapping = repo.getMappingForConsole("psx")
+        assertNotNull(mapping)
+        assertEquals(500, mapping.bindings[LibretroAnalog.LEFT_STICK_UP])
+        assertEquals(501, mapping.bindings[LibretroAnalog.RIGHT_STICK_LEFT])
+    }
+
+    @Test
+    fun virtualAnalogIdCoexistsWithRegularButtons() = runTest {
+        val repo = createRepo()
+        repo.setBinding("psx", 0, LibretroButtons.A, 200)
+        repo.setBinding("psx", 0, LibretroAnalog.LEFT_STICK_UP, 500)
+
+        val mapping = repo.getMappingForConsole("psx")
+        assertNotNull(mapping)
+        assertEquals(200, mapping.bindings[LibretroButtons.A])
+        assertEquals(500, mapping.bindings[LibretroAnalog.LEFT_STICK_UP])
     }
 
     @Test

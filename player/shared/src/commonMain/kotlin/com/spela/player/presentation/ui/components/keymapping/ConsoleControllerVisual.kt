@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ButtonInfo
 import com.spela.player.domain.model.ConsoleButtonLayout
@@ -213,9 +214,12 @@ private fun ControllerButton(
             )
         }
         Text(
-            text = mappedKeyLabel ?: label,
+            text = if (mappedKeyLabel != null) "$label\n$mappedKeyLabel" else label,
             style = SpTypography.LabelSmall,
             color = if (isHighlighted) SpColor.OnPrimary else SpColor.OnSurface,
+            maxLines = 2,
+            textAlign = TextAlign.Center,
+            lineHeight = SpTypography.LabelSmall.lineHeight,
         )
     }
 }

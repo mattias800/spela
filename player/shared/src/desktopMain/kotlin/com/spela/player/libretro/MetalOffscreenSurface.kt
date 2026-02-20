@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlinx.coroutines.delay
 import org.jetbrains.skia.Bitmap
@@ -60,6 +61,7 @@ fun MetalOffscreenSurface(
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultMetalKeyMapping
     }
+    val analogTracker = remember { AnalogAxisTracker() }
     val focusRequester = remember { FocusRequester() }
     val frameBuffers = remember { MetalFrameBuffers() }
 
@@ -106,7 +108,12 @@ fun MetalOffscreenSurface(
                     val buttonId = effectiveMapping[keyCode]
                     if (buttonId != null) {
                         val pressed = event.type == KeyEventType.KeyDown
-                        controller.setButton(0, buttonId, pressed)
+                        val axisUpdate = analogTracker.update(buttonId, pressed)
+                        if (axisUpdate != null) {
+                            controller.setAnalog(0, axisUpdate.stickIndex, axisUpdate.axisId, axisUpdate.value)
+                        } else {
+                            controller.setButton(0, buttonId, pressed)
+                        }
                         true
                     } else {
                         false
@@ -221,4 +228,13 @@ private val defaultMetalKeyMapping: Map<Int, Int> = mapOf(
     Key.W.keyCode.toInt() to LibretroButtons.R,
     Key.One.keyCode.toInt() to LibretroButtons.L2,
     Key.Two.keyCode.toInt() to LibretroButtons.R2,
+    // Analog sticks
+    Key.T.keyCode.toInt() to LibretroAnalog.LEFT_STICK_UP,
+    Key.G.keyCode.toInt() to LibretroAnalog.LEFT_STICK_DOWN,
+    Key.F.keyCode.toInt() to LibretroAnalog.LEFT_STICK_LEFT,
+    Key.H.keyCode.toInt() to LibretroAnalog.LEFT_STICK_RIGHT,
+    Key.I.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_UP,
+    Key.K.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_DOWN,
+    Key.J.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_LEFT,
+    Key.L.keyCode.toInt() to LibretroAnalog.RIGHT_STICK_RIGHT,
 )

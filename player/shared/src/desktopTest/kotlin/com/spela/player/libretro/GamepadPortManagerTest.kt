@@ -3,6 +3,7 @@ package com.spela.player.libretro
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
 import kotlinx.coroutines.test.runTest
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -145,6 +146,23 @@ class GamepadPortManagerTest {
 
         manager.disconnectDevice(100)
         assertNull(manager.mapKeyToLibretro(0, 96))
+    }
+
+    @Test
+    fun analogIdsFlowThroughMapKeyToLibretro() = runTest {
+        manager.connectDevice(100, "Xbox")
+        fakeRepo.effectiveMappings["psx:0"] = mapOf(
+            0 to 96,                           // B -> 96
+            LibretroAnalog.LEFT_STICK_UP to 500, // L-Stick Up -> 500
+        )
+        manager.loadMappingForPort(0, "psx")
+
+        // Regular button
+        assertEquals(0, manager.mapKeyToLibretro(0, 96))
+        // Analog virtual button
+        assertEquals(LibretroAnalog.LEFT_STICK_UP, manager.mapKeyToLibretro(0, 500))
+        // Unmapped
+        assertNull(manager.mapKeyToLibretro(0, 999))
     }
 
     @Test

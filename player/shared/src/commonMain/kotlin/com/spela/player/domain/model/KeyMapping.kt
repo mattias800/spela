@@ -1,5 +1,6 @@
 package com.spela.player.domain.model
 
+import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
 
 /**
@@ -53,6 +54,20 @@ object DefaultKeyMappings {
         ButtonInfo(LibretroButtons.RIGHT, "Right"),
     )
 
+    private val leftStickButtons = listOf(
+        ButtonInfo(LibretroAnalog.LEFT_STICK_UP, "L-Stick Up"),
+        ButtonInfo(LibretroAnalog.LEFT_STICK_DOWN, "L-Stick Down"),
+        ButtonInfo(LibretroAnalog.LEFT_STICK_LEFT, "L-Stick Left"),
+        ButtonInfo(LibretroAnalog.LEFT_STICK_RIGHT, "L-Stick Right"),
+    )
+
+    private val rightStickButtons = listOf(
+        ButtonInfo(LibretroAnalog.RIGHT_STICK_UP, "R-Stick Up"),
+        ButtonInfo(LibretroAnalog.RIGHT_STICK_DOWN, "R-Stick Down"),
+        ButtonInfo(LibretroAnalog.RIGHT_STICK_LEFT, "R-Stick Left"),
+        ButtonInfo(LibretroAnalog.RIGHT_STICK_RIGHT, "R-Stick Right"),
+    )
+
     val NES = ConsoleButtonLayout(
         consoleId = "nes",
         displayName = "NES",
@@ -94,7 +109,7 @@ object DefaultKeyMappings {
             ButtonInfo(LibretroButtons.Y, "C-Down"),
             ButtonInfo(LibretroButtons.L3, "C-Up"),
             ButtonInfo(LibretroButtons.R3, "C-Right"),
-        ),
+        ) + leftStickButtons,
     )
 
     val GENESIS = ConsoleButtonLayout(
@@ -152,7 +167,7 @@ object DefaultKeyMappings {
             ButtonInfo(LibretroButtons.START, "Start"),
             ButtonInfo(LibretroButtons.L3, "L3"),
             ButtonInfo(LibretroButtons.R3, "R3"),
-        ),
+        ) + leftStickButtons + rightStickButtons,
     )
 
     val PSP = ConsoleButtonLayout(
@@ -167,7 +182,7 @@ object DefaultKeyMappings {
             ButtonInfo(LibretroButtons.R, "R"),
             ButtonInfo(LibretroButtons.SELECT, "Select"),
             ButtonInfo(LibretroButtons.START, "Start"),
-        ),
+        ) + leftStickButtons,
     )
 
     val NDS = ConsoleButtonLayout(
@@ -185,9 +200,55 @@ object DefaultKeyMappings {
         ),
     )
 
+    val THREEDS = ConsoleButtonLayout(
+        consoleId = "3ds",
+        displayName = "Nintendo 3DS",
+        buttons = dpadButtons + listOf(
+            ButtonInfo(LibretroButtons.A, "A"),
+            ButtonInfo(LibretroButtons.B, "B"),
+            ButtonInfo(LibretroButtons.X, "X"),
+            ButtonInfo(LibretroButtons.Y, "Y"),
+            ButtonInfo(LibretroButtons.L, "L"),
+            ButtonInfo(LibretroButtons.R, "R"),
+            ButtonInfo(LibretroButtons.START, "Start"),
+            ButtonInfo(LibretroButtons.SELECT, "Select"),
+        ) + leftStickButtons,
+    )
+
+    val DREAMCAST = ConsoleButtonLayout(
+        consoleId = "dc",
+        displayName = "Dreamcast",
+        buttons = dpadButtons + listOf(
+            ButtonInfo(LibretroButtons.A, "A"),
+            ButtonInfo(LibretroButtons.B, "B"),
+            ButtonInfo(LibretroButtons.X, "X"),
+            ButtonInfo(LibretroButtons.Y, "Y"),
+            ButtonInfo(LibretroButtons.L, "L"),
+            ButtonInfo(LibretroButtons.R, "R"),
+            ButtonInfo(LibretroButtons.START, "Start"),
+        ) + leftStickButtons,
+    )
+
+    val SATURN = ConsoleButtonLayout(
+        consoleId = "sat",
+        displayName = "Saturn",
+        buttons = dpadButtons + listOf(
+            ButtonInfo(LibretroButtons.A, "A"),
+            ButtonInfo(LibretroButtons.B, "B"),
+            ButtonInfo(LibretroButtons.Y, "C"),
+            ButtonInfo(LibretroButtons.X, "X"),
+            ButtonInfo(LibretroButtons.L, "Y"),
+            ButtonInfo(LibretroButtons.R, "Z"),
+            ButtonInfo(LibretroButtons.L2, "L"),
+            ButtonInfo(LibretroButtons.R2, "R"),
+            ButtonInfo(LibretroButtons.START, "Start"),
+        ) + leftStickButtons,
+    )
+
     /** All known console layouts, indexed by console ID. */
     val allLayouts: Map<String, ConsoleButtonLayout> = listOf(
         NES, SNES, N64, GENESIS, GAMEBOY, GBA, PSX, PSP, NDS,
+        THREEDS, DREAMCAST, SATURN,
     ).associateBy { it.consoleId }
 
     /**
@@ -210,7 +271,7 @@ object DefaultKeyMappings {
             ButtonInfo(LibretroButtons.R3, "R3"),
             ButtonInfo(LibretroButtons.START, "Start"),
             ButtonInfo(LibretroButtons.SELECT, "Select"),
-        ),
+        ) + leftStickButtons + rightStickButtons,
     )
 
     /**
