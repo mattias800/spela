@@ -146,9 +146,9 @@ test.describe("Shader Preview", () => {
 
     // At least one preview-screenshot request should have been made
     expect(screenshotRequests.length).toBeGreaterThan(0);
-    // The URL should contain a valid console ID (numeric)
+    // The URL should contain a valid console abbreviation (e.g. "nes", "snes")
     expect(screenshotRequests[0]).toMatch(
-      /\/api\/consoles\/\d+\/preview-screenshot/,
+      /\/api\/consoles\/[a-z0-9-]+\/preview-screenshot/,
     );
   });
 
