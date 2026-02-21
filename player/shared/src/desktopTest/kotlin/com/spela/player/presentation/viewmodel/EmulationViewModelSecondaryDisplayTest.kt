@@ -279,6 +279,35 @@ class EmulationViewModelSecondaryDisplayTest {
         vmScope.cancel()
     }
 
+    @Test
+    fun threedsConsoleIdTriggersIsDualScreenConsole() = runTest(testDispatcher) {
+        val vm = createViewModelWithConsoleId("3ds")
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(100)
+
+        assertTrue(vm.state.value.isDualScreenConsole)
+        assertEquals(240, vm.state.value.dualScreenSplitY)
+        vmScope.cancel()
+    }
+
+    @Test
+    fun stopGameResetsIsDualScreenConsole() = runTest(testDispatcher) {
+        val vm = createViewModelWithConsoleId("nds")
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(100)
+        assertTrue(vm.state.value.isDualScreenConsole)
+        assertEquals(192, vm.state.value.dualScreenSplitY)
+
+        vm.onIntent(EmulationIntent.StopGame)
+        advanceTimeBy(100)
+
+        assertFalse(vm.state.value.isDualScreenConsole)
+        assertEquals(0, vm.state.value.dualScreenSplitY)
+        vmScope.cancel()
+    }
+
     private fun createViewModelWithConsoleId(consoleId: String): EmulationViewModel {
         val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
         return EmulationViewModel(

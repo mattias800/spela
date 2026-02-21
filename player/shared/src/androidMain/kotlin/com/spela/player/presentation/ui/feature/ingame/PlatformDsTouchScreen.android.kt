@@ -61,10 +61,12 @@ actual fun PlatformDsTouchScreen(
                 .pointerInput(splitY) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
+                        val bmpHeight = bitmap?.height ?: 0
                         // Map and send initial touch
                         sendPointerFromTouch(
                             controller, down.position.x, down.position.y,
-                            canvasSize, bitmap?.width ?: 0, (bitmap?.height ?: 0) - splitY,
+                            canvasSize, bitmap?.width ?: 0, bmpHeight - splitY,
+                            fullHeight = bmpHeight,
                             pressed = true,
                         )
                         down.consume()
@@ -77,7 +79,8 @@ actual fun PlatformDsTouchScreen(
                                 PointerEventType.Move -> {
                                     sendPointerFromTouch(
                                         controller, change.position.x, change.position.y,
-                                        canvasSize, bitmap?.width ?: 0, (bitmap?.height ?: 0) - splitY,
+                                        canvasSize, bitmap?.width ?: 0, bmpHeight - splitY,
+                                        fullHeight = bmpHeight,
                                         pressed = true,
                                     )
                                     change.consume()
@@ -131,6 +134,13 @@ actual fun PlatformDsTouchScreen(
  *
  * The libretro pointer device uses the range -0x7FFF to 0x7FFF for both axes,
  * where (-0x7FFF, -0x7FFF) is the top-left corner and (0x7FFF, 0x7FFF) is the bottom-right.
+ *
+ * For DS/3DS touch input, the core expects coordinates relative to the full viewport
+ * (both screens stacked). The bottom screen occupies the lower portion of the viewport,
+ * so Y is mapped to the bottom half only (0 to 0x7FFF), not the full range.
+ * X uses the full range (-0x7FFF to 0x7FFF) as normal.
+ *
+ * @param fullHeight The full framebuffer height (both screens), used to compute the split ratio.
  */
 private fun sendPointerFromTouch(
     controller: LibretroController,
@@ -139,6 +149,7 @@ private fun sendPointerFromTouch(
     canvasSize: Size,
     srcWidth: Int,
     srcHeight: Int,
+    fullHeight: Int,
     pressed: Boolean,
 ) {
     if (canvasSize.width <= 0 || canvasSize.height <= 0 || srcWidth <= 0 || srcHeight <= 0) return
@@ -154,9 +165,14 @@ private fun sendPointerFromTouch(
     val normalizedX = ((touchX - offsetX) / scaledWidth).coerceIn(0f, 1f)
     val normalizedY = ((touchY - offsetY) / scaledHeight).coerceIn(0f, 1f)
 
-    // Map to libretro pointer range: -0x7FFF to 0x7FFF
+    // X maps to full libretro pointer range: -0x7FFF to 0x7FFF
     val pointerX = ((normalizedX * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
-    val pointerY = ((normalizedY * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
+
+    // Y maps to the bottom portion of the full viewport.
+    // The split ratio determines where the bottom screen starts in the full viewport.
+    val splitRatio = if (fullHeight > 0) (fullHeight - srcHeight).toFloat() / fullHeight else 0f
+    val viewportY = splitRatio + normalizedY * (1f - splitRatio)
+    val pointerY = ((viewportY * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
 
     controller.setPointer(0, pointerX, pointerY, pressed)
 }

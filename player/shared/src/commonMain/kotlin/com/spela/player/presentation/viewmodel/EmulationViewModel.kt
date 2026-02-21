@@ -195,9 +195,14 @@ class EmulationViewModel(
                 consoleId = detail.game.consoleId
             }
 
-            // Detect dual-screen consoles (Nintendo DS)
-            val isDualScreen = consoleId.lowercase() == "nds"
-            val splitY = if (isDualScreen) 192 else 0
+            // Detect dual-screen consoles (Nintendo DS, Nintendo 3DS)
+            val lc = consoleId.lowercase()
+            val isDualScreen = lc == "nds" || lc == "3ds"
+            val splitY = when (lc) {
+                "nds" -> 192   // 256×192 top + 256×192 bottom = 256×384
+                "3ds" -> 240   // 400×240 top + 320×240 bottom = 400×480
+                else -> 0
+            }
             withContext(dispatchers.main) {
                 _state.update { it.copy(isDualScreenConsole = isDualScreen, dualScreenSplitY = splitY) }
             }
@@ -503,6 +508,8 @@ class EmulationViewModel(
     }
 
     private fun stopGame() {
+        // Dismiss secondary display immediately on the main thread, before async save operations
+        dismissSecondaryDisplay()
         sessionTimerJob?.cancel()
         sessionTimerJob = null
         challengeTimerJob?.cancel()
@@ -574,7 +581,6 @@ class EmulationViewModel(
                 // Best effort
             }
 
-            dismissSecondaryDisplay()
             libretroController.stop()
             withContext(dispatchers.main) {
                 _state.update {
@@ -588,6 +594,8 @@ class EmulationViewModel(
                         showExitConfirm = false,
                         showOverlay = false,
                         secondaryDisplayActive = false,
+                        isDualScreenConsole = false,
+                        dualScreenSplitY = 0,
                         relayId = null,
                         turnToken = null,
                         netplaySessionId = null,
