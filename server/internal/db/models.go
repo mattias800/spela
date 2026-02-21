@@ -459,6 +459,22 @@ type GameKeyMappingPreference struct {
 	CustomMapping string `json:"customMapping" gorm:"type:text"` // JSON string of map[string]string
 }
 
+// SaveData represents a user's SRAM/battery save data for a game.
+type SaveData struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"index;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	GameID    uint           `gorm:"index;not null" json:"gameId"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name      string         `gorm:"size:255;not null" json:"name"`
+	FilePath  string         `gorm:"size:1024;not null" json:"-"`
+	FileSize  int64          `json:"fileSize"`
+	IsActive  bool           `gorm:"default:false" json:"isActive"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

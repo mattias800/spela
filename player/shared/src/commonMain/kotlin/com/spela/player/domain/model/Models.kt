@@ -89,6 +89,17 @@ data class SaveState(
 )
 
 @Serializable
+data class SaveData(
+    val id: Long,
+    val gameId: Long,
+    val name: String,
+    val fileSize: Long = 0,
+    val isActive: Boolean = false,
+    val createdAt: Instant? = null,
+    val updatedAt: Instant? = null,
+)
+
+@Serializable
 data class LibretroCore(
     val id: Long,
     val name: String,

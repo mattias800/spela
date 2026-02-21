@@ -1,5 +1,7 @@
 package com.spela.player.presentation.navigation
 
+import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.data.remote.SyncEngine
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.util.DispatcherProvider
@@ -12,6 +14,8 @@ import kotlinx.coroutines.launch
 
 class NavigationViewModel(
     private val restoreSessionUseCase: RestoreSessionUseCase,
+    private val connectivityMonitor: ConnectivityMonitor,
+    private val syncEngine: SyncEngine,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -121,6 +125,7 @@ class NavigationViewModel(
             val result = restoreSessionUseCase()
             val screen = when (result) {
                 RestoreSessionResult.Success -> SpScreen.Home
+                RestoreSessionResult.OfflineSuccess -> SpScreen.Home
                 is RestoreSessionResult.NeedsLogin -> SpScreen.Login
                 RestoreSessionResult.NoSession -> SpScreen.ServerConnection
             }
@@ -133,7 +138,14 @@ class NavigationViewModel(
                     currentScreen = screen,
                     isRestoringSession = false,
                     restoredServerUrl = serverUrl,
+                    isOffline = result is RestoreSessionResult.OfflineSuccess,
                 )
+            }
+
+            // Start connectivity monitoring and sync engine after successful session restore
+            if (result is RestoreSessionResult.Success || result is RestoreSessionResult.OfflineSuccess) {
+                connectivityMonitor.start()
+                syncEngine.start()
             }
         }
     }

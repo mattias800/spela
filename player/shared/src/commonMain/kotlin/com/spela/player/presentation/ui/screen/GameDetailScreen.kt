@@ -87,6 +87,7 @@ fun GameDetailScreen(
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
     onNavigateToRelay: ((relayId: String) -> Unit)? = null,
+    onNavigateToSaveData: ((gameId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -168,6 +169,33 @@ fun GameDetailScreen(
                                 viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
                             },
                         )
+                    }
+                }
+
+                // Save Data (SRAM) section
+                if (onNavigateToSaveData != null && state.saveDataCount > 0) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            Spacer(Modifier.height(SpSpacing.Medium))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "Save Data",
+                                    style = SpTypography.HeadlineSmall,
+                                    color = SpColor.OnBackground,
+                                )
+                                SpButton(
+                                    text = "Manage (${state.saveDataCount})",
+                                    onClick = { onNavigateToSaveData(gameId) },
+                                    style = SpButtonStyle.Ghost,
+                                )
+                            }
+                        }
                     }
                 }
 

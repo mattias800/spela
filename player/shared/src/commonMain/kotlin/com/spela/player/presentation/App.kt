@@ -15,8 +15,10 @@ import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.RelayDetailViewModel
 import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
+import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
@@ -52,6 +54,8 @@ fun App() {
     val challengeDetailViewModel: ChallengeDetailViewModel = koinInject()
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
     val presenceService: PresenceService = koinInject()
+    val connectivityMonitor: ConnectivityMonitor = koinInject()
+    val saveDataViewModel: SaveDataViewModel = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -75,5 +79,7 @@ fun App() {
         challengeDetailViewModel = challengeDetailViewModel,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
+        connectivityMonitor = connectivityMonitor,
+        saveDataViewModel = saveDataViewModel,
     )
 }

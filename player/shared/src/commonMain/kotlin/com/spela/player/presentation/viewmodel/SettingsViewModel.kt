@@ -1,6 +1,9 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.data.remote.SyncEngine
+import com.spela.player.data.remote.SyncState
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.DeviceDto
 import com.spela.player.domain.model.Console
@@ -84,6 +87,7 @@ sealed interface SettingsIntent {
     data class ShowDeleteDeviceConfirm(val deviceId: Long) : SettingsIntent
     data object DismissDeleteDeviceConfirm : SettingsIntent
     data class SaveScrollPosition(val index: Int, val offset: Int) : SettingsIntent
+    data object SyncNow : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -95,6 +99,8 @@ class SettingsViewModel(
     private val achievementsRepository: AchievementsRepository,
     private val keyMappingRepository: KeyMappingRepository,
     private val deviceManager: DeviceManager,
+    private val syncEngine: SyncEngine,
+    private val connectivityMonitor: ConnectivityMonitor,
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -165,6 +171,16 @@ class SettingsViewModel(
                 _state.update { it.copy(showDeleteDeviceConfirm = null) }
             is SettingsIntent.SaveScrollPosition ->
                 _state.update { it.copy(scrollIndex = intent.index, scrollOffset = intent.offset) }
+            SettingsIntent.SyncNow -> syncNow()
+        }
+    }
+
+    val syncState: StateFlow<SyncState> = syncEngine.syncState
+    val isOnline: StateFlow<Boolean> = connectivityMonitor.isOnline
+
+    private fun syncNow() {
+        scope.launch(dispatchers.io) {
+            syncEngine.syncAll()
         }
     }
 

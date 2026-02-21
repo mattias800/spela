@@ -466,3 +466,13 @@ fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
     startedAt = startedAt,
     endedAt = endedAt,
 )
+
+fun SaveDataDto.toDomain() = SaveData(
+    id = id,
+    gameId = gameId,
+    name = name,
+    fileSize = fileSize,
+    isActive = isActive,
+    createdAt = runCatching { Instant.parse(createdAt) }.getOrNull(),
+    updatedAt = runCatching { Instant.parse(updatedAt) }.getOrNull(),
+)

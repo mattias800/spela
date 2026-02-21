@@ -322,6 +322,63 @@ func (s *Storage) DeleteChallengeSave(challengeID uint) error {
 	return nil
 }
 
+// SaveDataPath returns the filesystem path for a user's SRAM/save data file.
+func (s *Storage) SaveDataPath(userID, gameID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, fmt.Sprintf("user_%d", userID), fmt.Sprintf("game_%d", gameID), "sram", safe)
+}
+
+// WriteSaveData stores a save data file.
+func (s *Storage) WriteSaveData(userID, gameID uint, filename string, data io.Reader) (int64, error) {
+	path := s.SaveDataPath(userID, gameID, filename)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return 0, fmt.Errorf("resolving save data path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return 0, fmt.Errorf("invalid save data path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return 0, fmt.Errorf("creating save data directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return 0, fmt.Errorf("creating save data file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return 0, fmt.Errorf("writing save data file: %w", err)
+	}
+
+	return n, nil
+}
+
+// ReadSaveData opens a save data file for reading.
+func (s *Storage) ReadSaveData(path string) (*os.File, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("opening save data file: %w", err)
+	}
+	return f, nil
+}
+
+// DeleteSaveData removes a save data file.
+func (s *Storage) DeleteSaveData(path string) error {
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("deleting save data file: %w", err)
+	}
+	return nil
+}
+
 // ValidateROMPath checks that a ROM path is within allowed game directories.
 func ValidateROMPath(filePath string, allowedDirs []string) bool {
 	absPath, err := filepath.Abs(filePath)

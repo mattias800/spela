@@ -124,6 +124,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
 	biosHandler := &BiosHandler{Storage: cfg.Storage}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
+	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 
@@ -183,6 +184,16 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/games/:id/saves/:saveId", gameHandler.DeleteSave)
 		api.POST("/games/:id/saves/auto", gameHandler.UploadAutoSave)
 		api.GET("/games/:id/saves/auto", gameHandler.GetAutoSave)
+
+		// Save data (SRAM/battery saves)
+		api.GET("/games/:id/save-data", saveDataHandler.ListSaveData)
+		api.POST("/games/:id/save-data", saveDataHandler.UploadSaveData)
+		api.POST("/games/:id/save-data/active", saveDataHandler.UploadActiveSaveData)
+		api.GET("/games/:id/save-data/active", saveDataHandler.DownloadActiveSaveData)
+		api.GET("/games/:id/save-data/:sdId/download", saveDataHandler.DownloadSaveData)
+		api.PUT("/games/:id/save-data/:sdId/activate", saveDataHandler.ActivateSaveData)
+		api.PUT("/games/:id/save-data/:sdId", saveDataHandler.RenameSaveData)
+		api.DELETE("/games/:id/save-data/:sdId", saveDataHandler.DeleteSaveData)
 
 		// Cores
 		api.GET("/games/:id/core", gameHandler.GetRecommendedCore)

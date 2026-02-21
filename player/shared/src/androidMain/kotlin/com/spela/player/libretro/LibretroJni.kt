@@ -58,6 +58,7 @@ class LibretroJni {
 
     /* Memory */
     external fun nativeGetSRAM(): ByteArray?
+    external fun nativeSetSRAM(data: ByteArray): Boolean
 
     /* GPU Renderer */
     external fun nativeGpuInit(surface: Any): Boolean

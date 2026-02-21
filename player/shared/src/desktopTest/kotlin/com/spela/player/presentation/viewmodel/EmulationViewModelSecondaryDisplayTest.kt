@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
@@ -12,6 +13,7 @@ import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.LibretroCore
 import com.spela.player.domain.model.RACredentials
 import com.spela.player.domain.model.RAStatus
+import com.spela.player.domain.model.SaveData
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
@@ -22,6 +24,7 @@ import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.RelayRepository
+import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.LoadGameStateUseCase
@@ -95,6 +98,7 @@ class EmulationViewModelSecondaryDisplayTest {
     }
 
     private fun createViewModel(): EmulationViewModel {
+        val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
@@ -117,8 +121,10 @@ class EmulationViewModelSecondaryDisplayTest {
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
             challengeRepository = StubChallengeRepository(),
+            saveDataRepository = StubSaveDataRepository(),
+            connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
-            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            apiClient = apiClient,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -274,6 +280,7 @@ class EmulationViewModelSecondaryDisplayTest {
     }
 
     private fun createViewModelWithConsoleId(consoleId: String): EmulationViewModel {
+        val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
@@ -296,8 +303,10 @@ class EmulationViewModelSecondaryDisplayTest {
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
             challengeRepository = StubChallengeRepository(),
+            saveDataRepository = StubSaveDataRepository(),
+            connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
-            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            apiClient = apiClient,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -305,6 +314,7 @@ class EmulationViewModelSecondaryDisplayTest {
     }
 
     private fun createViewModelWithConsoleIdAndController(consoleId: String, controller: LibretroController): EmulationViewModel {
+        val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
@@ -327,8 +337,10 @@ class EmulationViewModelSecondaryDisplayTest {
             presenceService = stubPresenceService,
             relayRepository = StubRelayRepository(),
             challengeRepository = StubChallengeRepository(),
+            saveDataRepository = StubSaveDataRepository(),
+            connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
-            apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager()),
+            apiClient = apiClient,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -423,6 +435,24 @@ class EmulationViewModelSecondaryDisplayTest {
             Result.success(SaveState(id = 1, gameId = 1, name = "auto"))
         override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> =
             Result.success(byteArrayOf())
+        override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
+            Result.success(SaveState(id = 1, gameId = 1, name = name))
+        override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> =
+            Result.failure(Exception("none"))
+        override suspend fun getPendingSyncCount(): Int = 0
+    }
+
+    private class StubSaveDataRepository : SaveDataRepository {
+        override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
+        override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
+        override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
+        override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
+        override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+        override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
+        override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+        override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
+        override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
+        override suspend fun getPendingSyncCount(): Int = 0
     }
 
     private class StubGameRepository : GameRepository {

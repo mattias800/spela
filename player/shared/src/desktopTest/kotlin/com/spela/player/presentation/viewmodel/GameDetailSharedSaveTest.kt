@@ -62,6 +62,7 @@ class GameDetailSharedSaveTest {
             togglePlayLaterUseCase = TogglePlayLaterUseCase(testGameRepo),
             downloadRepository = TestDownloadRepository(),
             saveRepository = fakeSaveRepo,
+            saveDataRepository = SharedSaveTestSaveDataRepository(),
             ratingRepository = TestRatingRepository(),
             sharedSaveRepository = fakeSharedSaveRepo,
             getMyCollectionsUseCase = GetMyCollectionsUseCase(TestCollectionRepository()),
@@ -273,6 +274,23 @@ private class TestSaveRepository : SaveRepository {
     override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> =
         Result.success(SaveState(1, 1, "auto"))
     override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
+    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
+        Result.success(SaveState(1, 1, name))
+    override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> = Result.failure(Exception("none"))
+    override suspend fun getPendingSyncCount(): Int = 0
+}
+
+private class SharedSaveTestSaveDataRepository : SaveDataRepository {
+    override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
+    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
+    override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
+    override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
+    override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
+    override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+    override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
+    override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
+    override suspend fun getPendingSyncCount(): Int = 0
 }
 
 private class SharedSaveTestGameStatsRepository : GameStatsRepository {

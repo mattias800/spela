@@ -910,6 +910,24 @@ JNI_FUNC(jbyteArray, nativeGetSRAM)(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+JNI_FUNC(jboolean, nativeSetSRAM)(JNIEnv *env, jobject thiz, jbyteArray data) {
+    if (!g_core.game_loaded) return JNI_FALSE;
+
+    void *sram = g_core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    size_t sram_size = g_core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+    if (!sram || sram_size == 0) return JNI_FALSE;
+
+    jsize data_len = (*env)->GetArrayLength(env, data);
+    size_t copy_size = (size_t)data_len < sram_size ? (size_t)data_len : sram_size;
+
+    jbyte *src = (*env)->GetByteArrayElements(env, data, NULL);
+    if (!src) return JNI_FALSE;
+
+    memcpy(sram, src, copy_size);
+    (*env)->ReleaseByteArrayElements(env, data, src, JNI_ABORT);
+    return JNI_TRUE;
+}
+
 JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, jstring value) {
     const char *k = (*env)->GetStringUTFChars(env, key, NULL);
     const char *v = (*env)->GetStringUTFChars(env, value, NULL);

@@ -6,12 +6,16 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.ConsoleKeyMappingDto
 import com.spela.player.data.remote.dto.UpdateDevicePreferencesRequest
 import com.spela.player.data.remote.dto.UpdatePreferencesRequest
+import com.spela.player.data.remote.dto.UserPreferencesDto
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import kotlin.time.Clock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -22,8 +26,32 @@ class PreferencesRepositoryImpl(
     private val keyMappingRepository: KeyMappingRepository,
 ) : PreferencesRepository {
 
-    override suspend fun getPreferences(): Result<UserPreferences> = runCatching {
-        apiClient.getPreferences().toDomain()
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+    override suspend fun getPreferences(): Result<UserPreferences> {
+        return runCatching {
+            val dto = apiClient.getPreferences()
+            cachePreferences(dto)
+            dto.toDomain()
+        }.recoverCatching {
+            getCachedPreferences() ?: throw it
+        }
+    }
+
+    private fun cachePreferences(dto: UserPreferencesDto) {
+        val jsonString = json.encodeToString(dto)
+        database.spelaDatabaseQueries.upsertCachedPreferences(
+            json_data = jsonString,
+            updated_at = Clock.System.now().toEpochMilliseconds(),
+        )
+    }
+
+    private fun getCachedPreferences(): UserPreferences? {
+        val cached = database.spelaDatabaseQueries.getCachedPreferences().executeAsOneOrNull()
+            ?: return null
+        return runCatching {
+            json.decodeFromString<UserPreferencesDto>(cached.json_data).toDomain()
+        }.getOrNull()
     }
 
     override suspend fun updatePreferences(
@@ -97,7 +125,7 @@ class PreferencesRepositoryImpl(
         val deviceOverride = getDeviceShaderOverride(consoleId)
         if (deviceOverride != null) return deviceOverride
 
-        // 2. Check server per-console preference
+        // 2. Try preferences from API (with cache fallback)
         val preferences = getPreferences().getOrNull()
         if (preferences != null) {
             val consoleShader = preferences.consoleShaders[consoleId]

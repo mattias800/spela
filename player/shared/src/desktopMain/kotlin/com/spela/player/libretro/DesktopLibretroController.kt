@@ -418,4 +418,8 @@ class DesktopLibretroController(
         jni.nativeSetInputAnalog(port, 0, 0, input.analogX)
         jni.nativeSetInputAnalog(port, 0, 1, input.analogY)
     }
+
+    override fun getSRAM(): ByteArray? = jni.nativeGetSRAM()
+
+    override fun setSRAM(data: ByteArray): Boolean = jni.nativeSetSRAM(data)
 }

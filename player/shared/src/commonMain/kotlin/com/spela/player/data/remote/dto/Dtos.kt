@@ -830,3 +830,17 @@ data class RecentAchievementDto(
 data class RecentAchievementsResponse(
     val achievements: List<RecentAchievementDto> = emptyList(),
 )
+
+// Save Data (SRAM)
+
+@Serializable
+data class SaveDataDto(
+    val id: Long = 0,
+    val userId: Long = 0,
+    val gameId: Long = 0,
+    val name: String = "",
+    val fileSize: Long = 0,
+    val isActive: Boolean = false,
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)

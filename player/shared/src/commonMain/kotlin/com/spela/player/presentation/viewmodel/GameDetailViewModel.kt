@@ -12,6 +12,7 @@ import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.RelayRepository
+import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.repository.SharedSaveRepository
 import com.spela.player.domain.repository.GameStatsRepository
@@ -33,6 +34,7 @@ class GameDetailViewModel(
     private val togglePlayLaterUseCase: TogglePlayLaterUseCase,
     private val downloadRepository: DownloadRepository,
     private val saveRepository: SaveRepository,
+    private val saveDataRepository: SaveDataRepository,
     private val ratingRepository: RatingRepository,
     private val sharedSaveRepository: SharedSaveRepository,
     private val getMyCollectionsUseCase: GetMyCollectionsUseCase,
@@ -90,6 +92,7 @@ class GameDetailViewModel(
             is GameDetailIntent.LoadAchievementLeaderboard -> loadAchievementLeaderboard(intent.gameId)
             is GameDetailIntent.ToggleAchievementsView -> toggleAchievementsView(intent.mode)
             GameDetailIntent.RefreshSaves -> refreshSaves()
+            GameDetailIntent.LoadSaveDataCount -> loadSaveDataCount()
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
@@ -139,6 +142,7 @@ class GameDetailViewModel(
         loadReviews(gameId)
         loadGameRelays(gameId)
         loadAchievements(gameId)
+        loadSaveDataCount()
     }
 
     private fun refreshSaves() {
@@ -587,6 +591,15 @@ class GameDetailViewModel(
             AchievementsViewMode.TIMELINE -> loadAchievementTimeline(gameId)
             AchievementsViewMode.LEADERBOARD -> loadAchievementLeaderboard(gameId)
             AchievementsViewMode.GRID -> { /* Already loaded */ }
+        }
+    }
+
+    private fun loadSaveDataCount() {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            saveDataRepository.getSaveDataList(gameId).onSuccess { list ->
+                _state.update { it.copy(saveDataCount = list.size) }
+            }
         }
     }
 

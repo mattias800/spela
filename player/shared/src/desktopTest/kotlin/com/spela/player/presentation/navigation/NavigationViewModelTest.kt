@@ -1,15 +1,17 @@
 package com.spela.player.presentation.navigation
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
-import com.spela.player.domain.model.AuthTokens
-import com.spela.player.domain.model.ServerConnection
-import com.spela.player.domain.model.User
-import com.spela.player.domain.repository.AuthRepository
-import com.spela.player.domain.repository.ServerRepository
+import com.spela.player.domain.model.*
+import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,13 +47,33 @@ class NavigationViewModelTest {
 
     private fun createViewModel(): NavigationViewModel {
         val scope = CoroutineScope(testDispatcher)
+        val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
         val restoreSessionUseCase = RestoreSessionUseCase(
             authRepository = NoSessionAuthRepository(),
             serverRepository = NoSessionServerRepository(),
-            apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager()),
+            apiClient = apiClient,
+        )
+        val connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, scope)
+        val testDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).also {
+            SpelaDatabase.Schema.create(it)
+        }
+        val testDatabase = SpelaDatabase(testDriver)
+        val syncEngine = SyncEngine(
+            connectivityMonitor = connectivityMonitor,
+            saveRepository = NoOpSaveRepository(),
+            saveDataRepository = NoOpSaveDataRepository(),
+            preferencesRepository = NoOpPreferencesRepository(),
+            gameRepository = NoOpGameRepository(),
+            apiClient = apiClient,
+            database = testDatabase,
+            fileStorage = NoOpFileStorage(),
+            dispatchers = testDispatchers,
+            scope = scope,
         )
         return NavigationViewModel(
             restoreSessionUseCase = restoreSessionUseCase,
+            connectivityMonitor = connectivityMonitor,
+            syncEngine = syncEngine,
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -187,5 +209,74 @@ class NavigationViewModelTest {
         override suspend fun storeTokens(tokens: AuthTokens) = throw UnsupportedOperationException()
         override suspend fun clearTokens() = throw UnsupportedOperationException()
         override fun isLoggedIn(): Boolean = false
+    }
+
+    // Minimal stubs for SyncEngine dependencies (never actually called in these tests)
+
+    private class NoOpSaveRepository : SaveRepository {
+        override suspend fun getSaveStates(gameId: String) = Result.success(emptyList<SaveState>())
+        override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray) = Result.success(SaveState(1, 1, name))
+        override suspend fun downloadSaveState(gameId: String, saveId: String) = Result.success(ByteArray(0))
+        override suspend fun deleteSaveState(gameId: String, saveId: String) = Result.success(Unit)
+        override suspend fun uploadAutoSave(gameId: String, data: ByteArray) = Result.success(SaveState(1, 1, "auto"))
+        override suspend fun downloadAutoSave(gameId: String) = Result.success(ByteArray(0))
+        override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean) = Result.success(SaveState(1, 1, name))
+        override suspend fun loadLocalAutoSave(gameId: String) = Result.failure<ByteArray>(Exception("none"))
+        override suspend fun getPendingSyncCount() = 0
+    }
+
+    private class NoOpSaveDataRepository : SaveDataRepository {
+        override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
+        override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
+        override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
+        override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
+        override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+        override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
+        override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+        override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
+        override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
+        override suspend fun getPendingSyncCount() = 0
+    }
+
+    private class NoOpPreferencesRepository : PreferencesRepository {
+        override suspend fun getPreferences() = Result.success(UserPreferences())
+        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?) = Result.success(UserPreferences())
+        override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
+        override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
+        override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()
+        override suspend fun syncDeviceShaderOverrides() {}
+        override suspend fun pushDeviceShaderOverridesToServer() {}
+        override suspend fun resolveShader(consoleId: String) = ShaderPreset.NONE
+        override suspend fun syncKeyMappingsFromServer() {}
+        override suspend fun pushKeyMappingsToServer() {}
+    }
+
+    private class NoOpGameRepository : GameRepository {
+        override suspend fun getConsoles() = Result.success(emptyList<Console>())
+        override suspend fun getGamesForConsole(consoleId: String) = Result.success(emptyList<Game>())
+        override suspend fun getAllGames() = Result.success(emptyList<Game>())
+        override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?) = Result.success(emptyList<Game>())
+        override suspend fun getGameDetail(gameId: String) = Result.success(GameDetail(game = Game(id = gameId, title = "Test", consoleId = "nes")))
+        override suspend fun getRecentGames() = Result.success(emptyList<Game>())
+        override suspend fun getFavoriteGames() = Result.success(emptyList<Game>())
+        override suspend fun addFavorite(gameId: String) = Result.success(Unit)
+        override suspend fun removeFavorite(gameId: String) = Result.success(Unit)
+        override suspend fun getPlayLaterGames() = Result.success(emptyList<Game>())
+        override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
+        override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
+    }
+
+    private class NoOpFileStorage : FileStorage {
+        override fun getGamesDir() = "/tmp/games"
+        override fun getCoresDir() = "/tmp/cores"
+        override fun getSavesDir() = "/tmp/saves"
+        override fun getBiosDir() = "/tmp/bios"
+        override suspend fun createDirectory(path: String) {}
+        override suspend fun writeFile(path: String, data: ByteArray) {}
+        override suspend fun readFile(path: String) = ByteArray(0)
+        override suspend fun fileExists(path: String) = false
+        override suspend fun deleteFile(path: String) {}
+        override suspend fun deleteDirectory(path: String) {}
+        override suspend fun getDirectorySize(path: String) = 0L
     }
 }

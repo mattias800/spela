@@ -167,3 +167,163 @@ UPDATE DeviceInfoEntity SET device_name = ? WHERE id = 1;
 
 updateServerDeviceId:
 UPDATE DeviceInfoEntity SET server_device_id = ? WHERE id = 1;
+
+-- Cached preferences (JSON blob, singleton row)
+CREATE TABLE CachedPreferencesEntity (
+    id INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    json_data TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+upsertCachedPreferences:
+INSERT OR REPLACE INTO CachedPreferencesEntity(id, json_data, updated_at)
+VALUES (1, ?, ?);
+
+getCachedPreferences:
+SELECT * FROM CachedPreferencesEntity WHERE id = 1;
+
+deleteCachedPreferences:
+DELETE FROM CachedPreferencesEntity WHERE id = 1;
+
+-- Cached consoles (for offline browsing)
+CREATE TABLE CachedConsoleEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    abbreviation TEXT NOT NULL,
+    game_count INTEGER NOT NULL DEFAULT 0,
+    color_theme TEXT NOT NULL DEFAULT '#6366f1',
+    cover_aspect_ratio REAL NOT NULL DEFAULT 0.75,
+    default_core TEXT NOT NULL DEFAULT '',
+    icon_url TEXT NOT NULL DEFAULT '',
+    save_state_support INTEGER NOT NULL DEFAULT 1
+);
+
+insertCachedConsole:
+INSERT OR REPLACE INTO CachedConsoleEntity(id, name, abbreviation, game_count, color_theme, cover_aspect_ratio, default_core, icon_url, save_state_support)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllCachedConsoles:
+SELECT * FROM CachedConsoleEntity;
+
+deleteCachedConsole:
+DELETE FROM CachedConsoleEntity WHERE id = ?;
+
+deleteAllCachedConsoles:
+DELETE FROM CachedConsoleEntity;
+
+-- Cached games (for offline browsing)
+CREATE TABLE CachedGameEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    console_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    console_name TEXT NOT NULL DEFAULT '',
+    cover_url TEXT,
+    description TEXT,
+    developer TEXT,
+    publisher TEXT,
+    release_date TEXT,
+    genre TEXT,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    file_name TEXT NOT NULL DEFAULT '',
+    disc_count INTEGER NOT NULL DEFAULT 0,
+    is_favorite INTEGER NOT NULL DEFAULT 0,
+    is_in_play_later INTEGER NOT NULL DEFAULT 0,
+    last_played_at TEXT,
+    total_play_time INTEGER NOT NULL DEFAULT 0,
+    cached_at INTEGER NOT NULL
+);
+
+insertCachedGame:
+INSERT OR REPLACE INTO CachedGameEntity(id, console_id, title, console_name, cover_url, description, developer, publisher, release_date, genre, file_size, file_name, disc_count, is_favorite, is_in_play_later, last_played_at, total_play_time, cached_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllCachedGames:
+SELECT * FROM CachedGameEntity;
+
+getCachedGamesForConsole:
+SELECT * FROM CachedGameEntity WHERE console_id = ?;
+
+getCachedGame:
+SELECT * FROM CachedGameEntity WHERE id = ?;
+
+searchCachedGames:
+SELECT * FROM CachedGameEntity WHERE title LIKE '%' || ? || '%';
+
+getCachedFavorites:
+SELECT * FROM CachedGameEntity WHERE is_favorite = 1;
+
+getCachedPlayLater:
+SELECT * FROM CachedGameEntity WHERE is_in_play_later = 1;
+
+getCachedRecentGames:
+SELECT * FROM CachedGameEntity WHERE last_played_at IS NOT NULL ORDER BY last_played_at DESC LIMIT 20;
+
+deleteAllCachedGames:
+DELETE FROM CachedGameEntity;
+
+-- Local save states (for offline save/sync)
+CREATE TABLE LocalSaveStateEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    is_auto INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    server_id INTEGER,
+    sync_status TEXT NOT NULL DEFAULT 'pending',
+    last_synced_at INTEGER
+);
+
+insertLocalSaveState:
+INSERT OR REPLACE INTO LocalSaveStateEntity(id, game_id, name, local_path, file_size, is_auto, created_at, updated_at, server_id, sync_status, last_synced_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getLocalSaveStatesForGame:
+SELECT * FROM LocalSaveStateEntity WHERE game_id = ? ORDER BY updated_at DESC;
+
+getLocalAutoSave:
+SELECT * FROM LocalSaveStateEntity WHERE game_id = ? AND is_auto = 1 ORDER BY updated_at DESC LIMIT 1;
+
+getPendingSaveStateSyncs:
+SELECT * FROM LocalSaveStateEntity WHERE sync_status = 'pending';
+
+markSaveStateSynced:
+UPDATE LocalSaveStateEntity SET sync_status = 'synced', server_id = ?, last_synced_at = ? WHERE id = ?;
+
+deleteLocalSaveState:
+DELETE FROM LocalSaveStateEntity WHERE id = ?;
+
+-- Local save data / SRAM (for offline sync)
+CREATE TABLE LocalSaveDataEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    server_id INTEGER,
+    sync_status TEXT NOT NULL DEFAULT 'pending'
+);
+
+insertLocalSaveData:
+INSERT OR REPLACE INTO LocalSaveDataEntity(id, game_id, name, local_path, file_size, is_active, created_at, updated_at, server_id, sync_status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getLocalSaveDataForGame:
+SELECT * FROM LocalSaveDataEntity WHERE game_id = ? ORDER BY updated_at DESC;
+
+getActiveLocalSaveData:
+SELECT * FROM LocalSaveDataEntity WHERE game_id = ? AND is_active = 1 LIMIT 1;
+
+getPendingSaveDataSyncs:
+SELECT * FROM LocalSaveDataEntity WHERE sync_status = 'pending';
+
+markSaveDataSynced:
+UPDATE LocalSaveDataEntity SET sync_status = 'synced', server_id = ? WHERE id = ?;
+
+deleteLocalSaveData:
+DELETE FROM LocalSaveDataEntity WHERE id = ?;

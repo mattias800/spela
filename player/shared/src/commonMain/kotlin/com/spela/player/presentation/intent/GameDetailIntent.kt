@@ -45,6 +45,7 @@ sealed interface GameDetailIntent {
     data class ToggleAchievementsView(val mode: com.spela.player.presentation.state.AchievementsViewMode) : GameDetailIntent
 
     data object RefreshSaves : GameDetailIntent
+    data object LoadSaveDataCount : GameDetailIntent
 
     data object DismissError : GameDetailIntent
     data object DismissSuccess : GameDetailIntent

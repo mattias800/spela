@@ -26,6 +26,7 @@ sealed class SpScreen(val route: String) {
     data object GlobalChallenges : SpScreen("challenges")
     data class ChallengeList(val gameId: String, val gameTitle: String) : SpScreen("challenges/$gameId")
     data class ChallengeDetail(val challengeId: String) : SpScreen("challenge/$challengeId")
+    data class SaveDataManagement(val gameId: String) : SpScreen("save_data/$gameId")
 }
 
 data class NavigationState(
@@ -46,6 +47,7 @@ data class NavigationState(
     val backStackBehindOverlay: List<SpScreen> = emptyList(),
     val isRestoringSession: Boolean = true,
     val restoredServerUrl: String? = null,
+    val isOffline: Boolean = false,
 )
 
 sealed interface NavigationIntent {

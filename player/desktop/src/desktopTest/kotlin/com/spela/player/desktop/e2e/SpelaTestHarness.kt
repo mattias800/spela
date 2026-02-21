@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.data.remote.SyncEngine
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
@@ -48,9 +50,25 @@ class SpelaTestHarness(
     }
     private val testDatabase = SpelaDatabase(testDriver)
     val deviceManager = DeviceManager(testDatabase, fakeApiClient)
+    val saveDataRepo = FakeSaveDataRepository()
+    val connectivityMonitor = ConnectivityMonitor(fakeApiClient, dispatchers, scope)
+    val syncEngine = SyncEngine(
+        connectivityMonitor = connectivityMonitor,
+        saveRepository = FakeSaveRepository(),
+        saveDataRepository = saveDataRepo,
+        preferencesRepository = FakePreferencesRepository(),
+        gameRepository = FakeGameRepository(),
+        apiClient = fakeApiClient,
+        database = testDatabase,
+        fileStorage = FakeFileStorage(),
+        dispatchers = dispatchers,
+        scope = scope,
+    )
 
     val navigationViewModel = NavigationViewModel(
         restoreSessionUseCase = RestoreSessionUseCase(authRepo, serverRepo, fakeApiClient),
+        connectivityMonitor = connectivityMonitor,
+        syncEngine = syncEngine,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -109,6 +127,7 @@ class SpelaTestHarness(
         togglePlayLaterUseCase = TogglePlayLaterUseCase(gameRepo),
         downloadRepository = downloadRepo,
         saveRepository = saveRepo,
+        saveDataRepository = saveDataRepo,
         ratingRepository = ratingRepo,
         sharedSaveRepository = sharedSaveRepo,
         getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
@@ -143,6 +162,8 @@ class SpelaTestHarness(
         presenceService = presenceService,
         relayRepository = relayRepo,
         challengeRepository = challengeRepo,
+        saveDataRepository = saveDataRepo,
+        connectivityMonitor = connectivityMonitor,
         screenshotCapture = null,
         apiClient = fakeApiClient,
         engineFactory = stubEngineFactory,
@@ -167,6 +188,8 @@ class SpelaTestHarness(
         achievementsRepository = FakeAchievementsRepository(),
         keyMappingRepository = keyMappingRepo,
         deviceManager = deviceManager,
+        syncEngine = syncEngine,
+        connectivityMonitor = connectivityMonitor,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
@@ -253,6 +276,12 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val saveDataViewModel = SaveDataViewModel(
+        saveDataRepository = saveDataRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         SpelaApp(
@@ -277,6 +306,8 @@ class SpelaTestHarness(
             challengeDetailViewModel = challengeDetailViewModel,
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
+            connectivityMonitor = connectivityMonitor,
+            saveDataViewModel = saveDataViewModel,
         )
     }
 }

@@ -63,6 +63,13 @@ class SpelaApiClient(
         return "$baseUrl$path"
     }
 
+    // Health
+
+    suspend fun healthCheck(): Boolean {
+        val response = client.get("$baseUrl/api/health")
+        return response.status.isSuccess()
+    }
+
     // Auth
 
     suspend fun login(request: LoginRequest): AuthResponse {
@@ -812,6 +819,59 @@ class SpelaApiClient(
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
+    }
+
+    // Save Data (SRAM)
+
+    suspend fun getSaveDataList(gameId: String): List<SaveDataDto> {
+        return client.get("$baseUrl/api/games/$gameId/save-data").body()
+    }
+
+    suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): SaveDataDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/save-data/active",
+            formData = formData {
+                append("file", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"active.srm\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
+    }
+
+    suspend fun downloadActiveSaveData(gameId: String): ByteArray {
+        return client.get("$baseUrl/api/games/$gameId/save-data/active").body()
+    }
+
+    suspend fun uploadSaveData(gameId: String, name: String, data: ByteArray): SaveDataDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/save-data",
+            formData = formData {
+                append("name", name)
+                append("file", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save.srm\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
+    }
+
+    suspend fun downloadSaveData(gameId: String, saveDataId: String): ByteArray {
+        return client.get("$baseUrl/api/games/$gameId/save-data/$saveDataId/download").body()
+    }
+
+    suspend fun activateSaveData(gameId: String, saveDataId: String) {
+        client.put("$baseUrl/api/games/$gameId/save-data/$saveDataId/activate")
+    }
+
+    suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) {
+        client.put("$baseUrl/api/games/$gameId/save-data/$saveDataId") {
+            setBody(mapOf("name" to name))
+        }
+    }
+
+    suspend fun deleteSaveData(gameId: String, saveDataId: String) {
+        client.delete("$baseUrl/api/games/$gameId/save-data/$saveDataId")
     }
 
     fun close() {

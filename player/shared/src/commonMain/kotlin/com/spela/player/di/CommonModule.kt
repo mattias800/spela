@@ -1,8 +1,10 @@
 package com.spela.player.di
 
 import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.ScrapeService
+import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
@@ -32,13 +34,20 @@ val commonModule = module {
     /* Scraping */
     single { ScrapeService(get(), get(), get()) }
 
+    /* Connectivity */
+    single { ConnectivityMonitor(get(), get(), get()) }
+
+    /* Sync Engine */
+    single { SyncEngine(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+
     /* Presence */
     single { PresenceService(get(), get(), get(), get(), get()) }
 
     /* Repositories */
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
-    single<GameRepository> { GameRepositoryImpl(get()) }
-    single<SaveRepository> { SaveRepositoryImpl(get()) }
+    single<GameRepository> { GameRepositoryImpl(get(), get(), get()) }
+    single<SaveRepository> { SaveRepositoryImpl(get(), get(), get(), get()) }
+    single<SaveDataRepository> { SaveDataRepositoryImpl(get(), get(), get(), get()) }
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get()) }
@@ -132,6 +141,7 @@ val commonModule = module {
             togglePlayLaterUseCase = get(),
             downloadRepository = get(),
             saveRepository = get(),
+            saveDataRepository = get(),
             ratingRepository = get(),
             sharedSaveRepository = get(),
             getMyCollectionsUseCase = get(),
@@ -160,6 +170,8 @@ val commonModule = module {
             presenceService = get(),
             relayRepository = get(),
             challengeRepository = get(),
+            saveDataRepository = get(),
+            connectivityMonitor = get(),
             screenshotCapture = getOrNull<ScreenshotCapture>(),
             apiClient = get(),
             engineFactory = get(),
@@ -254,10 +266,20 @@ val commonModule = module {
         )
     }
 
+    factory {
+        SaveDataViewModel(
+            saveDataRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
     /* Navigation & UI ViewModels */
     single {
         NavigationViewModel(
             restoreSessionUseCase = get(),
+            connectivityMonitor = get(),
+            syncEngine = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -294,6 +316,8 @@ val commonModule = module {
             achievementsRepository = get(),
             keyMappingRepository = get(),
             deviceManager = get(),
+            syncEngine = get(),
+            connectivityMonitor = get(),
             apiClient = get(),
             dispatchers = get(),
             scope = get(),

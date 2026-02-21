@@ -52,6 +52,8 @@ data class GameDetailState(
     // Active Relays
     val gameRelays: List<Relay> = emptyList(),
     val isLoadingRelays: Boolean = false,
+    // Save Data (SRAM)
+    val saveDataCount: Int = 0,
     // Create Challenge
     val showCreateChallengeDialog: Boolean = false,
     val isCreatingChallenge: Boolean = false,

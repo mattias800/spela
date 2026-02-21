@@ -55,6 +55,7 @@ import com.spela.player.presentation.ui.feature.settings.shaderDefaultScopeItems
 import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import com.spela.player.presentation.ui.components.SpSyncStatusIndicator
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.util.formatBytes
@@ -71,6 +72,8 @@ fun SettingsScreen(
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
+    val syncState by viewModel.syncState.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
     val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
     val listState = rememberLazyListState(
@@ -466,6 +469,34 @@ fun SettingsScreen(
                         viewModel.onIntent(SettingsIntent.DismissDeleteDeviceConfirm)
                     },
                 )
+            }
+
+            // Sync section
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Sync") }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpSpacing.Default),
+                    ) {
+                        SpSyncStatusIndicator(
+                            syncState = syncState,
+                            isOnline = isOnline,
+                        )
+                        Spacer(Modifier.height(SpSpacing.Medium))
+                        SpButton(
+                            text = if (syncState.isSyncing) "Syncing..." else "Sync Now",
+                            onClick = { viewModel.onIntent(SettingsIntent.SyncNow) },
+                            style = SpButtonStyle.Outlined,
+                            modifier = Modifier.fillMaxWidth(),
+                            isLoading = syncState.isSyncing,
+                            enabled = isOnline && !syncState.isSyncing,
+                        )
+                    }
+                }
             }
 
             // About section

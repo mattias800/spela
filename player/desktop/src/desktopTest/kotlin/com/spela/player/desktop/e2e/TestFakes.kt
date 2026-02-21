@@ -7,6 +7,10 @@ import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
 import com.spela.player.presentation.viewmodel.LibretroController
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.util.FileStorage
 import io.ktor.client.engine.HttpClientEngine
@@ -386,6 +390,7 @@ class FakeDownloadRepository : DownloadRepository {
 class FakeSaveRepository : SaveRepository {
     var saves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
+    private val localSaves = mutableMapOf<String, ByteArray>()
 
     override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> {
         return Result.success(saves[gameId] ?: emptyList())
@@ -430,6 +435,25 @@ class FakeSaveRepository : SaveRepository {
         return autoSaves[gameId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No auto-save found"))
     }
+
+    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> {
+        localSaves[gameId] = data
+        val save = SaveState(
+            id = (saves[gameId]?.size?.toLong() ?: 0L) + 1,
+            gameId = gameId.toLongOrNull() ?: 0L,
+            name = name,
+            isAuto = isAuto,
+        )
+        saves.getOrPut(gameId) { mutableListOf() }.add(save)
+        return Result.success(save)
+    }
+
+    override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> {
+        return localSaves[gameId]?.let { Result.success(it) }
+            ?: Result.failure(Exception("No local auto-save found"))
+    }
+
+    override suspend fun getPendingSyncCount(): Int = 0
 }
 
 class FakeCoreRepository : CoreRepository {
@@ -1006,6 +1030,98 @@ class FakeChallengeRepository : ChallengeRepository {
 
     fun preSetMyAttempts(attempts: List<ChallengeAttempt>) {
         myAttempts = attempts
+    }
+}
+
+class FakeSaveDataRepository : SaveDataRepository {
+    var saveDataList: MutableList<SaveData> = mutableListOf()
+    private val localSram = mutableMapOf<String, ByteArray>()
+
+    override suspend fun getSaveDataList(gameId: String): Result<List<SaveData>> =
+        Result.success(saveDataList.filter { it.gameId == gameId.toLongOrNull() ?: 0L })
+
+    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): Result<SaveData> {
+        val sd = SaveData(
+            id = (saveDataList.size + 1).toLong(),
+            gameId = gameId.toLongOrNull() ?: 0L,
+            name = "Active",
+            fileSize = data.size.toLong(),
+            isActive = true,
+        )
+        saveDataList.add(sd)
+        return Result.success(sd)
+    }
+
+    override suspend fun downloadActiveSaveData(gameId: String): Result<ByteArray> =
+        localSram[gameId]?.let { Result.success(it) }
+            ?: Result.failure(Exception("No active save data"))
+
+    override suspend fun downloadSaveData(gameId: String, saveDataId: String): Result<ByteArray> =
+        Result.success(ByteArray(128) { it.toByte() })
+
+    override suspend fun activateSaveData(gameId: String, saveDataId: String): Result<Unit> =
+        Result.success(Unit)
+
+    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String): Result<Unit> {
+        val idx = saveDataList.indexOfFirst { it.id.toString() == saveDataId }
+        if (idx >= 0) saveDataList[idx] = saveDataList[idx].copy(name = name)
+        return Result.success(Unit)
+    }
+
+    override suspend fun deleteSaveData(gameId: String, saveDataId: String): Result<Unit> {
+        saveDataList.removeAll { it.id.toString() == saveDataId }
+        return Result.success(Unit)
+    }
+
+    override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {
+        localSram[gameId] = data
+    }
+
+    override suspend fun loadLocalSRAM(gameId: String): ByteArray? = localSram[gameId]
+
+    override suspend fun getPendingSyncCount(): Int = 0
+
+    fun preAddSaveData(
+        id: Long = 1,
+        gameId: Long = 1,
+        name: String = "Save 1",
+        isActive: Boolean = false,
+        fileSize: Long = 8192,
+    ): SaveData {
+        val sd = SaveData(id = id, gameId = gameId, name = name, fileSize = fileSize, isActive = isActive)
+        saveDataList.add(sd)
+        return sd
+    }
+}
+
+class FakeConnectivityMonitor {
+    private val _isOnline = MutableStateFlow(true)
+    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    private val _onReconnect = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val onReconnect: kotlinx.coroutines.flow.SharedFlow<Unit> = _onReconnect.asSharedFlow()
+
+    fun start() {}
+    fun reportOffline() { _isOnline.value = false }
+    fun reportOnline() {
+        val wasOffline = !_isOnline.value
+        _isOnline.value = true
+        if (wasOffline) _onReconnect.tryEmit(Unit)
+    }
+
+    fun setOnline(online: Boolean) {
+        if (online) reportOnline() else reportOffline()
+    }
+}
+
+class FakeSyncEngine {
+    private val _syncState = MutableStateFlow(com.spela.player.data.remote.SyncState())
+    val syncState: StateFlow<com.spela.player.data.remote.SyncState> = _syncState.asStateFlow()
+    var syncAllCallCount = 0
+        private set
+
+    fun start() {}
+    suspend fun syncAll() {
+        syncAllCallCount++
     }
 }
 
