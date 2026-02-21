@@ -190,6 +190,41 @@ class GameDetailAchievementsTest {
         onNodeWithText("50 pts").assertIsDisplayed()
     }
 
+    // --- Achievements Warning ---
+
+    @Test
+    fun achievementsWarningBannerShownWhenGameHasWarning() = runComposeUiTest {
+        val harness = createHarnessWithAchievements()
+        setUpAchievementData(harness)
+
+        // Replace game "1" with one that has an achievements warning
+        harness.gameRepo.games = harness.gameRepo.games.map { game ->
+            if (game.id == "1") game.copy(
+                achievementsWarning = "This PSP CHD was created with 'createdvd' mode, which is incompatible with RetroAchievements."
+            ) else game
+        }
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness)
+
+        scrollToSection(hasTestTag("achievements_section"))
+        onNodeWithTag("achievements_warning_banner").assertIsDisplayed()
+        onNodeWithText("createdvd", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun achievementsWarningBannerHiddenWhenNoWarning() = runComposeUiTest {
+        val harness = createHarnessWithAchievements()
+        setUpAchievementData(harness)
+        // Default games have no achievementsWarning (null)
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness)
+
+        scrollToSection(hasTestTag("achievements_section"))
+        onNodeWithTag("achievements_warning_banner").assertDoesNotExist()
+    }
+
     // --- Test Data Helpers ---
 
     private val testAchievements = listOf(

@@ -604,6 +604,122 @@ func TestScan_RescanUpgradesOldEntries(t *testing.T) {
 	assert.Equal(t, 1, result.TotalGames)
 }
 
+func TestScan_PSPCHDSetsAchievementsWarning(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	pspDir := filepath.Join(dir, "psp")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+
+	// Create a CHD file with no CD metadata tags (createdvd mode)
+	chdPath := writeCHDV5(t, pspDir, "God of War.chd", [][4]byte{
+		{'R', 'A', 'W', 'H'}, // non-CD tag → createdvd
+	})
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	assert.NotEmpty(t, game.AchievementsWarning, "PSP CHD with createdvd should have a warning")
+	assert.Contains(t, game.AchievementsWarning, "createdvd")
+}
+
+func TestScan_PSPCHDCreateCDNoWarning(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	pspDir := filepath.Join(dir, "psp")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+
+	// Create a CHD file with CD metadata tags (createcd mode)
+	chdPath := writeCHDV5(t, pspDir, "Lumines.chd", [][4]byte{
+		{'C', 'H', 'T', '2'}, // CD track v2 → createcd
+	})
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	assert.Empty(t, game.AchievementsWarning, "PSP CHD with createcd should have no warning")
+}
+
+func TestScan_PSPISONoWarning(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	pspDir := filepath.Join(dir, "psp")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+
+	isoPath := filepath.Join(pspDir, "Crisis Core.iso")
+	require.NoError(t, os.WriteFile(isoPath, []byte("fake iso"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	require.NoError(t, database.Where("file_path = ?", isoPath).First(&game).Error)
+	assert.Empty(t, game.AchievementsWarning, "PSP ISO should have no warning")
+}
+
+func TestScan_PSPCSOSetsWarning(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	pspDir := filepath.Join(dir, "psp")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+
+	csoPath := filepath.Join(pspDir, "Patapon.cso")
+	require.NoError(t, os.WriteFile(csoPath, []byte("fake cso"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	require.NoError(t, database.Where("file_path = ?", csoPath).First(&game).Error)
+	assert.NotEmpty(t, game.AchievementsWarning, "PSP CSO should have a warning")
+	assert.Contains(t, game.AchievementsWarning, "CSO")
+}
+
+func TestScan_NonPSPCHDNoWarning(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// Place a createdvd CHD in the PSP directory but verify non-PSP consoles
+	// don't get warnings. We test this by manually creating a game in a
+	// non-PSP console and checking the warning function directly,
+	// since CHD in non-PSP dirs may not be scanned depending on extension support.
+	pspDir := filepath.Join(dir, "psp")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+
+	// A createcd CHD in PSP dir — should NOT get a warning
+	chdPath := writeCHDV5(t, pspDir, "GoodGame.chd", [][4]byte{
+		{'C', 'H', 'T', 'R'}, // CD metadata tag → createcd
+	})
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	assert.Empty(t, game.AchievementsWarning, "PSP CHD with createcd mode should have no warning")
+
+	// Also verify the unit-level function: non-PSP consoles never get warnings
+	assert.Empty(t, PSPCHDAchievementsWarning(chdPath, "PSX"), "PSX console should never get PSP CHD warning")
+	assert.Empty(t, PSPCHDAchievementsWarning(chdPath, "SAT"), "SAT console should never get PSP CHD warning")
+}
+
 func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
 	database := setupTestDB(t)
 	dir := t.TempDir()

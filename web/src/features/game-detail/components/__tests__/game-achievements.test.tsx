@@ -86,13 +86,13 @@ const mockTimeline = {
   earnedPoints: 5,
 };
 
-function renderComponent(gameId = "game-1") {
+function renderComponent(gameId = "game-1", achievementsWarning?: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <GameAchievements gameId={gameId} />
+      <GameAchievements gameId={gameId} achievementsWarning={achievementsWarning} />
     </QueryClientProvider>,
   );
 }
@@ -427,6 +427,38 @@ describe("GameAchievements", () => {
     fireEvent.click(screen.getByLabelText("Timeline view"));
 
     expect(screen.getByTestId("timeline-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows CHD warning banner when achievementsWarning is set", () => {
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    renderComponent("game-1", "This PSP CHD was created with 'createdvd' mode.");
+
+    const banner = screen.getByTestId("chd-warning-banner");
+    expect(banner).toBeInTheDocument();
+    expect(
+      screen.getByText(/createdvd/),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show CHD warning banner when achievementsWarning is not set", () => {
+    mockUseGameAchievements.mockReturnValue({
+      data: mockAchievements,
+      isLoading: false,
+    });
+    mockUseGameAchievementProgress.mockReturnValue({
+      data: mockProgress,
+      isLoading: false,
+    });
+    renderComponent();
+
+    expect(screen.queryByTestId("chd-warning-banner")).not.toBeInTheDocument();
   });
 
   it("persists view mode to localStorage", () => {
