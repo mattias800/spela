@@ -78,6 +78,7 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(libs.sqldelight.jvm.driver)
+                implementation(compose.desktop.currentOs)
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.spela.player.desktop.e2e
+package com.spela.player.libretro
 
 import com.spela.player.presentation.viewmodel.LibretroPixelFormat
 import org.jetbrains.skia.Bitmap
