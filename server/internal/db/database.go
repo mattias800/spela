@@ -84,7 +84,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", SaveStateSupport: true},
 		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", FolderName: "gba", ColorTheme: "#2e17a3", CoverAspect: "7:5", SaveStateSupport: true},
 		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", SaveStateSupport: true},
-		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "melonds", FolderName: "nds", ColorTheme: "#b0b0b0", SaveStateSupport: true},
+		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "melonds", FolderName: "nds", ColorTheme: "#b0b0b0", CoverAspect: "10:9", SaveStateSupport: true},
 		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", SaveStateSupport: true},
 		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", SaveStateSupport: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
@@ -129,7 +129,7 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
 				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
 			}
-			if (existing.CoverAspect == "" || existing.CoverAspect == "3:4") && c.CoverAspect != "" && c.CoverAspect != "3:4" {
+			if c.CoverAspect != "" && existing.CoverAspect != c.CoverAspect {
 				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
 				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
 			}

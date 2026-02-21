@@ -61,6 +61,7 @@ export interface Game {
   coreOverride?: string;
   scraperId?: string;
   scrapeAttempts: number;
+  coverAspectRatio: number;
   isFavorite: boolean;
   isInPlayLater: boolean;
   averageRating: number;

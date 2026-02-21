@@ -53,8 +53,8 @@ internal fun GameListRowItem(
                 imageUrl = game.coverUrl,
                 contentDescription = "${game.title} cover art",
                 modifier = Modifier
-                    .height(SpSpacing.CoverSmallHeight)
-                    .width(SpSpacing.CoverSmallWidth),
+                    .height(SpSpacing.CoverSmallHeight),
+                aspectRatio = game.coverAspectRatio,
             )
 
             Spacer(Modifier.width(SpSpacing.Medium))

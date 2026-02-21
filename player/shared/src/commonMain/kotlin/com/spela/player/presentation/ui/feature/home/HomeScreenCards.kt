@@ -79,8 +79,9 @@ internal fun ContinuePlayingCard(
             SpCoverArt(
                 imageUrl = game.coverUrl,
                 contentDescription = "${game.title} cover art",
-                modifier = Modifier.size(width = 60.dp, height = 84.dp),
+                modifier = Modifier.height(84.dp),
                 cornerRadius = SpSpacing.RadiusMedium,
+                aspectRatio = game.coverAspectRatio,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
@@ -212,8 +213,9 @@ internal fun NetplaySessionCard(
             SpCoverArt(
                 imageUrl = session.gameCoverUrl,
                 contentDescription = "${session.gameTitle} cover",
-                modifier = Modifier.size(width = 48.dp, height = 64.dp),
+                modifier = Modifier.height(64.dp),
                 cornerRadius = SpSpacing.RadiusMedium,
+                aspectRatio = session.coverAspectRatio,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {

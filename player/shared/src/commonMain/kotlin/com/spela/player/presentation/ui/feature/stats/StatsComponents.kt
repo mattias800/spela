@@ -88,8 +88,9 @@ internal fun MostPlayedGameItem(
             SpCoverArt(
                 imageUrl = item.game.coverUrl,
                 contentDescription = "${item.game.title} cover",
-                modifier = Modifier.size(width = 48.dp, height = 64.dp),
+                modifier = Modifier.height(64.dp),
                 cornerRadius = SpSpacing.RadiusMedium,
+                aspectRatio = item.game.coverAspectRatio,
             )
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
