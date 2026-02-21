@@ -10,8 +10,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Ring buffer for audio samples. Stereo interleaved int16. */
-#define AUDIO_BUFFER_MAX_FRAMES 8192
+/* Audio sample buffer. Stereo interleaved int16.
+ * Sized for ~5 frames at 48kHz/60fps (~85ms). With audio-sync pacing
+ * the buffer is drained every retro_run(), so this is ample headroom. */
+#define AUDIO_BUFFER_MAX_FRAMES 4096
 
 static struct {
     int16_t  buffer[AUDIO_BUFFER_MAX_FRAMES * 2]; /* stereo */

@@ -49,6 +49,14 @@ class DesktopLibretroController(
     /** Callback invoked on the emulation thread when the remote peer times out. */
     var onNetplayPeerTimeout: (() -> Unit)? = null
 
+    /**
+     * Audio player for audio-sync frame pacing. When set, the emulation loop
+     * writes audio directly to the device after each retro_run() and the
+     * blocking write provides frame pacing (no precisionSleep needed).
+     */
+    @Volatile
+    var audioPlayer: DesktopAudioPlayer? = null
+
     private var emulationThread: Thread? = null
     private var targetFps = 60.0
 
@@ -255,6 +263,21 @@ class DesktopLibretroController(
                 renderGpuFrameToBgra()
             }
 
+            // Audio-sync frame pacing: write audio to device (blocking write
+            // paces emulation to the audio sample rate). Falls back to
+            // precisionSleep if no audio player or no samples available.
+            // Audio-sync frame pacing: write audio to device (blocking write
+            // paces emulation to the audio sample rate). Falls back to
+            // precisionSleep if no audio player, no samples, or device not ready.
+            val ap = audioPlayer
+            val audioSamples = jni.nativeGetAudioBuffer()
+            val synced = if (ap != null && !fastForward && audioSamples != null && audioSamples.isNotEmpty()) {
+                ap.writeSync(audioSamples)
+            } else false
+            if (!synced && !fastForward) {
+                precisionSleep(frameStart + frameTimeNs)
+            }
+
             fpsCounter++
             val now = System.nanoTime()
             val elapsed = now - fpsTimer
@@ -267,10 +290,6 @@ class DesktopLibretroController(
 
             val frameEnd = System.nanoTime()
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
-
-            if (!fastForward) {
-                precisionSleep(frameStart + frameTimeNs)
-            }
         }
     }
 

@@ -1,62 +1,46 @@
 package com.spela.player.libretro
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.logging.Logger
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.SourceDataLine
 
 /**
- * Desktop audio output using javax.sound.sampled.
+ * Desktop audio output using javax.sound.sampled with audio-sync frame pacing.
  *
- * Runs a background thread that polls audio samples from the
- * [DesktopLibretroController] and writes them to the system audio device.
- * The thread waits for a valid sample rate from the core before opening
- * the audio line, so it is safe to start this before the game is loaded.
+ * Instead of running a separate polling thread, audio samples are written
+ * directly from the emulation thread via [writeSync]. The blocking
+ * SourceDataLine.write() call naturally paces emulation to the audio
+ * sample rate, eliminating both audio jitter and the need for sleep-based
+ * frame timing. This mirrors RetroArch's "audio sync" approach.
+ *
+ * The audio device is opened lazily on the first [writeSync] call,
+ * ensuring the core's sample rate is available.
  */
 class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
 
     private val logger = Logger.getLogger("SpelaAudio")
 
-    private var audioThread: Thread? = null
-
-    @Volatile
-    private var running = false
-
     private var sourceDataLine: SourceDataLine? = null
+    private var initAttempted = false
 
-    fun start() {
-        running = true
-        audioThread = Thread({
-            runAudioLoop()
-        }, "SpelaAudio").apply {
-            isDaemon = true
-            start()
-        }
-    }
+    // Pre-allocated conversion buffer (resized if needed)
+    private var conversionBuffer = ByteBuffer.allocate(0).order(ByteOrder.LITTLE_ENDIAN)
 
-    fun stop() {
-        running = false
-        audioThread?.join(1000)
-        audioThread = null
-        sourceDataLine?.let {
-            it.drain()
-            it.stop()
-            it.close()
-        }
-        sourceDataLine = null
-    }
+    /**
+     * Lazily open the audio device. Called automatically on the first
+     * [writeSync] when audio samples are available (sample rate is set).
+     */
+    private fun ensureStarted(): Boolean {
+        if (sourceDataLine != null) return true
+        if (initAttempted) return false
 
-    private fun runAudioLoop() {
-        // Wait for the libretro core to report a valid sample rate.
-        // The core sets this after loadGame(), which may happen after
-        // this thread has already started.
-        var sampleRate = controller.getSampleRate()
-        while (running && sampleRate <= 0) {
-            Thread.sleep(50)
-            sampleRate = controller.getSampleRate()
-        }
-        if (!running) return
+        val sampleRate = controller.getSampleRate()
+        if (sampleRate <= 0) return false // Not ready yet, try next frame
 
+        initAttempted = true
         logger.info("Audio starting: sampleRate=$sampleRate")
 
         val format = AudioFormat(
@@ -67,35 +51,56 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
             false,  // little-endian
         )
 
-        val line = try {
-            AudioSystem.getSourceDataLine(format).also {
-                // Buffer for ~50ms of audio
-                val bufferSize = (sampleRate * 2 * 2 * 0.05).toInt()
+        // ~46ms buffer — small for low latency. Audio-sync pacing keeps the
+        // buffer steadily filled, so underruns don't occur in normal operation.
+        val bufferSize = (sampleRate * 2 * 2 * 0.046).toInt()
+
+        try {
+            sourceDataLine = AudioSystem.getSourceDataLine(format).also {
                 it.open(format, bufferSize)
                 it.start()
             }
+            logger.info("Audio device opened successfully (buffer=${bufferSize} bytes, ~46ms)")
+            return true
         } catch (e: Exception) {
             logger.severe("Failed to open audio device: ${e.message}")
-            return
+            return false
         }
-        sourceDataLine = line
-        logger.info("Audio device opened successfully")
+    }
 
-        while (running) {
-            val samples = controller.getAudioBuffer()
-            if (samples != null && samples.isNotEmpty()) {
-                // Convert ShortArray to ByteArray (little-endian)
-                val bytes = ByteArray(samples.size * 2)
-                for (i in samples.indices) {
-                    val s = samples[i].toInt()
-                    bytes[i * 2] = (s and 0xFF).toByte()
-                    bytes[i * 2 + 1] = (s shr 8 and 0xFF).toByte()
-                }
-                line.write(bytes, 0, bytes.size)
-            } else {
-                // No audio data yet, sleep briefly to avoid busy-spinning
-                Thread.sleep(1)
-            }
+    fun stop() {
+        sourceDataLine?.let {
+            it.drain()
+            it.stop()
+            it.close()
         }
+        sourceDataLine = null
+        initAttempted = false
+    }
+
+    /**
+     * Write audio samples to the output device. Blocks until the device
+     * accepts the data, which naturally paces the caller (emulation thread)
+     * to the audio sample rate. This is the core of audio-sync frame pacing.
+     *
+     * On the first call, lazily opens the audio device (sample rate must be
+     * available from the core by this point).
+     *
+     * Called from the emulation thread after each retro_run().
+     *
+     * @return true if audio was written (and blocking occurred), false if
+     *         the device isn't ready yet (caller should fall back to sleep-based pacing).
+     */
+    fun writeSync(samples: ShortArray): Boolean {
+        if (!ensureStarted()) return false
+        val line = sourceDataLine ?: return false
+        val needed = samples.size * 2
+        if (conversionBuffer.capacity() < needed) {
+            conversionBuffer = ByteBuffer.allocate(needed).order(ByteOrder.LITTLE_ENDIAN)
+        }
+        conversionBuffer.clear()
+        conversionBuffer.asShortBuffer().put(samples)
+        line.write(conversionBuffer.array(), 0, needed)
+        return true
     }
 }

@@ -32,11 +32,14 @@ actual fun PlatformEmulationSurface(
         DesktopAudioPlayer(desktopController)
     }
 
-    // Start audio when the surface enters composition, stop when it leaves.
+    // Wire audio player to controller for audio-sync frame pacing.
+    // The audio device opens lazily on the first writeSync() call,
+    // when the core's sample rate is available.
     DisposableEffect(desktopController) {
-        audioPlayer.start()
+        desktopController.audioPlayer = audioPlayer
         onDispose {
             audioPlayer.stop()
+            desktopController.audioPlayer = null
         }
     }
 
