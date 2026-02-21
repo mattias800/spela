@@ -76,6 +76,12 @@ extern "C" {
 #define RETRO_DEVICE_ID_ANALOG_X 0
 #define RETRO_DEVICE_ID_ANALOG_Y 1
 
+/* Mouse device IDs */
+#define RETRO_DEVICE_ID_MOUSE_X      0
+#define RETRO_DEVICE_ID_MOUSE_Y      1
+#define RETRO_DEVICE_ID_MOUSE_LEFT   2
+#define RETRO_DEVICE_ID_MOUSE_RIGHT  3
+
 /* Pointer device IDs */
 #define RETRO_DEVICE_ID_POINTER_X       0
 #define RETRO_DEVICE_ID_POINTER_Y       1

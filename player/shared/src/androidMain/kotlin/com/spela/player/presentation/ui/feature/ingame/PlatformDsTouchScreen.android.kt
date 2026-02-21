@@ -62,7 +62,6 @@ actual fun PlatformDsTouchScreen(
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         val bmpHeight = bitmap?.height ?: 0
-                        println("[DsTouch] DOWN at (${down.position.x}, ${down.position.y}) canvas=${canvasSize} bmpH=$bmpHeight splitY=$splitY")
                         // Map and send initial touch
                         sendPointerFromTouch(
                             controller, down.position.x, down.position.y,

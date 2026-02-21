@@ -252,16 +252,20 @@ class EmulationViewModel(
             prepareGameUseCase(gameId).fold(
                 onSuccess = { (gamePath, corePath) ->
                     try {
-                        libretroController.loadCore(corePath)
-
-                        // Set core options AFTER loadCore (core variable system
-                        // initializes during retro_init/retro_set_environment)
+                        // Set core options BEFORE loadCore so they're already in
+                        // the variable store when SET_VARIABLES runs during init.
+                        // The already_set check prevents defaults from overwriting.
                         if (isDualScreen) {
                             libretroController.setCoreVariable("desmume_screens_layout", "vertical")
                             libretroController.setCoreVariable("desmume_screens_gap", "0")
-                            libretroController.setCoreVariable("desmume_pointer_type", "absolute")
+                            // "touch" makes the core use RETRO_DEVICE_POINTER with absolute
+                            // coordinates. "mouse" (default) uses RETRO_DEVICE_MOUSE with
+                            // relative deltas which doesn't work for touchscreen input.
+                            libretroController.setCoreVariable("desmume_pointer_type", "touch")
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
+
+                        libretroController.loadCore(corePath)
 
                         // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
                         // because SwiftShader doesn't support required compute features.

@@ -129,6 +129,22 @@ Local persistence uses **SQLDelight** (`player/shared/src/commonMain/sqldelight/
 | Shader per-device overrides | Per-device | Player SQLDelight DB (`ShaderOverrideEntity`) |
 | Server admin settings | Global | Server DB (`ServerSetting`) |
 
+## Debugging Strategy
+
+**Logging is the primary debugging tool** for issues that can't be reproduced in tests — especially platform-specific behavior on Android devices. When a bug isn't obvious from reading code:
+
+1. **Add targeted diagnostic logging** (`println("[Tag] ...")` in Kotlin, `LOGI(...)` in native C) to trace the data flow through the pipeline. Use prefixed tags like `[DsTouch]`, `[Emulation]`, `[Download]` for easy filtering.
+2. **Build, deploy, reproduce**, then pull logs with `adb logcat -d | grep "Tag"`.
+3. **Analyze the logs** to identify where expected vs actual behavior diverge. Often the bug is in a different layer than suspected (e.g. core variables set correctly but a *different* variable controls the feature).
+4. **Fix, remove diagnostic logs, commit.**
+
+This is especially important for:
+- **libretro core integration**: Core variables, input device mapping, HW rendering — the native C bridge (`player/native/src/`) mediates between Kotlin and the core. Logging at the JNI boundary reveals mismatches.
+- **Android device-specific issues**: Secondary displays, touch input routing, lifecycle events — these can't be tested in desktop tests.
+- **Network/download issues**: Progress reporting, file integrity, API response format mismatches.
+
+Do not guess at the problem — instrument the code, read the logs, and let the data guide the fix.
+
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture
 - SQLite as default database (self-hosted friendly)

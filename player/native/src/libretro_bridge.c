@@ -176,14 +176,8 @@ static bool environment_callback(unsigned cmd, void *data) {
                 for (int i = 0; i < core_variable_count; i++) {
                     if (strcmp(core_variables[i].key, var->key) == 0) {
                         var->value = core_variables[i].value;
-                        if (strstr(var->key, "desmume") || strstr(var->key, "pointer")) {
-                            LOGI("[CoreVar] GET %s = %s", var->key, var->value);
-                        }
                         return true;
                     }
-                }
-                if (strstr(var->key, "desmume") || strstr(var->key, "pointer")) {
-                    LOGI("[CoreVar] GET %s = (not found)", var->key);
                 }
             }
             var->value = NULL;
@@ -214,9 +208,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                         }
                     }
                     if (already_set) {
-                        if (strstr(vars->key, "desmume") || strstr(vars->key, "pointer")) {
-                            LOGI("[CoreVar] SET_VARIABLES: %s already set, keeping user value", vars->key);
-                        }
                         continue;
                     }
 
@@ -238,9 +229,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
 
                     if (buf[0]) {
-                        if (strstr(vars->key, "desmume") || strstr(vars->key, "pointer")) {
-                            LOGI("[CoreVar] SET_VARIABLES registered: %s = %s (already_set was skipped above if true)", vars->key, buf);
-                        }
                         core_variables_set(vars->key, buf);
                     }
                 }
