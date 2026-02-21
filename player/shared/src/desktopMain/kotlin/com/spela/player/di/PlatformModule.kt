@@ -26,7 +26,50 @@ import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
     single {
-        val driver = JdbcSqliteDriver("jdbc:sqlite:spela.db")
+        val dbPath = "spela.db"
+        val dbFile = java.io.File(dbPath)
+
+        // Validate existing database schema before opening
+        if (dbFile.exists()) {
+            try {
+                val checkDriver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
+                val existingTables = checkDriver.executeQuery(
+                    identifier = null,
+                    sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                    mapper = { cursor ->
+                        val tables = mutableSetOf<String>()
+                        while (cursor.next().value) {
+                            cursor.getString(0)?.let { tables.add(it) }
+                        }
+                        app.cash.sqldelight.db.QueryResult.Value(tables)
+                    },
+                    parameters = 0,
+                ).value
+                checkDriver.close()
+
+                val expectedTables = setOf(
+                    "ServerConnectionEntity", "DownloadEntity", "AuthTokenEntity",
+                    "PlayHistoryEntity", "ShaderOverrideEntity", "KeyMappingEntity",
+                    "GameKeyMappingEntity", "DeviceInfoEntity", "CachedPreferencesEntity",
+                    "CachedConsoleEntity", "CachedGameEntity", "LocalSaveStateEntity",
+                    "LocalSaveDataEntity",
+                )
+                val missingTables = expectedTables - existingTables
+                if (missingTables.isNotEmpty()) {
+                    println("Spela: Database schema incompatible, missing tables: $missingTables. Deleting database.")
+                    dbFile.delete()
+                    java.io.File("$dbPath-wal").delete()
+                    java.io.File("$dbPath-shm").delete()
+                }
+            } catch (e: Exception) {
+                println("Spela: Failed to validate database, deleting: ${e.message}")
+                dbFile.delete()
+                java.io.File("$dbPath-wal").delete()
+                java.io.File("$dbPath-shm").delete()
+            }
+        }
+
+        val driver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
 
         val currentVersion: Long = driver.executeQuery(
             identifier = null,

@@ -25,7 +25,44 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
-    single { AndroidSqliteDriver(SpelaDatabase.Schema, get(), "spela.db") }
+    single {
+        val context: android.content.Context = get()
+        val dbFile = context.getDatabasePath("spela.db")
+        if (dbFile.exists()) {
+            try {
+                val db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                    dbFile.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+                )
+                val cursor = db.rawQuery(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%'",
+                    null
+                )
+                val existingTables = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    existingTables.add(cursor.getString(0))
+                }
+                cursor.close()
+                db.close()
+
+                val expectedTables = setOf(
+                    "ServerConnectionEntity", "DownloadEntity", "AuthTokenEntity",
+                    "PlayHistoryEntity", "ShaderOverrideEntity", "KeyMappingEntity",
+                    "GameKeyMappingEntity", "DeviceInfoEntity", "CachedPreferencesEntity",
+                    "CachedConsoleEntity", "CachedGameEntity", "LocalSaveStateEntity",
+                    "LocalSaveDataEntity",
+                )
+                val missingTables = expectedTables - existingTables
+                if (missingTables.isNotEmpty()) {
+                    println("Spela: Database schema incompatible, missing tables: $missingTables. Deleting database.")
+                    context.deleteDatabase("spela.db")
+                }
+            } catch (e: Exception) {
+                println("Spela: Failed to validate database, deleting: ${e.message}")
+                context.deleteDatabase("spela.db")
+            }
+        }
+        AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
+    }
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
     single<HttpClientEngineFactory<*>> { OkHttp }
     single {
