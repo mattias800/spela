@@ -265,6 +265,7 @@ internal fun GameGridItem(
                 imageUrl = game.coverUrl,
                 contentDescription = "${game.title} cover art",
                 modifier = Modifier.fillMaxWidth(),
+                aspectRatio = game.coverAspectRatio,
             )
             Column(
                 modifier = Modifier.padding(

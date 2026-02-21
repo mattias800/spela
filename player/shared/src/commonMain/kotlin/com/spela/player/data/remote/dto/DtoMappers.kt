@@ -43,6 +43,7 @@ fun GameDto.toDomain(): Game = Game(
     title = title,
     consoleId = consoleId,
     consoleName = consoleName,
+    coverAspectRatio = coverAspectRatio.toFloat(),
     coverUrl = coverUrl,
     description = description,
     developer = developer,

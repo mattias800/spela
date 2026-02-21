@@ -225,6 +225,7 @@ CREATE TABLE CachedGameEntity (
     genre TEXT,
     file_size INTEGER NOT NULL DEFAULT 0,
     file_name TEXT NOT NULL DEFAULT '',
+    cover_aspect_ratio REAL NOT NULL DEFAULT 0.75,
     disc_count INTEGER NOT NULL DEFAULT 0,
     is_favorite INTEGER NOT NULL DEFAULT 0,
     is_in_play_later INTEGER NOT NULL DEFAULT 0,
@@ -234,8 +235,8 @@ CREATE TABLE CachedGameEntity (
 );
 
 insertCachedGame:
-INSERT OR REPLACE INTO CachedGameEntity(id, console_id, title, console_name, cover_url, description, developer, publisher, release_date, genre, file_size, file_name, disc_count, is_favorite, is_in_play_later, last_played_at, total_play_time, cached_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO CachedGameEntity(id, console_id, title, console_name, cover_url, description, developer, publisher, release_date, genre, file_size, file_name, cover_aspect_ratio, disc_count, is_favorite, is_in_play_later, last_played_at, total_play_time, cached_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getAllCachedGames:
 SELECT * FROM CachedGameEntity;

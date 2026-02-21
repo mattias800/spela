@@ -49,6 +49,7 @@ data class Game(
     val title: String,
     val consoleId: String,
     val consoleName: String = "",
+    val coverAspectRatio: Float = 0.75f,
     val coverUrl: String? = null,
     val description: String? = null,
     val developer: String? = null,

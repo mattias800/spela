@@ -37,12 +37,13 @@ type DiscResponse struct {
 
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID             string         `json:"id"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	ConsoleID      string         `json:"consoleId"`
-	ConsoleName    string         `json:"consoleName"`
-	Title          string         `json:"title"`
+	ID               string         `json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	ConsoleID        string         `json:"consoleId"`
+	ConsoleName      string         `json:"consoleName"`
+	CoverAspectRatio float64        `json:"coverAspectRatio"`
+	Title            string         `json:"title"`
 	FileName       string         `json:"fileName"`
 	FileSize       int64          `json:"fileSize"`
 	DiscCount      int            `json:"discCount"`
@@ -201,8 +202,10 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	}
 
 	consoleName := ""
+	coverAspectRatio := 0.75
 	if g.Console.ID != 0 {
 		consoleName = g.Console.Name
+		coverAspectRatio = parseAspectRatio(g.Console.CoverAspect)
 	}
 
 	coverURL := g.CoverURL
@@ -231,12 +234,13 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	}
 
 	resp := GameResponse{
-		ID:             strconv.FormatUint(uint64(g.ID), 10),
-		CreatedAt:      g.CreatedAt,
-		UpdatedAt:      g.UpdatedAt,
-		ConsoleID:      consoleAbbr,
-		ConsoleName:    consoleName,
-		Title:          g.Title,
+		ID:               strconv.FormatUint(uint64(g.ID), 10),
+		CreatedAt:        g.CreatedAt,
+		UpdatedAt:        g.UpdatedAt,
+		ConsoleID:        consoleAbbr,
+		ConsoleName:      consoleName,
+		CoverAspectRatio: coverAspectRatio,
+		Title:            g.Title,
 		FileName:       g.FileName,
 		FileSize:       g.FileSize,
 		DiscCount:      g.DiscCount,

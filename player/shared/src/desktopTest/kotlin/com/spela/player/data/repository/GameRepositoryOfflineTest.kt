@@ -154,6 +154,7 @@ class GameRepositoryOfflineTest {
             genre = "Platformer",
             file_size = 40960,
             file_name = "smb.nes",
+            cover_aspect_ratio = 0.714,
             disc_count = 0,
             is_favorite = if (isFavorite) 1L else 0L,
             is_in_play_later = 0,

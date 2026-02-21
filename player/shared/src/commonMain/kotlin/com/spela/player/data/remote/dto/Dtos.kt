@@ -70,6 +70,7 @@ data class GameDto(
     val title: String,
     val consoleId: String,
     val consoleName: String = "",
+    val coverAspectRatio: Double = 0.75,
     val fileName: String = "",
     val fileSize: Long = 0,
     val coverUrl: String? = null,
