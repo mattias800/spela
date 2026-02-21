@@ -24,6 +24,7 @@ import com.spela.player.presentation.ui.feature.shader.gpuShaderId
 fun VulkanEmulationSurface(
     controller: AndroidLibretroController,
     selectedShader: ShaderPreset,
+    isOverlayVisible: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     AndroidView(
@@ -61,6 +62,17 @@ fun VulkanEmulationSurface(
                         }
                     }
                 })
+            }
+        },
+        update = { surfaceView ->
+            // Hide the SurfaceView when an overlay is showing. Since setZOrderOnTop(true)
+            // renders the Surface above the entire Compose layer, the overlay (which is
+            // Compose content) would be invisible behind it. INVISIBLE keeps the Surface
+            // alive (no surfaceDestroyed) while letting Compose overlays render on top.
+            surfaceView.visibility = if (isOverlayVisible) {
+                android.view.View.INVISIBLE
+            } else {
+                android.view.View.VISIBLE
             }
         },
         modifier = modifier.fillMaxSize(),

@@ -95,14 +95,16 @@ fun SpDownloadProgressBar(
 ) {
     Column(modifier = modifier) {
         if (progress < 0f) {
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = SpColor.Accent,
-                trackColor = SpColor.SurfaceBright,
-            )
+            if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = SpColor.Accent,
+                    trackColor = SpColor.SurfaceBright,
+                )
+            }
         } else {
             SpProgressBar(
                 progress = progress,

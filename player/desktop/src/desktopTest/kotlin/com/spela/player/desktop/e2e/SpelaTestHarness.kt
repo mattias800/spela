@@ -298,6 +298,9 @@ class SpelaTestHarness(
 
     @Composable
     fun App() {
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
+        ) {
         SpelaApp(
             navigationViewModel = navigationViewModel,
             serverConnectionViewModel = serverConnectionViewModel,
@@ -324,5 +327,6 @@ class SpelaTestHarness(
             connectivityMonitor = connectivityMonitor,
             saveDataViewModel = saveDataViewModel,
         )
+        }
     }
 }

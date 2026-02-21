@@ -54,16 +54,22 @@ fun MappingListPanel(
     keyNameResolver: (Int) -> String,
     modifier: Modifier = Modifier,
 ) {
-    val pulseTransition = rememberInfiniteTransition(label = "listPulse")
-    val pulseAlpha by pulseTransition.animateFloat(
-        initialValue = 0.1f,
-        targetValue = 0.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "listPulseAlpha",
-    )
+    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+    val pulseAlpha = if (animationsEnabled) {
+        val pulseTransition = rememberInfiniteTransition(label = "listPulse")
+        val animatedAlpha by pulseTransition.animateFloat(
+            initialValue = 0.1f,
+            targetValue = 0.3f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "listPulseAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.2f
+    }
 
     LazyColumn(
         modifier = modifier,

@@ -104,16 +104,21 @@ fun SpHeroCover(
 
 @Composable
 private fun CoverShimmer() {
-    val transition = rememberInfiniteTransition(label = "coverShimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.15f,
-        targetValue = 0.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "coverShimmerAlpha",
-    )
+    val alpha = if (LocalAnimationsEnabled.current) {
+        val transition = rememberInfiniteTransition(label = "coverShimmer")
+        val animatedAlpha by transition.animateFloat(
+            initialValue = 0.15f,
+            targetValue = 0.35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "coverShimmerAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.25f
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()

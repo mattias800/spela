@@ -114,48 +114,54 @@ fun SecondaryScreenContent(
                 }
             ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = contentAlpha * burnInAlpha },
-        ) {
-            // Game info bar
-            GameInfoBar(
-                gameTitle = state.gameTitle,
-                sessionElapsedSeconds = state.sessionElapsedSeconds,
-            )
-
-            // Main content area (takes remaining space)
+        if (state.isDualScreenConsole) {
+            // DS/3DS mode: only show the bottom screen, no UI chrome
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = contentAlpha },
             ) {
-                if (state.isDualScreenConsole) {
-                    // DS mode: render bottom screen with touch input
-                    PlatformDsTouchScreen(
-                        controller = controller,
-                        splitY = state.dualScreenSplitY,
-                        selectedShader = state.selectedShader,
-                    )
-                } else {
+                PlatformDsTouchScreen(
+                    controller = controller,
+                    splitY = state.dualScreenSplitY,
+                    selectedShader = state.selectedShader,
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = contentAlpha * burnInAlpha },
+            ) {
+                // Game info bar
+                GameInfoBar(
+                    gameTitle = state.gameTitle,
+                    sessionElapsedSeconds = state.sessionElapsedSeconds,
+                )
+
+                // Main content area (takes remaining space)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
                     // Normal mode: touch gamepad controls
                     PlatformTouchControls(
                         controller = controller,
                     )
                 }
-            }
 
-            // Quick action bar + performance HUD
-            QuickActionBar(
-                fps = state.fps,
-                frameTime = state.frameTime,
-                isFastForward = state.isFastForward,
-                onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
-                onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
-                onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-            )
+                // Quick action bar + performance HUD
+                QuickActionBar(
+                    fps = state.fps,
+                    frameTime = state.frameTime,
+                    isFastForward = state.isFastForward,
+                    onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
+                    onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
+                    onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                    onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                )
+            }
         }
 
         // Paused overlay

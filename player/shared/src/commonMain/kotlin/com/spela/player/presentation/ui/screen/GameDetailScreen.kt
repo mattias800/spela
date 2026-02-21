@@ -483,12 +483,12 @@ private fun GameInfoContent(
             val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
             val isBusy = state.isDownloading || isActivelyDownloading
             SpButton(
-                text = if (isActivelyDownloading) "Downloading..." else "Download",
+                text = if (isBusy) "Downloading..." else "Download",
                 onClick = onDownloadGame,
                 modifier = Modifier
                     .weight(1f)
                     .semantics {
-                        contentDescription = if (isActivelyDownloading) "Downloading ${game.title}"
+                        contentDescription = if (isBusy) "Downloading ${game.title}"
                         else "Download ${game.title}"
                     },
                 isLoading = isBusy,

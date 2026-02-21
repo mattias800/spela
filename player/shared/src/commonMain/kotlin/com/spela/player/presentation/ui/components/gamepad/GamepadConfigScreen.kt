@@ -172,7 +172,8 @@ private fun ActivityIndicator(isActive: Boolean) {
         animationSpec = tween(durationMillis = 150),
     )
 
-    val pulseAlpha = if (isActive) {
+    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+    val pulseAlpha = if (isActive && animationsEnabled) {
         val transition = rememberInfiniteTransition()
         val alpha by transition.animateFloat(
             initialValue = 1f,

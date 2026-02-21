@@ -100,7 +100,7 @@ class GameDetailViewModel(
 
     private fun loadGame(gameId: String) {
         currentGameId = gameId
-        _state.update { it.copy(isLoading = true) }
+        _state.update { GameDetailState(isLoading = true) }
 
         scope.launch(dispatchers.io) {
             getGameDetailUseCase(gameId).fold(

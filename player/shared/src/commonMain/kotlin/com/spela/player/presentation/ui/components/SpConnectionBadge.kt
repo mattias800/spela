@@ -84,16 +84,21 @@ fun SpConnectionBadge(
 
 @Composable
 private fun PulsingDot(color: Color) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulsingDot")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "pulsingDotAlpha",
-    )
+    val alpha = if (LocalAnimationsEnabled.current) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulsingDot")
+        val animatedAlpha by infiniteTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "pulsingDotAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.7f
+    }
 
     Box(
         modifier = Modifier

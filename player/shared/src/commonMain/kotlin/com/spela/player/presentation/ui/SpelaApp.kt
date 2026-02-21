@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.EmulationIntent
@@ -45,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpOfflineBanner
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.ConsoleScreen
 import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
 import com.spela.player.presentation.ui.screen.DownloadsScreen
@@ -154,7 +156,9 @@ fun SpelaApp(
                     .background(SpColor.Background),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = SpColor.Primary)
+                if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
+                    CircularProgressIndicator(color = SpColor.Primary)
+                }
             }
             return@SpelaTheme
         }
@@ -721,6 +725,21 @@ fun SpelaApp(
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
+                        // Touch-blocking background: prevents touches from leaking through
+                        // to the navigation screens (e.g. GameDetail) rendered behind.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                                .pointerInput(Unit) {
+                                    awaitPointerEventScope {
+                                        while (true) {
+                                            awaitPointerEvent().changes.forEach { it.consume() }
+                                        }
+                                    }
+                                },
+                        )
+
                         LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
@@ -805,7 +824,9 @@ fun SpelaApp(
                                 modifier = Modifier.fillMaxSize().background(Color.Black),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                CircularProgressIndicator(color = Color.White)
+                                if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
+                                    CircularProgressIndicator(color = Color.White)
+                                }
                             }
                         }
 
@@ -817,10 +838,25 @@ fun SpelaApp(
                             })
                         }
 
+                        // DS/3DS touch overlay on primary display (when secondary display is not active)
+                        // Handles touch input on the bottom screen area of the rendered game
+                        if (emulationState.isDualScreenConsole && !emulationState.secondaryDisplayActive
+                            && emulationState.isRunning && !emulationState.showOverlay
+                        ) {
+                            DsPrimaryTouchOverlay(
+                                controller = libretroController,
+                                consoleId = emulationState.consoleId,
+                                splitY = emulationState.dualScreenSplitY,
+                            )
+                        }
+
                         // Touch gamepad controls (Android only, no-op on desktop)
                         // Hidden when secondary display is active (controls move there)
+                        // Also hidden for DS games (bottom screen touch replaces virtual buttons)
                         androidx.compose.animation.AnimatedVisibility(
-                            visible = emulationState.isRunning && !emulationState.showOverlay && !emulationState.secondaryDisplayActive,
+                            visible = emulationState.isRunning && !emulationState.showOverlay
+                                && !emulationState.secondaryDisplayActive
+                                && !emulationState.isDualScreenConsole,
                             enter = fadeIn(),
                             exit = fadeOut(),
                         ) {

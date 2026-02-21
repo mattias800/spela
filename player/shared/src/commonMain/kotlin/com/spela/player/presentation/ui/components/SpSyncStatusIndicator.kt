@@ -70,16 +70,21 @@ fun SpSyncStatusIndicator(
 
 @Composable
 private fun SyncingText() {
-    val transition = rememberInfiniteTransition(label = "syncing")
-    val alpha by transition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "syncingAlpha",
-    )
+    val alpha = if (LocalAnimationsEnabled.current) {
+        val transition = rememberInfiniteTransition(label = "syncing")
+        val animatedAlpha by transition.animateFloat(
+            initialValue = 0.5f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "syncingAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.75f
+    }
 
     Text(
         text = "Syncing...",

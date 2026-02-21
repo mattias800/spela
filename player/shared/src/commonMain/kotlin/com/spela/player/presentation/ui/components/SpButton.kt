@@ -141,11 +141,13 @@ private fun ButtonContent(
     indicatorColor: Color = SpColor.OnPrimary,
 ) {
     if (isLoading) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(20.dp),
-            color = indicatorColor,
-            strokeWidth = 2.dp,
-        )
+        if (LocalAnimationsEnabled.current) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = indicatorColor,
+                strokeWidth = 2.dp,
+            )
+        }
         if (text.isNotEmpty()) {
             Spacer(Modifier.width(SpSpacing.Small))
         }

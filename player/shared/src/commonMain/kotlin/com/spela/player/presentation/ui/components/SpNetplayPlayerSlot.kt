@@ -142,16 +142,21 @@ fun SpNetplayPlayerSlot(
 
 @Composable
 private fun WaitingForPlayerText(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "waitingPulse")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "waitingAlpha",
-    )
+    val alpha = if (LocalAnimationsEnabled.current) {
+        val infiniteTransition = rememberInfiniteTransition(label = "waitingPulse")
+        val animatedAlpha by infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 0.6f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "waitingAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.5f
+    }
 
     Text(
         text = "Waiting for player...",

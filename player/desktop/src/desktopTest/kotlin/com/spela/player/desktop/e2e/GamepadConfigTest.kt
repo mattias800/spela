@@ -98,10 +98,13 @@ class GamepadConfigTest {
         setContent { harness.App() }
         navigateToConsoleSettings(harness, "nes")
 
-        // Connect a device and report activity
+        // Connect a device and let the UI settle
         harness.gamepadPortManager.connectDevice(1, "Xbox Controller")
-        harness.gamepadPortManager.reportActivity(0)
         advance(harness)
+
+        // Report activity AFTER advance so the 500ms timeout hasn't expired
+        harness.gamepadPortManager.reportActivity(0)
+        advanceQuick(harness)
 
         // The activity indicator should be active
         onAllNodesWithContentDescription("Activity indicator active").assertCountEquals(1)

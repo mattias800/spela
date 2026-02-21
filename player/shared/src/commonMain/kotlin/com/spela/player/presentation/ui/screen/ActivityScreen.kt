@@ -156,10 +156,12 @@ fun ActivityScreen(
                                     modifier = Modifier.fillMaxWidth().padding(SpSpacing.Large),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    CircularProgressIndicator(
-                                        color = SpColor.Primary,
-                                        modifier = Modifier.size(24.dp),
-                                    )
+                                    if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
+                                        CircularProgressIndicator(
+                                            color = SpColor.Primary,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
                                 }
                             }
                         }

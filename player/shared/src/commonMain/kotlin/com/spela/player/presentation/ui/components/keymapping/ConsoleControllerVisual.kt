@@ -97,16 +97,22 @@ fun ConsoleControllerVisual(
         ControllerIcons.forConsole(layout.consoleId)
     }
 
-    val pulseTransition = rememberInfiniteTransition(label = "controllerPulse")
-    val pulseAlpha by pulseTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "controllerPulseAlpha",
-    )
+    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+    val pulseAlpha = if (animationsEnabled) {
+        val pulseTransition = rememberInfiniteTransition(label = "controllerPulse")
+        val animatedAlpha by pulseTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "controllerPulseAlpha",
+        )
+        animatedAlpha
+    } else {
+        0.7f
+    }
 
     BoxWithConstraints(modifier = modifier) {
         val containerWidth = maxWidth
