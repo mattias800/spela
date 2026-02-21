@@ -109,8 +109,8 @@ class DownloadRepositoryImpl(
             }
 
             if (disc.fileName.endsWith(".cue", ignoreCase = true)) {
-                // Tar archive (cue+bin) - use ByteArray (typically <800MB)
-                val discData = apiClient.downloadDisc(gameId, disc.discNumber) { downloaded, total ->
+                // Tar archive (cue+bin) - stream-extract directly to disk
+                apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
@@ -119,7 +119,6 @@ class DownloadRepositoryImpl(
                         ))
                     }
                 }
-                extractTar(discData, gameDir)
             } else {
                 // Single file (ISO/CHD/CSO) - stream to disk
                 val discPath = "$gameDir/${disc.fileName}"
@@ -149,35 +148,6 @@ class DownloadRepositoryImpl(
         }
 
         return m3uPath
-    }
-
-    private suspend fun extractTar(tarData: ByteArray, outputDir: String) {
-        var offset = 0
-        while (offset + 512 <= tarData.size) {
-            // Read header (512 bytes)
-            val header = tarData.copyOfRange(offset, offset + 512)
-
-            // Check for end-of-archive (two zero blocks)
-            if (header.all { it == 0.toByte() }) break
-
-            // Extract filename (bytes 0-99, null-terminated)
-            val nameEnd = header.indexOf(0.toByte()).let { if (it < 0 || it > 100) 100 else it }
-            val name = header.copyOfRange(0, nameEnd).decodeToString().trim()
-            if (name.isEmpty()) break
-
-            // Extract file size (bytes 124-135, octal ASCII)
-            val sizeStr = header.copyOfRange(124, 136).decodeToString().trim().trimEnd(0.toChar())
-            val size = sizeStr.toLongOrNull(8) ?: 0L
-
-            offset += 512 // Move past header
-
-            if (size > 0) {
-                val fileData = tarData.copyOfRange(offset, (offset + size.toInt()).coerceAtMost(tarData.size))
-                fileStorage.writeFile("$outputDir/$name", fileData)
-                // Tar pads to 512-byte blocks
-                offset += ((size + 511) / 512 * 512).toInt()
-            }
-        }
     }
 
     private suspend fun cleanupPartialDownload(gameId: String) {
