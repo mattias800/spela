@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.libretro.AndroidAchievementsController
 import com.spela.player.libretro.AndroidLibretroController
@@ -27,7 +28,17 @@ actual fun platformModule(): Module = module {
     single { AndroidSqliteDriver(SpelaDatabase.Schema, get(), "spela.db") }
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
     single<HttpClientEngineFactory<*>> { OkHttp }
-    single { SpelaApiClient(OkHttp, get()) }
+    single {
+        val db = get<SpelaDatabase>()
+        SpelaApiClient(
+            engineFactory = OkHttp,
+            tokenManager = get(),
+            authEventBus = get<AuthEventBus>(),
+            onTokenRefreshed = { accessToken, refreshToken ->
+                db.spelaDatabaseQueries.insertTokens(accessToken, refreshToken, "")
+            },
+        )
+    }
     single<FileStorage> { AndroidFileStorage(get()) }
     single { LibretroJni() }
     single<LibretroController> { AndroidLibretroController(get(), get()) }

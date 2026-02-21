@@ -7,6 +7,7 @@ import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.SyncEngine
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
@@ -65,10 +66,13 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val authEventBus = AuthEventBus()
+
     val navigationViewModel = NavigationViewModel(
         restoreSessionUseCase = RestoreSessionUseCase(authRepo, serverRepo, fakeApiClient),
         connectivityMonitor = connectivityMonitor,
         syncEngine = syncEngine,
+        authEventBus = authEventBus,
         dispatchers = dispatchers,
         scope = scope,
     )

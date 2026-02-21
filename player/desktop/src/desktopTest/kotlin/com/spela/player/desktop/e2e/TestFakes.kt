@@ -3,6 +3,7 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
@@ -1132,5 +1133,5 @@ private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineC
 }
 
 fun createFakeApiClient(): SpelaApiClient {
-    return SpelaApiClient(StubMockEngineFactory, TokenManager())
+    return SpelaApiClient(StubMockEngineFactory, TokenManager(), AuthEventBus())
 }

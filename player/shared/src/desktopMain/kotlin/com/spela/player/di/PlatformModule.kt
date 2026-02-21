@@ -3,6 +3,7 @@ package com.spela.player.di
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.DesktopAchievementsController
@@ -65,7 +66,17 @@ actual fun platformModule(): Module = module {
     }
     single { SpelaDatabase(get<JdbcSqliteDriver>()) }
     single<HttpClientEngineFactory<*>> { CIO }
-    single { SpelaApiClient(CIO, get()) }
+    single {
+        val db = get<SpelaDatabase>()
+        SpelaApiClient(
+            engineFactory = CIO,
+            tokenManager = get(),
+            authEventBus = get<AuthEventBus>(),
+            onTokenRefreshed = { accessToken, refreshToken ->
+                db.spelaDatabaseQueries.insertTokens(accessToken, refreshToken, "")
+            },
+        )
+    }
     single<FileStorage> { DesktopFileStorage() }
     single { LibretroJni() }
     single<LibretroController> { DesktopLibretroController(get(), get()) }

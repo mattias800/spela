@@ -2,6 +2,8 @@ package com.spela.player.presentation.navigation
 
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
+import com.spela.player.data.remote.interceptor.AuthEvent
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.util.DispatcherProvider
@@ -16,6 +18,7 @@ class NavigationViewModel(
     private val restoreSessionUseCase: RestoreSessionUseCase,
     private val connectivityMonitor: ConnectivityMonitor,
     private val syncEngine: SyncEngine,
+    private val authEventBus: AuthEventBus,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -24,6 +27,25 @@ class NavigationViewModel(
 
     init {
         restoreSession()
+        observeAuthEvents()
+    }
+
+    private fun observeAuthEvents() {
+        scope.launch(dispatchers.main) {
+            authEventBus.events.collect { event ->
+                when (event) {
+                    AuthEvent.SessionExpired -> {
+                        _state.update {
+                            it.copy(
+                                currentScreen = SpScreen.Login,
+                                backStack = emptyList(),
+                                showInGameOverlay = false,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun onIntent(intent: NavigationIntent) {

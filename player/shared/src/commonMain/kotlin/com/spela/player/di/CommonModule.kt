@@ -5,6 +5,7 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.SyncEngine
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
@@ -27,6 +28,7 @@ val commonModule = module {
     single<DispatcherProvider> { DefaultDispatcherProvider() }
     single { CoroutineScope(SupervisorJob() + get<DispatcherProvider>().main) }
     single { TokenManager() }
+    single { AuthEventBus() }
 
     /* Device */
     single { DeviceManager(get(), get()) }
@@ -280,6 +282,7 @@ val commonModule = module {
             restoreSessionUseCase = get(),
             connectivityMonitor = get(),
             syncEngine = get(),
+            authEventBus = get(),
             dispatchers = get(),
             scope = get(),
         )

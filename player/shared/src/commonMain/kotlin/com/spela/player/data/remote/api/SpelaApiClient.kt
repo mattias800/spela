@@ -1,11 +1,14 @@
 package com.spela.player.data.remote.api
 
 import com.spela.player.data.remote.dto.*
+import com.spela.player.data.remote.interceptor.AuthEvent
+import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
-import com.spela.player.data.remote.interceptor.installAuth
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
@@ -18,6 +21,8 @@ import kotlinx.serialization.json.Json
 class SpelaApiClient(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val tokenManager: TokenManager,
+    private val authEventBus: AuthEventBus = AuthEventBus(),
+    private val onTokenRefreshed: (suspend (String, String) -> Unit)? = null,
 ) {
     private var baseUrl: String = ""
 
@@ -36,7 +41,39 @@ class SpelaApiClient(
             level = LogLevel.HEADERS
         }
 
-        installAuth(tokenManager)
+        install(Auth) {
+            bearer {
+                loadTokens {
+                    tokenManager.toBearerTokens()
+                }
+
+                refreshTokens {
+                    val refreshToken = tokenManager.refreshToken ?: run {
+                        tokenManager.clearTokens()
+                        authEventBus.emit(AuthEvent.SessionExpired)
+                        return@refreshTokens null
+                    }
+
+                    try {
+                        val response: AuthResponse = client.post("$baseUrl/api/auth/refresh") {
+                            markAsRefreshTokenRequest()
+                            contentType(ContentType.Application.Json)
+                            setBody(RefreshRequest(refreshToken))
+                        }.body()
+
+                        tokenManager.setTokens(response.accessToken, response.refreshToken)
+                        onTokenRefreshed?.invoke(response.accessToken, response.refreshToken)
+                        BearerTokens(response.accessToken, response.refreshToken)
+                    } catch (_: Exception) {
+                        tokenManager.clearTokens()
+                        authEventBus.emit(AuthEvent.SessionExpired)
+                        null
+                    }
+                }
+
+                sendWithoutRequest { true }
+            }
+        }
 
         install(HttpTimeout) {
             requestTimeoutMillis = 30_000

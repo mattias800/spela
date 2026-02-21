@@ -1,9 +1,6 @@
 package com.spela.player.data.remote.interceptor
 
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.plugins.auth.providers.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -33,15 +30,10 @@ class TokenManager {
     }
 
     fun hasTokens(): Boolean = accessToken != null
-}
 
-/**
- * Ktor plugin that adds the Authorization header to all requests.
- */
-fun HttpClientConfig<*>.installAuth(tokenManager: TokenManager) {
-    defaultRequest {
-        tokenManager.accessToken?.let { token ->
-            header(HttpHeaders.Authorization, "Bearer $token")
-        }
+    fun toBearerTokens(): BearerTokens? {
+        val access = accessToken ?: return null
+        val refresh = refreshToken ?: return null
+        return BearerTokens(access, refresh)
     }
 }
