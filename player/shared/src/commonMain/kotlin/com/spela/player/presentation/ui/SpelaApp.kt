@@ -42,7 +42,9 @@ import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpBottomNavBar
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpOfflineBanner
 import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.presentation.ui.screen.ConsoleScreen
 import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
 import com.spela.player.presentation.ui.screen.DownloadsScreen
@@ -71,6 +73,7 @@ import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
+import com.spela.player.presentation.ui.screen.SaveDataScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -95,6 +98,7 @@ import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
+import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
 
@@ -121,6 +125,8 @@ fun SpelaApp(
     challengeDetailViewModel: ChallengeDetailViewModel,
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
+    connectivityMonitor: ConnectivityMonitor,
+    saveDataViewModel: SaveDataViewModel? = null,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
@@ -185,6 +191,10 @@ fun SpelaApp(
                 .background(SpColor.Background),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                // Offline banner
+                val isOnline by connectivityMonitor.isOnline.collectAsState()
+                SpOfflineBanner(isOffline = !isOnline)
+
                 Box(modifier = Modifier.weight(1f)) {
                     AnimatedContent(
                         targetState = navState.currentScreen,
@@ -364,6 +374,11 @@ fun SpelaApp(
                                     onNavigateToRelay = { relayId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
+                                        )
+                                    },
+                                    onNavigateToSaveData = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.SaveDataManagement(gameId))
                                         )
                                     },
                                 )
@@ -686,6 +701,18 @@ fun SpelaApp(
                                     },
                                 )
                             }
+
+                            is SpScreen.SaveDataManagement -> {
+                                if (saveDataViewModel != null) {
+                                    SaveDataScreen(
+                                        gameId = screen.gameId,
+                                        viewModel = saveDataViewModel,
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -728,6 +755,7 @@ fun SpelaApp(
                         LaunchedEffect(emulationState.requestExit) {
                             if (emulationState.requestExit) {
                                 emulationViewModel.onIntent(EmulationIntent.ClearExitRequest)
+                                netplayViewModel.onIntent(NetplayIntent.ClearJoinedSession)
                                 navigationViewModel.onIntent(NavigationIntent.HideOverlay)
                             }
                         }

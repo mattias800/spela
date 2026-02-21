@@ -176,7 +176,6 @@ internal fun InGameOverlayPanel(
                             text = "Resume",
                             onClick = {
                                 viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                                viewModel.onIntent(EmulationIntent.ResumeGame)
                             },
                             modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
                         )
@@ -277,7 +276,6 @@ internal fun InGameOverlayPanel(
                             text = "Continue",
                             onClick = {
                                 viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                                viewModel.onIntent(EmulationIntent.ResumeGame)
                             },
                             modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
                         )

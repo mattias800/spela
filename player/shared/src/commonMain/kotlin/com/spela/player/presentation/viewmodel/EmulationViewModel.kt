@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
@@ -9,6 +10,7 @@ import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.RelayRepository
+import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
@@ -53,6 +55,8 @@ class EmulationViewModel(
     private val presenceService: PresenceService,
     private val relayRepository: RelayRepository,
     private val challengeRepository: ChallengeRepository,
+    private val saveDataRepository: SaveDataRepository,
+    private val connectivityMonitor: ConnectivityMonitor,
     private val screenshotCapture: ScreenshotCapture?,
     private val apiClient: SpelaApiClient,
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
@@ -86,7 +90,11 @@ class EmulationViewModel(
             EmulationIntent.StopGame -> stopGame()
             EmulationIntent.SaveState -> saveState()
             EmulationIntent.LoadState -> loadState()
-            EmulationIntent.ToggleOverlay -> _state.update { it.copy(showOverlay = !it.showOverlay) }
+            EmulationIntent.ToggleOverlay -> {
+                val wasShowing = _state.value.showOverlay
+                _state.update { it.copy(showOverlay = !it.showOverlay) }
+                if (wasShowing) resumeGame() else pauseGame()
+            }
             EmulationIntent.ToggleFastForward -> toggleFastForward()
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
 
@@ -229,6 +237,21 @@ class EmulationViewModel(
                         }
 
                         libretroController.loadGame(gamePath)
+
+                        // Load SRAM (save data) before starting emulation
+                        try {
+                            val localSram = saveDataRepository.loadLocalSRAM(gameId)
+                            if (localSram != null) {
+                                libretroController.setSRAM(localSram)
+                            } else if (connectivityMonitor.isOnline.value) {
+                                saveDataRepository.downloadActiveSaveData(gameId).onSuccess { sram ->
+                                    libretroController.setSRAM(sram)
+                                    saveDataRepository.saveLocalSRAM(gameId, sram)
+                                }
+                            }
+                        } catch (_: Exception) {
+                            // SRAM loading is best-effort
+                        }
 
                         // Store the core name for challenge creation
                         currentCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
@@ -529,6 +552,20 @@ class EmulationViewModel(
                 } catch (_: Exception) {
                     // Best effort auto-save
                 }
+            }
+
+            // Save SRAM before stopping (best effort)
+            try {
+                val gameId = currentState.gameId
+                val sramData = libretroController.getSRAM()
+                if (sramData != null && sramData.isNotEmpty()) {
+                    saveDataRepository.saveLocalSRAM(gameId, sramData)
+                    if (connectivityMonitor.isOnline.value) {
+                        runCatching { saveDataRepository.uploadActiveSaveData(gameId, sramData) }
+                    }
+                }
+            } catch (_: Exception) {
+                // Best effort SRAM save
             }
 
             try {
@@ -930,4 +967,10 @@ interface LibretroController {
 
     /** Exit netplay mode and return to normal emulation. */
     fun clearNetplayMode() {}
+
+    /** Get the current SRAM data from the running core. */
+    fun getSRAM(): ByteArray? = null
+
+    /** Set SRAM data into the running core's memory. */
+    fun setSRAM(data: ByteArray): Boolean = false
 }

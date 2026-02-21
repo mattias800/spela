@@ -26,6 +26,7 @@ class NetplayViewModel(
             is NetplayIntent.JoinByCode -> joinByCode(intent.code)
             is NetplayIntent.DeleteSession -> deleteSession(intent.sessionId)
             NetplayIntent.DismissError -> _state.update { it.copy(error = null) }
+            NetplayIntent.ClearJoinedSession -> _state.update { it.copy(joinedSession = null) }
         }
     }
 

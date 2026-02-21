@@ -27,7 +27,7 @@ import org.koin.java.KoinJavaComponent.getKoin
 
 private val isMacOS = System.getProperty("os.name").orEmpty().contains("Mac", ignoreCase = true)
 
-fun main(args: Array<String>) = application {
+fun main(args: Array<String>) {
     val autoStartGameId = args.indexOf("--game").let { idx ->
         if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
     }
@@ -35,6 +35,8 @@ fun main(args: Array<String>) = application {
     startKoin {
         modules(commonModule, platformModule())
     }
+
+    application {
 
     val emulationViewModel = getKoin().get<EmulationViewModel>()
     val emulationState by emulationViewModel.state.collectAsState()
@@ -83,5 +85,6 @@ fun main(args: Array<String>) = application {
                 navigationViewModel.onIntent(NavigationIntent.ShowOverlay(autoStartGameId))
             }
         }
+    }
     }
 }

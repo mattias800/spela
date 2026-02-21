@@ -6,6 +6,7 @@ sealed interface NetplayIntent {
     data class JoinByCode(val code: String) : NetplayIntent
     data class DeleteSession(val sessionId: String) : NetplayIntent
     data object DismissError : NetplayIntent
+    data object ClearJoinedSession : NetplayIntent
 }
 
 sealed interface NetplayLobbyIntent {
