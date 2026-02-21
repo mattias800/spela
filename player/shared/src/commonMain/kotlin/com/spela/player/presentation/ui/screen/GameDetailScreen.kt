@@ -124,8 +124,10 @@ fun GameDetailScreen(
                 )
             },
             cover = { modifier ->
+                // Read coverUrl from state delegate (not snapshot) so
+                // the LazyColumn item recomposes when it changes after scraping.
                 SpHeroCover(
-                    imageUrl = game.coverUrl,
+                    imageUrl = state.gameDetail?.game?.coverUrl,
                     contentDescription = "${game.title} cover art",
                     modifier = modifier,
                 )
