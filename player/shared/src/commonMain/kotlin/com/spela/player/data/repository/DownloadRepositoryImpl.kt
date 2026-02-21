@@ -32,11 +32,12 @@ class DownloadRepositoryImpl(
 
         // Check if this is a multi-disc game by fetching game detail
         val gameDetail = apiClient.getGameDetail(gameId)
+        println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
 
         if (gameDetail.discCount >= 2) {
             downloadMultiDiscGame(gameId, gameTitle, gameDetail)
         } else {
-            downloadSingleDiscGame(gameId, gameTitle)
+            downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         }
     }.onFailure {
         cleanupPartialDownload(gameId)
@@ -45,16 +46,40 @@ class DownloadRepositoryImpl(
         }
     }
 
-    private suspend fun downloadSingleDiscGame(gameId: String, gameTitle: String): String {
-        val path = fileStorage.getGamesDir() + "/$gameId"
+    private suspend fun downloadSingleDiscGame(
+        gameId: String,
+        gameTitle: String,
+        fileName: String,
+        expectedSize: Long,
+    ): String {
+        // Store in a subdirectory with the original filename so the core can identify the format
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
+        // Clean up any old flat file at this path (from previous download format)
+        if (fileStorage.fileExists(gameDir) && !fileStorage.isDirectory(gameDir)) {
+            fileStorage.deleteFile(gameDir)
+        }
+        fileStorage.createDirectory(gameDir)
+        val actualFileName = fileName.ifEmpty { gameId }
+        val path = "$gameDir/$actualFileName"
 
         apiClient.downloadGameToFile(gameId, fileStorage, path) { downloaded, total ->
+            // Use server-reported fileSize as fallback when Content-Length is missing
+            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else null
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: -1))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal ?: -1))
             }
         }
 
         val actualSize = fileStorage.getFileSize(path)
+        println("[Download] File written: path=$path actualSize=$actualSize expectedSize=$expectedSize")
+        if (actualSize == 0L) {
+            throw RuntimeException("Download produced empty file: $path")
+        }
+        if (expectedSize > 0 && actualSize != expectedSize) {
+            throw RuntimeException(
+                "Download size mismatch: expected $expectedSize bytes, got $actualSize bytes"
+            )
+        }
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, actualSize, actualSize))
         }
@@ -158,7 +183,7 @@ class DownloadRepositoryImpl(
     private suspend fun cleanupPartialDownload(gameId: String) {
         try {
             val gameDir = fileStorage.getGamesDir() + "/$gameId"
-            if (fileStorage.fileExists("$gameDir/game.m3u")) {
+            if (fileStorage.isDirectory(gameDir)) {
                 fileStorage.deleteDirectory(gameDir)
             } else if (fileStorage.fileExists(gameDir)) {
                 fileStorage.deleteFile(gameDir)
@@ -173,12 +198,20 @@ class DownloadRepositoryImpl(
     }
 
     override suspend fun getLocalGamePath(gameId: String): String? {
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
         // Check multi-disc first
-        val multiPath = fileStorage.getGamesDir() + "/$gameId/game.m3u"
+        val multiPath = "$gameDir/game.m3u"
         if (fileStorage.fileExists(multiPath)) return multiPath
-        // Fall back to single-disc
-        val singlePath = fileStorage.getGamesDir() + "/$gameId"
-        if (fileStorage.fileExists(singlePath)) return singlePath
+        // Check single-disc in subdirectory (new format: /$gameId/$fileName)
+        if (fileStorage.isDirectory(gameDir)) {
+            val files = fileStorage.listFiles(gameDir)
+            println("[Download] getLocalGamePath: gameDir=$gameDir isDir=true files=$files")
+            val gameFile = files.firstOrNull { it != "game.m3u" }
+            if (gameFile != null) return "$gameDir/$gameFile"
+        } else {
+            val exists = fileStorage.fileExists(gameDir)
+            println("[Download] getLocalGamePath: gameDir=$gameDir isDir=false exists=$exists")
+        }
         return null
     }
 
@@ -187,13 +220,11 @@ class DownloadRepositoryImpl(
     }
 
     override suspend fun deleteLocalGame(gameId: String) {
-        val multiPath = fileStorage.getGamesDir() + "/$gameId/game.m3u"
-        if (fileStorage.fileExists(multiPath)) {
-            // Multi-disc: delete the entire directory
-            fileStorage.deleteDirectory(fileStorage.getGamesDir() + "/$gameId")
-        } else {
-            val path = fileStorage.getGamesDir() + "/$gameId"
-            fileStorage.deleteFile(path)
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
+        if (fileStorage.isDirectory(gameDir)) {
+            fileStorage.deleteDirectory(gameDir)
+        } else if (fileStorage.fileExists(gameDir)) {
+            fileStorage.deleteFile(gameDir)
         }
         downloads.update { it - gameId }
     }

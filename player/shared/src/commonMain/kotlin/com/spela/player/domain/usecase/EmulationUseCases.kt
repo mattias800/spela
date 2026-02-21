@@ -36,7 +36,7 @@ class PrepareGameUseCase(
         val core = coreRepository.getRecommendedCore(gameId).getOrElse { networkError ->
             // Fallback: if server is unreachable, try locally cached cores
             println("[PrepareGame] getRecommendedCore failed: ${networkError.message}, trying local fallback")
-            val knownCores = listOf("mednafen_psx", "beetle_psx_hw", "mupen64plus_next", "snes9x", "nestopia", "mgba", "gambatte", "genesis_plus_gx")
+            val knownCores = listOf("ppsspp", "desmume", "mednafen_psx", "beetle_psx_hw", "mupen64plus_next", "snes9x", "nestopia", "mgba", "gambatte", "genesis_plus_gx")
             for (coreName in knownCores) {
                 val localPath = coreRepository.getLocalCorePath(coreName)
                 if (localPath != null) {

@@ -63,4 +63,10 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
     }
 
     override suspend fun getFileSize(path: String): Long = File(path).length()
+
+    override suspend fun listFiles(path: String): List<String> = withContext(Dispatchers.IO) {
+        File(path).listFiles()?.map { it.name } ?: emptyList()
+    }
+
+    override suspend fun isDirectory(path: String): Boolean = File(path).isDirectory
 }

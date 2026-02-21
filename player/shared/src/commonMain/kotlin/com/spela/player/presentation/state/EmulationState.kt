@@ -34,6 +34,9 @@ data class EmulationState(
     /** True when running a dual-screen console game (e.g. Nintendo DS). */
     val isDualScreenConsole: Boolean = false,
 
+    /** True when the loaded core uses HW rendering (OpenGL/Vulkan). */
+    val isHwRenderEnabled: Boolean = false,
+
     /** Y pixel offset where the framebuffer splits (e.g. 192 for DS top/bottom). */
     val dualScreenSplitY: Int = 0,
 

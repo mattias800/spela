@@ -270,6 +270,8 @@ class SyncEngineTest {
             files[path] = chunks.fold(ByteArray(0)) { acc, chunk -> acc + chunk }
         }
         override suspend fun getFileSize(path: String) = files[path]?.size?.toLong() ?: 0L
+        override suspend fun listFiles(path: String) = emptyList<String>()
+        override suspend fun isDirectory(path: String) = false
     }
 
     private class NoOpSaveRepository : SaveRepository {

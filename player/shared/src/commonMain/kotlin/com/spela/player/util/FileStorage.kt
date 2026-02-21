@@ -21,4 +21,6 @@ interface FileStorage {
         writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
     )
     suspend fun getFileSize(path: String): Long
+    suspend fun listFiles(path: String): List<String>
+    suspend fun isDirectory(path: String): Boolean
 }

@@ -19,6 +19,8 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class SpelaApiClient(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
@@ -408,7 +410,16 @@ class SpelaApiClient(
 
     /** May return either a full Core object or just {coreName: "..."} */
     suspend fun getRecommendedCore(gameId: String): LibretroCoreDto {
-        return client.get("$baseUrl/api/games/$gameId/core").body()
+        val text: String = client.get("$baseUrl/api/games/$gameId/core").body()
+        return try {
+            json.decodeFromString<LibretroCoreDto>(text)
+        } catch (_: Exception) {
+            // Server returns just {coreName: "..."} when core isn't in DB
+            val obj = json.parseToJsonElement(text).jsonObject
+            val coreName = obj["coreName"]?.jsonPrimitive?.content
+                ?: throw IllegalStateException("No core name in response: $text")
+            LibretroCoreDto(id = 0, name = coreName)
+        }
     }
 
     suspend fun downloadCore(coreId: String, platform: String = "android", onProgress: (Long, Long?) -> Unit = { _, _ -> }): ByteArray {
@@ -924,15 +935,16 @@ class SpelaApiClient(
         destPath: String,
         onProgress: (Long, Long?) -> Unit = { _, _ -> },
     ) {
-        val response = client.get("$baseUrl/api/games/$gameId/download") {
+        client.prepareGet("$baseUrl/api/games/$gameId/download") {
             timeout {
                 requestTimeoutMillis = Long.MAX_VALUE
             }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("Game download failed: HTTP ${response.status.value}")
+            }
+            streamResponseToFile(response, fileStorage, destPath, onProgress)
         }
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Game download failed: HTTP ${response.status.value}")
-        }
-        streamResponseToFile(response, fileStorage, destPath, onProgress)
     }
 
     suspend fun downloadDiscToFile(
@@ -942,15 +954,16 @@ class SpelaApiClient(
         destPath: String,
         onProgress: (Long, Long?) -> Unit = { _, _ -> },
     ) {
-        val response = client.get("$baseUrl/api/games/$gameId/discs/$discNumber/download") {
+        client.prepareGet("$baseUrl/api/games/$gameId/discs/$discNumber/download") {
             timeout {
                 requestTimeoutMillis = Long.MAX_VALUE
             }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
+            }
+            streamResponseToFile(response, fileStorage, destPath, onProgress)
         }
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
-        }
-        streamResponseToFile(response, fileStorage, destPath, onProgress)
     }
 
     private suspend fun streamResponseToFile(
@@ -962,16 +975,23 @@ class SpelaApiClient(
         val totalBytes = response.contentLength()
         val channel = response.bodyAsChannel()
         var downloaded = 0L
+        println("[Download] Starting stream to $destPath, Content-Length=$totalBytes")
 
         fileStorage.writeFileStreaming(destPath) { append ->
             val buffer = ByteArray(65536)
+            var chunkCount = 0
             while (true) {
                 val bytesRead = channel.readAvailable(buffer)
                 if (bytesRead == -1) break
                 append(buffer, 0, bytesRead)
                 downloaded += bytesRead
+                chunkCount++
+                if (chunkCount % 100 == 0) {
+                    println("[Download] chunk=$chunkCount downloaded=$downloaded total=$totalBytes")
+                }
                 onProgress(downloaded, totalBytes)
             }
+            println("[Download] Finished: $chunkCount chunks, $downloaded bytes written")
         }
     }
 

@@ -50,6 +50,11 @@ import com.spela.player.presentation.navigation.SpScreen
  * animations.  By the time the loop finishes, loading skeletons with
  * infinite shimmer animations should be replaced by real content.
  *
+ * IMPORTANT: If a test navigates to a screen with SpShimmer/SpPulseDots
+ * skeletons, pre-load the data BEFORE setContent or navigation so the
+ * skeleton never renders. Otherwise waitForIdle() will hang on the
+ * infinite animation. See ChallengeDetailScreen tests for examples.
+ *
  * Tiered variants:
  * - [advanceQuick]: 2 iterations — for simple click-then-assert patterns
  * - [advance]: 4 iterations — standard default for navigation and data loads
@@ -569,6 +574,8 @@ class FakeFileStorage : FileStorage {
         writer { _, _, _ -> }
     }
     override suspend fun getFileSize(path: String): Long = 0
+    override suspend fun listFiles(path: String): List<String> = emptyList()
+    override suspend fun isDirectory(path: String): Boolean = false
 }
 
 class FakePreferencesRepository : PreferencesRepository {

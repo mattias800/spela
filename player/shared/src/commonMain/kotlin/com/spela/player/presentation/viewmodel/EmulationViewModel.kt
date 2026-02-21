@@ -252,13 +252,16 @@ class EmulationViewModel(
             prepareGameUseCase(gameId).fold(
                 onSuccess = { (gamePath, corePath) ->
                     try {
-                        // Set DS core options before loading
+                        libretroController.loadCore(corePath)
+
+                        // Set core options AFTER loadCore (core variable system
+                        // initializes during retro_init/retro_set_environment)
                         if (isDualScreen) {
                             libretroController.setCoreVariable("desmume_screens_layout", "vertical")
                             libretroController.setCoreVariable("desmume_screens_gap", "0")
+                            libretroController.setCoreVariable("desmume_pointer_type", "absolute")
+                            libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
-
-                        libretroController.loadCore(corePath)
 
                         // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
                         // because SwiftShader doesn't support required compute features.
@@ -270,6 +273,7 @@ class EmulationViewModel(
                             libretroController.setCoreVariable("mupen64plus-angrylion-sync", "Low")
                         }
 
+                        println("[Emulation] Loading game: path=$gamePath core=$corePath")
                         libretroController.loadGame(gamePath)
 
                         // Load SRAM (save data) before starting emulation
@@ -324,8 +328,9 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
+                        val hwRender = libretroController.isHwRenderEnabled()
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0) }
+                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)
@@ -985,6 +990,9 @@ interface LibretroController {
 
     /** Set a core option variable (e.g. DeSmuME screen layout). */
     fun setCoreVariable(key: String, value: String) {}
+
+    /** Returns true if the loaded core uses HW rendering (OpenGL/Vulkan). */
+    fun isHwRenderEnabled(): Boolean = false
 
     /**
      * Enter netplay lockstep mode. The emulation loop will synchronize inputs

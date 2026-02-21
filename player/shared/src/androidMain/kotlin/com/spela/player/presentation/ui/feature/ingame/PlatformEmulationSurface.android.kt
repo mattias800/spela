@@ -27,17 +27,21 @@ actual fun PlatformEmulationSurface(
 
     // Use Vulkan surface for HW render cores (Vulkan init happens in surfaceCreated),
     // or when the GPU renderer is already active. Fall back to software otherwise.
+    // Use emulationState.isHwRenderEnabled (reactive) instead of the JNI call directly,
+    // so Compose recomposes when HW render activates after core/game load.
     // On emulators, HW render is overridden to Angrylion (SwiftShader can't run
-    // paraLLEl-RDP), so only trust gpuIsActive() — not isHwRenderEnabled().
+    // paraLLEl-RDP), so only trust gpuIsActive() — not isHwRenderEnabled.
     val useVulkanSurface = if (com.spela.player.util.isEmulator()) {
         androidController.gpuIsActive()
     } else {
-        androidController.isHwRenderEnabled() || androidController.gpuIsActive()
+        emulationState.isHwRenderEnabled || androidController.gpuIsActive()
     }
+    val isOverlayVisible = emulationState.showOverlay || emulationState.showKeyMapping || emulationState.showGamepadConfig
     if (useVulkanSurface && !isDualScreenSplit) {
         VulkanEmulationSurface(
             controller = androidController,
             selectedShader = selectedShader,
+            isOverlayVisible = isOverlayVisible,
             modifier = modifier,
         )
     } else {

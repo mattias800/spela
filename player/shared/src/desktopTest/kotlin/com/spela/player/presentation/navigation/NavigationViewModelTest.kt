@@ -284,5 +284,7 @@ class NavigationViewModelTest {
             writer { _, _, _ -> }
         }
         override suspend fun getFileSize(path: String) = 0L
+        override suspend fun listFiles(path: String) = emptyList<String>()
+        override suspend fun isDirectory(path: String) = false
     }
 }
