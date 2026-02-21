@@ -32,9 +32,10 @@ function getStoredViewMode(): ViewMode {
 
 interface GameAchievementsProps {
   gameId: string;
+  achievementsWarning?: string;
 }
 
-export function GameAchievements({ gameId }: GameAchievementsProps) {
+export function GameAchievements({ gameId, achievementsWarning }: GameAchievementsProps) {
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode);
   const { data: achievements, isLoading: achievementsLoading } =
     useGameAchievements(gameId);
@@ -140,6 +141,15 @@ export function GameAchievements({ gameId }: GameAchievementsProps) {
         </div>
       </CardHeader>
       <CardContent>
+        {achievementsWarning && (
+          <div
+            className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6"
+            data-testid="chd-warning-banner"
+          >
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5" />
+            <p className="text-sm text-amber-200">{achievementsWarning}</p>
+          </div>
+        )}
         <div
           className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6"
           data-testid="browser-warning-banner"

@@ -205,7 +205,7 @@ export function GameDetailPage() {
         gameTitle={game.title}
       />
 
-      <GameAchievements gameId={game.id} />
+      <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
 
       <SaveStatesList saves={saves} gameId={game.id} />
 

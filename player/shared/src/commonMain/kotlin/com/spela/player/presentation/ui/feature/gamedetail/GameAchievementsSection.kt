@@ -43,6 +43,7 @@ internal fun GameAchievementsSection(
     viewMode: AchievementsViewMode,
     isLoading: Boolean,
     onToggleView: (AchievementsViewMode) -> Unit,
+    achievementsWarning: String? = null,
     modifier: Modifier = Modifier,
 ) {
     if (achievements.isEmpty() && !isLoading) return
@@ -94,6 +95,25 @@ internal fun GameAchievementsSection(
                     text = "100% Complete!",
                     style = SpTypography.LabelMedium,
                     color = SpColor.Gold,
+                )
+            }
+        }
+
+        // Achievements warning (e.g. PSP CHD created with createdvd)
+        if (achievementsWarning != null) {
+            Spacer(Modifier.height(SpSpacing.Medium))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
+                    .background(SpColor.Warning.copy(alpha = 0.1f))
+                    .padding(SpSpacing.Default)
+                    .testTag("achievements_warning_banner"),
+            ) {
+                Text(
+                    text = achievementsWarning,
+                    style = SpTypography.BodySmall,
+                    color = SpColor.Warning,
                 )
             }
         }

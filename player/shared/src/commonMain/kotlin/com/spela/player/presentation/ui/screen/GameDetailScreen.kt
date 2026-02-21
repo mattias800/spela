@@ -297,6 +297,7 @@ fun GameDetailScreen(
                             onToggleView = { mode ->
                                 viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
                             },
+                            achievementsWarning = game.achievementsWarning,
                         )
                     }
                 }

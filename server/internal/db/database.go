@@ -89,7 +89,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", SaveStateSupport: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "pcsx_rearmed", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", SaveStateSupport: true},
-		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", SaveStateSupport: true},
+		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso,.chd", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", SaveStateSupport: true},
 		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", SaveStateSupport: true},
 		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "beetle_pce", EmulatorJSCore: "mednafen_pce_fast", FolderName: "tg16", ColorTheme: "#ff6600", SaveStateSupport: true},
@@ -146,6 +146,12 @@ func SeedConsoles(db *gorm.DB) error {
 				newExts := existing.Extensions + ",.m3u"
 				db.Model(&existing).Update("extensions", newExts)
 				slog.Info("backfilled .m3u extension", "name", existing.Name)
+			}
+			// Backfill .chd extension for disc-based consoles
+			if strings.Contains(c.Extensions, ".chd") && !strings.Contains(existing.Extensions, ".chd") {
+				newExts := existing.Extensions + ",.chd"
+				db.Model(&existing).Update("extensions", newExts)
+				slog.Info("backfilled .chd extension", "name", existing.Name)
 			}
 		}
 	}

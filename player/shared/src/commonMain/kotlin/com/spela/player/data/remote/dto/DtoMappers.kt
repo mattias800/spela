@@ -65,6 +65,7 @@ fun GameDto.toDomain(): Game = Game(
     totalPlayTime = totalPlayTime,
     discCount = discCount,
     discs = discs.map { it.toDomain() },
+    achievementsWarning = achievementsWarning,
 )
 
 /**

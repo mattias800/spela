@@ -549,6 +549,14 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 		}
 	}
 
+	// Check for achievements warnings (e.g. PSP CHD created with createdvd)
+	if len(discFiles) > 0 {
+		if warning := PSPCHDAchievementsWarning(discFiles[0], console.Abbreviation); warning != "" {
+			game.AchievementsWarning = warning
+			s.DB.Save(&game)
+		}
+	}
+
 	result.NewGames++
 	slog.Info("found multi-disc game", "title", title, "console", console.Abbreviation, "discs", len(discFiles))
 
@@ -626,6 +634,13 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 			slog.Warn("failed to create game entry", "path", path, "error", err)
 			return nil
 		}
+
+		// Check for achievements warnings (e.g. PSP CHD created with createdvd)
+		if warning := PSPCHDAchievementsWarning(path, console.Abbreviation); warning != "" {
+			game.AchievementsWarning = warning
+			s.DB.Save(&game)
+		}
+
 		result.NewGames++
 		slog.Info("found game", "title", title, "console", console.Abbreviation)
 
