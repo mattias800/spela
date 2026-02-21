@@ -280,5 +280,9 @@ class NavigationViewModelTest {
         override suspend fun deleteFile(path: String) {}
         override suspend fun deleteDirectory(path: String) {}
         override suspend fun getDirectorySize(path: String) = 0L
+        override suspend fun writeFileStreaming(path: String, writer: suspend (suspend (ByteArray, Int, Int) -> Unit) -> Unit) {
+            writer { _, _, _ -> }
+        }
+        override suspend fun getFileSize(path: String) = 0L
     }
 }

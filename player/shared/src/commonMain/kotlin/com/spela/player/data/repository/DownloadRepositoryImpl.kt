@@ -39,23 +39,24 @@ class DownloadRepositoryImpl(
             downloadSingleDiscGame(gameId, gameTitle)
         }
     }.onFailure {
+        cleanupPartialDownload(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
         }
     }
 
     private suspend fun downloadSingleDiscGame(gameId: String, gameTitle: String): String {
-        val data = apiClient.downloadGame(gameId) { downloaded, total ->
+        val path = fileStorage.getGamesDir() + "/$gameId"
+
+        apiClient.downloadGameToFile(gameId, fileStorage, path) { downloaded, total ->
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: 0))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: -1))
             }
         }
 
-        val path = fileStorage.getGamesDir() + "/$gameId"
-        fileStorage.writeFile(path, data)
-
+        val actualSize = fileStorage.getFileSize(path)
         downloads.update {
-            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, data.size.toLong(), data.size.toLong()))
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, actualSize, actualSize))
         }
 
         return path
@@ -82,21 +83,30 @@ class DownloadRepositoryImpl(
                 ))
             }
 
-            val discData = apiClient.downloadDisc(gameId, disc.discNumber) { downloaded, total ->
-                downloads.update {
-                    it + (gameId to DownloadProgress(
-                        gameId, gameTitle, DownloadState.DOWNLOADING,
-                        bytesDownloaded = downloaded, totalBytes = total ?: disc.fileSize,
-                        currentDisc = disc.discNumber, totalDiscs = totalDiscs,
-                    ))
-                }
-            }
-
-            // Check if response is a tar (multi-file disc like .cue+.bin)
             if (disc.fileName.endsWith(".cue", ignoreCase = true)) {
+                // Tar archive (cue+bin) - use ByteArray (typically <800MB)
+                val discData = apiClient.downloadDisc(gameId, disc.discNumber) { downloaded, total ->
+                    downloads.update {
+                        it + (gameId to DownloadProgress(
+                            gameId, gameTitle, DownloadState.DOWNLOADING,
+                            bytesDownloaded = downloaded, totalBytes = total ?: disc.fileSize,
+                            currentDisc = disc.discNumber, totalDiscs = totalDiscs,
+                        ))
+                    }
+                }
                 extractTar(discData, gameDir)
             } else {
-                fileStorage.writeFile("$gameDir/${disc.fileName}", discData)
+                // Single file (ISO/CHD/CSO) - stream to disk
+                val discPath = "$gameDir/${disc.fileName}"
+                apiClient.downloadDiscToFile(gameId, disc.discNumber, fileStorage, discPath) { downloaded, total ->
+                    downloads.update {
+                        it + (gameId to DownloadProgress(
+                            gameId, gameTitle, DownloadState.DOWNLOADING,
+                            bytesDownloaded = downloaded, totalBytes = total ?: disc.fileSize,
+                            currentDisc = disc.discNumber, totalDiscs = totalDiscs,
+                        ))
+                    }
+                }
             }
         }
 
@@ -142,6 +152,19 @@ class DownloadRepositoryImpl(
                 // Tar pads to 512-byte blocks
                 offset += ((size + 511) / 512 * 512).toInt()
             }
+        }
+    }
+
+    private suspend fun cleanupPartialDownload(gameId: String) {
+        try {
+            val gameDir = fileStorage.getGamesDir() + "/$gameId"
+            if (fileStorage.fileExists("$gameDir/game.m3u")) {
+                fileStorage.deleteDirectory(gameDir)
+            } else if (fileStorage.fileExists(gameDir)) {
+                fileStorage.deleteFile(gameDir)
+            }
+        } catch (_: Exception) {
+            // Best effort cleanup
         }
     }
 

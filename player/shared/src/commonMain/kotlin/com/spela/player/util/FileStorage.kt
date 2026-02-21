@@ -16,4 +16,9 @@ interface FileStorage {
     suspend fun deleteFile(path: String)
     suspend fun deleteDirectory(path: String)
     suspend fun getDirectorySize(path: String): Long
+    suspend fun writeFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    )
+    suspend fun getFileSize(path: String): Long
 }

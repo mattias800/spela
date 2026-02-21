@@ -589,8 +589,8 @@ private fun GameInfoContent(
                     )
                 }
                 SpProgressBar(
-                    progress = progress.progress,
-                    showPercentage = true,
+                    progress = if (progress.isIndeterminate) 0f else progress.progress,
+                    showPercentage = !progress.isIndeterminate,
                     label = "Downloading...",
                 )
             }

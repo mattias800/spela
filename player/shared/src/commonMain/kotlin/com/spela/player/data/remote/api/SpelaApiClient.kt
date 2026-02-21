@@ -4,6 +4,7 @@ import com.spela.player.data.remote.dto.*
 import com.spela.player.data.remote.interceptor.AuthEvent
 import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
+import com.spela.player.util.FileStorage
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -16,6 +17,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
 import kotlinx.serialization.json.Json
 
 class SpelaApiClient(
@@ -321,6 +323,9 @@ class SpelaApiClient(
 
     suspend fun downloadDisc(gameId: String, discNumber: Int, onProgress: (Long, Long?) -> Unit = { _, _ -> }): ByteArray {
         val response = client.get("$baseUrl/api/games/$gameId/discs/$discNumber/download") {
+            timeout {
+                requestTimeoutMillis = Long.MAX_VALUE
+            }
             onDownload { bytesSentTotal, contentLength ->
                 onProgress(bytesSentTotal, contentLength)
             }
@@ -909,6 +914,65 @@ class SpelaApiClient(
 
     suspend fun deleteSaveData(gameId: String, saveDataId: String) {
         client.delete("$baseUrl/api/games/$gameId/save-data/$saveDataId")
+    }
+
+    // Streaming Game Download
+
+    suspend fun downloadGameToFile(
+        gameId: String,
+        fileStorage: FileStorage,
+        destPath: String,
+        onProgress: (Long, Long?) -> Unit = { _, _ -> },
+    ) {
+        val response = client.get("$baseUrl/api/games/$gameId/download") {
+            timeout {
+                requestTimeoutMillis = Long.MAX_VALUE
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Game download failed: HTTP ${response.status.value}")
+        }
+        streamResponseToFile(response, fileStorage, destPath, onProgress)
+    }
+
+    suspend fun downloadDiscToFile(
+        gameId: String,
+        discNumber: Int,
+        fileStorage: FileStorage,
+        destPath: String,
+        onProgress: (Long, Long?) -> Unit = { _, _ -> },
+    ) {
+        val response = client.get("$baseUrl/api/games/$gameId/discs/$discNumber/download") {
+            timeout {
+                requestTimeoutMillis = Long.MAX_VALUE
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
+        }
+        streamResponseToFile(response, fileStorage, destPath, onProgress)
+    }
+
+    private suspend fun streamResponseToFile(
+        response: HttpResponse,
+        fileStorage: FileStorage,
+        destPath: String,
+        onProgress: (Long, Long?) -> Unit,
+    ) {
+        val totalBytes = response.contentLength()
+        val channel = response.bodyAsChannel()
+        var downloaded = 0L
+
+        fileStorage.writeFileStreaming(destPath) { append ->
+            val buffer = ByteArray(65536)
+            while (true) {
+                val bytesRead = channel.readAvailable(buffer)
+                if (bytesRead == -1) break
+                append(buffer, 0, bytesRead)
+                downloaded += bytesRead
+                onProgress(downloaded, totalBytes)
+            }
+        }
     }
 
     fun close() {

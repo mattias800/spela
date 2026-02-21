@@ -55,4 +55,19 @@ class DesktopFileStorage : FileStorage {
         if (!dir.exists()) return@withContext 0L
         dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
     }
+
+    override suspend fun writeFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    ) = withContext(Dispatchers.IO) {
+        val file = File(path)
+        file.parentFile?.mkdirs()
+        java.io.FileOutputStream(file).use { fos ->
+            writer { bytes, offset, length ->
+                fos.write(bytes, offset, length)
+            }
+        }
+    }
+
+    override suspend fun getFileSize(path: String): Long = File(path).length()
 }

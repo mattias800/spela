@@ -153,12 +153,19 @@ data class DownloadProgress(
     val gameTitle: String = "",
     val state: DownloadState,
     val bytesDownloaded: Long = 0,
-    val totalBytes: Long = 0,
+    val totalBytes: Long = -1,
     val currentDisc: Int = 0,
     val totalDiscs: Int = 0,
 ) {
     val progress: Float
-        get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
+        get() = when {
+            totalBytes < 0 -> -1f
+            totalBytes > 0 -> bytesDownloaded.toFloat() / totalBytes
+            else -> 0f
+        }
+
+    val isIndeterminate: Boolean
+        get() = totalBytes < 0
 }
 
 // RetroAchievements

@@ -264,6 +264,12 @@ class SyncEngineTest {
         override suspend fun deleteFile(path: String) { files.remove(path) }
         override suspend fun deleteDirectory(path: String) { files.keys.removeAll { it.startsWith(path) } }
         override suspend fun getDirectorySize(path: String) = 0L
+        override suspend fun writeFileStreaming(path: String, writer: suspend (suspend (ByteArray, Int, Int) -> Unit) -> Unit) {
+            val chunks = mutableListOf<ByteArray>()
+            writer { bytes, offset, length -> chunks.add(bytes.copyOfRange(offset, offset + length)) }
+            files[path] = chunks.fold(ByteArray(0)) { acc, chunk -> acc + chunk }
+        }
+        override suspend fun getFileSize(path: String) = files[path]?.size?.toLong() ?: 0L
     }
 
     private class NoOpSaveRepository : SaveRepository {

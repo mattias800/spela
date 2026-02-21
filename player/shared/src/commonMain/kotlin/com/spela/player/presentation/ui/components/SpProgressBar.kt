@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -93,10 +94,21 @@ fun SpDownloadProgressBar(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        SpProgressBar(
-            progress = progress,
-            progressColors = listOf(SpColor.Accent, SpColor.AccentLight),
-        )
+        if (progress < 0f) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = SpColor.Accent,
+                trackColor = SpColor.SurfaceBright,
+            )
+        } else {
+            SpProgressBar(
+                progress = progress,
+                progressColors = listOf(SpColor.Accent, SpColor.AccentLight),
+            )
+        }
         Spacer(Modifier.height(SpSpacing.XSmall))
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -106,7 +118,7 @@ fun SpDownloadProgressBar(
             )
             Spacer(Modifier.weight(1f))
             Text(
-                text = formatBytes(totalBytes),
+                text = if (totalBytes < 0) "..." else formatBytes(totalBytes),
                 style = SpTypography.LabelSmall,
                 color = SpColor.OnBackgroundTertiary,
             )

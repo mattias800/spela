@@ -157,7 +157,8 @@ private fun DownloadItem(
                 .semantics {
                     contentDescription = "$displayTitle, $statusText" +
                             if (download.state == DownloadState.DOWNLOADING)
-                                ", ${(download.progress * 100).toInt()} percent" else ""
+                                if (download.isIndeterminate) ", downloading" else ", ${(download.progress * 100).toInt()} percent"
+                            else ""
                 },
         ) {
             Row(

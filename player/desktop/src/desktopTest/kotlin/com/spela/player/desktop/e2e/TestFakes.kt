@@ -562,6 +562,13 @@ class FakeFileStorage : FileStorage {
     override suspend fun deleteFile(path: String) {}
     override suspend fun deleteDirectory(path: String) {}
     override suspend fun getDirectorySize(path: String): Long = 0
+    override suspend fun writeFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    ) {
+        writer { _, _, _ -> }
+    }
+    override suspend fun getFileSize(path: String): Long = 0
 }
 
 class FakePreferencesRepository : PreferencesRepository {
