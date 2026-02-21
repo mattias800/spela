@@ -22,6 +22,11 @@ interface KeyMappingRepository {
     suspend fun resetToDefault(consoleId: String, port: Int = 0)
 
     /**
+     * Removes a single button binding for a console and port.
+     */
+    suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int)
+
+    /**
      * Returns the effective mapping for a console, with fallback chain:
      * console-specific -> global default (__default__) -> hardcoded defaults.
      * The returned map is retroButtonId -> platformKeyCode.

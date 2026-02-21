@@ -50,6 +50,8 @@ fun KeyMappingScreen(
     onStartWizard: () -> Unit,
     onResetToDefaults: () -> Unit,
     onLoadPreset: (() -> Unit)? = null,
+    onCancelMapping: (() -> Unit)? = null,
+    onClearBinding: (() -> Unit)? = null,
     keyNameResolver: (Int) -> String = { "Key $it" },
 ) {
     val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
@@ -173,11 +175,26 @@ fun KeyMappingScreen(
                     color = SpColor.Primary,
                 )
 
-                Text(
-                    text = "Press Escape to cancel",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
+                Spacer(Modifier.height(SpSpacing.Small))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    if (onCancelMapping != null) {
+                        SpButton(
+                            text = "Cancel",
+                            onClick = onCancelMapping,
+                            style = SpButtonStyle.Ghost,
+                        )
+                    }
+                    if (onClearBinding != null) {
+                        SpButton(
+                            text = "Clear",
+                            onClick = onClearBinding,
+                            style = SpButtonStyle.Outlined,
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(SpSpacing.Medium))

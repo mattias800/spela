@@ -54,6 +54,7 @@ fun KeyMappingWizard(
     layout: ConsoleButtonLayout,
     state: KeyMappingState,
     onSkip: () -> Unit,
+    onClearBinding: (() -> Unit)? = null,
     onResetAll: () -> Unit,
     onDone: () -> Unit,
     onDismiss: () -> Unit,
@@ -192,6 +193,14 @@ fun KeyMappingWizard(
                         style = SpButtonStyle.Ghost,
                         modifier = Modifier.weight(1f),
                     )
+                    if (onClearBinding != null) {
+                        SpButton(
+                            text = "Clear",
+                            onClick = onClearBinding,
+                            style = SpButtonStyle.Ghost,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     SpButton(
                         text = "Reset All",
                         onClick = onResetAll,

@@ -193,6 +193,7 @@ class GamepadPortManagerTest {
         override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? = null
         override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {}
         override suspend fun resetToDefault(consoleId: String, port: Int) {}
+        override suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int) {}
         override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {
             return effectiveMappings["$consoleId:$port"] ?: emptyMap()
         }

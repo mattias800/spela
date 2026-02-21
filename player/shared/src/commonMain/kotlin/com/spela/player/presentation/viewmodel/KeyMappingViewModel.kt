@@ -32,6 +32,7 @@ class KeyMappingViewModel(
             KeyMappingIntent.ResetAll -> resetAll()
             KeyMappingIntent.FinishMapping -> finishMapping()
             KeyMappingIntent.CancelMapping -> cancelMapping()
+            KeyMappingIntent.ClearCurrentBinding -> clearCurrentBinding()
             KeyMappingIntent.DismissError -> _state.update { it.copy(error = null) }
             KeyMappingIntent.ShowPresetPicker -> showPresetPicker()
             KeyMappingIntent.DismissPresetPicker -> _state.update { it.copy(showPresetPicker = false) }
@@ -181,6 +182,36 @@ class KeyMappingViewModel(
                 mappingStep = 0,
                 totalSteps = 0,
             )
+        }
+    }
+
+    private fun clearCurrentBinding() {
+        val retroButtonId = _state.value.currentMappingButton ?: return
+        val consoleId = _state.value.consoleId
+        val port = _state.value.port
+
+        val updatedBindings = _state.value.currentBindings.toMutableMap()
+        updatedBindings.remove(retroButtonId)
+
+        scope.launch(dispatchers.io) {
+            try {
+                keyMappingRepository.clearBinding(consoleId, port, retroButtonId)
+                preferencesRepository.pushKeyMappingsToServer()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = "Failed to clear binding: ${e.message}") }
+            }
+        }
+
+        if (_state.value.isWizardMode) {
+            advanceWizard(updatedBindings)
+        } else {
+            _state.update {
+                it.copy(
+                    currentBindings = updatedBindings,
+                    currentMappingButton = null,
+                    activePresetId = null,
+                )
+            }
         }
     }
 

@@ -254,6 +254,62 @@ class KeyMappingViewModelTest {
     }
 
     @Test
+    fun clearCurrentBindingRemovesBindingAndExitsListening() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        // Set a custom binding first
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+        vm.onIntent(KeyMappingIntent.CaptureButton(777))
+        advanceUntilIdle()
+        assertEquals(777, vm.state.value.currentBindings[LibretroButtons.A])
+
+        // Now enter listening mode again and clear it
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(LibretroButtons.A))
+        vm.onIntent(KeyMappingIntent.ClearCurrentBinding)
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.currentMappingButton)
+        assertFalse(vm.state.value.currentBindings.containsKey(LibretroButtons.A))
+    }
+
+    @Test
+    fun clearCurrentBindingInWizardAdvancesToNext() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.StartWizard("nes"))
+        val firstButton = vm.state.value.currentMappingButton!!
+        assertEquals(1, vm.state.value.mappingStep)
+
+        vm.onIntent(KeyMappingIntent.ClearCurrentBinding)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(2, state.mappingStep)
+        // The first button should have been cleared (removed from bindings)
+        assertFalse(state.currentBindings.containsKey(firstButton))
+        // Should have advanced to the second button
+        assertEquals(DefaultKeyMappings.NES.buttons[1].retroButtonId, state.currentMappingButton)
+    }
+
+    @Test
+    fun clearCurrentBindingWhenNotListeningIsNoOp() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        val bindingsBefore = vm.state.value.currentBindings.toMap()
+        vm.onIntent(KeyMappingIntent.ClearCurrentBinding)
+        advanceUntilIdle()
+
+        assertEquals(bindingsBefore, vm.state.value.currentBindings)
+        assertNull(vm.state.value.currentMappingButton)
+    }
+
+    @Test
     fun loadMappingWithUnknownConsoleUsesFullLayout() = runTest(testDispatcher) {
         val vm = createViewModel()
         vm.onIntent(KeyMappingIntent.LoadMapping("unknown_console"))
@@ -307,6 +363,10 @@ class KeyMappingViewModelTest {
 
         override suspend fun resetToDefault(consoleId: String, port: Int) {
             storage.remove(key(consoleId, port))
+        }
+
+        override suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int) {
+            storage[key(consoleId, port)]?.remove(retroButtonId)
         }
 
         override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {

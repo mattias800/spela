@@ -25,6 +25,9 @@ sealed interface KeyMappingIntent {
     /** Cancel the current mapping operation. */
     data object CancelMapping : KeyMappingIntent
 
+    /** Clear the binding for the currently-highlighted button and exit listening mode. */
+    data object ClearCurrentBinding : KeyMappingIntent
+
     /** Dismiss error message. */
     data object DismissError : KeyMappingIntent
 

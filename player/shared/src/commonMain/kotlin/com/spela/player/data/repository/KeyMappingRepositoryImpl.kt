@@ -49,6 +49,10 @@ class KeyMappingRepositoryImpl(
         queries.deleteKeyMappingsForConsole(consoleId, port.toLong())
     }
 
+    override suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int) {
+        queries.deleteKeyMappingForButton(consoleId, port.toLong(), retroButtonId.toLong())
+    }
+
     override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {
         // Try console-specific first
         val consoleMapping = getMappingForConsole(consoleId, port)

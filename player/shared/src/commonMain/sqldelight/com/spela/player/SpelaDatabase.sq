@@ -123,6 +123,9 @@ DELETE FROM KeyMappingEntity WHERE console_id = ? AND port = ?;
 deleteKeyMapping:
 DELETE FROM KeyMappingEntity WHERE id = ?;
 
+deleteKeyMappingForButton:
+DELETE FROM KeyMappingEntity WHERE console_id = ? AND port = ? AND libretro_button_id = ?;
+
 getAllKeyMappings:
 SELECT * FROM KeyMappingEntity;
 

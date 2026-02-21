@@ -776,6 +776,10 @@ class FakeKeyMappingRepository : KeyMappingRepository {
         mappings.remove(key(consoleId, port))
     }
 
+    override suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int) {
+        mappings[key(consoleId, port)]?.remove(retroButtonId)
+    }
+
     override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> {
         return mappings[key(consoleId, port)] ?: emptyMap()
     }

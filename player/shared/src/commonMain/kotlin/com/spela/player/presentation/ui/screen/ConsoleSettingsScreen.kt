@@ -270,6 +270,12 @@ fun ConsoleSettingsScreen(
                             onResetToDefaults = {
                                 keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
                             },
+                            onCancelMapping = {
+                                keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
+                            },
+                            onClearBinding = {
+                                keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
+                            },
                             keyNameResolver = ::platformKeyName,
                         )
                     }

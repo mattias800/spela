@@ -15,7 +15,9 @@ import com.spela.player.presentation.App
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
+import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -31,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
     private val navigationViewModel: NavigationViewModel by inject()
     private val emulationViewModel: EmulationViewModel by inject()
+    private val keyMappingViewModel: KeyMappingViewModel by inject()
     private val gamepadPortManager: GamepadPortManager by inject()
 
     /** True when gamepad input should go to libretro (game running, overlay not shown). */
@@ -116,7 +119,28 @@ class MainActivity : ComponentActivity() {
         return port
     }
 
+    /** Key codes that are gamepad-relevant and should be captured during key mapping. */
+    private fun isGamepadCapturable(keyCode: Int): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B,
+        KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_Y,
+        KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1,
+        KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2,
+        KeyEvent.KEYCODE_BUTTON_THUMBL, KeyEvent.KEYCODE_BUTTON_THUMBR,
+        KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_SELECT,
+        KeyEvent.KEYCODE_BUTTON_MODE,
+        KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+        KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+        KeyEvent.KEYCODE_DPAD_CENTER -> true
+        else -> false
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Key mapping capture: when in listening mode, intercept gamepad buttons
+        if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
+            keyMappingViewModel.onIntent(KeyMappingIntent.CaptureButton(keyCode))
+            return true
+        }
+
         // State 1: Game running, overlay hidden — send buttons to emulation core
         if (isEmulationConsuming && event != null) {
             val deviceId = event.deviceId
@@ -169,6 +193,11 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // Key mapping capture: consume key-up for gamepad buttons when in listening mode
+        if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
+            return true
+        }
+
         // State 1: Game running, overlay hidden — release button in core
         if (isEmulationConsuming && event != null) {
             val deviceId = event.deviceId

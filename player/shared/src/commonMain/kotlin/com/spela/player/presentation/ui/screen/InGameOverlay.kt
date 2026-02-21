@@ -234,6 +234,12 @@ fun InGameOverlay(
             onLoadPreset = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.ShowPresetPicker)
             },
+            onCancelMapping = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
+            },
+            onClearBinding = {
+                keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
+            },
             onDismiss = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.FinishMapping)
                 viewModel.onIntent(EmulationIntent.HideKeyMapping)

@@ -37,6 +37,8 @@ fun KeyMappingDialog(
     onStartWizard: () -> Unit,
     onResetToDefaults: () -> Unit,
     onLoadPreset: (() -> Unit)? = null,
+    onCancelMapping: (() -> Unit)? = null,
+    onClearBinding: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     keyNameResolver: (Int) -> String = { "Key $it" },
 ) {
@@ -64,6 +66,8 @@ fun KeyMappingDialog(
                     onStartWizard = onStartWizard,
                     onResetToDefaults = onResetToDefaults,
                     onLoadPreset = onLoadPreset,
+                    onCancelMapping = onCancelMapping,
+                    onClearBinding = onClearBinding,
                     keyNameResolver = keyNameResolver,
                 )
             }
