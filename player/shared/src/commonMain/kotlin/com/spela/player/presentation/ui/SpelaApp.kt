@@ -98,6 +98,7 @@ import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
+import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
@@ -114,6 +115,7 @@ fun SpelaApp(
     downloadsViewModel: DownloadsViewModel,
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
+    gamepadConfigViewModel: GamepadConfigViewModel? = null,
     socialViewModel: SocialViewModel,
     relaysViewModel: RelaysViewModel,
     relayDetailViewModel: RelayDetailViewModel,
@@ -423,6 +425,7 @@ fun SpelaApp(
                                     consoleId = screen.consoleId,
                                     settingsViewModel = settingsViewModel,
                                     keyMappingViewModel = keyMappingViewModel,
+                                    gamepadConfigViewModel = gamepadConfigViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
@@ -829,6 +832,7 @@ fun SpelaApp(
                         InGameOverlay(
                             viewModel = emulationViewModel,
                             keyMappingViewModel = keyMappingViewModel,
+                            gamepadConfigViewModel = gamepadConfigViewModel,
                             onExit = {
                                 navigationViewModel.onIntent(NavigationIntent.HideOverlay)
                             },

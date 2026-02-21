@@ -22,6 +22,7 @@ data class EmulationState(
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,
     val showKeyMapping: Boolean = false,
+    val showGamepadConfig: Boolean = false,
     val error: String? = null,
 
     val achievementEvent: AchievementEvent? = null,

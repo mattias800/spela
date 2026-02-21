@@ -41,6 +41,7 @@ fun KeyMappingDialog(
     onClearBinding: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     keyNameResolver: (Int) -> String = { "Key $it" },
+    portLabel: String? = null,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -69,6 +70,7 @@ fun KeyMappingDialog(
                     onCancelMapping = onCancelMapping,
                     onClearBinding = onClearBinding,
                     keyNameResolver = keyNameResolver,
+                    portLabel = portLabel,
                 )
             }
         }

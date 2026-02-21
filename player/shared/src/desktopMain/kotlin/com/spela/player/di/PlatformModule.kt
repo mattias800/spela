@@ -7,6 +7,7 @@ import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.DesktopAchievementsController
+import com.spela.player.libretro.DesktopGamepadPoller
 import com.spela.player.libretro.DesktopLibretroController
 import com.spela.player.libretro.DesktopScreenshotCapture
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
@@ -126,6 +127,7 @@ actual fun platformModule(): Module = module {
     single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
     single<ScreenshotCapture> { DesktopScreenshotCapture(get<LibretroController>() as DesktopLibretroController) }
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
+    single { DesktopGamepadPoller(get(), get(), get()) }
     single {
         HttpClient(CIO) {
             install(HttpTimeout) {

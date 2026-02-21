@@ -14,6 +14,7 @@ import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.libretro.DesktopAudioPlayer
 import com.spela.player.libretro.DesktopEmulationSurface
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.libretro.MetalOffscreenSurface
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
@@ -46,6 +47,7 @@ actual fun PlatformEmulationSurface(
     // Load key mapping from repository based on current game/console
     val keyMappingRepo: KeyMappingRepository = koinInject()
     val emulationViewModel: EmulationViewModel = koinInject()
+    val gamepadPortManager: GamepadPortManager = koinInject()
     val gameId = emulationViewModel.state.value.gameId
     val consoleId = emulationViewModel.state.value.consoleId
 
@@ -95,6 +97,7 @@ actual fun PlatformEmulationSurface(
             modifier = modifier,
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,
+            gamepadPortManager = gamepadPortManager,
         )
     } else {
         // Fallback: software rendering via Compose Canvas + Skia
@@ -104,6 +107,7 @@ actual fun PlatformEmulationSurface(
             modifier = modifier,
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,
+            gamepadPortManager = gamepadPortManager,
         )
     }
 }

@@ -4,6 +4,7 @@ import com.spela.player.domain.repository.KeyMappingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.time.Clock
 
 /**
  * Manages mapping of physical gamepad devices to libretro player ports.
@@ -42,6 +43,13 @@ class GamepadPortManager(
     /** Fallback mapping used when a port-specific mapping hasn't been loaded yet. */
     private var fallbackKeyMapping: Map<Int, Int>? = null
 
+    /** Per-port last-input timestamps (epoch milliseconds). */
+    private val lastActivityMs = LongArray(MAX_PORTS)
+
+    /** Observable activity map: port -> last activity timestamp. */
+    private val _portActivity = MutableStateFlow<Map<Int, Long>>(emptyMap())
+    val portActivity: StateFlow<Map<Int, Long>> = _portActivity.asStateFlow()
+
     /** Observable list of current port assignments. */
     private val _assignments = MutableStateFlow<List<PortAssignment>>(emptyList())
     val assignments: StateFlow<List<PortAssignment>> = _assignments.asStateFlow()
@@ -68,6 +76,18 @@ class GamepadPortManager(
     }
 
     /**
+     * Records input activity on a port. Updates the per-port timestamp
+     * and emits a new activity map for UI observation.
+     */
+    @Synchronized
+    fun reportActivity(port: Int) {
+        if (port < 0 || port >= MAX_PORTS) return
+        if (!occupiedPorts[port]) return
+        lastActivityMs[port] = Clock.System.now().toEpochMilliseconds()
+        _portActivity.value = buildActivityMap()
+    }
+
+    /**
      * Disconnects a device and frees its port for reuse.
      */
     @Synchronized
@@ -75,7 +95,9 @@ class GamepadPortManager(
         val assignment = deviceToPort.remove(deviceId) ?: return
         occupiedPorts[assignment.port] = false
         portKeyMappings[assignment.port] = null
+        lastActivityMs[assignment.port] = 0L
         _assignments.value = deviceToPort.values.toList()
+        _portActivity.value = buildActivityMap()
     }
 
     /**
@@ -193,6 +215,48 @@ class GamepadPortManager(
     fun connectedDeviceCount(): Int = deviceToPort.size
 
     /**
+     * Swaps device assignments, key mappings, and activity timestamps
+     * between two ports. No-op if either port is out of range.
+     */
+    @Synchronized
+    fun swapPorts(portA: Int, portB: Int) {
+        if (portA < 0 || portA >= MAX_PORTS) return
+        if (portB < 0 || portB >= MAX_PORTS) return
+        if (portA == portB) return
+
+        // Swap occupied flags
+        val tmpOccupied = occupiedPorts[portA]
+        occupiedPorts[portA] = occupiedPorts[portB]
+        occupiedPorts[portB] = tmpOccupied
+
+        // Swap key mappings
+        val tmpMapping = portKeyMappings[portA]
+        portKeyMappings[portA] = portKeyMappings[portB]
+        portKeyMappings[portB] = tmpMapping
+
+        // Swap activity timestamps
+        val tmpActivity = lastActivityMs[portA]
+        lastActivityMs[portA] = lastActivityMs[portB]
+        lastActivityMs[portB] = tmpActivity
+
+        // Update device-to-port assignments
+        val devicesOnA = deviceToPort.entries.filter { it.value.port == portA }.map { it.key }
+        val devicesOnB = deviceToPort.entries.filter { it.value.port == portB }.map { it.key }
+
+        for (devId in devicesOnA) {
+            val old = deviceToPort[devId]!!
+            deviceToPort[devId] = old.copy(port = portB)
+        }
+        for (devId in devicesOnB) {
+            val old = deviceToPort[devId]!!
+            deviceToPort[devId] = old.copy(port = portA)
+        }
+
+        _assignments.value = deviceToPort.values.toList()
+        _portActivity.value = buildActivityMap()
+    }
+
+    /**
      * Clears all device assignments and mappings.
      */
     @Synchronized
@@ -201,6 +265,22 @@ class GamepadPortManager(
         occupiedPorts.fill(false)
         portKeyMappings.fill(null)
         fallbackKeyMapping = null
+        lastActivityMs.fill(0L)
         _assignments.value = emptyList()
+        _portActivity.value = emptyMap()
+    }
+
+    /**
+     * Builds an activity map from the current timestamps,
+     * only including occupied ports with non-zero timestamps.
+     */
+    private fun buildActivityMap(): Map<Int, Long> {
+        val map = mutableMapOf<Int, Long>()
+        for (i in 0 until MAX_PORTS) {
+            if (occupiedPorts[i] && lastActivityMs[i] > 0L) {
+                map[i] = lastActivityMs[i]
+            }
+        }
+        return map
     }
 }

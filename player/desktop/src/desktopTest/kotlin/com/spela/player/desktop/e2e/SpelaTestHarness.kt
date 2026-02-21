@@ -9,6 +9,7 @@ import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.usecase.*
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
@@ -153,6 +154,9 @@ class SpelaTestHarness(
     }
     val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
 
+    val keyMappingRepo = FakeKeyMappingRepository()
+    val gamepadPortManager = GamepadPortManager(keyMappingRepo)
+
     val emulationViewModel = EmulationViewModel(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
@@ -168,6 +172,7 @@ class SpelaTestHarness(
         challengeRepository = challengeRepo,
         saveDataRepository = saveDataRepo,
         connectivityMonitor = connectivityMonitor,
+        gamepadPortManager = gamepadPortManager,
         screenshotCapture = null,
         apiClient = fakeApiClient,
         engineFactory = stubEngineFactory,
@@ -180,8 +185,6 @@ class SpelaTestHarness(
         dispatchers = dispatchers,
         scope = scope,
     )
-
-    val keyMappingRepo = FakeKeyMappingRepository()
 
     val settingsViewModel = SettingsViewModel(
         authRepository = authRepo,
@@ -202,6 +205,13 @@ class SpelaTestHarness(
     val keyMappingViewModel = KeyMappingViewModel(
         keyMappingRepository = keyMappingRepo,
         preferencesRepository = preferencesRepo,
+        gamepadPortManager = gamepadPortManager,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val gamepadConfigViewModel = GamepadConfigViewModel(
+        gamepadPortManager = gamepadPortManager,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -299,6 +309,7 @@ class SpelaTestHarness(
             downloadsViewModel = downloadsViewModel,
             settingsViewModel = settingsViewModel,
             keyMappingViewModel = keyMappingViewModel,
+            gamepadConfigViewModel = gamepadConfigViewModel,
             socialViewModel = socialViewModel,
             relaysViewModel = relaysViewModel,
             relayDetailViewModel = relayDetailViewModel,

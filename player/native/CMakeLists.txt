@@ -35,6 +35,15 @@ else()
     )
 endif()
 
+# SDL2 gamepad support (desktop only)
+if(NOT ANDROID)
+    list(APPEND COMMON_SOURCES src/gamepad_sdl2.c)
+    find_package(SDL2 QUIET)
+    if(SDL2_FOUND)
+        add_compile_definitions(HAS_SDL2)
+    endif()
+endif()
+
 add_library(spela-libretro SHARED ${COMMON_SOURCES})
 
 target_include_directories(spela-libretro PRIVATE
@@ -65,6 +74,12 @@ else()
     # Desktop (JNI)
     find_package(JNI REQUIRED)
     target_include_directories(spela-libretro PRIVATE ${JNI_INCLUDE_DIRS})
+    # SDL2 include/link (optional, for gamepad support)
+    if(SDL2_FOUND)
+        target_include_directories(spela-libretro PRIVATE ${SDL2_INCLUDE_DIRS})
+        target_link_libraries(spela-libretro ${SDL2_LIBRARIES})
+    endif()
+
     if(APPLE)
         # macOS: Metal + QuartzCore + OpenGL frameworks
         find_library(METAL_FRAMEWORK Metal)

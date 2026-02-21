@@ -1,5 +1,6 @@
 package com.spela.player.android
 
+import android.hardware.input.InputManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.InputDevice
@@ -20,8 +21,6 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
@@ -58,39 +57,34 @@ class MainActivity : ComponentActivity() {
     private var analogDpadUp = false
     private var analogDpadDown = false
 
+    private val inputDeviceListener = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) {
+            // Device will be connected via ensureDeviceConnected on first input
+        }
+
+        override fun onInputDeviceRemoved(deviceId: Int) {
+            gamepadPortManager.disconnectDevice(deviceId)
+        }
+
+        override fun onInputDeviceChanged(deviceId: Int) {
+            // No action needed
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        observeGameMappingChanges()
+        val inputManager = getSystemService(INPUT_SERVICE) as InputManager
+        inputManager.registerInputDeviceListener(inputDeviceListener, null)
         setContent {
             App()
         }
     }
 
-    /**
-     * Observes the emulation state and loads the appropriate key mapping
-     * whenever the active game's console changes. Loads mappings for all
-     * currently connected gamepad ports.
-     */
-    private fun observeGameMappingChanges() {
-        lifecycleScope.launch {
-            emulationViewModel.state
-                .map { Pair(it.gameId, it.consoleId) }
-                .distinctUntilChanged()
-                .collect { (gameId, consoleId) ->
-                    if (consoleId.isNotEmpty()) {
-                        try {
-                            if (gameId.isNotEmpty()) {
-                                gamepadPortManager.loadAllGameMappings(gameId, consoleId)
-                            } else {
-                                gamepadPortManager.loadAllMappings(consoleId)
-                            }
-                        } catch (_: Exception) {
-                            // Best effort - defaults will be used
-                        }
-                    }
-                }
-        }
+    override fun onDestroy() {
+        val inputManager = getSystemService(INPUT_SERVICE) as InputManager
+        inputManager.unregisterInputDeviceListener(inputDeviceListener)
+        super.onDestroy()
     }
 
     /**
@@ -153,6 +147,7 @@ class MainActivity : ComponentActivity() {
                     it.setButton(port, buttonId, true)
                     it.notifyPhysicalControllerInput()
                 }
+                gamepadPortManager.reportActivity(port)
                 return true
             }
             return super.onKeyDown(keyCode, event)
@@ -259,6 +254,7 @@ class MainActivity : ComponentActivity() {
             if (port < 0) return super.onGenericMotionEvent(event)
 
             controller.notifyPhysicalControllerInput()
+            gamepadPortManager.reportActivity(port)
 
             val leftX = GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_X))
             val leftY = GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_Y))

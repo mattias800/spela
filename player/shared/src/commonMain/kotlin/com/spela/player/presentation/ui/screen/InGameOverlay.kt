@@ -27,20 +27,25 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
 import com.spela.player.presentation.ui.components.challenge.ChallengeCreationPanel
+import com.spela.player.presentation.ui.components.gamepad.GamepadConfigDialog
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import com.spela.player.presentation.viewmodel.GamepadConfigIntent
+import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 
 @Composable
 fun InGameOverlay(
     viewModel: EmulationViewModel,
     keyMappingViewModel: KeyMappingViewModel,
+    gamepadConfigViewModel: GamepadConfigViewModel? = null,
     onExit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val continueFocusRequester = remember { FocusRequester() }
+    val hasGamepadConfig = gamepadConfigViewModel != null
 
     AnimatedVisibility(
         visible = state.showOverlay,
@@ -54,6 +59,7 @@ fun InGameOverlay(
             state = state,
             viewModel = viewModel,
             continueFocusRequester = continueFocusRequester,
+            useGamepadConfig = hasGamepadConfig,
         )
     }
 
@@ -200,6 +206,44 @@ fun InGameOverlay(
                 viewModel.onIntent(EmulationIntent.DismissChallengeResult)
                 viewModel.onIntent(EmulationIntent.StopGame)
                 onExit()
+            },
+        )
+    }
+
+    // Gamepad config dialog (controller list with activity indicators)
+    if (state.showGamepadConfig && gamepadConfigViewModel != null) {
+        val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
+        val configAssignments = gamepadConfigState.portAssignments
+
+        GamepadConfigDialog(
+            state = gamepadConfigState,
+            onConfigurePort = { port ->
+                val assignment = configAssignments.find { it.port == port }
+                val portLabel = if (assignment != null) {
+                    "Player ${port + 1} \u2014 ${assignment.deviceName}"
+                } else null
+                // Load mapping for the selected port and show key mapping dialog
+                val consoleId = state.consoleId
+                val gameId = state.gameId
+                keyMappingViewModel.onIntent(
+                    if (gameId.isNotEmpty()) {
+                        KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                    } else {
+                        KeyMappingIntent.LoadMapping(consoleId, port)
+                    }
+                )
+                gamepadConfigViewModel.onIntent(GamepadConfigIntent.SelectPortForMapping(port))
+                viewModel.onIntent(EmulationIntent.HideGamepadConfig)
+                viewModel.onIntent(EmulationIntent.ShowKeyMapping)
+            },
+            onSwapUp = { port ->
+                gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port - 1, port))
+            },
+            onSwapDown = { port ->
+                gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port, port + 1))
+            },
+            onDismiss = {
+                viewModel.onIntent(EmulationIntent.HideGamepadConfig)
             },
         )
     }

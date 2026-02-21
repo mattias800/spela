@@ -174,6 +174,7 @@ val commonModule = module {
             challengeRepository = get(),
             saveDataRepository = get(),
             connectivityMonitor = get(),
+            gamepadPortManager = get(),
             screenshotCapture = getOrNull<ScreenshotCapture>(),
             apiClient = get(),
             engineFactory = get(),
@@ -305,6 +306,14 @@ val commonModule = module {
         KeyMappingViewModel(
             keyMappingRepository = get(),
             preferencesRepository = get(),
+            gamepadPortManager = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
+        GamepadConfigViewModel(
+            gamepadPortManager = get(),
             dispatchers = get(),
             scope = get(),
         )

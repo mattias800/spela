@@ -17,10 +17,14 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
+import com.spela.player.libretro.DesktopGamepadPoller
 import com.spela.player.presentation.App
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
@@ -35,6 +39,11 @@ fun main(args: Array<String>) {
     startKoin {
         modules(commonModule, platformModule())
     }
+
+    // Start gamepad poller (SDL2)
+    val gamepadPoller = getKoin().get<DesktopGamepadPoller>()
+    val gamepadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    gamepadPoller.start(gamepadScope)
 
     application {
 
@@ -52,7 +61,10 @@ fun main(args: Array<String>) {
     val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
 
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = {
+            gamepadPoller.stop()
+            exitApplication()
+        },
         title = windowTitle,
         state = rememberWindowState(width = 1280.dp, height = 720.dp),
         icon = icon,

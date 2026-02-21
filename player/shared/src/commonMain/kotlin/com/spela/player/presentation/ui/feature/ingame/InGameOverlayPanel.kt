@@ -57,6 +57,7 @@ internal fun InGameOverlayPanel(
     state: EmulationState,
     viewModel: EmulationViewModel,
     continueFocusRequester: FocusRequester,
+    useGamepadConfig: Boolean = false,
 ) {
     Box(
         modifier = Modifier
@@ -254,7 +255,11 @@ internal fun InGameOverlayPanel(
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                             onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                             onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
-                            onControls = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+                            onControls = {
+                            viewModel.onIntent(
+                                if (useGamepadConfig) EmulationIntent.ShowGamepadConfig else EmulationIntent.ShowKeyMapping
+                            )
+                        },
                         )
                     }
 

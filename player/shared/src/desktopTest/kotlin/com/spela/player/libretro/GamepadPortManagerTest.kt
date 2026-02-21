@@ -166,6 +166,48 @@ class GamepadPortManagerTest {
     }
 
     @Test
+    fun reportActivityUpdatesFlowForPort() {
+        manager.connectDevice(100, "Xbox")
+        manager.reportActivity(0)
+        val activity = manager.portActivity.value
+        assertTrue(activity.containsKey(0), "Activity map should have port 0")
+        assertTrue(activity[0]!! > 0, "Timestamp should be positive")
+    }
+
+    @Test
+    fun reportActivityIgnoresInvalidPort() {
+        manager.reportActivity(-1)
+        manager.reportActivity(8)
+        assertTrue(manager.portActivity.value.isEmpty(), "Activity map should be empty for invalid ports")
+    }
+
+    @Test
+    fun reportActivityIgnoresUnoccupiedPort() {
+        manager.reportActivity(0)
+        assertTrue(manager.portActivity.value.isEmpty(), "Activity map should be empty for unoccupied port")
+    }
+
+    @Test
+    fun disconnectDeviceClearsActivity() {
+        manager.connectDevice(100, "Xbox")
+        manager.reportActivity(0)
+        assertTrue(manager.portActivity.value.containsKey(0))
+
+        manager.disconnectDevice(100)
+        assertTrue(!manager.portActivity.value.containsKey(0), "Activity should be cleared after disconnect")
+    }
+
+    @Test
+    fun clearResetsActivity() {
+        manager.connectDevice(100, "Xbox")
+        manager.reportActivity(0)
+        assertTrue(manager.portActivity.value.isNotEmpty())
+
+        manager.clear()
+        assertTrue(manager.portActivity.value.isEmpty(), "Activity should be cleared after clear()")
+    }
+
+    @Test
     fun portReassignmentKeepsIndependentMappings() = runTest {
         manager.connectDevice(100, "Xbox")
         manager.connectDevice(200, "PS5")
@@ -185,6 +227,76 @@ class GamepadPortManagerTest {
 
         // Port 1 should be unchanged
         assertEquals(8, manager.mapKeyToLibretro(1, 97))
+    }
+
+    @Test
+    fun swapPortsSwapsDevicesAndMappings() = runTest {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "PS5")
+        fakeRepo.effectiveMappings["snes:0"] = mapOf(0 to 96)
+        fakeRepo.effectiveMappings["snes:1"] = mapOf(8 to 97)
+        manager.loadAllMappings("snes")
+
+        // Before swap
+        assertEquals(0, manager.getPort(100))
+        assertEquals(1, manager.getPort(200))
+        assertEquals(0, manager.mapKeyToLibretro(0, 96))
+        assertEquals(8, manager.mapKeyToLibretro(1, 97))
+
+        manager.swapPorts(0, 1)
+
+        // After swap: devices moved
+        assertEquals(1, manager.getPort(100))
+        assertEquals(0, manager.getPort(200))
+        // Mappings moved with ports
+        assertEquals(8, manager.mapKeyToLibretro(0, 97))
+        assertEquals(0, manager.mapKeyToLibretro(1, 96))
+    }
+
+    @Test
+    fun swapPortsSamePortIsNoOp() {
+        manager.connectDevice(100, "Xbox")
+        manager.swapPorts(0, 0)
+        assertEquals(0, manager.getPort(100))
+    }
+
+    @Test
+    fun swapPortsOutOfRangeIsNoOp() {
+        manager.connectDevice(100, "Xbox")
+        manager.swapPorts(0, 8)
+        assertEquals(0, manager.getPort(100))
+        manager.swapPorts(-1, 0)
+        assertEquals(0, manager.getPort(100))
+    }
+
+    @Test
+    fun swapPortsWithEmptyPortSwapsOccupancy() {
+        manager.connectDevice(100, "Xbox")
+        assertEquals(0, manager.getPort(100))
+
+        manager.swapPorts(0, 1)
+
+        // Device should now be on port 1
+        assertEquals(1, manager.getPort(100))
+        // Port 0 should be free for a new device
+        val newPort = manager.connectDevice(200, "PS5")
+        assertEquals(0, newPort)
+    }
+
+    @Test
+    fun swapPortsUpdatesAssignmentsFlow() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "PS5")
+
+        val beforeSwap = manager.assignments.value
+        assertEquals(0, beforeSwap.find { it.deviceId == 100 }?.port)
+        assertEquals(1, beforeSwap.find { it.deviceId == 200 }?.port)
+
+        manager.swapPorts(0, 1)
+
+        val afterSwap = manager.assignments.value
+        assertEquals(1, afterSwap.find { it.deviceId == 100 }?.port)
+        assertEquals(0, afterSwap.find { it.deviceId == 200 }?.port)
     }
 
     private class FakeKeyMappingRepo : KeyMappingRepository {

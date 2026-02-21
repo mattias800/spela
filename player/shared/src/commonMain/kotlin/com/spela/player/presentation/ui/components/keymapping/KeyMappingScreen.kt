@@ -42,6 +42,10 @@ import com.spela.player.presentation.ui.theme.SpTypography
  * @param onResetToDefaults Called when the user wants to reset all bindings to defaults
  * @param keyNameResolver Converts a platform key code to a human-readable name
  */
+/**
+ * @param portLabel Optional subtitle showing which player/device is being configured
+ *   (e.g., "Player 2 — Xbox Controller").
+ */
 @Composable
 fun KeyMappingScreen(
     layout: ConsoleButtonLayout,
@@ -53,6 +57,7 @@ fun KeyMappingScreen(
     onCancelMapping: (() -> Unit)? = null,
     onClearBinding: (() -> Unit)? = null,
     keyNameResolver: (Int) -> String = { "Key $it" },
+    portLabel: String? = null,
 ) {
     val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
         buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
@@ -81,6 +86,15 @@ fun KeyMappingScreen(
                 style = SpTypography.HeadlineMedium,
                 color = SpColor.OnBackground,
             )
+
+            if (portLabel != null) {
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                Text(
+                    text = portLabel,
+                    style = SpTypography.TitleSmall,
+                    color = SpColor.Primary,
+                )
+            }
 
             Spacer(Modifier.height(SpSpacing.Small))
 

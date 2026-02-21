@@ -65,11 +65,17 @@ fun DesktopEmulationSurface(
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
     keyMapping: Map<Int, Int>? = null,
+    gamepadPortManager: GamepadPortManager? = null,
 ) {
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultKeyMapping
     }
     val analogTracker = remember { AnalogAxisTracker() }
+
+    // Register keyboard as a device on port manager (device ID = -1)
+    val keyboardPort = remember(gamepadPortManager) {
+        gamepadPortManager?.connectDevice(-1, "Keyboard") ?: 0
+    }
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     val focusRequester = remember { FocusRequester() }
 
@@ -123,15 +129,19 @@ fun DesktopEmulationSurface(
                         return@onPreviewKeyEvent true
                     }
                     val keyCode = event.key.keyCode.toInt()
-                    val buttonId = effectiveMapping[keyCode]
+                    val port = gamepadPortManager?.getPort(-1) ?: 0
+                    // Use port-specific mapping from GamepadPortManager if available
+                    val buttonId = gamepadPortManager?.mapKeyToLibretro(port, keyCode)
+                        ?: effectiveMapping[keyCode]
                     if (buttonId != null) {
                         val pressed = event.type == KeyEventType.KeyDown
                         val axisUpdate = analogTracker.update(buttonId, pressed)
                         if (axisUpdate != null) {
-                            controller.setAnalog(0, axisUpdate.stickIndex, axisUpdate.axisId, axisUpdate.value)
+                            controller.setAnalog(port, axisUpdate.stickIndex, axisUpdate.axisId, axisUpdate.value)
                         } else {
-                            controller.setButton(0, buttonId, pressed)
+                            controller.setButton(port, buttonId, pressed)
                         }
+                        gamepadPortManager?.reportActivity(port)
                         true
                     } else {
                         false

@@ -6,6 +6,10 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.AchievementEvent
+import com.spela.player.domain.model.KeyMappingPreset
+import com.spela.player.domain.model.KeyMappingProfile
+import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
@@ -75,6 +79,8 @@ class EmulationViewModelSecondaryDisplayTest {
     private lateinit var fakeLibretroController: StubLibretroController
     private lateinit var stubPresenceService: PresenceService
     private lateinit var vmScope: CoroutineScope
+    private val stubKeyMappingRepo = StubKeyMappingRepository()
+    private val gamepadPortManager = GamepadPortManager(stubKeyMappingRepo)
 
     private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineConfig> {
         override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
@@ -125,6 +131,7 @@ class EmulationViewModelSecondaryDisplayTest {
             connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
             apiClient = apiClient,
+            gamepadPortManager = gamepadPortManager,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -336,6 +343,7 @@ class EmulationViewModelSecondaryDisplayTest {
             connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
             apiClient = apiClient,
+            gamepadPortManager = gamepadPortManager,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -370,6 +378,7 @@ class EmulationViewModelSecondaryDisplayTest {
             connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, vmScope),
             screenshotCapture = null,
             apiClient = apiClient,
+            gamepadPortManager = gamepadPortManager,
             engineFactory = StubMockEngineFactory,
             dispatchers = testDispatchers,
             scope = vmScope,
@@ -624,5 +633,21 @@ class EmulationViewModelSecondaryDisplayTest {
         override suspend fun getMyAttempts(challengeId: String) =
             Result.success(emptyList<com.spela.player.domain.model.ChallengeAttempt>())
         override suspend fun deleteChallenge(challengeId: String) = Result.success(Unit)
+    }
+
+    private class StubKeyMappingRepository : KeyMappingRepository {
+        override suspend fun getMappingForConsole(consoleId: String, port: Int): KeyMappingProfile? = null
+        override suspend fun setBinding(consoleId: String, port: Int, retroButtonId: Int, platformKeyCode: Int) {}
+        override suspend fun resetToDefault(consoleId: String, port: Int) {}
+        override suspend fun clearBinding(consoleId: String, port: Int, retroButtonId: Int) {}
+        override suspend fun getEffectiveMapping(consoleId: String, port: Int): Map<Int, Int> = emptyMap()
+        override fun getDefaultMapping(): Map<Int, Int> = emptyMap()
+        override fun getAvailablePresets(): List<KeyMappingPreset> = emptyList()
+        override suspend fun applyPreset(presetId: String) {}
+        override suspend fun ensureDefaultsApplied() {}
+        override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> = emptyMap()
+        override suspend fun setGameMapping(gameId: String, bindings: Map<Int, Int>) {}
+        override suspend fun clearGameMapping(gameId: String) {}
+        override suspend fun hasGameMapping(gameId: String): Boolean = false
     }
 }

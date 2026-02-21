@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.util.DispatcherProvider
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 class KeyMappingViewModel(
     private val keyMappingRepository: KeyMappingRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val gamepadPortManager: GamepadPortManager? = null,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -105,11 +107,12 @@ class KeyMappingViewModel(
         val updatedBindings = _state.value.currentBindings.toMutableMap()
         updatedBindings[currentButton] = platformKeyCode
 
-        // Persist locally and sync to server
+        // Persist locally, sync to server, and reload GamepadPortManager mapping
         scope.launch(dispatchers.io) {
             try {
                 keyMappingRepository.setBinding(consoleId, port, currentButton, platformKeyCode)
                 preferencesRepository.pushKeyMappingsToServer()
+                gamepadPortManager?.loadMappingForPort(port, consoleId)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to save binding: ${e.message}") }
             }

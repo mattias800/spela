@@ -15,6 +15,7 @@ import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplaySignaling
 import com.spela.player.netplay.NetplayTransport
@@ -32,6 +33,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -57,6 +60,7 @@ class EmulationViewModel(
     private val challengeRepository: ChallengeRepository,
     private val saveDataRepository: SaveDataRepository,
     private val connectivityMonitor: ConnectivityMonitor,
+    private val gamepadPortManager: GamepadPortManager,
     private val screenshotCapture: ScreenshotCapture?,
     private val apiClient: SpelaApiClient,
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
@@ -77,6 +81,29 @@ class EmulationViewModel(
     private var netplayTransport: NetplayTransport? = null
     private var netplayInputCollectorJob: Job? = null
     private var netplayControlCollectorJob: Job? = null
+
+    init {
+        // Observe game/console changes and reload gamepad mappings for all ports.
+        // Centralized here so both Android and Desktop get mapping reloads.
+        scope.launch(dispatchers.io) {
+            _state
+                .map { Pair(it.gameId, it.consoleId) }
+                .distinctUntilChanged()
+                .collect { (gameId, consoleId) ->
+                    if (consoleId.isNotEmpty()) {
+                        try {
+                            if (gameId.isNotEmpty()) {
+                                gamepadPortManager.loadAllGameMappings(gameId, consoleId)
+                            } else {
+                                gamepadPortManager.loadAllMappings(consoleId)
+                            }
+                        } catch (_: Exception) {
+                            // Best effort - defaults will be used
+                        }
+                    }
+                }
+        }
+    }
 
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
@@ -118,8 +145,10 @@ class EmulationViewModel(
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
             EmulationIntent.ClearExitRequest -> _state.update { it.copy(requestExit = false) }
 
-            EmulationIntent.ShowKeyMapping -> _state.update { it.copy(showKeyMapping = true, showOverlay = false) }
+            EmulationIntent.ShowKeyMapping -> _state.update { it.copy(showKeyMapping = true, showOverlay = false, showGamepadConfig = false) }
             EmulationIntent.HideKeyMapping -> _state.update { it.copy(showKeyMapping = false, showOverlay = true) }
+            EmulationIntent.ShowGamepadConfig -> _state.update { it.copy(showGamepadConfig = true, showOverlay = false) }
+            EmulationIntent.HideGamepadConfig -> _state.update { it.copy(showGamepadConfig = false, showOverlay = true) }
 
             EmulationIntent.DismissAchievement -> _state.update { it.copy(achievementEvent = null) }
 
