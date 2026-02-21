@@ -1,5 +1,8 @@
 package com.spela.player.presentation.ui.feature.ingame
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,16 +22,24 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.ui.components.EmulationActionButton
@@ -39,6 +50,9 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import org.koin.compose.koinInject
+
+private const val BURN_IN_IDLE_TIMEOUT_MS = 15_000L
+private const val BURN_IN_FADE_DURATION_MS = 5_000
 
 /**
  * Content composable displayed on the secondary screen during gameplay.
@@ -64,15 +78,46 @@ fun SecondaryScreenContent(
     val state by viewModel.state.collectAsState()
     val contentAlpha = if (state.isPaused) 0.4f else 1f
 
+    // OLED burn-in protection: fade to black after idle timeout (single-screen games only)
+    var touchResetKey by remember { mutableIntStateOf(0) }
+    var isDimmed by remember { mutableStateOf(false) }
+    val burnInAlpha by animateFloatAsState(
+        targetValue = if (isDimmed) 0f else 1f,
+        animationSpec = if (isDimmed) tween(BURN_IN_FADE_DURATION_MS) else snap(),
+        label = "burnInAlpha",
+    )
+
+    if (!state.isDualScreenConsole) {
+        LaunchedEffect(touchResetKey, state.isPaused) {
+            isDimmed = false
+            delay(BURN_IN_IDLE_TIMEOUT_MS)
+            isDimmed = true
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .background(SpColor.Background)
+            .then(
+                if (!state.isDualScreenConsole) {
+                    Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent(PointerEventPass.Initial)
+                                touchResetKey++
+                            }
+                        }
+                    }
+                } else {
+                    Modifier
+                }
+            ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = contentAlpha },
+                .graphicsLayer { alpha = contentAlpha * burnInAlpha },
         ) {
             // Game info bar
             GameInfoBar(
@@ -116,7 +161,9 @@ fun SecondaryScreenContent(
         // Paused overlay
         if (state.isPaused) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = burnInAlpha },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -125,6 +172,25 @@ fun SecondaryScreenContent(
                     color = SpColor.OnBackground.copy(alpha = 0.8f),
                 )
             }
+        }
+
+        // Touch-blocking overlay when screen is dimmed (prevents accidental button presses)
+        if (burnInAlpha < 0.5f && !state.isDualScreenConsole) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+                    .semantics {
+                        contentDescription = "Screen dimmed for OLED protection"
+                    },
+            )
         }
     }
 }
