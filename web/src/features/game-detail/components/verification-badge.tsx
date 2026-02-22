@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api-client";
 import type { Game } from "@/types/api";
 
@@ -90,7 +90,11 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
 
   return (
     <div className="relative">
-      <button type="button" onClick={() => setShowInfo(!showInfo)}>
+      <button
+        type="button"
+        onClick={() => setShowInfo(!showInfo)}
+        className="cursor-pointer rounded-full transition-opacity hover:opacity-80"
+      >
         <Badge variant="warning" data-testid="verification-badge">
           <AlertTriangle className="h-3.5 w-3.5 mr-1" />
           {displayText}
@@ -115,7 +119,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
               </label>
               <select
                 ref={selectRef}
-                className="w-full rounded-md border border-surface-600 bg-surface-700 px-2 py-1.5 text-sm text-surface-200"
+                className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-1.5 text-sm text-surface-200"
                 value=""
                 onChange={(e) => {
                   const value = e.target.value;
@@ -143,21 +147,21 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
                   placeholder="Custom tag"
                   value={customTag}
                   onChange={(e) => setCustomTag(e.target.value)}
-                  className="flex-1 rounded-md border border-surface-600 bg-surface-700 px-2 py-1.5 text-sm text-surface-200"
+                  className="flex-1 rounded-lg border border-surface-600 bg-surface-700 px-3 py-1.5 text-sm text-surface-200"
                   data-testid="custom-tag-input"
                 />
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={() => {
                     if (customTag.trim()) {
                       mutation.mutate(customTag.trim());
                     }
                   }}
-                  className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+                  loading={mutation.isPending}
                   data-testid="save-custom-tag"
                 >
                   Save
-                </button>
+                </Button>
               </div>
             </div>
           )}
