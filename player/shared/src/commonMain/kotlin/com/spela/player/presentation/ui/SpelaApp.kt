@@ -348,6 +348,7 @@ fun SpelaApp(
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.NetplayLobby(session.id))
                                         )
+                                        netplayViewModel.onIntent(NetplayIntent.ClearJoinedSession)
                                     }
                                 }
                                 GameDetailScreen(

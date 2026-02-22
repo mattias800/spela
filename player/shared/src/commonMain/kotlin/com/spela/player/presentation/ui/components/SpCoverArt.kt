@@ -71,7 +71,7 @@ fun SpHeroCover(
                 model = imageUrl,
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 loading = {
                     CoverShimmer()
                 },

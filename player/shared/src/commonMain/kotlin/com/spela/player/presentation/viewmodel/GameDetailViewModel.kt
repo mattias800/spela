@@ -59,6 +59,12 @@ class GameDetailViewModel(
             GameDetailIntent.DownloadGame -> downloadGame()
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
+            GameDetailIntent.ShowDeleteDownloadDialog -> _state.update {
+                it.copy(showDeleteDownloadDialog = true)
+            }
+            GameDetailIntent.DismissDeleteDownloadDialog -> _state.update {
+                it.copy(showDeleteDownloadDialog = false)
+            }
             GameDetailIntent.ToggleFavorite -> toggleFavorite()
             GameDetailIntent.TogglePlayLater -> togglePlayLater()
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
@@ -204,7 +210,7 @@ class GameDetailViewModel(
         val gameId = currentGameId ?: return
         scope.launch(dispatchers.io) {
             downloadRepository.deleteLocalGame(gameId)
-            _state.update { it.copy(isGameCached = false) }
+            _state.update { it.copy(isGameCached = false, showDeleteDownloadDialog = false) }
         }
     }
 

@@ -54,6 +54,8 @@ data class GameDetailState(
     val isLoadingRelays: Boolean = false,
     // Save Data (SRAM)
     val saveDataCount: Int = 0,
+    // Delete Download
+    val showDeleteDownloadDialog: Boolean = false,
     // Create Challenge
     val showCreateChallengeDialog: Boolean = false,
     val isCreatingChallenge: Boolean = false,

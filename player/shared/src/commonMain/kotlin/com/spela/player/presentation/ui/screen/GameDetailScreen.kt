@@ -61,12 +61,15 @@ import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpSplitButton
+import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
@@ -153,6 +156,7 @@ fun GameDetailScreen(
                             onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
                             onRate = { rating -> viewModel.onIntent(GameDetailIntent.RateGame(rating)) },
                             onCreateNetplay = onCreateNetplay,
+                            onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
                         )
                     }
                 }
@@ -341,6 +345,18 @@ fun GameDetailScreen(
             },
         )
 
+        // Delete Download confirmation dialog
+        if (state.showDeleteDownloadDialog) {
+            SpConfirmDialog(
+                title = "Delete Download",
+                message = "Remove the downloaded game files from this device? Your save states on the server are not affected.",
+                onDismiss = { viewModel.onIntent(GameDetailIntent.DismissDeleteDownloadDialog) },
+                onConfirm = { viewModel.onIntent(GameDetailIntent.DeleteLocalGame) },
+                confirmText = "Delete",
+                isDestructive = true,
+            )
+        }
+
         // Create Challenge dialog
         if (state.showCreateChallengeDialog) {
             CreateChallengeDialog(
@@ -416,6 +432,7 @@ private fun GameInfoContent(
     onAddToCollection: () -> Unit,
     onRate: (Int) -> Unit,
     onCreateNetplay: ((String) -> Unit)? = null,
+    onDeleteLocalGame: () -> Unit = {},
 ) {
     Text(
         text = game.title,
@@ -450,51 +467,53 @@ private fun GameInfoContent(
     Spacer(Modifier.height(SpSpacing.XLarge))
 
     // Action buttons - two-row layout
-    // Row 1: Play buttons
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        if (state.isGameCached && hasSaves && onPlayFresh != null) {
-            SpButton(
-                text = "Resume",
-                onClick = { onPlay(gameId) },
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { contentDescription = "Resume ${game.title}" },
-            )
-            SpButton(
-                text = "New Game",
-                onClick = { onPlayFresh(gameId) },
-                style = SpButtonStyle.Secondary,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { contentDescription = "New Game ${game.title}" },
-            )
-        } else if (state.isGameCached) {
-            SpButton(
-                text = "Play",
-                onClick = { onPlay(gameId) },
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { contentDescription = "Play ${game.title}" },
-            )
-        } else {
-            val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
-            val isBusy = state.isDownloading || isActivelyDownloading
-            SpButton(
-                text = if (isBusy) "Downloading..." else "Download",
-                onClick = onDownloadGame,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics {
-                        contentDescription = if (isBusy) "Downloading ${game.title}"
-                        else "Download ${game.title}"
-                    },
-                isLoading = isBusy,
-                enabled = !isBusy,
-            )
+    // Row 1: Play/Download split button with overflow menu
+    val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
+
+    if (state.isGameCached) {
+        val menuItems = buildList {
+            if (hasSaves && onPlayFresh != null) {
+                add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+            }
+            if (onCreateNetplay != null && supportsNetplay) {
+                add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+            }
+            add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
         }
+
+        SpSplitButton(
+            text = if (hasSaves) "Resume" else "Play",
+            onClick = { onPlay(gameId) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
+                },
+            menuItems = menuItems,
+        )
+    } else {
+        val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+        val isBusy = state.isDownloading || isActivelyDownloading
+
+        val menuItems = buildList {
+            if (onCreateNetplay != null && supportsNetplay) {
+                add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+            }
+        }
+
+        SpSplitButton(
+            text = if (isBusy) "Downloading..." else "Download",
+            onClick = onDownloadGame,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = if (isBusy) "Downloading ${game.title}"
+                    else "Download ${game.title}"
+                },
+            isLoading = isBusy,
+            enabled = !isBusy,
+            menuItems = menuItems,
+        )
     }
 
     Spacer(Modifier.height(SpSpacing.Small))
@@ -552,23 +571,6 @@ private fun GameInfoContent(
                     modifier = Modifier.size(24.dp),
                 )
             },
-        )
-    }
-
-    // Netplay button -- only for supported consoles (AC-1/AC-16)
-    val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
-    if (onCreateNetplay != null && supportsNetplay) {
-        Spacer(Modifier.height(SpSpacing.Small))
-        SpButton(
-            text = "Netplay",
-            onClick = { onCreateNetplay(gameId) },
-            style = SpButtonStyle.Secondary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = "Create netplay session for ${game.title}"
-                    role = Role.Button
-                },
         )
     }
 
