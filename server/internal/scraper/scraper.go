@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,18 +23,21 @@ type Scraper struct {
 	Storage    *storage.Storage
 	HTTPClient *http.Client
 	IGDBClient *igdb.Client
+	DATCache   *DATCache
 	cache      *nameCache
 }
 
 // NewScraper creates a new metadata scraper instance.
-func NewScraper(database *gorm.DB, store *storage.Storage) *Scraper {
+func NewScraper(database *gorm.DB, store *storage.Storage, datDir string) *Scraper {
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	return &Scraper{
-		DB:      database,
-		Storage: store,
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-		cache: &nameCache{entries: make(map[string][]nameEntry)},
+		DB:         database,
+		Storage:    store,
+		HTTPClient: httpClient,
+		DATCache:   NewDATCache(datDir, httpClient),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 }
 
@@ -214,18 +218,44 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		return fmt.Errorf("empty game name after cleaning: %s", game.FileName)
 	}
 
-	games, err := s.IGDBClient.SearchGame(cleanName, platformID)
+	// CRC-based identification: look up ROM in No-Intro DAT
+	searchName := cleanName
+	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
+		if crc, err := computeFileCRC32(game.FilePath); err == nil {
+			if entry, ok := idx.LookupCRC(crc); ok {
+				slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
+
+				// Rename ROM file to canonical No-Intro name
+				newPath := filepath.Join(filepath.Dir(game.FilePath), entry.ROMName)
+				if newPath != game.FilePath {
+					if err := os.Rename(game.FilePath, newPath); err == nil {
+						game.FilePath = newPath
+						game.FileName = entry.ROMName
+					} else {
+						slog.Warn("failed to rename ROM to canonical name", "from", game.FilePath, "to", newPath, "error", err)
+					}
+				}
+
+				// Use canonical game name (strip region tags) for IGDB search
+				searchName = igdb.CleanGameName(entry.ROMName)
+			}
+		} else {
+			slog.Debug("failed to compute CRC32", "file", game.FilePath, "error", err)
+		}
+	}
+
+	games, err := s.IGDBClient.SearchGame(searchName, platformID)
 	if err != nil {
 		return fmt.Errorf("IGDB search: %w", err)
 	}
 
 	if len(games) == 0 {
-		slog.Debug("no IGDB results", "game", cleanName, "platform", console.Abbreviation)
+		slog.Debug("no IGDB results", "game", searchName, "platform", console.Abbreviation)
 		return nil
 	}
 
-	// Pick the first (best) match
-	match := games[0]
+	// Pick the result whose name best matches the search name
+	match := bestIGDBMatch(searchName, games)
 
 	// Set scraper ID
 	game.ScraperID = fmt.Sprintf("igdb:%d", match.ID)
@@ -289,7 +319,7 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
-	slog.Info("IGDB match found", "game", cleanName, "matched", match.Name, "igdbId", match.ID)
+	slog.Info("IGDB match found", "game", searchName, "matched", match.Name, "igdbId", match.ID)
 	return nil
 }
 

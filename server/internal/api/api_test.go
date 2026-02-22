@@ -73,7 +73,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		GameDirs:  []string{tmpDir},
 		Storage:   store,
 		Scanner:   scanner.NewScanner(database, []string{tmpDir}),
-		Scraper:   scraper.NewScraper(database, store),
+		Scraper:   scraper.NewScraper(database, store, t.TempDir()),
 		Hub:       hub,
 		CoreDir:   tmpDir + "/cores",
 	}

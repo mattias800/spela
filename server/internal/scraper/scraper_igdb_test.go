@@ -117,6 +117,7 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -186,6 +187,7 @@ func TestScrapeGame_IGDBNoResults_FallsBackToLibRetro(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -244,6 +246,7 @@ func TestScrapeGame_IGDBError_FallsBackGracefully(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -273,6 +276,7 @@ func TestScrapeGame_NoIGDB_LibRetroOnly(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: nil, // no IGDB configured
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -339,6 +343,7 @@ func TestScrapeGame_DoesNotOverwriteWithEmptyValues(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -403,6 +408,7 @@ func TestScrapeGame_UnknownPlatform_SkipsIGDB(t *testing.T) {
 		Storage:    store,
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 

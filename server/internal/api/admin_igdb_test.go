@@ -40,7 +40,7 @@ func setupIGDBTestEnv(t *testing.T, twitchServer *httptest.Server) (*gorm.DB, *g
 	hub := ws.NewHub(nil)
 	go hub.Run()
 
-	s := scraper.NewScraper(database, nil)
+	s := scraper.NewScraper(database, nil, t.TempDir())
 	adminHandler := &AdminHandler{DB: database, Scraper: s, Hub: hub}
 	igdbHandler := &IGDBHandler{DB: database}
 
