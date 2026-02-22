@@ -3,7 +3,6 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 /**
@@ -30,9 +29,7 @@ class AppLaunchAndConnectionTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
         // Pre-add a server so the form doesn't auto-open (auto-opens when server list is empty)
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("Existing", "http://existing:8080")
-        }
+        harness.serverRepo.preAddServer("Existing", "http://existing:8080")
 
         setContent { harness.App() }
         advance(harness)
@@ -52,10 +49,7 @@ class AppLaunchAndConnectionTest {
     fun selectingServerNavigatesToLoginScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        // Pre-add a server
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("Local Server", "http://localhost:8080")
-        }
+        harness.serverRepo.preAddServer("Local Server", "http://localhost:8080")
 
         setContent { harness.App() }
         advance(harness)
@@ -75,9 +69,7 @@ class AppLaunchAndConnectionTest {
     fun loginScreenShowsRegisterToggle() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("Local", "http://localhost:8080")
-        }
+        harness.serverRepo.preAddServer("Local", "http://localhost:8080")
 
         setContent { harness.App() }
         advance(harness)
@@ -99,9 +91,7 @@ class AppLaunchAndConnectionTest {
     fun serverListShowsRemoveButton() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("My Server", "http://my-server:8080")
-        }
+        harness.serverRepo.preAddServer("My Server", "http://my-server:8080")
 
         setContent { harness.App() }
         advance(harness)
@@ -117,10 +107,8 @@ class AppLaunchAndConnectionTest {
     fun removeServerRemovesItFromList() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("Server A", "http://a:8080")
-            harness.serverRepo.addServer("Server B", "http://b:8080")
-        }
+        harness.serverRepo.preAddServer("Server A", "http://a:8080")
+        harness.serverRepo.preAddServer("Server B", "http://b:8080")
 
         setContent { harness.App() }
         advance(harness)
@@ -142,9 +130,7 @@ class AppLaunchAndConnectionTest {
     fun successfulLoginNavigatesToHomeScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        runTest(harness.testDispatcher) {
-            harness.serverRepo.addServer("Local", "http://localhost:8080")
-        }
+        harness.serverRepo.preAddServer("Local", "http://localhost:8080")
 
         setContent { harness.App() }
         advance(harness)

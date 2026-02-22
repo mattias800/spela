@@ -24,6 +24,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 
 /**
@@ -31,6 +32,7 @@ import kotlinx.coroutines.test.TestDispatcher
  * This allows Compose UI tests to exercise the complete app without any real
  * network, file system, or native library dependencies.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SpelaTestHarness(
     val testDispatcher: TestDispatcher,
 ) {
@@ -82,7 +84,11 @@ class SpelaTestHarness(
         // Flush restoreSession() so isRestoringSession becomes false before tests run.
         // With no active server, this resolves to NoSession → ServerConnection screen,
         // matching the original default NavigationState behavior.
-        testDispatcher.scheduler.advanceUntilIdle()
+        // Use bounded advance instead of advanceUntilIdle() — if ViewModels with
+        // perpetual loops (e.g. GamepadConfigViewModel) are ever reordered above this
+        // init block, advanceUntilIdle() would hang forever.
+        testDispatcher.scheduler.advanceTimeBy(2_000)
+        testDispatcher.scheduler.runCurrent()
     }
 
     val serverConnectionViewModel = ServerConnectionViewModel(

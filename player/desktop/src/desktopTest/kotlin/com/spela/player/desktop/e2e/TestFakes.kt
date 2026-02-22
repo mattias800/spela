@@ -34,15 +34,15 @@ import com.spela.player.presentation.navigation.SpScreen
 /**
  * Advance both the test dispatcher and Compose clock in bounded steps.
  *
- * Compose Multiplatform 1.7.x `waitForIdle()` hangs when the composition
+ * Compose Multiplatform `waitForIdle()` hangs when the composition
  * contains infinite animations (`rememberInfiniteTransition`).  Disabling
  * `mainClock.autoAdvance` prevents this during the advance loop.
  *
  * We use bounded `advanceTimeBy` instead of `advanceUntilIdle()` on the
  * test dispatcher so that perpetual coroutine loops (e.g. the session
  * timer in EmulationViewModel) don't hang the scheduler.  Multiple
- * iterations handle cascading async chains (click → navigation → compose
- * effect → ViewModel coroutine → state update → recomposition).
+ * iterations handle cascading async chains (click -> navigation -> compose
+ * effect -> ViewModel coroutine -> state update -> recomposition).
  *
  * After the loop completes, `autoAdvance` is restored to `true` so that
  * subsequent operations (`performScrollTo`, `assertIsDisplayed`, etc.)
@@ -50,10 +50,11 @@ import com.spela.player.presentation.navigation.SpScreen
  * animations.  By the time the loop finishes, loading skeletons with
  * infinite shimmer animations should be replaced by real content.
  *
- * IMPORTANT: If a test navigates to a screen with SpShimmer/SpPulseDots
- * skeletons, pre-load the data BEFORE setContent or navigation so the
- * skeleton never renders. Otherwise waitForIdle() will hang on the
- * infinite animation. See ChallengeDetailScreen tests for examples.
+ * IMPORTANT: All infinite animations MUST be guarded by
+ * `LocalAnimationsEnabled.current` checks. This includes Material 3
+ * `CircularProgressIndicator` which has an internal infinite rotation.
+ * Any un-guarded infinite animation will cause `waitForIdle()` to hang
+ * after `autoAdvance` is restored to `true`.
  *
  * Tiered variants:
  * - [advanceQuick]: 2 iterations — for simple click-then-assert patterns
@@ -435,6 +436,10 @@ class FakeSaveRepository : SaveRepository {
             isAuto = true,
         )
         return Result.success(save)
+    }
+
+    fun preUploadAutoSave(gameId: String, data: ByteArray) {
+        autoSaves[gameId] = data
     }
 
     override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> {

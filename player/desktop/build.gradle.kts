@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.time.Duration
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -108,6 +109,13 @@ compose.desktop {
 tasks.withType<Test> {
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
     jvmArgs("-Xmx1024m")
+    // Fail individual tests that hang instead of blocking the entire suite.
+    // Per-test timeout: 30 seconds. Per-class (suite) timeout: 120 seconds.
+    systemProperty("junit.jupiter.execution.timeout.default", "30s")
+    systemProperty("junit.jupiter.execution.timeout.testable.method.default", "30s")
+    systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "15s")
+    // Gradle-level timeout as a backstop for the entire test task.
+    timeout.set(Duration.ofMinutes(5))
 }
 
 // Make the run task depend on building the native library.

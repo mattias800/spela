@@ -35,7 +35,11 @@ class ChallengeBrowsingTest {
      */
     private fun SpelaTestHarness.preLoadChallengeDetail(challengeId: String) {
         challengeDetailViewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
-        testDispatcher.scheduler.advanceUntilIdle()
+        // Bounded advance instead of advanceUntilIdle() — the gamepad config
+        // ViewModel runs a perpetual 200ms refresh loop on the shared dispatcher,
+        // so advanceUntilIdle() would hang forever.
+        testDispatcher.scheduler.advanceTimeBy(2_000)
+        testDispatcher.scheduler.runCurrent()
     }
 
     @Test

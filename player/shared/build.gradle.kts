@@ -1,3 +1,5 @@
+import java.time.Duration
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
@@ -88,6 +90,11 @@ kotlin {
 tasks.withType<Test> {
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
     jvmArgs("-Xmx1024m")
+    // Fail individual tests that hang instead of blocking the entire suite.
+    systemProperty("junit.jupiter.execution.timeout.default", "30s")
+    systemProperty("junit.jupiter.execution.timeout.testable.method.default", "30s")
+    systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "15s")
+    timeout.set(Duration.ofMinutes(5))
 }
 
 android {

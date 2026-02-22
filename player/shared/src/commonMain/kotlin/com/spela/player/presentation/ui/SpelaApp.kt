@@ -2,6 +2,8 @@ package com.spela.player.presentation.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -202,10 +204,13 @@ fun SpelaApp(
                 SpOfflineBanner(isOffline = !isOnline)
 
                 Box(modifier = Modifier.weight(1f)) {
+                    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
                     AnimatedContent(
                         targetState = navState.currentScreen,
                         transitionSpec = {
-                            if (navState.isGoingBack) {
+                            if (!animationsEnabled) {
+                                EnterTransition.None togetherWith ExitTransition.None
+                            } else if (navState.isGoingBack) {
                                 (slideInHorizontally { -it / 3 } + fadeIn())
                                     .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
                             } else {
