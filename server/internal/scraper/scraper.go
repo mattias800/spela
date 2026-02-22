@@ -226,7 +226,9 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 
 	// CRC-based identification: look up ROM in No-Intro DAT
 	searchName := cleanName
-	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
+	if discBasedSystems[console.Abbreviation] {
+		game.VerificationStatus = "not_applicable"
+	} else if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
 		if crc, err := computeFileCRC32(game.FilePath); err == nil {
 			game.CRC32 = crc
 			if entry, ok := idx.LookupCRC(crc); ok {

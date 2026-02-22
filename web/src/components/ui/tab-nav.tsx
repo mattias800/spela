@@ -83,11 +83,11 @@ export function StateTabItem({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+        "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 cursor-pointer",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950",
         active
           ? "bg-surface-800 text-surface-100"
-          : "text-surface-400 hover:text-surface-200",
+          : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50",
       )}
     >
       {children}

@@ -230,7 +230,7 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	}
 
 	var unverified []db.Game
-	if err := h.DB.Where("verification_status = ? OR verification_status = '' OR verification_status IS NULL", "unverified").
+	if err := h.DB.Where("verification_status = ?", "unverified").
 		Preload("Console").Preload("Discs").
 		Find(&unverified).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unverified games"})
