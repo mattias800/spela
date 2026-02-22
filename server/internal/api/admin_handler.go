@@ -261,6 +261,15 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.scraping = true
 	h.scrapeMu.Unlock()
 
+	// Count matching games before launching the goroutine so we can
+	// return the total in the HTTP response for immediate user feedback.
+	var total int64
+	if force {
+		h.DB.Model(&db.Game{}).Count(&total)
+	} else {
+		h.DB.Model(&db.Game{}).Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
+	}
+
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
 
 	go func() {
@@ -285,7 +294,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
 	}()
 
-	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background"})
+	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background", "total": total})
 }
 
 // ScrapeStatus returns the current scrape operation status.

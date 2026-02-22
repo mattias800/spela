@@ -84,12 +84,19 @@ export function useScanLibrary() {
   });
 }
 
+export interface ScrapeStartResponse {
+  message: string;
+  total: number;
+}
+
 export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (force?: boolean) =>
-      api.post<void>(`/admin/scrape${force ? "?force=true" : ""}`),
+      api.post<ScrapeStartResponse>(
+        `/admin/scrape${force ? "?force=true" : ""}`,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });

@@ -137,7 +137,15 @@ function ScrapeCard() {
           <Button
             onClick={() =>
               scrapeMetadata.mutate(false, {
-                onSuccess: () => toast("success", "Metadata scraping started"),
+                onSuccess: (data) => {
+                  const n = data.total;
+                  toast(
+                    n === 0 ? "info" : "success",
+                    n === 0
+                      ? "No unscraped games found"
+                      : `Scraping ${n} game${n === 1 ? "" : "s"}...`,
+                  );
+                },
                 onError: (err) =>
                   toast(
                     "error",
@@ -156,8 +164,15 @@ function ScrapeCard() {
           <Button
             onClick={() =>
               scrapeMetadata.mutate(true, {
-                onSuccess: () =>
-                  toast("success", "Full metadata re-scrape started"),
+                onSuccess: (data) => {
+                  const n = data.total;
+                  toast(
+                    n === 0 ? "info" : "success",
+                    n === 0
+                      ? "No games found to scrape"
+                      : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
+                  );
+                },
                 onError: (err) =>
                   toast(
                     "error",
