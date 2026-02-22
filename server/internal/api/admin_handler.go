@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	ws "github.com/spela/server/internal/websocket"
@@ -162,7 +163,13 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, ToUserResponse(user))
 }
 
+// secretSettingKeys are settings that should be masked in GET responses.
+var secretSettingKeys = map[string]bool{
+	"igdb_client_secret": true,
+}
+
 // GetSettings returns server settings (admin only).
+// Secret values are masked with "********" placeholders.
 func (h *AdminHandler) GetSettings(c *gin.Context) {
 	var settings []db.ServerSetting
 	if err := h.DB.Find(&settings).Error; err != nil {
@@ -172,13 +179,22 @@ func (h *AdminHandler) GetSettings(c *gin.Context) {
 
 	settingsMap := make(map[string]string)
 	for _, s := range settings {
-		settingsMap[s.Key] = s.Value
+		if secretSettingKeys[s.Key] && s.Value != "" {
+			settingsMap[s.Key] = secretMaskPlaceholder
+		} else {
+			settingsMap[s.Key] = s.Value
+		}
 	}
 
 	c.JSON(http.StatusOK, settingsMap)
 }
 
+// secretMaskPlaceholder is the masked value returned for secret settings in GET responses.
+const secretMaskPlaceholder = "********"
+
 // UpdateSettings updates server settings (admin only).
+// Secret keys whose value equals the mask placeholder are skipped to prevent
+// overwriting the real secret with the masked value.
 func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	var req map[string]string
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -187,6 +203,11 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	for key, value := range req {
+		// Skip secret keys when value is the mask placeholder — the frontend
+		// loaded "********" from GET and is sending it back unchanged.
+		if secretSettingKeys[key] && value == secretMaskPlaceholder {
+			continue
+		}
 		setting := db.ServerSetting{Key: key, Value: value}
 		h.DB.Where("key = ?", key).Assign(setting).FirstOrCreate(&setting)
 	}
@@ -224,10 +245,8 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 
 // TriggerScrape starts a metadata scraping operation (admin only).
 // Only one scrape can run at a time; concurrent requests are rejected.
-// Images are always fetched from LibRetro Thumbnails (no credentials needed).
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
-	// Try loading ScreenScraper credentials for optional text metadata enrichment
-	h.tryConfigureScreenScraper()
+	h.tryConfigureIGDB()
 
 	h.scrapeMu.Lock()
 	if h.scraping {
@@ -256,25 +275,6 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background"})
-}
-
-// tryConfigureScreenScraper loads ScreenScraper credentials from DB settings if not already configured.
-func (h *AdminHandler) tryConfigureScreenScraper() {
-	if h.Scraper.IsConfigured() {
-		return
-	}
-	var settings []db.ServerSetting
-	h.DB.Where("key IN ?", []string{
-		"screenscraper_username", "screenscraper_password",
-	}).Find(&settings)
-
-	sm := make(map[string]string)
-	for _, s := range settings {
-		sm[s.Key] = s.Value
-	}
-	if sm["screenscraper_username"] != "" && sm["screenscraper_password"] != "" {
-		h.Scraper.Configure(sm["screenscraper_username"], sm["screenscraper_password"])
-	}
 }
 
 // DeleteUser permanently deletes a user and all their data (admin only).
@@ -323,8 +323,6 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 }
 
 // ScrapeGame scrapes metadata for a single game (admin only).
-// Images are always fetched from LibRetro Thumbnails (no credentials needed).
-// If ScreenScraper credentials are configured, text metadata is also enriched.
 func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
@@ -333,8 +331,7 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 		return
 	}
 
-	// Try loading ScreenScraper credentials for optional text metadata enrichment
-	h.tryConfigureScreenScraper()
+	h.tryConfigureIGDB()
 
 	if err := h.Scraper.ScrapeGame(&game); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "scrape failed: " + err.Error()})
@@ -344,6 +341,40 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
+}
+
+// tryConfigureIGDB loads IGDB credentials from DB settings and configures the scraper's IGDB client.
+// Always reloads from DB so that updated credentials are picked up without a server restart.
+func (h *AdminHandler) tryConfigureIGDB() {
+	var settings []db.ServerSetting
+	h.DB.Where("key IN ?", []string{
+		"igdb_client_id", "igdb_client_secret",
+	}).Find(&settings)
+
+	sm := make(map[string]string)
+	for _, s := range settings {
+		sm[s.Key] = s.Value
+	}
+
+	clientID := sm["igdb_client_id"]
+	clientSecret := sm["igdb_client_secret"]
+
+	if clientID == "" || clientSecret == "" {
+		return
+	}
+
+	// Skip re-creation if credentials haven't changed
+	if h.Scraper.IGDBClient != nil &&
+		h.Scraper.IGDBClient.ClientID == clientID &&
+		h.Scraper.IGDBClient.ClientSecret == clientSecret {
+		return
+	}
+
+	// Close old client to release its rate limiter ticker
+	if h.Scraper.IGDBClient != nil {
+		h.Scraper.IGDBClient.Close()
+	}
+	h.Scraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
 }
 
 // GetStats returns admin dashboard statistics.

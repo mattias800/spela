@@ -21,6 +21,8 @@ import {
 } from "@/hooks/use-games";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
+import { useIgdbStatus } from "@/hooks/use-admin";
+import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
 import { usePlayLaterGames, useTogglePlayLater } from "@/hooks/use-play-later";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
@@ -243,11 +245,15 @@ function TrendingChallengesSection() {
 export function DashboardPage() {
   const { user, isAdmin } = useAuth();
   const { data: biosData } = useBiosStatus();
+  const { data: igdbStatus } = useIgdbStatus();
   const [biosDismissed, setBiosDismissed] = useState(false);
+  const [igdbDismissed, setIgdbDismissed] = useState(false);
   const hasMissingBios =
     isAdmin &&
     !biosDismissed &&
     (biosData?.consoles.some((c) => c.status === "missing") ?? false);
+  const showIgdbWarning =
+    isAdmin && !igdbDismissed && igdbStatus && !igdbStatus.configured;
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
   const playLaterGames = usePlayLaterGames();
@@ -284,6 +290,13 @@ export function DashboardPage() {
           message="Some consoles are missing required BIOS files. Games may not work correctly."
           isAdmin={true}
           onDismiss={() => setBiosDismissed(true)}
+        />
+      )}
+
+      {showIgdbWarning && (
+        <IgdbWarningBanner
+          variant="dashboard"
+          onDismiss={() => setIgdbDismissed(true)}
         />
       )}
 

@@ -23,6 +23,7 @@ import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
 import { usePendingInvitationCount } from "@/hooks/use-relays";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
+import { useIgdbStatus } from "@/hooks/use-admin";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -35,6 +36,8 @@ export function AppLayout() {
   const { data: biosData } = useBiosStatus();
   const hasMissingBios =
     biosData?.consoles.some((c) => c.status === "missing") ?? false;
+  const { data: igdbStatus } = useIgdbStatus();
+  const igdbNotConfigured = !(igdbStatus?.configured ?? true);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -92,7 +95,12 @@ export function AppLayout() {
             section: "Admin",
             items: [
               { to: "/admin/users", icon: Users, label: "Users" },
-              { to: "/admin/settings", icon: Settings, label: "Settings" },
+              {
+                to: "/admin/settings",
+                icon: Settings,
+                label: "Settings",
+                warning: igdbNotConfigured,
+              },
               {
                 to: "/admin/bios",
                 icon: Cpu,

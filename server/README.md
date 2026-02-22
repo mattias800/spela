@@ -50,11 +50,6 @@ docker compose up -d
 | `SPELA_CORE_DIR` | `./cores` | Directory for libretro core binaries |
 | `SPELA_CORS_ORIGINS` | `*` | Comma-separated allowed CORS origins |
 | `SPELA_WS_ORIGINS` | (any) | Comma-separated allowed WebSocket origins |
-| `SPELA_SCRAPER_DEV_ID` | (empty) | ScreenScraper developer ID |
-| `SPELA_SCRAPER_DEV_PASS` | (empty) | ScreenScraper developer password |
-| `SPELA_SCRAPER_USER` | (empty) | ScreenScraper user account |
-| `SPELA_SCRAPER_USER_PASS` | (empty) | ScreenScraper user password |
-
 ### Security notes
 
 - `SPELA_JWT_SECRET` **must** be set in production. The server refuses to start in release mode (`GIN_MODE=release`) with the default secret.
@@ -158,7 +153,7 @@ server/
     auth/         JWT and password hashing
     db/           GORM models, migrations, console seeding
     scanner/      ROM directory scanner
-    scraper/      ScreenScraper API client
+    scraper/      Metadata scraper (LibRetro Thumbnails + IGDB)
     storage/      File storage (saves, cores)
     websocket/    WebSocket hub for real-time events
   Dockerfile      Multi-stage Alpine build

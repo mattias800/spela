@@ -1,20 +1,27 @@
 import { useState, useEffect } from "react";
-import { Settings, Plus, X, Key } from "lucide-react";
+import { Settings, Plus, X } from "lucide-react";
 import {
+  Badge,
   Button,
   Card,
   CardHeader,
   CardContent,
   Input,
-  Select,
   Switch,
 } from "@/components/ui";
-import { useServerSettings, useUpdateSettings } from "@/hooks/use-admin";
+import {
+  useServerSettings,
+  useUpdateSettings,
+  useIgdbStatus,
+} from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
+import { IgdbConfigCard } from "@/features/admin/components/igdb-config-card";
+import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useServerSettings();
+  const { data: igdbStatus } = useIgdbStatus();
   const updateSettings = useUpdateSettings();
   const { toast } = useToast();
 
@@ -22,9 +29,8 @@ export function AdminSettingsPage() {
   const [newDir, setNewDir] = useState("");
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
-  const [scraperSource, setScraperSource] = useState("igdb");
-  const [ssUsername, setSsUsername] = useState("");
-  const [ssPassword, setSsPassword] = useState("");
+  const [igdbClientId, setIgdbClientId] = useState("");
+  const [igdbClientSecret, setIgdbClientSecret] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -32,9 +38,8 @@ export function AdminSettingsPage() {
       setGameDirectories(dirs ? dirs.split(",") : []);
       setAllowRegistration(settings["allowRegistration"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
-      setScraperSource(settings["defaultScraperSource"] ?? "igdb");
-      setSsUsername(settings["screenscraper_username"] ?? "");
-      setSsPassword(settings["screenscraper_password"] ?? "");
+      setIgdbClientId(settings["igdb_client_id"] ?? "");
+      setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
     }
   }, [settings]);
 
@@ -56,9 +61,8 @@ export function AdminSettingsPage() {
         gameDirectories: gameDirectories.join(","),
         allowRegistration: String(allowRegistration),
         scrapeOnScan: String(scrapeOnScan),
-        defaultScraperSource: scraperSource,
-        screenscraper_username: ssUsername,
-        screenscraper_password: ssPassword,
+        igdb_client_id: igdbClientId,
+        igdb_client_secret: igdbClientSecret,
       },
       {
         onSuccess: () => toast("success", "Settings saved"),
@@ -77,6 +81,8 @@ export function AdminSettingsPage() {
     );
   }
 
+  const igdbNotConfigured = igdbStatus && !igdbStatus.configured;
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
@@ -85,6 +91,8 @@ export function AdminSettingsPage() {
           Configure server behavior and game scanning.
         </p>
       </div>
+
+      {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
 
       <Card>
         <CardHeader>
@@ -159,48 +167,15 @@ export function AdminSettingsPage() {
             </div>
             <Switch checked={scrapeOnScan} onChange={setScrapeOnScan} />
           </div>
-
-          <Select
-            label="Default Scraper Source"
-            options={[
-              { value: "igdb", label: "IGDB" },
-              { value: "thegamesdb", label: "TheGamesDB" },
-              { value: "screenscraper", label: "ScreenScraper" },
-            ]}
-            value={scraperSource}
-            onChange={(e) => setScraperSource(e.target.value)}
-          />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-            <Key className="h-5 w-5 text-brand-400" />
-            ScreenScraper Credentials
-          </h2>
-          <p className="text-xs text-surface-500 mt-1">
-            Required for metadata scraping. Get credentials at screenscraper.fr
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Username"
-              placeholder="ScreenScraper username"
-              value={ssUsername}
-              onChange={(e) => setSsUsername(e.target.value)}
-            />
-            <Input
-              label="Password"
-              type="password"
-              placeholder="ScreenScraper password"
-              value={ssPassword}
-              onChange={(e) => setSsPassword(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <IgdbConfigCard
+        clientId={igdbClientId}
+        onClientIdChange={setIgdbClientId}
+        clientSecret={igdbClientSecret}
+        onClientSecretChange={setIgdbClientSecret}
+      />
 
       <div className="flex justify-end">
         <Button

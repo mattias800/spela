@@ -109,6 +109,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	statsHandler := &StatsHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
+	igdbHandler := &IGDBHandler{DB: cfg.DB}
 	coreHandler := &CoreHandler{DB: cfg.DB, CoreDir: cfg.CoreDir}
 	raClient := cfg.RAClient
 	if raClient == nil {
@@ -332,6 +333,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/scrape", adminHandler.TriggerScrape)
 			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
+			admin.POST("/igdb/test", igdbHandler.TestIGDB)
+			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
 			admin.GET("/stats", adminHandler.GetStats)
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 			admin.POST("/bios", biosHandler.UploadBiosFile)

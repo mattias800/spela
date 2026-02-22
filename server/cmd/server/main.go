@@ -24,8 +24,6 @@ func main() {
 	coreDir := getEnv("SPELA_CORE_DIR", "./cores")
 	imageDir := getEnv("SPELA_IMAGE_DIR", "./images")
 	biosDir := getEnv("SPELA_BIOS_DIR", "./bios")
-	scraperUser := getEnv("SPELA_SCRAPER_USER", "")
-	scraperUserPass := getEnv("SPELA_SCRAPER_USER_PASS", "")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
 	corsOriginsRaw := getEnv("SPELA_CORS_ORIGINS", "")
 	challengeRateLimitRaw := getEnv("SPELA_CHALLENGE_RATE_LIMIT_SEC", "30")
@@ -88,10 +86,6 @@ func main() {
 
 	// Initialize scraper
 	metaScraper := scraper.NewScraper(database, store)
-	if scraperUser != "" {
-		metaScraper.Configure(scraperUser, scraperUserPass)
-		slog.Info("ScreenScraper integration configured")
-	}
 
 	// Initialize WebSocket hub
 	hub := websocket.NewHub(wsOrigins)

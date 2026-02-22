@@ -143,6 +143,29 @@ export function useAdminStats() {
   });
 }
 
+export function useTestIgdbCredentials() {
+  return useMutation({
+    mutationFn: async (data: { clientId: string; clientSecret: string }) => {
+      return api.post<{ success: boolean; error?: string }>(
+        "/admin/igdb/test",
+        data,
+      );
+    },
+  });
+}
+
+export function useIgdbStatus() {
+  return useQuery({
+    queryKey: ["admin", "igdb-status"],
+    queryFn: () =>
+      api.get<{
+        configured: boolean;
+        status: "connected" | "not_configured" | "error";
+        error?: string;
+      }>("/admin/igdb/status"),
+  });
+}
+
 export function useUpdateGameMetadata() {
   const queryClient = useQueryClient();
 
