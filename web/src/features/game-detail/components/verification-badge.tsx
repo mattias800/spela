@@ -106,7 +106,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
           ref={dropdownRef}
           role="dialog"
           aria-modal="true"
-          className="absolute top-full left-0 mt-2 z-50 w-64 rounded-lg border border-surface-700 bg-surface-800 p-3 shadow-xl"
+          className="absolute top-full left-0 mt-2 z-50 w-80 rounded-lg border border-surface-700 bg-surface-800 p-4 shadow-xl"
         >
           <p className="text-sm text-surface-300 mb-3">
             This ROM does not match any known verified dump.
@@ -119,7 +119,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
               </label>
               <select
                 ref={selectRef}
-                className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-1.5 text-sm text-surface-200"
+                className="w-full appearance-none rounded-lg border border-surface-600 bg-surface-700 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat px-3 pr-9 py-1.5 text-sm text-surface-200"
                 value=""
                 onChange={(e) => {
                   const value = e.target.value;
