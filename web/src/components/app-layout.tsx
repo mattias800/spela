@@ -1,4 +1,5 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Library,
@@ -13,6 +14,8 @@ import {
   ScanSearch,
   FileSearch,
   Cpu,
+  Menu,
+  Gamepad2,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,6 +27,7 @@ import { useBiosStatus } from "@/hooks/use-bios";
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   useGameScrapedListener();
   useNotifications();
   const { data: invitationCountData } = usePendingInvitationCount();
@@ -31,6 +35,15 @@ export function AppLayout() {
   const { data: biosData } = useBiosStatus();
   const hasMissingBios =
     biosData?.consoles.some((c) => c.status === "missing") ?? false;
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    closeMobileMenu();
+  }, [location.pathname, closeMobileMenu]);
 
   const links = [
     {
@@ -100,6 +113,26 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen">
+      {/* Mobile header bar — visible below lg */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 h-14 px-4 bg-surface-950 border-b border-surface-800/50 lg:hidden">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 -ml-1 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/50 transition-colors"
+          aria-label="Open navigation menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-600/20">
+            <Gamepad2 className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-base font-bold tracking-tight text-surface-100">
+            Spela
+          </span>
+        </div>
+      </header>
+
       <Sidebar
         links={links}
         user={user ? { username: user.username, role: user.role } : undefined}
@@ -107,9 +140,12 @@ export function AppLayout() {
           logout();
           navigate("/login");
         }}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={closeMobileMenu}
       />
 
-      <div className="pl-64">
+      {/* Content area — left padding on desktop, top padding on mobile */}
+      <div className="pt-14 lg:pt-0 lg:pl-64">
         <main className="p-6">
           <Outlet />
         </main>

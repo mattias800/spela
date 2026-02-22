@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { Gamepad2, LogOut } from "lucide-react";
@@ -66,7 +66,7 @@ function SidebarSection({ title, children }: SidebarSectionProps) {
   );
 }
 
-interface SidebarProps {
+interface SidebarContentProps {
   links: Array<{
     section?: string;
     items: SidebarLinkProps[];
@@ -78,9 +78,9 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
-export function Sidebar({ links, user, onLogout }: SidebarProps) {
+function SidebarContent({ links, user, onLogout }: SidebarContentProps) {
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex flex-col z-40">
+    <>
       <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-800/50">
         <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-600/20">
           <Gamepad2 className="h-5 w-5 text-white" />
@@ -125,6 +125,86 @@ export function Sidebar({ links, user, onLogout }: SidebarProps) {
           </div>
         </div>
       )}
-    </aside>
+    </>
+  );
+}
+
+interface SidebarProps {
+  links: Array<{
+    section?: string;
+    items: SidebarLinkProps[];
+  }>;
+  user?: {
+    username: string;
+    role: string;
+  };
+  onLogout?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
+  const drawerRef = useRef<HTMLElement>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onMobileClose?.();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [mobileOpen, onMobileClose]);
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible at lg and above */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex-col z-40">
+        <SidebarContent links={links} user={user} onLogout={onLogout} />
+      </aside>
+
+      {/* Mobile drawer — visible below lg when open */}
+      <div className="lg:hidden">
+        {/* Backdrop */}
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/50 transition-opacity",
+            mobileOpen
+              ? "opacity-100 duration-300"
+              : "opacity-0 pointer-events-none duration-200",
+          )}
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+
+        {/* Drawer panel */}
+        <aside
+          ref={drawerRef}
+          role="dialog"
+          aria-modal={mobileOpen ? "true" : undefined}
+          aria-label="Navigation menu"
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-64 bg-surface-950 border-r border-surface-800/50 flex flex-col shadow-2xl transition-transform",
+            mobileOpen
+              ? "translate-x-0 duration-300 ease-out"
+              : "-translate-x-full duration-200 ease-in",
+          )}
+        >
+          <SidebarContent links={links} user={user} onLogout={onLogout} />
+        </aside>
+      </div>
+    </>
   );
 }
