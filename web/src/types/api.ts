@@ -109,23 +109,9 @@ export interface GameFilters {
   pageSize?: number;
 }
 
-export interface MetadataMatch {
-  gameId: string;
-  currentTitle: string;
-  currentCoverUrl?: string;
-  suggestions: MetadataSuggestion[];
-}
-
-export interface MetadataSuggestion {
-  source: string;
-  title: string;
-  coverUrl?: string;
-  description?: string;
-  developer?: string;
-  publisher?: string;
-  releaseDate?: string;
-  genre?: string;
-  confidence: number;
+export interface MetadataMatchesResponse {
+  scraped: Game[];
+  unscraped: Game[];
 }
 
 export interface Device {

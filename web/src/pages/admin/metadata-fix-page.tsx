@@ -1,16 +1,68 @@
-import { useState } from "react";
-import { FileSearch, Check, ChevronRight, AlertTriangle } from "lucide-react";
+import { FileSearch, ScanSearch, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button, Card, Badge, EmptyState } from "@/components/ui";
-import { useMetadataMatches, useUpdateGameMetadata } from "@/hooks/use-admin";
+import { useMetadataMatches, useScrapeGame } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import type { MetadataMatch, MetadataSuggestion } from "@/types/api";
+import type { Game } from "@/types/api";
+
+function GameRow({
+  game,
+  onScrape,
+  isScraping,
+}: {
+  game: Game;
+  onScrape: () => void;
+  isScraping: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-800/30 border border-surface-800">
+      <div className="h-16 w-12 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
+        {game.coverUrl ? (
+          <img
+            src={game.coverUrl}
+            alt={game.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center">
+            <AlertTriangle className="h-4 w-4 text-warning-500" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0 space-y-1">
+        <h4 className="text-sm font-semibold text-surface-100 truncate">
+          {game.title}
+        </h4>
+        <div className="flex flex-wrap gap-2 text-xs text-surface-400">
+          <span>{game.consoleName}</span>
+          {game.developer && <span>{game.developer}</span>}
+          {game.genre && <span>{game.genre}</span>}
+        </div>
+      </div>
+
+      {game.scraperId ? (
+        <Badge variant="success">Scraped</Badge>
+      ) : (
+        <Badge variant="warning">Unscraped</Badge>
+      )}
+
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={onScrape}
+        loading={isScraping}
+      >
+        <ScanSearch className="h-4 w-4" />
+        Scrape
+      </Button>
+    </div>
+  );
+}
 
 export function MetadataFixPage() {
-  const { data: matches, isLoading } = useMetadataMatches();
-  const updateMetadata = useUpdateGameMetadata();
+  const { data, isLoading } = useMetadataMatches();
+  const scrapeGame = useScrapeGame();
   const { toast } = useToast();
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (isLoading) {
     return (
@@ -21,200 +73,99 @@ export function MetadataFixPage() {
     );
   }
 
-  if (!matches || matches.length === 0) {
+  const scraped = data?.scraped ?? [];
+  const unscraped = data?.unscraped ?? [];
+
+  if (scraped.length === 0 && unscraped.length === 0) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-surface-100">Metadata Fix</h1>
+          <h1 className="text-3xl font-bold text-surface-100">
+            Metadata Review
+          </h1>
           <p className="mt-1 text-surface-400">
-            Review and fix mismatched game metadata.
+            Review and fix game metadata.
           </p>
         </div>
         <EmptyState
           icon={FileSearch}
-          title="All metadata looks correct"
-          description="No metadata mismatches found. Run a scrape to check for new matches."
+          title="No games found"
+          description="Scan your library first to detect games, then scrape for metadata."
         />
       </div>
     );
   }
 
-  const current = matches[currentIndex]!;
-
-  function handleApply(match: MetadataMatch, suggestion: MetadataSuggestion) {
-    updateMetadata.mutate(
-      {
-        gameId: match.gameId,
-        metadata: {
-          title: suggestion.title,
-          coverUrl: suggestion.coverUrl,
-          description: suggestion.description,
-          developer: suggestion.developer,
-          publisher: suggestion.publisher,
-          releaseDate: suggestion.releaseDate,
-          genre: suggestion.genre,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast("success", `Metadata updated for "${suggestion.title}"`);
-          if (matches && currentIndex < matches.length - 1) {
-            setCurrentIndex((i) => i + 1);
-          }
-        },
-        onError: (err) =>
-          toast("error", err instanceof Error ? err.message : "Unknown error"),
-      },
-    );
-  }
-
-  function handleSkip() {
-    if (matches && currentIndex < matches.length - 1) {
-      setCurrentIndex((i) => i + 1);
-    }
+  function handleScrape(game: Game) {
+    scrapeGame.mutate(game.id, {
+      onSuccess: () => toast("success", `Metadata updated for "${game.title}"`),
+      onError: (err) =>
+        toast("error", err instanceof Error ? err.message : "Scrape failed"),
+    });
   }
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Metadata Fix</h1>
-          <p className="mt-1 text-surface-400">
-            Review {matches.length} game{matches.length !== 1 ? "s" : ""} with
-            potential metadata issues.
-          </p>
-        </div>
-        <Badge variant="warning">
-          {currentIndex + 1} / {matches.length}
-        </Badge>
+      <div>
+        <h1 className="text-3xl font-bold text-surface-100">
+          Metadata Review
+        </h1>
+        <p className="mt-1 text-surface-400">
+          Review game metadata. Scrape individual games to fetch or update cover
+          art and descriptions.
+        </p>
       </div>
 
-      {/* Current item */}
-      <Card className="p-6">
-        <div className="flex items-start gap-6 mb-6">
-          {/* Current state */}
-          <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
-              Current
-            </p>
-            <div className="flex gap-4">
-              <div className="h-32 w-24 rounded-xl overflow-hidden bg-surface-800 flex-shrink-0 border border-surface-700">
-                {current.currentCoverUrl ? (
-                  <img
-                    src={current.currentCoverUrl}
-                    alt={current.currentTitle}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <AlertTriangle className="h-6 w-6 text-warning-500" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-surface-100">
-                  {current.currentTitle}
-                </h3>
-                <p className="text-sm text-surface-500 mt-1">
-                  Game ID: {current.gameId}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <ChevronRight className="h-6 w-6 text-surface-600 mt-12 flex-shrink-0" />
-
-          {/* Suggestions */}
-          <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
-              Suggestions
-            </p>
-          </div>
-        </div>
-
-        {/* Suggestion cards */}
-        <div className="space-y-3">
-          {current.suggestions.map((suggestion, i) => (
-            <SuggestionCard
-              key={i}
-              suggestion={suggestion}
-              onApply={() => handleApply(current, suggestion)}
-              isApplying={updateMetadata.isPending}
-            />
-          ))}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-6 pt-4 border-t border-surface-800">
-          <Button
-            variant="secondary"
-            onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-            disabled={currentIndex === 0}
-          >
-            Previous
-          </Button>
-          <Button variant="ghost" onClick={handleSkip}>
-            Skip
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function SuggestionCard({
-  suggestion,
-  onApply,
-  isApplying,
-}: {
-  suggestion: MetadataSuggestion;
-  onApply: () => void;
-  isApplying: boolean;
-}) {
-  const confidenceColor =
-    suggestion.confidence >= 0.8
-      ? "text-success-500"
-      : suggestion.confidence >= 0.5
-        ? "text-warning-500"
-        : "text-danger-500";
-
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-800/30 border border-surface-800 hover:border-surface-700 transition-colors">
-      <div className="h-20 w-15 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-        {suggestion.coverUrl ? (
-          <img
-            src={suggestion.coverUrl}
-            alt={suggestion.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center text-surface-600 text-xs">
-            N/A
-          </div>
-        )}
+      <div className="flex gap-3 text-sm text-surface-400">
+        <span className="flex items-center gap-1.5">
+          <CheckCircle className="h-4 w-4 text-success-500" />
+          {scraped.length} scraped
+        </span>
+        <span className="flex items-center gap-1.5">
+          <AlertTriangle className="h-4 w-4 text-warning-500" />
+          {unscraped.length} unscraped
+        </span>
       </div>
 
-      <div className="flex-1 min-w-0 space-y-1">
-        <h4 className="text-sm font-semibold text-surface-100 truncate">
-          {suggestion.title}
-        </h4>
-        <div className="flex flex-wrap gap-2 text-xs text-surface-400">
-          {suggestion.developer && <span>{suggestion.developer}</span>}
-          {suggestion.releaseDate && <span>{suggestion.releaseDate}</span>}
-          {suggestion.genre && <span>{suggestion.genre}</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge>{suggestion.source}</Badge>
-          <span className={cn("text-xs font-medium", confidenceColor)}>
-            {Math.round(suggestion.confidence * 100)}% match
-          </span>
-        </div>
-      </div>
+      {unscraped.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-surface-100 mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-warning-500" />
+            Unscraped Games
+            <Badge variant="warning">{unscraped.length}</Badge>
+          </h2>
+          <div className="space-y-2">
+            {unscraped.map((game) => (
+              <GameRow
+                key={game.id}
+                game={game}
+                onScrape={() => handleScrape(game)}
+                isScraping={scrapeGame.isPending}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
 
-      <Button size="sm" onClick={onApply} loading={isApplying}>
-        <Check className="h-4 w-4" />
-        Apply
-      </Button>
+      {scraped.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-surface-100 mb-4 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-success-500" />
+            Scraped Games
+            <Badge variant="success">{scraped.length}</Badge>
+          </h2>
+          <div className="space-y-2">
+            {scraped.map((game) => (
+              <GameRow
+                key={game.id}
+                game={game}
+                onScrape={() => handleScrape(game)}
+                isScraping={scrapeGame.isPending}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

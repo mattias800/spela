@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { User, ServerSettingsMap, MetadataMatch } from "@/types/api";
+import type { User, ServerSettingsMap, MetadataMatchesResponse } from "@/types/api";
 
 export function useAdminUsers() {
   return useQuery({
@@ -107,7 +107,7 @@ export function useScrapeMetadata() {
 export function useMetadataMatches() {
   return useQuery({
     queryKey: ["admin", "metadata-matches"],
-    queryFn: () => api.get<MetadataMatch[]>("/admin/metadata-matches"),
+    queryFn: () => api.get<MetadataMatchesResponse>("/admin/metadata-matches"),
   });
 }
 
