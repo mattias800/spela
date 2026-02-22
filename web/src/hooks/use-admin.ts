@@ -89,13 +89,15 @@ export interface ScrapeStartResponse {
   total: number;
 }
 
+export type ScrapeMode = "new" | "all" | "fallback";
+
 export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (force?: boolean) =>
+    mutationFn: (mode: ScrapeMode = "new") =>
       api.post<ScrapeStartResponse>(
-        `/admin/scrape${force ? "?force=true" : ""}`,
+        `/admin/scrape${mode !== "new" ? `?mode=${mode}` : ""}`,
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });

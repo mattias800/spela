@@ -245,11 +245,16 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 
 // TriggerScrape starts a metadata scraping operation (admin only).
 // Only one scrape can run at a time; concurrent requests are rejected.
-// Pass ?force=true to re-scrape all games, not just unscraped ones.
+// Pass ?mode=all to re-scrape all games, ?mode=fallback to re-scrape
+// games that only have LibRetro metadata. Default scrapes unscraped games only.
+// Legacy ?force=true is equivalent to ?mode=all.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.tryConfigureIGDB()
 
-	force := c.Query("force") == "true"
+	mode := c.Query("mode")
+	if mode == "" && c.Query("force") == "true" {
+		mode = "all"
+	}
 
 	h.scrapeMu.Lock()
 	if h.scraping {
@@ -263,9 +268,12 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	// Count matching games before launching the goroutine so we can
 	// return the total in the HTTP response for immediate user feedback.
 	var total int64
-	if force {
+	switch mode {
+	case "all":
 		h.DB.Model(&db.Game{}).Count(&total)
-	} else {
+	case "fallback":
+		h.DB.Model(&db.Game{}).Where("scraper_id = 'libretro'").Count(&total)
+	default:
 		h.DB.Model(&db.Game{}).Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
 	}
 
@@ -279,7 +287,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			h.scrapeMu.Unlock()
 		}()
 
-		count, total, err := h.Scraper.ScrapeAll(force, func(p scraper.ScrapeProgress) {
+		count, total, err := h.Scraper.ScrapeAll(mode, func(p scraper.ScrapeProgress) {
 			h.scrapeMu.Lock()
 			h.scrapeProgress = &p
 			h.scrapeMu.Unlock()

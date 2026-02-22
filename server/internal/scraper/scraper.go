@@ -370,17 +370,25 @@ type ScrapeProgress struct {
 }
 
 // ScrapeAll fetches metadata for games.
-// When force is false, only games without scraper IDs are scraped.
-// When force is true, all games are re-scraped.
+// Mode controls which games are scraped:
+//   - "new": only games without scraper IDs (default)
+//   - "all": re-scrape every game
+//   - "fallback": re-scrape games that were only scraped via LibRetro fallback (no IGDB match)
+//
 // If onProgress is non-nil, it is called after each game attempt with the current progress.
 // Returns the number of successes, the total number of games attempted, and any error.
-func (s *Scraper) ScrapeAll(force bool, onProgress func(ScrapeProgress)) (int, int, error) {
+func (s *Scraper) ScrapeAll(mode string, onProgress func(ScrapeProgress)) (int, int, error) {
 	var games []db.Game
-	if force {
+	switch mode {
+	case "all":
 		if err := s.DB.Find(&games).Error; err != nil {
 			return 0, 0, fmt.Errorf("loading all games: %w", err)
 		}
-	} else {
+	case "fallback":
+		if err := s.DB.Where("scraper_id = 'libretro'").Find(&games).Error; err != nil {
+			return 0, 0, fmt.Errorf("loading fallback-scraped games: %w", err)
+		}
+	default:
 		if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
 			return 0, 0, fmt.Errorf("loading unscraped games: %w", err)
 		}

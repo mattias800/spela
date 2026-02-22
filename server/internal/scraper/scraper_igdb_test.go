@@ -613,7 +613,7 @@ func TestScrapeAll_DefaultOnlyUnscraped(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll(false, nil)
+	successes, total, err := s.ScrapeAll("", nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt the unscraped game")
 	assert.Equal(t, 1, successes)
@@ -643,7 +643,7 @@ func TestScrapeAll_ForceScrapesAll(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll(true, nil)
+	successes, total, err := s.ScrapeAll("all", nil)
 	require.NoError(t, err)
 	assert.Equal(t, 2, total, "force should attempt all games")
 	assert.Equal(t, 2, successes)

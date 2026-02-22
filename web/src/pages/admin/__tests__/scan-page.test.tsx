@@ -89,10 +89,13 @@ describe("AdminScanPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Scrape New Games and Rescrape All Games buttons", () => {
+  it("renders all three scrape buttons", () => {
     renderPage();
     expect(
       screen.getByRole("button", { name: /Scrape New Games/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Rescrape Fallback Only/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Rescrape All Games/ }),
@@ -107,24 +110,35 @@ describe("AdminScanPage", () => {
     expect(mockScanMutate).toHaveBeenCalled();
   });
 
-  it("calls scrape mutation with false when Scrape New Games is clicked", async () => {
+  it("calls scrape mutation with 'new' when Scrape New Games is clicked", async () => {
     renderPage();
     await userEvent.click(
       screen.getByRole("button", { name: /Scrape New Games/ }),
     );
     expect(mockScrapeMutate).toHaveBeenCalledWith(
-      false,
+      "new",
       expect.any(Object),
     );
   });
 
-  it("calls scrape mutation with true when Rescrape All Games is clicked", async () => {
+  it("calls scrape mutation with 'fallback' when Rescrape Fallback Only is clicked", async () => {
+    renderPage();
+    await userEvent.click(
+      screen.getByRole("button", { name: /Rescrape Fallback Only/ }),
+    );
+    expect(mockScrapeMutate).toHaveBeenCalledWith(
+      "fallback",
+      expect.any(Object),
+    );
+  });
+
+  it("calls scrape mutation with 'all' when Rescrape All Games is clicked", async () => {
     renderPage();
     await userEvent.click(
       screen.getByRole("button", { name: /Rescrape All Games/ }),
     );
     expect(mockScrapeMutate).toHaveBeenCalledWith(
-      true,
+      "all",
       expect.any(Object),
     );
   });

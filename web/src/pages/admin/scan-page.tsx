@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { Button, Card, CardHeader, CardContent } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
@@ -136,7 +137,7 @@ function ScrapeCard() {
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() =>
-              scrapeMetadata.mutate(false, {
+              scrapeMetadata.mutate("new", {
                 onSuccess: (data) => {
                   const n = data.total;
                   toast(
@@ -163,7 +164,34 @@ function ScrapeCard() {
           </Button>
           <Button
             onClick={() =>
-              scrapeMetadata.mutate(true, {
+              scrapeMetadata.mutate("fallback", {
+                onSuccess: (data) => {
+                  const n = data.total;
+                  toast(
+                    n === 0 ? "info" : "success",
+                    n === 0
+                      ? "No fallback-only games found"
+                      : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
+                  );
+                },
+                onError: (err) =>
+                  toast(
+                    "error",
+                    err instanceof Error ? err.message : "Scrape failed",
+                  ),
+              })
+            }
+            loading={scrapeMetadata.isPending}
+            disabled={isActive}
+            variant="secondary"
+            className="flex-1 min-w-[10rem]"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Rescrape Fallback Only
+          </Button>
+          <Button
+            onClick={() =>
+              scrapeMetadata.mutate("all", {
                 onSuccess: (data) => {
                   const n = data.total;
                   toast(
