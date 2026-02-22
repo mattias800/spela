@@ -82,9 +82,9 @@ function OverflowMenu({
           size="sm"
           onClick={onScrape}
           loading={isScraping}
+          icon={<RefreshCw className="h-4 w-4" />}
           className="w-full justify-start rounded-none"
         >
-          <RefreshCw className="h-4 w-4" />
           Scrape Metadata
         </Button>
       )}
@@ -247,8 +247,8 @@ export function GameHero({
                   size="sm"
                   onClick={onScrape}
                   loading={isScraping}
+                  icon={<RefreshCw className="h-5 w-5" />}
                 >
-                  <RefreshCw className="h-5 w-5" />
                   Scrape Metadata
                 </Button>
               )}

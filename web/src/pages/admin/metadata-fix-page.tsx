@@ -70,8 +70,8 @@ function GameRow({
           onScrape();
         }}
         loading={isScraping}
+        icon={<ScanSearch className="h-4 w-4" />}
       >
-        <ScanSearch className="h-4 w-4" />
         Scrape
       </Button>
     </div>

@@ -157,9 +157,9 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
+            icon={<ScanSearch className="h-4 w-4" />}
             className="w-full"
           >
-            <ScanSearch className="h-4 w-4" />
             Scrape New Games
           </Button>
           <Button
@@ -184,9 +184,9 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
+            icon={<RotateCcw className="h-4 w-4" />}
             className="w-full"
           >
-            <RotateCcw className="h-4 w-4" />
             Rescrape Fallback Only
           </Button>
           <Button
@@ -211,9 +211,9 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
+            icon={<RefreshCw className="h-4 w-4" />}
             className="w-full"
           >
-            <RefreshCw className="h-4 w-4" />
             Rescrape All Games
           </Button>
         </div>
@@ -316,9 +316,9 @@ export function AdminScanPage() {
                 })
               }
               loading={scanLibrary.isPending}
+              icon={<FolderSearch className="h-4 w-4" />}
               className="w-full"
             >
-              <FolderSearch className="h-4 w-4" />
               Start Scan
             </Button>
           </CardContent>
