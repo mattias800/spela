@@ -106,7 +106,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
           ref={dropdownRef}
           role="dialog"
           aria-modal="true"
-          className="absolute top-full left-0 mt-2 z-50 w-80 rounded-lg border border-surface-700 bg-surface-800 p-4 shadow-xl"
+          className="absolute top-full left-0 mt-2 z-50 min-w-64 rounded-lg border border-surface-700 bg-surface-800 p-4 shadow-xl"
         >
           <p className="text-sm text-surface-300 mb-3">
             This ROM does not match any known verified dump.
