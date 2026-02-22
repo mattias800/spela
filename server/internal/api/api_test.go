@@ -2275,6 +2275,61 @@ func TestGameResponse_IncludesVerificationFields(t *testing.T) {
 	assert.Equal(t, "No-Intro", resp["verificationTag"])
 }
 
+func TestScrapeStatus_Idle(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/scrape/status", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, false, resp["active"])
+	// When idle, no progress fields should be present
+	_, hasTotal := resp["total"]
+	assert.False(t, hasTotal)
+}
+
+func TestScrapeStatus_NonAdmin(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+
+	// Register first user as admin (owner)
+	registerAndGetToken(t, router)
+
+	// Register second user (will be regular user)
+	body, _ := json.Marshal(map[string]string{
+		"username": "regularuser2",
+		"email":    "regular2@example.com",
+		"password": "password123",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var regResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &regResp)
+	userToken := regResp["accessToken"].(string)
+
+	// Verify user is not admin
+	var user db.User
+	database.Where("username = ?", "regularuser2").First(&user)
+	assert.Equal(t, "user", user.Role)
+
+	// Non-admin should be rejected
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/admin/scrape/status", nil)
+	req.Header.Set("Authorization", "Bearer "+userToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()

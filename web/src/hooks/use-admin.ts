@@ -154,6 +154,22 @@ export function useTestIgdbCredentials() {
   });
 }
 
+export interface ScrapeStatus {
+  active: boolean;
+  current?: number;
+  total?: number;
+  gameName?: string;
+  successes?: number;
+  failures?: number;
+}
+
+export function useScrapeStatus() {
+  return useQuery({
+    queryKey: ["admin", "scrape-status"],
+    queryFn: () => api.get<ScrapeStatus>("/admin/scrape/status"),
+  });
+}
+
 export function useIgdbStatus() {
   return useQuery({
     queryKey: ["admin", "igdb-status"],

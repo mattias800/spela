@@ -21,8 +21,9 @@ type AdminHandler struct {
 	Hub     *ws.Hub
 	Storage *storage.Storage
 
-	scrapeMu sync.Mutex
-	scraping bool
+	scrapeMu       sync.Mutex
+	scraping       bool
+	scrapeProgress *scraper.ScrapeProgress
 }
 
 // ListUsers returns all users (admin only).
@@ -263,10 +264,17 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		defer func() {
 			h.scrapeMu.Lock()
 			h.scraping = false
+			h.scrapeProgress = nil
 			h.scrapeMu.Unlock()
 		}()
 
-		count, err := h.Scraper.ScrapeAll()
+		count, err := h.Scraper.ScrapeAll(func(p scraper.ScrapeProgress) {
+			h.scrapeMu.Lock()
+			h.scrapeProgress = &p
+			h.scrapeMu.Unlock()
+
+			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
+		})
 		if err != nil {
 			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": err.Error()}})
 			return
@@ -275,6 +283,32 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background"})
+}
+
+// ScrapeStatus returns the current scrape operation status.
+func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
+	h.scrapeMu.Lock()
+	active := h.scraping
+	var progress *scraper.ScrapeProgress
+	if h.scrapeProgress != nil {
+		p := *h.scrapeProgress
+		progress = &p
+	}
+	h.scrapeMu.Unlock()
+
+	if !active || progress == nil {
+		c.JSON(http.StatusOK, gin.H{"active": false})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"active":    true,
+		"current":   progress.Current,
+		"total":     progress.Total,
+		"gameName":  progress.GameName,
+		"successes": progress.Successes,
+		"failures":  progress.Failures,
+	})
 }
 
 // DeleteUser permanently deletes a user and all their data (admin only).

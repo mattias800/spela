@@ -352,23 +352,47 @@ func (s *Scraper) downloadExternalImage(imageURL, subpath string) string {
 	return savedPath
 }
 
+// ScrapeProgress holds progress information for a bulk scrape operation.
+type ScrapeProgress struct {
+	Current  int    `json:"current"`
+	Total    int    `json:"total"`
+	GameName string `json:"gameName"`
+	Successes int   `json:"successes"`
+	Failures  int   `json:"failures"`
+}
+
 // ScrapeAll fetches metadata for all games that don't have scraper IDs.
-func (s *Scraper) ScrapeAll() (int, error) {
+// If onProgress is non-nil, it is called after each game attempt with the current progress.
+func (s *Scraper) ScrapeAll(onProgress func(ScrapeProgress)) (int, error) {
 	var games []db.Game
 	if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
 		return 0, fmt.Errorf("loading unscraped games: %w", err)
 	}
 
-	scraped := 0
+	total := len(games)
+	successes := 0
+	failures := 0
 	for i := range games {
 		if err := s.ScrapeGame(&games[i]); err != nil {
 			slog.Warn("failed to scrape game", "game", games[i].Title, "error", err)
-			continue
+			failures++
+		} else {
+			successes++
 		}
-		scraped++
+
+		if onProgress != nil {
+			onProgress(ScrapeProgress{
+				Current:   i + 1,
+				Total:     total,
+				GameName:  games[i].Title,
+				Successes: successes,
+				Failures:  failures,
+			})
+		}
+
 		// Small delay to avoid hammering the thumbnail server
 		time.Sleep(200 * time.Millisecond)
 	}
 
-	return scraped, nil
+	return successes, nil
 }

@@ -1,7 +1,14 @@
-import { ScanSearch, FolderSearch, CheckCircle } from "lucide-react";
+import {
+  ScanSearch,
+  FolderSearch,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { Button, Card, CardHeader, CardContent } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
+import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 
 interface ScanResult {
   newGames?: number;
@@ -10,9 +17,139 @@ interface ScanResult {
   totalGames?: number;
 }
 
+function ProgressBar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="h-2 w-full rounded-full bg-surface-700">
+      <div
+        className="h-2 rounded-full bg-brand-500 transition-all duration-300 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+function ScrapeCard() {
+  const scrapeMetadata = useScrapeMetadata();
+  const scrape = useScrapeProgress();
+  const { toast } = useToast();
+
+  const isActive = scrape.phase === "active";
+  const isComplete = scrape.phase === "complete";
+  const isError = scrape.phase === "error";
+
+  return (
+    <Card>
+      <CardHeader>
+        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+          <ScanSearch className="h-5 w-5 text-brand-400" />
+          Scrape Metadata
+        </h2>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-surface-400">
+          Fetch cover art, descriptions, and other metadata for games that are
+          missing information.
+        </p>
+
+        {isActive && (
+          <div className="rounded-xl bg-surface-800/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-400" />
+              <span className="text-surface-200">
+                Scraping game {scrape.current} of {scrape.total}...
+              </span>
+            </div>
+            {scrape.gameName && (
+              <p className="text-sm text-surface-400 truncate">
+                {scrape.gameName}
+              </p>
+            )}
+            <ProgressBar value={scrape.current} max={scrape.total} />
+            <div className="flex gap-4 text-xs text-surface-400">
+              <span className="text-success-500">
+                {scrape.successes} succeeded
+              </span>
+              {scrape.failures > 0 && (
+                <span className="text-error-500">
+                  {scrape.failures} failed
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isComplete && (
+          <div className="rounded-xl bg-surface-800/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle className="h-4 w-4 text-success-500" />
+              <span className="text-surface-200">Scraping complete</span>
+            </div>
+            <div className="flex gap-4 text-sm">
+              <span className="text-surface-300">
+                {scrape.successes} scraped
+              </span>
+              {scrape.failures > 0 && (
+                <span className="text-error-400">
+                  {scrape.failures} failed
+                </span>
+              )}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={scrape.dismiss}
+              className="w-full"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
+        {isError && (
+          <div className="rounded-xl bg-error-900/30 border border-error-700/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <AlertCircle className="h-4 w-4 text-error-400" />
+              <span className="text-error-300">Scraping failed</span>
+            </div>
+            <p className="text-sm text-error-400">{scrape.error}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={scrape.dismiss}
+              className="w-full"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
+        <Button
+          onClick={() =>
+            scrapeMetadata.mutate(undefined, {
+              onSuccess: () => toast("success", "Metadata scraping started"),
+              onError: (err) =>
+                toast(
+                  "error",
+                  err instanceof Error ? err.message : "Scrape failed",
+                ),
+            })
+          }
+          loading={scrapeMetadata.isPending}
+          disabled={isActive}
+          variant="secondary"
+          className="w-full"
+        >
+          <ScanSearch className="h-4 w-4" />
+          Scrape Metadata
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AdminScanPage() {
   const scanLibrary = useScanLibrary();
-  const scrapeMetadata = useScrapeMetadata();
   const { toast } = useToast();
 
   const scanResult = scanLibrary.data as ScanResult | undefined;
@@ -39,6 +176,17 @@ export function AdminScanPage() {
               Scan configured game directories for new ROMs. Previously detected
               games will not be duplicated.
             </p>
+
+            {scanLibrary.isPending && (
+              <div className="rounded-xl bg-surface-800/50 p-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-400" />
+                  <span className="text-surface-200">
+                    Scanning game directories...
+                  </span>
+                </div>
+              </div>
+            )}
 
             {scanResult && (
               <div className="rounded-xl bg-surface-800/50 p-4 space-y-3">
@@ -96,46 +244,13 @@ export function AdminScanPage() {
               loading={scanLibrary.isPending}
               className="w-full"
             >
-              <ScanSearch className="h-4 w-4" />
+              <FolderSearch className="h-4 w-4" />
               Start Scan
             </Button>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-              <ScanSearch className="h-5 w-5 text-brand-400" />
-              Scrape Metadata
-            </h2>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-surface-400">
-              Fetch cover art, descriptions, and other metadata for games that
-              are missing information.
-            </p>
-
-            <Button
-              onClick={() =>
-                scrapeMetadata.mutate(undefined, {
-                  onSuccess: () =>
-                    toast("success", "Metadata scraping started"),
-                  onError: (err) =>
-                    toast(
-                      "error",
-                      err instanceof Error ? err.message : "Scrape failed",
-                    ),
-                })
-              }
-              loading={scrapeMetadata.isPending}
-              variant="secondary"
-              className="w-full"
-            >
-              <ScanSearch className="h-4 w-4" />
-              Scrape Metadata
-            </Button>
-          </CardContent>
-        </Card>
+        <ScrapeCard />
       </div>
     </div>
   );
