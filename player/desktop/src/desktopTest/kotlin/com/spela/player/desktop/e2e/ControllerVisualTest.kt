@@ -41,6 +41,19 @@ class ControllerVisualTest {
         advance(harness)
     }
 
+    /**
+     * Scroll the LazyColumn on ConsoleSettingsScreen to the key mapping card.
+     * The controller mapping items are below shader settings and gamepad config
+     * in a LazyColumn, so they aren't composed until scrolled into view.
+     * We target the tagged LazyColumn specifically to avoid ambiguity with
+     * nested scrollables (e.g. MappingListPanel's own LazyColumn).
+     */
+    private fun ComposeUiTest.scrollToKeyMapping(harness: SpelaTestHarness) {
+        onNodeWithTag("console-settings-list")
+            .performScrollToNode(hasTestTag("key-mapping-card"))
+        advanceQuick(harness)
+    }
+
     @Test
     fun nesConsoleSettingsShowsCorrectButtons() = runComposeUiTest {
         val harness = createLoggedInHarness()
@@ -50,6 +63,8 @@ class ControllerVisualTest {
 
         // Controller Mapping section should exist in the semantics tree
         onNodeWithText("Controller Mapping").assertExists()
+
+        scrollToKeyMapping(harness)
 
         // NES has A, B, Start, Select + D-pad (8 buttons)
         // The controller visual should have button regions for these
@@ -67,6 +82,8 @@ class ControllerVisualTest {
         // SNES has 12 buttons: D-pad(4), A, B, X, Y, L, R, Start, Select
         onNodeWithText("Controller Mapping").assertExists()
 
+        scrollToKeyMapping(harness)
+
         // Check that SNES-specific face buttons exist
         onNodeWithContentDescription("A, unmapped").assertExists()
         onNodeWithContentDescription("B, unmapped").assertExists()
@@ -80,6 +97,8 @@ class ControllerVisualTest {
 
         setContent { harness.App() }
         navigateToConsoleSettings(harness, "nes")
+
+        scrollToKeyMapping(harness)
 
         // Trigger listening mode via the ViewModel directly
         // (the button click triggers StartSingleButtonMap which requires key event handling)
@@ -99,6 +118,8 @@ class ControllerVisualTest {
         setContent { harness.App() }
         navigateToConsoleSettings(harness, "nes")
 
+        scrollToKeyMapping(harness)
+
         // The mapping list panel shows each button with its mapping status
         // NES buttons should appear in the mapping list with "not mapped" descriptions
         onNodeWithContentDescription("A, not mapped").assertExists()
@@ -113,6 +134,8 @@ class ControllerVisualTest {
 
         setContent { harness.App() }
         navigateToConsoleSettings(harness, "nes")
+
+        scrollToKeyMapping(harness)
 
         // Verify the B row starts as "not mapped"
         onNodeWithContentDescription("B, not mapped").assertExists()
@@ -135,6 +158,8 @@ class ControllerVisualTest {
 
         // Should still show the Controller Mapping section
         onNodeWithText("Controller Mapping").assertExists()
+
+        scrollToKeyMapping(harness)
 
         // Game Boy has A, B, Start, Select + D-pad
         onNodeWithContentDescription("A, unmapped").assertExists()
@@ -245,8 +270,9 @@ class ControllerVisualTest {
         setContent { harness.App() }
         navigateToConsoleSettings(harness, "n64")
 
+        scrollToKeyMapping(harness)
+
         // Verify that the visual controller overlay shows analog stick buttons
-        // (These should be visible since they're positioned in the controller visual, not in the LazyColumn)
         onNodeWithContentDescription("L-Stick Up, unmapped").assertExists()
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -102,7 +103,7 @@ fun ConsoleSettingsScreen(
         )
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("console-settings-list"),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Default,
@@ -293,7 +294,8 @@ fun ConsoleSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(560.dp)
-                            .padding(SpSpacing.Small),
+                            .padding(SpSpacing.Small)
+                            .testTag("key-mapping-card"),
                     ) {
                         KeyMappingScreen(
                             layout = layout,

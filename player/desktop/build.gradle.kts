@@ -116,6 +116,9 @@ tasks.withType<Test> {
     systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "15s")
     // Gradle-level timeout as a backstop for the entire test task.
     timeout.set(Duration.ofMinutes(5))
+    testLogging {
+        events("failed")
+    }
 }
 
 // Make the run task depend on building the native library.

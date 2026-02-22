@@ -139,7 +139,7 @@ class EmulationViewModel(
             }
             EmulationIntent.DismissExitConfirm -> _state.update { it.copy(showExitConfirm = false) }
             EmulationIntent.ConfirmExit -> {
-                _state.update { it.copy(showExitConfirm = false) }
+                _state.update { it.copy(showExitConfirm = false, requestExit = true) }
                 stopGame()
             }
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
@@ -628,7 +628,10 @@ class EmulationViewModel(
                         fps = 0f,
                         frameTime = 0f,
                         isHardcoreMode = false,
-                        requestExit = false,
+                        // Note: requestExit is NOT reset here — the LaunchedEffect in
+                        // SpelaApp observes it and calls HideOverlay + ClearExitRequest.
+                        // Resetting it here would race with the LaunchedEffect on a
+                        // single-threaded test dispatcher.
                         showExitConfirm = false,
                         showOverlay = false,
                         secondaryDisplayActive = false,

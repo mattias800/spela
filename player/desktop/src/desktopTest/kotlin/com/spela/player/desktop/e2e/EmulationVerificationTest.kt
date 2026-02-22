@@ -144,9 +144,10 @@ class EmulationVerificationTest {
         )
         advance(harness)
 
-        // Play second game
+        // Play second game — needs extra advancement for the full
+        // LaunchedEffect → StartGame → scope.launch chain to complete
         onNodeWithContentDescription("Play Super Mario Bros.").performClick()
-        advance(harness)
+        advanceFully(harness)
 
         assertTrue(harness.libretroController.isRunning)
         assertEquals(2, harness.libretroController.startCallCount)
