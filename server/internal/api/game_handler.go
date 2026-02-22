@@ -598,6 +598,32 @@ func serveTar(w io.Writer, filePaths []string) error {
 	return nil
 }
 
+// UpdateVerificationTag sets a custom verification tag on a game (admin only).
+func (h *GameHandler) UpdateVerificationTag(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	var req struct {
+		Tag string `json:"tag"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	game.VerificationTag = req.Tag
+	if err := h.DB.Save(&game).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update verification tag"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"verificationTag": game.VerificationTag})
+}
+
 // GetRecommendedCore returns the recommended libretro core for a game.
 func (h *GameHandler) GetRecommendedCore(c *gin.Context) {
 	id := c.Param("id")

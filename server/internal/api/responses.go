@@ -61,6 +61,8 @@ type GameResponse struct {
 	ScraperID           string         `json:"scraperId,omitempty"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
 	AchievementsWarning string         `json:"achievementsWarning,omitempty"`
+	VerificationStatus  string         `json:"verificationStatus,omitempty"`
+	VerificationTag     string         `json:"verificationTag,omitempty"`
 	BiosStatus     string         `json:"biosStatus,omitempty"`
 	IsFavorite     bool           `json:"isFavorite"`
 	IsInPlayLater  bool           `json:"isInPlayLater"`
@@ -260,6 +262,8 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		ScraperID:           g.ScraperID,
 		ScrapeAttempts:      g.ScrapeAttempts,
 		AchievementsWarning: g.AchievementsWarning,
+		VerificationStatus:  g.VerificationStatus,
+		VerificationTag:     g.VerificationTag,
 	}
 
 	if data != nil {

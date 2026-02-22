@@ -72,6 +72,8 @@ data class Game(
     val discCount: Int = 0,
     val discs: List<GameDisc> = emptyList(),
     val achievementsWarning: String? = null,
+    val verificationStatus: String? = null,
+    val verificationTag: String? = null,
 )
 
 @Serializable

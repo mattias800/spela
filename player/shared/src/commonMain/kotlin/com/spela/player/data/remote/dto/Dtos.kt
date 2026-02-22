@@ -95,6 +95,8 @@ data class GameDto(
     val discCount: Int = 0,
     val discs: List<GameDiscDto> = emptyList(),
     val achievementsWarning: String? = null,
+    val verificationStatus: String? = null,
+    val verificationTag: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

@@ -2164,6 +2164,117 @@ func TestGetPendingInviteCount(t *testing.T) {
 	})
 }
 
+func TestUpdateVerificationTag_AdminSuccess(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	// First user is owner (admin)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+
+	body, _ := json.Marshal(map[string]string{"tag": "No-Intro Verified"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/games/%d/verification-tag", game.ID), bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "No-Intro Verified", resp["verificationTag"])
+
+	// Verify it was persisted
+	var updated db.Game
+	database.First(&updated, game.ID)
+	assert.Equal(t, "No-Intro Verified", updated.VerificationTag)
+}
+
+func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	// Register first user as owner
+	registerAndGetToken(t, router)
+
+	// Register second user (regular user)
+	body, _ := json.Marshal(map[string]string{
+		"username": "regularuser",
+		"email":    "regular@example.com",
+		"password": "password123",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var regResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &regResp)
+	userToken := regResp["accessToken"].(string)
+
+	// Create a test game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+
+	body, _ = json.Marshal(map[string]string{"tag": "Hacked"})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/games/%d/verification-tag", game.ID), bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+userToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestUpdateVerificationTag_GameNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]string{"tag": "test"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/admin/games/99999/verification-tag", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGameResponse_IncludesVerificationFields(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{
+		ConsoleID:          console.ID,
+		Title:              "Verified Game",
+		FileName:           "verified.nes",
+		FilePath:           "/tmp/verified.nes",
+		FileSize:           100,
+		VerificationStatus: "verified",
+		VerificationTag:    "No-Intro",
+	}
+	database.Create(&game)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "verified", resp["verificationStatus"])
+	assert.Equal(t, "No-Intro", resp["verificationTag"])
+}
+
 // registerAndGetToken registers a user and returns an access token.
 func registerAndGetToken(t *testing.T, router http.Handler) string {
 	t.Helper()

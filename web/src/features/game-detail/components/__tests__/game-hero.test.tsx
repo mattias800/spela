@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GameHero } from "../game-hero";
 import type { Game } from "@/types/api";
 
@@ -39,10 +40,19 @@ const defaultProps = {
   onTogglePlayLater: vi.fn(),
 };
 
+function renderWithQuery(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+}
+
 describe("GameHero", () => {
   it("does not render bare '0' when game.players is 0", () => {
     const game = makeGame({ players: 0 });
-    render(<GameHero game={game} {...defaultProps} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     // Should render a MetaItem with "Players: 0", not a bare "0" text node
     expect(screen.getByText("Players:")).toBeInTheDocument();
@@ -56,14 +66,14 @@ describe("GameHero", () => {
 
   it("does not render Players MetaItem when players is undefined", () => {
     const game = makeGame({ players: undefined });
-    render(<GameHero game={game} {...defaultProps} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     expect(screen.queryByText("Players:")).not.toBeInTheDocument();
   });
 
   it("renders overflow menu button", () => {
     const game = makeGame();
-    render(<GameHero game={game} {...defaultProps} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     expect(screen.getByTestId("overflow-menu-btn")).toBeInTheDocument();
   });
@@ -71,7 +81,7 @@ describe("GameHero", () => {
   it("calls onPlay when play button is clicked", async () => {
     const onPlay = vi.fn();
     const game = makeGame();
-    render(<GameHero game={game} {...defaultProps} onPlay={onPlay} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} onPlay={onPlay} />);
 
     await userEvent.click(screen.getByTestId("play-in-browser-btn"));
     expect(onPlay).toHaveBeenCalledOnce();
@@ -79,7 +89,7 @@ describe("GameHero", () => {
 
   it("renders game title", () => {
     const game = makeGame({ title: "Super Mario Bros" });
-    render(<GameHero game={game} {...defaultProps} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     expect(
       screen.getByRole("heading", { name: /Super Mario Bros/ }),
@@ -88,7 +98,7 @@ describe("GameHero", () => {
 
   it("renders console badge", () => {
     const game = makeGame({ consoleName: "SNES" });
-    render(<GameHero game={game} {...defaultProps} />);
+    renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     expect(screen.getByText("SNES")).toBeInTheDocument();
   });

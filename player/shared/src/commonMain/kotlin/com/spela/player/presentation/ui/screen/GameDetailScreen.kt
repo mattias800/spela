@@ -50,6 +50,7 @@ import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.feature.gamedetail.BiosWarningChip
+import com.spela.player.presentation.ui.feature.gamedetail.VerificationChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
@@ -458,6 +459,10 @@ private fun GameInfoContent(
         SpConsoleChip(
             consoleName = game.consoleName,
             consoleColor = getConsoleColor(game.consoleName),
+        )
+        VerificationChip(
+            verificationStatus = game.verificationStatus,
+            verificationTag = game.verificationTag,
         )
         game.genre?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }

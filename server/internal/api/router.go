@@ -339,6 +339,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 			admin.POST("/bios", biosHandler.UploadBiosFile)
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
+			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
 		}
 
 		// WebSocket

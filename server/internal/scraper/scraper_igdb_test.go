@@ -2,8 +2,13 @@ package scraper
 
 import (
 	"encoding/json"
+	"fmt"
+	"hash/crc32"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -416,4 +421,170 @@ func TestScrapeGame_UnknownPlatform_SkipsIGDB(t *testing.T) {
 	require.NoError(t, err)
 	// Should fall back to libretro (even though LibRetro also won't know this platform)
 	assert.Equal(t, "libretro", game.ScraperID)
+}
+
+// writeROMFile writes content to a file and returns the CRC32 as uppercase hex.
+func writeROMFile(t *testing.T, path string, content []byte) string {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, content, 0o644))
+	h := crc32.NewIEEE()
+	h.Write(content)
+	return strings.ToUpper(fmt.Sprintf("%08x", h.Sum32()))
+}
+
+func TestScrapeGame_CRCMatch_SetsVerified(t *testing.T) {
+	// Set up IGDB mock
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{ID: 10, Name: "Verified Game"},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	// Create a ROM file with known content and compute its CRC
+	romDir := t.TempDir()
+	romPath := filepath.Join(romDir, "TestGame (USA).nes")
+	romContent := []byte("test rom content for verification")
+	crc := writeROMFile(t, romPath, romContent)
+
+	// Create a DAT file that contains this CRC
+	datDir := t.TempDir()
+	systemName := AbbreviationToLibRetro["NES"]
+	datPath := filepath.Join(datDir, systemName+".dat")
+	datContent := fmt.Sprintf(`game (
+	name "Canonical Game Name (USA)"
+	rom ( name "Canonical Game Name (USA).nes" size %d crc %s md5 abc sha1 def )
+)
+`, len(romContent), crc)
+	require.NoError(t, os.WriteFile(datPath, []byte(datContent), 0o644))
+
+	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "TestGame (USA)",
+		FileName:  "TestGame (USA).nes",
+		FilePath:  romPath,
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	assert.Equal(t, "verified", game.VerificationStatus)
+	assert.Equal(t, crc, game.CRC32)
+}
+
+func TestScrapeGame_CRCNoMatch_SetsUnverified(t *testing.T) {
+	// Set up IGDB mock
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{ID: 11, Name: "Unverified Game"},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	// Create a ROM file
+	romDir := t.TempDir()
+	romPath := filepath.Join(romDir, "Unknown (USA).nes")
+	romContent := []byte("unmatched rom content")
+	crc := writeROMFile(t, romPath, romContent)
+
+	// Create a DAT file that does NOT contain this CRC
+	datDir := t.TempDir()
+	systemName := AbbreviationToLibRetro["NES"]
+	datPath := filepath.Join(datDir, systemName+".dat")
+	datContent := `game (
+	name "Other Game (USA)"
+	rom ( name "Other Game (USA).nes" size 100 crc DEADBEEF md5 abc sha1 def )
+)
+`
+	require.NoError(t, os.WriteFile(datPath, []byte(datContent), 0o644))
+
+	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Unknown (USA)",
+		FileName:  "Unknown (USA).nes",
+		FilePath:  romPath,
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	assert.Equal(t, "unverified", game.VerificationStatus)
+	assert.Equal(t, crc, game.CRC32)
 }

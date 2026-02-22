@@ -14,6 +14,7 @@ import {
   Ellipsis,
 } from "lucide-react";
 import { Button, Badge, DropdownMenu } from "@/components/ui";
+import { VerificationBadge } from "./verification-badge";
 import { MetaItem } from "@/components/meta-item";
 import {
   formatFileSize,
@@ -181,6 +182,7 @@ export function GameHero({
             </h1>
             <div className="flex items-center gap-3 mt-2">
               {consoleName && <Badge variant="brand">{consoleName}</Badge>}
+              <VerificationBadge game={game} isAdmin={isAdmin} />
               {game.averageRating > 0 && (
                 <span className="flex items-center gap-1 text-sm text-surface-400">
                   <Star className="h-4 w-4 text-amber-400 fill-amber-400" />

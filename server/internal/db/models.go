@@ -85,6 +85,9 @@ type Game struct {
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
 	ScraperID           string         `gorm:"size:128" json:"scraperId,omitempty"`
 	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning,omitempty"`
+	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus,omitempty"`
+	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
+	CRC32               string         `gorm:"size:16" json:"-"`
 }
 
 // GameDisc represents a single disc in a multi-disc game.

@@ -62,6 +62,8 @@ export interface Game {
   scraperId?: string;
   scrapeAttempts: number;
   achievementsWarning?: string;
+  verificationStatus?: "verified" | "unverified";
+  verificationTag?: string;
   coverAspectRatio: number;
   biosStatus?: "ready" | "missing" | "invalid" | "not_required";
   isFavorite: boolean;

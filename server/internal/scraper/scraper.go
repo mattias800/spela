@@ -222,8 +222,10 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	searchName := cleanName
 	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
 		if crc, err := computeFileCRC32(game.FilePath); err == nil {
+			game.CRC32 = crc
 			if entry, ok := idx.LookupCRC(crc); ok {
 				slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
+				game.VerificationStatus = "verified"
 
 				// Rename ROM file to canonical No-Intro name
 				newPath := filepath.Join(filepath.Dir(game.FilePath), entry.ROMName)
@@ -238,6 +240,8 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 
 				// Use canonical game name (strip region tags) for IGDB search
 				searchName = igdb.CleanGameName(entry.ROMName)
+			} else {
+				game.VerificationStatus = "unverified"
 			}
 		} else {
 			slog.Debug("failed to compute CRC32", "file", game.FilePath, "error", err)
