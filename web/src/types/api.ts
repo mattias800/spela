@@ -110,8 +110,8 @@ export interface GameFilters {
 }
 
 export interface MetadataMatchesResponse {
-  scraped: Game[];
   unscraped: Game[];
+  unverified: Game[];
 }
 
 export interface Device {

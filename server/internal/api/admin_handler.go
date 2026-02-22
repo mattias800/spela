@@ -216,23 +216,11 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }
 
-// MetadataMatches returns games with potential metadata mismatches for admin review.
-// Games are considered mismatched if they have a scraper ID but the scraped title
-// differs significantly from the filename-derived title.
+// MetadataMatches returns games needing admin attention: unscraped and unverified.
 func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
 
-	var scraped []db.Game
-	// Find games that have been scraped (have a scraper ID)
-	if err := h.DB.Where("scraper_id != '' AND scraper_id IS NOT NULL").
-		Preload("Console").Preload("Discs").
-		Find(&scraped).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
-		return
-	}
-
-	// Also include games that have never been scraped
 	var unscraped []db.Game
 	if err := h.DB.Where("scraper_id = '' OR scraper_id IS NULL").
 		Preload("Console").Preload("Discs").
@@ -241,9 +229,17 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 		return
 	}
 
+	var unverified []db.Game
+	if err := h.DB.Where("verification_status = ? OR verification_status = '' OR verification_status IS NULL", "unverified").
+		Preload("Console").Preload("Discs").
+		Find(&unverified).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unverified games"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"scraped":   ToGameResponses(scraped, h.DB, uid),
-		"unscraped": ToGameResponses(unscraped, h.DB, uid),
+		"unscraped":  ToGameResponses(unscraped, h.DB, uid),
+		"unverified": ToGameResponses(unverified, h.DB, uid),
 	})
 }
 

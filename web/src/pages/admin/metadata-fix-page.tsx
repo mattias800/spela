@@ -1,8 +1,24 @@
-import { FileSearch, ScanSearch, AlertTriangle, CheckCircle } from "lucide-react";
-import { Button, Card, Badge, EmptyState } from "@/components/ui";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FileSearch,
+  ScanSearch,
+  AlertTriangle,
+  ShieldQuestion,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  Badge,
+  EmptyState,
+  StateTabNav,
+  StateTabItem,
+} from "@/components/ui";
 import { useMetadataMatches, useScrapeGame } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import type { Game } from "@/types/api";
+
+type Tab = "unscraped" | "unverified";
 
 function GameRow({
   game,
@@ -13,8 +29,13 @@ function GameRow({
   onScrape: () => void;
   isScraping: boolean;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-800/30 border border-surface-800">
+    <div
+      className="flex items-center gap-4 p-4 rounded-xl bg-surface-800/30 border border-surface-800 hover:border-surface-700 transition-colors cursor-pointer"
+      onClick={() => navigate(`/games/${game.id}`)}
+    >
       <div className="h-16 w-12 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
         {game.coverUrl ? (
           <img
@@ -46,10 +67,19 @@ function GameRow({
         <Badge variant="warning">Unscraped</Badge>
       )}
 
+      {game.verificationStatus === "verified" ? (
+        <Badge variant="success">Verified</Badge>
+      ) : (
+        <Badge variant="warning">Unverified</Badge>
+      )}
+
       <Button
         size="sm"
         variant="secondary"
-        onClick={onScrape}
+        onClick={(e) => {
+          e.stopPropagation();
+          onScrape();
+        }}
         loading={isScraping}
       >
         <ScanSearch className="h-4 w-4" />
@@ -63,6 +93,7 @@ export function MetadataFixPage() {
   const { data, isLoading } = useMetadataMatches();
   const scrapeGame = useScrapeGame();
   const { toast } = useToast();
+  const [tab, setTab] = useState<Tab>("unscraped");
 
   if (isLoading) {
     return (
@@ -73,28 +104,8 @@ export function MetadataFixPage() {
     );
   }
 
-  const scraped = data?.scraped ?? [];
   const unscraped = data?.unscraped ?? [];
-
-  if (scraped.length === 0 && unscraped.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            Metadata Review
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Review and fix game metadata.
-          </p>
-        </div>
-        <EmptyState
-          icon={FileSearch}
-          title="No games found"
-          description="Scan your library first to detect games, then scrape for metadata."
-        />
-      </div>
-    );
-  }
+  const unverified = data?.unverified ?? [];
 
   function handleScrape(game: Game) {
     scrapeGame.mutate(game.id, {
@@ -104,6 +115,8 @@ export function MetadataFixPage() {
     });
   }
 
+  const games = tab === "unscraped" ? unscraped : unverified;
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
@@ -111,51 +124,41 @@ export function MetadataFixPage() {
           Metadata Review
         </h1>
         <p className="mt-1 text-surface-400">
-          Review game metadata. Scrape individual games to fetch or update cover
-          art and descriptions.
+          Review games that need attention. Click a game to view its details.
         </p>
       </div>
 
-      <div className="flex gap-3 text-sm text-surface-400">
-        <span className="flex items-center gap-1.5">
-          <CheckCircle className="h-4 w-4 text-success-500" />
-          {scraped.length} scraped
-        </span>
-        <span className="flex items-center gap-1.5">
-          <AlertTriangle className="h-4 w-4 text-warning-500" />
-          {unscraped.length} unscraped
-        </span>
-      </div>
+      <StateTabNav>
+        <StateTabItem active={tab === "unscraped"} onClick={() => setTab("unscraped")}>
+          <ScanSearch className="h-4 w-4" />
+          Unscraped
+          <Badge variant="warning">{unscraped.length}</Badge>
+        </StateTabItem>
+        <StateTabItem active={tab === "unverified"} onClick={() => setTab("unverified")}>
+          <ShieldQuestion className="h-4 w-4" />
+          Unverified
+          <Badge variant="warning">{unverified.length}</Badge>
+        </StateTabItem>
+      </StateTabNav>
 
-      {unscraped.length > 0 && (
+      {games.length === 0 ? (
+        <EmptyState
+          icon={FileSearch}
+          title={
+            tab === "unscraped"
+              ? "All games have been scraped"
+              : "All games are verified"
+          }
+          description={
+            tab === "unscraped"
+              ? "Every game in your library has metadata. Nice!"
+              : "Every game matches a known good dump."
+          }
+        />
+      ) : (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-surface-100 mb-4 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning-500" />
-            Unscraped Games
-            <Badge variant="warning">{unscraped.length}</Badge>
-          </h2>
           <div className="space-y-2">
-            {unscraped.map((game) => (
-              <GameRow
-                key={game.id}
-                game={game}
-                onScrape={() => handleScrape(game)}
-                isScraping={scrapeGame.isPending}
-              />
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {scraped.length > 0 && (
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-surface-100 mb-4 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-success-500" />
-            Scraped Games
-            <Badge variant="success">{scraped.length}</Badge>
-          </h2>
-          <div className="space-y-2">
-            {scraped.map((game) => (
+            {games.map((game) => (
               <GameRow
                 key={game.id}
                 game={game}
