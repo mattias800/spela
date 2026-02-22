@@ -134,7 +134,7 @@ function ScrapeCard() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             onClick={() =>
               scrapeMetadata.mutate("new", {
@@ -157,7 +157,7 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
-            className="flex-1 min-w-[10rem]"
+            className="w-full"
           >
             <ScanSearch className="h-4 w-4" />
             Scrape New Games
@@ -184,7 +184,7 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
-            className="flex-1 min-w-[10rem]"
+            className="w-full"
           >
             <RotateCcw className="h-4 w-4" />
             Rescrape Fallback Only
@@ -211,7 +211,7 @@ function ScrapeCard() {
             loading={scrapeMetadata.isPending}
             disabled={isActive}
             variant="secondary"
-            className="flex-1 min-w-[10rem]"
+            className="w-full"
           >
             <RefreshCw className="h-4 w-4" />
             Rescrape All Games
