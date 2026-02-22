@@ -134,6 +134,7 @@ val commonModule = module {
             scrapeService = get(),
             dispatchers = get(),
             scope = get(),
+            biosRepository = get(),
         )
     }
     factory {
@@ -156,6 +157,7 @@ val commonModule = module {
             apiClient = get(),
             dispatchers = get(),
             scope = get(),
+            biosRepository = get(),
         )
     }
     single {
@@ -180,6 +182,7 @@ val commonModule = module {
             engineFactory = get(),
             dispatchers = get(),
             scope = get(),
+            biosRepository = get(),
         )
     }
 
@@ -286,6 +289,7 @@ val commonModule = module {
             authEventBus = get(),
             dispatchers = get(),
             scope = get(),
+            biosRepository = get(),
         )
     }
     factory {

@@ -18,6 +18,7 @@ flags anything that feels rough, confusing, or incomplete.
 
 **Responsibilities:**
 - Define and prioritize features based on user value
+- Structure all planning as **user stories** that describe the *what* and *why* — what problem are we solving for the user? User stories must not include technical implementation details; they describe the desired outcome and the motivation behind it. Technical decisions are left to the developers.
 - Write clear acceptance criteria before work begins
 - Review completed features from a user perspective
 - Resolve scope disputes between agents
@@ -446,9 +447,13 @@ web/src/
 
 A task is **not done** until:
 
-1. The change has appropriate test coverage (E2E and/or unit tests)
+1. The change has appropriate test coverage (unit tests and/or E2E tests)
 2. **ALL** tests in the full suite pass — not just the new ones
 3. No regressions have been introduced
+
+### Test type preference
+
+**Prefer unit tests over E2E tests** when unit tests can provide equal test quality. Unit tests are faster to run, easier to debug, and more reliable. Use E2E tests for things that unit tests *cannot* adequately cover — real browser interactions, cross-service integration, full navigation flows, and platform-specific behavior. If a behavior can be confidently verified with a unit test, do not write an E2E test for it instead.
 
 Run the entire test suite after every change. A feature with passing new tests but broken existing tests is **not done**.
 

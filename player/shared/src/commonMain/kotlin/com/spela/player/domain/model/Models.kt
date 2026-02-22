@@ -569,3 +569,19 @@ data class PublicProfileGame(
     val consoleName: String,
     val playTime: Long,
 )
+
+// BIOS
+
+data class BiosConsoleStatus(
+    val consoleId: String,
+    val consoleName: String,
+    val biosRequired: Boolean,
+    val status: String,
+    val missingFiles: List<BiosMissingFile>,
+)
+
+data class BiosMissingFile(
+    val fileName: String,
+    val description: String,
+    val required: Boolean,
+)

@@ -379,7 +379,7 @@ class SpelaApiClient(
 
     // BIOS
 
-    suspend fun listBiosFiles(): List<BiosFileDto> {
+    suspend fun getBiosStatus(): BiosStatusResponse {
         return client.get("$baseUrl/api/bios").body()
     }
 

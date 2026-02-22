@@ -12,6 +12,9 @@ import {
 import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
+import { useBiosStatus } from "@/hooks/use-bios";
+import { useAuth } from "@/hooks/use-auth";
+import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
 
@@ -23,6 +26,8 @@ export function ConsoleDetailPage() {
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
   const [search, setSearch] = useState("");
+  const { data: biosData } = useBiosStatus();
+  const { isAdmin } = useAuth();
 
   // Find console info from the consoles list
   const console = consoles?.find((c) => c.id === id);
@@ -32,6 +37,14 @@ export function ConsoleDetailPage() {
   const gameList = games ?? [];
   const style = getConsoleStyle(consoleAbbr);
   const Icon = style.icon;
+
+  const biosConsole = biosData?.consoles.find((c) => c.consoleId === id);
+  const showBiosWarning =
+    biosConsole?.status === "missing" && biosConsole.biosRequired;
+  const missingBiosFiles =
+    biosConsole?.files
+      .filter((f) => f.status === "missing" && f.required)
+      .map((f) => f.fileName) ?? [];
 
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -79,6 +92,15 @@ export function ConsoleDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* BIOS warning */}
+      {showBiosWarning && (
+        <BiosWarningBanner
+          message={`Missing BIOS: ${consoleName} requires firmware files to play games.`}
+          isAdmin={isAdmin}
+          missingFiles={missingBiosFiles}
+        />
+      )}
 
       {/* Search */}
       {gameList.length > 5 && (

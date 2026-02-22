@@ -111,6 +111,7 @@ class SpelaTestHarness(
 
     val gameStatsRepo = FakeGameStatsRepository()
     val challengeRepo = FakeChallengeRepository()
+    val biosRepo = FakeBiosRepository(fakeApiClient, FakeFileStorage())
 
     private val scrapeService = com.spela.player.data.remote.ScrapeService(fakeApiClient, dispatchers, scope)
 
@@ -129,6 +130,7 @@ class SpelaTestHarness(
         scrapeService = scrapeService,
         dispatchers = dispatchers,
         scope = scope,
+        biosRepository = biosRepo,
     )
     val relayRepo = FakeRelayRepository()
 
@@ -151,6 +153,7 @@ class SpelaTestHarness(
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,
+        biosRepository = biosRepo,
     )
 
     private val stubEngineFactory = object : HttpClientEngineFactory<HttpClientEngineConfig> {
@@ -184,6 +187,7 @@ class SpelaTestHarness(
         engineFactory = stubEngineFactory,
         dispatchers = dispatchers,
         scope = scope,
+        biosRepository = biosRepo,
     )
 
     val downloadsViewModel = DownloadsViewModel(

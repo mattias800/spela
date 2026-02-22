@@ -35,6 +35,8 @@ import { SharedSavesList } from "@/features/game-detail/components/shared-saves-
 import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
+import { useBiosStatus } from "@/hooks/use-bios";
+import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import type { Collection } from "@/types/api";
 
 function AddToCollectionButton({
@@ -124,6 +126,7 @@ export function GameDetailPage() {
   const isAdmin =
     currentUser?.role === "admin" || currentUser?.role === "owner";
 
+  const { data: biosData } = useBiosStatus();
   const { data: gameAchievements } = useGameAchievements(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
@@ -157,9 +160,28 @@ export function GameDetailPage() {
     );
   }
 
+  const biosConsole = biosData?.consoles.find(
+    (c) => c.consoleId === game?.consoleId,
+  );
+  const showBiosWarning =
+    game?.biosStatus === "missing" ||
+    (biosConsole?.status === "missing" && biosConsole.biosRequired);
+  const missingBiosFiles =
+    biosConsole?.files
+      .filter((f) => f.status === "missing" && f.required)
+      .map((f) => f.fileName) ?? [];
+
   return (
     <div className="max-w-5xl space-y-8">
       <BackButton onClick={() => navigate(-1)} />
+
+      {showBiosWarning && (
+        <BiosWarningBanner
+          message={`Missing BIOS: ${game!.consoleName} requires firmware files to play. ${missingBiosFiles.length > 0 ? missingBiosFiles.join(", ") + " not found." : ""}`}
+          isAdmin={isAdmin}
+          missingFiles={missingBiosFiles}
+        />
+      )}
 
       <GameHero
         game={game}

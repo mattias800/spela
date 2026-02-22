@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.ScrapeService
+import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.usecase.*
@@ -30,6 +31,7 @@ class GameListViewModel(
     private val scrapeService: ScrapeService,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val biosRepository: BiosRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameListState())
     val state: StateFlow<GameListState> = _state.asStateFlow()
@@ -117,6 +119,17 @@ class GameListViewModel(
             }
         }
         loadDashboardWidgets()
+        // Load BIOS status for dashboard console list (AC 4.5)
+        biosRepository?.let { repo ->
+            scope.launch(dispatchers.io) {
+                try {
+                    val missingBios = repo.getConsolesWithMissingBios()
+                    _state.update { it.copy(consolesWithMissingBios = missingBios.keys) }
+                } catch (_: Exception) {
+                    // Best effort
+                }
+            }
+        }
     }
 
     private fun loadDashboardWidgets() {
@@ -169,6 +182,17 @@ class GameListViewModel(
                     _state.update { it.copy(error = error.message, isLoading = false) }
                 },
             )
+        }
+        // Load BIOS status in parallel (AC 4.5)
+        biosRepository?.let { repo ->
+            scope.launch(dispatchers.io) {
+                try {
+                    val missingBios = repo.getConsolesWithMissingBios()
+                    _state.update { it.copy(consolesWithMissingBios = missingBios.keys) }
+                } catch (_: Exception) {
+                    // Best effort — don't block console list on BIOS check
+                }
+            }
         }
     }
 

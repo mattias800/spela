@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.model.UserPreferences
@@ -66,6 +67,7 @@ class EmulationViewModel(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val biosRepository: BiosRepository? = null,
 ) {
     private val _state = MutableStateFlow(EmulationState())
     val state: StateFlow<EmulationState> = _state.asStateFlow()
@@ -81,6 +83,7 @@ class EmulationViewModel(
     private var netplayTransport: NetplayTransport? = null
     private var netplayInputCollectorJob: Job? = null
     private var netplayControlCollectorJob: Job? = null
+    private var skipBiosCheck = false
 
     init {
         // Observe game/console changes and reload gamepad mappings for all ports.
@@ -176,6 +179,17 @@ class EmulationViewModel(
             EmulationIntent.DismissGiveUpConfirm -> _state.update { it.copy(showGiveUpConfirm = false) }
             EmulationIntent.ConfirmGiveUp -> giveUpChallenge()
             EmulationIntent.DismissChallengeResult -> _state.update { it.copy(challengeCompletedAttempt = null) }
+
+            // BIOS
+            EmulationIntent.DismissMissingBiosDialog -> {
+                _state.update { it.copy(showMissingBiosDialog = false, missingBiosFiles = emptyList(), isLoading = false) }
+            }
+            EmulationIntent.TryAnywayMissingBios -> {
+                _state.update { it.copy(showMissingBiosDialog = false) }
+                skipBiosCheck = true
+                val currentState = _state.value
+                startGame(currentState.gameId)
+            }
         }
     }
 
@@ -217,12 +231,33 @@ class EmulationViewModel(
 
             // Get game detail for consoleId
             var consoleId = ""
+            var consoleName = ""
             getGameDetailUseCase(gameId).onSuccess { detail ->
                 withContext(dispatchers.main) {
                     _state.update { it.copy(gameTitle = detail.game.title, consoleId = detail.game.consoleId) }
                 }
                 consoleId = detail.game.consoleId
+                consoleName = detail.game.consoleName
             }
+
+            // Pre-launch BIOS check (AC 4.2)
+            if (biosRepository != null && !skipBiosCheck) {
+                val missingFiles = biosRepository.preLaunchBiosCheck(consoleId)
+                if (missingFiles.isNotEmpty()) {
+                    withContext(dispatchers.main) {
+                        _state.update {
+                            it.copy(
+                                showMissingBiosDialog = true,
+                                missingBiosFiles = missingFiles,
+                                missingBiosConsoleName = consoleName,
+                                isLoading = false,
+                            )
+                        }
+                    }
+                    return@launch
+                }
+            }
+            skipBiosCheck = false
 
             // Detect dual-screen consoles (Nintendo DS, Nintendo 3DS)
             val lc = consoleId.lowercase()
@@ -362,9 +397,14 @@ class EmulationViewModel(
                         // Show secondary display if available
                         showSecondaryDisplayIfAvailable()
                     } catch (e: Exception) {
+                        val errorMsg = if (_state.value.missingBiosFiles.isNotEmpty()) {
+                            "Emulation failed -- this is likely because required BIOS files are missing"
+                        } else {
+                            "Failed to start emulation: ${e.message}"
+                        }
                         withContext(dispatchers.main) {
                             _state.update {
-                                it.copy(error = "Failed to start emulation: ${e.message}", isLoading = false)
+                                it.copy(error = errorMsg, isLoading = false)
                             }
                         }
                     }

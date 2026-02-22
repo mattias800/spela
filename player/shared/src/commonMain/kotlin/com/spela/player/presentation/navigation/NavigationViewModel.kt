@@ -4,6 +4,7 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.interceptor.AuthEvent
 import com.spela.player.data.remote.interceptor.AuthEventBus
+import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.util.DispatcherProvider
@@ -21,6 +22,7 @@ class NavigationViewModel(
     private val authEventBus: AuthEventBus,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val biosRepository: BiosRepository? = null,
 ) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
@@ -168,6 +170,18 @@ class NavigationViewModel(
             if (result is RestoreSessionResult.Success || result is RestoreSessionResult.OfflineSuccess) {
                 connectivityMonitor.start()
                 syncEngine.start()
+
+                // Sync BIOS files in background (AC 4.1)
+                biosRepository?.let { repo ->
+                    scope.launch(dispatchers.io) {
+                        try {
+                            repo.syncBiosFiles()
+                            repo.fetchBiosStatus()
+                        } catch (e: Exception) {
+                            println("[Bios] Background sync failed: ${e.message}")
+                        }
+                    }
+                }
             }
         }
     }

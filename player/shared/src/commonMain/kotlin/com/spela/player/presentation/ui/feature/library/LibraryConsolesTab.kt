@@ -69,6 +69,7 @@ internal fun LibraryConsolesTab(
                             ConsolesGrid(
                                 consoles = state.consoles,
                                 onConsoleSelected = onConsoleSelected,
+                                consolesWithMissingBios = state.consolesWithMissingBios,
                                 columnsPerRow = columnsPerRow,
                             )
                         }

@@ -5,7 +5,8 @@ import { Button, Skeleton } from "@/components/ui";
 import { useGame, useGameSaves } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
-import { useBiosFiles, getBiosFileUrl } from "@/hooks/use-bios";
+import { useBiosFiles, useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
+import { useAuth } from "@/hooks/use-auth";
 import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
 import { usePlaySession } from "@/hooks/use-play-session";
@@ -32,6 +33,18 @@ export function PlayPage() {
   const { data: preferences } = useUserPreferences();
   const { data: consoles } = useConsoles();
   const { data: biosFiles } = useBiosFiles();
+  const { data: biosData } = useBiosStatus();
+  const { isAdmin } = useAuth();
+
+  const biosConsole = biosData?.consoles.find(
+    (c) => c.consoleId === game?.consoleId,
+  );
+  const biosMissing =
+    biosConsole?.status === "missing" && biosConsole.biosRequired;
+  const missingBiosFiles =
+    biosConsole?.files
+      .filter((f) => f.status === "missing" && f.required)
+      .map((f) => f.fileName) ?? [];
 
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -252,6 +265,9 @@ export function PlayPage() {
           status={emulator.status}
           error={emulator.error}
           romProgress={emulator.romProgress}
+          biosMissing={biosMissing}
+          missingBiosFiles={missingBiosFiles}
+          isAdmin={isAdmin}
           onRetry={() => {
             setIframeLoaded(false);
             const iframe = emulator.iframeRef.current;

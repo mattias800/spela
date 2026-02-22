@@ -122,7 +122,9 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
+	resp := ToGameResponse(game, h.DB, userID)
+	resp.BiosStatus = GetConsoleStatus(h.Storage.BiosDir, game.Console.Abbreviation)
+	c.JSON(http.StatusOK, resp)
 }
 
 // DownloadGame serves the ROM file for a game.

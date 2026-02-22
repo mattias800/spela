@@ -1057,6 +1057,45 @@ class FakeChallengeRepository : ChallengeRepository {
     }
 }
 
+class FakeBiosRepository(
+    apiClient: com.spela.player.data.remote.api.SpelaApiClient = createFakeApiClient(),
+    fileStorage: FileStorage = FakeFileStorage(),
+) : com.spela.player.data.repository.BiosRepository(apiClient, fileStorage) {
+    var consolesWithMissingBios: Map<String, com.spela.player.domain.model.BiosConsoleStatus> = emptyMap()
+    var preLaunchMissingFiles: List<com.spela.player.domain.model.BiosMissingFile> = emptyList()
+    var syncCalled = false
+    var fetchStatusCalled = false
+
+    override suspend fun syncBiosFiles() {
+        syncCalled = true
+    }
+
+    override suspend fun fetchBiosStatus(): com.spela.player.data.remote.dto.BiosStatusResponse? {
+        fetchStatusCalled = true
+        return null
+    }
+
+    override suspend fun getConsoleStatus(consoleId: String): com.spela.player.domain.model.BiosConsoleStatus? {
+        return consolesWithMissingBios[consoleId]
+    }
+
+    override suspend fun preLaunchBiosCheck(consoleId: String): List<com.spela.player.domain.model.BiosMissingFile> {
+        return preLaunchMissingFiles
+    }
+
+    override suspend fun getConsolesWithMissingBios(): Map<String, com.spela.player.domain.model.BiosConsoleStatus> {
+        return consolesWithMissingBios
+    }
+
+    fun preSetConsolesWithMissingBios(consoles: Map<String, com.spela.player.domain.model.BiosConsoleStatus>) {
+        consolesWithMissingBios = consoles
+    }
+
+    fun preSetPreLaunchMissingFiles(files: List<com.spela.player.domain.model.BiosMissingFile>) {
+        preLaunchMissingFiles = files
+    }
+}
+
 class FakeSaveDataRepository : SaveDataRepository {
     var saveDataList: MutableList<SaveData> = mutableListOf()
     private val localSram = mutableMapOf<String, ByteArray>()

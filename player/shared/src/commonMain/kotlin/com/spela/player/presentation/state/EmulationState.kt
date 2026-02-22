@@ -1,6 +1,7 @@
 package com.spela.player.presentation.state
 
 import com.spela.player.domain.model.AchievementEvent
+import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.ShaderPreset
 
 data class EmulationState(
@@ -67,6 +68,11 @@ data class EmulationState(
     val challengeCreationSuccess: Boolean = false,
     val showGiveUpConfirm: Boolean = false,
     val challengeCompletedAttempt: com.spela.player.domain.model.ChallengeAttempt? = null,
+
+    /** BIOS: missing files detected before launch. */
+    val showMissingBiosDialog: Boolean = false,
+    val missingBiosFiles: List<BiosMissingFile> = emptyList(),
+    val missingBiosConsoleName: String = "",
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

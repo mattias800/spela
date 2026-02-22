@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
 import com.spela.player.domain.usecase.CreateCollectionUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
@@ -47,6 +48,7 @@ class GameDetailViewModel(
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val biosRepository: BiosRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameDetailState())
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
@@ -149,6 +151,21 @@ class GameDetailViewModel(
         loadGameRelays(gameId)
         loadAchievements(gameId)
         loadSaveDataCount()
+        loadBiosStatus()
+    }
+
+    private fun loadBiosStatus() {
+        val gameId = currentGameId ?: return
+        val repo = biosRepository ?: return
+        scope.launch(dispatchers.io) {
+            val detail = _state.value.gameDetail ?: return@launch
+            val consoleId = detail.game.consoleId
+            val consoleStatus = repo.getConsoleStatus(consoleId) ?: return@launch
+
+            if (consoleStatus.biosRequired && consoleStatus.missingFiles.isNotEmpty()) {
+                _state.update { it.copy(missingBiosFiles = consoleStatus.missingFiles) }
+            }
+        }
     }
 
     private fun refreshSaves() {

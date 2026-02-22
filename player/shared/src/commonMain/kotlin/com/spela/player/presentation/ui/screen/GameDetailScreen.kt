@@ -15,10 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,6 +32,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
@@ -44,6 +49,7 @@ import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
 import com.spela.player.presentation.intent.KeyMappingIntent
+import com.spela.player.presentation.ui.feature.gamedetail.BiosWarningChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
@@ -148,6 +154,7 @@ fun GameDetailScreen(
                             detail = detail,
                             state = state,
                             hasSaves = state.saveStates.isNotEmpty(),
+                            missingBiosFiles = state.missingBiosFiles,
                             onPlay = onPlay,
                             onPlayFresh = onPlayFresh,
                             onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
@@ -424,6 +431,7 @@ private fun GameInfoContent(
     detail: GameDetail,
     state: GameDetailState,
     hasSaves: Boolean,
+    missingBiosFiles: List<BiosMissingFile> = emptyList(),
     onPlay: (String) -> Unit,
     onPlayFresh: ((String) -> Unit)? = null,
     onDownloadGame: () -> Unit,
@@ -514,6 +522,44 @@ private fun GameInfoContent(
             enabled = !isBusy,
             menuItems = menuItems,
         )
+    }
+
+    // BIOS warning chip (AC 4.4)
+    if (missingBiosFiles.isNotEmpty()) {
+        var showBiosInfo by remember { mutableStateOf(false) }
+
+        Spacer(Modifier.height(SpSpacing.Small))
+        BiosWarningChip(
+            missingFiles = missingBiosFiles,
+            onClick = { showBiosInfo = !showBiosInfo },
+        )
+        AnimatedVisibility(visible = showBiosInfo) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = SpSpacing.Small)
+                    .background(
+                        SpColor.Warning.copy(alpha = 0.1f),
+                        RoundedCornerShape(SpSpacing.RadiusMedium),
+                    )
+                    .padding(SpSpacing.Medium)
+                    .semantics { contentDescription = "Missing BIOS files info" },
+            ) {
+                Text(
+                    text = "Missing BIOS files:",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.Warning,
+                )
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                missingBiosFiles.forEach { file ->
+                    Text(
+                        text = file.fileName,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundSecondary,
+                    )
+                }
+            }
+        }
     }
 
     Spacer(Modifier.height(SpSpacing.Small))

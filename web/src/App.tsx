@@ -17,6 +17,7 @@ import { AdminUsersPage } from "@/pages/admin/users-page";
 import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
+import { AdminBiosPage } from "@/pages/admin/bios-page";
 import { PreferencesPage } from "@/pages/preferences-page";
 import { PlayPage } from "@/pages/play-page";
 import { StatsPage } from "@/pages/stats-page";
@@ -128,6 +129,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <AdminSettingsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/bios"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminBiosPage />
                         </ProtectedRoute>
                       }
                     />

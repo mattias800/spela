@@ -63,6 +63,7 @@ export interface Game {
   scrapeAttempts: number;
   achievementsWarning?: string;
   coverAspectRatio: number;
+  biosStatus?: "ready" | "missing" | "invalid" | "not_required";
   isFavorite: boolean;
   isInPlayLater: boolean;
   averageRating: number;
@@ -552,7 +553,41 @@ export interface NetplaySessionsResponse {
 export interface BiosFile {
   name: string;
   size: number;
+  md5: string;
+  consoleId: string | null;
+  consoleName: string | null;
+  description: string | null;
+  required: boolean;
+  status: "valid" | "present" | "invalid" | "missing";
 }
+
+export interface BiosConsoleFile {
+  fileName: string;
+  description: string;
+  required: boolean;
+  md5: string;
+  status: "valid" | "present" | "invalid" | "missing";
+}
+
+export interface BiosConsole {
+  consoleId: string;
+  consoleName: string;
+  biosRequired: boolean;
+  status: "ready" | "missing" | "invalid" | "not_required";
+  requiredPresent: number;
+  requiredTotal: number;
+  optionalPresent: number;
+  optionalTotal: number;
+  files: BiosConsoleFile[];
+}
+
+export interface BiosResponse {
+  files: BiosFile[];
+  consoles: BiosConsole[];
+}
+
+export type BiosFileStatus = BiosFile["status"];
+export type BiosConsoleStatus = BiosConsole["status"];
 
 // --- Challenges ---
 

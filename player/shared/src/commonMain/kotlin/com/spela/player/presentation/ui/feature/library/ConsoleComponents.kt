@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import com.spela.player.presentation.ui.theme.SpTypography
 internal fun ConsolesGrid(
     consoles: List<Console>,
     onConsoleSelected: (String) -> Unit,
+    consolesWithMissingBios: Set<String> = emptySet(),
     columnsPerRow: Int = 2,
 ) {
     Column(
@@ -48,6 +50,7 @@ internal fun ConsolesGrid(
                     ConsoleCard(
                         console = console,
                         onClick = { onConsoleSelected(console.id) },
+                        hasMissingBios = console.id in consolesWithMissingBios,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -63,15 +66,17 @@ internal fun ConsolesGrid(
 internal fun ConsoleCard(
     console: Console,
     onClick: () -> Unit,
+    hasMissingBios: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val consoleColor = getConsoleColor(console.colorTheme)
+    val biosDesc = if (hasMissingBios) ", BIOS missing" else ""
 
     SpGradientCard(
         modifier = modifier
             .height(100.dp)
             .semantics {
-                contentDescription = "${console.name}, ${console.gameCount} games"
+                contentDescription = "${console.name}, ${console.gameCount} games$biosDesc"
                 role = Role.Button
             },
         onClick = onClick,
@@ -90,11 +95,24 @@ internal fun ConsoleCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = console.name,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnBackground,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                ) {
+                    Text(
+                        text = console.name,
+                        style = SpTypography.TitleLarge,
+                        color = SpColor.OnBackground,
+                    )
+                    if (hasMissingBios) {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = "BIOS missing for ${console.name}",
+                            tint = SpColor.Warning,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
                 Text(
                     text = "${console.gameCount} games",
                     style = SpTypography.BodySmall,

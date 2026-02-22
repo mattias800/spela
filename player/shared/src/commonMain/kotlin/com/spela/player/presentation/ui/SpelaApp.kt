@@ -824,6 +824,21 @@ fun SpelaApp(
                             }
                         }
 
+                        // Missing BIOS dialog (AC 4.3)
+                        if (emulationState.showMissingBiosDialog) {
+                            com.spela.player.presentation.ui.feature.gamedetail.MissingBiosDialog(
+                                consoleName = emulationState.missingBiosConsoleName,
+                                missingFiles = emulationState.missingBiosFiles,
+                                onGoBack = {
+                                    emulationViewModel.onIntent(EmulationIntent.DismissMissingBiosDialog)
+                                    navigationViewModel.onIntent(NavigationIntent.HideOverlay)
+                                },
+                                onTryAnyway = {
+                                    emulationViewModel.onIntent(EmulationIntent.TryAnywayMissingBios)
+                                },
+                            )
+                        }
+
                         // Loading spinner over black background while preparing game
                         if (emulationState.isLoading && emulationState.error == null) {
                             Box(

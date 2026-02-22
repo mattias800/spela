@@ -31,4 +31,5 @@ data class GameListState(
     val isLoadingAchievements: Boolean = false,
     val trendingChallenges: List<Challenge> = emptyList(),
     val isLoadingTrendingChallenges: Boolean = false,
+    val consolesWithMissingBios: Set<String> = emptySet(),
 )

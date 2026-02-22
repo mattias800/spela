@@ -57,4 +57,8 @@ sealed interface EmulationIntent {
     data object DismissGiveUpConfirm : EmulationIntent
     data object ConfirmGiveUp : EmulationIntent
     data object DismissChallengeResult : EmulationIntent
+
+    // BIOS
+    data object DismissMissingBiosDialog : EmulationIntent
+    data object TryAnywayMissingBios : EmulationIntent
 }

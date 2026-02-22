@@ -3,6 +3,7 @@ package com.spela.player.presentation.state
 import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineData
+import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.GameCollection
@@ -61,4 +62,6 @@ data class GameDetailState(
     val isCreatingChallenge: Boolean = false,
     val successMessage: String? = null,
     val error: String? = null,
+    // BIOS
+    val missingBiosFiles: List<BiosMissingFile> = emptyList(),
 )

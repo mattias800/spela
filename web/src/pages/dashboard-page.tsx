@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Play,
   Heart,
@@ -18,6 +19,8 @@ import {
   useToggleFavorite,
   useGames,
 } from "@/hooks/use-games";
+import { useBiosStatus } from "@/hooks/use-bios";
+import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { usePlayLaterGames, useTogglePlayLater } from "@/hooks/use-play-later";
 import { useRecentAchievements } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
@@ -238,7 +241,13 @@ function TrendingChallengesSection() {
 }
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { data: biosData } = useBiosStatus();
+  const [biosDismissed, setBiosDismissed] = useState(false);
+  const hasMissingBios =
+    isAdmin &&
+    !biosDismissed &&
+    (biosData?.consoles.some((c) => c.status === "missing") ?? false);
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
   const playLaterGames = usePlayLaterGames();
@@ -269,6 +278,14 @@ export function DashboardPage() {
           Pick up where you left off or discover something new.
         </p>
       </div>
+
+      {hasMissingBios && (
+        <BiosWarningBanner
+          message="Some consoles are missing required BIOS files. Games may not work correctly."
+          isAdmin={true}
+          onDismiss={() => setBiosDismissed(true)}
+        />
+      )}
 
       <PersonalStatsCard />
 

@@ -122,7 +122,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
-	biosHandler := &BiosHandler{Storage: cfg.Storage}
+	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
@@ -334,6 +334,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
 			admin.GET("/stats", adminHandler.GetStats)
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
+			admin.POST("/bios", biosHandler.UploadBiosFile)
+			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 		}
 
 		// WebSocket

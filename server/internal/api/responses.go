@@ -61,6 +61,7 @@ type GameResponse struct {
 	ScraperID           string         `json:"scraperId,omitempty"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
 	AchievementsWarning string         `json:"achievementsWarning,omitempty"`
+	BiosStatus     string         `json:"biosStatus,omitempty"`
 	IsFavorite     bool           `json:"isFavorite"`
 	IsInPlayLater  bool           `json:"isInPlayLater"`
 	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`

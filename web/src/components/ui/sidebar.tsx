@@ -12,9 +12,11 @@ export interface SidebarLinkProps {
   matchPaths?: string[];
   /** Optional count badge shown next to the label. */
   badge?: number;
+  /** Show a small warning dot indicator (orange). */
+  warning?: boolean;
 }
 
-function SidebarLink({ to, icon: Icon, label, matchPaths, badge }: SidebarLinkProps) {
+function SidebarLink({ to, icon: Icon, label, matchPaths, badge, warning }: SidebarLinkProps) {
   const location = useLocation();
 
   return (
@@ -38,6 +40,9 @@ function SidebarLink({ to, icon: Icon, label, matchPaths, badge }: SidebarLinkPr
         <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-xs font-medium bg-brand-500/15 text-brand-400">
           {badge}
         </span>
+      )}
+      {warning && (
+        <span className="h-2.5 w-2.5 rounded-full bg-warning-500 flex-shrink-0" aria-label="Warning" />
       )}
     </NavLink>
   );
