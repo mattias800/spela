@@ -136,6 +136,7 @@ export function useScrapeGame() {
     onSuccess: (_data, gameId) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "metadata-matches"] });
     },
   });
 }

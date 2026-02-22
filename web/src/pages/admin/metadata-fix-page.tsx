@@ -62,18 +62,6 @@ function GameRow({
         </div>
       </div>
 
-      {game.scraperId ? (
-        <Badge variant="success">Scraped</Badge>
-      ) : (
-        <Badge variant="warning">Unscraped</Badge>
-      )}
-
-      {game.verificationStatus === "verified" ? (
-        <Badge variant="success">Verified</Badge>
-      ) : (
-        <Badge variant="warning">Unverified</Badge>
-      )}
-
       <Button
         size="sm"
         variant="secondary"
@@ -95,6 +83,7 @@ export function MetadataFixPage() {
   const scrapeGame = useScrapeGame();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("unscraped");
+  const [scrapingGameId, setScrapingGameId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -110,10 +99,16 @@ export function MetadataFixPage() {
   const incomplete = data?.incomplete ?? [];
 
   function handleScrape(game: Game) {
+    setScrapingGameId(game.id);
     scrapeGame.mutate(game.id, {
-      onSuccess: () => toast("success", `Metadata updated for "${game.title}"`),
-      onError: (err) =>
-        toast("error", err instanceof Error ? err.message : "Scrape failed"),
+      onSuccess: () => {
+        toast("success", `Metadata updated for "${game.title}"`);
+        setScrapingGameId(null);
+      },
+      onError: (err) => {
+        toast("error", err instanceof Error ? err.message : "Scrape failed");
+        setScrapingGameId(null);
+      },
     });
   }
 
@@ -179,7 +174,7 @@ export function MetadataFixPage() {
                 key={game.id}
                 game={game}
                 onScrape={() => handleScrape(game)}
-                isScraping={scrapeGame.isPending}
+                isScraping={scrapingGameId === game.id}
               />
             ))}
           </div>
