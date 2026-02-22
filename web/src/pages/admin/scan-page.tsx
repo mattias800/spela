@@ -4,6 +4,7 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Button, Card, CardHeader, CardContent } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
@@ -86,13 +87,21 @@ function ScrapeCard() {
               <span className="text-surface-200">Scraping complete</span>
             </div>
             <div className="flex gap-4 text-sm">
-              <span className="text-surface-300">
-                {scrape.successes} scraped
-              </span>
-              {scrape.failures > 0 && (
-                <span className="text-error-400">
-                  {scrape.failures} failed
+              {scrape.successes === 0 && scrape.failures === 0 ? (
+                <span className="text-surface-400">
+                  No unscraped games found
                 </span>
+              ) : (
+                <>
+                  <span className="text-surface-300">
+                    {scrape.successes} scraped
+                  </span>
+                  {scrape.failures > 0 && (
+                    <span className="text-error-400">
+                      {scrape.failures} failed
+                    </span>
+                  )}
+                </>
               )}
             </div>
             <Button
@@ -124,25 +133,47 @@ function ScrapeCard() {
           </div>
         )}
 
-        <Button
-          onClick={() =>
-            scrapeMetadata.mutate(undefined, {
-              onSuccess: () => toast("success", "Metadata scraping started"),
-              onError: (err) =>
-                toast(
-                  "error",
-                  err instanceof Error ? err.message : "Scrape failed",
-                ),
-            })
-          }
-          loading={scrapeMetadata.isPending}
-          disabled={isActive}
-          variant="secondary"
-          className="w-full"
-        >
-          <ScanSearch className="h-4 w-4" />
-          Scrape Metadata
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() =>
+              scrapeMetadata.mutate(false, {
+                onSuccess: () => toast("success", "Metadata scraping started"),
+                onError: (err) =>
+                  toast(
+                    "error",
+                    err instanceof Error ? err.message : "Scrape failed",
+                  ),
+              })
+            }
+            loading={scrapeMetadata.isPending}
+            disabled={isActive}
+            variant="secondary"
+            className="flex-1 min-w-[10rem]"
+          >
+            <ScanSearch className="h-4 w-4" />
+            Scrape New Games
+          </Button>
+          <Button
+            onClick={() =>
+              scrapeMetadata.mutate(true, {
+                onSuccess: () =>
+                  toast("success", "Full metadata re-scrape started"),
+                onError: (err) =>
+                  toast(
+                    "error",
+                    err instanceof Error ? err.message : "Scrape failed",
+                  ),
+              })
+            }
+            loading={scrapeMetadata.isPending}
+            disabled={isActive}
+            variant="secondary"
+            className="flex-1 min-w-[10rem]"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Rescrape All Games
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

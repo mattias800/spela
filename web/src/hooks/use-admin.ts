@@ -88,7 +88,8 @@ export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.post<void>("/admin/scrape"),
+    mutationFn: (force?: boolean) =>
+      api.post<void>(`/admin/scrape${force ? "?force=true" : ""}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });

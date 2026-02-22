@@ -12,6 +12,7 @@ interface ScrapeProgressPayload {
 
 interface ScrapeCompletePayload {
   scraped: number;
+  total: number;
 }
 
 interface ScrapeErrorPayload {
@@ -85,8 +86,8 @@ export function useScrapeProgress(): ScrapeProgressState {
     "scrape_complete",
     useCallback((payload: ScrapeCompletePayload) => {
       setPhase("complete");
-      setCurrent(payload.scraped);
-      setTotal(payload.scraped);
+      setSuccesses(payload.scraped);
+      setTotal(payload.total);
     }, []),
   );
 

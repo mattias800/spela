@@ -161,6 +161,12 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		}
 	}
 
+	// On re-scrape, clear stale images so fresh ones are downloaded
+	if game.ScrapeAttempts > 0 {
+		game.CoverURL = ""
+		game.ScreenshotURL = ""
+	}
+
 	gameName := gameNameFromFileName(game.FileName)
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
@@ -361,12 +367,21 @@ type ScrapeProgress struct {
 	Failures  int   `json:"failures"`
 }
 
-// ScrapeAll fetches metadata for all games that don't have scraper IDs.
+// ScrapeAll fetches metadata for games.
+// When force is false, only games without scraper IDs are scraped.
+// When force is true, all games are re-scraped.
 // If onProgress is non-nil, it is called after each game attempt with the current progress.
-func (s *Scraper) ScrapeAll(onProgress func(ScrapeProgress)) (int, error) {
+// Returns the number of successes, the total number of games attempted, and any error.
+func (s *Scraper) ScrapeAll(force bool, onProgress func(ScrapeProgress)) (int, int, error) {
 	var games []db.Game
-	if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
-		return 0, fmt.Errorf("loading unscraped games: %w", err)
+	if force {
+		if err := s.DB.Find(&games).Error; err != nil {
+			return 0, 0, fmt.Errorf("loading all games: %w", err)
+		}
+	} else {
+		if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
+			return 0, 0, fmt.Errorf("loading unscraped games: %w", err)
+		}
 	}
 
 	total := len(games)
@@ -394,5 +409,5 @@ func (s *Scraper) ScrapeAll(onProgress func(ScrapeProgress)) (int, error) {
 		time.Sleep(200 * time.Millisecond)
 	}
 
-	return successes, nil
+	return successes, total, nil
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui";
@@ -25,6 +25,42 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [customTag, setCustomTag] = useState("");
   const queryClient = useQueryClient();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  const close = useCallback(() => setShowInfo(false), []);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!showInfo) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showInfo, close]);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!showInfo) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        close();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showInfo, close]);
+
+  // Auto-focus first interactive element when opening
+  useEffect(() => {
+    if (showInfo && selectRef.current) {
+      selectRef.current.focus();
+    }
+  }, [showInfo]);
 
   const mutation = useMutation({
     mutationFn: (tag: string) =>
@@ -62,7 +98,12 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
       </button>
 
       {showInfo && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-64 rounded-lg border border-surface-700 bg-surface-800 p-4 shadow-xl">
+        <div
+          ref={dropdownRef}
+          role="dialog"
+          aria-modal="true"
+          className="absolute top-full left-0 mt-2 z-50 w-64 rounded-lg border border-surface-700 bg-surface-800 p-3 shadow-xl"
+        >
           <p className="text-sm text-surface-300 mb-3">
             This ROM does not match any known verified dump.
           </p>
@@ -73,6 +114,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
                 Set tag
               </label>
               <select
+                ref={selectRef}
                 className="w-full rounded-md border border-surface-600 bg-surface-700 px-2 py-1.5 text-sm text-surface-200"
                 value=""
                 onChange={(e) => {

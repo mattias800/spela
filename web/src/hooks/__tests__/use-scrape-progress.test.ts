@@ -100,12 +100,28 @@ describe("useScrapeProgress", () => {
     });
 
     act(() => {
-      wsHandlers["scrape_complete"]({ scraped: 10 });
+      wsHandlers["scrape_complete"]({ scraped: 10, total: 10 });
     });
 
     expect(result.current.phase).toBe("complete");
-    expect(result.current.current).toBe(10);
+    expect(result.current.successes).toBe(10);
     expect(result.current.total).toBe(10);
+  });
+
+  it("handles scrape_complete with 0 scraped and 0 total", () => {
+    const { result } = renderHook(() => useScrapeProgress());
+
+    act(() => {
+      wsHandlers["scrape_started"]({});
+    });
+
+    act(() => {
+      wsHandlers["scrape_complete"]({ scraped: 0, total: 0 });
+    });
+
+    expect(result.current.phase).toBe("complete");
+    expect(result.current.successes).toBe(0);
+    expect(result.current.total).toBe(0);
   });
 
   it("transitions to error on scrape_error event", () => {
@@ -124,7 +140,7 @@ describe("useScrapeProgress", () => {
 
     // First transition to complete
     act(() => {
-      wsHandlers["scrape_complete"]({ scraped: 5 });
+      wsHandlers["scrape_complete"]({ scraped: 5, total: 5 });
     });
 
     expect(result.current.phase).toBe("complete");

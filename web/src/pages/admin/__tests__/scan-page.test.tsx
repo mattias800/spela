@@ -74,8 +74,7 @@ describe("AdminScanPage", () => {
   it("renders both scan and scrape cards", () => {
     renderPage();
     expect(screen.getByText("Scan for Games")).toBeInTheDocument();
-    // "Scrape Metadata" appears as both a heading and button text
-    expect(screen.getAllByText("Scrape Metadata").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Scrape Metadata")).toBeInTheDocument();
   });
 
   it("renders page heading", () => {
@@ -90,14 +89,14 @@ describe("AdminScanPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Scrape Metadata button", () => {
+  it("renders Scrape New Games and Rescrape All Games buttons", () => {
     renderPage();
-    const buttons = screen.getAllByText("Scrape Metadata");
-    // One is the heading, one is the button
-    const buttonEl = buttons.find(
-      (el) => el.closest("button") !== null,
-    );
-    expect(buttonEl).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Scrape New Games/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Rescrape All Games/ }),
+    ).toBeInTheDocument();
   });
 
   it("calls scan mutation when Start Scan is clicked", async () => {
@@ -108,14 +107,26 @@ describe("AdminScanPage", () => {
     expect(mockScanMutate).toHaveBeenCalled();
   });
 
-  it("calls scrape mutation when Scrape Metadata button is clicked", async () => {
+  it("calls scrape mutation with false when Scrape New Games is clicked", async () => {
     renderPage();
-    const scrapeButton = screen
-      .getAllByText("Scrape Metadata")
-      .find((el) => el.closest("button") !== null)!
-      .closest("button")!;
-    await userEvent.click(scrapeButton);
-    expect(mockScrapeMutate).toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: /Scrape New Games/ }),
+    );
+    expect(mockScrapeMutate).toHaveBeenCalledWith(
+      false,
+      expect.any(Object),
+    );
+  });
+
+  it("calls scrape mutation with true when Rescrape All Games is clicked", async () => {
+    renderPage();
+    await userEvent.click(
+      screen.getByRole("button", { name: /Rescrape All Games/ }),
+    );
+    expect(mockScrapeMutate).toHaveBeenCalledWith(
+      true,
+      expect.any(Object),
+    );
   });
 
   it("shows scanning indicator when scan is pending", () => {
@@ -162,7 +173,7 @@ describe("AdminScanPage", () => {
     expect(screen.getByText("1 failed")).toBeInTheDocument();
   });
 
-  it("disables Scrape Metadata button when scrape is active", () => {
+  it("disables scrape buttons when scrape is active", () => {
     mockUseScrapeProgress.mockReturnValue({
       phase: "active",
       current: 1,
@@ -174,11 +185,12 @@ describe("AdminScanPage", () => {
       dismiss: mockDismiss,
     });
     renderPage();
-    const scrapeButton = screen
-      .getAllByText("Scrape Metadata")
-      .find((el) => el.closest("button") !== null)!
-      .closest("button")!;
-    expect(scrapeButton).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Scrape New Games/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Rescrape All Games/ }),
+    ).toBeDisabled();
   });
 
   it("shows completion summary", () => {
@@ -279,5 +291,21 @@ describe("AdminScanPage", () => {
     renderPage();
     expect(screen.getByText("10 scraped")).toBeInTheDocument();
     expect(screen.queryByText(/failed/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'No unscraped games found' when 0 successes and 0 failures", () => {
+    mockUseScrapeProgress.mockReturnValue({
+      phase: "complete",
+      current: 0,
+      total: 0,
+      gameName: "",
+      successes: 0,
+      failures: 0,
+      error: null,
+      dismiss: mockDismiss,
+    });
+    renderPage();
+    expect(screen.getByText("No unscraped games found")).toBeInTheDocument();
+    expect(screen.queryByText(/\d+ scraped/)).not.toBeInTheDocument();
   });
 });

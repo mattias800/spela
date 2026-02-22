@@ -246,8 +246,11 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 
 // TriggerScrape starts a metadata scraping operation (admin only).
 // Only one scrape can run at a time; concurrent requests are rejected.
+// Pass ?force=true to re-scrape all games, not just unscraped ones.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.tryConfigureIGDB()
+
+	force := c.Query("force") == "true"
 
 	h.scrapeMu.Lock()
 	if h.scraping {
@@ -268,7 +271,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			h.scrapeMu.Unlock()
 		}()
 
-		count, err := h.Scraper.ScrapeAll(func(p scraper.ScrapeProgress) {
+		count, total, err := h.Scraper.ScrapeAll(force, func(p scraper.ScrapeProgress) {
 			h.scrapeMu.Lock()
 			h.scrapeProgress = &p
 			h.scrapeMu.Unlock()
@@ -279,7 +282,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": err.Error()}})
 			return
 		}
-		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count}})
+		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background"})

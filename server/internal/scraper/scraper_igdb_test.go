@@ -588,3 +588,104 @@ func TestScrapeGame_CRCNoMatch_SetsUnverified(t *testing.T) {
 	assert.Equal(t, "unverified", game.VerificationStatus)
 	assert.Equal(t, crc, game.CRC32)
 }
+
+func TestScrapeAll_DefaultOnlyUnscraped(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	// Use an unknown platform so no real HTTP requests are made
+	console := db.Console{Abbreviation: "TESTPLAT", Name: "Test Platform"}
+	require.NoError(t, database.Create(&console).Error)
+
+	romDir := t.TempDir()
+
+	// One scraped game, one unscraped
+	scraped := db.Game{ConsoleID: console.ID, Console: console, Title: "Scraped", FileName: "scraped.rom", FilePath: filepath.Join(romDir, "scraped.rom"), ScraperID: "igdb:1"}
+	unscraped := db.Game{ConsoleID: console.ID, Console: console, Title: "Unscraped", FileName: "unscraped.rom", FilePath: filepath.Join(romDir, "unscraped.rom")}
+	require.NoError(t, database.Create(&scraped).Error)
+	require.NoError(t, database.Create(&unscraped).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	successes, total, err := s.ScrapeAll(false, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total, "should only attempt the unscraped game")
+	assert.Equal(t, 1, successes)
+}
+
+func TestScrapeAll_ForceScrapesAll(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	// Use an unknown platform so no real HTTP requests are made
+	console := db.Console{Abbreviation: "TESTPLAT", Name: "Test Platform"}
+	require.NoError(t, database.Create(&console).Error)
+
+	romDir := t.TempDir()
+
+	// Both games already scraped
+	g1 := db.Game{ConsoleID: console.ID, Console: console, Title: "Game 1", FileName: "g1.rom", FilePath: filepath.Join(romDir, "g1.rom"), ScraperID: "igdb:1"}
+	g2 := db.Game{ConsoleID: console.ID, Console: console, Title: "Game 2", FileName: "g2.rom", FilePath: filepath.Join(romDir, "g2.rom"), ScraperID: "igdb:2"}
+	require.NoError(t, database.Create(&g1).Error)
+	require.NoError(t, database.Create(&g2).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	successes, total, err := s.ScrapeAll(true, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, total, "force should attempt all games")
+	assert.Equal(t, 2, successes)
+}
+
+func TestScrapeGame_RescrapesClearsStaleImages(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	// Use an unknown platform so LibRetro image fallback doesn't fire
+	console := db.Console{Abbreviation: "TESTPLAT", Name: "Test Platform"}
+	require.NoError(t, database.Create(&console).Error)
+
+	romDir := t.TempDir()
+
+	game := db.Game{
+		ConsoleID:      console.ID,
+		Console:        console,
+		Title:          "Test Game",
+		FileName:       "test.rom",
+		FilePath:       filepath.Join(romDir, "test.rom"),
+		CoverURL:       "/old/cover.png",
+		ScreenshotURL:  "/old/screenshot.png",
+		ScrapeAttempts: 1, // already scraped once
+		ScraperID:      "libretro",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	// Images should be cleared since no image server is available
+	// (stale images from previous scrape are removed before attempting download)
+	assert.Empty(t, game.CoverURL, "stale cover should be cleared on re-scrape")
+	assert.Empty(t, game.ScreenshotURL, "stale screenshot should be cleared on re-scrape")
+	assert.Equal(t, 2, game.ScrapeAttempts)
+}
