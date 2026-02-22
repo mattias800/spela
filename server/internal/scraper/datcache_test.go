@@ -2,7 +2,6 @@ package scraper
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -83,32 +82,13 @@ func TestDATCache_GetIndex_MemoryCache(t *testing.T) {
 	assert.Equal(t, idx1, idx2)
 }
 
-func TestDATCache_GetIndex_DownloadFromServer(t *testing.T) {
-	datContent := `game (
-	name "Downloaded Game (USA)"
-	rom ( name "Downloaded Game (USA).sfc" size 512 crc DEADBEEF md5 a sha1 b )
-)
-`
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(datContent))
-	}))
-	defer server.Close()
-
-	// Override the base URL to point to our test server
-	origBaseURL := datBaseURL
-	// We can't directly override the const, so instead we test the download
-	// indirectly through a pre-cached file. The mock server test validates
-	// the full download path by using a cache that has no disk file.
-
-	// Create cache with empty dir — no files on disk
+func TestDATCache_GetIndex_MissingFileReturnsNil(t *testing.T) {
+	// Empty dir — no DAT files on disk. GetIndex should return nil, nil
+	// for a valid mapped system without attempting a download.
 	dir := t.TempDir()
-	cache := NewDATCache(dir, server.Client())
+	cache := NewDATCache(dir, &http.Client{})
 
-	// For systems that are not on disk and can't be downloaded from test server
-	// (URL doesn't match), this will fail. But we can verify disk-based systems
-	// are correctly skipped even when empty.
-	_ = origBaseURL
-	idx, err := cache.GetIndex("PSX")
+	idx, err := cache.GetIndex("SNES")
 	assert.NoError(t, err)
 	assert.Nil(t, idx)
 }

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -42,8 +41,8 @@ func NewDATCache(dir string, client *http.Client) *DATCache {
 }
 
 // GetIndex returns the parsed DAT index for the given console abbreviation.
-// It lazily downloads and parses the DAT file if not already cached.
-// Returns nil, nil for disc-based systems or systems without a LibRetro mapping.
+// It loads and parses the bundled DAT file from disk if not already in memory.
+// Returns nil, nil for disc-based systems, unmapped systems, or if the file is missing.
 func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
 	if discBasedSystems[consoleAbbrev] {
 		return nil, nil
@@ -62,7 +61,7 @@ func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
 		return idx, nil
 	}
 
-	// Try loading from disk cache
+	// Load from disk (bundled DAT files)
 	datPath := filepath.Join(c.dir, systemName+".dat")
 	if _, err := os.Stat(datPath); err == nil {
 		idx, err := c.parseFile(datPath)
@@ -70,50 +69,31 @@ func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
 			c.indices[consoleAbbrev] = idx
 			return idx, nil
 		}
-		slog.Warn("failed to parse cached DAT file, re-downloading", "path", datPath, "error", err)
+		slog.Warn("failed to parse DAT file", "path", datPath, "error", err)
 	}
 
-	// Download from GitHub
-	idx, err := c.downloadAndCache(consoleAbbrev, systemName, datPath)
-	if err != nil {
-		return nil, err
-	}
-
-	c.indices[consoleAbbrev] = idx
-	return idx, nil
+	// File not on disk — return nil (no download attempt)
+	return nil, nil
 }
 
-// RefreshAll re-downloads all DAT files that are already cached on disk.
+// RefreshAll downloads/updates DAT files for all mapped non-disc-based systems.
 func (c *DATCache) RefreshAll() {
-	entries, err := os.ReadDir(c.dir)
-	if err != nil {
-		slog.Debug("no DAT cache dir to refresh", "dir", c.dir, "error", err)
+	if err := os.MkdirAll(c.dir, 0o755); err != nil {
+		slog.Warn("failed to create DAT dir for refresh", "dir", c.dir, "error", err)
 		return
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".dat") {
+	var ok, failures int
+	for consoleAbbrev, systemName := range AbbreviationToLibRetro {
+		if discBasedSystems[consoleAbbrev] {
 			continue
 		}
 
-		systemName := strings.TrimSuffix(entry.Name(), ".dat")
-
-		// Find the console abbreviation for this system name
-		var consoleAbbrev string
-		for abbrev, name := range AbbreviationToLibRetro {
-			if name == systemName {
-				consoleAbbrev = abbrev
-				break
-			}
-		}
-		if consoleAbbrev == "" {
-			continue
-		}
-
-		datPath := filepath.Join(c.dir, entry.Name())
+		datPath := filepath.Join(c.dir, systemName+".dat")
 		idx, err := c.downloadAndCache(consoleAbbrev, systemName, datPath)
 		if err != nil {
 			slog.Warn("failed to refresh DAT file", "system", systemName, "error", err)
+			failures++
 			continue
 		}
 
@@ -121,8 +101,10 @@ func (c *DATCache) RefreshAll() {
 		c.indices[consoleAbbrev] = idx
 		c.mu.Unlock()
 
-		slog.Info("refreshed DAT file", "system", systemName)
+		ok++
 	}
+
+	slog.Info("DAT refresh complete", "refreshed", ok, "failures", failures)
 }
 
 // downloadAndCache downloads a DAT file, saves it to disk, then parses it.

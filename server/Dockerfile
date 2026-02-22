@@ -22,13 +22,15 @@ COPY --from=builder /build/spela-server .
 COPY --from=builder /build/spela-seed .
 COPY --from=builder /build/entrypoint.sh .
 
-RUN mkdir -p /app/data /app/games /app/saves /app/cores /app/images
+RUN mkdir -p /app/data /app/games /app/saves /app/cores /app/images /app/dats
+COPY --from=builder /build/dats/ /app/dats/
 
 ENV SPELA_PORT=8080
 ENV SPELA_DB_PATH=/app/data/spela.db
 ENV SPELA_GAME_DIRS=/app/games
 ENV SPELA_SAVE_DIR=/app/saves
 ENV SPELA_CORE_DIR=/app/cores
+ENV SPELA_DAT_DIR=/app/dats
 ENV GIN_MODE=release
 
 EXPOSE 8080
