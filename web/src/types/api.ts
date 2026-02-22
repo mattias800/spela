@@ -112,6 +112,7 @@ export interface GameFilters {
 export interface MetadataMatchesResponse {
   unscraped: Game[];
   unverified: Game[];
+  incomplete: Game[];
 }
 
 export interface Device {

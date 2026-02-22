@@ -5,6 +5,7 @@ import {
   ScanSearch,
   AlertTriangle,
   ShieldQuestion,
+  ImageOff,
 } from "lucide-react";
 import {
   Button,
@@ -18,7 +19,7 @@ import { useMetadataMatches, useScrapeGame } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import type { Game } from "@/types/api";
 
-type Tab = "unscraped" | "unverified";
+type Tab = "unscraped" | "unverified" | "incomplete";
 
 function GameRow({
   game,
@@ -106,6 +107,7 @@ export function MetadataFixPage() {
 
   const unscraped = data?.unscraped ?? [];
   const unverified = data?.unverified ?? [];
+  const incomplete = data?.incomplete ?? [];
 
   function handleScrape(game: Game) {
     scrapeGame.mutate(game.id, {
@@ -115,7 +117,12 @@ export function MetadataFixPage() {
     });
   }
 
-  const games = tab === "unscraped" ? unscraped : unverified;
+  const games =
+    tab === "unscraped"
+      ? unscraped
+      : tab === "unverified"
+        ? unverified
+        : incomplete;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -134,6 +141,11 @@ export function MetadataFixPage() {
           Unscraped
           <Badge variant="warning">{unscraped.length}</Badge>
         </StateTabItem>
+        <StateTabItem active={tab === "incomplete"} onClick={() => setTab("incomplete")}>
+          <ImageOff className="h-4 w-4" />
+          Incomplete
+          <Badge variant="warning">{incomplete.length}</Badge>
+        </StateTabItem>
         <StateTabItem active={tab === "unverified"} onClick={() => setTab("unverified")}>
           <ShieldQuestion className="h-4 w-4" />
           Unverified
@@ -147,12 +159,16 @@ export function MetadataFixPage() {
           title={
             tab === "unscraped"
               ? "All games have been scraped"
-              : "All games are verified"
+              : tab === "incomplete"
+                ? "No incomplete games"
+                : "All games are verified"
           }
           description={
             tab === "unscraped"
               ? "Every game in your library has metadata. Nice!"
-              : "Every game matches a known good dump."
+              : tab === "incomplete"
+                ? "All scraped games have full IGDB metadata."
+                : "Every game matches a known good dump."
           }
         />
       ) : (

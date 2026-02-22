@@ -216,7 +216,8 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }
 
-// MetadataMatches returns games needing admin attention: unscraped and unverified.
+// MetadataMatches returns games needing admin attention: unscraped, unverified,
+// and incomplete (scraped only via LibRetro fallback, missing IGDB metadata).
 func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
@@ -237,9 +238,18 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 		return
 	}
 
+	var incomplete []db.Game
+	if err := h.DB.Where("scraper_id = 'libretro'").
+		Preload("Console").Preload("Discs").
+		Find(&incomplete).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch incomplete games"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"unscraped":  ToGameResponses(unscraped, h.DB, uid),
 		"unverified": ToGameResponses(unverified, h.DB, uid),
+		"incomplete": ToGameResponses(incomplete, h.DB, uid),
 	})
 }
 
