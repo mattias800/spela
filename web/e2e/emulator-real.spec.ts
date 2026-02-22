@@ -28,6 +28,8 @@ function monitorPageErrors(page: import("@playwright/test").Page) {
       // Ratings & shared-saves endpoints may not be available on the server
       if (response.status() === 404 && url.includes("/ratings")) return;
       if (response.status() === 404 && url.includes("/shared-saves")) return;
+      // BIOS files may not be present in the E2E environment
+      if (response.status() === 404 && url.includes("/api/bios/")) return;
       failedRequests.push(`${response.status()} ${url}`);
     }
   });

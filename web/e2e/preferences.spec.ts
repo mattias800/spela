@@ -193,7 +193,7 @@ test.describe("Shader Preview", () => {
       timeout: 3_000,
     });
 
-    await page.locator(".fixed.inset-0").click({ position: { x: 10, y: 10 } });
+    await page.locator(".fixed.inset-0.z-50").click({ position: { x: 10, y: 10 } });
     await expect(page.getByText("Click anywhere to close")).not.toBeVisible();
   });
 

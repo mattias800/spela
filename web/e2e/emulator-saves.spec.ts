@@ -54,6 +54,27 @@ test.describe("Emulator Save State Sync", () => {
     test("triggers auto-save API call when navigating away", async ({
       page,
     }) => {
+      // Disable auto-save in preferences so handleBack() navigates immediately
+      // instead of waiting up to 3s for an exit-save from the fake iframe.
+      await page.route("**/api/user/preferences", (route) => {
+        if (route.request().method() === "GET") {
+          route.fulfill({
+            json: {
+              showPerformanceOverlay: false,
+              autoSaveEnabled: false,
+              autoLoadSaveEnabled: false,
+              selectedShader: "none",
+              consoleShaders: {},
+              selectedKeyMapping: "arrows-left",
+              customKeyMapping: {},
+              consoleKeyMappings: {},
+            },
+          });
+        } else {
+          route.continue();
+        }
+      });
+
       const gameId = await navigateToPlayPage(page);
 
       // Intercept auto-save uploads to track them
