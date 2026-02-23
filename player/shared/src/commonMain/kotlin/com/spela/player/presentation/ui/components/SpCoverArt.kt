@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,8 +71,8 @@ fun SpHeroCover(
             SubcomposeAsyncImage(
                 model = imageUrl,
                 contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth,
                 loading = {
                     CoverShimmer()
                 },

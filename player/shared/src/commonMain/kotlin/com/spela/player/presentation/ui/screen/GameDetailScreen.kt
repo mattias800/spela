@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clipToBounds
@@ -461,6 +462,7 @@ private fun GameInfoContent(
             verificationStatus = game.verificationStatus,
             verificationTag = game.verificationTag,
         )
+        game.region?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
         game.genre?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
     }
@@ -472,11 +474,21 @@ private fun GameInfoContent(
 
     if (state.isScraping) {
         Spacer(Modifier.height(SpSpacing.Small))
-        Text(
-            text = "Fetching game info...",
-            style = SpTypography.BodySmall,
-            color = SpColor.OnBackgroundTertiary,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = SpColor.Primary,
+            )
+            Text(
+                text = "Scraping metadata\u2026",
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
+        }
     }
 
     Spacer(Modifier.height(SpSpacing.XLarge))

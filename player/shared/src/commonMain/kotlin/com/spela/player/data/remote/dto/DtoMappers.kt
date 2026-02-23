@@ -68,6 +68,7 @@ fun GameDto.toDomain(): Game = Game(
     achievementsWarning = achievementsWarning,
     verificationStatus = verificationStatus,
     verificationTag = verificationTag,
+    region = region,
 )
 
 /**

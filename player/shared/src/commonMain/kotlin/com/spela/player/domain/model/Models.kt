@@ -74,6 +74,7 @@ data class Game(
     val achievementsWarning: String? = null,
     val verificationStatus: String? = null,
     val verificationTag: String? = null,
+    val region: String? = null,
 )
 
 @Serializable

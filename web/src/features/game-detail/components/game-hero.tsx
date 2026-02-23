@@ -120,16 +120,15 @@ export function GameHero({
       <div className="w-48 flex-shrink-0 md:w-64">
         <div
           className="rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
-          style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
         >
           {game.coverUrl ? (
             <img
               src={game.coverUrl}
               alt={game.title}
-              className="h-full w-full object-cover"
+              className="w-full"
             />
           ) : (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900">
+            <div className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900" style={{ aspectRatio: aspectRatio ?? 3 / 4 }}>
               <span className="text-5xl font-bold text-surface-700">
                 {game.title.charAt(0)}
               </span>
