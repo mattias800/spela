@@ -149,6 +149,10 @@ export function GameHero({
             <div className="flex items-center gap-3 mt-2">
               {consoleName && <Badge variant="brand">{consoleName}</Badge>}
               <VerificationBadge game={game} isAdmin={isAdmin} />
+              {game.region && <RegionBadge region={game.region} />}
+              {game.rating != null && game.rating > 0 && (
+                <IgdbRatingStars rating={game.rating} />
+              )}
               {game.averageRating > 0 && (
                 <span className="flex items-center gap-1 text-sm text-surface-400">
                   <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
@@ -157,9 +161,6 @@ export function GameHero({
                 </span>
               )}
             </div>
-            {game.rating != null && game.rating > 0 && (
-              <IgdbRatingStars rating={game.rating} />
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {hasSaves ? (
@@ -207,11 +208,30 @@ export function GameHero({
               </Button>
             )}
             <ActionsMenu items={actionsMenuItems} />
+            <span className="flex items-center gap-1 text-sm text-surface-400 ml-2">
+              <Clock className="h-4 w-4 text-surface-500" />
+              {game.totalPlayTime > 0
+                ? formatPlayTime(game.totalPlayTime)
+                : "Not played yet"}
+            </span>
+            {game.lastPlayedAt && (
+              <span className="flex items-center gap-1 text-sm text-surface-400">
+                <Calendar className="h-4 w-4 text-surface-500" />
+                {formatRelativeTime(game.lastPlayedAt)}
+              </span>
+            )}
           </div>
         </div>
 
+        {/* Description */}
+        {game.description && (
+          <p className="text-sm text-surface-300 leading-relaxed">
+            {game.description}
+          </p>
+        )}
+
         {/* Metadata grid */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           {game.developer && (
             <MetaItem
               icon={Building2}
@@ -251,32 +271,48 @@ export function GameHero({
               value={`${game.discCount}`}
             />
           )}
-          <MetaItem
-            icon={Clock}
-            label="Play Time"
-            value={
-              game.totalPlayTime > 0
-                ? formatPlayTime(game.totalPlayTime)
-                : "Not played yet"
-            }
-          />
-          {game.lastPlayedAt && (
-            <MetaItem
-              icon={Calendar}
-              label="Last Played"
-              value={formatRelativeTime(game.lastPlayedAt)}
-            />
-          )}
         </div>
-
-        {/* Description */}
-        {game.description && (
-          <p className="text-sm text-surface-300 leading-relaxed">
-            {game.description}
-          </p>
-        )}
       </div>
     </div>
+  );
+}
+
+const regionFlags: Record<string, string> = {
+  USA: "\u{1F1FA}\u{1F1F8}",
+  Japan: "\u{1F1EF}\u{1F1F5}",
+  Europe: "\u{1F1EA}\u{1F1FA}",
+  World: "\u{1F30D}",
+  Korea: "\u{1F1F0}\u{1F1F7}",
+  Brazil: "\u{1F1E7}\u{1F1F7}",
+  France: "\u{1F1EB}\u{1F1F7}",
+  Germany: "\u{1F1E9}\u{1F1EA}",
+  Spain: "\u{1F1EA}\u{1F1F8}",
+  Italy: "\u{1F1EE}\u{1F1F9}",
+  Australia: "\u{1F1E6}\u{1F1FA}",
+  China: "\u{1F1E8}\u{1F1F3}",
+  Canada: "\u{1F1E8}\u{1F1E6}",
+  UK: "\u{1F1EC}\u{1F1E7}",
+  Sweden: "\u{1F1F8}\u{1F1EA}",
+  Netherlands: "\u{1F1F3}\u{1F1F1}",
+  Russia: "\u{1F1F7}\u{1F1FA}",
+  Taiwan: "\u{1F1F9}\u{1F1FC}",
+  Asia: "\u{1F30F}",
+};
+
+function getRegionFlag(region: string): string | null {
+  for (const [key, flag] of Object.entries(regionFlags)) {
+    if (region.includes(key)) return flag;
+  }
+  return null;
+}
+
+function RegionBadge({ region }: { region: string }) {
+  const flag = getRegionFlag(region);
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-surface-800 px-2 py-0.5 text-xs font-medium text-surface-300">
+      {flag && <span>{flag}</span>}
+      {region}
+    </span>
   );
 }
 
@@ -287,7 +323,7 @@ function IgdbRatingStars({ rating }: { rating: number }) {
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
 
   return (
-    <div className="flex items-center gap-1.5 mt-1">
+    <div className="flex items-center gap-1.5">
       <div className="flex items-center">
         {Array.from({ length: fullStars }, (_, i) => (
           <Star

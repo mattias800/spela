@@ -64,6 +64,7 @@ export interface Game {
   achievementsWarning?: string;
   verificationStatus?: "verified" | "unverified" | "not_applicable";
   verificationTag?: string;
+  region?: string;
   coverAspectRatio: number;
   biosStatus?: "ready" | "missing" | "invalid" | "not_required";
   isFavorite: boolean;
@@ -666,4 +667,36 @@ export interface CompleteAttemptResponse {
   attempt: ChallengeAttempt;
   rank: number;
   isNewBest: boolean;
+}
+
+// --- Staged Uploads ---
+
+export type StagedUploadStatus =
+  | "pending_console"
+  | "pending_scrape"
+  | "ready"
+  | "duplicate"
+  | "accepted"
+  | "rejected";
+
+export interface PossibleConsole {
+  id: string;
+  name: string;
+}
+
+export interface StagedUpload {
+  id: string;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
+  consoleId: string;
+  consoleName: string;
+  possibleConsoles: PossibleConsole[];
+  status: StagedUploadStatus;
+  title: string;
+  coverUrl: string;
+  rating: number;
+  verificationStatus: string;
+  crc32: string;
+  canonicalName: string;
 }

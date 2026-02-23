@@ -178,10 +178,12 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScreenshotURL = ""
 		game.LibRetroCoverURL = ""
 		game.IGDBCoverURL = ""
+		// Delete old normalized screenshots
+		s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
 	}
 
 	// Mark disc-based systems as not applicable for CRC verification
-	if discBasedSystems[console.Abbreviation] {
+	if DiscBasedSystems[console.Abbreviation] {
 		game.VerificationStatus = "not_applicable"
 	}
 
@@ -204,11 +206,13 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 			game.LibRetroCoverURL = path
 		}
 
-		// Screenshot fallback
-		if game.ScreenshotURL == "" {
+		// Screenshot fallback: only if no IGDB screenshots were saved
+		var screenshotCount int64
+		s.DB.Model(&db.GameScreenshot{}).Where("game_id = ?", game.ID).Count(&screenshotCount)
+		if screenshotCount == 0 {
 			snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
 			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
-				game.ScreenshotURL = path
+				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
 			}
 		}
 	}
@@ -244,6 +248,11 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScraperID = "libretro"
 	}
 
+	// Extract region from filename (works for both verified and unverified ROMs)
+	if game.Region == "" {
+		game.Region = ExtractRegion(game.FileName)
+	}
+
 	game.ScrapeAttempts++
 
 	if err := s.DB.Save(game).Error; err != nil {
@@ -269,7 +278,7 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	// CRC-based identification: look up ROM in No-Intro DAT
 	searchName := cleanName
 	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
-		if crc, err := computeFileCRC32(game.FilePath); err == nil {
+		if crc, err := ComputeFileCRC32(game.FilePath); err == nil {
 			game.CRC32 = crc
 			if entry, ok := idx.LookupCRC(crc); ok {
 				slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
@@ -362,12 +371,20 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
-	// Download screenshot from IGDB
-	if len(match.Screenshots) > 0 && match.Screenshots[0].ImageID != "" {
-		screenshotURL := igdb.ImageURL(match.Screenshots[0].ImageID, "screenshot_big")
-		screenshotSubpath := fmt.Sprintf("%s/%s/screenshot.jpg", console.Abbreviation, gameIDStr)
+	// Download all screenshots from IGDB at original resolution (max 10)
+	maxScreenshots := 10
+	if len(match.Screenshots) < maxScreenshots {
+		maxScreenshots = len(match.Screenshots)
+	}
+	for i := 0; i < maxScreenshots; i++ {
+		ss := match.Screenshots[i]
+		if ss.ImageID == "" {
+			continue
+		}
+		screenshotURL := igdb.ImageURL(ss.ImageID, "original")
+		screenshotSubpath := fmt.Sprintf("%s/%s/screenshot_%d.jpg", console.Abbreviation, gameIDStr, i)
 		if path := s.downloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
-			game.ScreenshotURL = path
+			s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: i})
 		}
 	}
 

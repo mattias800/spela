@@ -90,7 +90,19 @@ type Game struct {
 	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning,omitempty"`
 	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus,omitempty"`
 	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
+	Region              string         `gorm:"size:128" json:"region,omitempty"`
 	CRC32               string         `gorm:"size:16" json:"-"`
+	Screenshots         []GameScreenshot `gorm:"foreignKey:GameID" json:"-"`
+}
+
+// GameScreenshot represents a single screenshot image for a game.
+type GameScreenshot struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	GameID    uint           `gorm:"index;not null" json:"gameId"`
+	URL       string         `gorm:"size:512;not null" json:"url"`
+	Position  int            `gorm:"default:0" json:"position"`
 }
 
 // GameDisc represents a single disc in a multi-disc game.
@@ -494,4 +506,36 @@ type Core struct {
 	Version     string         `gorm:"size:64" json:"version,omitempty"`
 	Platforms   string         `gorm:"size:255" json:"platforms"` // comma-separated: windows,linux,macos,android
 	FilePath    string         `gorm:"size:1024" json:"-"`
+}
+
+// StagedUpload represents a ROM file uploaded to the staging area pending admin review.
+type StagedUpload struct {
+	ID               uint           `gorm:"primarykey" json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+	FileName         string         `gorm:"size:512;not null" json:"fileName"`
+	OriginalFileName string         `gorm:"size:512;not null" json:"originalFileName"`
+	FilePath         string         `gorm:"size:1024;not null" json:"-"`
+	FileSize         int64          `json:"fileSize"`
+	ConsoleID        *uint          `json:"consoleId,omitempty"`
+	Console          Console        `gorm:"foreignKey:ConsoleID" json:"-"`
+	PossibleConsoles string         `gorm:"size:512" json:"possibleConsoles,omitempty"` // JSON array of abbreviations
+	Status           string         `gorm:"size:32;not null;default:pending_console" json:"status"`
+	// Scrape results
+	Title       string  `gorm:"size:255" json:"title,omitempty"`
+	CoverURL    string  `gorm:"size:512" json:"coverUrl,omitempty"`
+	Description string  `gorm:"type:text" json:"description,omitempty"`
+	Rating      float64 `json:"rating,omitempty"`
+	Developer   string  `gorm:"size:255" json:"developer,omitempty"`
+	Publisher   string  `gorm:"size:255" json:"publisher,omitempty"`
+	Genre       string  `gorm:"size:128" json:"genre,omitempty"`
+	Players     int     `json:"players,omitempty"`
+	ReleaseDate string  `gorm:"size:32" json:"releaseDate,omitempty"`
+	// Verification
+	VerificationStatus string `gorm:"size:32" json:"verificationStatus,omitempty"` // verified, unverified, not_applicable
+	CRC32              string `gorm:"size:16" json:"crc32,omitempty"`
+	CanonicalName      string `gorm:"size:512" json:"canonicalName,omitempty"`
+	// Duplicate detection
+	DuplicateOfGameID *uint `json:"duplicateOfGameId,omitempty"`
 }

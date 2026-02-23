@@ -63,6 +63,7 @@ type GameResponse struct {
 	AchievementsWarning string         `json:"achievementsWarning,omitempty"`
 	VerificationStatus  string         `json:"verificationStatus,omitempty"`
 	VerificationTag     string         `json:"verificationTag,omitempty"`
+	Region              string         `json:"region,omitempty"`
 	BiosStatus     string         `json:"biosStatus,omitempty"`
 	IsFavorite     bool           `json:"isFavorite"`
 	IsInPlayLater  bool           `json:"isInPlayLater"`
@@ -195,8 +196,16 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 
 // toGameResponseWithData converts a db.Game using pre-loaded enrichment data.
 func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
+	// Build screenshot URLs from the normalized GameScreenshot table.
+	// Fall back to the legacy comma-separated ScreenshotURL field for
+	// games that haven't been re-scraped yet.
 	var screenshots []string
-	if g.ScreenshotURL != "" {
+	if len(g.Screenshots) > 0 {
+		screenshots = make([]string, len(g.Screenshots))
+		for i, ss := range g.Screenshots {
+			screenshots[i] = ss.URL
+		}
+	} else if g.ScreenshotURL != "" {
 		screenshots = strings.Split(g.ScreenshotURL, ",")
 		for i := range screenshots {
 			screenshots[i] = strings.TrimSpace(screenshots[i])
@@ -259,6 +268,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		AchievementsWarning: g.AchievementsWarning,
 		VerificationStatus:  g.VerificationStatus,
 		VerificationTag:     g.VerificationTag,
+		Region:              g.Region,
 	}
 
 	if data != nil {
