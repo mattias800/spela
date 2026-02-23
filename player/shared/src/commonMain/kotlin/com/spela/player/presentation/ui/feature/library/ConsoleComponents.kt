@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -161,20 +162,14 @@ internal fun ConsoleHeroBanner(
     console: Console,
     modifier: Modifier = Modifier,
 ) {
-    val consoleColor = getConsoleColor(console.colorTheme)
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
-    // Diagonal gradient background using console brand color
-    val backgroundBrush = Brush.linearGradient(
-        colors = listOf(
-            consoleColor,
-            consoleColor.copy(alpha = 0.6f),
-        ),
-        start = Offset.Zero,
-        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
-    )
+    // Per-console gradient matching web UI's console-metadata.ts exactly
+    val (gradientFrom, gradientTo) = getConsoleGradient(console.abbreviation, console.colorTheme)
+    val gradientColors = listOf(gradientFrom, gradientTo)
 
-    // Depth overlay: transparent top → black/30 bottom
+    // Depth overlay matching web: from-black/30 via-transparent to-white/[0.04]
+    // Web uses bg-gradient-to-t (bottom→top), so in vertical gradient: top=white/4, mid=transparent, bottom=black/30
     val overlayBrush = Brush.verticalGradient(
         colors = listOf(
             Color.White.copy(alpha = 0.04f),
@@ -187,31 +182,45 @@ internal fun ConsoleHeroBanner(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(backgroundBrush)
+            // CSS 135deg-equivalent gradient: fixed 45° diagonal (top-left → bottom-right)
+            // regardless of aspect ratio, matching the visual appearance on the web.
+            // d = (w + h) / 4 — the displacement from centre along both axes.
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val d = (size.width + size.height) * 0.25f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = gradientColors,
+                        start = Offset(cx - d, cy - d),
+                        end = Offset(cx + d, cy + d),
+                    ),
+                )
+            }
             .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games"
             },
     ) {
-        // Watermark icon (top-end, large, very faint)
+        // Watermark icon: web uses -right-8 -top-8 (32px) at 224px (h-56 w-56), opacity 7%
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = 24.dp, y = (-24).dp)
+                .offset(x = 32.dp, y = (-32).dp)
                 .alpha(0.07f),
         ) {
             if (console.iconUrl.isNotEmpty()) {
                 AsyncImage(
                     model = console.iconUrl,
                     contentDescription = null,
-                    modifier = Modifier.size(180.dp),
+                    modifier = Modifier.size(224.dp),
                 )
             } else {
                 Icon(
                     imageVector = Icons.Filled.SportsEsports,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(180.dp),
+                    modifier = Modifier.size(224.dp),
                 )
             }
         }
@@ -223,7 +232,7 @@ internal fun ConsoleHeroBanner(
                 .background(overlayBrush),
         )
 
-        // Content
+        // Content: web uses px-6 (24dp) py-10 (40dp)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -254,15 +263,17 @@ internal fun ConsoleHeroBanner(
                 )
             }
 
-            // Metadata row
+            // Metadata row: web uses gap-3 (12dp), mt-4 (16dp)
             Row(
                 modifier = Modifier.padding(top = SpSpacing.Default),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Web: text-sm font-medium text-white/70
                 Text(
                     text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
                     style = SpTypography.BodySmall,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White.copy(alpha = 0.7f),
                 )
                 if (console.saveStateSupport) {
@@ -287,6 +298,7 @@ private fun MetadataBadge(
     icon: @Composable () -> Unit,
     label: String,
 ) {
+    // Web: rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 gap-1.5
     Row(
         modifier = Modifier
             .background(
@@ -294,16 +306,76 @@ private fun MetadataBadge(
                 RoundedCornerShape(SpSpacing.RadiusPill),
             )
             .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon()
+        // Web: text-xs font-medium text-white/90
         Text(
             text = label,
             style = SpTypography.LabelSmall,
+            fontWeight = FontWeight.Medium,
             color = Color.White.copy(alpha = 0.9f),
         )
     }
+}
+
+/** Darkens a color by mixing it towards black. [amount] 0f = unchanged, 1f = pure black. */
+private fun Color.darken(amount: Float): Color = copy(
+    red = red * (1f - amount),
+    green = green * (1f - amount),
+    blue = blue * (1f - amount),
+)
+
+/**
+ * Returns the hero banner gradient (from, to) for a console.
+ * Colors match the web UI's console-metadata.ts Tailwind gradient pairs exactly.
+ * Falls back to deriving a gradient from the console's colorTheme hex.
+ */
+internal fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, Color> {
+    // Curated gradient pairs matching the web UI (Tailwind color values)
+    val gradient = when (abbreviation.lowercase()) {
+        "nes" -> Color(0xFFdc2626) to Color(0xFF7f1d1d)         // red-600 → red-900
+        "snes" -> Color(0xFF9333ea) to Color(0xFF312e81)        // purple-600 → indigo-900
+        "gb" -> Color(0xFF16a34a) to Color(0xFF14532d)          // green-600 → green-900
+        "gbc" -> Color(0xFF14b8a6) to Color(0xFF166534)         // teal-500 → green-800
+        "gba" -> Color(0xFF6366f1) to Color(0xFF6b21a8)         // indigo-500 → purple-800
+        "n64" -> Color(0xFF22c55e) to Color(0xFF1d4ed8)         // green-500 → blue-700
+        "nds" -> Color(0xFF9ca3af) to Color(0xFF374151)         // gray-400 → gray-700
+        "sms" -> Color(0xFF3b82f6) to Color(0xFF1e40af)         // blue-500 → blue-800
+        "gen" -> Color(0xFF1d4ed8) to Color(0xFF000000)         // blue-700 → black
+        "sat" -> Color(0xFF4b5563) to Color(0xFF111827)         // gray-600 → gray-900
+        "psx" -> Color(0xFF6b7280) to Color(0xFF1e3a8a)         // gray-500 → blue-900
+        "psp" -> Color(0xFF374151) to Color(0xFF000000)         // gray-700 → black
+        "neogeo" -> Color(0xFFeab308) to Color(0xFFb91c1c)      // yellow-500 → red-700
+        "pce" -> Color(0xFFf97316) to Color(0xFF991b1b)         // orange-500 → red-800
+        "a26" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
+        "gg" -> Color(0xFF2563eb) to Color(0xFF1e3a8a)          // blue-600 → blue-900
+        "scd" -> Color(0xFF374151) to Color(0xFF1e3a8a)         // gray-700 → blue-900
+        "32x" -> Color(0xFF1f2937) to Color(0xFF000000)         // gray-800 → black
+        "dc" -> Color(0xFFf97316) to Color(0xFF1d4ed8)          // orange-500 → blue-700
+        "vb" -> Color(0xFF991b1b) to Color(0xFF450a0a)          // red-800 → red-950
+        "3ds" -> Color(0xFFef4444) to Color(0xFF991b1b)         // red-500 → red-800
+        "a52" -> Color(0xFFb45309) to Color(0xFF451a03)         // amber-700 → amber-950
+        "a78" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
+        "lynx" -> Color(0xFFca8a04) to Color(0xFF713f12)        // yellow-600 → yellow-900
+        "jag" -> Color(0xFFb91c1c) to Color(0xFF111827)         // red-700 → gray-900
+        "ngp" -> Color(0xFF6b7280) to Color(0xFF1f2937)         // gray-500 → gray-800
+        "ws" -> Color(0xFF4f46e5) to Color(0xFF312e81)          // indigo-600 → indigo-900
+        "pcfx" -> Color(0xFF0d9488) to Color(0xFF134e4a)        // teal-600 → teal-900
+        "cv" -> Color(0xFF0284c7) to Color(0xFF0c4a6e)          // sky-600 → sky-900
+        "pkmn" -> Color(0xFFfacc15) to Color(0xFFa16207)        // yellow-400 → yellow-700
+        "ps2" -> Color(0xFF1e40af) to Color(0xFF172554)         // blue-800 → blue-950
+        "c64" -> Color(0xFF3b82f6) to Color(0xFF6b21a8)         // blue-500 → purple-800
+        "dos" -> Color(0xFF15803d) to Color(0xFF052e16)         // green-700 → green-950
+        "amiga" -> Color(0xFFdc2626) to Color(0xFF1e40af)       // red-600 → blue-800
+        else -> null
+    }
+    if (gradient != null) return gradient
+
+    // Fallback: use colorTheme hex and darken for the end color
+    val baseColor = getConsoleColor(colorTheme)
+    return baseColor to baseColor.darken(0.55f)
 }
 
 internal fun getConsoleColor(colorTheme: String?): Color {
