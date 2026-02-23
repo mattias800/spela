@@ -117,7 +117,7 @@ export function GameHero({
   return (
     <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
       {/* Cover art */}
-      <div className="w-48 flex-shrink-0 md:w-64">
+      <div className="w-48 flex-shrink-0 md:w-64 flex flex-col items-center">
         <div
           className="rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
         >
@@ -135,16 +135,16 @@ export function GameHero({
             </div>
           )}
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowCoverModal(true)}
-            className="mt-2 flex items-center gap-1 text-xs text-surface-400 hover:text-surface-200 transition-colors"
-            data-testid="change-cover-btn"
-          >
-            <ImageIcon className="h-3.5 w-3.5" />
-            Change cover
-          </button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowCoverModal(true)}
+          className="mt-3"
+          data-testid="change-cover-btn"
+        >
+          <ImageIcon className="h-4 w-4" />
+          Change cover
+        </Button>
         <CoverArtSelector
           open={showCoverModal}
           onClose={() => setShowCoverModal(false)}
