@@ -124,4 +124,113 @@ describe("GameHero", () => {
     await userEvent.click(screen.getByTestId("resume-btn"));
     expect(onPlay).toHaveBeenCalledOnce();
   });
+
+  it("shows admin-only 'Scrape Metadata' in actions menu for admin users", async () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} isAdmin={true} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    expect(screen.getByText("Scrape Metadata")).toBeInTheDocument();
+  });
+
+  it("hides 'Scrape Metadata' in actions menu for non-admin users", async () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} isAdmin={false} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    expect(screen.queryByText("Scrape Metadata")).not.toBeInTheDocument();
+  });
+
+  it("shows 'Unfavorite' in actions menu when game is favorited", async () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} isFavorite={true} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    expect(screen.getByText("Unfavorite")).toBeInTheDocument();
+    expect(screen.queryByText("Favorite")).not.toBeInTheDocument();
+  });
+
+  it("shows 'In Queue' in actions menu when game is in play later", async () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} isInPlayLater={true} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    expect(screen.getByText("In Queue")).toBeInTheDocument();
+    expect(screen.queryByText("Play Later")).not.toBeInTheDocument();
+  });
+
+  it("calls onToggleFavorite when Favorite is clicked in actions menu", async () => {
+    const onToggleFavorite = vi.fn();
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} onToggleFavorite={onToggleFavorite} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    await userEvent.click(screen.getByText("Favorite"));
+    expect(onToggleFavorite).toHaveBeenCalledOnce();
+  });
+
+  it("calls onAddToCollection when clicked in actions menu", async () => {
+    const onAddToCollection = vi.fn();
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} onAddToCollection={onAddToCollection} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    await userEvent.click(screen.getByText("Add to Collection"));
+    expect(onAddToCollection).toHaveBeenCalledOnce();
+  });
+
+  it("hides 'Add to Collection' in actions menu when callback not provided", async () => {
+    const game = makeGame();
+    const { onAddToCollection: _, ...propsWithoutAddToCollection } = defaultProps;
+    renderWithQuery(
+      <GameHero game={game} {...propsWithoutAddToCollection} />,
+    );
+
+    await userEvent.click(screen.getByTestId("actions-menu-btn"));
+    expect(screen.queryByText("Add to Collection")).not.toBeInTheDocument();
+  });
+
+  it("shows 'New Game' in split button menu when hasSaves with onPlayFresh", async () => {
+    const onPlayFresh = vi.fn();
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} hasSaves={true} onPlayFresh={onPlayFresh} />,
+    );
+
+    await userEvent.click(screen.getByTestId("split-menu-btn"));
+    expect(screen.getByText("New Game")).toBeInTheDocument();
+  });
+
+  it("calls onPlayFresh when 'New Game' is clicked in split button menu", async () => {
+    const onPlayFresh = vi.fn();
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} hasSaves={true} onPlayFresh={onPlayFresh} />,
+    );
+
+    await userEvent.click(screen.getByTestId("split-menu-btn"));
+    await userEvent.click(screen.getByText("New Game"));
+    expect(onPlayFresh).toHaveBeenCalledOnce();
+  });
+
+  it("disables play button when canPlayInBrowser is false", () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} canPlayInBrowser={false} />,
+    );
+
+    expect(screen.getByTestId("play-in-browser-btn")).toBeDisabled();
+  });
 });
