@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -219,8 +220,81 @@ func (h *ConsoleHandler) GetConsoleLogo(c *gin.Context) {
 		return
 	}
 
+	// Inline CSS styles so SVG renderers without CSS support (e.g. Coil on JVM) show colors.
+	processed := inlineSvgStyles(string(data))
+
 	c.Header("Cache-Control", "public, max-age=604800")
-	c.Data(http.StatusOK, "image/svg+xml", data)
+	c.Data(http.StatusOK, "image/svg+xml", []byte(processed))
+}
+
+// inlineSvgStyles parses CSS <style> blocks in SVGs and replaces class="stN"
+// with direct SVG presentation attributes (fill="...", fill-rule="...", etc).
+// This ensures SVG renderers without CSS support (e.g. Coil3 on JVM) show colors.
+func inlineSvgStyles(svg string) string {
+	// Extract class→CSS declarations from <style> blocks: .st0{fill:#FFFFFF;} etc.
+	classRe := regexp.MustCompile(`\.([a-zA-Z][\w-]*)\s*\{([^}]+)\}`)
+	styles := make(map[string]string) // class name → raw CSS declarations
+	for _, m := range classRe.FindAllStringSubmatch(svg, -1) {
+		styles[m[1]] = strings.TrimSpace(m[2])
+	}
+	if len(styles) == 0 {
+		return svg
+	}
+
+	// Parse CSS declarations into SVG attributes: "fill:#FFF; fill-rule:evenodd" → `fill="#FFF" fill-rule="evenodd"`
+	propRe := regexp.MustCompile(`([\w-]+)\s*:\s*([^;]+)`)
+
+	// Replace class="stN" with direct SVG attributes.
+	attrRe := regexp.MustCompile(`\bclass="([^"]+)"`)
+	result := attrRe.ReplaceAllStringFunc(svg, func(match string) string {
+		sub := attrRe.FindStringSubmatch(match)
+		if len(sub) < 2 {
+			return match
+		}
+		classes := strings.Fields(sub[1])
+		var attrs []string
+		for _, cls := range classes {
+			css, ok := styles[cls]
+			if !ok {
+				continue
+			}
+			for _, prop := range propRe.FindAllStringSubmatch(css, -1) {
+				attrs = append(attrs, fmt.Sprintf(`%s="%s"`, strings.TrimSpace(prop[1]), strings.TrimSpace(prop[2])))
+			}
+		}
+		if len(attrs) == 0 {
+			return match
+		}
+		return strings.Join(attrs, " ")
+	})
+
+	// Remove the <style> block since styles are now inline.
+	styleBlockRe := regexp.MustCompile(`(?s)<style[^>]*>.*?</style>`)
+	result = styleBlockRe.ReplaceAllString(result, "")
+
+	return result
+}
+
+// GetConsoleLogoPng serves a pre-rendered PNG version of the console logo.
+// Generated from SVGs via scripts/generate-logo-pngs.sh.
+func (h *ConsoleHandler) GetConsoleLogoPng(c *gin.Context) {
+	consoleID := c.Param("id")
+
+	var console db.Console
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
+		return
+	}
+
+	filename := strings.ToLower(console.Abbreviation) + ".png"
+	data, err := consoleLogosPng.ReadFile("static/console-logos-png/" + filename)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "logo not available for this console"})
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=604800")
+	c.Data(http.StatusOK, "image/png", data)
 }
 
 // getUserID extracts the authenticated user's ID from the context.

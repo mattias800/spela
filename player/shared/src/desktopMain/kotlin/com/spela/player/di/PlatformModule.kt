@@ -46,7 +46,6 @@ actual fun platformModule(): Module = module {
                     },
                     parameters = 0,
                 ).value
-                checkDriver.close()
 
                 val expectedTables = setOf(
                     "ServerConnectionEntity", "DownloadEntity", "AuthTokenEntity",
@@ -57,10 +56,22 @@ actual fun platformModule(): Module = module {
                 )
                 val missingTables = expectedTables - existingTables
                 if (missingTables.isNotEmpty()) {
+                    checkDriver.close()
                     println("Spela: Database schema incompatible, missing tables: $missingTables. Deleting database.")
                     dbFile.delete()
                     java.io.File("$dbPath-wal").delete()
                     java.io.File("$dbPath-shm").delete()
+                } else {
+                    // Also check for missing columns in key tables
+                    val columnsValid = validateColumns(checkDriver, "CachedConsoleEntity", setOf("logo_url")) &&
+                        validateColumns(checkDriver, "CachedGameEntity", setOf("cover_aspect_ratio"))
+                    checkDriver.close()
+                    if (!columnsValid) {
+                        println("Spela: Database schema incompatible, missing columns. Deleting database.")
+                        dbFile.delete()
+                        java.io.File("$dbPath-wal").delete()
+                        java.io.File("$dbPath-shm").delete()
+                    }
                 }
             } catch (e: Exception) {
                 println("Spela: Failed to validate database, deleting: ${e.message}")
@@ -142,4 +153,24 @@ actual fun platformModule(): Module = module {
     single<Map<Int, Int>>(named("platformDefaultMapping")) {
         desktopDefaultRetroMapping
     }
+}
+
+private fun validateColumns(driver: JdbcSqliteDriver, table: String, expectedColumns: Set<String>): Boolean {
+    val columns = driver.executeQuery(
+        identifier = null,
+        sql = "PRAGMA table_info($table)",
+        mapper = { cursor ->
+            val cols = mutableSetOf<String>()
+            while (cursor.next().value) {
+                cursor.getString(1)?.let { cols.add(it) }
+            }
+            app.cash.sqldelight.db.QueryResult.Value(cols)
+        },
+        parameters = 0,
+    ).value
+    val missing = expectedColumns - columns
+    if (missing.isNotEmpty()) {
+        println("Spela: Table $table missing columns: $missing")
+    }
+    return missing.isEmpty()
 }

@@ -24,6 +24,7 @@ type ConsoleResponse struct {
 	ColorTheme       string    `json:"colorTheme"`
 	IconURL          string    `json:"iconUrl"`
 	LogoURL          string    `json:"logoUrl"`
+	LogoPngURL       string    `json:"logoPngUrl"`
 	GameCount        int       `json:"gameCount"`
 	SaveStateSupport bool      `json:"saveStateSupport"`
 	BrowserPlayable  bool      `json:"browserPlayable"`
@@ -106,6 +107,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		ColorTheme:       c.ColorTheme,
 		IconURL:          "/api/consoles/" + abbr + "/icon",
 		LogoURL:          "/api/consoles/" + abbr + "/logo",
+		LogoPngURL:       "/api/consoles/" + abbr + "/logo.png",
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		BrowserPlayable:  c.EmulatorJSCore != "",

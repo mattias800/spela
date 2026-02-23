@@ -27,6 +27,7 @@ fun ConsoleDto.toDomain(): Console = Console(
     coverAspectRatio = coverAspectRatio,
     defaultCore = defaultCore,
     iconUrl = iconUrl,
+    logoUrl = logoPngUrl.ifEmpty { logoUrl },
     saveStateSupport = saveStateSupport,
     browserPlayable = browserPlayable,
 )

@@ -36,6 +36,7 @@ data class Console(
     val coverAspectRatio: Double = 0.75,
     val defaultCore: String = "",
     val iconUrl: String = "",
+    val logoUrl: String = "",
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,
 )

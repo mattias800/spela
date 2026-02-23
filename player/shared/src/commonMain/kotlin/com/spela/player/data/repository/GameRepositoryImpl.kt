@@ -140,6 +140,7 @@ class GameRepositoryImpl(
                 cover_aspect_ratio = c.coverAspectRatio,
                 default_core = c.defaultCore,
                 icon_url = c.iconUrl,
+                logo_url = c.logoUrl,
                 save_state_support = if (c.saveStateSupport) 1L else 0L,
             )
         }
@@ -156,6 +157,7 @@ class GameRepositoryImpl(
                 coverAspectRatio = it.cover_aspect_ratio,
                 defaultCore = it.default_core,
                 iconUrl = it.icon_url,
+                logoUrl = it.logo_url,
                 saveStateSupport = it.save_state_support != 0L,
             )
         }
@@ -265,5 +267,6 @@ class GameRepositoryImpl(
 
     private fun Console.resolveImageUrls(): Console = copy(
         iconUrl = apiClient.resolveUrl(iconUrl) ?: "",
+        logoUrl = apiClient.resolveUrl(logoUrl) ?: "",
     )
 }

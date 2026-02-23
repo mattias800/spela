@@ -49,6 +49,8 @@ data class ConsoleDto(
     val coverAspectRatio: Double = 0.75,
     val colorTheme: String = "#6366f1",
     val iconUrl: String = "",
+    val logoUrl: String = "",
+    val logoPngUrl: String = "",
     val gameCount: Int = 0,
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,

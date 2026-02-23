@@ -198,12 +198,13 @@ CREATE TABLE CachedConsoleEntity (
     cover_aspect_ratio REAL NOT NULL DEFAULT 0.75,
     default_core TEXT NOT NULL DEFAULT '',
     icon_url TEXT NOT NULL DEFAULT '',
+    logo_url TEXT NOT NULL DEFAULT '',
     save_state_support INTEGER NOT NULL DEFAULT 1
 );
 
 insertCachedConsole:
-INSERT OR REPLACE INTO CachedConsoleEntity(id, name, abbreviation, game_count, color_theme, cover_aspect_ratio, default_core, icon_url, save_state_support)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO CachedConsoleEntity(id, name, abbreviation, game_count, color_theme, cover_aspect_ratio, default_core, icon_url, logo_url, save_state_support)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getAllCachedConsoles:
 SELECT * FROM CachedConsoleEntity;

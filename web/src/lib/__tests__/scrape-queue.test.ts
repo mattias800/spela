@@ -7,6 +7,12 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+vi.mock("@/lib/query-client", () => ({
+  queryClient: {
+    invalidateQueries: vi.fn(),
+  },
+}));
+
 import { api } from "@/lib/api-client";
 
 const mockApi = api as unknown as {

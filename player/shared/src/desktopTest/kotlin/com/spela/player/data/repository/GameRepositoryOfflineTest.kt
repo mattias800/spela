@@ -129,6 +129,7 @@ class GameRepositoryOfflineTest {
             cover_aspect_ratio = 0.72,
             default_core = "fceumm",
             icon_url = "/images/nes.png",
+            logo_url = "/api/consoles/nes/logo",
             save_state_support = 1,
         )
     }
