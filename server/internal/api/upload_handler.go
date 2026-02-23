@@ -382,8 +382,8 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 		return
 	}
 
-	// Set title from filename
-	staged.Title = scanner.GameTitle(staged.FileName)
+	// Set title from original filename (not the deduplicated on-disk name)
+	staged.Title = scanner.GameTitle(staged.OriginalFileName)
 
 	// CRC32 verification for cartridge-based systems
 	if scraper.DiscBasedSystems[console.Abbreviation] {
