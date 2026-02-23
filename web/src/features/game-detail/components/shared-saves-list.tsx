@@ -12,7 +12,7 @@ function SharedSavesSkeleton() {
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50"
+          className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30"
         >
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
@@ -45,7 +45,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
     <section data-testid="shared-saves-list">
       <div className="flex items-center gap-2.5 mb-4">
         <Share2 className="h-5 w-5 text-brand-400" />
-        <h2 className="text-xl font-bold text-surface-100">Community Saves</h2>
+        <h2 className="text-lg font-semibold text-surface-100">Community Saves</h2>
         {data && data.total > 0 && (
           <span className="text-sm text-surface-500">({data.total})</span>
         )}
@@ -69,7 +69,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
             return (
               <div
                 key={save.id}
-                className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
+                className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30 hover:bg-surface-800/50 transition-colors"
                 data-testid={`shared-save-${save.id}`}
               >
                 <PlayerAvatar

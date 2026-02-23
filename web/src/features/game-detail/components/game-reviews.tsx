@@ -12,7 +12,7 @@ function ReviewsSkeleton() {
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
-          className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-900/50"
+          className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-800/30"
         >
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-2">
@@ -41,7 +41,7 @@ export function GameReviews({ gameId }: GameReviewsProps) {
     <div data-testid="game-reviews">
       <div className="flex items-center gap-2.5 mb-4">
         <MessageSquare className="h-5 w-5 text-brand-400" />
-        <h2 className="text-lg font-bold text-surface-100">Reviews</h2>
+        <h2 className="text-lg font-semibold text-surface-100">Reviews</h2>
         {data && data.total > 0 && (
           <span className="text-sm text-surface-500">({data.total})</span>
         )}
@@ -63,7 +63,7 @@ export function GameReviews({ gameId }: GameReviewsProps) {
           {data.data.map((rating) => (
             <div
               key={rating.id}
-              className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-900/50"
+              className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-800/30"
               data-testid={`review-${rating.id}`}
             >
               <PlayerAvatar

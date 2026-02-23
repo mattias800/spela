@@ -28,7 +28,7 @@ export function LeaderboardRow({
         "flex items-center gap-3 rounded-xl px-3 py-2.5",
         isCurrentUser
           ? "bg-brand-500/5 border-l-2 border-brand-400"
-          : "bg-surface-900/50",
+          : "bg-surface-800/30",
       )}
     >
       {rank}

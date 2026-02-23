@@ -60,7 +60,7 @@ export function RatingSummaryCard({ gameId }: RatingSummaryProps) {
       <div data-testid="rating-summary">
         <div className="flex items-center gap-2.5 mb-4">
           <Star className="h-5 w-5 text-brand-400" />
-          <h2 className="text-lg font-bold text-surface-100">Ratings</h2>
+          <h2 className="text-lg font-semibold text-surface-100">Ratings</h2>
         </div>
         <RatingSummarySkeleton />
       </div>
@@ -72,7 +72,7 @@ export function RatingSummaryCard({ gameId }: RatingSummaryProps) {
       <div data-testid="rating-summary">
         <div className="flex items-center gap-2.5 mb-4">
           <Star className="h-5 w-5 text-brand-400" />
-          <h2 className="text-lg font-bold text-surface-100">Ratings</h2>
+          <h2 className="text-lg font-semibold text-surface-100">Ratings</h2>
         </div>
         <EmptyState
           icon={Star}
@@ -90,7 +90,7 @@ export function RatingSummaryCard({ gameId }: RatingSummaryProps) {
     <div data-testid="rating-summary">
       <div className="flex items-center gap-2.5 mb-4">
         <Star className="h-5 w-5 text-brand-400" />
-        <h2 className="text-lg font-bold text-surface-100">Ratings</h2>
+        <h2 className="text-lg font-semibold text-surface-100">Ratings</h2>
       </div>
 
       <div className="flex items-center gap-4 mb-4">

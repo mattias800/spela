@@ -31,7 +31,7 @@ function CommunityStatsSkeleton() {
         {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-surface-900/50"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-surface-800/30"
           >
             <Skeleton className="h-5 w-5" />
             <Skeleton className="h-8 w-8 rounded-full" />
@@ -60,7 +60,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
   if (!stats || stats.totalPlayers === 0) {
     return (
       <section>
-        <h2 className="text-xl font-bold text-surface-100 flex items-center gap-2.5 mb-4">
+        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2.5 mb-4">
           <Activity className="h-5 w-5 text-brand-400" />
           Play Activity
         </h2>
@@ -80,7 +80,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-surface-100 flex items-center gap-2.5 mb-5">
+      <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2.5 mb-5">
         <Activity className="h-5 w-5 text-brand-400" />
         Play Activity
       </h2>

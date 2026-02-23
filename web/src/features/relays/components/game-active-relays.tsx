@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Repeat, Users } from "lucide-react";
-import { Badge, Skeleton } from "@/components/ui";
+import { Badge, Card, Skeleton } from "@/components/ui";
 import { useGameRelays } from "@/hooks/use-relays";
 import { formatRelativeTime } from "@/lib/format";
 
@@ -16,7 +16,7 @@ function GameActiveRelaysSkeleton() {
       {Array.from({ length: 2 }, (_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50"
+          className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30"
         >
           <Skeleton className="h-5 w-5 rounded" />
           <div className="flex-1 space-y-1.5">
@@ -39,13 +39,13 @@ export function GameActiveRelays({ gameId }: GameActiveRelaysProps) {
 
   if (isLoading) {
     return (
-      <section>
+      <Card className="p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <Repeat className="h-5 w-5 text-brand-400" />
-          <h2 className="text-xl font-bold text-surface-100">Active Relays</h2>
+          <h2 className="text-lg font-semibold text-surface-100">Active Relays</h2>
         </div>
         <GameActiveRelaysSkeleton />
-      </section>
+      </Card>
     );
   }
 
@@ -54,10 +54,10 @@ export function GameActiveRelays({ gameId }: GameActiveRelaysProps) {
   }
 
   return (
-    <section>
+    <Card className="p-6">
       <div className="flex items-center gap-2.5 mb-4">
         <Repeat className="h-5 w-5 text-brand-400" />
-        <h2 className="text-xl font-bold text-surface-100">Active Relays</h2>
+        <h2 className="text-lg font-semibold text-surface-100">Active Relays</h2>
         <span className="text-sm text-surface-500">({relays.length})</span>
       </div>
 
@@ -66,7 +66,7 @@ export function GameActiveRelays({ gameId }: GameActiveRelaysProps) {
           <Link
             key={relay.id}
             to={`/relays/${relay.id}`}
-            className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
+            className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30 hover:bg-surface-800/50 transition-colors"
             data-testid={`game-relay-${relay.id}`}
           >
             <Repeat className="h-5 w-5 text-brand-400 flex-shrink-0" />
@@ -94,6 +94,6 @@ export function GameActiveRelays({ gameId }: GameActiveRelaysProps) {
           </Link>
         ))}
       </div>
-    </section>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
 import { Trophy } from "lucide-react";
-import { Badge, Skeleton, LeaderboardSkeleton, LeaderboardRow } from "@/components/ui";
+import { Badge, Card, Skeleton, LeaderboardSkeleton, LeaderboardRow } from "@/components/ui";
 import { useAchievementLeaderboard } from "@/hooks/use-retroachievements";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/cn";
@@ -48,13 +48,13 @@ export function GameAchievementLeaderboard({
 
   if (isLoading) {
     return (
-      <section>
+      <Card className="p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <Skeleton className="h-5 w-5" />
           <Skeleton className="h-6 w-48" />
         </div>
         <LeaderboardSkeleton />
-      </section>
+      </Card>
     );
   }
 
@@ -72,8 +72,8 @@ export function GameAchievementLeaderboard({
   );
 
   return (
-    <section data-testid="achievement-leaderboard">
-      <h2 className="text-xl font-bold text-surface-100 flex items-center gap-2.5 mb-5">
+    <Card className="p-6" data-testid="achievement-leaderboard">
+      <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2.5 mb-5">
         <Trophy className="h-5 w-5 text-brand-400" />
         Achievement Leaderboard
       </h2>
@@ -120,6 +120,6 @@ export function GameAchievementLeaderboard({
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

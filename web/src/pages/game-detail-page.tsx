@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Button,
   BackButton,
+  Card,
   GameDetailSkeleton,
   Modal,
 } from "@/components/ui";
@@ -28,13 +29,11 @@ import { GameCommunityStats } from "@/features/game-detail/components/game-commu
 import { SaveStatesList } from "@/features/game-detail/components/save-states-list";
 import { GameAchievements } from "@/features/game-detail/components/game-achievements";
 import { GameAchievementLeaderboard } from "@/features/game-detail/components/game-achievement-leaderboard";
-import { UserRating } from "@/features/game-detail/components/user-rating";
 import { RatingSummaryCard } from "@/features/game-detail/components/rating-summary";
 import { GameReviews } from "@/features/game-detail/components/game-reviews";
 import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
 import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
-import { CoverArtSelector } from "@/features/game-detail/components/cover-art-selector";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
@@ -199,24 +198,18 @@ export function GameDetailPage() {
         onClose={() => setShowCollectionPicker(false)}
       />
 
-      {isAdmin && (
-        <CoverArtSelector
-          gameId={game.id}
-          aspectRatio={consoleInfo?.coverAspectRatio}
-        />
-      )}
-
-      <GameCommunityStats gameId={game.id} game={game} />
+      <Card className="p-6">
+        <GameCommunityStats gameId={game.id} game={game} />
+      </Card>
 
       {/* Rating section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-4">
-          <UserRating gameId={game.id} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
           <RatingSummaryCard gameId={game.id} />
-        </div>
-        <div className="lg:col-span-2">
+        </Card>
+        <Card className="p-6">
           <GameReviews gameId={game.id} />
-        </div>
+        </Card>
       </div>
 
       <GameAchievementLeaderboard gameId={game.id} />
@@ -228,11 +221,18 @@ export function GameDetailPage() {
 
       <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
 
-      <SaveStatesList saves={saves} gameId={game.id} />
+      <Card className="p-6">
+        <SaveStatesList saves={saves} gameId={game.id} />
+      </Card>
 
-      <SharedSavesList gameId={game.id} />
-
-      <GameChallenges gameId={game.id} saves={saves} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <SharedSavesList gameId={game.id} />
+        </Card>
+        <Card className="p-6">
+          <GameChallenges gameId={game.id} saves={saves} />
+        </Card>
+      </div>
 
       <GameActiveRelays gameId={game.id} />
     </div>

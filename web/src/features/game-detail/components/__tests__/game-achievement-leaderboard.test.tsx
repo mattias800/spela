@@ -78,9 +78,8 @@ describe("GameAchievementLeaderboard", () => {
     });
     renderComponent();
 
-    // Skeleton should have multiple placeholder elements
-    const section = document.querySelector("section");
-    expect(section).toBeInTheDocument();
+    // Skeleton should render inside a card
+    expect(document.querySelector("[class*='rounded-2xl']")).toBeInTheDocument();
   });
 
   it("renders nothing when no leaderboard data", () => {
@@ -181,7 +180,7 @@ describe("GameAchievementLeaderboard", () => {
     renderComponent();
 
     const otherUserRow = screen.getByTestId("leaderboard-entry-user-2");
-    expect(otherUserRow.className).toContain("bg-surface-900/50");
+    expect(otherUserRow.className).toContain("bg-surface-800/30");
     expect(otherUserRow.className).not.toContain("border-brand-400");
   });
 

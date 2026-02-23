@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trash2, Download, Share2 } from "lucide-react";
-import { Button, Badge, Card, CardContent, ConfirmDeleteModal } from "@/components/ui";
+import { Button, Badge, ConfirmDeleteModal } from "@/components/ui";
 import { useDeleteSave } from "@/hooks/use-games";
 import { ShareSaveModal } from "@/features/game-detail/components/share-save-modal";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
@@ -18,21 +18,18 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-surface-100 mb-4">Save States</h2>
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">Save States</h2>
       {!saves || saves.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-surface-400">
-              No save states yet. Play the game in the Spela player to create
-              saves.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="py-8 text-center">
+          <p className="text-surface-400">
+            No save states yet. Play the game in the Spela player to create
+            saves.
+          </p>
+        </div>
       ) : (
         <div className="space-y-2">
           {saves.map((save) => (
-            <Card key={save.id} hover>
-              <CardContent className="flex items-center gap-4 py-3">
+            <div key={save.id} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30 hover:bg-surface-800/50 transition-colors">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-surface-100">
                     {save.name}
@@ -73,8 +70,7 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                     <Trash2 className="h-4 w-4 text-danger-500" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
           ))}
         </div>
       )}
