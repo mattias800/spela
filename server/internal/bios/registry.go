@@ -18,6 +18,14 @@ var registry = []Entry{
 	{ConsoleID: "psx", FileName: "scph5501.bin", Description: "PlayStation BIOS (North America)", MD5: "490f666e1afb15b7362b406ed1cea246", Required: true},
 	{ConsoleID: "psx", FileName: "scph5502.bin", Description: "PlayStation BIOS (Europe)", MD5: "32736f17079d0b2b7024407c39bd3050", Required: false},
 
+	// PlayStation 2 (PS2) — pcsx2_libretro.info
+	// PCSX2 auto-detects BIOS files; no strict filename or MD5 enforced by core.
+	// Common BIOS models listed for user guidance.
+	{ConsoleID: "ps2", FileName: "SCPH-70012.bin", Description: "PS2 BIOS v12 (North America)", MD5: "", Required: true},
+	{ConsoleID: "ps2", FileName: "SCPH-39001.bin", Description: "PS2 BIOS v7 (North America)", MD5: "", Required: false},
+	{ConsoleID: "ps2", FileName: "SCPH-70004.bin", Description: "PS2 BIOS v12 (Europe)", MD5: "", Required: false},
+	{ConsoleID: "ps2", FileName: "SCPH-70000.bin", Description: "PS2 BIOS v12 (Japan)", MD5: "", Required: false},
+
 	// Sega Saturn (SAT) — mednafen_saturn_libretro.info
 	{ConsoleID: "sat", FileName: "sega_101.bin", Description: "Saturn BIOS (Japan)", MD5: "85ec9ca47d8f6807718151cbcca8b964", Required: false},
 	{ConsoleID: "sat", FileName: "mpr-17933.bin", Description: "Saturn BIOS (North America/Europe)", MD5: "3240872c70984b6cbfda1586cab68dbe", Required: true},
@@ -70,6 +78,20 @@ func ByConsole(consoleID string) []Entry {
 		}
 	}
 	return matches
+}
+
+// ByMD5 returns the first entry matching the given MD5 checksum, or nil if none.
+func ByMD5(md5 string) *Entry {
+	if md5 == "" {
+		return nil
+	}
+	for _, e := range registry {
+		if e.MD5 != "" && e.MD5 == md5 {
+			cp := e
+			return &cp
+		}
+	}
+	return nil
 }
 
 // ConsoleIDs returns the unique set of console IDs present in the registry.

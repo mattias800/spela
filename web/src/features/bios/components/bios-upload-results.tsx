@@ -51,6 +51,13 @@ function UploadResultItem({ item }: { item: UploadResult }) {
           <p className="text-warning-400 text-xs">
             Checksum mismatch &mdash; file saved but may be a bad dump
           </p>
+          {item.result.expectedMd5 && (
+            <p className="text-surface-500 text-xs font-mono mt-0.5">
+              Expected: {item.result.expectedMd5}
+              <br />
+              Got: {item.result.md5}
+            </p>
+          )}
         </div>
       </div>
     );

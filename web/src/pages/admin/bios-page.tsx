@@ -150,8 +150,7 @@ export function AdminBiosPage() {
         <p className="text-sm text-surface-300 mb-3">
           Drag and drop BIOS files here, or click to browse
         </p>
-        <Button onClick={handleUploadClick} loading={uploadBios.isPending}>
-          <Upload className="h-4 w-4" />
+        <Button onClick={handleUploadClick} loading={uploadBios.isPending} icon={<Upload className="h-4 w-4" />}>
           Upload BIOS Files
         </Button>
         <input

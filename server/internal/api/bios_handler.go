@@ -29,6 +29,7 @@ type BiosFileResponse struct {
 	Name        string  `json:"name"`
 	Size        int64   `json:"size"`
 	MD5         string  `json:"md5"`
+	ExpectedMD5 string  `json:"expectedMd5,omitempty"`
 	ConsoleID   *string `json:"consoleId"`
 	ConsoleName *string `json:"consoleName,omitempty"`
 	Description *string `json:"description,omitempty"`
@@ -333,9 +334,21 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 	// Compute MD5
 	fileMD5, _ := computeFileMD5(safePath)
 
-	// Look up in registry
+	// Look up in registry: first by filename, then by MD5
 	names := consoleNameMap(h.DB)
 	matches := bios.ByFileName(safeName)
+
+	// If filename didn't match, try MD5-based lookup and auto-rename
+	if len(matches) == 0 {
+		if md5Match := bios.ByMD5(fileMD5); md5Match != nil {
+			canonicalPath := h.Storage.BiosFilePath(md5Match.FileName)
+			if err := os.Rename(safePath, canonicalPath); err == nil {
+				safePath = canonicalPath
+				safeName = md5Match.FileName
+			}
+			matches = []bios.Entry{*md5Match}
+		}
+	}
 
 	resp := BiosFileResponse{
 		Name:     safeName,
@@ -361,6 +374,7 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 			resp.Status = "valid"
 		} else {
 			resp.Status = "invalid"
+			resp.ExpectedMD5 = match.MD5
 		}
 	}
 

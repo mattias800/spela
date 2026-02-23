@@ -543,6 +543,7 @@ export interface BiosFile {
   name: string;
   size: number;
   md5: string;
+  expectedMd5?: string;
   consoleId: string | null;
   consoleName: string | null;
   description: string | null;
