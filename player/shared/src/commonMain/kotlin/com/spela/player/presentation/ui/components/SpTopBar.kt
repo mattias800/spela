@@ -48,7 +48,7 @@ fun SpTopBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(SpColor.Surface.copy(alpha = 0.95f)),
+            .background(SpColor.Surface.copy(alpha = 0f)),
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(

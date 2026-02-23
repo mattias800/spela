@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
@@ -15,7 +18,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -59,6 +64,8 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -102,12 +109,139 @@ fun ConsoleScreen(
         }
     }
 
+    // Darkened version of the console's brand gradient for the full-screen background
+    val screenGradientColors = if (console != null) {
+        val (from, to) = getConsoleGradient(console.abbreviation, console.colorTheme)
+        listOf(from.darken(0.65f), to.darken(0.65f))
+    } else {
+        listOf(SpColor.Background, SpColor.Background)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SpColor.Background),
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val d = (size.width + size.height) * 0.25f
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = screenGradientColors,
+                            start = Offset(cx - d, cy - d),
+                            end = Offset(cx + d, cy + d),
+                        ),
+                    )
+                },
         ) {
+            PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = SpSpacing.ScreenHorizontal,
+                        end = SpSpacing.ScreenHorizontal,
+                        top = SpSpacing.TopBarHeight,
+                        bottom = SpSpacing.Default,
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                ) {
+                    // Console hero banner (scrolls with content)
+                    if (console != null) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleHeroBanner(
+                                console = console,
+                                modifier = Modifier.padding(top = SpSpacing.Small),
+                            )
+                        }
+                    }
+
+                    // Search field
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Column {
+                            AnimatedVisibility(
+                                visible = isSearchVisible,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                SpSearchField(
+                                    value = state.searchQuery,
+                                    onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = SpSpacing.Small)
+                                        .focusRequester(focusRequester),
+                                    placeholder = "Search $consoleName games...",
+                                    trailingIcon = {
+                                        SpIconButton(
+                                            icon = Icons.Filled.Close,
+                                            contentDescription = "Close search",
+                                            onClick = {
+                                                viewModel.onIntent(GameListIntent.Search(""))
+                                                isSearchVisible = false
+                                            },
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    // BIOS warning banner
+                    if (consoleId in state.consolesWithMissingBios) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            BiosWarningBanner(
+                                consoleName = consoleName,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = SpSpacing.Small),
+                            )
+                        }
+                    }
+
+                    // Loading state
+                    if (state.isLoading && state.games.isEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(300.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                SpLoadingIndicator(message = "Loading games...")
+                            }
+                        }
+                    } else if (state.games.isEmpty()) {
+                        // Empty state
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(300.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (state.searchQuery.length >= 2) {
+                                    SpEmptyStates.NoSearchResults(query = state.searchQuery)
+                                } else {
+                                    SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
+                                }
+                            }
+                        }
+                    } else {
+                        // Game grid items
+                        items(state.games, key = { it.id }) { game ->
+                            GameGridItem(
+                                game = game,
+                                onClick = { onGameSelected(game.id) },
+                                onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Fixed top bar overlaid on top of scrollable content
             SpTopBar(
                 title = consoleName,
                 showBack = true,
@@ -151,99 +285,6 @@ fun ConsoleScreen(
                     )
                 },
             )
-
-            // Console hero banner
-            if (console != null) {
-                ConsoleHeroBanner(
-                    console = console,
-                    modifier = Modifier
-                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                        .padding(top = SpSpacing.Small),
-                )
-            }
-
-            AnimatedVisibility(
-                visible = isSearchVisible,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                SpSearchField(
-                    value = state.searchQuery,
-                    onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small)
-                        .focusRequester(focusRequester),
-                    placeholder = "Search $consoleName games...",
-                    trailingIcon = {
-                        SpIconButton(
-                            icon = Icons.Filled.Close,
-                            contentDescription = "Close search",
-                            onClick = {
-                                viewModel.onIntent(GameListIntent.Search(""))
-                                isSearchVisible = false
-                            },
-                        )
-                    },
-                )
-            }
-
-            // BIOS warning banner
-            if (consoleId in state.consolesWithMissingBios) {
-                BiosWarningBanner(
-                    consoleName = consoleName,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
-                )
-            }
-
-            if (state.isLoading && state.games.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    SpLoadingIndicator(message = "Loading games...")
-                }
-            } else {
-                PullToRefreshBox(
-                    isRefreshing = state.isLoading,
-                    onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (state.games.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (state.searchQuery.length >= 2) {
-                                SpEmptyStates.NoSearchResults(query = state.searchQuery)
-                            } else {
-                                SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
-                            }
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                horizontal = SpSpacing.ScreenHorizontal,
-                                vertical = SpSpacing.Default,
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-                            verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
-                        ) {
-                            items(state.games, key = { it.id }) { game ->
-                                GameGridItem(
-                                    game = game,
-                                    onClick = { onGameSelected(game.id) },
-                                    onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         // Error snackbar

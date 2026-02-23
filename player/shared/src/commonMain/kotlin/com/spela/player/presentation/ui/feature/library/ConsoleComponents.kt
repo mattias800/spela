@@ -321,7 +321,7 @@ private fun MetadataBadge(
 }
 
 /** Darkens a color by mixing it towards black. [amount] 0f = unchanged, 1f = pure black. */
-private fun Color.darken(amount: Float): Color = copy(
+internal fun Color.darken(amount: Float): Color = copy(
     red = red * (1f - amount),
     green = green * (1f - amount),
     blue = blue * (1f - amount),
