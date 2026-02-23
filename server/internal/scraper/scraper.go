@@ -305,9 +305,24 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
-	games, err := s.IGDBClient.SearchGame(searchName, platformID)
-	if err != nil {
-		return fmt.Errorf("IGDB search: %w", err)
+	// For CRC-verified games, try exact name match first. IGDB's text search
+	// can omit the original game (e.g. "Super Mario 64" returns the unreleased
+	// sequel but not the original).
+	var games []igdb.Game
+	var err error
+	if game.VerificationStatus == "verified" {
+		games, err = s.IGDBClient.SearchGameExact(searchName, platformID)
+		if err != nil {
+			slog.Warn("IGDB exact search failed, falling back to text search", "game", searchName, "error", err)
+		}
+	}
+
+	// Fall back to text search if exact match found nothing
+	if len(games) == 0 {
+		games, err = s.IGDBClient.SearchGame(searchName, platformID)
+		if err != nil {
+			return fmt.Errorf("IGDB search: %w", err)
+		}
 	}
 
 	if len(games) == 0 {

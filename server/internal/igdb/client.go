@@ -243,6 +243,8 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 		escapeQuery(name), platformID,
 	)
 
+	slog.Info("IGDB search request", "name", name, "platformID", platformID, "query", query)
+
 	c.mu.Lock()
 	token := c.token.AccessToken
 	c.mu.Unlock()
@@ -273,6 +275,72 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	if err := json.Unmarshal(body, &games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
+
+	gameNames := make([]string, len(games))
+	for i, g := range games {
+		gameNames[i] = fmt.Sprintf("%s (id:%d)", g.Name, g.ID)
+	}
+	slog.Info("IGDB search response", "name", name, "resultCount", len(games), "results", gameNames)
+
+	return games, nil
+}
+
+// SearchGameExact queries IGDB for a game by exact name match and platform.
+// Uses a "where name" clause instead of the "search" keyword to avoid text-search
+// relevance ranking which can omit the exact game (e.g. "Super Mario 64" text search
+// returns the unreleased sequel but not the original).
+func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	// Wait for rate limiter
+	<-c.rateLimiter
+
+	// Case-insensitive exact match using ~ operator
+	query := fmt.Sprintf(
+		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name; where name ~ "%s" & platforms = (%d); limit 5;`,
+		escapeQuery(name), platformID,
+	)
+
+	slog.Info("IGDB exact search request", "name", name, "platformID", platformID, "query", query)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var games []Game
+	if err := json.Unmarshal(body, &games); err != nil {
+		return nil, fmt.Errorf("decoding IGDB response: %w", err)
+	}
+
+	gameNames := make([]string, len(games))
+	for i, g := range games {
+		gameNames[i] = fmt.Sprintf("%s (id:%d)", g.Name, g.ID)
+	}
+	slog.Info("IGDB exact search response", "name", name, "resultCount", len(games), "results", gameNames)
 
 	return games, nil
 }
