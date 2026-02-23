@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -39,8 +40,8 @@ fun SpButton(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     leadingIcon: (@Composable () -> Unit)? = null,
+    shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
 ) {
-    val shape = RoundedCornerShape(SpSpacing.RadiusLarge)
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val focusBorder = Modifier.border(

@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import {
   Heart,
   Calendar,
@@ -11,9 +10,9 @@ import {
   Play,
   Trophy,
   Clock,
-  Ellipsis,
+  FolderPlus,
 } from "lucide-react";
-import { Button, Badge, DropdownMenu } from "@/components/ui";
+import { Button, Badge, SplitButton, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
 import { MetaItem } from "@/components/meta-item";
 import {
@@ -35,91 +34,12 @@ interface GameHeroProps {
   isScraping: boolean;
   hasAchievements?: boolean;
   hasSaves?: boolean;
-  extraButtons?: ReactNode;
-  extraMenuButtons?: ReactNode;
   onPlay: () => void;
   onPlayFresh?: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
   onTogglePlayLater: () => void;
-}
-
-function OverflowMenu({
-  isAdmin,
-  isFavorite,
-  isInPlayLater,
-  isPlayLaterPending,
-  isScraping,
-  extraMenuButtons,
-  onScrape,
-  onToggleFavorite,
-  onTogglePlayLater,
-}: Pick<
-  GameHeroProps,
-  | "isAdmin"
-  | "isFavorite"
-  | "isInPlayLater"
-  | "isPlayLaterPending"
-  | "isScraping"
-  | "extraMenuButtons"
-  | "onScrape"
-  | "onToggleFavorite"
-  | "onTogglePlayLater"
->) {
-  return (
-    <DropdownMenu
-      align="right"
-      className="w-56"
-      trigger={
-        <Button variant="secondary" size="sm" data-testid="overflow-menu-btn">
-          <Ellipsis className="h-5 w-5" />
-        </Button>
-      }
-    >
-      {isAdmin && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onScrape}
-          loading={isScraping}
-          icon={<RefreshCw className="h-4 w-4" />}
-          className="w-full justify-start rounded-none"
-        >
-          Scrape Metadata
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onToggleFavorite}
-        className="w-full justify-start rounded-none"
-      >
-        <Heart
-          className={cn(
-            "h-4 w-4",
-            isFavorite && "fill-current text-danger-500",
-          )}
-        />
-        {isFavorite ? "Unfavorite" : "Favorite"}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onTogglePlayLater}
-        disabled={isPlayLaterPending}
-        className="w-full justify-start rounded-none"
-      >
-        <Clock
-          className={cn(
-            "h-4 w-4",
-            isInPlayLater && "fill-current text-brand-500",
-          )}
-        />
-        {isInPlayLater ? "In Queue" : "Play Later"}
-      </Button>
-      {extraMenuButtons}
-    </DropdownMenu>
-  );
+  onAddToCollection?: () => void;
 }
 
 export function GameHero({
@@ -133,15 +53,61 @@ export function GameHero({
   isScraping,
   hasAchievements,
   hasSaves,
-  extraButtons,
-  extraMenuButtons,
   onPlay,
   onPlayFresh,
   onScrape,
   onToggleFavorite,
   onTogglePlayLater,
+  onAddToCollection,
 }: GameHeroProps) {
   const consoleName = game.consoleName ?? "";
+
+  const actionsMenuItems = [
+    ...(isAdmin
+      ? [
+          {
+            label: "Scrape Metadata",
+            icon: <RefreshCw className="h-4 w-4" />,
+            onClick: onScrape,
+            loading: isScraping,
+          },
+        ]
+      : []),
+    {
+      label: isFavorite ? "Unfavorite" : "Favorite",
+      icon: (
+        <Heart
+          className={cn(
+            "h-4 w-4",
+            isFavorite && "fill-current text-danger-500",
+          )}
+        />
+      ),
+      onClick: onToggleFavorite,
+    },
+    {
+      label: isInPlayLater ? "In Queue" : "Play Later",
+      icon: (
+        <Clock
+          className={cn(
+            "h-4 w-4",
+            isInPlayLater && "fill-current text-brand-500",
+          )}
+        />
+      ),
+      onClick: onTogglePlayLater,
+      disabled: isPlayLaterPending,
+    },
+    ...(onAddToCollection
+      ? [
+          {
+            label: "Add to Collection",
+            icon: <FolderPlus className="h-4 w-4" />,
+            onClick: onAddToCollection,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
@@ -197,34 +163,32 @@ export function GameHero({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {hasSaves ? (
-              <>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={onPlay}
-                  disabled={!canPlayInBrowser}
-                  title={
-                    canPlayInBrowser
-                      ? "Resume game with latest save"
-                      : `${game.consoleName} is not supported for browser play`
-                  }
-                  data-testid="resume-btn"
-                >
-                  <Play className="h-5 w-5" />
-                  Resume
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={onPlayFresh}
-                  disabled={!canPlayInBrowser}
-                  title="Start a new game without loading saves"
-                  data-testid="new-game-btn"
-                >
-                  <Play className="h-5 w-5" />
-                  New Game
-                </Button>
-              </>
+              <SplitButton
+                variant="primary"
+                size="sm"
+                onClick={onPlay}
+                disabled={!canPlayInBrowser}
+                title={
+                  canPlayInBrowser
+                    ? "Resume game with latest save"
+                    : `${game.consoleName} is not supported for browser play`
+                }
+                data-testid="resume-btn"
+                menuItems={[
+                  ...(onPlayFresh
+                    ? [
+                        {
+                          label: "New Game",
+                          icon: <Play className="h-4 w-4" />,
+                          onClick: onPlayFresh,
+                        },
+                      ]
+                    : []),
+                ]}
+              >
+                <Play className="h-5 w-5" />
+                Resume
+              </SplitButton>
             ) : (
               <Button
                 variant="primary"
@@ -242,56 +206,7 @@ export function GameHero({
                 Play in Browser
               </Button>
             )}
-            {/* Desktop: show all buttons inline */}
-            <div className="hidden lg:contents">
-              {isAdmin && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={onScrape}
-                  loading={isScraping}
-                  icon={<RefreshCw className="h-5 w-5" />}
-                >
-                  Scrape Metadata
-                </Button>
-              )}
-              <Button
-                variant={isFavorite ? "danger" : "secondary"}
-                size="sm"
-                onClick={onToggleFavorite}
-              >
-                <Heart
-                  className={cn("h-5 w-5", isFavorite && "fill-current")}
-                />
-                {isFavorite ? "Unfavorite" : "Favorite"}
-              </Button>
-              <Button
-                variant={isInPlayLater ? "primary" : "secondary"}
-                size="sm"
-                onClick={onTogglePlayLater}
-                disabled={isPlayLaterPending}
-              >
-                <Clock
-                  className={cn("h-5 w-5", isInPlayLater && "fill-current")}
-                />
-                {isInPlayLater ? "In Queue" : "Play Later"}
-              </Button>
-              {extraButtons}
-            </div>
-            {/* Mobile/tablet: overflow menu */}
-            <div className="lg:hidden">
-              <OverflowMenu
-                isAdmin={isAdmin}
-                isFavorite={isFavorite}
-                isInPlayLater={isInPlayLater}
-                isPlayLaterPending={isPlayLaterPending}
-                isScraping={isScraping}
-                extraMenuButtons={extraMenuButtons}
-                onScrape={onScrape}
-                onToggleFavorite={onToggleFavorite}
-                onTogglePlayLater={onTogglePlayLater}
-              />
-            </div>
+            <ActionsMenu items={actionsMenuItems} />
           </div>
         </div>
 

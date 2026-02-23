@@ -2,8 +2,10 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 data class SpSplitButtonMenuItem(
@@ -57,7 +60,9 @@ fun SpSplitButton(
     var expanded by remember { mutableStateOf(false) }
 
     Row(
-        modifier = modifier.heightIn(min = 48.dp),
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SpButton(
@@ -67,6 +72,26 @@ fun SpSplitButton(
             style = style,
             enabled = enabled,
             isLoading = isLoading,
+            shape = RoundedCornerShape(
+                topStart = SpSpacing.RadiusLarge,
+                bottomStart = SpSpacing.RadiusLarge,
+                topEnd = 0.dp,
+                bottomEnd = 0.dp,
+            ),
+        )
+
+        // Divider between the two halves
+        val dividerColor = when (style) {
+            SpButtonStyle.Primary -> SpColor.OnPrimary.copy(alpha = 0.2f)
+            SpButtonStyle.Secondary -> SpColor.OnSecondary.copy(alpha = 0.2f)
+            SpButtonStyle.Outlined -> SpColor.Divider
+            SpButtonStyle.Ghost -> SpColor.Divider
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(dividerColor),
         )
 
         Box {
@@ -74,6 +99,7 @@ fun SpSplitButton(
                 text = "",
                 onClick = { expanded = true },
                 style = style,
+                enabled = enabled,
                 modifier = Modifier
                     .width(48.dp)
                     .semantics { contentDescription = menuContentDescription },
@@ -83,6 +109,12 @@ fun SpSplitButton(
                         contentDescription = null,
                     )
                 },
+                shape = RoundedCornerShape(
+                    topStart = 0.dp,
+                    bottomStart = 0.dp,
+                    topEnd = SpSpacing.RadiusLarge,
+                    bottomEnd = SpSpacing.RadiusLarge,
+                ),
             )
 
             DropdownMenu(

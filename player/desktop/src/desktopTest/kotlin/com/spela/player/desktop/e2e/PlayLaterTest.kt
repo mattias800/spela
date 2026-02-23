@@ -63,8 +63,12 @@ class PlayLaterTest {
         )
         advance(harness)
 
-        // Game is not in Play Later, so the button should say "Add to Play Later"
-        onNodeWithContentDescription("Add to Play Later").assertIsDisplayed()
+        // Open the actions menu
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
+
+        // "Play Later" menu item should be visible
+        onNodeWithText("Play Later").assertIsDisplayed()
     }
 
     @Test
@@ -83,8 +87,12 @@ class PlayLaterTest {
         )
         advance(harness)
 
-        // Game is in Play Later, so the button should say "Remove from Play Later"
-        onNodeWithContentDescription("Remove from Play Later").assertIsDisplayed()
+        // Open the actions menu
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
+
+        // Should show "Remove from Play Later" menu item
+        onNodeWithText("Remove from Play Later").assertIsDisplayed()
     }
 
     @Test
@@ -98,15 +106,23 @@ class PlayLaterTest {
         )
         advance(harness)
 
-        // Initially "Add to Play Later"
-        onNodeWithContentDescription("Add to Play Later").assertIsDisplayed()
+        // Open the actions menu
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
 
-        // Click the toggle button
-        onNodeWithContentDescription("Add to Play Later").performClick()
+        // Initially "Play Later"
+        onNodeWithText("Play Later").assertIsDisplayed()
+
+        // Click the Play Later menu item
+        onNodeWithText("Play Later").performClick()
+        advanceQuick(harness)
+
+        // Re-open the actions menu to verify state changed
+        onNodeWithContentDescription("More actions").performClick()
         advanceQuick(harness)
 
         // After toggling, should show "Remove from Play Later"
-        onNodeWithContentDescription("Remove from Play Later").assertIsDisplayed()
+        onNodeWithText("Remove from Play Later").assertIsDisplayed()
     }
 
     // ---- Activity feed: queued_play_later event ----

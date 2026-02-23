@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FolderPlus } from "lucide-react";
 import {
   Button,
   BackButton,
   GameDetailSkeleton,
-  DropdownMenu,
+  Modal,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import {
@@ -40,12 +40,14 @@ import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import type { Collection } from "@/types/api";
 
-function AddToCollectionButton({
+function CollectionPickerModal({
   gameId,
-  menuItem,
+  open,
+  onClose,
 }: {
   gameId: string;
-  menuItem?: boolean;
+  open: boolean;
+  onClose: () => void;
 }) {
   const { data: collectionsData } = useMyCollections(1, 100);
   const addGame = useAddGameToCollection();
@@ -59,6 +61,7 @@ function AddToCollectionButton({
       {
         onSuccess: () => {
           toast("success", `Added to ${collection.name}`);
+          onClose();
         },
         onError: () => {
           toast("error", "Failed to add to collection");
@@ -68,48 +71,30 @@ function AddToCollectionButton({
   }
 
   return (
-    <DropdownMenu
-      align="right"
-      className="w-64"
-      trigger={
-        menuItem ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start rounded-none"
-          >
-            <FolderPlus className="h-4 w-4" />
-            Add to Collection
-          </Button>
+    <Modal open={open} onClose={onClose} title="Add to Collection" size="sm">
+      <div className="max-h-64 overflow-y-auto -mx-6 -mb-6 px-6 pb-6">
+        {collections.length === 0 ? (
+          <p className="py-4 text-sm text-surface-500 text-center">
+            No collections yet. Create one first.
+          </p>
         ) : (
-          <Button variant="secondary" size="sm">
-            <FolderPlus className="h-5 w-5" />
-            Add to Collection
-          </Button>
-        )
-      }
-    >
-      {collections.length === 0 ? (
-        <p className="px-3 py-2 text-sm text-surface-500">
-          No collections yet. Create one first.
-        </p>
-      ) : (
-        collections.map((collection) => (
-          <Button
-            key={collection.id}
-            variant="ghost"
-            size="sm"
-            onClick={() => handleAdd(collection)}
-            className="w-full justify-between rounded-none"
-          >
-            <span className="truncate">{collection.name}</span>
-            <span className="text-xs text-surface-500 flex-shrink-0 ml-2">
-              {collection.gameCount} games
-            </span>
-          </Button>
-        ))
-      )}
-    </DropdownMenu>
+          <div className="space-y-1">
+            {collections.map((collection) => (
+              <button
+                key={collection.id}
+                onClick={() => handleAdd(collection)}
+                className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-surface-200 hover:bg-surface-800 hover:text-surface-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <span className="truncate">{collection.name}</span>
+                <span className="text-xs text-surface-500 flex-shrink-0 ml-2">
+                  {collection.gameCount} games
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -132,6 +117,7 @@ export function GameDetailPage() {
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -195,8 +181,6 @@ export function GameDetailPage() {
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         hasSaves={(saves?.length ?? 0) > 0}
-        extraButtons={<AddToCollectionButton gameId={game.id} />}
-        extraMenuButtons={<AddToCollectionButton gameId={game.id} menuItem />}
         onPlay={() => navigate(`/games/${game.id}/play`)}
         onPlayFresh={() => navigate(`/games/${game.id}/play?fresh=true`)}
         onScrape={() => scrapeGame.mutate(game.id)}
@@ -206,6 +190,13 @@ export function GameDetailPage() {
         onTogglePlayLater={() =>
           togglePlayLater.mutate({ gameId: game.id, isInPlayLater })
         }
+        onAddToCollection={() => setShowCollectionPicker(true)}
+      />
+
+      <CollectionPickerModal
+        gameId={game.id}
+        open={showCollectionPicker}
+        onClose={() => setShowCollectionPicker(false)}
       />
 
       {isAdmin && (

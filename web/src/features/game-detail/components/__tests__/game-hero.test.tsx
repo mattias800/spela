@@ -38,6 +38,7 @@ const defaultProps = {
   onScrape: vi.fn(),
   onToggleFavorite: vi.fn(),
   onTogglePlayLater: vi.fn(),
+  onAddToCollection: vi.fn(),
 };
 
 function renderWithQuery(ui: React.ReactElement) {
@@ -71,11 +72,11 @@ describe("GameHero", () => {
     expect(screen.queryByText("Players:")).not.toBeInTheDocument();
   });
 
-  it("renders overflow menu button", () => {
+  it("renders actions menu button", () => {
     const game = makeGame();
     renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
-    expect(screen.getByTestId("overflow-menu-btn")).toBeInTheDocument();
+    expect(screen.getByTestId("actions-menu-btn")).toBeInTheDocument();
   });
 
   it("calls onPlay when play button is clicked", async () => {
@@ -101,5 +102,26 @@ describe("GameHero", () => {
     renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
     expect(screen.getByText("SNES")).toBeInTheDocument();
+  });
+
+  it("renders resume-btn instead of play-in-browser-btn when hasSaves is true", () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} hasSaves={true} />,
+    );
+
+    expect(screen.getByTestId("resume-btn")).toBeInTheDocument();
+    expect(screen.queryByTestId("play-in-browser-btn")).not.toBeInTheDocument();
+  });
+
+  it("calls onPlay when resume-btn is clicked", async () => {
+    const onPlay = vi.fn();
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} hasSaves={true} onPlay={onPlay} />,
+    );
+
+    await userEvent.click(screen.getByTestId("resume-btn"));
+    expect(onPlay).toHaveBeenCalledOnce();
   });
 });

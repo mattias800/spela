@@ -27,10 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.BiosMissingFile
@@ -42,17 +40,13 @@ import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.WatchLater
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.feature.gamedetail.BiosWarningChip
+import com.spela.player.presentation.ui.feature.gamedetail.GameActionsMenu
 import com.spela.player.presentation.ui.feature.gamedetail.VerificationChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
@@ -577,61 +571,14 @@ private fun GameInfoContent(
 
     Spacer(Modifier.height(SpSpacing.Small))
 
-    // Row 2: Icon action buttons
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        SpButton(
-            text = "",
-            onClick = onToggleFavorite,
-            style = if (game.isFavorite) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
-            modifier = Modifier.semantics {
-                contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites"
-                role = Role.Button
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = if (game.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-        )
-
-        SpButton(
-            text = "",
-            onClick = onTogglePlayLater,
-            style = if (game.isInPlayLater) SpButtonStyle.Secondary else SpButtonStyle.Outlined,
-            modifier = Modifier.semantics {
-                contentDescription = if (game.isInPlayLater) "Remove from Play Later" else "Add to Play Later"
-                role = Role.Button
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = if (game.isInPlayLater) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-        )
-
-        SpButton(
-            text = "",
-            onClick = onAddToCollection,
-            style = SpButtonStyle.Outlined,
-            modifier = Modifier.semantics {
-                contentDescription = "Add to collection"
-                role = Role.Button
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.LibraryAdd,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-        )
-    }
+    // Actions menu
+    GameActionsMenu(
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+        onToggleFavorite = onToggleFavorite,
+        onTogglePlayLater = onTogglePlayLater,
+        onAddToCollection = onAddToCollection,
+    )
 
     // Download progress
     AnimatedVisibility(
