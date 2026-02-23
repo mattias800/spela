@@ -1,5 +1,5 @@
-import { Check, ImageIcon } from "lucide-react";
-import { useToast } from "@/components/ui";
+import { Check } from "lucide-react";
+import { useToast, Modal } from "@/components/ui";
 import {
   useGameCovers,
   useSetGameCover,
@@ -10,6 +10,8 @@ import { cn } from "@/lib/cn";
 interface CoverArtSelectorProps {
   gameId: string;
   aspectRatio?: number;
+  open: boolean;
+  onClose: () => void;
 }
 
 const sourceLabels: Record<string, string> = {
@@ -21,6 +23,8 @@ const sourceLabels: Record<string, string> = {
 export function CoverArtSelector({
   gameId,
   aspectRatio,
+  open,
+  onClose,
 }: CoverArtSelectorProps) {
   const { data, isLoading, isError } = useGameCovers(gameId);
   const setCover = useSetGameCover();
@@ -38,6 +42,7 @@ export function CoverArtSelector({
       {
         onSuccess: () => {
           toast("success", `Cover art set to ${sourceLabels[source] ?? source}`);
+          onClose();
         },
         onError: () => {
           toast("error", "Failed to update cover art");
@@ -47,12 +52,8 @@ export function CoverArtSelector({
   }
 
   return (
-    <div className="space-y-3" data-testid="cover-art-selector">
-      <h2 className="text-lg font-bold text-surface-100 flex items-center gap-2">
-        <ImageIcon className="h-5 w-5" />
-        Cover Art Source
-      </h2>
-      <div className="flex flex-wrap gap-4">
+    <Modal open={open} onClose={onClose} title="Cover Art Source" size="lg">
+      <div className="flex flex-wrap gap-4" data-testid="cover-art-selector">
         {data.covers.map((cover) => {
           const isActive = cover.source === data.active;
           return (
@@ -101,6 +102,6 @@ export function CoverArtSelector({
           );
         })}
       </div>
-    </div>
+    </Modal>
   );
 }

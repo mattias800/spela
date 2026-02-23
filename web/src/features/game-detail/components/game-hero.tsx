@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Heart,
   Calendar,
@@ -11,9 +12,11 @@ import {
   Trophy,
   Clock,
   FolderPlus,
+  ImageIcon,
 } from "lucide-react";
 import { Button, Badge, SplitButton, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
+import { CoverArtSelector } from "./cover-art-selector";
 import { MetaItem } from "@/components/meta-item";
 import {
   formatFileSize,
@@ -21,6 +24,7 @@ import {
   formatRelativeTime,
 } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { UserRating } from "./user-rating";
 import type { Game } from "@/types/api";
 
 interface GameHeroProps {
@@ -60,6 +64,7 @@ export function GameHero({
   onTogglePlayLater,
   onAddToCollection,
 }: GameHeroProps) {
+  const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
 
   const actionsMenuItems = [
@@ -130,6 +135,25 @@ export function GameHero({
               </span>
             </div>
           )}
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setShowCoverModal(true)}
+            className="mt-2 flex items-center gap-1 text-xs text-surface-400 hover:text-surface-200 transition-colors"
+            data-testid="change-cover-btn"
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+            Change cover
+          </button>
+        )}
+        <CoverArtSelector
+          open={showCoverModal}
+          onClose={() => setShowCoverModal(false)}
+          gameId={game.id}
+          aspectRatio={aspectRatio}
+        />
+        <div className="mt-4">
+          <UserRating gameId={game.id} />
         </div>
       </div>
 
@@ -208,6 +232,12 @@ export function GameHero({
               </Button>
             )}
             <ActionsMenu items={actionsMenuItems} />
+            {isScraping && (
+              <span className="flex items-center gap-1.5 text-sm text-brand-400 ml-1">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Scraping metadata…
+              </span>
+            )}
             <span className="flex items-center gap-1 text-sm text-surface-400 ml-2">
               <Clock className="h-4 w-4 text-surface-500" />
               {game.totalPlayTime > 0
