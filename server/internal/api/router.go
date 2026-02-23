@@ -155,6 +155,9 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Console icons (public — embedded PNGs, loaded by <img> tags)
 	r.GET("/api/consoles/:id/icon", consoleHandler.GetConsoleIcon)
 
+	// Console logos (public — embedded SVGs, loaded by <img> tags)
+	r.GET("/api/consoles/:id/logo", consoleHandler.GetConsoleLogo)
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(AuthMiddleware(cfg.JWTSecret))

@@ -23,6 +23,7 @@ type ConsoleResponse struct {
 	CoverAspectRatio float64   `json:"coverAspectRatio"`
 	ColorTheme       string    `json:"colorTheme"`
 	IconURL          string    `json:"iconUrl"`
+	LogoURL          string    `json:"logoUrl"`
 	GameCount        int       `json:"gameCount"`
 	SaveStateSupport bool      `json:"saveStateSupport"`
 	BrowserPlayable  bool      `json:"browserPlayable"`
@@ -104,6 +105,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		CoverAspectRatio: ratio,
 		ColorTheme:       c.ColorTheme,
 		IconURL:          "/api/consoles/" + abbr + "/icon",
+		LogoURL:          "/api/consoles/" + abbr + "/logo",
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		BrowserPlayable:  c.EmulatorJSCore != "",

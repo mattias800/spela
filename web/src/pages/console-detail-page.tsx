@@ -57,34 +57,70 @@ export function ConsoleDetailPage() {
       {/* Back button */}
       <BackButton onClick={() => navigate(-1)}>Back to Consoles</BackButton>
 
-      {/* Console header */}
-      <div className="flex items-center gap-4">
-        <div
-          className={cn(
-            "h-14 w-14 rounded-2xl bg-gradient-to-br flex items-center justify-center",
-            style.gradient,
-          )}
-        >
+      {/* Console hero banner */}
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl border border-white/[0.06]",
+          "bg-gradient-to-br",
+          style.gradient,
+        )}
+      >
+        {/* Background watermark icon for depth */}
+        <div className="absolute -right-8 -top-8 opacity-[0.07] pointer-events-none">
           {console?.iconUrl ? (
-            <img src={console.iconUrl} alt={`${consoleName} icon`} className="h-8 w-8 object-contain" />
+            <img
+              src={console.iconUrl}
+              alt=""
+              aria-hidden="true"
+              className="h-56 w-56 object-contain"
+            />
           ) : (
-            <Icon className="h-7 w-7 text-white" />
+            <Icon className="h-56 w-56 text-white" />
           )}
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">{consoleName}</h1>
-          <div className="flex items-center gap-3 mt-1">
-            <p className="text-surface-400">
+
+        {/* Subtle noise/texture overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />
+
+        {/* Content */}
+        <div className="relative flex flex-col items-center px-6 py-10 md:py-12">
+          {/* Logo / Title */}
+          {console?.logoUrl ? (
+            <img
+              src={console.logoUrl}
+              alt={consoleName}
+              className="max-h-20 md:max-h-24 w-auto object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
+              onError={(e) => {
+                // Fall back to text if logo fails to load
+                const target = e.currentTarget;
+                target.style.display = "none";
+                const fallback = target.nextElementSibling;
+                if (fallback) fallback.classList.remove("hidden");
+              }}
+            />
+          ) : null}
+          <h1
+            className={cn(
+              "text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-lg",
+              console?.logoUrl && "hidden",
+            )}
+          >
+            {consoleName}
+          </h1>
+
+          {/* Metadata row */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+            <span className="text-sm font-medium text-white/70">
               {gameList.length} {gameList.length === 1 ? "game" : "games"}
-            </p>
+            </span>
             {console?.saveStateSupport && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
                 <Check className="h-3 w-3" />
                 Save states
               </span>
             )}
             {console?.browserPlayable && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
                 <Globe className="h-3 w-3" />
                 Browser play
               </span>

@@ -26,6 +26,7 @@ export interface Console {
   coverAspectRatio: number; // backend parses "3:4" into 0.75
   colorTheme: string;
   iconUrl: string;
+  logoUrl: string;
   gameCount: number;
   saveStateSupport: boolean;
   browserPlayable: boolean;

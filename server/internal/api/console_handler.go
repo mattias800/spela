@@ -202,6 +202,27 @@ func (h *ConsoleHandler) GetConsoleIcon(c *gin.Context) {
 	c.Data(http.StatusOK, "image/png", data)
 }
 
+// GetConsoleLogo serves the embedded SVG logo for a console.
+func (h *ConsoleHandler) GetConsoleLogo(c *gin.Context) {
+	consoleID := c.Param("id")
+
+	var console db.Console
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
+		return
+	}
+
+	filename := strings.ToLower(console.Abbreviation) + ".svg"
+	data, err := consoleLogos.ReadFile("static/console-logos/" + filename)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "logo not available for this console"})
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=604800")
+	c.Data(http.StatusOK, "image/svg+xml", data)
+}
+
 // getUserID extracts the authenticated user's ID from the context.
 func getUserID(c *gin.Context) uint {
 	userID, _ := c.Get("userId")
