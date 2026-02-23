@@ -49,7 +49,7 @@ function UploadResultItem({ item }: { item: UploadResult }) {
             {item.result.name}
           </span>
           <p className="text-warning-400 text-xs">
-            Checksum mismatch: expected {item.result.md5}, got different value
+            Checksum mismatch &mdash; file saved but may be a bad dump
           </p>
         </div>
       </div>

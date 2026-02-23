@@ -147,7 +147,10 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 		fileMD5, err := computeFileMD5(filepath.Join(h.Storage.BiosDir, e.FileName))
 		status := "present"
 		if err == nil {
-			if fileMD5 == e.MD5 {
+			if e.MD5 == "" {
+				// No known checksum in registry — accept the file as-is
+				status = "present"
+			} else if fileMD5 == e.MD5 {
 				status = "valid"
 			} else {
 				status = "invalid"
@@ -209,7 +212,9 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 			status := "missing"
 			if onDisk {
 				fileMD5, err := computeFileMD5(filepath.Join(h.Storage.BiosDir, e.FileName))
-				if err == nil && fileMD5 == e.MD5 {
+				if err == nil && e.MD5 == "" {
+					status = "present"
+				} else if err == nil && fileMD5 == e.MD5 {
 					status = "valid"
 				} else if err == nil {
 					status = "invalid"
@@ -349,7 +354,10 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 		resp.ConsoleName = &consoleName
 		resp.Description = &desc
 		resp.Required = match.Required
-		if fileMD5 == match.MD5 {
+		if match.MD5 == "" {
+			// No known checksum in registry — accept the file as-is
+			resp.Status = "present"
+		} else if fileMD5 == match.MD5 {
 			resp.Status = "valid"
 		} else {
 			resp.Status = "invalid"
@@ -404,7 +412,7 @@ func GetConsoleStatus(biosDir string, consoleAbbr string) string {
 		}
 
 		fileMD5, err := computeFileMD5(filePath)
-		if err != nil || fileMD5 != e.MD5 {
+		if err == nil && e.MD5 != "" && fileMD5 != e.MD5 {
 			hasInvalidRequired = true
 		}
 	}

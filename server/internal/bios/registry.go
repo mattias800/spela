@@ -10,33 +10,36 @@ type Entry struct {
 }
 
 // registry is the built-in list of known BIOS files.
+// MD5 checksums sourced from libretro core-info:
+// https://github.com/libretro/libretro-core-info
 var registry = []Entry{
-	// PlayStation (PSX)
+	// PlayStation (PSX) — pcsx_rearmed_libretro.info
 	{ConsoleID: "psx", FileName: "scph5500.bin", Description: "PlayStation BIOS (Japan)", MD5: "8dd7d5296a650fac7319bce665a6a53c", Required: false},
-	{ConsoleID: "psx", FileName: "scph5501.bin", Description: "PlayStation BIOS (North America)", MD5: "924e392ed05558ffdb115408c263dccf", Required: true},
-	{ConsoleID: "psx", FileName: "scph5502.bin", Description: "PlayStation BIOS (Europe)", MD5: "e56ec1b027e00571a0e4cd3e0aadb4c0", Required: false},
+	{ConsoleID: "psx", FileName: "scph5501.bin", Description: "PlayStation BIOS (North America)", MD5: "490f666e1afb15b7362b406ed1cea246", Required: true},
+	{ConsoleID: "psx", FileName: "scph5502.bin", Description: "PlayStation BIOS (Europe)", MD5: "32736f17079d0b2b7024407c39bd3050", Required: false},
 
-	// Sega Saturn (SAT)
-	{ConsoleID: "sat", FileName: "saturn_bios.bin", Description: "Sega Saturn BIOS", MD5: "af5828fdfc0d3f41e2f8b2edc4c6f9e8", Required: true},
+	// Sega Saturn (SAT) — mednafen_saturn_libretro.info
+	{ConsoleID: "sat", FileName: "sega_101.bin", Description: "Saturn BIOS (Japan)", MD5: "85ec9ca47d8f6807718151cbcca8b964", Required: false},
+	{ConsoleID: "sat", FileName: "mpr-17933.bin", Description: "Saturn BIOS (North America/Europe)", MD5: "3240872c70984b6cbfda1586cab68dbe", Required: true},
 
-	// Sega CD (SCD)
-	{ConsoleID: "scd", FileName: "bios_CD_U.bin", Description: "Sega CD BIOS (North America)", MD5: "2efd74e3232ff260e371b99f84024f7f", Required: true},
-	{ConsoleID: "scd", FileName: "bios_CD_E.bin", Description: "Sega CD BIOS (Europe)", MD5: "e66fa1dc5820d254611fdcdba0662372", Required: false},
-	{ConsoleID: "scd", FileName: "bios_CD_J.bin", Description: "Sega CD BIOS (Japan)", MD5: "278a9397d192149e84e820ac621a8edd", Required: false},
+	// Sega CD (SCD) — genesis_plus_gx_libretro.info (no MD5 provided by core-info)
+	{ConsoleID: "scd", FileName: "bios_CD_U.bin", Description: "Sega CD BIOS (North America)", MD5: "", Required: true},
+	{ConsoleID: "scd", FileName: "bios_CD_E.bin", Description: "Sega CD BIOS (Europe)", MD5: "", Required: false},
+	{ConsoleID: "scd", FileName: "bios_CD_J.bin", Description: "Sega CD BIOS (Japan)", MD5: "", Required: false},
 
-	// Dreamcast (DC)
+	// Dreamcast (DC) — flycast_libretro.info
 	{ConsoleID: "dc", FileName: "dc_boot.bin", Description: "Dreamcast BIOS", MD5: "e10c53c2f8b90bab96ead2d368858623", Required: true},
-	{ConsoleID: "dc", FileName: "dc_flash.bin", Description: "Dreamcast Flash ROM", MD5: "0a93f7940c455905bea6e392dfde92a4", Required: false},
+	{ConsoleID: "dc", FileName: "dc_flash.bin", Description: "Dreamcast Flash ROM", MD5: "", Required: false},
 
-	// Game Boy Advance (GBA)
+	// Game Boy Advance (GBA) — mgba_libretro.info
 	{ConsoleID: "gba", FileName: "gba_bios.bin", Description: "Game Boy Advance BIOS", MD5: "a860e8c0b6d573d191e4ec7db1b1e4f6", Required: false},
 
-	// Nintendo DS (NDS)
+	// Nintendo DS (NDS) — desmume_libretro.info
 	{ConsoleID: "nds", FileName: "bios7.bin", Description: "Nintendo DS ARM7 BIOS", MD5: "df692a80a5b1bc90728bc3dfc76cd948", Required: false},
 	{ConsoleID: "nds", FileName: "bios9.bin", Description: "Nintendo DS ARM9 BIOS", MD5: "a392174eb3e572fed6447e956bde4b25", Required: false},
 	{ConsoleID: "nds", FileName: "firmware.bin", Description: "Nintendo DS Firmware", MD5: "145eaef5bd3037cbc247c213bb3da1b3", Required: false},
 
-	// PC Engine / TurboGrafx-16 (PCE)
+	// PC Engine / TurboGrafx-16 (PCE) — mednafen_pce_fast_libretro.info
 	{ConsoleID: "pce", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
 }
 

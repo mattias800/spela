@@ -26,7 +26,7 @@ func TestByFileName_KnownFile(t *testing.T) {
 		wantID   string
 	}{
 		{"PSX BIOS NA", "scph5501.bin", 1, "psx"},
-		{"Saturn BIOS", "saturn_bios.bin", 1, "sat"},
+		{"Saturn BIOS US/EU", "mpr-17933.bin", 1, "sat"},
 		{"Dreamcast boot", "dc_boot.bin", 1, "dc"},
 		{"GBA BIOS", "gba_bios.bin", 1, "gba"},
 		{"PC Engine syscard", "syscard3.pce", 1, "pce"},
@@ -51,10 +51,10 @@ func TestByConsole(t *testing.T) {
 	tests := []struct {
 		name      string
 		consoleID string
-		wantMin   int
+		wantLen   int
 	}{
 		{"PSX has 3 entries", "psx", 3},
-		{"Saturn has 1 entry", "sat", 1},
+		{"Saturn has 2 entries", "sat", 2},
 		{"Dreamcast has 2 entries", "dc", 2},
 		{"NDS has 3 entries", "nds", 3},
 		{"Unknown console returns empty", "unknown", 0},
@@ -62,7 +62,7 @@ func TestByConsole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			entries := ByConsole(tt.consoleID)
-			assert.Len(t, entries, tt.wantMin)
+			assert.Len(t, entries, tt.wantLen)
 		})
 	}
 }
@@ -86,7 +86,9 @@ func TestRegistryEntries_HaveRequiredFields(t *testing.T) {
 		assert.NotEmpty(t, e.ConsoleID, "ConsoleID must not be empty")
 		assert.NotEmpty(t, e.FileName, "FileName must not be empty")
 		assert.NotEmpty(t, e.Description, "Description must not be empty")
-		assert.NotEmpty(t, e.MD5, "MD5 must not be empty")
-		assert.Len(t, e.MD5, 32, "MD5 must be 32 hex chars for %s", e.FileName)
+		// MD5 may be empty when libretro core-info does not provide a checksum
+		if e.MD5 != "" {
+			assert.Len(t, e.MD5, 32, "MD5 must be 32 hex chars for %s", e.FileName)
+		}
 	}
 }
