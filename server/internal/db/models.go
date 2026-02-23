@@ -82,6 +82,9 @@ type Game struct {
 	Players       int            `json:"players,omitempty"`
 	Rating        float64        `json:"rating,omitempty"`
 	CoreOverride        string         `gorm:"size:128" json:"coreOverride,omitempty"`
+	LibRetroCoverURL    string         `gorm:"size:512" json:"-"`
+	IGDBCoverURL        string         `gorm:"size:512" json:"-"`
+	CoverManuallySet    bool           `gorm:"default:false" json:"-"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
 	ScraperID           string         `gorm:"size:128" json:"scraperId,omitempty"`
 	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning,omitempty"`

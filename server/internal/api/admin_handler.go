@@ -440,6 +440,109 @@ func (h *AdminHandler) tryConfigureIGDB() {
 	h.Scraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
 }
 
+// CoverOption represents a single available cover art source.
+type CoverOption struct {
+	Source string `json:"source"`
+	URL    string `json:"url"`
+}
+
+// GetGameCovers returns the available cover art options for a game.
+func (h *AdminHandler) GetGameCovers(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	var covers []CoverOption
+
+	if game.LibRetroCoverURL != "" {
+		covers = append(covers, CoverOption{Source: "libretro", URL: resolveImageURL(game.LibRetroCoverURL)})
+	}
+
+	if game.IGDBCoverURL != "" {
+		covers = append(covers, CoverOption{Source: "igdb", URL: resolveImageURL(game.IGDBCoverURL)})
+	}
+
+	// Include the current cover as "custom" if it differs from both known sources
+	// (e.g. pre-migration games with the old boxart.png naming)
+	if game.CoverURL != "" && game.CoverURL != game.LibRetroCoverURL && game.CoverURL != game.IGDBCoverURL {
+		covers = append(covers, CoverOption{Source: "custom", URL: resolveImageURL(game.CoverURL)})
+	}
+
+	// Determine which source is active
+	active := ""
+	if game.CoverURL != "" {
+		switch game.CoverURL {
+		case game.LibRetroCoverURL:
+			active = "libretro"
+		case game.IGDBCoverURL:
+			active = "igdb"
+		default:
+			active = "custom"
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"active": active,
+		"covers": covers,
+	})
+}
+
+// SetGameCover sets the active cover art for a game from one of the available sources.
+func (h *AdminHandler) SetGameCover(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	var req struct {
+		Source string `json:"source" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		return
+	}
+
+	var newCoverURL string
+	switch req.Source {
+	case "libretro":
+		if game.LibRetroCoverURL == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no LibRetro cover available"})
+			return
+		}
+		newCoverURL = game.LibRetroCoverURL
+	case "igdb":
+		if game.IGDBCoverURL == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no IGDB cover available"})
+			return
+		}
+		newCoverURL = game.IGDBCoverURL
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "source must be 'libretro' or 'igdb'"})
+		return
+	}
+
+	if err := h.DB.Model(&game).Updates(map[string]interface{}{
+		"cover_url":          newCoverURL,
+		"cover_manually_set": true,
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update cover"})
+		return
+	}
+
+	userID, _ := c.Get("userId")
+	uid, _ := userID.(uint)
+	if err := h.DB.Preload("Console").Preload("Discs").First(&game, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reload game"})
+		return
+	}
+	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
+}
+
 // GetStats returns admin dashboard statistics.
 func (h *AdminHandler) GetStats(c *gin.Context) {
 	var users, games, consoles, saves int64

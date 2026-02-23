@@ -34,6 +34,7 @@ import { GameReviews } from "@/features/game-detail/components/game-reviews";
 import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
 import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
+import { CoverArtSelector } from "@/features/game-detail/components/cover-art-selector";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
@@ -206,6 +207,13 @@ export function GameDetailPage() {
           togglePlayLater.mutate({ gameId: game.id, isInPlayLater })
         }
       />
+
+      {isAdmin && (
+        <CoverArtSelector
+          gameId={game.id}
+          aspectRatio={consoleInfo?.coverAspectRatio}
+        />
+      )}
 
       <GameCommunityStats gameId={game.id} game={game} />
 

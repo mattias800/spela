@@ -333,6 +333,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/scrape", adminHandler.TriggerScrape)
 			admin.GET("/scrape/status", adminHandler.ScrapeStatus)
 			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
+			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)
+			admin.PUT("/games/:id/covers", adminHandler.SetGameCover)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
 			admin.POST("/igdb/test", igdbHandler.TestIGDB)
 			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)

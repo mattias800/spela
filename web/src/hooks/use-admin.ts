@@ -181,6 +181,47 @@ export function useScrapeStatus() {
   });
 }
 
+export interface CoverOption {
+  source: "libretro" | "igdb" | "custom";
+  url: string;
+}
+
+export interface GameCoversResponse {
+  active: string;
+  covers: CoverOption[];
+}
+
+export function useGameCovers(gameId: string) {
+  return useQuery({
+    queryKey: ["admin", "game-covers", gameId],
+    queryFn: () => api.get<GameCoversResponse>(`/admin/games/${gameId}/covers`),
+    enabled: !!gameId,
+  });
+}
+
+export function useSetGameCover() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      gameId,
+      source,
+    }: {
+      gameId: string;
+      source: CoverOption["source"];
+    }) => {
+      await api.put(`/admin/games/${gameId}/covers`, { source });
+    },
+    onSuccess: (_data, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "game-covers", gameId],
+      });
+    },
+  });
+}
+
 export function useIgdbStatus() {
   return useQuery({
     queryKey: ["admin", "igdb-status"],

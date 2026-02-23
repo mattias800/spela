@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Scraper fetches game metadata and images from IGDB (primary) and LibRetro Thumbnails (fallback).
+// Scraper fetches game metadata from IGDB and box art from LibRetro Thumbnails (preferred) with IGDB fallback.
 type Scraper struct {
 	DB         *gorm.DB
 	Storage    *storage.Storage
@@ -80,7 +80,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"AMIGA": "Commodore - Amiga",
 }
 
-const libRetroThumbnailBase = "https://thumbnails.libretro.com"
+var libRetroThumbnailBase = "https://thumbnails.libretro.com"
 
 // gameNameFromFileName strips the file extension to derive the game name.
 func gameNameFromFileName(fileName string) string {
@@ -161,10 +161,23 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		}
 	}
 
-	// On re-scrape, clear stale images so fresh ones are downloaded
+	// On re-scrape, clear stale images so fresh ones are downloaded.
+	// Remember the admin's manual cover choice so we can restore it after.
+	manualOverride := game.CoverManuallySet
+	prevCoverSource := ""
+	if manualOverride {
+		switch game.CoverURL {
+		case game.LibRetroCoverURL:
+			prevCoverSource = "libretro"
+		case game.IGDBCoverURL:
+			prevCoverSource = "igdb"
+		}
+	}
 	if game.ScrapeAttempts > 0 {
 		game.CoverURL = ""
 		game.ScreenshotURL = ""
+		game.LibRetroCoverURL = ""
+		game.IGDBCoverURL = ""
 	}
 
 	// Mark disc-based systems as not applicable for CRC verification
@@ -182,15 +195,13 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		}
 	}
 
-	// --- LibRetro Thumbnails (fallback for images) ---
+	// --- LibRetro Thumbnails (preferred for box art, fallback for screenshots) ---
 	libRetroSystem, hasLibRetro := AbbreviationToLibRetro[console.Abbreviation]
 	if hasLibRetro {
-		// Box art fallback
-		if game.CoverURL == "" {
-			boxartSubpath := fmt.Sprintf("%s/%s/boxart.png", console.Abbreviation, gameIDStr)
-			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath); path != "" {
-				game.CoverURL = path
-			}
+		// Box art: always try LibRetro (preferred source for box art)
+		boxartSubpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
+		if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath); path != "" {
+			game.LibRetroCoverURL = path
 		}
 
 		// Screenshot fallback
@@ -199,6 +210,32 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
 				game.ScreenshotURL = path
 			}
+		}
+	}
+
+	// Set active cover: restore admin's manual choice if still available,
+	// otherwise prefer LibRetro box art, fall back to IGDB.
+	if manualOverride {
+		switch prevCoverSource {
+		case "libretro":
+			if game.LibRetroCoverURL != "" {
+				game.CoverURL = game.LibRetroCoverURL
+			}
+		case "igdb":
+			if game.IGDBCoverURL != "" {
+				game.CoverURL = game.IGDBCoverURL
+			}
+		}
+	}
+	if game.CoverURL == "" {
+		if game.LibRetroCoverURL != "" {
+			game.CoverURL = game.LibRetroCoverURL
+		} else if game.IGDBCoverURL != "" {
+			game.CoverURL = game.IGDBCoverURL
+		}
+		// Admin's chosen source is no longer available; clear the flag
+		if manualOverride {
+			game.CoverManuallySet = false
 		}
 	}
 
@@ -316,12 +353,12 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
-	// Download cover art from IGDB
+	// Download cover art from IGDB (stored separately; LibRetro is preferred for active cover)
 	if match.Cover != nil && match.Cover.ImageID != "" {
 		coverURL := igdb.ImageURL(match.Cover.ImageID, "cover_big")
-		coverSubpath := fmt.Sprintf("%s/%s/boxart.jpg", console.Abbreviation, gameIDStr)
+		coverSubpath := fmt.Sprintf("%s/%s/boxart-igdb.jpg", console.Abbreviation, gameIDStr)
 		if path := s.downloadExternalImage(coverURL, coverSubpath); path != "" {
-			game.CoverURL = path
+			game.IGDBCoverURL = path
 		}
 	}
 

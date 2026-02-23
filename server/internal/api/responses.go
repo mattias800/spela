@@ -212,15 +212,10 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		coverAspectRatio = parseAspectRatio(g.Console.CoverAspect)
 	}
 
-	coverURL := g.CoverURL
-	if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
-		coverURL = "/api/images/" + coverURL
-	}
+	coverURL := resolveImageURL(g.CoverURL)
 
 	for i, s := range screenshots {
-		if s != "" && !strings.HasPrefix(s, "http") {
-			screenshots[i] = "/api/images/" + s
-		}
+		screenshots[i] = resolveImageURL(s)
 	}
 
 	var discs []DiscResponse
@@ -588,6 +583,15 @@ type ChallengeLeaderboardEntry struct {
 	DurationMs int64      `json:"durationMs"`
 	AttemptID  string     `json:"attemptId"`
 	CompletedAt time.Time `json:"completedAt"`
+}
+
+// resolveImageURL prefixes relative image paths with /api/images/.
+// External URLs (starting with http) are returned unchanged.
+func resolveImageURL(path string) string {
+	if path == "" || strings.HasPrefix(path, "http") {
+		return path
+	}
+	return "/api/images/" + path
 }
 
 // parseAspectRatio converts a string like "3:4" to a float like 0.75.
