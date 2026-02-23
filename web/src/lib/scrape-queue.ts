@@ -1,4 +1,5 @@
 import { api } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
 
 const THROTTLE_MS = 300;
 
@@ -14,6 +15,7 @@ async function processQueue() {
     const gameId = queue.shift()!;
     try {
       await api.post(`/games/${gameId}/scrape-if-needed`);
+      queryClient.invalidateQueries({ queryKey: ["games"] });
     } catch {
       // Server increments scrapeAttempts regardless — silently continue
     }

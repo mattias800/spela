@@ -570,7 +570,7 @@ func TestScan_RescanUpgradesOldEntries(t *testing.T) {
 		ConsoleID: psxConsole.ID,
 		Title:     "Metal Gear Solid",
 		FileName:  "Metal Gear Solid (Disc 1).cue",
-		FilePath:  cue1Path,
+		FilePath:  filepath.Join("psx", "Metal Gear Solid (Disc 1).cue"),
 		FileSize:  100,
 	}
 	require.NoError(t, database.Create(&oldGame1).Error)
@@ -579,7 +579,7 @@ func TestScan_RescanUpgradesOldEntries(t *testing.T) {
 		ConsoleID: psxConsole.ID,
 		Title:     "Metal Gear Solid",
 		FileName:  "Metal Gear Solid (Disc 2).cue",
-		FilePath:  cue2Path,
+		FilePath:  filepath.Join("psx", "Metal Gear Solid (Disc 2).cue"),
 		FileSize:  100,
 	}
 	require.NoError(t, database.Create(&oldGame2).Error)
@@ -612,7 +612,7 @@ func TestScan_PSPCHDSetsAchievementsWarning(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pspDir, 0755))
 
 	// Create a CHD file with no CD metadata tags (createdvd mode)
-	chdPath := writeCHDV5(t, pspDir, "God of War.chd", [][4]byte{
+	writeCHDV5(t, pspDir, "God of War.chd", [][4]byte{
 		{'R', 'A', 'W', 'H'}, // non-CD tag → createdvd
 	})
 
@@ -622,7 +622,7 @@ func TestScan_PSPCHDSetsAchievementsWarning(t *testing.T) {
 	assert.Equal(t, 1, result.NewGames)
 
 	var game db.Game
-	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("psp", "God of War.chd")).First(&game).Error)
 	assert.NotEmpty(t, game.AchievementsWarning, "PSP CHD with createdvd should have a warning")
 	assert.Contains(t, game.AchievementsWarning, "createdvd")
 }
@@ -635,7 +635,7 @@ func TestScan_PSPCHDCreateCDNoWarning(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pspDir, 0755))
 
 	// Create a CHD file with CD metadata tags (createcd mode)
-	chdPath := writeCHDV5(t, pspDir, "Lumines.chd", [][4]byte{
+	writeCHDV5(t, pspDir, "Lumines.chd", [][4]byte{
 		{'C', 'H', 'T', '2'}, // CD track v2 → createcd
 	})
 
@@ -645,7 +645,7 @@ func TestScan_PSPCHDCreateCDNoWarning(t *testing.T) {
 	assert.Equal(t, 1, result.NewGames)
 
 	var game db.Game
-	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("psp", "Lumines.chd")).First(&game).Error)
 	assert.Empty(t, game.AchievementsWarning, "PSP CHD with createcd should have no warning")
 }
 
@@ -656,8 +656,7 @@ func TestScan_PSPISONoWarning(t *testing.T) {
 	pspDir := filepath.Join(dir, "psp")
 	require.NoError(t, os.MkdirAll(pspDir, 0755))
 
-	isoPath := filepath.Join(pspDir, "Crisis Core.iso")
-	require.NoError(t, os.WriteFile(isoPath, []byte("fake iso"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "Crisis Core.iso"), []byte("fake iso"), 0644))
 
 	s := NewScanner(database, []string{dir})
 	result, err := s.Scan()
@@ -665,7 +664,7 @@ func TestScan_PSPISONoWarning(t *testing.T) {
 	assert.Equal(t, 1, result.NewGames)
 
 	var game db.Game
-	require.NoError(t, database.Where("file_path = ?", isoPath).First(&game).Error)
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("psp", "Crisis Core.iso")).First(&game).Error)
 	assert.Empty(t, game.AchievementsWarning, "PSP ISO should have no warning")
 }
 
@@ -676,8 +675,7 @@ func TestScan_PSPCSOSetsWarning(t *testing.T) {
 	pspDir := filepath.Join(dir, "psp")
 	require.NoError(t, os.MkdirAll(pspDir, 0755))
 
-	csoPath := filepath.Join(pspDir, "Patapon.cso")
-	require.NoError(t, os.WriteFile(csoPath, []byte("fake cso"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "Patapon.cso"), []byte("fake cso"), 0644))
 
 	s := NewScanner(database, []string{dir})
 	result, err := s.Scan()
@@ -685,7 +683,7 @@ func TestScan_PSPCSOSetsWarning(t *testing.T) {
 	assert.Equal(t, 1, result.NewGames)
 
 	var game db.Game
-	require.NoError(t, database.Where("file_path = ?", csoPath).First(&game).Error)
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("psp", "Patapon.cso")).First(&game).Error)
 	assert.NotEmpty(t, game.AchievementsWarning, "PSP CSO should have a warning")
 	assert.Contains(t, game.AchievementsWarning, "CSO")
 }
@@ -712,7 +710,7 @@ func TestScan_NonPSPCHDNoWarning(t *testing.T) {
 	assert.Equal(t, 1, result.NewGames)
 
 	var game db.Game
-	require.NoError(t, database.Where("file_path = ?", chdPath).First(&game).Error)
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("psp", "GoodGame.chd")).First(&game).Error)
 	assert.Empty(t, game.AchievementsWarning, "PSP CHD with createcd mode should have no warning")
 
 	// Also verify the unit-level function: non-PSP consoles never get warnings

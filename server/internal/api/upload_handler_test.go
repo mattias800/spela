@@ -347,9 +347,12 @@ func TestAcceptUpload(t *testing.T) {
 	// Verify file was moved to library
 	var nesConsole db.Console
 	env.db.Where("abbreviation = ?", "NES").First(&nesConsole)
-	expectedPath := filepath.Join(env.tmpDir, nesConsole.FolderName, "TestGame.nes")
-	_, err = os.Stat(expectedPath)
+	expectedAbsPath := filepath.Join(env.tmpDir, nesConsole.FolderName, "TestGame.nes")
+	_, err = os.Stat(expectedAbsPath)
 	assert.NoError(t, err, "ROM file should exist in library directory")
+
+	// Verify game stores relative path
+	assert.Equal(t, filepath.Join(nesConsole.FolderName, "TestGame.nes"), game.FilePath)
 
 	// Verify staging record was deleted
 	var count int64
@@ -654,15 +657,15 @@ func TestAcceptUpload_CreatesGameInCorrectDirectory(t *testing.T) {
 	var snesConsole db.Console
 	env.db.Where("abbreviation = ?", "SNES").First(&snesConsole)
 	expectedDir := filepath.Join(env.tmpDir, snesConsole.FolderName)
-	expectedPath := filepath.Join(expectedDir, "Chrono Trigger.sfc")
-	_, err := os.Stat(expectedPath)
+	expectedAbsPath := filepath.Join(expectedDir, "Chrono Trigger.sfc")
+	_, err := os.Stat(expectedAbsPath)
 	assert.NoError(t, err, "ROM should be in the SNES folder")
 
-	// Verify game record
+	// Verify game record stores relative path
 	var game db.Game
 	require.NoError(t, env.db.Where("file_name = ?", "Chrono Trigger.sfc").First(&game).Error)
 	assert.Equal(t, snesConsole.ID, game.ConsoleID)
-	assert.Equal(t, expectedPath, game.FilePath)
+	assert.Equal(t, filepath.Join(snesConsole.FolderName, "Chrono Trigger.sfc"), game.FilePath)
 }
 
 func TestUploadROMs_DuplicateFilename(t *testing.T) {

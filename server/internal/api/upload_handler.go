@@ -495,7 +495,7 @@ func (h *UploadHandler) acceptStaged(staged *db.StagedUpload) (*db.Game, error) 
 		ConsoleID:          console.ID,
 		Title:              title,
 		FileName:           targetName,
-		FilePath:           targetPath,
+		FilePath:           filepath.Join(console.FolderName, targetName),
 		FileSize:           staged.FileSize,
 		Description:        staged.Description,
 		CoverURL:           staged.CoverURL,

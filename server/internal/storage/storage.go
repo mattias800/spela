@@ -379,6 +379,40 @@ func (s *Storage) DeleteSaveData(path string) error {
 	return nil
 }
 
+// ResolveGamePath resolves a relative game path (e.g. "nes/Mario.nes") to an
+// absolute filesystem path by joining it with each gameDir and returning the
+// first that exists on disk. Returns an error if no match is found.
+func ResolveGamePath(relPath string, gameDirs []string) (string, error) {
+	for _, dir := range gameDirs {
+		full := filepath.Join(dir, relPath)
+		if _, err := os.Stat(full); err == nil {
+			return full, nil
+		}
+	}
+	return "", fmt.Errorf("game file not found in any game directory: %s", relPath)
+}
+
+// RelativeGamePath strips the gameDirs prefix from an absolute path to produce
+// a relative path suitable for database storage. If the path doesn't start with
+// any gameDir prefix, it is returned unchanged.
+func RelativeGamePath(absPath string, gameDirs []string) string {
+	for _, dir := range gameDirs {
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			continue
+		}
+		absFile, err := filepath.Abs(absPath)
+		if err != nil {
+			continue
+		}
+		prefix := absDir + string(filepath.Separator)
+		if strings.HasPrefix(absFile, prefix) {
+			return absFile[len(prefix):]
+		}
+	}
+	return absPath
+}
+
 // ValidateROMPath checks that a ROM path is within allowed game directories.
 func ValidateROMPath(filePath string, allowedDirs []string) bool {
 	absPath, err := filepath.Abs(filePath)

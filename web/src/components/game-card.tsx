@@ -24,17 +24,16 @@ export function GameCard({
     <Link ref={ref} to={`/games/${game.id}`} className="group block space-y-3">
       <div
         className="relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
-        style={{ aspectRatio: game.coverAspectRatio ?? aspectRatio ?? 3 / 4 }}
       >
         {game.coverUrl ? (
           <img
             src={game.coverUrl}
             alt={game.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900">
+          <div className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900" style={{ aspectRatio: game.coverAspectRatio ?? aspectRatio ?? 3 / 4 }}>
             {isScraping ? (
               <Loader2 className="h-6 w-6 animate-spin text-surface-500" />
             ) : (

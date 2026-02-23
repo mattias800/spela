@@ -16,10 +16,12 @@ import (
 )
 
 func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
-	// Create a ROM file with known CRC
-	romDir := t.TempDir()
+	// Create a ROM file with known CRC inside a console-named subdirectory
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
 	romContent := []byte("hello") // CRC32 = 3610A686
-	romPath := filepath.Join(romDir, "castlevania.nes")
+	romPath := filepath.Join(nesDir, "castlevania.nes")
 	require.NoError(t, os.WriteFile(romPath, romContent, 0o644))
 
 	// Set up DAT cache with a matching entry
@@ -71,12 +73,13 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
 	require.NoError(t, database.Create(&console).Error)
 
+	gameDirs := []string{gameDir}
 	game := db.Game{
 		ConsoleID: console.ID,
 		Console:   console,
 		Title:     "castlevania",
 		FileName:  "castlevania.nes",
-		FilePath:  romPath,
+		FilePath:  filepath.Join("nes", "castlevania.nes"),
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -89,18 +92,19 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
 	err := s.ScrapeGame(&game)
 	require.NoError(t, err)
 
-	// Verify the ROM file was renamed to canonical name
+	// Verify the ROM file was renamed to canonical name (relative path)
 	assert.Equal(t, "Castlevania (USA).nes", game.FileName)
-	assert.Equal(t, filepath.Join(romDir, "Castlevania (USA).nes"), game.FilePath)
+	assert.Equal(t, filepath.Join("nes", "Castlevania (USA).nes"), game.FilePath)
 
 	// Verify the renamed file exists on disk
-	_, err = os.Stat(game.FilePath)
+	_, err = os.Stat(filepath.Join(nesDir, "Castlevania (USA).nes"))
 	assert.NoError(t, err)
 
 	// Verify the old file no longer exists
@@ -117,10 +121,11 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 
 func TestScrapeIGDB_NoCRCMatch_UsesCleannedFilename(t *testing.T) {
 	// Create a ROM file with a CRC that won't match any DAT entry
-	romDir := t.TempDir()
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
 	romContent := []byte("unknown rom data that has no match")
-	romPath := filepath.Join(romDir, "My Cool Game (Hack).nes")
-	require.NoError(t, os.WriteFile(romPath, romContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "My Cool Game (Hack).nes"), romContent, 0o644))
 
 	// Set up DAT cache with entries that won't match this CRC
 	datDir := t.TempDir()
@@ -165,12 +170,14 @@ func TestScrapeIGDB_NoCRCMatch_UsesCleannedFilename(t *testing.T) {
 	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
 	require.NoError(t, database.Create(&console).Error)
 
+	gameDirs := []string{gameDir}
+	relPath := filepath.Join("nes", "My Cool Game (Hack).nes")
 	game := db.Game{
 		ConsoleID: console.ID,
 		Console:   console,
 		Title:     "My Cool Game (Hack)",
 		FileName:  "My Cool Game (Hack).nes",
-		FilePath:  romPath,
+		FilePath:  relPath,
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -183,6 +190,7 @@ func TestScrapeIGDB_NoCRCMatch_UsesCleannedFilename(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -191,7 +199,7 @@ func TestScrapeIGDB_NoCRCMatch_UsesCleannedFilename(t *testing.T) {
 
 	// File should NOT be renamed since there was no CRC match
 	assert.Equal(t, "My Cool Game (Hack).nes", game.FileName)
-	assert.Equal(t, romPath, game.FilePath)
+	assert.Equal(t, relPath, game.FilePath)
 
 	// But it should still scrape metadata from IGDB
 	assert.Equal(t, "My Cool Game", game.Title)
@@ -236,7 +244,7 @@ func TestScrapeIGDB_DiscSystem_SkipsCRC(t *testing.T) {
 		Console:   console,
 		Title:     "Final Fantasy VII",
 		FileName:  "Final Fantasy VII (USA).bin",
-		FilePath:  "/nonexistent/path.bin", // Path doesn't need to exist for disc systems
+		FilePath:  "psx/Final Fantasy VII (USA).bin", // Relative path; doesn't need to exist for disc systems
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -249,6 +257,7 @@ func TestScrapeIGDB_DiscSystem_SkipsCRC(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   nil,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -262,10 +271,12 @@ func TestScrapeIGDB_DiscSystem_SkipsCRC(t *testing.T) {
 
 func TestScrapeIGDB_CRCMatch_SameNameNoRename(t *testing.T) {
 	// When CRC matches but file already has the canonical name, no rename needed
-	romDir := t.TempDir()
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
 	romContent := []byte("hello") // CRC32 = 3610A686
-	romPath := filepath.Join(romDir, "Castlevania (USA).nes")
-	require.NoError(t, os.WriteFile(romPath, romContent, 0o644))
+	romAbsPath := filepath.Join(nesDir, "Castlevania (USA).nes")
+	require.NoError(t, os.WriteFile(romAbsPath, romContent, 0o644))
 
 	datDir := t.TempDir()
 	systemName := AbbreviationToLibRetro["NES"]
@@ -308,12 +319,14 @@ func TestScrapeIGDB_CRCMatch_SameNameNoRename(t *testing.T) {
 	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
 	require.NoError(t, database.Create(&console).Error)
 
+	gameDirs := []string{gameDir}
+	relPath := filepath.Join("nes", "Castlevania (USA).nes")
 	game := db.Game{
 		ConsoleID: console.ID,
 		Console:   console,
 		Title:     "Castlevania (USA)",
 		FileName:  "Castlevania (USA).nes",
-		FilePath:  romPath,
+		FilePath:  relPath,
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -326,6 +339,7 @@ func TestScrapeIGDB_CRCMatch_SameNameNoRename(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -334,9 +348,9 @@ func TestScrapeIGDB_CRCMatch_SameNameNoRename(t *testing.T) {
 
 	// File should remain as-is (no rename since names match)
 	assert.Equal(t, "Castlevania (USA).nes", game.FileName)
-	assert.Equal(t, romPath, game.FilePath)
+	assert.Equal(t, relPath, game.FilePath)
 
 	// File should still exist at original path
-	_, err = os.Stat(romPath)
+	_, err = os.Stat(romAbsPath)
 	assert.NoError(t, err)
 }

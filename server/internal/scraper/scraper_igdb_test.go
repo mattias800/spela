@@ -474,8 +474,10 @@ func TestScrapeGame_CRCMatch_SetsVerified(t *testing.T) {
 	store := setupTestStorage(t)
 
 	// Create a ROM file with known content and compute its CRC
-	romDir := t.TempDir()
-	romPath := filepath.Join(romDir, "TestGame (USA).nes")
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
+	romPath := filepath.Join(nesDir, "TestGame (USA).nes")
 	romContent := []byte("test rom content for verification")
 	crc := writeROMFile(t, romPath, romContent)
 
@@ -493,12 +495,13 @@ func TestScrapeGame_CRCMatch_SetsVerified(t *testing.T) {
 	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
 	require.NoError(t, database.Create(&console).Error)
 
+	gameDirs := []string{gameDir}
 	game := db.Game{
 		ConsoleID: console.ID,
 		Console:   console,
 		Title:     "TestGame (USA)",
 		FileName:  "TestGame (USA).nes",
-		FilePath:  romPath,
+		FilePath:  filepath.Join("nes", "TestGame (USA).nes"),
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -511,6 +514,7 @@ func TestScrapeGame_CRCMatch_SetsVerified(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
@@ -552,8 +556,10 @@ func TestScrapeGame_CRCNoMatch_SetsUnverified(t *testing.T) {
 	store := setupTestStorage(t)
 
 	// Create a ROM file
-	romDir := t.TempDir()
-	romPath := filepath.Join(romDir, "Unknown (USA).nes")
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
+	romPath := filepath.Join(nesDir, "Unknown (USA).nes")
 	romContent := []byte("unmatched rom content")
 	crc := writeROMFile(t, romPath, romContent)
 
@@ -571,12 +577,13 @@ func TestScrapeGame_CRCNoMatch_SetsUnverified(t *testing.T) {
 	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
 	require.NoError(t, database.Create(&console).Error)
 
+	gameDirs := []string{gameDir}
 	game := db.Game{
 		ConsoleID: console.ID,
 		Console:   console,
 		Title:     "Unknown (USA)",
 		FileName:  "Unknown (USA).nes",
-		FilePath:  romPath,
+		FilePath:  filepath.Join("nes", "Unknown (USA).nes"),
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -589,6 +596,7 @@ func TestScrapeGame_CRCNoMatch_SetsUnverified(t *testing.T) {
 		HTTPClient: &http.Client{Timeout: 5 * time.Second},
 		IGDBClient: igdbClient,
 		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 

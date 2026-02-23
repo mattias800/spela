@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
@@ -297,7 +298,9 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 	}
 	for _, g := range allGames {
 		if !foundPaths[g.FilePath] {
-			if _, err := os.Stat(g.FilePath); os.IsNotExist(err) {
+			// Resolve relative path to absolute for filesystem check
+			absPath, resolveErr := storage.ResolveGamePath(g.FilePath, s.GameDirs)
+			if resolveErr != nil || func() bool { _, err := os.Stat(absPath); return os.IsNotExist(err) }() {
 				slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
 				// Delete associated discs first
 				s.DB.Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
@@ -385,10 +388,8 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			}
 		}
 
-		// Mark all claimed paths as found
-		for _, p := range allClaimed {
-			foundPaths[p] = true
-		}
+		// Mark the .m3u relative path as found (disc files don't have their own Game records)
+		foundPaths[storage.RelativeGamePath(m3uPath, s.GameDirs)] = true
 
 		// Determine console from parent directory
 		abbrev := s.identifyConsoleForDir(filepath.Dir(m3uPath))
@@ -453,18 +454,17 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			continue
 		}
 
-		// Claim all files
+		// Claim all files (absolute paths for pass-2 exclusion)
 		claimedPaths[m3uPath] = true
-		foundPaths[m3uPath] = true
 		for _, f := range files {
 			claimedPaths[f] = true
-			foundPaths[f] = true
 			companions, _, _ := DiscCompanionFiles(f)
 			for _, c := range companions {
 				claimedPaths[c] = true
-				foundPaths[c] = true
 			}
 		}
+		// Mark the .m3u relative path as found
+		foundPaths[storage.RelativeGamePath(m3uPath, s.GameDirs)] = true
 
 		s.createMultiDiscGame(m3uPath, files, console, foundPaths, result)
 	}
@@ -485,8 +485,9 @@ func (s *Scanner) identifyConsoleForDir(dir string) string {
 // so they don't coexist with the new multi-disc entry.
 func (s *Scanner) removeOldDiscGames(claimedFiles []string, newM3UPath string, result *ScanResult) {
 	for _, f := range claimedFiles {
+		relPath := storage.RelativeGamePath(f, s.GameDirs)
 		var oldGame db.Game
-		if err := s.DB.Where("file_path = ?", f).First(&oldGame).Error; err == nil {
+		if err := s.DB.Where("file_path = ?", relPath).First(&oldGame).Error; err == nil {
 			slog.Info("removing old single-disc entry superseded by multi-disc game",
 				"title", oldGame.Title, "path", f)
 			s.DB.Unscoped().Where("game_id = ?", oldGame.ID).Delete(&db.GameDisc{})
@@ -498,11 +499,14 @@ func (s *Scanner) removeOldDiscGames(claimedFiles []string, newM3UPath string, r
 
 // createMultiDiscGame creates or updates a multi-disc game entry in the database.
 func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, console *db.Console, foundPaths map[string]bool, result *ScanResult) {
+	// Compute relative paths for DB storage
+	m3uRelPath := storage.RelativeGamePath(m3uPath, s.GameDirs)
+
 	// Check if game already exists
 	var existing db.Game
-	if err := s.DB.Where("file_path = ?", m3uPath).First(&existing).Error; err == nil {
+	if err := s.DB.Where("file_path = ?", m3uRelPath).First(&existing).Error; err == nil {
 		// Game exists, update if needed
-		foundPaths[m3uPath] = true
+		foundPaths[m3uRelPath] = true
 		return
 	}
 
@@ -518,7 +522,7 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 		totalSize += discSize
 		discs = append(discs, db.GameDisc{
 			DiscNumber: i + 1,
-			FilePath:   df,
+			FilePath:   storage.RelativeGamePath(df, s.GameDirs),
 			FileName:   filepath.Base(df),
 			FileSize:   discSize,
 		})
@@ -532,7 +536,7 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 		ConsoleID: console.ID,
 		Title:     title,
 		FileName:  m3uName,
-		FilePath:  m3uPath,
+		FilePath:  m3uRelPath,
 		FileSize:  totalSize,
 		DiscCount: len(discFiles),
 	}
@@ -607,11 +611,13 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 			return nil
 		}
 
-		foundPaths[path] = true
+		// Compute relative path from game dir root for DB storage
+		relPath := storage.RelativeGamePath(path, s.GameDirs)
+		foundPaths[relPath] = true
 
 		// Check if game already exists
 		var existing db.Game
-		if err := s.DB.Where("file_path = ?", path).First(&existing).Error; err == nil {
+		if err := s.DB.Where("file_path = ?", relPath).First(&existing).Error; err == nil {
 			// Game exists, check if file size changed
 			if existing.FileSize != info.Size() {
 				existing.FileSize = info.Size()
@@ -627,11 +633,11 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 			ConsoleID: console.ID,
 			Title:     title,
 			FileName:  info.Name(),
-			FilePath:  path,
+			FilePath:  relPath,
 			FileSize:  info.Size(),
 		}
 		if err := s.DB.Create(&game).Error; err != nil {
-			slog.Warn("failed to create game entry", "path", path, "error", err)
+			slog.Warn("failed to create game entry", "path", relPath, "error", err)
 			return nil
 		}
 

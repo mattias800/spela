@@ -136,8 +136,15 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		return
 	}
 
+	// Resolve relative path to absolute for filesystem access
+	absPath, err := storage.ResolveGamePath(game.FilePath, h.GameDirs)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game file not found"})
+		return
+	}
+
 	// Security: validate the file path is within allowed directories
-	if !storage.ValidateROMPath(game.FilePath, h.GameDirs) {
+	if !storage.ValidateROMPath(absPath, h.GameDirs) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
 		return
 	}
@@ -157,7 +164,7 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	}
 
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
-	c.File(game.FilePath)
+	c.File(absPath)
 }
 
 // UpdateMetadata manually updates game metadata.
@@ -534,14 +541,21 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		return
 	}
 
+	// Resolve relative path to absolute for filesystem access
+	absDiscPath, err := storage.ResolveGamePath(disc.FilePath, h.GameDirs)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "disc file not found"})
+		return
+	}
+
 	// Security: validate the disc file path is within allowed directories
-	if !storage.ValidateROMPath(disc.FilePath, h.GameDirs) {
+	if !storage.ValidateROMPath(absDiscPath, h.GameDirs) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
 		return
 	}
 
 	// Get companion files for this disc
-	companions, _, err := scanner.DiscCompanionFiles(disc.FilePath)
+	companions, _, err := scanner.DiscCompanionFiles(absDiscPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
 		return

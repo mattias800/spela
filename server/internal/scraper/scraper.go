@@ -24,11 +24,12 @@ type Scraper struct {
 	HTTPClient *http.Client
 	IGDBClient *igdb.Client
 	DATCache   *DATCache
+	GameDirs   []string
 	cache      *nameCache
 }
 
 // NewScraper creates a new metadata scraper instance.
-func NewScraper(database *gorm.DB, store *storage.Storage, datDir string) *Scraper {
+func NewScraper(database *gorm.DB, store *storage.Storage, datDir string, gameDirs []string) *Scraper {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -37,6 +38,7 @@ func NewScraper(database *gorm.DB, store *storage.Storage, datDir string) *Scrap
 		Storage:    store,
 		HTTPClient: httpClient,
 		DATCache:   NewDATCache(datDir, httpClient),
+		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 }
@@ -278,30 +280,36 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	// CRC-based identification: look up ROM in No-Intro DAT
 	searchName := cleanName
 	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
-		if crc, err := ComputeFileCRC32(game.FilePath); err == nil {
-			game.CRC32 = crc
-			if entry, ok := idx.LookupCRC(crc); ok {
-				slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
-				game.VerificationStatus = "verified"
+		// Resolve relative path to absolute for filesystem access
+		absFilePath, resolveErr := storage.ResolveGamePath(game.FilePath, s.GameDirs)
+		if resolveErr == nil {
+			if crc, err := ComputeFileCRC32(absFilePath); err == nil {
+				game.CRC32 = crc
+				if entry, ok := idx.LookupCRC(crc); ok {
+					slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
+					game.VerificationStatus = "verified"
 
-				// Rename ROM file to canonical No-Intro name
-				newPath := filepath.Join(filepath.Dir(game.FilePath), entry.ROMName)
-				if newPath != game.FilePath {
-					if err := os.Rename(game.FilePath, newPath); err == nil {
-						game.FilePath = newPath
-						game.FileName = entry.ROMName
-					} else {
-						slog.Warn("failed to rename ROM to canonical name", "from", game.FilePath, "to", newPath, "error", err)
+					// Rename ROM file to canonical No-Intro name
+					newAbsPath := filepath.Join(filepath.Dir(absFilePath), entry.ROMName)
+					if newAbsPath != absFilePath {
+						if err := os.Rename(absFilePath, newAbsPath); err == nil {
+							game.FilePath = storage.RelativeGamePath(newAbsPath, s.GameDirs)
+							game.FileName = entry.ROMName
+						} else {
+							slog.Warn("failed to rename ROM to canonical name", "from", absFilePath, "to", newAbsPath, "error", err)
+						}
 					}
-				}
 
-				// Use canonical game name (strip region tags) for IGDB search
-				searchName = igdb.CleanGameName(entry.ROMName)
+					// Use canonical game name (strip region tags) for IGDB search
+					searchName = igdb.CleanGameName(entry.ROMName)
+				} else {
+					game.VerificationStatus = "unverified"
+				}
 			} else {
-				game.VerificationStatus = "unverified"
+				slog.Debug("failed to compute CRC32", "file", absFilePath, "error", err)
 			}
 		} else {
-			slog.Debug("failed to compute CRC32", "file", game.FilePath, "error", err)
+			slog.Debug("failed to resolve game path for CRC", "path", game.FilePath, "error", resolveErr)
 		}
 	}
 
