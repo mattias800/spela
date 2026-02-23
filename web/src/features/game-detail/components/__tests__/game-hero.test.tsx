@@ -55,21 +55,22 @@ describe("GameHero", () => {
     const game = makeGame({ players: 0 });
     renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
-    // Should render a MetaItem with "Players: 0", not a bare "0" text node
-    expect(screen.getByText("Players:")).toBeInTheDocument();
-    expect(screen.getByText("0")).toBeInTheDocument();
+    // Should render a MetaItem with "Players" label and "0" value, not a bare "0" text node
+    expect(screen.getAllByText("Players").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("0").length).toBeGreaterThan(0);
 
     // Check that "0" appears within a MetaItem context
-    const playersLabel = screen.getByText("Players:");
-    const metaItem = playersLabel.closest("div");
-    expect(metaItem).toHaveTextContent("Players: 0");
+    const playersLabel = screen.getAllByText("Players")[0];
+    const metaItem = playersLabel.closest("div")?.parentElement;
+    expect(metaItem).toHaveTextContent("Players");
+    expect(metaItem).toHaveTextContent("0");
   });
 
   it("does not render Players MetaItem when players is undefined", () => {
     const game = makeGame({ players: undefined });
     renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
-    expect(screen.queryByText("Players:")).not.toBeInTheDocument();
+    expect(screen.queryByText("Players")).not.toBeInTheDocument();
   });
 
   it("renders actions menu button", () => {

@@ -40,7 +40,7 @@ func TestGameTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
-			result := gameTitle(tt.filename)
+			result := GameTitle(tt.filename)
 			assert.Equal(t, tt.want, result)
 		})
 	}

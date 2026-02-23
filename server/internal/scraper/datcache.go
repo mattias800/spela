@@ -11,9 +11,9 @@ import (
 	"sync"
 )
 
-// discBasedSystems lists console abbreviations where CRC-based identification
+// DiscBasedSystems lists console abbreviations where CRC-based identification
 // is impractical (disc images are too large, and No-Intro DATs don't cover them).
-var discBasedSystems = map[string]bool{
+var DiscBasedSystems = map[string]bool{
 	"PSX": true,
 	"SAT": true,
 	"DC":  true,
@@ -44,7 +44,7 @@ func NewDATCache(dir string, client *http.Client) *DATCache {
 // It loads and parses the bundled DAT file from disk if not already in memory.
 // Returns nil, nil for disc-based systems, unmapped systems, or if the file is missing.
 func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
-	if discBasedSystems[consoleAbbrev] {
+	if DiscBasedSystems[consoleAbbrev] {
 		return nil, nil
 	}
 
@@ -85,7 +85,7 @@ func (c *DATCache) RefreshAll() {
 
 	var ok, failures int
 	for consoleAbbrev, systemName := range AbbreviationToLibRetro {
-		if discBasedSystems[consoleAbbrev] {
+		if DiscBasedSystems[consoleAbbrev] {
 			continue
 		}
 

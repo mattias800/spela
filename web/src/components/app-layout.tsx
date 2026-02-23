@@ -14,6 +14,7 @@ import {
   ScanSearch,
   FileSearch,
   Cpu,
+  Upload,
   Menu,
   Gamepad2,
 } from "lucide-react";
@@ -107,6 +108,7 @@ export function AppLayout() {
                 label: "BIOS Files",
                 warning: hasMissingBios,
               },
+              { to: "/admin/upload", icon: Upload, label: "Upload ROMs" },
               { to: "/admin/scan", icon: ScanSearch, label: "Library Scan" },
               {
                 to: "/admin/metadata",

@@ -28,8 +28,8 @@ func NewScanner(database *gorm.DB, gameDirs []string) *Scanner {
 	}
 }
 
-// consoleExtMap maps file extensions to console abbreviations.
-var consoleExtMap = map[string]string{
+// ConsoleExtMap maps file extensions to console abbreviations.
+var ConsoleExtMap = map[string]string{
 	".nes": "NES",
 	".fds": "NES",
 	".sfc": "SNES",
@@ -51,10 +51,10 @@ var consoleExtMap = map[string]string{
 	".cue": "PSX", // .cue files indicate PSX disc images
 }
 
-// romExtensions is the set of file extensions recognized as ROM/disc files.
+// RomExtensions is the set of file extensions recognized as ROM/disc files.
 // Files with other extensions (e.g. .txt, .jpg, .nfo) are never scanned,
 // even when placed inside a console-named directory.
-var romExtensions = map[string]bool{
+var RomExtensions = map[string]bool{
 	".nes": true, ".fds": true,
 	".sfc": true, ".smc": true,
 	".gb": true, ".gbc": true, ".gba": true,
@@ -345,7 +345,7 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 		}
 
 		// Check for disc pattern in filename
-		if discPattern.MatchString(info.Name()) && romExtensions[ext] && ext != ".m3u" {
+		if discPattern.MatchString(info.Name()) && RomExtensions[ext] && ext != ".m3u" {
 			parentDir := filepath.Dir(path)
 			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 			baseTitle := stripDiscMarker(nameNoExt)
@@ -526,7 +526,7 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 
 	// Extract title from the .m3u filename
 	m3uName := filepath.Base(m3uPath)
-	title := gameTitle(m3uName)
+	title := GameTitle(m3uName)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -622,7 +622,7 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 		}
 
 		// Create new game entry
-		title := gameTitle(info.Name())
+		title := GameTitle(info.Name())
 		game := db.Game{
 			ConsoleID: console.ID,
 			Title:     title,
@@ -651,7 +651,7 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 // identifyConsole determines the console for a file by its extension and parent directory.
 // Only files with known ROM extensions are considered; other files (.txt, .jpg, etc.) are skipped.
 func (s *Scanner) identifyConsole(path, ext string) string {
-	if !romExtensions[ext] {
+	if !RomExtensions[ext] {
 		return ""
 	}
 
@@ -662,7 +662,7 @@ func (s *Scanner) identifyConsole(path, ext string) string {
 	}
 
 	// Then try file extension
-	if abbrev, ok := consoleExtMap[ext]; ok {
+	if abbrev, ok := ConsoleExtMap[ext]; ok {
 		return abbrev
 	}
 
@@ -679,8 +679,8 @@ func consoleHasExtension(console *db.Console, ext string) bool {
 	return false
 }
 
-// gameTitle extracts a clean game title from a filename.
-func gameTitle(filename string) string {
+// GameTitle extracts a clean game title from a filename.
+func GameTitle(filename string) string {
 	// Remove extension
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 	// Remove common tags in parentheses/brackets

@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-// computeFileCRC32 computes the CRC32 (IEEE polynomial) of the file at path.
+// ComputeFileCRC32 computes the CRC32 (IEEE polynomial) of the file at path.
 // Returns the CRC as an uppercase hex string (e.g., "03225522").
-func computeFileCRC32(path string) (string, error) {
+func ComputeFileCRC32(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)

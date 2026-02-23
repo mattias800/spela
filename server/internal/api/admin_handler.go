@@ -401,6 +401,8 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 		return
 	}
 
+	// Reload with screenshots for the response
+	h.DB.Preload("Screenshots").First(&game, game.ID)
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
@@ -536,7 +538,7 @@ func (h *AdminHandler) SetGameCover(c *gin.Context) {
 
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
-	if err := h.DB.Preload("Console").Preload("Discs").First(&game, id).Error; err != nil {
+	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").First(&game, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reload game"})
 		return
 	}

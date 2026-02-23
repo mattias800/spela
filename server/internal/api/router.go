@@ -1,6 +1,7 @@
 package api
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -128,6 +129,14 @@ func NewRouter(cfg Config) *gin.Engine {
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
+	stagingDir := filepath.Join(cfg.GameDirs[0], "staging")
+	uploadHandler := &UploadHandler{
+		DB:         cfg.DB,
+		Storage:    cfg.Storage,
+		Scraper:    cfg.Scraper,
+		GameDirs:   cfg.GameDirs,
+		StagingDir: stagingDir,
+	}
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -343,6 +352,18 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/bios", biosHandler.UploadBiosFile)
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
+
+			// ROM uploads
+			admin.POST("/uploads", uploadHandler.UploadROMs)
+			admin.GET("/uploads", uploadHandler.ListUploads)
+			admin.POST("/uploads/:id/console", uploadHandler.SetConsole)
+			admin.POST("/uploads/:id/scrape", uploadHandler.ScrapeUpload)
+			admin.POST("/uploads/scrape", uploadHandler.ScrapeAllUploads)
+			admin.POST("/uploads/:id/accept", uploadHandler.AcceptUpload)
+			admin.POST("/uploads/:id/reject", uploadHandler.RejectUpload)
+			admin.POST("/uploads/accept-all", uploadHandler.AcceptAllUploads)
+			admin.POST("/uploads/reject-all", uploadHandler.RejectAllUploads)
+			admin.DELETE("/uploads", uploadHandler.ClearStaging)
 		}
 
 		// WebSocket

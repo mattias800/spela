@@ -1,253 +1,246 @@
-# Code Review: Netplay Implementation
+# ROM Upload Feature — User Stories & Acceptance Criteria
 
-**Reviewer:** code-reviewer
-**Date:** 2026-02-15
-**Task:** #10 - Code review all netplay implementations
+Upload ROMs through the web admin UI. After upload, each ROM is identified, matched against IGDB for metadata, and presented for admin review before being added to the library.
 
-## CRITICAL Issues
+---
 
-### C1. Backend/Web Type Mismatch -- `hostUserId` vs `hostId`, `clientUserId` vs `clientId`
-**Files:** `server/internal/api/responses.go:473-474,477`, `web/src/types/api.ts:505-508`
+## Priority: MVP (must-have for first release)
 
-The backend `NetplaySessionResponse` returns `hostUserId` and `clientUserId` (JSON: `"hostUserId"`, `"clientUserId"`). The web TypeScript type expects `hostId` and `clientId`. This means:
-- `session.hostId` is always `undefined` on the frontend
-- `session.clientId` is always `undefined` on the frontend
-- The "is host" check (`session.hostId === user?.id`) in `netplay-session-page.tsx:62` never matches, so the host cannot see the Cancel button
-- The player count in `netplay-player-list.tsx:19` (`session.clientId ? 2 : 1`) always shows 1
-- Player 2 slot in `netplay-player-list.tsx:31` is never rendered
+---
 
-**Fix:** Either rename the backend JSON tags to `hostId`/`clientId` for consistency, or update the web types to match the backend's `hostUserId`/`clientUserId`.
+### Story 1: Upload ROMs via the admin UI
 
-### C2. Backend/Web Type Mismatch -- `name` field does not exist
-**Files:** `web/src/types/api.ts:504`, `web/src/pages/netplay-session-page.tsx:124,260`
+**As an** admin,
+**I want** to upload one or more ROM files through the web admin UI,
+**so that** I can add games to my Spela server without needing SSH or filesystem access.
 
-The web `NetplaySession` type has a `name` field, but the backend `NetplaySessionResponse` has no `name` field. The `netplay-session-page.tsx` renders `session.name` as the page title (line 124) and in the cancel modal (line 260). This will render `undefined` in the UI.
+#### Acceptance Criteria
 
-The backend also has no `name` field in the `CreateSession` request, yet `useCreateNetplaySession` sends a `name` field (`use-netplay.ts:35`).
+1. **Dedicated upload page**
+   - A new "Upload ROMs" page is accessible from the admin section navigation.
+   - The page has a prominent drag-and-drop zone that accepts files.
+   - Clicking the drop zone opens a file picker as an alternative to drag-and-drop.
+   - The drop zone accepts multiple files in a single operation (batch upload of dozens of files).
 
-**Fix:** Either add a `name` field to the server's `NetplaySession` model and response, or remove `name` from the web type and display `session.gameTitle` instead.
+2. **Upload behavior**
+   - Each file is uploaded to the server via multipart/form-data.
+   - Files are stored in a temporary staging area on the server (not in the game library directory).
+   - The upload shows per-file progress (uploading / complete / failed).
+   - Failed uploads show an error message and can be retried individually.
+   - The server rejects files with extensions that are not recognized as ROM files (using the existing `romExtensions` set or equivalent). Rejected files show a clear reason.
+   - There is a reasonable maximum file size limit (large enough for disc-based games, e.g. 4 GB) communicated to the user before upload.
 
-### C3. Backend/Web/KMP API Mismatch -- ListSessions returns array, clients expect paginated wrapper
-**Files:** `server/internal/api/netplay_handler.go:106-111`, `web/src/hooks/use-netplay.ts:8-18`, `web/src/types/api.ts:524-529`, `player/shared/.../NetplayRepositoryImpl.kt:24-25`
+3. **Filename sanitization**
+   - Uploaded filenames are sanitized to prevent path traversal attacks (following the same pattern as the existing BIOS upload handler).
 
-The backend `ListSessions` handler returns a raw `[]NetplaySessionResponse` JSON array (line 111). But:
-- The web hook sends `page` and `pageSize` query params that the handler ignores
-- The web expects `NetplaySessionsResponse` with `{ data, total, page, pageSize }` wrapper
-- The KMP `NetplayRepositoryImpl` calls `.data` on the response, expecting a wrapper
+---
 
-This means the `sessionsData?.data` access in `netplay-page.tsx:50` will be `undefined` (the array doesn't have a `.data` property), so sessions will never render. Similarly, the KMP client will fail to parse the response.
+### Story 2: Identify uploaded ROMs and detect console
 
-**Fix:** Either wrap the backend response in a `PaginatedResponse` (consistent with other list endpoints), or change the clients to expect a raw array.
+**As an** admin who just uploaded ROM files,
+**I want** the server to automatically detect which console each ROM belongs to,
+**so that** I don't have to manually categorize every file.
 
-### C4. Supported consoles lists are inconsistent across all three components
-**Files:** `server/internal/api/netplay_handler.go:19-21`, `web/src/components/netplay/netplay-consoles.ts:1-8`, `player/shared/.../NetplayModels.kt:30`
+#### Acceptance Criteria
 
-| Console    | Server (abbreviation)  | Web (consoleName)     | KMP (lowercase)      |
-|------------|------------------------|-----------------------|----------------------|
-| NES        | NES                    | NES                   | nes                  |
-| SNES       | SNES                   | SNES                  | snes                 |
-| GB         | GB                     | Game Boy              | gb                   |
-| GBC        | --(not listed)         | --(not listed)        | gbc                  |
-| GBA        | GBA                    | Game Boy Advance      | gba                  |
-| GEN        | GEN                    | Genesis               | genesis              |
-| Mega Drive | --(not listed)         | Mega Drive            | megadrive            |
+1. **Automatic console detection from extension**
+   - After upload, the server identifies the console for each ROM using its file extension (using the same extension-to-console mapping that the existing scanner uses).
+   - For unambiguous extensions (`.nes`, `.sfc`, `.gba`, `.n64`, `.nds`, etc.), the console is assigned automatically with no user input required.
 
-Problems:
-- **Server uses abbreviations** (NES, SNES, GB, GBA, GEN) while **web uses full console names** (NES, SNES, Game Boy, Game Boy Advance, Genesis, Mega Drive). The web filter compares against full names but this happens to work because `consoleName` in `GameResponse` comes from `Console.Name`.
-- **GBC** is only in the KMP list, not in the server or web. A player app user could try to start a GBC game via netplay, only for the server to reject it.
-- **Mega Drive** is in the web and KMP lists but not in the server list. A user could select a Mega Drive game in the web create modal, but the server would reject it.
+2. **Ambiguous extension handling**
+   - For file extensions that map to multiple consoles (`.bin`, `.iso`), the server cannot automatically determine the console.
+   - These files are flagged as "console unknown" and the admin must select the correct console from a dropdown before proceeding.
+   - The dropdown only shows consoles that support that file extension (e.g., for `.bin` show Genesis, Sega CD, Saturn, PlayStation, Atari 2600, Atari 5200, Atari 7800; for `.iso` show PSX, PS2, PSP, Saturn, Sega CD, Dreamcast, PC-FX).
+   - The admin can select a console for multiple ambiguous files at once if they are all for the same system (batch console assignment).
 
-**Fix:** Unify the supported consoles list. Add GBC to the server list if intended, and add GEN (for Mega Drive) to the server list. The web and KMP lists must exactly match whatever the server accepts.
+3. **Companion file grouping**
+   - `.cue` files and their companion `.bin` files are recognized as belonging together.
+   - If a `.cue` file and its referenced `.bin` files are all uploaded in the same batch, they are grouped as a single game entry.
+   - If a `.cue` file is uploaded without its companion `.bin` files (or vice versa), the user sees a clear warning that the game is incomplete.
 
-## HIGH Issues
+---
 
-### H1. WebSocket binary messages sent as TextMessage on the write pump
-**File:** `server/internal/websocket/netplay_hub.go:245`
+### Story 3: Scrape metadata for uploaded ROMs
 
-The `netplayWritePump` sends all messages as `websocket.TextMessage`:
-```go
-func (c *NetplayClient) netplayWritePump() {
-    for msg := range c.Send {
-        if err := c.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-```
+**As an** admin reviewing uploaded ROMs,
+**I want** each ROM to be automatically matched against IGDB for metadata,
+**so that** I can see game names, cover art, and ratings before deciding whether to add them to the library.
 
-However, the `netplayReadPump` distinguishes between `BinaryMessage` and text frames (line 210-214). When a client sends a binary frame (input data), the server broadcasts it via `broadcastExcept` -> client's `Send` channel -> `netplayWritePump`, which re-sends it as `TextMessage`. The receiving client's Ktor WebSocket will interpret this as text, not binary, breaking the binary protocol parsing.
+#### Acceptance Criteria
 
-**Fix:** Either (a) add a message type byte prefix to the channel data so the write pump can distinguish text vs binary, or (b) use separate channels for text and binary messages.
+1. **Automatic metadata scrape**
+   - After upload and console detection (Story 2), the server automatically attempts to scrape metadata for each ROM from IGDB (if configured) and LibRetro Thumbnails.
+   - The scrape uses the same scraper logic that already exists for library games (IGDB search by cleaned filename + platform ID, LibRetro boxart, No-Intro CRC verification).
 
-### H2. `runBlocking` in emulation loop with polling `delay(1)` wastes CPU
-**Files:** `player/shared/src/androidMain/.../AndroidLibretroController.kt:361-368`, `player/shared/src/desktopMain/.../DesktopLibretroController.kt:241-249`
+2. **CRC32 verification**
+   - For cartridge-based ROMs, the server computes CRC32 and checks against No-Intro DAT files (same as the existing scraper does).
+   - If a match is found, the ROM is marked as "verified" with the canonical No-Intro name.
+   - If no match is found, the ROM is marked as "unverified".
+   - For disc-based systems, verification is marked as "not applicable".
 
-Both `runNetplayEmulationLoop` methods use `runBlocking { inputBuffer.awaitInputsForFrame(...) }`, which internally polls with `delay(1)` in a tight loop. At 60fps, each frame has a 16ms budget, and the polling loop runs up to 5000 iterations (5s timeout) calling `delay(1)` each time. This creates significant CPU overhead from coroutine scheduling inside `runBlocking`.
+3. **Scrape progress feedback**
+   - The user sees progress as each ROM is being scraped (e.g., "Scraping 3 of 12...").
+   - Scraping failures for individual ROMs do not block the entire batch. Failed ROMs show a warning but can still be accepted into the library (with whatever metadata was found, or none).
 
-**Fix:** Replace the polling loop with a notification mechanism (e.g., `CompletableDeferred<Map<Int, InputState>>` per frame, or a `Channel`-based approach where the network thread signals when inputs arrive).
+---
 
-### H3. Invite code uniqueness not retried on collision
-**File:** `server/internal/api/netplay_handler.go:68,373-386`
+### Story 4: Review uploaded ROMs before adding to library
 
-`generateInviteCode()` generates a random 6-char code from a 30-char alphabet (~729 million combinations). The code has a `uniqueIndex` constraint (models.go:392), so the DB will reject duplicates, but the handler doesn't retry on collision -- it returns a generic 500 error to the user.
+**As an** admin,
+**I want** to see a preview of each uploaded ROM with its scraped metadata before it gets added to my library,
+**so that** I can verify the matches are correct and reject unwanted files.
 
-**Fix:** Add retry logic (2-3 attempts) when `Create` fails due to unique constraint violation on the invite code.
+#### Acceptance Criteria
 
-### H4. GetSession exposes any session to any authenticated user
-**File:** `server/internal/api/netplay_handler.go:115-122`
+1. **Game summary card for each upload**
+   - After scraping, each uploaded ROM is displayed as a game summary card showing:
+     - Cover art (from IGDB or LibRetro, if found)
+     - Game title (canonical name from IGDB/No-Intro if matched, otherwise cleaned filename)
+     - Console/system name and icon
+     - Rating (from IGDB, if available)
+     - Verification status badge ("Verified", "Unverified", or "N/A") using the existing VerificationBadge component
+     - File name and file size
+   - If no metadata was found, the card still shows the filename, file size, detected console, and verification status, with a note that no metadata match was found.
 
-`GetSession` returns session details to any authenticated user without access control. While "waiting" sessions should be discoverable (for joining), sessions in "in_progress" or "ended" state probably shouldn't be viewable by uninvolved users.
+2. **Reusable game summary component**
+   - The game summary card is built as a reusable component that can be used in other parts of the app in the future (e.g., search results, import previews).
+   - It receives game data as props and does not depend on upload-specific state.
 
-**Fix:** Either (a) restrict `GetSession` to participants for non-waiting sessions, or (b) document this as intentional for spectator-like visibility.
+3. **Duplicate detection**
+   - Before showing the review screen, the server checks if any uploaded ROM already exists in the library (by CRC32 match or by matching filename + console).
+   - Duplicates are clearly tagged with a "Duplicate" badge and a note indicating which existing library game they match.
+   - Duplicates are pre-selected for rejection (the admin can still override and accept if desired).
 
-### H5. No cleanup of stale waiting sessions
-**File:** `server/internal/db/models.go:377-395`
+4. **Accept / Reject actions per ROM**
+   - Each game summary card has "Accept" and "Reject" buttons.
+   - **Accept**: The ROM file is moved from the staging area to the correct library path (`{GameDir}/{console_folder_name}/{filename}`). If the ROM was verified by No-Intro CRC, the file is renamed to the canonical No-Intro name. A Game record is created in the database with all scraped metadata. The game is immediately available in the library.
+   - **Reject**: The ROM file is deleted from the staging area. No database record is created.
+   - Duplicates that the admin does not override are automatically rejected (file deleted from staging).
 
-There is no TTL or cleanup mechanism for sessions that remain in "waiting" status indefinitely. If a host creates a session and then disconnects, the session lingers forever. The list endpoint will accumulate stale sessions over time.
+5. **Batch actions**
+   - An "Accept All" button accepts all non-duplicate ROMs at once.
+   - A "Reject All" button rejects all ROMs at once (clears the staging area).
+   - The admin can still override individual decisions after using a batch action (e.g., accept all, then reject specific ones).
 
-**Fix:** Add a periodic cleanup goroutine that marks sessions older than N minutes as ended with `endReason: "timeout"`. Or add a `WHERE created_at > ?` filter in `ListSessions`.
+---
 
-### H6. CancellationException suppressed in NetplaySignaling
-**File:** `player/shared/.../NetplaySignaling.kt:99`
+### Story 5: Cleanup staging area
 
-```kotlin
-} catch (_: Exception) {
-    session = null
-}
-```
+**As an** admin,
+**I want** the staging area for uploaded ROMs to be cleaned up automatically,
+**so that** unreviewed uploads don't consume disk space indefinitely.
 
-This catches all exceptions including `CancellationException`, which is special in Kotlin coroutines. Suppressing it prevents proper coroutine cancellation, potentially causing the reconnection loop to continue running after the scope is cancelled.
+#### Acceptance Criteria
 
-**Fix:** Re-throw `CancellationException`:
-```kotlin
-} catch (e: Exception) {
-    if (e is kotlinx.coroutines.CancellationException) throw e
-    session = null
-}
-```
+1. **Automatic cleanup**
+   - Files in the staging area that have not been accepted or rejected within 24 hours are automatically deleted.
+   - The cleanup runs periodically (e.g., on server startup and every hour).
 
-### H7. Web `NetplaySession` type field `gameConsoleName` mismatches backend `consoleName`
-**File:** `web/src/types/api.ts:514`, `server/internal/api/responses.go:483`
+2. **Manual cleanup**
+   - The upload page shows the current state of the staging area (number of pending files, total size).
+   - A "Clear Staging Area" button deletes all pending uploads at once.
 
-The backend `NetplaySessionResponse` has JSON tag `consoleName`, but the web type has `gameConsoleName`. The `gameConsoleName` field will always be `undefined`. This affects:
-- `netplay-session-page.tsx:127` - Console badge shows nothing
-- `netplay-session-row.tsx:58` - Console badge in session list shows nothing
+---
 
-**Fix:** Rename the web type field to `consoleName` to match the backend, or rename the backend JSON tag to `gameConsoleName`.
+## Priority: Important (should-have, implement after MVP)
 
-## MEDIUM Issues
+---
 
-### M1. Code duplication: lockstep emulation loop in both controllers
-**Files:** `AndroidLibretroController.kt:335-419`, `DesktopLibretroController.kt:216-296`
+### Story 6: Multi-disc game upload support
 
-`runNetplayEmulationLoop()`, `captureLocalInput()`, and `applyInputToJni()` are nearly identical between Android and Desktop controllers. The only difference is Android includes `updateVideoFrame()` and `pushAudio()` calls.
+**As an** admin uploading disc-based games,
+**I want** multi-disc games to be recognized and grouped correctly,
+**so that** games like "Final Fantasy VII" (3 discs) are added as a single library entry with an auto-generated `.m3u` playlist.
 
-**Fix:** Extract common lockstep logic into a shared utility. Platform controllers can provide callbacks for platform-specific work (video/audio).
+#### Acceptance Criteria
 
-### M2. `toSessionResponse` has fallback N+1 queries
-**File:** `server/internal/api/netplay_handler.go:390-415`
+1. **Disc pattern detection**
+   - When multiple uploaded files have the same base name but different disc numbers (e.g., `Final Fantasy VII (Disc 1).cue`, `Final Fantasy VII (Disc 2).cue`, `Final Fantasy VII (Disc 3).cue`), they are automatically grouped as a single multi-disc game.
+   - The disc pattern detection uses the same regex as the existing scanner (`(Disc N)`, `[Disk N]`, `(CD N)`, etc.).
 
-The `toSessionResponse` method does fallback DB queries to load host/client user data if the associations weren't preloaded. This is a code smell -- it masks missing preloads and adds silent N+1 queries.
+2. **M3U playlist generation**
+   - When a multi-disc game is accepted, the server automatically generates a `.m3u` playlist file listing all discs in order (same as the existing scanner does for multi-disc games found during directory scanning).
+   - The `.m3u` file is stored alongside the disc files in the library.
 
-**Fix:** Remove the fallback queries and ensure all callers use `loadSession` or explicit Preload consistently.
+3. **Single game entry**
+   - A multi-disc game appears as a single game summary card in the review screen.
+   - The card shows the total file size across all discs and the number of discs.
+   - Accepting the game moves all disc files and creates the `.m3u` file in the library.
 
-### M3. `WebSocketRelayTransport.sendControl` is a silent no-op
-**File:** `player/shared/.../WebSocketRelayTransport.kt:41-45`
+4. **Incomplete multi-disc uploads**
+   - If not all discs of a multi-disc game are uploaded (e.g., Disc 1 and Disc 3 but not Disc 2), the user sees a warning that the set appears incomplete.
+   - The admin can still accept an incomplete set if they choose to.
 
-The `sendControl` method does nothing. The interface contract implies callers can send control messages, but they silently vanish. Any future caller using this method will be surprised.
+---
 
-**Fix:** At minimum, log a warning. Better: throw `UnsupportedOperationException` or return a result type indicating not supported.
+### Story 7: Upload progress and large batch UX
 
-### M4. `handleTextFrame` silently drops unparsable messages
-**File:** `player/shared/.../NetplaySignaling.kt:139-167`
+**As an** admin uploading a large number of ROMs (20-50+),
+**I want** clear progress feedback and a smooth experience,
+**so that** I can upload my entire collection without confusion or having to babysit the process.
 
-Messages with missing required fields are silently dropped via early `return`. No logging occurs. This makes debugging signaling issues very difficult.
+#### Acceptance Criteria
 
-**Fix:** Add debug-level logging for dropped messages.
+1. **Upload queue**
+   - Files are uploaded sequentially (or with limited concurrency, e.g., 3 at a time) to avoid overwhelming the server.
+   - A progress bar shows overall batch progress (e.g., "Uploaded 12 of 47 files").
+   - Each file in the queue shows its individual status: queued, uploading (with progress %), complete, or failed.
 
-### M5. `NetplayInputBuffer.awaitInputsForFrame` busy-waits with 1ms delay
-**File:** `player/shared/.../NetplayInputBuffer.kt:71-87`
+2. **Resumable batch**
+   - If the admin navigates away from the upload page and returns, pending uploads that completed are still visible in the review screen.
+   - Failed uploads can be retried without re-uploading the entire batch.
 
-The polling loop with `delay(1)` is wasteful. For a 60fps game with 16ms frame budget, this creates up to 16 coroutine suspend/resume cycles per frame.
+3. **Real-time status via WebSocket**
+   - Scraping progress for uploaded ROMs is communicated via WebSocket events (using the existing Hub infrastructure), so the UI updates in real-time without polling.
+   - Events include: upload_complete, scrape_progress, scrape_complete for each ROM.
 
-**Fix:** Use a condition-based notification mechanism instead of polling.
+---
 
-### M6. `deleteSession` in `NetplayViewModel` triggers full reload
-**File:** `player/shared/.../NetplayViewModel.kt:74-85`
+## Priority: Nice-to-have (defer to future release)
 
-On successful delete, `deleteSession` calls `loadSessions()` which sets `isLoading = true`. This causes a loading flash. Should optimistically remove the session from the local list instead.
+---
 
-### M7. DesktopLibretroController.stop() doesn't clean up netplay
-**File:** `player/shared/src/desktopMain/.../DesktopLibretroController.kt:100-106`
+### Story 8: M3U upload support
 
-The Android `stop()` method calls `netplayTransport?.disconnect()` and `clearNetplayMode()` (lines 148, 153). The Desktop `stop()` does NOT call `netplayTransport?.disconnect()` or `clearNetplayMode()`, which means the transport stays connected and netplay state is stale after stopping.
+**As an** admin who has pre-organized multi-disc games with `.m3u` playlists,
+**I want** to upload `.m3u` files alongside disc images and have them recognized,
+**so that** my existing multi-disc organization is preserved.
 
-**Fix:** Add `netplayTransport?.disconnect()` and `clearNetplayMode()` to Desktop's `stop()` method, matching the Android implementation.
+#### Acceptance Criteria
 
-### M8. `EmulationViewModel` has 14 constructor dependencies
-**File:** `player/shared/.../EmulationViewModel.kt:41-57`
+1. If an `.m3u` file is uploaded along with the disc files it references, the server uses the `.m3u` as the primary entry point (same as the scanner does).
+2. The `.m3u` is parsed to verify all referenced files are present in the upload batch.
+3. Missing referenced files produce a clear warning.
 
-The constructor takes 14 dependencies. Adding `apiClient` and `engineFactory` for netplay contributes to this. This violates single responsibility.
+---
 
-**Fix:** Extract netplay setup into a `NetplaySessionManager` or use case class that the ViewModel delegates to.
+### Story 9: ZIP/7z archive upload
 
-## LOW Issues
+**As an** admin who has ROMs stored in compressed archives,
+**I want** to upload `.zip` or `.7z` files and have them extracted automatically,
+**so that** I don't have to extract them manually before uploading.
 
-### L1. `generateInviteCode` fallback on random error is predictable
-**File:** `server/internal/api/netplay_handler.go:380`
+#### Acceptance Criteria
 
-If `rand.Int` fails, `code[i] = inviteCodeAlphabet[i]` produces predictable characters. This is extremely unlikely with `crypto/rand` but the fallback undermines the randomness.
+1. The server extracts uploaded `.zip` and `.7z` archives in the staging area.
+2. Extracted files go through the same identification and scraping pipeline as directly uploaded ROMs.
+3. The original archive is deleted from staging after extraction.
+4. Archives containing non-ROM files (e.g., NFO, TXT, images) have those non-ROM files discarded.
 
-**Fix:** Return an error instead of using a predictable fallback.
+---
 
-### L2. `remotePort` computed but never used in Android lockstep loop
-**File:** `player/shared/src/androidMain/.../AndroidLibretroController.kt:339`
+## Non-functional Requirements
 
-```kotlin
-val remotePort = if (localPort == 0) 1 else 0
-```
-Dead code -- `remotePort` is never referenced.
+1. **Security**: All upload endpoints require admin authentication. File paths are sanitized to prevent path traversal. Uploaded files cannot be executed by the server.
+2. **Disk space**: The staging area has a configurable maximum size. Uploads that would exceed the limit are rejected with a clear error message.
+3. **Performance**: Uploading and scraping should not block other server operations. Scraping of uploaded ROMs should use the same rate limiting as the existing bulk scraper.
+4. **Consistency**: The ROM upload flow produces the exact same library structure as the existing directory scanner — same folder paths, same naming conventions, same database records. A game added via upload is indistinguishable from a game added via scan.
 
-**Fix:** Remove the unused variable.
+---
 
-### L3. No unit tests for `NetplayProtocol` binary encode/decode
-**Files:** `player/shared/.../NetplayProtocol.kt`
+## Out of Scope
 
-The binary protocol lacks round-trip tests. Given the critical nature of correct binary encoding (endianness, field positions), this is a testing gap.
-
-**Fix:** Add tests verifying round-trip encode/decode for all message types (input frame, state chunk, desync check).
-
-### L4. `setLocalInput` and `setRemoteInput` are identical implementations
-**File:** `player/shared/.../NetplayInputBuffer.kt:21-34`
-
-Both methods are byte-for-byte identical. While separate methods improve semantics, they could share a private implementation to reduce surface area for bugs.
-
-### L5. Web test coverage is thin
-**File:** `web/src/components/netplay/__tests__/netplay-create-modal.test.tsx`
-
-Only the create modal has a unit test. The session page, session row, player list, and hooks lack unit tests.
-
-### L6. `netplay-consoles.ts` hardcodes list that should come from server
-**File:** `web/src/components/netplay/netplay-consoles.ts`
-
-This file duplicates the supported console list from the server. If the server adds/removes console support, the web must be manually updated.
-
-**Fix:** Consider exposing `/api/netplay/supported-consoles` from the server.
-
-### L7. Minimal hub tests -- no WebSocket integration test
-**File:** `server/internal/websocket/netplay_hub_test.go`
-
-Tests cover basic room management but don't test WebSocket upgrade, read/write pumps, or message routing through real WebSocket connections.
-
-## Summary
-
-| Severity | Count |
-|----------|-------|
-| CRITICAL | 4     |
-| HIGH     | 7     |
-| MEDIUM   | 8     |
-| LOW      | 7     |
-
-**Top priorities for the development team:**
-1. **C1-C3**: Fix type/API mismatches between backend and web/KMP -- the web frontend is fundamentally broken and will not render sessions correctly
-2. **C4**: Unify supported consoles list -- users will be able to select games the server rejects
-3. **H1**: Fix binary-as-text WebSocket bug -- netplay data relay will not function
-4. **H6**: Fix CancellationException suppression -- causes resource leaks in KMP
-5. **H7**: Fix `gameConsoleName` vs `consoleName` field mismatch -- console badges are empty
-6. **M7**: Fix Desktop stop() not cleaning up netplay -- resource leak on desktop
+- **Player app changes**: This is purely a web admin feature. No changes to the Kotlin player app.
+- **User (non-admin) uploads**: Only admins can upload ROMs. User-facing upload is a separate feature.
+- **Automatic library organization**: Uploaded files go to the standard `{GameDir}/{console_folder}/` path. There is no option to customize the destination.
+- **ROM patching or conversion**: ROMs are stored as-is. No BPS/IPS patching or format conversion.

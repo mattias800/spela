@@ -28,7 +28,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, database.AutoMigrate(&db.Console{}, &db.Game{}))
+	require.NoError(t, database.AutoMigrate(&db.Console{}, &db.Game{}, &db.GameScreenshot{}))
 	return database
 }
 
@@ -60,6 +60,8 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 				Cover:   &igdb.Image{ID: 1, ImageID: "co1234"},
 				Screenshots: []igdb.Image{
 					{ID: 2, ImageID: "sc5678"},
+					{ID: 3, ImageID: "sc9012"},
+					{ID: 4, ImageID: "sc3456"},
 				},
 				Genres: []igdb.Genre{
 					{ID: 8, Name: "Platform"},
@@ -140,9 +142,17 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 	assert.Equal(t, 2, game.Players)
 	assert.Equal(t, "igdb:42", game.ScraperID)
 
-	// Verify images were downloaded
+	// Verify cover was downloaded
 	assert.NotEmpty(t, game.CoverURL)
-	assert.NotEmpty(t, game.ScreenshotURL)
+
+	// Verify all 3 screenshots were saved as GameScreenshot rows
+	var screenshots []db.GameScreenshot
+	database.Where("game_id = ?", game.ID).Order("position ASC").Find(&screenshots)
+	assert.Len(t, screenshots, 3)
+	for i, ss := range screenshots {
+		assert.Equal(t, i, ss.Position)
+		assert.NotEmpty(t, ss.URL)
+	}
 }
 
 func TestScrapeGame_IGDBNoResults_FallsBackToLibRetro(t *testing.T) {
@@ -688,4 +698,9 @@ func TestScrapeGame_RescrapesClearsStaleImages(t *testing.T) {
 	assert.Empty(t, game.CoverURL, "stale cover should be cleared on re-scrape")
 	assert.Empty(t, game.ScreenshotURL, "stale screenshot should be cleared on re-scrape")
 	assert.Equal(t, 2, game.ScrapeAttempts)
+
+	// Verify normalized screenshots table is also empty after re-scrape
+	var screenshots []db.GameScreenshot
+	database.Where("game_id = ?", game.ID).Find(&screenshots)
+	assert.Empty(t, screenshots, "normalized screenshots should be cleared on re-scrape")
 }
