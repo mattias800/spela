@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"gorm.io/driver/sqlite"
@@ -74,6 +75,358 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+// MigrateToRelativePaths converts absolute game file paths to relative paths.
+// On startup, any Game or GameDisc record whose FilePath starts with "/" is
+// converted by stripping the matching gameDirs prefix. If no prefix matches
+// (e.g. SPELA_GAME_DIRS changed), it falls back to detecting a known console
+// FolderName in the path segments.
+func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
+	// Load console folder names for fallback detection
+	var consoles []Console
+	if err := database.Select("folder_name").Where("folder_name != ''").Find(&consoles).Error; err != nil {
+		return fmt.Errorf("loading console folder names: %w", err)
+	}
+	folderNames := make(map[string]bool, len(consoles))
+	for _, c := range consoles {
+		folderNames[c.FolderName] = true
+	}
+
+	// Migrate Game records: absolute paths AND stale relative paths (e.g. ../testdata/roms/nes/...)
+	var games []Game
+	if err := database.Where("file_path LIKE '/%' OR file_path LIKE '../%'").Find(&games).Error; err != nil {
+		return fmt.Errorf("loading non-canonical-path games: %w", err)
+	}
+	if len(games) > 0 {
+		slog.Info("migrating game paths to relative", "count", len(games))
+	}
+
+	for _, g := range games {
+		relPath := toRelativePath(g.FilePath, gameDirs)
+		// Fallback: if prefix stripping didn't work, detect console folder in path
+		if relPath == g.FilePath {
+			relPath = extractRelativeByConsoleFolders(g.FilePath, folderNames)
+		}
+		if relPath == g.FilePath {
+			slog.Warn("could not convert path to canonical relative",
+				"id", g.ID, "path", g.FilePath)
+			continue
+		}
+
+		// Check for duplicates: another game already has this relative path
+		var existing Game
+		if err := database.Where("file_path = ? AND id != ?", relPath, g.ID).First(&existing).Error; err == nil {
+			// Keep the lower ID, delete the higher
+			victim := g
+			if existing.ID > g.ID {
+				victim = existing
+			}
+			slog.Info("removing duplicate game during path migration",
+				"title", victim.Title, "id", victim.ID, "path", relPath)
+			database.Where("game_id = ?", victim.ID).Delete(&GameDisc{})
+			database.Unscoped().Delete(&victim)
+			if victim.ID == g.ID {
+				continue
+			}
+		}
+
+		database.Model(&g).Update("file_path", relPath)
+	}
+
+	// Migrate GameDisc records
+	var discs []GameDisc
+	if err := database.Where("file_path LIKE '/%' OR file_path LIKE '../%'").Find(&discs).Error; err != nil {
+		return fmt.Errorf("loading non-canonical-path discs: %w", err)
+	}
+	for _, d := range discs {
+		relPath := toRelativePath(d.FilePath, gameDirs)
+		if relPath == d.FilePath {
+			relPath = extractRelativeByConsoleFolders(d.FilePath, folderNames)
+		}
+		if relPath != d.FilePath {
+			database.Model(&d).Update("file_path", relPath)
+		}
+	}
+
+	return nil
+}
+
+// toRelativePath strips a gameDirs prefix from an absolute path.
+func toRelativePath(absPath string, gameDirs []string) string {
+	for _, dir := range gameDirs {
+		absDir := dir
+		if !filepath.IsAbs(absDir) {
+			var err error
+			absDir, err = filepath.Abs(absDir)
+			if err != nil {
+				continue
+			}
+		}
+		prefix := absDir + string(filepath.Separator)
+		if strings.HasPrefix(absPath, prefix) {
+			return absPath[len(prefix):]
+		}
+	}
+	return absPath
+}
+
+// extractRelativeByConsoleFolders finds a known console FolderName in the path
+// segments and returns everything from that segment onward.
+// e.g. "/old/docker/path/nes/game.nes" → "nes/game.nes"
+func extractRelativeByConsoleFolders(absPath string, folderNames map[string]bool) string {
+	// Split into segments: "/old/path/nes/game.nes" → ["old", "path", "nes", "game.nes"]
+	parts := strings.Split(filepath.ToSlash(absPath), "/")
+	for i, part := range parts {
+		if folderNames[part] && i < len(parts)-1 {
+			return filepath.Join(parts[i:]...)
+		}
+	}
+	return absPath
+}
+
+// duplicateGroup holds a file_path and the count of games sharing it.
+type duplicateGroup struct {
+	FilePath string
+	Cnt      int
+}
+
+// DeduplicateGames finds games with identical file_path values and merges user
+// data (favorites, play history, save states, etc.) from duplicates into the
+// best keeper before deleting the duplicates.
+func DeduplicateGames(database *gorm.DB) error {
+	var groups []duplicateGroup
+	if err := database.Model(&Game{}).
+		Select("file_path, COUNT(*) as cnt").
+		Where("deleted_at IS NULL").
+		Group("file_path").
+		Having("cnt > 1").
+		Find(&groups).Error; err != nil {
+		return fmt.Errorf("finding duplicate games: %w", err)
+	}
+	if len(groups) == 0 {
+		return nil
+	}
+	slog.Info("deduplicating games", "duplicateGroups", len(groups))
+
+	for _, g := range groups {
+		var dupes []Game
+		if err := database.Where("file_path = ?", g.FilePath).Order("id ASC").Find(&dupes).Error; err != nil {
+			slog.Warn("loading duplicates", "path", g.FilePath, "error", err)
+			continue
+		}
+		if len(dupes) < 2 {
+			continue
+		}
+
+		// Pick the keeper: prefer the one with best metadata
+		keeper := pickKeeper(dupes)
+
+		for _, dup := range dupes {
+			if dup.ID == keeper.ID {
+				continue
+			}
+			slog.Info("merging duplicate into keeper",
+				"keeperID", keeper.ID, "dupID", dup.ID, "path", g.FilePath)
+			mergeGameData(database, keeper.ID, dup.ID)
+			mergeGameMetadata(database, &keeper, &dup)
+			// Hard-delete the duplicate
+			database.Where("game_id = ?", dup.ID).Delete(&GameDisc{})
+			database.Unscoped().Delete(&dup)
+		}
+	}
+	return nil
+}
+
+// pickKeeper selects the best game to keep: has ScraperID > has CoverURL > lowest ID.
+func pickKeeper(games []Game) Game {
+	best := games[0]
+	for _, g := range games[1:] {
+		if betterMetadata(g, best) {
+			best = g
+		}
+	}
+	return best
+}
+
+func betterMetadata(a, b Game) bool {
+	aScore := metadataScore(a)
+	bScore := metadataScore(b)
+	if aScore != bScore {
+		return aScore > bScore
+	}
+	return a.ID < b.ID
+}
+
+func metadataScore(g Game) int {
+	score := 0
+	if g.ScraperID != "" {
+		score += 2
+	}
+	if g.CoverURL != "" {
+		score++
+	}
+	return score
+}
+
+// mergeGameData reassigns user data from dupID to keeperID.
+func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
+	// SaveState — move all
+	database.Model(&SaveState{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// SaveData — move all
+	database.Model(&SaveData{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// GameScreenshot — move all
+	database.Model(&GameScreenshot{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// SharedSaveState — move all
+	database.Model(&SharedSaveState{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// GameAchievementCache — move all
+	database.Model(&GameAchievementCache{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// ActivityEvent — move all
+	database.Model(&ActivityEvent{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// Challenge — move all
+	database.Model(&Challenge{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// NetplaySession — move all
+	database.Model(&NetplaySession{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// Relay — move all
+	database.Model(&Relay{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// GameKeyMappingPreference — move, skip conflicts
+	database.Model(&GameKeyMappingPreference{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// Favorite — skip if keeper already has one for same user (unique constraint)
+	var dupFavs []Favorite
+	database.Where("game_id = ?", dupID).Find(&dupFavs)
+	for _, f := range dupFavs {
+		var count int64
+		database.Model(&Favorite{}).Where("user_id = ? AND game_id = ?", f.UserID, keeperID).Count(&count)
+		if count == 0 {
+			database.Model(&f).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&f)
+		}
+	}
+
+	// PlayLaterItem — skip if keeper already has one for same user
+	var dupPLI []PlayLaterItem
+	database.Where("game_id = ?", dupID).Find(&dupPLI)
+	for _, p := range dupPLI {
+		var count int64
+		database.Model(&PlayLaterItem{}).Where("user_id = ? AND game_id = ?", p.UserID, keeperID).Count(&count)
+		if count == 0 {
+			database.Model(&p).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&p)
+		}
+	}
+
+	// GameRating — skip if keeper already has one for same user
+	var dupRatings []GameRating
+	database.Where("game_id = ?", dupID).Find(&dupRatings)
+	for _, r := range dupRatings {
+		var count int64
+		database.Model(&GameRating{}).Where("user_id = ? AND game_id = ?", r.UserID, keeperID).Count(&count)
+		if count == 0 {
+			database.Model(&r).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&r)
+		}
+	}
+
+	// CollectionItem — skip if keeper already in same collection
+	var dupCI []CollectionItem
+	database.Where("game_id = ?", dupID).Find(&dupCI)
+	for _, ci := range dupCI {
+		var count int64
+		database.Model(&CollectionItem{}).Where("collection_id = ? AND game_id = ?", ci.CollectionID, keeperID).Count(&count)
+		if count == 0 {
+			database.Model(&ci).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&ci)
+		}
+	}
+
+	// PlayHistory — merge: keep highest play time and latest timestamp per user
+	var dupPH []PlayHistory
+	database.Where("game_id = ?", dupID).Find(&dupPH)
+	for _, ph := range dupPH {
+		var existing PlayHistory
+		err := database.Where("user_id = ? AND game_id = ?", ph.UserID, keeperID).First(&existing).Error
+		if err != nil {
+			// No existing entry, just move it
+			database.Model(&ph).Update("game_id", keeperID)
+		} else {
+			// Merge: keep best values
+			updates := map[string]interface{}{}
+			if ph.PlayTime > existing.PlayTime {
+				updates["play_time"] = ph.PlayTime
+			}
+			if ph.LastPlayed.After(existing.LastPlayed) {
+				updates["last_played"] = ph.LastPlayed
+			}
+			if len(updates) > 0 {
+				database.Model(&existing).Updates(updates)
+			}
+			database.Unscoped().Delete(&ph)
+		}
+	}
+}
+
+// mergeGameMetadata copies metadata fields from dup to keeper if keeper is missing them.
+func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
+	updates := map[string]interface{}{}
+	if keeper.ScraperID == "" && dup.ScraperID != "" {
+		updates["scraper_id"] = dup.ScraperID
+	}
+	if keeper.CoverURL == "" && dup.CoverURL != "" {
+		updates["cover_url"] = dup.CoverURL
+	}
+	if keeper.Description == "" && dup.Description != "" {
+		updates["description"] = dup.Description
+	}
+	if keeper.Developer == "" && dup.Developer != "" {
+		updates["developer"] = dup.Developer
+	}
+	if keeper.Publisher == "" && dup.Publisher != "" {
+		updates["publisher"] = dup.Publisher
+	}
+	if keeper.Genre == "" && dup.Genre != "" {
+		updates["genre"] = dup.Genre
+	}
+	if keeper.ReleaseDate == "" && dup.ReleaseDate != "" {
+		updates["release_date"] = dup.ReleaseDate
+	}
+	if keeper.ScreenshotURL == "" && dup.ScreenshotURL != "" {
+		updates["screenshot_url"] = dup.ScreenshotURL
+	}
+	if keeper.IGDBCoverURL == "" && dup.IGDBCoverURL != "" {
+		updates["igdb_cover_url"] = dup.IGDBCoverURL
+	}
+	if keeper.LibRetroCoverURL == "" && dup.LibRetroCoverURL != "" {
+		updates["lib_retro_cover_url"] = dup.LibRetroCoverURL
+	}
+	if keeper.Players == 0 && dup.Players > 0 {
+		updates["players"] = dup.Players
+	}
+	if keeper.Rating == 0 && dup.Rating > 0 {
+		updates["rating"] = dup.Rating
+	}
+	if keeper.Region == "" && dup.Region != "" {
+		updates["region"] = dup.Region
+	}
+	if keeper.CRC32 == "" && dup.CRC32 != "" {
+		updates["crc32"] = dup.CRC32
+	}
+	if len(updates) > 0 {
+		database.Model(keeper).Updates(updates)
+	}
 }
 
 // SeedConsoles inserts the default console definitions if they don't exist.

@@ -70,6 +70,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Migrate absolute file paths to relative (one-time on upgrade)
+	if err := db.MigrateToRelativePaths(database, gameDirs); err != nil {
+		slog.Warn("failed to migrate game paths", "error", err)
+	}
+
+	// Deduplicate games with identical file paths (merges user data into keeper)
+	if err := db.DeduplicateGames(database); err != nil {
+		slog.Warn("failed to deduplicate games", "error", err)
+	}
+
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)
@@ -86,7 +96,7 @@ func main() {
 	gameScanner := scanner.NewScanner(database, gameDirs)
 
 	// Initialize scraper
-	metaScraper := scraper.NewScraper(database, store, datDir)
+	metaScraper := scraper.NewScraper(database, store, datDir, gameDirs)
 	go metaScraper.DATCache.RefreshAll()
 
 	// Initialize WebSocket hub
