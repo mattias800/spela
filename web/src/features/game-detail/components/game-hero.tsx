@@ -191,6 +191,9 @@ export function GameHero({
                 </span>
               )}
             </div>
+            {game.rating != null && game.rating > 0 && (
+              <IgdbRatingStars rating={game.rating} />
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {hasSaves ? (
@@ -333,9 +336,6 @@ export function GameHero({
               value={`${game.discCount}`}
             />
           )}
-          {game.rating !== undefined && game.rating > 0 && (
-            <MetaItem icon={Star} label="Rating" value={`${game.rating}/10`} />
-          )}
           <MetaItem
             icon={Clock}
             label="Play Time"
@@ -361,6 +361,41 @@ export function GameHero({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function IgdbRatingStars({ rating }: { rating: number }) {
+  const normalized = rating / 10;
+  const fullStars = Math.floor(normalized / 2);
+  const halfStar = normalized / 2 - fullStars >= 0.5;
+  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1">
+      <div className="flex items-center">
+        {Array.from({ length: fullStars }, (_, i) => (
+          <Star
+            key={`full-${i}`}
+            className="h-4 w-4 text-amber-400 fill-amber-400"
+          />
+        ))}
+        {halfStar && (
+          <div className="relative h-4 w-4">
+            <Star className="absolute h-4 w-4 text-amber-400" />
+            <div className="absolute inset-0 overflow-hidden w-[50%]">
+              <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+            </div>
+          </div>
+        )}
+        {Array.from({ length: emptyStars }, (_, i) => (
+          <Star key={`empty-${i}`} className="h-4 w-4 text-surface-600" />
+        ))}
+      </div>
+      <span className="text-sm font-medium text-surface-300">
+        {normalized.toFixed(1)}
+        <span className="text-surface-500">/10</span>
+      </span>
     </div>
   );
 }

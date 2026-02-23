@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,9 +43,11 @@ import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LibraryAdd
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
@@ -468,6 +471,11 @@ private fun GameInfoContent(
         game.releaseDate?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
     }
 
+    if (game.rating > 0) {
+        Spacer(Modifier.height(SpSpacing.Small))
+        IgdbRatingStars(rating = game.rating)
+    }
+
     if (state.isScraping) {
         Spacer(Modifier.height(SpSpacing.Small))
         Text(
@@ -691,4 +699,64 @@ private fun GameInfoContent(
         },
     )
     Spacer(Modifier.height(SpSpacing.XLarge))
+}
+
+@Composable
+private fun IgdbRatingStars(rating: Double) {
+    val normalized = rating / 10.0
+    val starValue = normalized / 2.0
+    val fullStars = starValue.toInt()
+    val hasHalf = starValue - fullStars >= 0.5
+    val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+        modifier = Modifier.semantics {
+            contentDescription = "IGDB rating: ${"%.1f".format(normalized)} out of 10"
+        },
+    ) {
+        repeat(fullStars) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = SpColor.Warning,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        if (hasHalf) {
+            Box(modifier = Modifier.size(16.dp)) {
+                Icon(
+                    imageVector = Icons.Outlined.StarOutline,
+                    contentDescription = null,
+                    tint = SpColor.Warning,
+                    modifier = Modifier.size(16.dp),
+                )
+                Box(modifier = Modifier.size(width = 8.dp, height = 16.dp).clipToBounds()) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = SpColor.Warning,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+        repeat(emptyStars) {
+            Icon(
+                imageVector = Icons.Outlined.StarOutline,
+                contentDescription = null,
+                tint = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        Spacer(Modifier.size(SpSpacing.XXSmall))
+
+        Text(
+            text = "${"%.1f".format(normalized)}/10",
+            style = SpTypography.LabelSmall,
+            color = SpColor.OnBackgroundSecondary,
+        )
+    }
 }
