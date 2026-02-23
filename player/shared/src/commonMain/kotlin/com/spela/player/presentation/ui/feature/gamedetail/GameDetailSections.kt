@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
+import com.spela.player.presentation.ui.components.ScreenshotLightbox
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -52,6 +53,8 @@ import com.spela.player.presentation.ui.theme.SpTypography
 @Composable
 internal fun ScreenshotsSection(screenshots: List<String>) {
     if (screenshots.isEmpty()) return
+
+    var lightboxIndex by remember { mutableStateOf<Int?>(null) }
 
     Text(
         text = "Screenshots",
@@ -66,22 +69,28 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(screenshots, key = { it }) { screenshotUrl ->
+        items(screenshots.size, key = { screenshots[it] }) { index ->
             SpCard(
-                modifier = Modifier
-                    .width(240.dp)
-                    .height(160.dp),
+                modifier = Modifier.width(280.dp),
+                onClick = { lightboxIndex = index },
             ) {
                 AsyncImage(
-                    model = screenshotUrl,
+                    model = screenshots[index],
                     contentDescription = "Game screenshot",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth,
                 )
             }
         }
     }
     Spacer(Modifier.height(SpSpacing.XLarge))
+
+    ScreenshotLightbox(
+        visible = lightboxIndex != null,
+        screenshotUrls = screenshots,
+        initialIndex = lightboxIndex ?: 0,
+        onDismiss = { lightboxIndex = null },
+    )
 }
 
 @Composable
