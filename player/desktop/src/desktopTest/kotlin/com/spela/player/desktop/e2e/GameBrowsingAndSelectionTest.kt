@@ -1,6 +1,8 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.DownloadState
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -127,11 +129,22 @@ class GameBrowsingAndSelectionTest {
     @Test
     fun topBarDownloadsIconNavigatesToDownloads() = runComposeUiTest {
         val harness = createLoggedInHarness()
+        harness.downloadRepo.setActiveDownloads(
+            listOf(
+                DownloadProgress(
+                    gameId = "dl1",
+                    gameTitle = "Test Game",
+                    state = DownloadState.DOWNLOADING,
+                    bytesDownloaded = 50,
+                    totalBytes = 100,
+                ),
+            ),
+        )
 
         setContent { harness.App() }
         advance(harness)
 
-        // Home screen should show Downloads icon in top bar
+        // Home screen should show Downloads icon when downloads are active
         onNodeWithContentDescription("Downloads").assertIsDisplayed()
 
         // Navigate to Downloads via top bar icon

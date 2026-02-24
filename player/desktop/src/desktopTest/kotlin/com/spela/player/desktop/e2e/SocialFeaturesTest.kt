@@ -79,7 +79,7 @@ class SocialFeaturesTest {
 
         onNodeWithText("Recent Activity").assertIsDisplayed()
         onNodeWithContentDescription("alice started playing Mario").assertIsDisplayed()
-        onNodeWithContentDescription("bob favorited Zelda").assertIsDisplayed()
+        onNodeWithContentDescription("bob favorited Zelda").performScrollTo().assertIsDisplayed()
     }
 
     // ---- Game detail: Star Rating ----

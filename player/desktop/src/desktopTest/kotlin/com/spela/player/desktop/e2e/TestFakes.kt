@@ -392,6 +392,10 @@ class FakeDownloadRepository : DownloadRepository {
     fun preCacheGame(gameId: String) {
         cachedGames.add(gameId)
     }
+
+    fun setActiveDownloads(downloads: List<DownloadProgress>) {
+        downloadsFlow.value = downloads
+    }
 }
 
 class FakeSaveRepository : SaveRepository {

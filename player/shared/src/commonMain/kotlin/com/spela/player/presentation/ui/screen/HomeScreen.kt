@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,11 +15,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.WatchLater
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -29,6 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -36,28 +48,32 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.presentation.intent.GameListIntent
+import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
-import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
-import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.social.ActivityEventItem
+import com.spela.player.presentation.ui.components.social.OnlineUsersRow
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.home.GameCarouselRow
 import com.spela.player.presentation.ui.feature.home.NetplaySessionCard
 import com.spela.player.presentation.ui.feature.home.PersonalStatsCard
 import com.spela.player.presentation.ui.feature.home.RecentAchievementsRow
 import com.spela.player.presentation.ui.feature.home.TrendingChallengesRow
-import com.spela.player.presentation.intent.SocialIntent
-import com.spela.player.presentation.ui.components.social.ActivityEventItem
-import com.spela.player.presentation.ui.components.social.OnlineUsersRow
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
+import org.jetbrains.compose.resources.painterResource
+import spela_player.shared.generated.resources.Res
+import spela_player.shared.generated.resources.spela_icon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,266 +101,337 @@ fun HomeScreen(
         socialViewModel.onIntent(SocialIntent.RefreshAll)
     }
 
+    val gradientColors = listOf(
+        SpColor.Primary.darken(0.70f),
+        SpColor.Accent.darken(0.75f),
+    )
+    val titleBarInset = LocalTitleBarInset.current
+
     Box(modifier = Modifier.fillMaxSize()) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(title = "Spela") {
-            SpIconButton(
-                icon = Icons.Filled.Download,
-                contentDescription = "Downloads",
-                onClick = onNavigateToDownloads,
-                badge = if (hasActiveDownloads) {
-                    {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .align(Alignment.TopEnd)
-                                .clip(CircleShape)
-                                .background(SpColor.Primary),
-                        )
-                    }
-                } else null,
-            )
-        }
-
-        if (state.isLoading && state.recentGames.isEmpty() && state.favoriteGames.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                SpLoadingIndicator(message = "Loading your library...")
-            }
-        } else {
-            PullToRefreshBox(
-                isRefreshing = state.isLoading,
-                onRefresh = {
-                    viewModel.onIntent(GameListIntent.LoadDashboard)
-                    socialViewModel.onIntent(SocialIntent.RefreshAll)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val d = (size.width + size.height) * 0.25f
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = gradientColors,
+                            start = Offset(cx - d, cy - d),
+                            end = Offset(cx + d, cy + d),
+                        ),
+                    )
                 },
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                val isEmpty = state.recentGames.isEmpty() &&
-                        state.favoriteGames.isEmpty() &&
-                        state.playLaterGames.isEmpty()
+        ) {
+            if (state.isLoading && state.recentGames.isEmpty() && state.favoriteGames.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SpLoadingIndicator(message = "Loading your library...")
+                }
+            } else {
+                PullToRefreshBox(
+                    isRefreshing = state.isLoading,
+                    onRefresh = {
+                        viewModel.onIntent(GameListIntent.LoadDashboard)
+                        socialViewModel.onIntent(SocialIntent.RefreshAll)
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    val isEmpty = state.recentGames.isEmpty() &&
+                            state.favoriteGames.isEmpty() &&
+                            state.playLaterGames.isEmpty()
 
-                if (isEmpty && !state.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        SpEmptyStates.EmptyLibrary()
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
-                    ) {
-                        // Netplay section (AC-15)
-                        if (activeNetplaySessions.isNotEmpty()) {
-                            item {
-                                SpSectionHeader(
-                                    title = "Netplay",
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                            }
-                            items(
-                                activeNetplaySessions,
-                                key = { "netplay-${it.id}" },
-                            ) { session ->
-                                NetplaySessionCard(
-                                    session = session,
-                                    onClick = { onNetplaySessionSelected(session.id) },
-                                )
-                            }
-                            item {
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
+                    if (isEmpty && !state.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            SpEmptyStates.EmptyLibrary()
                         }
-
-                        // Continue Playing section
-                        if (state.recentGames.isNotEmpty()) {
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = titleBarInset,
+                                bottom = SpSpacing.Default,
+                            ),
+                        ) {
+                            // Scrollable heading with app icon
                             item {
-                                SpSectionHeader(
-                                    title = "Continue Playing",
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                ContinuePlayingRow(
-                                    games = state.recentGames.take(10),
-                                    onGameSelected = onGameSelected,
-                                )
-                                Spacer(Modifier.height(SpSpacing.XLarge))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            horizontal = SpSpacing.ScreenHorizontal,
+                                            vertical = SpSpacing.Default,
+                                        ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                ) {
+                                    Image(
+                                        painter = painterResource(Res.drawable.spela_icon),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape),
+                                    )
+                                    Text(
+                                        text = "Spela",
+                                        style = SpTypography.HeadlineMedium,
+                                        color = SpColor.OnBackground,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    if (hasActiveDownloads) {
+                                        SpIconButton(
+                                            icon = Icons.Filled.Download,
+                                            contentDescription = "Downloads",
+                                            onClick = onNavigateToDownloads,
+                                            badge = {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .align(Alignment.TopEnd)
+                                                        .clip(CircleShape)
+                                                        .background(SpColor.Primary),
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
                             }
+
+                            // Netplay section
+                            if (activeNetplaySessions.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Netplay",
+                                        icon = Icons.Filled.WifiTethering,
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                        ) {
+                                            activeNetplaySessions.forEach { session ->
+                                                NetplaySessionCard(
+                                                    session = session,
+                                                    onClick = { onNetplaySessionSelected(session.id) },
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Continue Playing section
+                            if (state.recentGames.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Continue Playing",
+                                        icon = Icons.Filled.PlayArrow,
+                                        edgeToEdgeContent = true,
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        ContinuePlayingRow(
+                                            games = state.recentGames.take(10),
+                                            onGameSelected = onGameSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Personal Stats section
+                            if (state.personalStats != null) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Your Stats",
+                                        icon = Icons.Filled.BarChart,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Your Stats",
+                                                onClick = onNavigateToStats,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        PersonalStatsCard(stats = state.personalStats!!)
+                                    }
+                                }
+                            }
+
+                            // Recent Achievements section
+                            if (state.recentAchievements.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Recent Achievements",
+                                        icon = Icons.Filled.EmojiEvents,
+                                        edgeToEdgeContent = true,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Recent Achievements",
+                                                onClick = onNavigateToStats,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        RecentAchievementsRow(achievements = state.recentAchievements)
+                                    }
+                                }
+                            }
+
+                            // Trending Challenges section
+                            if (state.trendingChallenges.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Trending Challenges",
+                                        icon = Icons.Filled.Whatshot,
+                                        edgeToEdgeContent = true,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Trending Challenges",
+                                                onClick = onNavigateToChallenges,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        TrendingChallengesRow(
+                                            challenges = state.trendingChallenges,
+                                            onChallengeSelected = onChallengeSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Play Later section
+                            if (state.playLaterGames.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Play Later",
+                                        icon = Icons.Filled.WatchLater,
+                                        edgeToEdgeContent = true,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Play Later",
+                                                onClick = onNavigateToPlayLater,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        GameCarouselRow(
+                                            games = state.playLaterGames.take(6),
+                                            onGameSelected = onGameSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Online Now section
+                            if (socialState.onlineUsers.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Online Now",
+                                        icon = Icons.Filled.People,
+                                        edgeToEdgeContent = true,
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        OnlineUsersRow(
+                                            users = socialState.onlineUsers,
+                                            onUserSelected = onUserSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Recent Activity section
+                            if (socialState.activityEvents.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Recent Activity",
+                                        icon = Icons.Filled.History,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Recent Activity",
+                                                onClick = onNavigateToActivity,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                        ) {
+                                            socialState.activityEvents.take(3).forEach { event ->
+                                                ActivityEventItem(event = event)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Favorites section
+                            if (state.favoriteGames.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Favorites",
+                                        icon = Icons.Filled.Favorite,
+                                        edgeToEdgeContent = true,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Favorites",
+                                                onClick = onNavigateToFavorites,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        GameCarouselRow(
+                                            games = state.favoriteGames.take(6),
+                                            onGameSelected = onGameSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Bottom spacer
+                            item { Spacer(Modifier.height(SpSpacing.XLarge)) }
                         }
-
-                        // Personal Stats section
-                        if (state.personalStats != null) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Your Stats",
-                                    onSeeAll = onNavigateToStats,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                PersonalStatsCard(stats = state.personalStats!!)
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Recent Achievements section
-                        if (state.recentAchievements.isNotEmpty()) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Recent Achievements",
-                                    onSeeAll = onNavigateToStats,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                RecentAchievementsRow(achievements = state.recentAchievements)
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Trending Challenges section
-                        if (state.trendingChallenges.isNotEmpty()) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Trending Challenges",
-                                    onSeeAll = onNavigateToChallenges,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                TrendingChallengesRow(
-                                    challenges = state.trendingChallenges,
-                                    onChallengeSelected = onChallengeSelected,
-                                )
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Play Later section
-                        if (state.playLaterGames.isNotEmpty()) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Play Later",
-                                    onSeeAll = onNavigateToPlayLater,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                GameCarouselRow(
-                                    games = state.playLaterGames.take(6),
-                                    onGameSelected = onGameSelected,
-                                )
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Online Now section
-                        if (socialState.onlineUsers.isNotEmpty()) {
-                            item {
-                                SpSectionHeader(
-                                    title = "Online Now",
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                OnlineUsersRow(users = socialState.onlineUsers, onUserSelected = onUserSelected)
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Recent Activity section
-                        if (socialState.activityEvents.isNotEmpty()) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Recent Activity",
-                                    onSeeAll = onNavigateToActivity,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Small))
-                            }
-                            items(
-                                socialState.activityEvents.take(3),
-                                key = { "activity-${it.id}" },
-                            ) { event ->
-                                ActivityEventItem(event = event)
-                            }
-                            item {
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
-                        // Favorites section
-                        if (state.favoriteGames.isNotEmpty()) {
-                            item {
-                                SectionHeaderWithSeeAll(
-                                    title = "Favorites",
-                                    onSeeAll = onNavigateToFavorites,
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Medium))
-                                GameCarouselRow(
-                                    games = state.favoriteGames.take(6),
-                                    onGameSelected = onGameSelected,
-                                )
-                                Spacer(Modifier.height(SpSpacing.XLarge))
-                            }
-                        }
-
                     }
                 }
             }
         }
-    }
 
-    // Error snackbar
-    SpSnackbar(
-        data = state.error?.let {
-            SpSnackbarData(
-                message = it,
-                type = SpSnackbarType.Error,
-                actionLabel = "Dismiss",
-                onAction = { viewModel.onIntent(GameListIntent.DismissError) },
-            )
-        },
-        onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
-        modifier = Modifier.align(Alignment.BottomCenter),
-    )
-    } // outer Box
+        // Error snackbar
+        SpSnackbar(
+            data = state.error?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Error,
+                    actionLabel = "Dismiss",
+                    onAction = { viewModel.onIntent(GameListIntent.DismissError) },
+                )
+            },
+            onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 @Composable
-private fun SectionHeaderWithSeeAll(
-    title: String,
-    onSeeAll: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun SeeAllLink(
+    label: String,
+    onClick: () -> Unit,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = SpTypography.HeadlineLarge,
-            color = SpColor.OnBackground,
-            modifier = Modifier.semantics { contentDescription = "$title section" },
-        )
-        Text(
-            text = "See all",
-            style = SpTypography.LabelLarge,
-            color = SpColor.Primary,
-            modifier = Modifier
-                .clip(RoundedCornerShape(SpSpacing.Small))
-                .clickable(onClick = onSeeAll)
-                .padding(SpSpacing.Small)
-                .semantics {
-                    contentDescription = "See all $title"
-                    role = Role.Button
-                },
-        )
-    }
+    Text(
+        text = "See all",
+        style = SpTypography.LabelLarge,
+        color = SpColor.Primary,
+        modifier = Modifier
+            .clip(RoundedCornerShape(SpSpacing.Small))
+            .clickable(onClick = onClick)
+            .padding(SpSpacing.Small)
+            .semantics {
+                contentDescription = "See all $label"
+                role = Role.Button
+            },
+    )
 }

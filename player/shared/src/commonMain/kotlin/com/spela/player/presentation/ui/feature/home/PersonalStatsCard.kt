@@ -39,9 +39,7 @@ internal fun PersonalStatsCard(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

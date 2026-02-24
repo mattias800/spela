@@ -33,6 +33,14 @@ class DownloadsViewModel(
     private val _state = MutableStateFlow(DownloadsState())
     val state: StateFlow<DownloadsState> = _state.asStateFlow()
 
+    init {
+        scope.launch(dispatchers.io) {
+            downloadRepository.observeDownloads().collect { downloads ->
+                _state.update { it.copy(activeDownloads = downloads) }
+            }
+        }
+    }
+
     fun onIntent(intent: DownloadsIntent) {
         when (intent) {
             DownloadsIntent.LoadDownloads -> loadDownloads()
@@ -47,11 +55,6 @@ class DownloadsViewModel(
         scope.launch(dispatchers.io) {
             val cacheSize = downloadRepository.getCacheSize()
             _state.update { it.copy(cacheSize = cacheSize, isLoading = false) }
-        }
-        scope.launch(dispatchers.io) {
-            downloadRepository.observeDownloads().collect { downloads ->
-                _state.update { it.copy(activeDownloads = downloads) }
-            }
         }
     }
 
