@@ -53,7 +53,7 @@ internal fun AchievementCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Medium),
+                .padding(SpSpacing.Default),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Badge placeholder (colored circle)
@@ -122,13 +122,13 @@ internal fun TimelineEntryRow(
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(SpColor.Primary),
+                    .background(SpColor.Accent),
             )
             Box(
                 modifier = Modifier
                     .width(2.dp)
                     .weight(1f)
-                    .background(SpColor.Primary.copy(alpha = 0.3f)),
+                    .background(SpColor.Accent.copy(alpha = 0.3f)),
             )
         }
 
@@ -230,7 +230,7 @@ internal fun LeaderboardRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+                .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Rank

@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Repeat
 import com.spela.player.domain.model.Relay
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -36,6 +38,7 @@ internal fun GameRelaysSection(
 
     SpTitledSection(
         title = "Active Relays",
+        icon = Icons.Outlined.Repeat,
         modifier = modifier.testTag("game_relays_section"),
         titleTrailing = if (relays.isNotEmpty()) {
             {
@@ -73,7 +76,7 @@ private fun RelayItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Medium),
+                .padding(SpSpacing.Default),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {

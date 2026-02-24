@@ -3,11 +3,12 @@ package com.spela.player.presentation.ui.components.social
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
@@ -43,9 +44,11 @@ fun StarRatingRow(
         )
         Spacer(Modifier.height(SpSpacing.Small))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            itemVerticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.semantics {
                 contentDescription = if (currentRating != null) {
                     "Your rating: $currentRating out of 5 stars"
@@ -54,33 +57,37 @@ fun StarRatingRow(
                 }
             },
         ) {
-            for (star in 1..5) {
-                val isFilled = currentRating != null && star <= currentRating
-                Icon(
-                    imageVector = if (isFilled) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                    contentDescription = "$star star",
-                    tint = if (isFilled) SpColor.Warning else SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .size(starSize)
-                        .semantics { role = Role.Button }
-                        .clickable { onRate(star) },
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
+                for (star in 1..5) {
+                    val isFilled = currentRating != null && star <= currentRating
+                    Icon(
+                        imageVector = if (isFilled) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        contentDescription = "$star star",
+                        tint = if (isFilled) SpColor.Warning else SpColor.OnBackgroundTertiary,
+                        modifier = Modifier
+                            .size(starSize)
+                            .semantics { role = Role.Button }
+                            .clickable { onRate(star) },
+                    )
+                }
             }
 
-            Spacer(Modifier.width(SpSpacing.Medium))
-
             if (ratingCount > 0) {
-                Text(
-                    text = "%.1f".format(averageRating),
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnBackground,
-                )
-                Spacer(Modifier.width(SpSpacing.XSmall))
-                Text(
-                    text = "($ratingCount)",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                ) {
+                    Text(
+                        text = "%.1f".format(averageRating),
+                        style = SpTypography.TitleLarge,
+                        color = SpColor.OnBackground,
+                    )
+                    Text(
+                        text = "($ratingCount)",
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
             }
         }
     }

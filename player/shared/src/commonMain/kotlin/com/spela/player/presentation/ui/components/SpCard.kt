@@ -64,8 +64,8 @@ fun SpCard(
                 spotColor = SpColor.Primary.copy(alpha = 0.1f),
             )
             .border(
-                width = if (isFocused) 2.dp else 0.dp,
-                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else SpColor.Divider.copy(alpha = 0.5f),
                 shape = shape,
             )
             .clip(shape)

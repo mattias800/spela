@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,7 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
@@ -43,6 +46,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  *                 with the correct width for the current orientation, and a [Boolean] that is
  *                 `true` when in portrait mode (useful for showing full uncropped art).
  * @param coverExtra Optional composable rendered below the cover art (e.g. rating, download button).
+ * @param backgroundColors Gradient colors for the screen background (default: flat SpColor.Background).
  * @param sections Builder lambda that adds [LazyListScope] items for the scrollable content.
  */
 @Composable
@@ -50,12 +54,24 @@ fun GameDetailLayout(
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit = {},
+    backgroundColors: List<Color> = listOf(SpColor.Background, SpColor.Background),
     sections: LazyListScope.() -> Unit,
 ) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val d = (size.width + size.height) * 0.25f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = backgroundColors,
+                        start = Offset(cx - d, cy - d),
+                        end = Offset(cx + d, cy + d),
+                    ),
+                )
+            },
     ) {
         val isLandscape = maxWidth > maxHeight
 

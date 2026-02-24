@@ -25,6 +25,8 @@ import com.spela.player.domain.model.TopPlayer
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpTitledSection
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -40,12 +42,13 @@ internal fun GameCommunityStatsSection(
 
     SpTitledSection(
         title = "Play Activity",
+        icon = Icons.AutoMirrored.Outlined.TrendingUp,
         modifier = modifier.testTag("community_stats_section"),
     ) {
         // Stat cards
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
             StatMiniCard(
                 value = "${stats.totalPlayers}",
@@ -69,8 +72,8 @@ internal fun GameCommunityStatsSection(
             Spacer(Modifier.height(SpSpacing.Large))
             Text(
                 text = "TOP PLAYERS",
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnBackgroundSecondary,
             )
             Spacer(Modifier.height(SpSpacing.Small))
 
@@ -97,16 +100,16 @@ private fun StatMiniCard(
 ) {
     SpCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(SpSpacing.Medium),
+            modifier = Modifier.padding(SpSpacing.Default),
         ) {
             Text(
                 text = value,
                 style = SpTypography.TitleLarge,
-                color = SpColor.OnCard,
+                color = SpColor.Accent,
             )
             Text(
                 text = label,
-                style = SpTypography.LabelSmall,
+                style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundTertiary,
             )
         }
@@ -131,7 +134,7 @@ private fun TopPlayerRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+                .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -163,16 +166,16 @@ private fun TopPlayerRow(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(SpColor.Primary.copy(alpha = 0.15f)),
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(SpColor.Accent.copy(alpha = 0.15f)),
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(barFraction)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(SpColor.Primary),
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(SpColor.Accent),
                 )
             }
 

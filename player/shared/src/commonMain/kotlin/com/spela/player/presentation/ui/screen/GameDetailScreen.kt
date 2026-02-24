@@ -43,8 +43,10 @@ import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
@@ -63,7 +65,9 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
+import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
+import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.components.GameDetailLayout
 import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton
@@ -120,6 +124,12 @@ fun GameDetailScreen(
     val detail = state.gameDetail ?: return
     val game = detail.game
 
+    // Per-console gradient background (same as console screen, darkened)
+    val backgroundColors = remember(game.consoleId) {
+        val (from, to) = getConsoleGradient(game.consoleId, null)
+        listOf(from.darken(0.65f), to.darken(0.65f))
+    }
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isPortraitScreen = maxWidth <= maxHeight
         GameDetailLayout(
@@ -130,6 +140,7 @@ fun GameDetailScreen(
                     onBack = onBack,
                 )
             },
+            backgroundColors = backgroundColors,
             coverArt = { modifier, isPortrait ->
                 // Read coverUrl from state delegate (not snapshot) so
                 // the LazyColumn item recomposes when it changes after scraping.
@@ -521,7 +532,10 @@ private fun GameInfoContent(
             verificationStatus = game.verificationStatus,
             verificationTag = game.verificationTag,
         )
-        game.region?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
+        game.region?.takeIf { it.isNotBlank() }?.let { region ->
+            val flag = getRegionFlag(region)
+            SpChip(text = if (flag != null) "$flag $region" else region)
+        }
         if (game.rating > 0) {
             IgdbRatingStars(rating = game.rating)
         }
@@ -615,33 +629,40 @@ private fun GameInfoContent(
         )
     }
 
-    // Playtime + last played
+    // Playtime + last played as highlighted chips
     if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
         Spacer(Modifier.height(SpSpacing.Medium))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-            verticalAlignment = Alignment.CenterVertically,
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
-            Icon(
-                imageVector = Icons.Filled.AccessTime,
-                contentDescription = null,
-                tint = SpColor.OnBackgroundTertiary,
-                modifier = Modifier.size(16.dp),
-            )
             if (game.totalPlayTime > 0) {
-                Text(
+                SpChip(
                     text = formatPlayTime(game.totalPlayTime),
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundSecondary,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.AccessTime,
+                            contentDescription = null,
+                            tint = SpColor.OnBackgroundSecondary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    },
                 )
             }
             game.lastPlayedAt?.let { timestamp ->
                 val relative = formatRelativeTime(timestamp)
                 if (relative.isNotEmpty()) {
-                    Text(
+                    SpChip(
                         text = "Last played $relative",
-                        style = SpTypography.BodySmall,
-                        color = SpColor.OnBackgroundTertiary,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.History,
+                                contentDescription = null,
+                                tint = SpColor.OnBackgroundSecondary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        },
                     )
                 }
             }
@@ -715,7 +736,7 @@ private fun GameInfoContent(
 
     // Description
     game.description?.let { description ->
-        SpTitledSection(title = "About", includeTopSpacing = false) {
+        SpTitledSection(title = "About", icon = Icons.Outlined.Info, includeTopSpacing = false) {
             Text(
                 text = description,
                 style = SpTypography.BodyMedium,
@@ -816,3 +837,28 @@ private fun CommunityRatingBadge(averageRating: Double, ratingCount: Long) {
         )
     }
 }
+
+private val regionFlags = mapOf(
+    "USA" to "\uD83C\uDDFA\uD83C\uDDF8",
+    "Japan" to "\uD83C\uDDEF\uD83C\uDDF5",
+    "Europe" to "\uD83C\uDDEA\uD83C\uDDFA",
+    "World" to "\uD83C\uDF0D",
+    "Korea" to "\uD83C\uDDF0\uD83C\uDDF7",
+    "Brazil" to "\uD83C\uDDE7\uD83C\uDDF7",
+    "France" to "\uD83C\uDDEB\uD83C\uDDF7",
+    "Germany" to "\uD83C\uDDE9\uD83C\uDDEA",
+    "Spain" to "\uD83C\uDDEA\uD83C\uDDF8",
+    "Italy" to "\uD83C\uDDEE\uD83C\uDDF9",
+    "Australia" to "\uD83C\uDDE6\uD83C\uDDFA",
+    "China" to "\uD83C\uDDE8\uD83C\uDDF3",
+    "Canada" to "\uD83C\uDDE8\uD83C\uDDE6",
+    "UK" to "\uD83C\uDDEC\uD83C\uDDE7",
+    "Sweden" to "\uD83C\uDDF8\uD83C\uDDEA",
+    "Netherlands" to "\uD83C\uDDF3\uD83C\uDDF1",
+    "Russia" to "\uD83C\uDDF7\uD83C\uDDFA",
+    "Taiwan" to "\uD83C\uDDF9\uD83C\uDDFC",
+    "Asia" to "\uD83C\uDF0F",
+)
+
+private fun getRegionFlag(region: String): String? =
+    regionFlags.entries.firstOrNull { region.contains(it.key, ignoreCase = true) }?.value

@@ -289,6 +289,12 @@ internal fun ConsoleHeroBanner(
                     )
                 }
             }
+
+            // Console info chips (manufacturer, year, generation, media, units sold)
+            ConsoleInfoSection(
+                console = console,
+                modifier = Modifier.padding(top = SpSpacing.Medium),
+            )
         }
     }
 }
@@ -321,7 +327,7 @@ private fun MetadataBadge(
 }
 
 /** Darkens a color by mixing it towards black. [amount] 0f = unchanged, 1f = pure black. */
-internal fun Color.darken(amount: Float): Color = copy(
+fun Color.darken(amount: Float): Color = copy(
     red = red * (1f - amount),
     green = green * (1f - amount),
     blue = blue * (1f - amount),
@@ -332,7 +338,7 @@ internal fun Color.darken(amount: Float): Color = copy(
  * Colors match the web UI's console-metadata.ts Tailwind gradient pairs exactly.
  * Falls back to deriving a gradient from the console's colorTheme hex.
  */
-internal fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, Color> {
+fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, Color> {
     // Curated gradient pairs matching the web UI (Tailwind color values)
     val gradient = when (abbreviation.lowercase()) {
         "nes" -> Color(0xFFdc2626) to Color(0xFF7f1d1d)         // red-600 → red-900

@@ -25,6 +25,8 @@ import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineData
 import com.spela.player.domain.model.GameAchievement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.EmojiEvents
 import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpTitledSection
@@ -58,6 +60,7 @@ internal fun GameAchievementsSection(
 
     SpTitledSection(
         title = "Achievements",
+        icon = Icons.Outlined.EmojiEvents,
         modifier = modifier.testTag("achievements_section"),
     ) {
         // Progress bar + summary
@@ -277,15 +280,15 @@ private fun TimelineStatCard(
     modifier: Modifier = Modifier,
 ) {
     com.spela.player.presentation.ui.components.SpCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(SpSpacing.Medium)) {
+        Column(modifier = Modifier.padding(SpSpacing.Default)) {
             Text(
                 text = value,
                 style = SpTypography.TitleLarge,
-                color = SpColor.OnCard,
+                color = SpColor.Accent,
             )
             Text(
                 text = label,
-                style = SpTypography.LabelSmall,
+                style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundTertiary,
             )
         }

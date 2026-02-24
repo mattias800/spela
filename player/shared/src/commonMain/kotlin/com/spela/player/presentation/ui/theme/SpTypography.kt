@@ -37,7 +37,7 @@ object SpTypography {
     )
     val HeadlineSmall = TextStyle(
         fontSize = 18.sp,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         lineHeight = 24.sp,
     )
 

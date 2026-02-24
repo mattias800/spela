@@ -38,6 +38,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Share
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
@@ -98,7 +101,7 @@ internal fun SaveStatesSection(
     saveStates: List<SaveState>,
     onDelete: ((Long) -> Unit)? = null,
 ) {
-    SpTitledSection(title = "Save States") {
+    SpTitledSection(title = "Save States", icon = Icons.Outlined.Save) {
         if (saveStates.isEmpty()) {
         SpEmptyStates.NoSaveStates(modifier = Modifier.fillMaxWidth())
         } else {
@@ -138,7 +141,7 @@ internal fun CommunitySharesSection(
     onDownload: (String) -> Unit,
     onDelete: (String) -> Unit,
 ) {
-    SpTitledSection(title = "Community Saves") {
+    SpTitledSection(title = "Community Saves", icon = Icons.Outlined.Share) {
         if (sharedSaves.isEmpty()) {
             Text(
                 text = "No community saves yet. Be the first to share!",
@@ -193,7 +196,7 @@ private fun SaveStateItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Medium)
+                .padding(SpSpacing.Default)
                 .semantics {
                     contentDescription = "${saveState.name}, ${if (saveState.isAuto) "auto save" else "manual save"}"
                 },
@@ -252,7 +255,7 @@ internal fun ChallengesSection(
     onViewAll: () -> Unit,
     onCreateChallenge: (() -> Unit)? = null,
 ) {
-    SpTitledSection(title = "Challenges") {
+    SpTitledSection(title = "Challenges", icon = Icons.Outlined.Flag) {
         Text(
             text = "Compete on community-created challenges for $gameTitle",
             style = SpTypography.BodyMedium,

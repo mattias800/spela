@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.RateReview
 import com.spela.player.domain.model.GameRating
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
@@ -43,6 +44,7 @@ internal fun GameReviewsSection(
 ) {
     SpTitledSection(
         title = "Reviews",
+        icon = Icons.Outlined.RateReview,
         modifier = modifier.testTag("reviews_section"),
         titleTrailing = if (reviewsTotal > 0) {
             {
@@ -95,7 +97,7 @@ private fun ReviewItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpSpacing.Medium),
+                .padding(SpSpacing.Default),
             verticalAlignment = Alignment.Top,
         ) {
             SpAvatar(
@@ -104,7 +106,7 @@ private fun ReviewItem(
                 size = 32.dp,
             )
 
-            Spacer(Modifier.width(SpSpacing.Medium))
+            Spacer(Modifier.width(SpSpacing.Default))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -113,7 +115,7 @@ private fun ReviewItem(
                 ) {
                     Text(
                         text = rating.username,
-                        style = SpTypography.TitleSmall,
+                        style = SpTypography.TitleMedium,
                         color = SpColor.OnCard,
                     )
 

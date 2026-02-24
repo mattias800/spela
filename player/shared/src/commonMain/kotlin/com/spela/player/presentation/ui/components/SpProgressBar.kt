@@ -31,7 +31,7 @@ import com.spela.player.util.formatBytes
 fun SpProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
-    height: Dp = 6.dp,
+    height: Dp = 8.dp,
     trackColor: Color = SpColor.SurfaceBright,
     progressColors: List<Color> = listOf(SpColor.Primary, SpColor.Accent),
     showPercentage: Boolean = false,

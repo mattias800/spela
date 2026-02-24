@@ -64,7 +64,6 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
-import com.spela.player.presentation.ui.feature.library.ConsoleInfoSection
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.theme.SpColor
@@ -152,20 +151,12 @@ fun ConsoleScreen(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                 ) {
-                    // Console hero banner (scrolls with content)
+                    // Console hero banner (scrolls with content, includes info section)
                     if (console != null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             ConsoleHeroBanner(
                                 console = console,
                                 modifier = Modifier.padding(top = SpSpacing.Small),
-                            )
-                        }
-                        // Console info strip — manufacturer, year, generation, media, units sold.
-                        // Temporary placement below the banner while we decide final layout.
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleInfoSection(
-                                console = console,
-                                modifier = Modifier.padding(top = SpSpacing.XSmall),
                             )
                         }
                     }
