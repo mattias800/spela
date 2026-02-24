@@ -1,15 +1,9 @@
 package com.spela.player.presentation.ui.feature.library
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarToday
@@ -23,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -90,12 +83,9 @@ fun getConsoleInfo(abbreviation: String): ConsoleInfo? = when (abbreviation.lowe
 }
 
 /**
- * A horizontal scrollable row of stat chips shown below [ConsoleHeroBanner].
- * Each chip surfaces one key fact about the console: manufacturer, release year,
+ * A compact vertical list of console stats shown in the [ConsoleHeroBanner].
+ * Each row shows an icon and value for: release year, manufacturer,
  * hardware generation, media type, and units sold.
- *
- * Layout is intentionally temporary — the user will decide the final placement
- * (e.g. left / right of the hero banner). This composable proves the data works.
  */
 @Composable
 internal fun ConsoleInfoSection(
@@ -104,68 +94,41 @@ internal fun ConsoleInfoSection(
 ) {
     val info = getConsoleInfo(console.abbreviation) ?: return
 
-    data class Stat(val icon: ImageVector, val value: String, val label: String)
+    data class Stat(val icon: ImageVector, val value: String)
 
     val stats = buildList {
-        add(Stat(Icons.Filled.CalendarToday, info.releaseYear.toString(), "Released"))
-        add(Stat(Icons.Filled.Business,      info.manufacturer,           "Maker"))
+        add(Stat(Icons.Filled.CalendarToday, info.releaseYear.toString()))
+        add(Stat(Icons.Filled.Business,      info.manufacturer))
         if (info.generation.isNotEmpty()) {
-            add(Stat(Icons.Filled.Layers, info.generation, "Generation"))
+            add(Stat(Icons.Filled.Layers, info.generation))
         }
-        add(Stat(Icons.Filled.SdCard, info.mediaType, "Media"))
+        add(Stat(Icons.Filled.SdCard, info.mediaType))
         if (info.unitsSold.isNotEmpty()) {
-            add(Stat(Icons.Filled.Group, info.unitsSold, "Units sold"))
+            add(Stat(Icons.Filled.Group, info.unitsSold))
         }
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
     ) {
         stats.forEach { stat ->
-            ConsoleStatChip(
-                icon = stat.icon,
-                value = stat.value,
-                label = stat.label,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                Icon(
+                    imageVector = stat.icon,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    text = stat.value,
+                    style = SpTypography.BodySmall,
+                    color = Color.White.copy(alpha = 0.8f),
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun ConsoleStatChip(
-    icon: ImageVector,
-    value: String,
-    label: String,
-) {
-    Column(
-        modifier = Modifier
-            .background(
-                color = Color.White.copy(alpha = 0.08f),
-                shape = RoundedCornerShape(SpSpacing.CardCornerRadius),
-            )
-            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.55f),
-            modifier = Modifier.size(14.dp),
-        )
-        Text(
-            text = value,
-            style = SpTypography.TitleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
-        )
-        Text(
-            text = label,
-            style = SpTypography.LabelSmall,
-            color = Color.White.copy(alpha = 0.5f),
-        )
     }
 }

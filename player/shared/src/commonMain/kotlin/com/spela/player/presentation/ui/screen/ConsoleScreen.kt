@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,6 +63,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.darken
@@ -108,6 +111,13 @@ fun ConsoleScreen(
         if (isSearchVisible) {
             focusRequester.requestFocus()
         }
+    }
+
+    val continuePlayingGames = remember(state.games) {
+        state.games
+            .filter { it.lastPlayedAt != null }
+            .sortedByDescending { it.lastPlayedAt }
+            .take(5)
     }
 
     // Darkened version of the console's brand gradient for the full-screen background
@@ -159,6 +169,23 @@ fun ConsoleScreen(
                                 console = console,
                                 modifier = Modifier.padding(top = SpSpacing.Small),
                             )
+                        }
+                    }
+
+                    // Continue Playing section
+                    if (continuePlayingGames.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SpTitledSection(
+                                title = "Continue Playing",
+                                icon = Icons.Filled.PlayArrow,
+                                edgeToEdgeContent = true,
+                            ) {
+                                ContinuePlayingRow(
+                                    games = continuePlayingGames,
+                                    onGameSelected = onGameSelected,
+                                    contentPadding = PaddingValues(0.dp),
+                                )
+                            }
                         }
                     }
 
@@ -230,6 +257,16 @@ fun ConsoleScreen(
                             }
                         }
                     } else {
+                        // "Games" heading
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Text(
+                                text = "Games",
+                                style = SpTypography.HeadlineSmall,
+                                color = SpColor.OnBackground,
+                                modifier = Modifier.padding(top = SpSpacing.Default, bottom = SpSpacing.Small),
+                            )
+                        }
+
                         // Game grid items
                         items(state.games, key = { it.id }) { game ->
                             GameGridItem(

@@ -118,11 +118,24 @@ internal fun ConsoleCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    Text(
-                        text = console.name,
-                        style = SpTypography.TitleLarge,
-                        color = SpColor.OnBackground,
-                    )
+                    var logoFailed by remember { mutableStateOf(false) }
+
+                    if (console.logoUrl.isNotEmpty() && !logoFailed) {
+                        AsyncImage(
+                            model = console.logoUrl,
+                            contentDescription = console.name,
+                            modifier = Modifier.weight(1f, fill = false).heightIn(max = 32.dp),
+                            contentScale = ContentScale.Fit,
+                            alignment = Alignment.CenterStart,
+                            onError = { logoFailed = true },
+                        )
+                    } else {
+                        Text(
+                            text = console.name,
+                            style = SpTypography.TitleLarge,
+                            color = SpColor.OnBackground,
+                        )
+                    }
                     if (hasMissingBios) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
@@ -232,69 +245,74 @@ internal fun ConsoleHeroBanner(
                 .background(overlayBrush),
         )
 
-        // Content: web uses px-6 (24dp) py-10 (40dp)
-        Column(
+        // Content: stats on left, logo + badges centered
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = SpSpacing.XLarge, vertical = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Logo or text fallback
-            var logoFailed by remember { mutableStateOf(false) }
-
-            if (console.logoUrl.isNotEmpty() && !logoFailed) {
-                AsyncImage(
-                    model = console.logoUrl,
-                    contentDescription = console.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 80.dp),
-                    contentScale = ContentScale.Fit,
-                    onError = { logoFailed = true },
-                )
-            }
-
-            if (console.logoUrl.isEmpty() || logoFailed) {
-                Text(
-                    text = console.name,
-                    style = SpTypography.HeadlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
-            }
-
-            // Metadata row: web uses gap-3 (12dp), mt-4 (16dp)
-            Row(
-                modifier = Modifier.padding(top = SpSpacing.Default),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Web: text-sm font-medium text-white/70
-                Text(
-                    text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                    style = SpTypography.BodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.7f),
-                )
-                if (console.saveStateSupport) {
-                    MetadataBadge(
-                        icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
-                        label = "Save states",
-                    )
-                }
-                if (console.browserPlayable) {
-                    MetadataBadge(
-                        icon = { Icon(Icons.Filled.Language, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
-                        label = "Browser play",
-                    )
-                }
-            }
-
-            // Console info chips (manufacturer, year, generation, media, units sold)
+            // Compact platform details on the left
             ConsoleInfoSection(
                 console = console,
-                modifier = Modifier.padding(top = SpSpacing.Medium),
+                modifier = Modifier.padding(end = SpSpacing.Default),
             )
+
+            // Logo + metadata badges centered
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Logo or text fallback
+                var logoFailed by remember { mutableStateOf(false) }
+
+                if (console.logoUrl.isNotEmpty() && !logoFailed) {
+                    AsyncImage(
+                        model = console.logoUrl,
+                        contentDescription = console.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 80.dp),
+                        contentScale = ContentScale.Fit,
+                        onError = { logoFailed = true },
+                    )
+                }
+
+                if (console.logoUrl.isEmpty() || logoFailed) {
+                    Text(
+                        text = console.name,
+                        style = SpTypography.HeadlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
+
+                // Metadata row: game count + badges
+                Row(
+                    modifier = Modifier.padding(top = SpSpacing.Default),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                        style = SpTypography.BodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                    if (console.saveStateSupport) {
+                        MetadataBadge(
+                            icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
+                            label = "Save states",
+                        )
+                    }
+                    if (console.browserPlayable) {
+                        MetadataBadge(
+                            icon = { Icon(Icons.Filled.Language, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
+                            label = "Browser play",
+                        )
+                    }
+                }
+            }
         }
     }
 }
