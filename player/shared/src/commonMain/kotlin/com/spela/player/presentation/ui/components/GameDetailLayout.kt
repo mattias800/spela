@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -28,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -41,7 +41,10 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  * - **Portrait**: Cover art centered above (~192dp wide), info below,
  *   all in a single LazyColumn.
  *
- * @param topBar Composable rendered at the top (typically [SpTopBar] with back button).
+ * The top bar floats over content with a transparent background, matching the
+ * console screen pattern. Content scrolls behind the top bar.
+ *
+ * @param topBar Composable rendered floating over content (typically [SpTopBar] with back button).
  * @param coverArt Composable for the cover art image. Receives a [Modifier] pre-configured
  *                 with the correct width for the current orientation, and a [Boolean] that is
  *                 `true` when in portrait mode (useful for showing full uncropped art).
@@ -117,17 +120,15 @@ fun GameDetailLayout(
 
 @Composable
 private fun LandscapeLayout(
-    coverWidth: androidx.compose.ui.unit.Dp,
+    coverWidth: Dp,
     isCompact: Boolean,
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
     sections: LazyListScope.() -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        topBar()
-
-        Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxSize()) {
             // Left: Cover art column (scrollable)
             val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
             Column(
@@ -135,8 +136,12 @@ private fun LandscapeLayout(
                     .fillMaxHeight()
                     .width(coverWidth)
                     .verticalScroll(rememberScrollState())
-                    .padding(SpSpacing.ScreenHorizontal),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(
+                        start = SpSpacing.ScreenHorizontal,
+                        end = SpSpacing.ScreenHorizontal,
+                        top = SpSpacing.TopBarHeight,
+                    ),
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(SpSpacing.Small))
                 Box(
@@ -154,20 +159,26 @@ private fun LandscapeLayout(
             }
 
             // Right: Scrollable content
+            val horizontalPad = if (isCompact) SpSpacing.Default else SpSpacing.XLarge
+            val verticalPad = if (isCompact) SpSpacing.Medium else SpSpacing.XLarge
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .testTag("game_detail_content"),
-                contentPadding = if (isCompact) {
-                    PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium)
-                } else {
-                    PaddingValues(SpSpacing.XLarge)
-                },
+                contentPadding = PaddingValues(
+                    start = horizontalPad,
+                    end = horizontalPad,
+                    top = SpSpacing.TopBarHeight + verticalPad,
+                    bottom = verticalPad,
+                ),
             ) {
                 sections()
             }
         }
+
+        // Floating top bar overlaid on content
+        topBar()
     }
 }
 
@@ -178,38 +189,42 @@ private fun PortraitLayout(
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
     sections: LazyListScope.() -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag("game_detail_content")) {
-        item {
-            topBar()
-        }
-
-        item {
-            val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(SpSpacing.Small))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.XXLarge)
-                        .shadow(8.dp, coverShape)
-                        .clip(coverShape)
-                        .border(1.dp, SpColor.Divider, coverShape),
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().testTag("game_detail_content"),
+            contentPadding = PaddingValues(top = SpSpacing.TopBarHeight),
+        ) {
+            item {
+                val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 ) {
-                    coverArt(Modifier.fillMaxWidth(), true)
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = SpSpacing.XXLarge)
+                            .shadow(8.dp, coverShape)
+                            .clip(coverShape)
+                            .border(1.dp, SpColor.Divider, coverShape),
+                    ) {
+                        coverArt(Modifier.fillMaxWidth(), true)
+                    }
+                    Spacer(Modifier.height(SpSpacing.Medium))
+                    coverExtra(true)
+                    Spacer(Modifier.height(SpSpacing.XLarge))
                 }
-                Spacer(Modifier.height(SpSpacing.Medium))
-                coverExtra(true)
-                Spacer(Modifier.height(SpSpacing.XLarge))
+            }
+
+            sections()
+
+            item {
+                Spacer(Modifier.height(SpSpacing.XXXLarge))
             }
         }
 
-        sections()
-
-        item {
-            Spacer(Modifier.height(SpSpacing.XXXLarge))
-        }
+        // Floating top bar overlaid on content
+        topBar()
     }
 }

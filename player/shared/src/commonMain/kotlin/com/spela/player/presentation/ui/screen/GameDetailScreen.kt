@@ -148,7 +148,7 @@ fun GameDetailScreen(
                     imageUrl = state.gameDetail?.game?.coverUrl,
                     contentDescription = "${game.title} cover art",
                     modifier = modifier,
-                    aspectRatio = if (isPortrait) null else 0.714f,
+                    aspectRatio = null,
                 )
             },
             coverExtra = { isPortrait ->
