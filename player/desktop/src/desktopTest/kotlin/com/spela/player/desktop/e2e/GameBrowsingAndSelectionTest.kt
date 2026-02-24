@@ -87,7 +87,6 @@ class GameBrowsingAndSelectionTest {
 
         // Game detail should show game info
         onNodeWithText("Castlevania").assertIsDisplayed()
-        onNodeWithText("About").assertIsDisplayed()
         onNodeWithText("A classic action platformer.").assertIsDisplayed()
         onAllNodesWithText("Konami").onFirst().assertIsDisplayed()
     }

@@ -202,8 +202,10 @@ class CollectionsWriteTest {
         // Verify game detail loaded
         onNodeWithText("Castlevania").assertIsDisplayed()
 
-        // Tap "Add to collection" button
-        onNodeWithContentDescription("Add to collection").performClick()
+        // Open the actions menu and tap "Add to Collection"
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Add to Collection").performClick()
         advanceQuick(harness)
 
         // Collection picker dialog should appear
@@ -271,7 +273,7 @@ class CollectionsWriteTest {
         // Verify game detail loaded
         onNodeWithText("Castlevania").assertIsDisplayed()
 
-        // "Add to collection" button should be visible
-        onNodeWithContentDescription("Add to collection").assertIsDisplayed()
+        // "More actions" menu should be visible (contains "Add to Collection" option)
+        onNodeWithContentDescription("More actions").assertIsDisplayed()
     }
 }

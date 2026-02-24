@@ -2,12 +2,10 @@
 
 package com.spela.player.desktop
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.loadSvgPainter
 import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Density
@@ -19,6 +17,7 @@ import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
 import com.spela.player.libretro.DesktopGamepadPoller
 import com.spela.player.presentation.App
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -69,21 +68,28 @@ fun main(args: Array<String>) {
         state = rememberWindowState(width = 1280.dp, height = 720.dp),
         icon = icon,
     ) {
-        // macOS: transparent title bar blending with app background.
+        // macOS: transparent title bar that lets Compose content show through.
         // Uses official OpenJDK client properties (JDK 12+/17+).
+        // fullWindowContent extends Compose rendering behind the title bar.
+        // transparentTitleBar makes the native title bar transparent.
+        // The AWT background is an opaque fallback shown briefly before Compose renders.
         if (isMacOS) {
             LaunchedEffect(Unit) {
-                val bg = java.awt.Color(10, 10, 16) // #0A0A10
                 window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
                 window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
                 window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
+                val bg = java.awt.Color(10, 10, 16) // #0A0A10 — fallback before Compose renders
                 window.background = bg
                 window.rootPane.background = bg
                 window.contentPane.background = bg
             }
         }
 
-        Box(modifier = if (isMacOS) Modifier.padding(top = 28.dp) else Modifier) {
+        // On macOS, provide the title bar inset so SpTopBar and floating-bar screens
+        // can offset their content below the native traffic light buttons.
+        // The app's background/gradient extends to the top of the window, showing
+        // through the transparent title bar.
+        CompositionLocalProvider(LocalTitleBarInset provides if (isMacOS) 28.dp else 0.dp) {
             App()
         }
 

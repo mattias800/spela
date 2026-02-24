@@ -66,6 +66,7 @@ import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -145,7 +146,7 @@ fun ConsoleScreen(
                     contentPadding = PaddingValues(
                         start = SpSpacing.ScreenHorizontal,
                         end = SpSpacing.ScreenHorizontal,
-                        top = SpSpacing.TopBarHeight,
+                        top = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
                         bottom = SpSpacing.Default,
                     ),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),

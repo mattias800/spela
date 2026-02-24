@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -118,7 +119,7 @@ private fun LandscapeLayout(
                 .fillMaxSize()
                 .testTag("game_detail_content"),
             contentPadding = PaddingValues(
-                top = SpSpacing.TopBarHeight + verticalPad,
+                top = SpSpacing.TopBarHeight + LocalTitleBarInset.current + verticalPad,
                 bottom = verticalPad,
             ),
         ) {
@@ -184,7 +185,7 @@ private fun PortraitLayout(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("game_detail_content"),
-            contentPadding = PaddingValues(top = SpSpacing.TopBarHeight),
+            contentPadding = PaddingValues(top = SpSpacing.TopBarHeight + LocalTitleBarInset.current),
         ) {
             item {
                 val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
