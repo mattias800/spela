@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -505,9 +507,11 @@ private fun GameInfoContent(
     Spacer(Modifier.height(SpSpacing.Small))
 
     // Badges row: console, verification, region, IGDB rating, community rating
-    Row(
+    @OptIn(ExperimentalLayoutApi::class)
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         SpConsoleChip(
             consoleName = game.consoleName,
@@ -555,7 +559,7 @@ private fun GameInfoContent(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small, Alignment.Start),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (state.isGameCached) {
@@ -573,7 +577,6 @@ private fun GameInfoContent(
                 text = if (hasSaves) "Resume" else "Play",
                 onClick = { onPlay(gameId) },
                 modifier = Modifier
-                    .weight(1f)
                     .semantics {
                         contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
                     },
@@ -593,7 +596,6 @@ private fun GameInfoContent(
                 text = if (isBusy) "Downloading..." else "Download",
                 onClick = onDownloadGame,
                 modifier = Modifier
-                    .weight(1f)
                     .semantics {
                         contentDescription = if (isBusy) "Downloading ${game.title}"
                         else "Download ${game.title}"
