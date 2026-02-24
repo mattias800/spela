@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -569,10 +570,13 @@ private fun GameInfoContent(
                 add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
             }
 
+            val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
+            val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
             SpSplitButton(
                 text = if (hasSaves) "Resume" else "Play",
                 onClick = { onPlay(gameId) },
                 modifier = Modifier
+                    .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
                     .semantics {
                         contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
                     },
@@ -588,10 +592,13 @@ private fun GameInfoContent(
                 }
             }
 
+            val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
+            val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
             SpSplitButton(
                 text = if (isBusy) "Downloading..." else "Download",
                 onClick = onDownloadGame,
                 modifier = Modifier
+                    .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
                     .semantics {
                         contentDescription = if (isBusy) "Downloading ${game.title}"
                         else "Download ${game.title}"
