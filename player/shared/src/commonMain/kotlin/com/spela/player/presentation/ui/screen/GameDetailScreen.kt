@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import com.spela.player.presentation.ui.feature.collections.CollectionPickerDialog
@@ -82,7 +81,6 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
-import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
@@ -165,28 +163,56 @@ fun GameDetailScreen(
                 }
             },
             sections = {
-                item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    GameInfoContent(
+                        gameId = gameId,
+                        game = game,
+                        detail = detail,
+                        state = state,
+                        isPortrait = isPortraitScreen,
+                        hasSaves = state.saveStates.isNotEmpty(),
+                        missingBiosFiles = state.missingBiosFiles,
+                        onPlay = onPlay,
+                        onPlayFresh = onPlayFresh,
+                        onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                        onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
+                        onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+                        onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
+                        onCreateNetplay = onCreateNetplay,
+                        onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
+                        onRate = { rating ->
+                            viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                        },
+                    )
+                }
+
+                // Section ordering matches web UI:
+
+                // 1. Community Stats
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    GameCommunityStatsSection(
+                        stats = state.gameStats,
+                        isLoading = state.isLoadingStats,
+                    )
+                }
+
+                // Your Rating (portrait only — landscape shows it under cover art)
+                if (isPortraitScreen) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = SpSpacing.ScreenHorizontal),
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        GameInfoContent(
-                            gameId = gameId,
-                            game = game,
-                            detail = detail,
-                            state = state,
-                            isPortrait = isPortraitScreen,
-                            hasSaves = state.saveStates.isNotEmpty(),
-                            missingBiosFiles = state.missingBiosFiles,
-                            onPlay = onPlay,
-                            onPlayFresh = onPlayFresh,
-                            onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
-                            onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
-                            onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
-                            onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
-                            onCreateNetplay = onCreateNetplay,
-                            onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
+                        Spacer(Modifier.height(SpSpacing.XXLarge))
+                        StarRatingRow(
+                            currentRating = state.myRating,
+                            averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
+                            ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
                             onRate = { rating ->
                                 viewModel.onIntent(GameDetailIntent.RateGame(rating))
                             },
@@ -194,212 +220,158 @@ fun GameDetailScreen(
                     }
                 }
 
-                // Section ordering matches web UI:
-
-                // 1. Community Stats
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameCommunityStatsSection(
-                            stats = state.gameStats,
-                            isLoading = state.isLoadingStats,
-                        )
-                    }
-                }
-
-                // Your Rating (portrait only — landscape shows it under cover art)
-                if (isPortraitScreen) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Spacer(Modifier.height(SpSpacing.XXLarge))
-                            StarRatingRow(
-                                currentRating = state.myRating,
-                                averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
-                                ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
-                                onRate = { rating ->
-                                    viewModel.onIntent(GameDetailIntent.RateGame(rating))
-                                },
-                            )
-                        }
-                    }
-                }
-
                 // 2. Reviews
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameReviewsSection(
-                            reviews = state.reviews,
-                            reviewsTotal = state.reviewsTotal,
-                            reviewsPage = state.reviewsPage,
-                            isLoading = state.isLoadingReviews,
-                            onLoadMore = {
-                                viewModel.onIntent(GameDetailIntent.LoadMoreReviews(gameId))
-                            },
-                        )
-                    }
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    GameReviewsSection(
+                        reviews = state.reviews,
+                        reviewsTotal = state.reviewsTotal,
+                        reviewsPage = state.reviewsPage,
+                        isLoading = state.isLoadingReviews,
+                        onLoadMore = {
+                            viewModel.onIntent(GameDetailIntent.LoadMoreReviews(gameId))
+                        },
+                    )
                 }
 
                 // 3. Screenshots
-                item {
-                    ScreenshotsSection(detail.screenshots)
-                }
+                ScreenshotsSection(detail.screenshots)
 
                 // 4. Achievements
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameAchievementsSection(
-                            achievements = state.achievements,
-                            progress = state.achievementProgress,
-                            timeline = state.achievementTimeline,
-                            leaderboard = state.achievementLeaderboard,
-                            viewMode = state.achievementsView,
-                            isLoading = state.isLoadingAchievements,
-                            onToggleView = { mode ->
-                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
-                            },
-                            achievementsWarning = game.achievementsWarning,
-                        )
-                    }
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    GameAchievementsSection(
+                        achievements = state.achievements,
+                        progress = state.achievementProgress,
+                        timeline = state.achievementTimeline,
+                        leaderboard = state.achievementLeaderboard,
+                        viewMode = state.achievementsView,
+                        isLoading = state.isLoadingAchievements,
+                        onToggleView = { mode ->
+                            viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
+                        },
+                        achievementsWarning = game.achievementsWarning,
+                    )
                 }
 
                 // 5. Save States
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        SaveStatesSection(
-                            saveStates = state.saveStates,
-                            onDelete = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
-                            },
-                        )
-                    }
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    SaveStatesSection(
+                        saveStates = state.saveStates,
+                        onDelete = { saveId ->
+                            viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
+                        },
+                    )
                 }
 
                 // 6. Save Data (SRAM) - app-specific
                 if (onNavigateToSaveData != null && state.saveDataCount > 0) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        Spacer(Modifier.height(SpSpacing.XXLarge))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Spacer(Modifier.height(SpSpacing.XXLarge))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "Save Data",
-                                    style = SpTypography.HeadlineSmall,
-                                    color = SpColor.OnBackground,
-                                )
-                                SpButton(
-                                    text = "Manage (${state.saveDataCount})",
-                                    onClick = { onNavigateToSaveData(gameId) },
-                                    style = SpButtonStyle.Ghost,
-                                )
-                            }
+                            Text(
+                                text = "Save Data",
+                                style = SpTypography.HeadlineSmall,
+                                color = SpColor.OnBackground,
+                            )
+                            SpButton(
+                                text = "Manage (${state.saveDataCount})",
+                                onClick = { onNavigateToSaveData(gameId) },
+                                style = SpButtonStyle.Ghost,
+                            )
                         }
                     }
                 }
 
                 // 7. Community Shares
-                item {
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    CommunitySharesSection(
+                        sharedSaves = state.sharedSaves,
+                        onDownload = { saveId ->
+                            viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
+                        },
+                        onDelete = { saveId ->
+                            viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
+                        },
+                    )
+                }
+
+                // 8. Game Controls - app-specific
+                if (keyMappingViewModel != null && keyMappingState != null) {
+                    val consoleId = game.consoleId
+                    LaunchedEffect(gameId, consoleId) {
+                        keyMappingViewModel.onIntent(
+                            KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                        )
+                    }
+
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
-                        CommunitySharesSection(
-                            sharedSaves = state.sharedSaves,
-                            onDownload = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
+                        GameControlsSection(
+                            gameId = gameId,
+                            hasGameOverride = keyMappingState.value.hasGameOverride,
+                            onEnableOverride = {
+                                keyMappingViewModel.onIntent(
+                                    KeyMappingIntent.SaveAsGameOverride(gameId)
+                                )
                             },
-                            onDelete = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
+                            onClearOverride = {
+                                keyMappingViewModel.onIntent(
+                                    KeyMappingIntent.ClearGameOverride(gameId)
+                                )
+                            },
+                            onEditMapping = {
+                                keyMappingViewModel.onIntent(
+                                    KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                                )
                             },
                         )
                     }
                 }
 
-                // 8. Game Controls - app-specific
-                if (keyMappingViewModel != null && keyMappingState != null) {
-                    item {
-                        val consoleId = game.consoleId
-                        LaunchedEffect(gameId, consoleId) {
-                            keyMappingViewModel.onIntent(
-                                KeyMappingIntent.LoadGameMapping(gameId, consoleId)
-                            )
-                        }
-
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        ) {
-                            GameControlsSection(
-                                gameId = gameId,
-                                hasGameOverride = keyMappingState.value.hasGameOverride,
-                                onEnableOverride = {
-                                    keyMappingViewModel.onIntent(
-                                        KeyMappingIntent.SaveAsGameOverride(gameId)
-                                    )
-                                },
-                                onClearOverride = {
-                                    keyMappingViewModel.onIntent(
-                                        KeyMappingIntent.ClearGameOverride(gameId)
-                                    )
-                                },
-                                onEditMapping = {
-                                    keyMappingViewModel.onIntent(
-                                        KeyMappingIntent.LoadGameMapping(gameId, consoleId)
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
-
                 // 9. Challenges
                 if (onNavigateToChallenges != null) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        ) {
-                            ChallengesSection(
-                                gameTitle = game.title,
-                                onViewAll = { onNavigateToChallenges(gameId, game.title) },
-                                onCreateChallenge = {
-                                    viewModel.onIntent(GameDetailIntent.ShowCreateChallengeDialog)
-                                },
-                            )
-                        }
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        ChallengesSection(
+                            gameTitle = game.title,
+                            onViewAll = { onNavigateToChallenges(gameId, game.title) },
+                            onCreateChallenge = {
+                                viewModel.onIntent(GameDetailIntent.ShowCreateChallengeDialog)
+                            },
+                        )
                     }
                 }
 
                 // 10. Active Relays
                 if (onNavigateToRelay != null) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        ) {
-                            GameRelaysSection(
-                                relays = state.gameRelays,
-                                isLoading = state.isLoadingRelays,
-                                onRelayClick = { relayId -> onNavigateToRelay(relayId) },
-                            )
-                        }
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameRelaysSection(
+                            relays = state.gameRelays,
+                            isLoading = state.isLoadingRelays,
+                            onRelayClick = { relayId -> onNavigateToRelay(relayId) },
+                        )
                     }
                 }
 
                 // Bottom spacing
-                item {
-                    Spacer(Modifier.height(SpSpacing.XXLarge))
-                }
+                Spacer(Modifier.height(SpSpacing.XXLarge))
             },
         )
 
@@ -568,13 +540,14 @@ private fun GameInfoContent(
 
     Spacer(Modifier.height(SpSpacing.XLarge))
 
-    // Action buttons row: Play/Download + Actions menu
+    // Action buttons row: Play/Download + Actions menu + playtime chips
     val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small, Alignment.Start),
-        verticalAlignment = Alignment.CenterVertically,
+    @OptIn(ExperimentalLayoutApi::class)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         if (state.isGameCached) {
             val menuItems = buildList {
@@ -627,44 +600,35 @@ private fun GameInfoContent(
             onTogglePlayLater = onTogglePlayLater,
             onAddToCollection = onAddToCollection,
         )
-    }
 
-    // Playtime + last played as highlighted chips
-    if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
-        Spacer(Modifier.height(SpSpacing.Medium))
-        @OptIn(ExperimentalLayoutApi::class)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            if (game.totalPlayTime > 0) {
+        // Playtime + last played as highlighted chips (inline with buttons)
+        if (game.totalPlayTime > 0) {
+            SpChip(
+                text = formatPlayTime(game.totalPlayTime),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.AccessTime,
+                        contentDescription = null,
+                        tint = SpColor.OnBackgroundSecondary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                },
+            )
+        }
+        game.lastPlayedAt?.let { timestamp ->
+            val relative = formatRelativeTime(timestamp)
+            if (relative.isNotEmpty()) {
                 SpChip(
-                    text = formatPlayTime(game.totalPlayTime),
+                    text = "Last played $relative",
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Filled.AccessTime,
+                            imageVector = Icons.Filled.History,
                             contentDescription = null,
                             tint = SpColor.OnBackgroundSecondary,
                             modifier = Modifier.size(14.dp),
                         )
                     },
                 )
-            }
-            game.lastPlayedAt?.let { timestamp ->
-                val relative = formatRelativeTime(timestamp)
-                if (relative.isNotEmpty()) {
-                    SpChip(
-                        text = "Last played $relative",
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.History,
-                                contentDescription = null,
-                                tint = SpColor.OnBackgroundSecondary,
-                                modifier = Modifier.size(14.dp),
-                            )
-                        },
-                    )
-                }
             }
         }
     }
@@ -734,15 +698,13 @@ private fun GameInfoContent(
 
     Spacer(Modifier.height(SpSpacing.XLarge))
 
-    // Description
+    // Description (plain text, matching web UI)
     game.description?.let { description ->
-        SpTitledSection(title = "About", icon = Icons.Outlined.Info, includeTopSpacing = false) {
-            Text(
-                text = description,
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackgroundSecondary,
-            )
-        }
+        Text(
+            text = description,
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundSecondary,
+        )
         Spacer(Modifier.height(SpSpacing.XLarge))
     }
 

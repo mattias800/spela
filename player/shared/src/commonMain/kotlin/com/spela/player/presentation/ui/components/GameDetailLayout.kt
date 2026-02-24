@@ -1,24 +1,22 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -36,10 +34,9 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  * Defines the structural layout for a game detail screen.
  *
  * Uses a side-by-side hero pattern matching the web UI:
- * - **Landscape**: Cover art (fixed ~256dp) on the LEFT in a scrollable column,
- *   info/sections scroll on the RIGHT in a LazyColumn.
- * - **Portrait**: Cover art centered above (~192dp wide), info below,
- *   all in a single LazyColumn.
+ * - **Landscape**: Cover art (fixed ~256dp) on the LEFT, info/sections on the RIGHT.
+ *   Both scroll together in one unified scroll container (matching the web UI behavior).
+ * - **Portrait**: Cover art centered above, info below, all in a single LazyColumn.
  *
  * The top bar floats over content with a transparent background, matching the
  * console screen pattern. Content scrolls behind the top bar.
@@ -50,7 +47,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  *                 `true` when in portrait mode (useful for showing full uncropped art).
  * @param coverExtra Optional composable rendered below the cover art (e.g. rating, download button).
  * @param backgroundColors Gradient colors for the screen background (default: flat SpColor.Background).
- * @param sections Builder lambda that adds [LazyListScope] items for the scrollable content.
+ * @param sections Composable content for the scrollable info/sections area.
  */
 @Composable
 fun GameDetailLayout(
@@ -58,7 +55,7 @@ fun GameDetailLayout(
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit = {},
     backgroundColors: List<Color> = listOf(SpColor.Background, SpColor.Background),
-    sections: LazyListScope.() -> Unit,
+    sections: @Composable () -> Unit,
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -100,24 +97,6 @@ fun GameDetailLayout(
     }
 }
 
-/**
- * Legacy overload for backward compatibility with [GameDetailSkeleton].
- * Delegates to the new signature with coverArt = cover and no coverExtra.
- */
-@Composable
-fun GameDetailLayout(
-    topBar: @Composable () -> Unit,
-    cover: @Composable (Modifier) -> Unit,
-    sections: LazyListScope.() -> Unit,
-) {
-    GameDetailLayout(
-        topBar = topBar,
-        coverArt = { modifier, _ -> cover(modifier) },
-        coverExtra = {},
-        sections = sections,
-    )
-}
-
 @Composable
 private fun LandscapeLayout(
     coverWidth: Dp,
@@ -125,55 +104,55 @@ private fun LandscapeLayout(
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
-    sections: LazyListScope.() -> Unit,
+    sections: @Composable () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            // Left: Cover art column (scrollable)
-            val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(coverWidth)
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        start = SpSpacing.ScreenHorizontal,
-                        end = SpSpacing.ScreenHorizontal,
-                        top = SpSpacing.TopBarHeight,
-                    ),
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(SpSpacing.Small))
-                Box(
-                    modifier = Modifier
-                        .width(coverWidth - SpSpacing.ScreenHorizontal * 2)
-                        .shadow(8.dp, coverShape)
-                        .clip(coverShape)
-                        .border(1.dp, SpColor.Divider, coverShape),
-                ) {
-                    coverArt(Modifier.fillMaxWidth(), false)
-                }
-                Spacer(Modifier.height(SpSpacing.Medium))
-                coverExtra(false)
-                Spacer(Modifier.height(SpSpacing.XLarge))
-            }
+    val verticalPad = if (isCompact) SpSpacing.Medium else SpSpacing.XLarge
 
-            // Right: Scrollable content
-            val horizontalPad = if (isCompact) SpSpacing.Default else SpSpacing.XLarge
-            val verticalPad = if (isCompact) SpSpacing.Medium else SpSpacing.XLarge
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .testTag("game_detail_content"),
-                contentPadding = PaddingValues(
-                    start = horizontalPad,
-                    end = horizontalPad,
-                    top = SpSpacing.TopBarHeight + verticalPad,
-                    bottom = verticalPad,
-                ),
-            ) {
-                sections()
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("game_detail_content"),
+            contentPadding = PaddingValues(
+                top = SpSpacing.TopBarHeight + verticalPad,
+                bottom = verticalPad,
+            ),
+        ) {
+            item {
+                val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = SpSpacing.ScreenHorizontal),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXLarge),
+                ) {
+                    // Left: Cover art column
+                    Column(
+                        modifier = Modifier.width(coverWidth),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(8.dp, coverShape)
+                                .clip(coverShape)
+                                .border(1.dp, SpColor.Divider, coverShape),
+                        ) {
+                            coverArt(Modifier.fillMaxWidth(), false)
+                        }
+                        Spacer(Modifier.height(SpSpacing.Medium))
+                        coverExtra(false)
+                    }
+
+                    // Right: Content column
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = SpSpacing.ScreenHorizontal),
+                    ) {
+                        sections()
+                    }
+                }
             }
         }
 
@@ -187,7 +166,7 @@ private fun PortraitLayout(
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
-    sections: LazyListScope.() -> Unit,
+    sections: @Composable () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -198,7 +177,7 @@ private fun PortraitLayout(
                 val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Spacer(Modifier.height(SpSpacing.Small))
                     Box(
@@ -217,7 +196,11 @@ private fun PortraitLayout(
                 }
             }
 
-            sections()
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    sections()
+                }
+            }
 
             item {
                 Spacer(Modifier.height(SpSpacing.XXXLarge))

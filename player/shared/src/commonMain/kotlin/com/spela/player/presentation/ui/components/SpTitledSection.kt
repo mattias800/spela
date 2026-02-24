@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -28,15 +29,16 @@ import com.spela.player.presentation.ui.theme.SpTypography
 /**
  * Reusable section wrapper with a title and card-styled content slot.
  *
- * Renders: optional top spacing + icon + title (HeadlineSmall) + card container with content.
- * The card container matches the web UI's section styling (bg-surface-900/50 with border).
+ * Renders: optional top spacing + a card container with icon + title header inside,
+ * followed by the content. The card uses a semi-transparent black background that
+ * darkens the gradient behind it slightly.
  *
  * @param title Section heading text.
  * @param modifier Modifier applied to the outer Column.
  * @param icon Optional icon displayed before the title in accent color.
  * @param includeTopSpacing Whether to add [SpSpacing.XXLarge] above the title (default true).
  * @param titleTrailing Optional composable rendered beside the title in a Row (e.g. a count badge).
- * @param content Section body rendered inside a card-like container.
+ * @param content Section body rendered inside the card below the header.
  */
 @Composable
 fun SpTitledSection(
@@ -53,37 +55,37 @@ fun SpTitledSection(
         if (includeTopSpacing) {
             Spacer(Modifier.height(SpSpacing.XXLarge))
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = SpColor.Accent,
-                    modifier = Modifier.size(SpSpacing.IconDefault),
-                )
-            }
-            Text(
-                text = title,
-                style = SpTypography.HeadlineSmall,
-                color = SpColor.OnBackground,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (titleTrailing != null) {
-                titleTrailing()
-            }
-        }
-        Spacer(Modifier.height(SpSpacing.Medium))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SpColor.Card, shape)
-                .border(1.dp, SpColor.Divider.copy(alpha = 0.5f), shape)
+                .background(Color.Black.copy(alpha = 0.18f), shape)
+                .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
                 .padding(SpSpacing.Default),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    if (icon != null) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = SpColor.Accent,
+                            modifier = Modifier.size(SpSpacing.IconDefault),
+                        )
+                    }
+                    Text(
+                        text = title,
+                        style = SpTypography.HeadlineSmall,
+                        color = SpColor.OnBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    if (titleTrailing != null) {
+                        titleTrailing()
+                    }
+                }
+                Spacer(Modifier.height(SpSpacing.Medium))
                 content()
             }
         }

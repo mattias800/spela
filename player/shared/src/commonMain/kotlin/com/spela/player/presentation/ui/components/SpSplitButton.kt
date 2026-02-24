@@ -68,7 +68,6 @@ fun SpSplitButton(
         SpButton(
             text = text,
             onClick = onClick,
-            modifier = Modifier.weight(1f),
             style = style,
             enabled = enabled,
             isLoading = isLoading,
