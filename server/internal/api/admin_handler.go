@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -408,21 +409,10 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
 }
 
-// tryConfigureIGDB loads IGDB credentials from DB settings and configures the scraper's IGDB client.
-// Always reloads from DB so that updated credentials are picked up without a server restart.
+// tryConfigureIGDB loads IGDB credentials and configures the scraper's IGDB client.
+// Environment variables take precedence over database settings.
 func (h *AdminHandler) tryConfigureIGDB() {
-	var settings []db.ServerSetting
-	h.DB.Where("key IN ?", []string{
-		"igdb_client_id", "igdb_client_secret",
-	}).Find(&settings)
-
-	sm := make(map[string]string)
-	for _, s := range settings {
-		sm[s.Key] = s.Value
-	}
-
-	clientID := sm["igdb_client_id"]
-	clientSecret := sm["igdb_client_secret"]
+	clientID, clientSecret := igdbCredentials(h.DB)
 
 	if clientID == "" || clientSecret == "" {
 		return
@@ -559,4 +549,43 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 		"consoles": consoles,
 		"saves":    saves,
 	})
+}
+
+// igdbCredentials returns the IGDB client ID and secret.
+// Environment variables SPELA_IGDB_CLIENT_ID / SPELA_IGDB_CLIENT_SECRET take
+// precedence over database settings.
+func igdbCredentials(database *gorm.DB) (clientID, clientSecret string) {
+	clientID = os.Getenv("SPELA_IGDB_CLIENT_ID")
+	clientSecret = os.Getenv("SPELA_IGDB_CLIENT_SECRET")
+	if clientID != "" && clientSecret != "" {
+		return clientID, clientSecret
+	}
+
+	var settings []db.ServerSetting
+	database.Where("key IN ?", []string{
+		"igdb_client_id", "igdb_client_secret",
+	}).Find(&settings)
+
+	sm := make(map[string]string)
+	for _, s := range settings {
+		sm[s.Key] = s.Value
+	}
+	return sm["igdb_client_id"], sm["igdb_client_secret"]
+}
+
+// IGDBSource returns "env" if IGDB credentials are set via environment variables,
+// "database" if set via admin settings, or "none" if not configured.
+func IGDBSource(database *gorm.DB) string {
+	if os.Getenv("SPELA_IGDB_CLIENT_ID") != "" && os.Getenv("SPELA_IGDB_CLIENT_SECRET") != "" {
+		return "env"
+	}
+
+	var count int64
+	database.Model(&db.ServerSetting{}).
+		Where("key IN ? AND value != ''", []string{"igdb_client_id", "igdb_client_secret"}).
+		Count(&count)
+	if count == 2 {
+		return "database"
+	}
+	return "none"
 }

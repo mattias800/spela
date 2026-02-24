@@ -229,6 +229,7 @@ export function useIgdbStatus() {
       api.get<{
         configured: boolean;
         status: "connected" | "not_configured" | "error";
+        source: "env" | "database" | "none";
         error?: string;
       }>("/admin/igdb/status"),
   });

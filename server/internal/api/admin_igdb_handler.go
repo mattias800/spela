@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"gorm.io/gorm"
 )
@@ -40,26 +39,16 @@ func (h *IGDBHandler) TestIGDB(c *gin.Context) {
 }
 
 // GetIGDBStatus returns the current IGDB configuration status.
-// Only checks whether credentials exist in the database — does NOT make live
-// API calls to Twitch. Use the "Test Connection" button for live validation.
+// Checks environment variables first, then database settings.
+// Does NOT make live API calls to Twitch — use "Test Connection" for that.
 func (h *IGDBHandler) GetIGDBStatus(c *gin.Context) {
-	var settings []db.ServerSetting
-	h.DB.Where("key IN ?", []string{
-		"igdb_client_id", "igdb_client_secret",
-	}).Find(&settings)
+	source := IGDBSource(h.DB)
 
-	sm := make(map[string]string)
-	for _, s := range settings {
-		sm[s.Key] = s.Value
-	}
-
-	clientID := sm["igdb_client_id"]
-	clientSecret := sm["igdb_client_secret"]
-
-	if clientID == "" || clientSecret == "" {
+	if source == "none" {
 		c.JSON(http.StatusOK, gin.H{
 			"configured": false,
 			"status":     "not_configured",
+			"source":     "none",
 		})
 		return
 	}
@@ -67,5 +56,6 @@ func (h *IGDBHandler) GetIGDBStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"configured": true,
 		"status":     "connected",
+		"source":     source,
 	})
 }

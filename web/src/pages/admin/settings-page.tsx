@@ -56,20 +56,21 @@ export function AdminSettingsPage() {
   }
 
   function handleSave() {
-    updateSettings.mutate(
-      {
-        gameDirectories: gameDirectories.join(","),
-        allowRegistration: String(allowRegistration),
-        scrapeOnScan: String(scrapeOnScan),
-        igdb_client_id: igdbClientId,
-        igdb_client_secret: igdbClientSecret,
-      },
-      {
-        onSuccess: () => toast("success", "Settings saved"),
-        onError: (err) =>
-          toast("error", err instanceof Error ? err.message : "Unknown error"),
-      },
-    );
+    const payload: Record<string, string> = {
+      gameDirectories: gameDirectories.join(","),
+      allowRegistration: String(allowRegistration),
+      scrapeOnScan: String(scrapeOnScan),
+    };
+    // Only send IGDB credentials when they're managed via the UI, not env vars
+    if (!igdbEnvConfigured) {
+      payload.igdb_client_id = igdbClientId;
+      payload.igdb_client_secret = igdbClientSecret;
+    }
+    updateSettings.mutate(payload, {
+      onSuccess: () => toast("success", "Settings saved"),
+      onError: (err) =>
+        toast("error", err instanceof Error ? err.message : "Unknown error"),
+    });
   }
 
   if (isLoading) {
@@ -82,6 +83,7 @@ export function AdminSettingsPage() {
   }
 
   const igdbNotConfigured = igdbStatus && !igdbStatus.configured;
+  const igdbEnvConfigured = igdbStatus?.source === "env";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -175,6 +177,7 @@ export function AdminSettingsPage() {
         onClientIdChange={setIgdbClientId}
         clientSecret={igdbClientSecret}
         onClientSecretChange={setIgdbClientSecret}
+        envConfigured={igdbEnvConfigured}
       />
 
       <div className="flex justify-end">
