@@ -18,13 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.TopPlayer
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -38,16 +38,10 @@ internal fun GameCommunityStatsSection(
 ) {
     if (isLoading || stats == null || stats.totalPlayers == 0) return
 
-    Column(modifier = modifier.testTag("community_stats_section")) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
-        Text(
-            text = "Play Activity",
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-            modifier = Modifier.semantics { heading() },
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-
+    SpTitledSection(
+        title = "Play Activity",
+        modifier = modifier.testTag("community_stats_section"),
+    ) {
         // Stat cards
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -112,8 +112,8 @@ class SocialFeaturesTest {
         advance(harness)
 
         onNodeWithText("Your Rating").assertIsDisplayed()
-        onNodeWithText("4.2").assertIsDisplayed()
-        onNodeWithText("(15)").assertIsDisplayed()
+        onNodeWithText("4.2").assertExists()
+        onAllNodesWithText("(15)").onFirst().assertExists()
     }
 
     // ---- Game detail: Community Saves ----

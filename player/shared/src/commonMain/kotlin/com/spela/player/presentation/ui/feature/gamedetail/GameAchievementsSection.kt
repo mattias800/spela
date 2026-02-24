@@ -20,8 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
@@ -29,6 +27,7 @@ import com.spela.player.domain.model.AchievementTimelineData
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.ui.components.SpProgressBar
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -57,19 +56,10 @@ internal fun GameAchievementsSection(
     val completionFraction = if (totalCount > 0) unlockedCount.toFloat() / totalCount else 0f
     val isComplete = totalCount > 0 && unlockedCount == totalCount
 
-    Column(modifier = modifier.testTag("achievements_section")) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
-
-        // Header
-        Text(
-            text = "Achievements",
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-            modifier = Modifier.semantics { heading() },
-        )
-
-        Spacer(Modifier.height(SpSpacing.Medium))
-
+    SpTitledSection(
+        title = "Achievements",
+        modifier = modifier.testTag("achievements_section"),
+    ) {
         // Progress bar + summary
         SpProgressBar(
             progress = completionFraction,

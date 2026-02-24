@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.SharedSaveItem
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -56,6 +57,7 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
 
     var lightboxIndex by remember { mutableStateOf<Int?>(null) }
 
+    Spacer(Modifier.height(SpSpacing.XXLarge))
     Text(
         text = "Screenshots",
         style = SpTypography.HeadlineSmall,
@@ -83,8 +85,6 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
             }
         }
     }
-    Spacer(Modifier.height(SpSpacing.XLarge))
-
     ScreenshotLightbox(
         visible = lightboxIndex != null,
         screenshotUrls = screenshots,
@@ -98,25 +98,19 @@ internal fun SaveStatesSection(
     saveStates: List<SaveState>,
     onDelete: ((Long) -> Unit)? = null,
 ) {
-    Text(
-        text = "Save States",
-        style = SpTypography.HeadlineSmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier.semantics { heading() },
-    )
-    Spacer(Modifier.height(SpSpacing.Medium))
-
-    if (saveStates.isEmpty()) {
+    SpTitledSection(title = "Save States") {
+        if (saveStates.isEmpty()) {
         SpEmptyStates.NoSaveStates(modifier = Modifier.fillMaxWidth())
-    } else {
-        saveStates.forEach { save ->
-            SaveStateItem(
-                saveState = save,
-                onDelete = onDelete?.let { { it(save.id) } },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = SpSpacing.XSmall),
-            )
+        } else {
+            saveStates.forEach { save ->
+                SaveStateItem(
+                    saveState = save,
+                    onDelete = onDelete?.let { { it(save.id) } },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = SpSpacing.XSmall),
+                )
+            }
         }
     }
 }
@@ -144,31 +138,24 @@ internal fun CommunitySharesSection(
     onDownload: (String) -> Unit,
     onDelete: (String) -> Unit,
 ) {
-    Spacer(Modifier.height(SpSpacing.XLarge))
-    Text(
-        text = "Community Saves",
-        style = SpTypography.HeadlineSmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier.semantics { heading() },
-    )
-    Spacer(Modifier.height(SpSpacing.Medium))
-
-    if (sharedSaves.isEmpty()) {
-        Text(
-            text = "No community saves yet. Be the first to share!",
-            style = SpTypography.BodyMedium,
-            color = SpColor.OnBackgroundTertiary,
-        )
-    } else {
-        sharedSaves.forEach { save ->
-            SharedSaveItem(
-                sharedSave = save,
-                onDownload = { onDownload(save.id) },
-                onDelete = { onDelete(save.id) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = SpSpacing.XSmall),
+    SpTitledSection(title = "Community Saves") {
+        if (sharedSaves.isEmpty()) {
+            Text(
+                text = "No community saves yet. Be the first to share!",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundTertiary,
             )
+        } else {
+            sharedSaves.forEach { save ->
+                SharedSaveItem(
+                    sharedSave = save,
+                    onDownload = { onDownload(save.id) },
+                    onDelete = { onDelete(save.id) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = SpSpacing.XSmall),
+                )
+            }
         }
     }
 }
@@ -265,36 +252,30 @@ internal fun ChallengesSection(
     onViewAll: () -> Unit,
     onCreateChallenge: (() -> Unit)? = null,
 ) {
-    Spacer(Modifier.height(SpSpacing.XLarge))
-    Text(
-        text = "Challenges",
-        style = SpTypography.HeadlineSmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier.semantics { heading() },
-    )
-    Spacer(Modifier.height(SpSpacing.Small))
-    Text(
-        text = "Compete on community-created challenges for $gameTitle",
-        style = SpTypography.BodyMedium,
-        color = SpColor.OnBackgroundSecondary,
-    )
-    Spacer(Modifier.height(SpSpacing.Medium))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        SpButton(
-            text = "View Challenges",
-            onClick = onViewAll,
-            style = SpButtonStyle.Secondary,
-            modifier = Modifier.weight(1f).testTag("view_challenges_button"),
+    SpTitledSection(title = "Challenges") {
+        Text(
+            text = "Compete on community-created challenges for $gameTitle",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundSecondary,
         )
-        if (onCreateChallenge != null) {
+        Spacer(Modifier.height(SpSpacing.Medium))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
             SpButton(
-                text = "Create New",
-                onClick = onCreateChallenge,
-                modifier = Modifier.weight(1f).testTag("create_challenge_button"),
+                text = "View Challenges",
+                onClick = onViewAll,
+                style = SpButtonStyle.Secondary,
+                modifier = Modifier.weight(1f).testTag("view_challenges_button"),
             )
+            if (onCreateChallenge != null) {
+                SpButton(
+                    text = "Create New",
+                    onClick = onCreateChallenge,
+                    modifier = Modifier.weight(1f).testTag("create_challenge_button"),
+                )
+            }
         }
     }
 }

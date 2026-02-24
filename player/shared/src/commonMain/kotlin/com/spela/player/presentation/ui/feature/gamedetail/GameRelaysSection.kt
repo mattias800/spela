@@ -15,11 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.Relay
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -34,30 +34,19 @@ internal fun GameRelaysSection(
     // Hide section entirely if no relays and not loading
     if (relays.isEmpty() && !isLoading) return
 
-    Column(modifier = modifier.testTag("game_relays_section")) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            Text(
-                text = "Active Relays",
-                style = SpTypography.HeadlineSmall,
-                color = SpColor.OnBackground,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (relays.isNotEmpty()) {
+    SpTitledSection(
+        title = "Active Relays",
+        modifier = modifier.testTag("game_relays_section"),
+        titleTrailing = if (relays.isNotEmpty()) {
+            {
                 Text(
                     text = "(${relays.size})",
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )
             }
-        }
-
-        Spacer(Modifier.height(SpSpacing.Medium))
-
+        } else null,
+    ) {
         relays.forEach { relay ->
             RelayItem(
                 relay = relay,

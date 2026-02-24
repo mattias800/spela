@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameRating
@@ -25,6 +24,7 @@ import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -41,30 +41,19 @@ internal fun GameReviewsSection(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.testTag("reviews_section")) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            Text(
-                text = "Reviews",
-                style = SpTypography.HeadlineSmall,
-                color = SpColor.OnBackground,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (reviewsTotal > 0) {
+    SpTitledSection(
+        title = "Reviews",
+        modifier = modifier.testTag("reviews_section"),
+        titleTrailing = if (reviewsTotal > 0) {
+            {
                 Text(
                     text = "($reviewsTotal)",
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )
             }
-        }
-
-        Spacer(Modifier.height(SpSpacing.Medium))
-
+        } else null,
+    ) {
         if (reviews.isEmpty() && !isLoading) {
             Text(
                 text = "No reviews yet. Rate this game and add a review to share your thoughts.",

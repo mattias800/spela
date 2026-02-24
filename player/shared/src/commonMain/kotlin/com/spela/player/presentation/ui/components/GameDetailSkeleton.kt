@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -31,8 +32,18 @@ fun GameDetailSkeleton(
                 onBack = onBack,
             )
         },
-        cover = { modifier ->
+        coverArt = { modifier, _ ->
             SpShimmer(modifier = modifier, width = 0.dp, height = 0.dp)
+        },
+        coverExtra = { isPortrait ->
+            // Rating skeleton below cover (landscape only)
+            if (!isPortrait) {
+                Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                    repeat(5) {
+                        SpShimmer(width = 28.dp, height = 28.dp)
+                    }
+                }
+            }
         },
         sections = {
             // Info section skeleton
@@ -46,7 +57,7 @@ fun GameDetailSkeleton(
                     SpShimmer(width = 220.dp, height = 28.dp)
                     Spacer(Modifier.height(SpSpacing.Small))
 
-                    // Chips row (console + genre + release)
+                    // Chips row (console + verification + region)
                     Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                         SpShimmer(width = 64.dp, height = 24.dp)
                         SpShimmer(width = 80.dp, height = 24.dp)
@@ -54,17 +65,16 @@ fun GameDetailSkeleton(
                     }
                     Spacer(Modifier.height(SpSpacing.XLarge))
 
-                    // Action buttons row
+                    // Action buttons row (split button + actions menu)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     ) {
                         SpShimmer(
                             modifier = Modifier.weight(1f),
                             width = 0.dp,
                             height = 44.dp,
                         )
-                        SpShimmer(width = 44.dp, height = 44.dp)
                         SpShimmer(width = 44.dp, height = 44.dp)
                     }
                     Spacer(Modifier.height(SpSpacing.XLarge))
@@ -81,28 +91,36 @@ fun GameDetailSkeleton(
                     SpShimmer(width = 240.dp, height = 14.dp)
                     Spacer(Modifier.height(SpSpacing.XLarge))
 
-                    // Developer / Publisher
+                    // Metadata grid skeleton (2 columns x 2 rows)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXLarge),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             SpShimmer(width = 64.dp, height = 12.dp)
                             Spacer(Modifier.height(SpSpacing.XXSmall))
                             SpShimmer(width = 100.dp, height = 16.dp)
                         }
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             SpShimmer(width = 64.dp, height = 12.dp)
                             Spacer(Modifier.height(SpSpacing.XXSmall))
                             SpShimmer(width = 100.dp, height = 16.dp)
                         }
                     }
-                    Spacer(Modifier.height(SpSpacing.XLarge))
-
-                    // Rating row
-                    Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
-                        repeat(5) {
-                            SpShimmer(width = 28.dp, height = 28.dp)
+                    Spacer(Modifier.height(SpSpacing.Medium))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            SpShimmer(width = 64.dp, height = 12.dp)
+                            Spacer(Modifier.height(SpSpacing.XXSmall))
+                            SpShimmer(width = 100.dp, height = 16.dp)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            SpShimmer(width = 64.dp, height = 12.dp)
+                            Spacer(Modifier.height(SpSpacing.XXSmall))
+                            SpShimmer(width = 100.dp, height = 16.dp)
                         }
                     }
                     Spacer(Modifier.height(SpSpacing.XLarge))

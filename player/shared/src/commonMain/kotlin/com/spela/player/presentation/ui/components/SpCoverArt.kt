@@ -31,22 +31,26 @@ fun SpCoverArt(
     contentDescription: String,
     modifier: Modifier = Modifier,
     cornerRadius: Dp = SpSpacing.RadiusLarge,
-    aspectRatio: Float = 0.714f,
+    aspectRatio: Float? = 0.714f,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
+    val boxModifier = if (aspectRatio != null) {
+        modifier.aspectRatio(aspectRatio).clip(shape)
+    } else {
+        modifier.clip(shape)
+    }
+    val scale = if (aspectRatio != null) ContentScale.Crop else ContentScale.FillWidth
 
     Box(
-        modifier = modifier
-            .aspectRatio(aspectRatio)
-            .clip(shape),
+        modifier = boxModifier,
         contentAlignment = Alignment.Center,
     ) {
         if (imageUrl != null) {
             SubcomposeAsyncImage(
                 model = imageUrl,
                 contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = scale,
                 loading = {
                     CoverShimmer()
                 },

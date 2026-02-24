@@ -122,6 +122,11 @@ tasks.withType<Test> {
 }
 
 // Make the run task depend on building the native library.
-tasks.matching { it.name == "run" || it.name == "desktopRun" }.configureEach {
+tasks.matching { it.name == "run" || it.name == "desktopRun" || it.name == "hotRunDesktop" }.configureEach {
     dependsOn(buildNativeLibrary)
+}
+
+// Pass native library path to Compose Hot Reload tasks.
+tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") }.configureEach {
+    jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")
 }

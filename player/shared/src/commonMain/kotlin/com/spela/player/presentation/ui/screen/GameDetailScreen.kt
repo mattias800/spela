@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -38,9 +38,10 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.intent.GameDetailIntent
-import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import com.spela.player.presentation.ui.feature.collections.CollectionPickerDial
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.feature.gamedetail.BiosWarningChip
 import com.spela.player.presentation.ui.feature.gamedetail.GameActionsMenu
+import com.spela.player.presentation.ui.feature.gamedetail.MetadataGrid
 import com.spela.player.presentation.ui.feature.gamedetail.VerificationChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
@@ -57,7 +59,6 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
-import com.spela.player.presentation.ui.feature.gamedetail.InfoColumn
 import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
@@ -68,21 +69,24 @@ import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpConsoleChip
-import com.spela.player.presentation.ui.components.SpHeroCover
+import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
+import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import com.spela.player.util.formatPlayTime
 
 @Composable
 fun GameDetailScreen(
@@ -114,31 +118,38 @@ fun GameDetailScreen(
     val detail = state.gameDetail ?: return
     val game = detail.game
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isPortraitScreen = maxWidth <= maxHeight
         GameDetailLayout(
             topBar = {
                 SpTopBar(
                     title = "",
                     showBack = true,
                     onBack = onBack,
-                    modifier = Modifier.background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                SpColor.Background.copy(alpha = 0.7f),
-                                SpColor.Background.copy(alpha = 0f),
-                            ),
-                        )
-                    ),
                 )
             },
-            cover = { modifier ->
+            coverArt = { modifier, isPortrait ->
                 // Read coverUrl from state delegate (not snapshot) so
                 // the LazyColumn item recomposes when it changes after scraping.
-                SpHeroCover(
+                SpCoverArt(
                     imageUrl = state.gameDetail?.game?.coverUrl,
                     contentDescription = "${game.title} cover art",
                     modifier = modifier,
+                    aspectRatio = if (isPortrait) null else 0.714f,
                 )
+            },
+            coverExtra = { isPortrait ->
+                // User rating below the cover (landscape only; portrait shows it inline)
+                if (!isPortrait) {
+                    StarRatingRow(
+                        currentRating = state.myRating,
+                        averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
+                        ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+                        onRate = { rating ->
+                            viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                        },
+                    )
+                }
             },
             sections = {
                 item {
@@ -152,6 +163,7 @@ fun GameDetailScreen(
                             game = game,
                             detail = detail,
                             state = state,
+                            isPortrait = isPortraitScreen,
                             hasSaves = state.saveStates.isNotEmpty(),
                             missingBiosFiles = state.missingBiosFiles,
                             onPlay = onPlay,
@@ -160,17 +172,92 @@ fun GameDetailScreen(
                             onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                             onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
                             onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
-                            onRate = { rating -> viewModel.onIntent(GameDetailIntent.RateGame(rating)) },
                             onCreateNetplay = onCreateNetplay,
                             onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
+                            onRate = { rating ->
+                                viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                            },
                         )
                     }
                 }
 
+                // Section ordering matches web UI:
+
+                // 1. Community Stats
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameCommunityStatsSection(
+                            stats = state.gameStats,
+                            isLoading = state.isLoadingStats,
+                        )
+                    }
+                }
+
+                // Your Rating (portrait only — landscape shows it under cover art)
+                if (isPortraitScreen) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Spacer(Modifier.height(SpSpacing.XXLarge))
+                            StarRatingRow(
+                                currentRating = state.myRating,
+                                averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
+                                ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+                                onRate = { rating ->
+                                    viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                                },
+                            )
+                        }
+                    }
+                }
+
+                // 2. Reviews
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameReviewsSection(
+                            reviews = state.reviews,
+                            reviewsTotal = state.reviewsTotal,
+                            reviewsPage = state.reviewsPage,
+                            isLoading = state.isLoadingReviews,
+                            onLoadMore = {
+                                viewModel.onIntent(GameDetailIntent.LoadMoreReviews(gameId))
+                            },
+                        )
+                    }
+                }
+
+                // 3. Screenshots
                 item {
                     ScreenshotsSection(detail.screenshots)
                 }
 
+                // 4. Achievements
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        GameAchievementsSection(
+                            achievements = state.achievements,
+                            progress = state.achievementProgress,
+                            timeline = state.achievementTimeline,
+                            leaderboard = state.achievementLeaderboard,
+                            viewMode = state.achievementsView,
+                            isLoading = state.isLoadingAchievements,
+                            onToggleView = { mode ->
+                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
+                            },
+                            achievementsWarning = game.achievementsWarning,
+                        )
+                    }
+                }
+
+                // 5. Save States
                 item {
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -184,13 +271,13 @@ fun GameDetailScreen(
                     }
                 }
 
-                // Save Data (SRAM) section
+                // 6. Save Data (SRAM) - app-specific
                 if (onNavigateToSaveData != null && state.saveDataCount > 0) {
                     item {
                         Column(
                             modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                         ) {
-                            Spacer(Modifier.height(SpSpacing.Medium))
+                            Spacer(Modifier.height(SpSpacing.XXLarge))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -211,6 +298,7 @@ fun GameDetailScreen(
                     }
                 }
 
+                // 7. Community Shares
                 item {
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -227,7 +315,7 @@ fun GameDetailScreen(
                     }
                 }
 
-                // Controls section (per-game key mapping override)
+                // 8. Game Controls - app-specific
                 if (keyMappingViewModel != null && keyMappingState != null) {
                     item {
                         val consoleId = game.consoleId
@@ -254,7 +342,6 @@ fun GameDetailScreen(
                                     )
                                 },
                                 onEditMapping = {
-                                    // For now, re-load the mapping so user can see it
                                     keyMappingViewModel.onIntent(
                                         KeyMappingIntent.LoadGameMapping(gameId, consoleId)
                                     )
@@ -264,6 +351,7 @@ fun GameDetailScreen(
                     }
                 }
 
+                // 9. Challenges
                 if (onNavigateToChallenges != null) {
                     item {
                         Column(
@@ -280,56 +368,7 @@ fun GameDetailScreen(
                     }
                 }
 
-                // Community Stats
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameCommunityStatsSection(
-                            stats = state.gameStats,
-                            isLoading = state.isLoadingStats,
-                        )
-                    }
-                }
-
-                // Achievements
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameAchievementsSection(
-                            achievements = state.achievements,
-                            progress = state.achievementProgress,
-                            timeline = state.achievementTimeline,
-                            leaderboard = state.achievementLeaderboard,
-                            viewMode = state.achievementsView,
-                            isLoading = state.isLoadingAchievements,
-                            onToggleView = { mode ->
-                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
-                            },
-                            achievementsWarning = game.achievementsWarning,
-                        )
-                    }
-                }
-
-                // Reviews
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameReviewsSection(
-                            reviews = state.reviews,
-                            reviewsTotal = state.reviewsTotal,
-                            reviewsPage = state.reviewsPage,
-                            isLoading = state.isLoadingReviews,
-                            onLoadMore = {
-                                viewModel.onIntent(GameDetailIntent.LoadMoreReviews(gameId))
-                            },
-                        )
-                    }
-                }
-
-                // Active Relays
+                // 10. Active Relays
                 if (onNavigateToRelay != null) {
                     item {
                         Column(
@@ -429,6 +468,7 @@ private fun GameInfoContent(
     game: Game,
     detail: GameDetail,
     state: GameDetailState,
+    isPortrait: Boolean = false,
     hasSaves: Boolean,
     missingBiosFiles: List<BiosMissingFile> = emptyList(),
     onPlay: (String) -> Unit,
@@ -437,19 +477,34 @@ private fun GameInfoContent(
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
-    onRate: (Int) -> Unit,
     onCreateNetplay: ((String) -> Unit)? = null,
     onDeleteLocalGame: () -> Unit = {},
+    onRate: (Int) -> Unit = {},
 ) {
-    Text(
-        text = game.title,
-        style = SpTypography.DisplaySmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier.semantics { heading() },
-    )
+    // Title row with trophy icon if achievements exist
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        Text(
+            text = game.title,
+            style = SpTypography.DisplaySmall,
+            color = SpColor.OnBackground,
+            modifier = Modifier.weight(1f, fill = false).semantics { heading() },
+        )
+        if (state.achievements.isNotEmpty()) {
+            Icon(
+                imageVector = Icons.Filled.EmojiEvents,
+                contentDescription = "Has achievements",
+                tint = SpColor.Warning,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+    }
 
     Spacer(Modifier.height(SpSpacing.Small))
 
+    // Badges row: console, verification, region, IGDB rating, community rating
     Row(
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         verticalAlignment = Alignment.CenterVertically,
@@ -463,8 +518,6 @@ private fun GameInfoContent(
             verificationTag = game.verificationTag,
         )
         game.region?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
-        game.genre?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
-        game.releaseDate?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
     }
 
     if (game.rating > 0) {
@@ -493,57 +546,103 @@ private fun GameInfoContent(
 
     Spacer(Modifier.height(SpSpacing.XLarge))
 
-    // Action buttons - two-row layout
-    // Row 1: Play/Download split button with overflow menu
+    // Action buttons row: Play/Download + Actions menu
     val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
 
-    if (state.isGameCached) {
-        val menuItems = buildList {
-            if (hasSaves && onPlayFresh != null) {
-                add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (state.isGameCached) {
+            val menuItems = buildList {
+                if (hasSaves && onPlayFresh != null) {
+                    add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+                }
+                if (onCreateNetplay != null && supportsNetplay) {
+                    add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                }
+                add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
             }
-            if (onCreateNetplay != null && supportsNetplay) {
-                add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+
+            SpSplitButton(
+                text = if (hasSaves) "Resume" else "Play",
+                onClick = { onPlay(gameId) },
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
+                    },
+                menuItems = menuItems,
+            )
+        } else {
+            val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+            val isBusy = state.isDownloading || isActivelyDownloading
+
+            val menuItems = buildList {
+                if (onCreateNetplay != null && supportsNetplay) {
+                    add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                }
             }
-            add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+
+            SpSplitButton(
+                text = if (isBusy) "Downloading..." else "Download",
+                onClick = onDownloadGame,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = if (isBusy) "Downloading ${game.title}"
+                        else "Download ${game.title}"
+                    },
+                isLoading = isBusy,
+                enabled = !isBusy,
+                menuItems = menuItems,
+            )
         }
 
-        SpSplitButton(
-            text = if (hasSaves) "Resume" else "Play",
-            onClick = { onPlay(gameId) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
-                },
-            menuItems = menuItems,
-        )
-    } else {
-        val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
-        val isBusy = state.isDownloading || isActivelyDownloading
-
-        val menuItems = buildList {
-            if (onCreateNetplay != null && supportsNetplay) {
-                add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
-            }
-        }
-
-        SpSplitButton(
-            text = if (isBusy) "Downloading..." else "Download",
-            onClick = onDownloadGame,
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = if (isBusy) "Downloading ${game.title}"
-                    else "Download ${game.title}"
-                },
-            isLoading = isBusy,
-            enabled = !isBusy,
-            menuItems = menuItems,
+        GameActionsMenu(
+            isFavorite = game.isFavorite,
+            isInPlayLater = game.isInPlayLater,
+            onToggleFavorite = onToggleFavorite,
+            onTogglePlayLater = onTogglePlayLater,
+            onAddToCollection = onAddToCollection,
         )
     }
 
-    // BIOS warning chip (AC 4.4)
+    // Playtime + last played
+    if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
+        Spacer(Modifier.height(SpSpacing.Medium))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AccessTime,
+                contentDescription = null,
+                tint = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.size(16.dp),
+            )
+            if (game.totalPlayTime > 0) {
+                Text(
+                    text = formatPlayTime(game.totalPlayTime),
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+            game.lastPlayedAt?.let { timestamp ->
+                val relative = formatRelativeTime(timestamp)
+                if (relative.isNotEmpty()) {
+                    Text(
+                        text = "Last played $relative",
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
+            }
+        }
+    }
+
+    // BIOS warning chip
     if (missingBiosFiles.isNotEmpty()) {
         var showBiosInfo by remember { mutableStateOf(false) }
 
@@ -581,17 +680,6 @@ private fun GameInfoContent(
         }
     }
 
-    Spacer(Modifier.height(SpSpacing.Small))
-
-    // Actions menu
-    GameActionsMenu(
-        isFavorite = game.isFavorite,
-        isInPlayLater = game.isInPlayLater,
-        onToggleFavorite = onToggleFavorite,
-        onTogglePlayLater = onTogglePlayLater,
-        onAddToCollection = onAddToCollection,
-    )
-
     // Download progress
     AnimatedVisibility(
         visible = state.downloadProgress?.state == DownloadState.DOWNLOADING,
@@ -621,43 +709,18 @@ private fun GameInfoContent(
 
     // Description
     game.description?.let { description ->
-        Text(
-            text = "About",
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-            modifier = Modifier.semantics { heading() },
-        )
-        Spacer(Modifier.height(SpSpacing.Small))
-        Text(
-            text = description,
-            style = SpTypography.BodyMedium,
-            color = SpColor.OnBackgroundSecondary,
-        )
-        Spacer(Modifier.height(SpSpacing.XLarge))
-    }
-
-    // Developer / Publisher
-    if (game.developer != null || game.publisher != null) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXLarge),
-        ) {
-            game.developer?.let { InfoColumn(label = "Developer", value = it) }
-            game.publisher?.let { InfoColumn(label = "Publisher", value = it) }
+        SpTitledSection(title = "About", includeTopSpacing = false) {
+            Text(
+                text = description,
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+            )
         }
         Spacer(Modifier.height(SpSpacing.XLarge))
     }
 
-    // Rating
-    StarRatingRow(
-        currentRating = state.myRating,
-        averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
-        ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
-        onRate = { rating ->
-            onRate(rating)
-        },
-    )
-    Spacer(Modifier.height(SpSpacing.XLarge))
+    // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
+    MetadataGrid(game = game)
 }
 
 @Composable
