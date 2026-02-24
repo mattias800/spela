@@ -65,17 +65,10 @@ fun SpConsoleChip(
     consoleColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
-            .background(consoleColor.copy(alpha = 0.15f))
-            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = consoleName,
-            style = SpTypography.LabelSmall,
-            color = consoleColor,
-        )
-    }
+    SpChip(
+        text = consoleName,
+        color = consoleColor,
+        isSelected = true,
+        modifier = modifier,
+    )
 }

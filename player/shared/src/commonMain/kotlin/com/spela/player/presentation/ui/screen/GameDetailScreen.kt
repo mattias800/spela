@@ -506,7 +506,7 @@ private fun GameInfoContent(
 
     // Badges row: console, verification, region, IGDB rating, community rating
     Row(
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SpConsoleChip(
@@ -518,11 +518,15 @@ private fun GameInfoContent(
             verificationTag = game.verificationTag,
         )
         game.region?.takeIf { it.isNotBlank() }?.let { SpChip(text = it) }
-    }
-
-    if (game.rating > 0) {
-        Spacer(Modifier.height(SpSpacing.Small))
-        IgdbRatingStars(rating = game.rating)
+        if (game.rating > 0) {
+            IgdbRatingStars(rating = game.rating)
+        }
+        if (game.averageRating > 0) {
+            CommunityRatingBadge(
+                averageRating = game.averageRating,
+                ratingCount = game.ratingCount,
+            )
+        }
     }
 
     if (state.isScraping) {
@@ -743,23 +747,23 @@ private fun IgdbRatingStars(rating: Double) {
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
                 tint = SpColor.Warning,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
         if (hasHalf) {
-            Box(modifier = Modifier.size(16.dp)) {
+            Box(modifier = Modifier.size(20.dp)) {
                 Icon(
                     imageVector = Icons.Outlined.StarOutline,
                     contentDescription = null,
                     tint = SpColor.Warning,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(20.dp),
                 )
-                Box(modifier = Modifier.size(width = 8.dp, height = 16.dp).clipToBounds()) {
+                Box(modifier = Modifier.size(width = 10.dp, height = 20.dp).clipToBounds()) {
                     Icon(
                         imageVector = Icons.Filled.Star,
                         contentDescription = null,
                         tint = SpColor.Warning,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -769,7 +773,7 @@ private fun IgdbRatingStars(rating: Double) {
                 imageVector = Icons.Outlined.StarOutline,
                 contentDescription = null,
                 tint = SpColor.OnBackgroundTertiary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
 
@@ -777,8 +781,36 @@ private fun IgdbRatingStars(rating: Double) {
 
         Text(
             text = "${"%.1f".format(normalized)}/10",
-            style = SpTypography.LabelSmall,
+            style = SpTypography.LabelMedium,
             color = SpColor.OnBackgroundSecondary,
+        )
+    }
+}
+
+@Composable
+private fun CommunityRatingBadge(averageRating: Double, ratingCount: Long) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+        modifier = Modifier.semantics {
+            contentDescription = "Community rating: ${"%.1f".format(averageRating)} from $ratingCount ratings"
+        },
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = SpColor.Warning,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = "%.1f".format(averageRating),
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundTertiary,
+        )
+        Text(
+            text = "($ratingCount)",
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundTertiary,
         )
     }
 }
