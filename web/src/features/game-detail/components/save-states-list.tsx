@@ -44,28 +44,36 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
                     {formatFileSize(save.fileSize)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShareTarget(save)}
-                    className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-brand-400 hover:bg-surface-800/50 transition-colors"
-                    title="Share save"
                     aria-label="Share save"
+                    title="Share save"
                   >
                     <Share2 className="h-4 w-4" />
-                  </button>
-                  <a
-                    href={`/api/games/${gameId}/saves/${save.id}`}
-                    download
-                    className="inline-flex items-center justify-center p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/50 transition-colors"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      window.open(
+                        `/api/games/${gameId}/saves/${save.id}`,
+                        "_blank",
+                      )
+                    }
                     aria-label="Download save"
+                    title="Download save"
                   >
                     <Download className="h-4 w-4" />
-                  </a>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteTarget(save.id)}
                     aria-label="Delete save"
+                    title="Delete save"
                   >
                     <Trash2 className="h-4 w-4 text-danger-500" />
                   </Button>

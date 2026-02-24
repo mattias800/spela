@@ -169,7 +169,7 @@ export function GameHero({
                 />
               )}
             </h1>
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center gap-3 mt-2">
               {consoleName && <Badge variant="brand">{consoleName}</Badge>}
               <VerificationBadge game={game} isAdmin={isAdmin} />
               {game.region && <RegionBadge region={game.region} />}
