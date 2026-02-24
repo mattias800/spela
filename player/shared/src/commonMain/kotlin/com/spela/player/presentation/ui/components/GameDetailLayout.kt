@@ -34,20 +34,20 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  * Defines the structural layout for a game detail screen.
  *
  * Uses a side-by-side hero pattern matching the web UI:
- * - **Landscape**: Cover art (fixed ~256dp) on the LEFT, info/sections on the RIGHT.
- *   Both scroll together in one unified scroll container (matching the web UI behavior).
- * - **Portrait**: Cover art centered above, info below, all in a single LazyColumn.
+ * - **Landscape**: Cover art on the LEFT, info/sections on the RIGHT in a Row.
+ *   [fullWidthSections] render below the Row at full width.
+ *   Both scroll together in one unified scroll container.
+ * - **Portrait**: Cover art centered above, all sections below in a single column.
  *
- * The top bar floats over content with a transparent background, matching the
- * console screen pattern. Content scrolls behind the top bar.
+ * The top bar floats over content with a transparent background.
  *
- * @param topBar Composable rendered floating over content (typically [SpTopBar] with back button).
- * @param coverArt Composable for the cover art image. Receives a [Modifier] pre-configured
- *                 with the correct width for the current orientation, and a [Boolean] that is
- *                 `true` when in portrait mode (useful for showing full uncropped art).
- * @param coverExtra Optional composable rendered below the cover art (e.g. rating, download button).
- * @param backgroundColors Gradient colors for the screen background (default: flat SpColor.Background).
- * @param sections Composable content for the scrollable info/sections area.
+ * @param topBar Composable rendered floating over content.
+ * @param coverArt Composable for the cover art image.
+ * @param coverExtra Optional composable rendered below the cover art.
+ * @param backgroundColors Gradient colors for the screen background.
+ * @param sections Content rendered beside the cover art in landscape (right column).
+ * @param fullWidthSections Content rendered below the hero row at full width in landscape.
+ *        In portrait, rendered after [sections] in the same column.
  */
 @Composable
 fun GameDetailLayout(
@@ -56,6 +56,7 @@ fun GameDetailLayout(
     coverExtra: @Composable (isPortrait: Boolean) -> Unit = {},
     backgroundColors: List<Color> = listOf(SpColor.Background, SpColor.Background),
     sections: @Composable () -> Unit,
+    fullWidthSections: @Composable () -> Unit = {},
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -85,6 +86,7 @@ fun GameDetailLayout(
                 coverArt = coverArt,
                 coverExtra = coverExtra,
                 sections = sections,
+                fullWidthSections = fullWidthSections,
             )
         } else {
             PortraitLayout(
@@ -92,6 +94,7 @@ fun GameDetailLayout(
                 coverArt = coverArt,
                 coverExtra = coverExtra,
                 sections = sections,
+                fullWidthSections = fullWidthSections,
             )
         }
     }
@@ -105,6 +108,7 @@ private fun LandscapeLayout(
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
     sections: @Composable () -> Unit,
+    fullWidthSections: @Composable () -> Unit,
 ) {
     val verticalPad = if (isCompact) SpSpacing.Medium else SpSpacing.XLarge
 
@@ -118,6 +122,7 @@ private fun LandscapeLayout(
                 bottom = verticalPad,
             ),
         ) {
+            // Hero row: cover art (left) + sections (right)
             item {
                 val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
                 Row(
@@ -140,7 +145,7 @@ private fun LandscapeLayout(
                         ) {
                             coverArt(Modifier.fillMaxWidth(), false)
                         }
-                        Spacer(Modifier.height(SpSpacing.Medium))
+                        Spacer(Modifier.height(SpSpacing.XLarge))
                         coverExtra(false)
                     }
 
@@ -152,6 +157,13 @@ private fun LandscapeLayout(
                     ) {
                         sections()
                     }
+                }
+            }
+
+            // Full-width sections below the hero row
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    fullWidthSections()
                 }
             }
         }
@@ -167,6 +179,7 @@ private fun PortraitLayout(
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
     sections: @Composable () -> Unit,
+    fullWidthSections: @Composable () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -199,6 +212,7 @@ private fun PortraitLayout(
             item {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     sections()
+                    fullWidthSections()
                 }
             }
 

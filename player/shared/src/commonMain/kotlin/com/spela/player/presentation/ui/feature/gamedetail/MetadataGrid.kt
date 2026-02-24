@@ -69,12 +69,6 @@ internal fun MetadataGrid(
     if (items.isEmpty()) return
 
     Column(modifier = modifier.testTag("metadata_grid")) {
-        Text(
-            text = "Details",
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),

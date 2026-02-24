@@ -81,6 +81,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
@@ -152,14 +153,20 @@ fun GameDetailScreen(
             coverExtra = { isPortrait ->
                 // User rating below the cover (landscape only; portrait shows it inline)
                 if (!isPortrait) {
-                    StarRatingRow(
-                        currentRating = state.myRating,
-                        averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
-                        ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
-                        onRate = { rating ->
-                            viewModel.onIntent(GameDetailIntent.RateGame(rating))
-                        },
-                    )
+                    SpTitledSection(
+                        title = "Your Rating",
+                        icon = Icons.Filled.Star,
+                        includeTopSpacing = false,
+                    ) {
+                        StarRatingRow(
+                            currentRating = state.myRating,
+                            averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
+                            ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+                            onRate = { rating ->
+                                viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                            },
+                        )
+                    }
                 }
             },
             sections = {
@@ -190,9 +197,11 @@ fun GameDetailScreen(
                     )
                 }
 
+            },
+            fullWidthSections = {
                 // Section ordering matches web UI:
 
-                // 1. Community Stats
+                // 1. Community Stats (Play Activity)
                 Column(
                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                 ) {

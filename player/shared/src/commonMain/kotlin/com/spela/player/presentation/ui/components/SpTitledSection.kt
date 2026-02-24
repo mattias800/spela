@@ -60,7 +60,7 @@ fun SpTitledSection(
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.18f), shape)
                 .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
-                .padding(SpSpacing.Default),
+                .padding(SpSpacing.XLarge),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -85,7 +85,7 @@ fun SpTitledSection(
                         titleTrailing()
                     }
                 }
-                Spacer(Modifier.height(SpSpacing.Medium))
+                Spacer(Modifier.height(SpSpacing.Default))
                 content()
             }
         }

@@ -37,13 +37,6 @@ fun StarRatingRow(
     starSize: Dp = 32.dp,
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = "Your Rating",
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-        )
-        Spacer(Modifier.height(SpSpacing.Small))
-
         @OptIn(ExperimentalLayoutApi::class)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
