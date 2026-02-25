@@ -32,8 +32,10 @@ class ConsoleHeroBannerTest {
         )
         advance(harness)
 
-        // Hero banner should show game count
-        onNodeWithText("3 games", substring = true).assertIsDisplayed()
+        // Hero banner should show game count via its accessibility description
+        // ("3 games" text now appears in both the hero banner and the games heading)
+        onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+            .assertIsDisplayed()
     }
 
     @Test
