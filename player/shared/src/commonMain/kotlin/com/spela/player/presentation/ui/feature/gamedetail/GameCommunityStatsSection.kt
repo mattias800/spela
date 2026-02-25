@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.TopPlayer
 import com.spela.player.presentation.ui.components.SpAvatar
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
@@ -98,7 +98,7 @@ private fun StatMiniCard(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(SpSpacing.Default),
         ) {
@@ -130,7 +130,7 @@ private fun TopPlayerRow(
         else -> SpColor.OnBackgroundTertiary
     }
 
-    SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

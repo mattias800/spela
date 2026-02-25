@@ -139,6 +139,7 @@ fun GameDetailScreen(
                     title = "",
                     showBack = true,
                     onBack = onBack,
+                    onGradient = true,
                 )
             },
             backgroundColors = backgroundColors,
@@ -540,7 +541,7 @@ private fun GameInfoContent(
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
                 strokeWidth = 2.dp,
-                color = SpColor.Primary,
+                color = Color.White.copy(alpha = 0.75f),
             )
             Text(
                 text = "Scraping metadata\u2026",
@@ -714,6 +715,7 @@ private fun GameInfoContent(
                     progress = if (progress.isIndeterminate) 0f else progress.progress,
                     showPercentage = !progress.isIndeterminate,
                     label = "Downloading...",
+                    onGradient = true,
                 )
             }
         }
@@ -732,7 +734,7 @@ private fun GameInfoContent(
     }
 
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
-    MetadataGrid(game = game)
+    MetadataGrid(game = game, onGradient = true)
 }
 
 @Composable

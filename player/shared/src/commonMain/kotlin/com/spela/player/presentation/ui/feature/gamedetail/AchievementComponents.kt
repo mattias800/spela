@@ -31,7 +31,7 @@ import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineEntry
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.presentation.ui.components.SpAvatar
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -49,7 +49,7 @@ internal fun AchievementCard(
 ) {
     val alpha = if (isUnlocked) 1f else 0.5f
 
-    SpCard(modifier = modifier.alpha(alpha)) {
+    SpInnerCard(modifier = modifier.alpha(alpha)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -135,7 +135,7 @@ internal fun TimelineEntryRow(
         Spacer(Modifier.width(SpSpacing.Small))
 
         // Content card
-        SpCard(
+        SpInnerCard(
             modifier = Modifier
                 .weight(1f)
                 .padding(vertical = SpSpacing.XSmall),
@@ -226,7 +226,7 @@ internal fun LeaderboardRow(
         (player.unlockedCount * 100) / totalAchievements
     } else 0
 
-    SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

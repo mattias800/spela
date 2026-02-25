@@ -41,6 +41,7 @@ import com.spela.player.util.formatBytes
 internal fun MetadataGrid(
     game: Game,
     modifier: Modifier = Modifier,
+    onGradient: Boolean = false,
 ) {
     val items = buildList {
         game.developer?.takeIf { it.isNotBlank() }?.let {
@@ -81,6 +82,7 @@ internal fun MetadataGrid(
                     label = item.label,
                     value = item.value,
                     modifier = Modifier.weight(1f),
+                    onGradient = onGradient,
                 )
             }
         }
@@ -99,7 +101,9 @@ private fun MetadataItem(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    onGradient: Boolean = false,
 ) {
+    val secondaryColor = if (onGradient) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.50f) else SpColor.OnBackgroundTertiary
     Row(
         modifier = modifier.padding(vertical = SpSpacing.XSmall),
         verticalAlignment = Alignment.CenterVertically,
@@ -107,7 +111,7 @@ private fun MetadataItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = SpColor.OnBackgroundTertiary,
+            tint = secondaryColor,
             modifier = Modifier.size(18.dp),
         )
         Spacer(Modifier.width(SpSpacing.Small))
@@ -115,7 +119,7 @@ private fun MetadataItem(
             Text(
                 text = label,
                 style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
+                color = secondaryColor,
             )
             Text(
                 text = value,

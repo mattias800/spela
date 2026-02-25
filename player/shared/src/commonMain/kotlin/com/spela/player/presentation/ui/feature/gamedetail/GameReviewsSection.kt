@@ -24,7 +24,7 @@ import com.spela.player.domain.model.GameRating
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -93,7 +93,7 @@ private fun ReviewItem(
     rating: GameRating,
     modifier: Modifier = Modifier,
 ) {
-    SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

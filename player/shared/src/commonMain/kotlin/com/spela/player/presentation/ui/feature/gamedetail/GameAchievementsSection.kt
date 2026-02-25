@@ -28,6 +28,7 @@ import com.spela.player.domain.model.GameAchievement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EmojiEvents
 import com.spela.player.presentation.state.AchievementsViewMode
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -279,7 +280,7 @@ private fun TimelineStatCard(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    com.spela.player.presentation.ui.components.SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Column(modifier = Modifier.padding(SpSpacing.Default)) {
             Text(
                 text = value,

@@ -19,7 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Repeat
 import com.spela.player.domain.model.Relay
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -68,7 +68,7 @@ private fun RelayItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SpCard(
+    SpInnerCard(
         modifier = modifier
             .clickable(onClick = onClick)
             .testTag("relay_item_${relay.id}"),

@@ -36,7 +36,12 @@ fun SpProgressBar(
     progressColors: List<Color> = listOf(SpColor.Primary, SpColor.Accent),
     showPercentage: Boolean = false,
     label: String? = null,
+    onGradient: Boolean = false,
 ) {
+    val resolvedTrackColor = if (onGradient) Color.White.copy(alpha = 0.12f) else trackColor
+    val resolvedProgressColors = if (onGradient) listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.90f)) else progressColors
+    val resolvedLabelColor = if (onGradient) Color.White.copy(alpha = 0.70f) else SpColor.OnBackgroundSecondary
+
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = tween(300),
@@ -53,7 +58,7 @@ fun SpProgressBar(
                     Text(
                         text = label,
                         style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundSecondary,
+                        color = resolvedLabelColor,
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -61,7 +66,7 @@ fun SpProgressBar(
                     Text(
                         text = "${(animatedProgress * 100).toInt()}%",
                         style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundSecondary,
+                        color = resolvedLabelColor,
                     )
                 }
             }
@@ -73,14 +78,14 @@ fun SpProgressBar(
                 .fillMaxWidth()
                 .height(height)
                 .clip(RoundedCornerShape(height / 2))
-                .background(trackColor),
+                .background(resolvedTrackColor),
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(fraction = animatedProgress)
                     .height(height)
                     .clip(RoundedCornerShape(height / 2))
-                    .background(Brush.horizontalGradient(progressColors)),
+                    .background(Brush.horizontalGradient(resolvedProgressColors)),
             )
         }
     }

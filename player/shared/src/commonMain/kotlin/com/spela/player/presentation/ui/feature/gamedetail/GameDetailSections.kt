@@ -46,7 +46,7 @@ import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.SharedSaveItem
@@ -75,7 +75,7 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(screenshots.size, key = { screenshots[it] }) { index ->
-            SpCard(
+            SpInnerCard(
                 modifier = Modifier.width(280.dp),
                 onClick = { lightboxIndex = index },
             ) {
@@ -192,7 +192,7 @@ private fun SaveStateItem(
         )
     }
 
-    SpCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

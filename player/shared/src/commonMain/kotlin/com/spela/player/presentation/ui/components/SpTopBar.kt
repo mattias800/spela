@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -44,6 +45,7 @@ fun SpTopBar(
     showBack: Boolean = false,
     onBack: () -> Unit = {},
     titleLeadingContent: @Composable (() -> Unit)? = null,
+    onGradient: Boolean = false,
     actions: @Composable () -> Unit = {},
 ) {
     Column(
@@ -66,7 +68,7 @@ fun SpTopBar(
                         .size(48.dp)
                         .spFocusRing(shape = CircleShape)
                         .clip(CircleShape)
-                        .background(SpColor.SurfaceVariant)
+                        .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                         .clickable(onClick = onBack)
                         .focusable()
                         .semantics {

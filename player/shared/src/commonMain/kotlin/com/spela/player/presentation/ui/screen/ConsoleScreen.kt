@@ -346,6 +346,7 @@ fun ConsoleScreen(
             SpTopBar(
                 title = consoleName,
                 showBack = true,
+                onGradient = true,
                 onBack = {
                     if (isSearchVisible) {
                         viewModel.onIntent(GameListIntent.Search(""))
@@ -367,6 +368,7 @@ fun ConsoleScreen(
                     SpIconButton(
                         icon = Icons.Filled.Search,
                         contentDescription = "Search games",
+                        onGradient = true,
                         onClick = { isSearchVisible = !isSearchVisible },
                         badge = if (!isSearchVisible && state.searchQuery.isNotEmpty()) {
                             {
@@ -382,6 +384,7 @@ fun ConsoleScreen(
                     SpIconButton(
                         icon = Icons.Filled.Settings,
                         contentDescription = "Console settings",
+                        onGradient = true,
                         onClick = onNavigateToConsoleSettings,
                     )
                 },

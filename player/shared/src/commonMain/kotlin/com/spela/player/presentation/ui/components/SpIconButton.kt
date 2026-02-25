@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -36,6 +37,7 @@ fun SpIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onGradient: Boolean = false,
     badge: @Composable (BoxScope.() -> Unit)? = null,
 ) {
     Box(modifier = modifier) {
@@ -44,7 +46,7 @@ fun SpIconButton(
                 .size(40.dp)
                 .spFocusRing(shape = CircleShape)
                 .clip(CircleShape)
-                .background(SpColor.SurfaceVariant)
+                .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                 .clickable(onClick = onClick)
                 .focusable()
                 .semantics {

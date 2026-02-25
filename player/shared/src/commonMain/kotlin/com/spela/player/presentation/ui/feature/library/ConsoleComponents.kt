@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +51,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Console
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpGradientCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -401,20 +402,20 @@ internal fun ConsoleAboutSection(
             maxLines = if (expanded) Int.MAX_VALUE else 2,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextButton(
+        SpButton(
+            text = if (expanded) "Less" else "More",
             onClick = { expanded = !expanded },
+            style = SpButtonStyle.Ghost,
+            onGradient = true,
             modifier = Modifier.align(Alignment.End),
-        ) {
-            Icon(
-                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Text(
-                text = if (expanded) "Less" else "More",
-                style = SpTypography.LabelSmall,
-            )
-        }
+            leadingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            },
+        )
     }
 }
 
