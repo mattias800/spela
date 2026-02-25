@@ -16,6 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -53,7 +61,7 @@ import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Console
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
-import com.spela.player.presentation.ui.components.SpGradientCard
+import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -105,84 +113,199 @@ internal fun ConsoleCard(
     hasMissingBios: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val consoleColor = getConsoleColor(console.colorTheme)
+    val (gradientFrom, gradientTo) = getConsoleGradient(console.abbreviation, console.colorTheme)
+    val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     val biosDesc = if (hasMissingBios) ", BIOS missing" else ""
+    val consoleInfo = getConsoleInfo(console.abbreviation)
 
-    SpGradientCard(
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(
+        targetValue = when {
+            isPressed -> 0.97f
+            isHovered -> 1.02f
+            else -> 1f
+        },
+        animationSpec = tween(150),
+        label = "consoleCardScale",
+    )
+
+    Box(
         modifier = modifier
-            .height(120.dp)
+            .height(180.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .shadow(8.dp, shape)
+            .clip(shape)
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val d = (size.width + size.height) * 0.25f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(gradientFrom, gradientTo),
+                        start = Offset(cx - d, cy - d),
+                        end = Offset(cx + d, cy + d),
+                    ),
+                )
+            }
+            .border(1.dp, HeroBorder, shape)
+            .hoverable(interactionSource = interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games$biosDesc"
                 role = Role.Button
             },
-        onClick = onClick,
-        gradientColors = listOf(
-            consoleColor.copy(alpha = 0.3f),
-            consoleColor.copy(alpha = 0.1f),
-        ),
     ) {
-        Row(
+        // Watermark icon: bottom-end, clipped, 7% opacity
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(SpSpacing.Default),
-            verticalAlignment = Alignment.CenterVertically,
+                .align(Alignment.BottomEnd)
+                .offset(x = 20.dp, y = 20.dp)
+                .size(140.dp)
+                .alpha(0.07f),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                ) {
-                    var logoFailed by remember { mutableStateOf(false) }
-
-                    if (console.logoUrl.isNotEmpty() && !logoFailed) {
-                        AsyncImage(
-                            model = console.logoUrl,
-                            contentDescription = console.name,
-                            modifier = Modifier.weight(1f, fill = false).heightIn(max = 40.dp),
-                            contentScale = ContentScale.Fit,
-                            alignment = Alignment.CenterStart,
-                            onError = { logoFailed = true },
-                        )
-                    } else {
-                        Text(
-                            text = console.name,
-                            style = SpTypography.TitleLarge,
-                            color = SpColor.OnBackground,
-                        )
-                    }
-                    if (hasMissingBios) {
-                        Icon(
-                            imageVector = Icons.Filled.Warning,
-                            contentDescription = "BIOS missing for ${console.name}",
-                            tint = SpColor.Warning,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = "${console.gameCount} games",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundSecondary,
-                )
-            }
             if (console.iconUrl.isNotEmpty()) {
                 AsyncImage(
                     model = console.iconUrl,
-                    contentDescription = "${console.name} icon",
-                    modifier = Modifier.size(56.dp),
-                    alpha = 0.7f,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
                 )
             } else {
                 Icon(
                     imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = "${console.name} icon",
-                    tint = SpColor.OnBackground.copy(alpha = 0.3f),
-                    modifier = Modifier.size(56.dp),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.fillMaxSize(),
                 )
+            }
+        }
+
+        // Vertical depth overlay: light top, dark bottom
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(HeroOverlayTop, Color.Transparent, HeroOverlayBottom),
+                    ),
+                ),
+        )
+
+        // Content: logo top-left, stats bottom-left
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(SpSpacing.Default),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Top: console logo (or name fallback) + optional BIOS warning
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+            ) {
+                var logoFailed by remember { mutableStateOf(false) }
+                if (console.logoUrl.isNotEmpty() && !logoFailed) {
+                    AsyncImage(
+                        model = console.logoUrl,
+                        contentDescription = console.name,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .heightIn(max = 44.dp),
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.CenterStart,
+                        onError = { logoFailed = true },
+                    )
+                } else {
+                    Text(
+                        text = console.name,
+                        style = SpTypography.HeadlineMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HeroTextPrimary,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
+                if (hasMissingBios) {
+                    Icon(
+                        imageVector = Icons.Filled.Warning,
+                        contentDescription = "BIOS missing for ${console.name}",
+                        tint = SpColor.Warning,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+
+            // Bottom: game count + manufacturer · year
+            Column {
+                Text(
+                    text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                    style = SpTypography.BodySmall,
+                    color = HeroTextSecondary,
+                )
+                if (consoleInfo != null) {
+                    Text(
+                        text = "${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}",
+                        style = SpTypography.LabelSmall,
+                        color = Color.White.copy(alpha = 0.50f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun ConsoleCardSkeleton(
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
+    Box(
+        modifier = modifier
+            .height(180.dp)
+            .clip(shape)
+            .background(SpColor.SurfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(SpSpacing.Default),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            SpShimmer(width = 120.dp, height = 28.dp)
+            Column {
+                SpShimmer(width = 64.dp, height = 12.dp)
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                SpShimmer(width = 96.dp, height = 10.dp)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun ConsolesSkeletonGrid(
+    columnsPerRow: Int,
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        (0 until count).chunked(columnsPerRow).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                row.forEach { _ ->
+                    ConsoleCardSkeleton(modifier = Modifier.weight(1f))
+                }
+                repeat(columnsPerRow - row.size) {
+                    Spacer(Modifier.weight(1f))
+                }
             }
         }
     }

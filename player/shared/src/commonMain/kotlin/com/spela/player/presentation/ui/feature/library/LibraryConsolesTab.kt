@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameListViewModel
@@ -60,11 +59,22 @@ internal fun LibraryConsolesTab(
             },
     ) {
         if (state.isLoading && state.consoles.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                SpLoadingIndicator(message = "Loading consoles...")
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val columnsPerRow = if (maxWidth >= 600.dp) 2 else 1
+                LazyColumn(
+                    contentPadding = PaddingValues(
+                        horizontal = SpSpacing.ScreenHorizontal,
+                        vertical = SpSpacing.Default,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                ) {
+                    item {
+                        ConsolesSkeletonGrid(
+                            columnsPerRow = columnsPerRow,
+                            count = if (columnsPerRow == 2) 4 else 3,
+                        )
+                    }
+                }
             }
         } else {
             PullToRefreshBox(
@@ -90,7 +100,7 @@ internal fun LibraryConsolesTab(
                     ) {
                         item {
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                                val columnsPerRow = if (maxWidth > 600.dp) 3 else 2
+                                val columnsPerRow = if (maxWidth >= 600.dp) 2 else 1
                                 ConsolesGrid(
                                     consoles = state.consoles,
                                     onConsoleSelected = onConsoleSelected,
