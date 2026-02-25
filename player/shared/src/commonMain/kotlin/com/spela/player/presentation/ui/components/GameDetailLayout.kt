@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -91,6 +92,7 @@ fun GameDetailLayout(
             )
         } else {
             PortraitLayout(
+                screenHeight = maxHeight,
                 topBar = topBar,
                 coverArt = coverArt,
                 coverExtra = coverExtra,
@@ -176,6 +178,7 @@ private fun LandscapeLayout(
 
 @Composable
 private fun PortraitLayout(
+    screenHeight: Dp,
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
@@ -197,6 +200,7 @@ private fun PortraitLayout(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(max = screenHeight * 0.5f)
                             .padding(horizontal = SpSpacing.XXLarge)
                             .shadow(8.dp, coverShape)
                             .clip(coverShape)
