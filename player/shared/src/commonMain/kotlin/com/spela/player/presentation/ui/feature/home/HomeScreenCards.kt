@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,9 +32,11 @@ import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.feature.library.MetadataBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.formatPlayTime
 
 @Composable
 internal fun ContinuePlayingRow(
@@ -88,14 +94,27 @@ internal fun ContinuePlayingCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackground.copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .background(SpColor.SurfaceVariant, RoundedCornerShape(SpSpacing.RadiusSmall))
-                        .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XXSmall),
+                MetadataBadge(
+                    icon = {
+                        Icon(
+                            Icons.Filled.SportsEsports,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = SpColor.OnCard.copy(alpha = 0.85f),
+                        )
+                    },
+                    label = game.consoleName,
+                    backgroundColor = SpColor.OnCard.copy(alpha = 0.12f),
+                    textColor = SpColor.OnCard.copy(alpha = 0.85f),
                 )
+                if (game.totalPlayTime > 0) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
+                    Text(
+                        text = formatPlayTime(game.totalPlayTime),
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
             }
         }
     }

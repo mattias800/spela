@@ -267,7 +267,7 @@ private fun ActivityFeedItem(
             SpCoverArt(
                 imageUrl = event.gameCoverUrl,
                 contentDescription = event.gameTitle?.let { "$it cover" } ?: "Game cover",
-                modifier = Modifier.size(width = 40.dp, height = 56.dp),
+                modifier = Modifier.height(56.dp),
                 cornerRadius = SpSpacing.RadiusDefault,
             )
         }

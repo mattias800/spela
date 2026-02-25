@@ -42,7 +42,7 @@ internal fun GameActionsMenu(
         SpButton(
             text = "",
             onClick = { expanded = true },
-            style = SpButtonStyle.Secondary,
+            style = SpButtonStyle.Outlined,
             modifier = Modifier.semantics {
                 contentDescription = "More actions"
                 role = Role.Button

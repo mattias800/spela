@@ -159,7 +159,7 @@ fun ConsoleScreen(
                         top = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
                         bottom = SpSpacing.Default,
                     ),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                 ) {
                     // Console hero banner (scrolls with content, includes info section)
@@ -183,7 +183,7 @@ fun ConsoleScreen(
                                 ContinuePlayingRow(
                                     games = continuePlayingGames,
                                     onGameSelected = onGameSelected,
-                                    contentPadding = PaddingValues(0.dp),
+                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )
                             }
                         }

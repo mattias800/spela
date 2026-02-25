@@ -93,7 +93,7 @@ internal fun ConsoleCard(
 
     SpGradientCard(
         modifier = modifier
-            .height(100.dp)
+            .height(120.dp)
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games$biosDesc"
                 role = Role.Button
@@ -124,7 +124,7 @@ internal fun ConsoleCard(
                         AsyncImage(
                             model = console.logoUrl,
                             contentDescription = console.name,
-                            modifier = Modifier.weight(1f, fill = false).heightIn(max = 32.dp),
+                            modifier = Modifier.weight(1f, fill = false).heightIn(max = 40.dp),
                             contentScale = ContentScale.Fit,
                             alignment = Alignment.CenterStart,
                             onError = { logoFailed = true },
@@ -145,6 +145,7 @@ internal fun ConsoleCard(
                         )
                     }
                 }
+                Spacer(Modifier.height(SpSpacing.Small))
                 Text(
                     text = "${console.gameCount} games",
                     style = SpTypography.BodySmall,
@@ -245,22 +246,21 @@ internal fun ConsoleHeroBanner(
                 .background(overlayBrush),
         )
 
-        // Content: stats on left, logo + badges centered
-        Row(
+        // Content: stats on left, logo + badges truly centered in full width
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = SpSpacing.XLarge, vertical = 40.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Compact platform details on the left
             ConsoleInfoSection(
                 console = console,
-                modifier = Modifier.padding(end = SpSpacing.Default),
+                modifier = Modifier.align(Alignment.CenterStart),
             )
 
-            // Logo + metadata badges centered
+            // Logo + metadata badges centered in full banner width
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Logo or text fallback
@@ -318,15 +318,16 @@ internal fun ConsoleHeroBanner(
 }
 
 @Composable
-private fun MetadataBadge(
+internal fun MetadataBadge(
     icon: @Composable () -> Unit,
     label: String,
+    backgroundColor: Color = Color.White.copy(alpha = 0.1f),
+    textColor: Color = Color.White.copy(alpha = 0.9f),
 ) {
-    // Web: rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 gap-1.5
     Row(
         modifier = Modifier
             .background(
-                Color.White.copy(alpha = 0.1f),
+                backgroundColor,
                 RoundedCornerShape(SpSpacing.RadiusPill),
             )
             .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall),
@@ -334,12 +335,11 @@ private fun MetadataBadge(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon()
-        // Web: text-xs font-medium text-white/90
         Text(
             text = label,
             style = SpTypography.LabelSmall,
             fontWeight = FontWeight.Medium,
-            color = Color.White.copy(alpha = 0.9f),
+            color = textColor,
         )
     }
 }
