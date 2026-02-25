@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -509,6 +510,7 @@ private fun GameInfoContent(
         SpConsoleChip(
             consoleName = game.consoleName,
             consoleColor = getConsoleColor(game.consoleName),
+            onGradient = true,
         )
         VerificationChip(
             verificationStatus = game.verificationStatus,
@@ -516,7 +518,7 @@ private fun GameInfoContent(
         )
         game.region?.takeIf { it.isNotBlank() }?.let { region ->
             val flag = getRegionFlag(region)
-            SpChip(text = if (flag != null) "$flag $region" else region)
+            SpChip(text = if (flag != null) "$flag $region" else region, onGradient = true)
         }
         if (game.rating > 0) {
             IgdbRatingStars(rating = game.rating)
@@ -581,6 +583,7 @@ private fun GameInfoContent(
                         contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
                     },
                 menuItems = menuItems,
+                onGradient = true,
             )
         } else {
             val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
@@ -606,6 +609,7 @@ private fun GameInfoContent(
                 isLoading = isBusy,
                 enabled = !isBusy,
                 menuItems = menuItems,
+                onGradient = true,
             )
         }
 
@@ -615,17 +619,19 @@ private fun GameInfoContent(
             onToggleFavorite = onToggleFavorite,
             onTogglePlayLater = onTogglePlayLater,
             onAddToCollection = onAddToCollection,
+            onGradient = true,
         )
 
         // Playtime + last played as highlighted chips (inline with buttons)
         if (game.totalPlayTime > 0) {
             SpChip(
                 text = formatPlayTime(game.totalPlayTime),
+                onGradient = true,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.AccessTime,
                         contentDescription = null,
-                        tint = SpColor.OnBackgroundSecondary,
+                        tint = Color.White.copy(alpha = 0.65f),
                         modifier = Modifier.size(14.dp),
                     )
                 },
@@ -636,11 +642,12 @@ private fun GameInfoContent(
             if (relative.isNotEmpty()) {
                 SpChip(
                     text = "Last played $relative",
+                    onGradient = true,
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.History,
                             contentDescription = null,
-                            tint = SpColor.OnBackgroundSecondary,
+                            tint = Color.White.copy(alpha = 0.65f),
                             modifier = Modifier.size(14.dp),
                         )
                     },

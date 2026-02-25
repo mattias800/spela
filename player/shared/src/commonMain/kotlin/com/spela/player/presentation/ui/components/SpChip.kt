@@ -28,11 +28,16 @@ fun SpChip(
     onClick: (() -> Unit)? = null,
     color: Color = SpColor.Primary,
     leadingIcon: (@Composable () -> Unit)? = null,
+    onGradient: Boolean = false,
 ) {
     val shape = RoundedCornerShape(SpSpacing.RadiusPill)
-    val backgroundColor = if (isSelected) color.copy(alpha = 0.2f) else Color.Transparent
-    val borderColor = if (isSelected) color else SpColor.Divider
-    val textColor = if (isSelected) color else SpColor.OnBackgroundSecondary
+    val backgroundColor = when {
+        onGradient -> Color.White.copy(alpha = if (isSelected) 0.12f else 0.06f)
+        isSelected -> color.copy(alpha = 0.2f)
+        else -> Color.Transparent
+    }
+    val borderColor = if (onGradient) Color.White.copy(alpha = 0.20f) else if (isSelected) color else SpColor.Divider
+    val textColor = if (onGradient) Color.White.copy(alpha = 0.90f) else if (isSelected) color else SpColor.OnBackgroundSecondary
 
     Box(
         modifier = modifier
@@ -64,11 +69,13 @@ fun SpConsoleChip(
     consoleName: String,
     consoleColor: Color,
     modifier: Modifier = Modifier,
+    onGradient: Boolean = false,
 ) {
     SpChip(
         text = consoleName,
         color = consoleColor,
         isSelected = true,
         modifier = modifier,
+        onGradient = onGradient,
     )
 }

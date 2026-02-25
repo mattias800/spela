@@ -35,6 +35,7 @@ internal fun GameActionsMenu(
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
+    onGradient: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -43,6 +44,7 @@ internal fun GameActionsMenu(
             text = "",
             onClick = { expanded = true },
             style = SpButtonStyle.Outlined,
+            onGradient = onGradient,
             modifier = Modifier.semantics {
                 contentDescription = "More actions"
                 role = Role.Button

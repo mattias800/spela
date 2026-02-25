@@ -41,6 +41,7 @@ fun SpButton(
     isLoading: Boolean = false,
     leadingIcon: (@Composable () -> Unit)? = null,
     shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
+    onGradient: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -56,10 +57,15 @@ fun SpButton(
     when (style) {
         SpButtonStyle.Primary -> {
             val containerColor by animateColorAsState(
-                targetValue = if (enabled) SpColor.Primary else SpColor.SurfaceBright,
+                targetValue = when {
+                    !enabled -> SpColor.SurfaceBright
+                    onGradient -> Color.White.copy(alpha = 0.15f)
+                    else -> SpColor.Primary
+                },
                 animationSpec = tween(200),
                 label = "primaryContainerColor",
             )
+            val contentColor = if (onGradient && enabled) Color.White else SpColor.OnPrimary
             Button(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
@@ -68,13 +74,13 @@ fun SpButton(
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = containerColor,
-                    contentColor = SpColor.OnPrimary,
+                    contentColor = contentColor,
                     disabledContainerColor = SpColor.SurfaceBright,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon)
+                ButtonContent(text, isLoading, leadingIcon, if (onGradient && enabled) Color.White else SpColor.OnPrimary)
             }
         }
 
@@ -86,14 +92,14 @@ fun SpButton(
                 shape = shape,
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SpColor.Secondary,
-                    contentColor = SpColor.OnSecondary,
+                    containerColor = if (onGradient) Color.White.copy(alpha = 0.12f) else SpColor.Secondary,
+                    contentColor = if (onGradient) Color.White else SpColor.OnSecondary,
                     disabledContainerColor = SpColor.SurfaceBright,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon)
+                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.OnSecondary)
             }
         }
 
@@ -104,14 +110,21 @@ fun SpButton(
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
-                border = BorderStroke(1.dp, if (enabled) SpColor.Primary else SpColor.Divider),
+                border = BorderStroke(
+                    1.dp,
+                    when {
+                        !enabled -> SpColor.Divider
+                        onGradient -> Color.White.copy(alpha = 0.25f)
+                        else -> SpColor.Primary
+                    },
+                ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = SpColor.Primary,
+                    contentColor = if (onGradient) Color.White else SpColor.Primary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon, SpColor.Primary)
+                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.Primary)
             }
         }
 
@@ -123,12 +136,12 @@ fun SpButton(
                 shape = shape,
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = SpColor.Primary,
+                    contentColor = if (onGradient) Color.White else SpColor.Primary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
             ) {
-                ButtonContent(text, isLoading, leadingIcon, SpColor.Primary)
+                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.Primary)
             }
         }
     }

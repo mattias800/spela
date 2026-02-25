@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ fun SpSplitButton(
     isLoading: Boolean = false,
     menuItems: List<SpSplitButtonMenuItem> = emptyList(),
     menuContentDescription: String = "More options",
+    onGradient: Boolean = false,
 ) {
     if (menuItems.isEmpty()) {
         SpButton(
@@ -53,6 +55,7 @@ fun SpSplitButton(
             style = style,
             enabled = enabled,
             isLoading = isLoading,
+            onGradient = onGradient,
         )
         return
     }
@@ -71,6 +74,7 @@ fun SpSplitButton(
             style = style,
             enabled = enabled,
             isLoading = isLoading,
+            onGradient = onGradient,
             shape = RoundedCornerShape(
                 topStart = SpSpacing.RadiusLarge,
                 bottomStart = SpSpacing.RadiusLarge,
@@ -80,7 +84,7 @@ fun SpSplitButton(
         )
 
         // Divider between the two halves
-        val dividerColor = when (style) {
+        val dividerColor = if (onGradient) Color.White.copy(alpha = 0.15f) else when (style) {
             SpButtonStyle.Primary -> SpColor.OnPrimary.copy(alpha = 0.2f)
             SpButtonStyle.Secondary -> SpColor.OnSecondary.copy(alpha = 0.2f)
             SpButtonStyle.Outlined -> SpColor.Divider
@@ -99,6 +103,7 @@ fun SpSplitButton(
                 onClick = { expanded = true },
                 style = style,
                 enabled = enabled,
+                onGradient = onGradient,
                 modifier = Modifier
                     .width(48.dp)
                     .semantics { contentDescription = menuContentDescription },
