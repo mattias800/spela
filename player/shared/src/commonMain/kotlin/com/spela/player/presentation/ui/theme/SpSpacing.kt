@@ -34,6 +34,7 @@ object SpSpacing {
     val GridSpacing = 12.dp
 
     // Icon sizes
+    val IconXSmall = 10.dp
     val IconSmall = 14.dp
     val IconDefault = 20.dp
     val IconLarge = 28.dp

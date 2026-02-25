@@ -57,6 +57,14 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+// Named alpha constants for elements rendered over coloured hero banner backgrounds.
+private val HeroBorder         = Color.White.copy(alpha = 0.06f)
+private val HeroOverlayTop     = Color.White.copy(alpha = 0.04f)
+private val HeroOverlayBottom  = Color.Black.copy(alpha = 0.30f)
+private val HeroTextPrimary    = Color.White.copy(alpha = 0.90f)
+private val HeroTextSecondary  = Color.White.copy(alpha = 0.70f)
+private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
+
 @Composable
 internal fun ConsolesGrid(
     consoles: List<Console>,
@@ -194,9 +202,9 @@ internal fun ConsoleHeroBanner(
     // Web uses bg-gradient-to-t (bottom→top), so in vertical gradient: top=white/4, mid=transparent, bottom=black/30
     val overlayBrush = Brush.verticalGradient(
         colors = listOf(
-            Color.White.copy(alpha = 0.04f),
+            HeroOverlayTop,
             Color.Transparent,
-            Color.Black.copy(alpha = 0.3f),
+            HeroOverlayBottom,
         ),
     )
 
@@ -219,7 +227,7 @@ internal fun ConsoleHeroBanner(
                     ),
                 )
             }
-            .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
+            .border(1.dp, HeroBorder, shape)
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games"
             },
@@ -322,17 +330,17 @@ internal fun ConsoleHeroBanner(
                         text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
                         style = SpTypography.BodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = HeroTextSecondary,
                     )
                     if (console.saveStateSupport) {
                         MetadataBadge(
-                            icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
+                            icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
                             label = "Save states",
                         )
                     }
                     if (console.browserPlayable) {
                         MetadataBadge(
-                            icon = { Icon(Icons.Filled.Language, null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.9f)) },
+                            icon = { Icon(Icons.Filled.Language, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
                             label = "Browser play",
                         )
                     }
@@ -346,8 +354,8 @@ internal fun ConsoleHeroBanner(
 internal fun MetadataBadge(
     icon: @Composable () -> Unit,
     label: String,
-    backgroundColor: Color = Color.White.copy(alpha = 0.1f),
-    textColor: Color = Color.White.copy(alpha = 0.9f),
+    backgroundColor: Color = HeroBadgeBackground,
+    textColor: Color = HeroTextPrimary,
 ) {
     Row(
         modifier = Modifier
@@ -445,7 +453,7 @@ internal fun ConsoleAboutSection(
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
-            text = if (expanded) info.summary else info.summary,
+            text = info.summary,
             style = SpTypography.BodySmall,
             color = SpColor.OnBackgroundSecondary,
             maxLines = if (expanded) Int.MAX_VALUE else 2,

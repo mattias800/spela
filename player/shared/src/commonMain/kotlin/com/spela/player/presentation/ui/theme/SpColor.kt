@@ -41,6 +41,10 @@ object SpColor {
     val OnSurfaceVariant = Color(0xFFA0A0B8)
     val OnCard = Color(0xFFE0E0F0)
 
+    // Semantic interaction colors
+    val Favorite = Color(0xFFFF4757)  // heart / like
+    val Rating = Color(0xFFFACC15)    // star rating
+
     // Status colors
     val Success = Color(0xFF00C853)
     val SuccessContainer = Color(0xFF0D2818)

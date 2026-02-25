@@ -25,13 +25,16 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+/** Standard portrait game cover aspect ratio (5 × 7). */
+private const val COVER_ASPECT_RATIO: Float = 5f / 7f
+
 @Composable
 fun SpCoverArt(
     imageUrl: String?,
     contentDescription: String,
     modifier: Modifier = Modifier,
     cornerRadius: Dp = SpSpacing.RadiusLarge,
-    aspectRatio: Float? = 0.714f,
+    aspectRatio: Float? = COVER_ASPECT_RATIO,
     // True while a scrape is in progress — shows an animated shimmer instead of
     // the static placeholder so the user knows something is happening.
     isLoading: Boolean = false,

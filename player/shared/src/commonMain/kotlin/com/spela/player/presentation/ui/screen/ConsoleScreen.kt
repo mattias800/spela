@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,11 +29,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -48,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -56,14 +54,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.spela.player.domain.model.Game
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
-import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -77,6 +71,7 @@ import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleAboutSection
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
+import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -84,6 +79,14 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
+
+private data class SortOption(val key: String, val label: String)
+private val sortOptions = listOf(
+    SortOption("title",       "Title (A–Z)"),
+    SortOption("rating",      "Rating"),
+    SortOption("releaseDate", "Release date"),
+    SortOption("lastPlayed",  "Recently played"),
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,14 +147,6 @@ fun ConsoleScreen(
                              else state.games.sortedByDescending { it.title.lowercase() }
         }
     }
-
-    data class SortOption(val key: String, val label: String)
-    val sortOptions = listOf(
-        SortOption("title",       "Title (A–Z)"),
-        SortOption("rating",      "Rating"),
-        SortOption("releaseDate", "Release date"),
-        SortOption("lastPlayed",  "Recently played"),
-    )
 
     // Darkened version of the console's brand gradient for the full-screen background
     val screenGradientColors = if (console != null) {
@@ -407,97 +402,4 @@ fun ConsoleScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     } // outer Box
-}
-
-@Composable
-internal fun GameGridItem(
-    game: Game,
-    onClick: () -> Unit,
-    onRequestScrape: ((Game) -> Unit)? = null,
-) {
-    // Trigger scrape for games with no cover art that haven't been scraped
-    if (onRequestScrape != null && game.coverUrl == null && game.scrapeAttempts == 0) {
-        LaunchedEffect(game.id) {
-            onRequestScrape(game)
-        }
-    }
-
-    SpCard(
-        onClick = onClick,
-        modifier = Modifier.semantics {
-            contentDescription = "${game.title}${game.genre?.let { ", $it" } ?: ""}${if (game.isFavorite) ", favorited" else ""}"
-            role = Role.Button
-        },
-    ) {
-        Column {
-            // Cover art with favorite badge overlay (#3) and scraping shimmer (#6)
-            Box {
-                SpCoverArt(
-                    imageUrl = game.coverUrl,
-                    contentDescription = "${game.title} cover art",
-                    modifier = Modifier.fillMaxWidth(),
-                    aspectRatio = game.coverAspectRatio,
-                    isLoading = game.coverUrl == null && game.scrapeAttempts == 0,
-                )
-                if (game.isFavorite) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(SpSpacing.XSmall)
-                            .background(Color.Black.copy(alpha = 0.55f), CircleShape)
-                            .padding(SpSpacing.XXSmall),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = "Favorited",
-                            tint = Color(0xFFFF4757),
-                            modifier = Modifier.size(10.dp),
-                        )
-                    }
-                }
-            }
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (game.genre != null) {
-                    Text(
-                        text = game.genre,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        maxLines = 1,
-                    )
-                }
-                // Star rating (#8) — only shown when there are community ratings
-                if (game.averageRating >= 1.0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        modifier = Modifier.padding(top = 2.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFACC15),
-                            modifier = Modifier.size(10.dp),
-                        )
-                        Text(
-                            text = "%.1f".format(game.averageRating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
