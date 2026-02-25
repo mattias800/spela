@@ -335,6 +335,7 @@ internal fun ConsoleHeroBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .height(200.dp)
             .clip(shape)
             // CSS 135deg-equivalent gradient: fixed 45° diagonal (top-left → bottom-right)
             // regardless of aspect ratio, matching the visual appearance on the web.
@@ -386,39 +387,26 @@ internal fun ConsoleHeroBanner(
                 .background(overlayBrush),
         )
 
-        // Content: stats on left, logo + badges truly centered in full width
+        // Content: stats on left, logo + badges truly centered in full width.
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SpSpacing.XLarge, vertical = 40.dp),
+                .fillMaxSize()
+                .padding(horizontal = SpSpacing.XLarge),
         ) {
-            // Compact platform details on the left — capped width so they never
-            // overlap the centred logo, with a fading bottom edge for overflow safety.
+            // Compact platform details on the left
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .widthIn(max = 96.dp)
-                    .heightIn(max = 120.dp)
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawBehind {
-                        // fade out bottom ~25% so overflow clips gracefully
-                        drawRect(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(Color.Black, Color.Transparent),
-                                startY = size.height * 0.75f,
-                                endY = size.height,
-                            ),
-                            blendMode = BlendMode.DstIn,
-                        )
-                    },
+                    .widthIn(max = 96.dp),
             ) {
                 ConsoleInfoSection(console = console)
             }
 
             // Logo + metadata badges centered in full banner width
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
                 // Logo or text fallback
                 var logoFailed by remember { mutableStateOf(false) }

@@ -69,7 +69,6 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
-import com.spela.player.presentation.ui.feature.library.ConsoleAboutSection
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.darken
@@ -197,10 +196,6 @@ fun ConsoleScreen(
                                 console = console,
                                 modifier = Modifier.padding(top = SpSpacing.Small),
                             )
-                        }
-                        // Expandable prose description for the console (#5)
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleAboutSection(console = console)
                         }
                     }
 

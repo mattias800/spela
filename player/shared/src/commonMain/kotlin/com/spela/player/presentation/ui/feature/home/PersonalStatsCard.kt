@@ -1,8 +1,6 @@
 package com.spela.player.presentation.ui.feature.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.SportsEsports
@@ -22,12 +19,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.UserStats
+import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -93,14 +90,14 @@ private fun StatMiniCard(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    SpInnerCard(
         modifier = modifier
-            .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
-            .background(SpColor.SurfaceVariant)
-            .padding(SpSpacing.Default)
             .semantics { contentDescription = "$label: $value" },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(SpSpacing.Default),
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,

@@ -55,7 +55,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 @Composable
-internal fun ScreenshotsSection(screenshots: List<String>) {
+fun ScreenshotsSection(screenshots: List<String>) {
     if (screenshots.isEmpty()) return
 
     var lightboxIndex by remember { mutableStateOf<Int?>(null) }
@@ -97,7 +97,7 @@ internal fun ScreenshotsSection(screenshots: List<String>) {
 }
 
 @Composable
-internal fun SaveStatesSection(
+fun SaveStatesSection(
     saveStates: List<SaveState>,
     onDelete: ((Long) -> Unit)? = null,
 ) {
@@ -119,7 +119,7 @@ internal fun SaveStatesSection(
 }
 
 @Composable
-internal fun InfoColumn(label: String, value: String) {
+fun InfoColumn(label: String, value: String) {
     Column {
         Text(
             text = label,
@@ -136,7 +136,7 @@ internal fun InfoColumn(label: String, value: String) {
 }
 
 @Composable
-internal fun CommunitySharesSection(
+fun CommunitySharesSection(
     sharedSaves: List<SharedSaveState>,
     onDownload: (String) -> Unit,
     onDelete: (String) -> Unit,
@@ -250,7 +250,7 @@ private fun SaveStateItem(
 }
 
 @Composable
-internal fun ChallengesSection(
+fun ChallengesSection(
     gameTitle: String,
     onViewAll: () -> Unit,
     onCreateChallenge: (() -> Unit)? = null,
