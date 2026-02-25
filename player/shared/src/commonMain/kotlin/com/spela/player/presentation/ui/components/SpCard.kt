@@ -84,6 +84,63 @@ fun SpCard(
     }
 }
 
+/**
+ * A card intended to be nested inside [SpTitledSection] or other gradient-backed surfaces.
+ *
+ * Where [SpTitledSection] composites a semi-transparent *black* overlay to slightly darken
+ * the background, [SpInnerCard] composites a semi-transparent *white* overlay to slightly
+ * lighten it. The result is a card that always reads as one level above its container
+ * regardless of the gradient colour behind it — adapting naturally to any console theme.
+ *
+ * Use this instead of [SpCard] when the card sits inside a coloured or gradient surface
+ * and a fixed opaque background would look out of place.
+ */
+@Composable
+fun SpInnerCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    cornerRadius: Dp = SpSpacing.CardCornerRadius,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    val bgAlpha by animateFloatAsState(
+        targetValue = when {
+            isPressed -> 0.05f
+            isHovered || isFocused -> 0.11f
+            else -> 0.07f
+        },
+        animationSpec = tween(150),
+        label = "innerCardAlpha",
+    )
+
+    val shape = RoundedCornerShape(cornerRadius)
+
+    Box(
+        modifier = modifier
+            .border(
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f)
+                        else Color.White.copy(alpha = 0.08f),
+                shape = shape,
+            )
+            .clip(shape)
+            .background(Color.White.copy(alpha = bgAlpha))
+            .then(
+                if (onClick != null) Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ) else Modifier
+            )
+    ) {
+        content()
+    }
+}
+
 @Composable
 fun SpGradientCard(
     modifier: Modifier = Modifier,
