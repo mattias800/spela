@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameListViewModel
@@ -37,6 +38,7 @@ internal fun LibraryConsolesTab(
         viewModel.onIntent(GameListIntent.LoadConsoles)
     }
 
+    val titleBarInset = LocalTitleBarInset.current
     val gradientColors = listOf(
         SpColor.PrimaryDark.darken(0.75f),
         SpColor.AccentDark.darken(0.80f),
@@ -63,8 +65,10 @@ internal fun LibraryConsolesTab(
                 val columnsPerRow = if (maxWidth >= 600.dp) 2 else 1
                 LazyColumn(
                     contentPadding = PaddingValues(
-                        horizontal = SpSpacing.ScreenHorizontal,
-                        vertical = SpSpacing.Default,
+                        start = SpSpacing.ScreenHorizontal,
+                        end = SpSpacing.ScreenHorizontal,
+                        top = titleBarInset + SpSpacing.Default,
+                        bottom = SpSpacing.Default,
                     ),
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
@@ -93,8 +97,10 @@ internal fun LibraryConsolesTab(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            horizontal = SpSpacing.ScreenHorizontal,
-                            vertical = SpSpacing.Default,
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = titleBarInset + SpSpacing.Default,
+                            bottom = SpSpacing.Default,
                         ),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {

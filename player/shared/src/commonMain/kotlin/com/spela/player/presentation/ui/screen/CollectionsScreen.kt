@@ -6,15 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +28,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -46,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.feature.collections.CollectionFormDialog
+import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -80,11 +81,28 @@ fun CollectionsScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-            Spacer(Modifier.height(titleBarInset))
+    val gradientColors = listOf(
+        SpColor.Secondary.darken(0.78f),
+        SpColor.PrimaryDark.darken(0.72f),
+    )
 
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val d = (size.width + size.height) * 0.25f
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = gradientColors,
+                            start = Offset(cx - d, cy - d),
+                            end = Offset(cx + d, cy + d),
+                        ),
+                    )
+                },
+        ) {
             if (state.isLoading && state.myCollections.isEmpty() && state.publicCollections.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -116,8 +134,10 @@ fun CollectionsScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                horizontal = SpSpacing.ScreenHorizontal,
-                                vertical = SpSpacing.Default,
+                                start = SpSpacing.ScreenHorizontal,
+                                end = SpSpacing.ScreenHorizontal,
+                                top = titleBarInset + SpSpacing.Default,
+                                bottom = SpSpacing.Default,
                             ),
                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         ) {

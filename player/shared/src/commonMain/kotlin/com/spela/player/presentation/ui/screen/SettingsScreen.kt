@@ -1,7 +1,7 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -41,7 +44,8 @@ import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpDialog
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpTextField
-import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -165,21 +169,38 @@ fun SettingsScreen(
         }
     }
 
-    Column(
+    val titleBarInset = LocalTitleBarInset.current
+    val gradientColors = listOf(
+        SpColor.PrimaryDark.darken(0.74f),
+        SpColor.SecondaryDark.darken(0.82f),
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val d = (size.width + size.height) * 0.25f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = gradientColors,
+                        start = Offset(cx - d, cy - d),
+                        end = Offset(cx + d, cy + d),
+                    ),
+                )
+            },
     ) {
-        SpTopBar(title = "Settings", showBack = true, onBack = onBack)
-
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .testTag("settings_list"),
             contentPadding = PaddingValues(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Default,
+                start = SpSpacing.ScreenHorizontal,
+                end = SpSpacing.ScreenHorizontal,
+                top = titleBarInset + SpSpacing.Default,
+                bottom = SpSpacing.Default,
             ),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {

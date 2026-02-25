@@ -42,6 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -58,10 +61,10 @@ import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
-import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -81,22 +84,28 @@ fun ActivityScreen(
         viewModel.onIntent(SocialIntent.LoadFullActivityFeed)
     }
 
-    Column(
+    val titleBarInset = LocalTitleBarInset.current
+    val gradientColors = listOf(
+        SpColor.Accent.darken(0.80f),
+        SpColor.SecondaryDark.darken(0.78f),
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(
-            title = "Activity",
-            actions = {
-                SpIconButton(
-                    icon = Icons.Filled.BarChart,
-                    contentDescription = "Stats",
-                    onClick = onNavigateToStats,
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val d = (size.width + size.height) * 0.25f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = gradientColors,
+                        start = Offset(cx - d, cy - d),
+                        end = Offset(cx + d, cy + d),
+                    ),
                 )
             },
-        )
-
+    ) {
         if (state.isLoadingFullActivity && state.fullActivityEvents.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -136,7 +145,10 @@ fun ActivityScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                        contentPadding = PaddingValues(
+                            top = titleBarInset + SpSpacing.Default,
+                            bottom = SpSpacing.Default,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
                     ) {
                         items(
