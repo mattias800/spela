@@ -14,18 +14,23 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +38,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -252,11 +260,28 @@ internal fun ConsoleHeroBanner(
                 .fillMaxWidth()
                 .padding(horizontal = SpSpacing.XLarge, vertical = 40.dp),
         ) {
-            // Compact platform details on the left
-            ConsoleInfoSection(
-                console = console,
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
+            // Compact platform details on the left — capped width so they never
+            // overlap the centred logo, with a fading bottom edge for overflow safety.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .widthIn(max = 96.dp)
+                    .heightIn(max = 120.dp)
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawBehind {
+                        // fade out bottom ~25% so overflow clips gracefully
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Black, Color.Transparent),
+                                startY = size.height * 0.75f,
+                                endY = size.height,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
+            ) {
+                ConsoleInfoSection(console = console)
+            }
 
             // Logo + metadata badges centered in full banner width
             Column(
@@ -400,6 +425,47 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
     // Fallback: use colorTheme hex and darken for the end color
     val baseColor = getConsoleColor(colorTheme)
     return baseColor to baseColor.darken(0.55f)
+}
+
+/**
+ * An expandable "About" card shown below the hero banner when [ConsoleInfo.summary]
+ * is available. Collapsed by default to keep the screen tidy.
+ */
+@Composable
+internal fun ConsoleAboutSection(
+    console: Console,
+    modifier: Modifier = Modifier,
+) {
+    val info = getConsoleInfo(console.abbreviation) ?: return
+    if (info.summary.isBlank()) return
+
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = if (expanded) info.summary else info.summary,
+            style = SpTypography.BodySmall,
+            color = SpColor.OnBackgroundSecondary,
+            maxLines = if (expanded) Int.MAX_VALUE else 2,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TextButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier.align(Alignment.End),
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = if (expanded) "Less" else "More",
+                style = SpTypography.LabelSmall,
+            )
+        }
+    }
 }
 
 internal fun getConsoleColor(colorTheme: String?): Color {

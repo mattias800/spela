@@ -32,6 +32,9 @@ fun SpCoverArt(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = SpSpacing.RadiusLarge,
     aspectRatio: Float? = 0.714f,
+    // True while a scrape is in progress — shows an animated shimmer instead of
+    // the static placeholder so the user knows something is happening.
+    isLoading: Boolean = false,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
     val boxModifier = if (aspectRatio != null) {
@@ -45,21 +48,17 @@ fun SpCoverArt(
         modifier = boxModifier,
         contentAlignment = Alignment.Center,
     ) {
-        if (imageUrl != null) {
-            SubcomposeAsyncImage(
+        when {
+            isLoading -> CoverShimmer()
+            imageUrl != null -> SubcomposeAsyncImage(
                 model = imageUrl,
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = scale,
-                loading = {
-                    CoverShimmer()
-                },
-                error = {
-                    CoverPlaceholder(contentDescription)
-                },
+                loading = { CoverShimmer() },
+                error = { CoverPlaceholder(contentDescription) },
             )
-        } else {
-            CoverPlaceholder(contentDescription)
+            else -> CoverPlaceholder(contentDescription)
         }
     }
 }

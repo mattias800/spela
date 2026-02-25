@@ -140,7 +140,7 @@ object SpEmptyStates {
         SpEmptyState(
             icon = Icons.Filled.Gamepad,
             title = "No $consoleName games",
-            message = "Games will appear here once the server scans your library",
+            message = "Add $consoleName ROM files to your server's game library folder, then pull down to refresh.",
             modifier = modifier,
         )
     }
