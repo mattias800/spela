@@ -4,6 +4,7 @@ import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineData
 import com.spela.player.domain.model.BiosMissingFile
+import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.GameCollection
@@ -14,6 +15,7 @@ import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.Relay
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
+import com.spela.player.domain.model.SimilarGame
 
 enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
 
@@ -62,6 +64,12 @@ data class GameDetailState(
     val isCreatingChallenge: Boolean = false,
     val successMessage: String? = null,
     val error: String? = null,
+    // Similar Games & Developer Games
+    val similarGames: List<SimilarGame> = emptyList(),
+    val developerGames: List<DeveloperGame> = emptyList(),
+    val developerName: String? = null,
+    val isLoadingSimilar: Boolean = false,
+    val isLoadingDeveloperGames: Boolean = false,
     // BIOS
     val missingBiosFiles: List<BiosMissingFile> = emptyList(),
 )

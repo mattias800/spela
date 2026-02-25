@@ -192,6 +192,14 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/consoles/$consoleId/top-rated").body()
     }
 
+    suspend fun getSimilarGames(gameId: String): List<SimilarGameDto> {
+        return client.get("$baseUrl/api/games/$gameId/similar").body()
+    }
+
+    suspend fun getDeveloperGames(gameId: String): List<DeveloperGameDto> {
+        return client.get("$baseUrl/api/games/$gameId/developer-games").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

@@ -62,10 +62,12 @@ import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSectio
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
+import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
+import com.spela.player.presentation.ui.feature.gamedetail.SimilarGamesSection
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
@@ -107,6 +109,7 @@ fun GameDetailScreen(
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
     onNavigateToRelay: ((relayId: String) -> Unit)? = null,
     onNavigateToSaveData: ((gameId: String) -> Unit)? = null,
+    onNavigateToGame: ((gameId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -249,6 +252,35 @@ fun GameDetailScreen(
 
                 // 3. Screenshots
                 ScreenshotsSection(detail.screenshots)
+
+                // 3b. Similar Games
+                if (state.similarGames.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        SimilarGamesSection(
+                            games = state.similarGames,
+                            onGameSelected = { gameId ->
+                                onNavigateToGame?.invoke(gameId)
+                            },
+                        )
+                    }
+                }
+
+                // 3c. More from Developer
+                if (state.developerGames.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        DeveloperGamesSection(
+                            games = state.developerGames,
+                            developerName = state.developerName,
+                            onGameSelected = { gameId ->
+                                onNavigateToGame?.invoke(gameId)
+                            },
+                        )
+                    }
+                }
 
                 // 4. Achievements
                 Column(

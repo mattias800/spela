@@ -883,6 +883,26 @@ data class TopRatedGameDto(
     val localGameId: String? = null,
 )
 
+// Similar Games
+
+@Serializable
+data class SimilarGameDto(
+    val name: String,
+    val coverUrl: String? = null,
+    val rating: Double = 0.0,
+    val localGameId: String? = null,
+)
+
+// Developer Games
+
+@Serializable
+data class DeveloperGameDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+)
+
 // Save Data (SRAM)
 
 @Serializable

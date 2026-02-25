@@ -159,6 +159,7 @@ val commonModule = module {
             gameStatsRepository = get(),
             challengeRepository = get(),
             relayRepository = get(),
+            gameRepository = get(),
             apiClient = get(),
             dispatchers = get(),
             scope = get(),

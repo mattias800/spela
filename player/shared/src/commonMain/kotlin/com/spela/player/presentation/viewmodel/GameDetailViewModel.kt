@@ -11,6 +11,7 @@ import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.DownloadRepository
+import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveDataRepository
@@ -45,6 +46,7 @@ class GameDetailViewModel(
     private val gameStatsRepository: GameStatsRepository,
     private val challengeRepository: ChallengeRepository,
     private val relayRepository: RelayRepository,
+    private val gameRepository: GameRepository,
     private val apiClient: SpelaApiClient,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -152,6 +154,8 @@ class GameDetailViewModel(
         loadAchievements(gameId)
         loadSaveDataCount()
         loadBiosStatus()
+        loadSimilarGames(gameId)
+        loadDeveloperGames(gameId)
     }
 
     private fun loadBiosStatus() {
@@ -614,6 +618,41 @@ class GameDetailViewModel(
             AchievementsViewMode.TIMELINE -> loadAchievementTimeline(gameId)
             AchievementsViewMode.LEADERBOARD -> loadAchievementLeaderboard(gameId)
             AchievementsViewMode.GRID -> { /* Already loaded */ }
+        }
+    }
+
+    private fun loadSimilarGames(gameId: String) {
+        _state.update { it.copy(isLoadingSimilar = true) }
+        scope.launch(dispatchers.io) {
+            gameRepository.getSimilarGames(gameId).fold(
+                onSuccess = { games ->
+                    _state.update { it.copy(similarGames = games, isLoadingSimilar = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingSimilar = false) }
+                },
+            )
+        }
+    }
+
+    private fun loadDeveloperGames(gameId: String) {
+        _state.update { it.copy(isLoadingDeveloperGames = true) }
+        scope.launch(dispatchers.io) {
+            gameRepository.getDeveloperGames(gameId).fold(
+                onSuccess = { games ->
+                    val devName = _state.value.gameDetail?.game?.developer
+                    _state.update {
+                        it.copy(
+                            developerGames = games,
+                            developerName = devName,
+                            isLoadingDeveloperGames = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingDeveloperGames = false) }
+                },
+            )
         }
     }
 

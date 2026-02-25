@@ -481,6 +481,20 @@ fun TopRatedGameDto.toDomain(): TopRatedGame = TopRatedGame(
     localGameId = localGameId,
 )
 
+fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
+    name = name,
+    coverUrl = coverUrl,
+    rating = rating,
+    localGameId = localGameId,
+)
+
+fun DeveloperGameDto.toDomain(): DeveloperGame = DeveloperGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+)
+
 fun SaveDataDto.toDomain() = SaveData(
     id = id,
     gameId = gameId,

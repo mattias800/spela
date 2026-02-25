@@ -584,6 +584,24 @@ data class TopRatedGame(
     val localGameId: String? = null,
 )
 
+// Similar Games
+
+data class SimilarGame(
+    val name: String,
+    val coverUrl: String? = null,
+    val rating: Double = 0.0,
+    val localGameId: String? = null,
+)
+
+// Developer Games
+
+data class DeveloperGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+)
+
 // BIOS
 
 data class BiosConsoleStatus(

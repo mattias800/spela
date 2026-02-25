@@ -153,6 +153,7 @@ class SpelaTestHarness(
         gameStatsRepository = gameStatsRepo,
         challengeRepository = challengeRepo,
         relayRepository = relayRepo,
+        gameRepository = gameRepo,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
         scope = scope,

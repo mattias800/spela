@@ -326,6 +326,8 @@ class SyncEngineTest {
         override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
+        override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
+        override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
 
     private class FailingPreferencesRepository : PreferencesRepository {
@@ -355,6 +357,8 @@ class SyncEngineTest {
         override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
+        override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
+        override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
 
     private class TrackingPreferencesRepository : PreferencesRepository {
@@ -392,5 +396,7 @@ class SyncEngineTest {
         override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
+        override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
+        override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
 }

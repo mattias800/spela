@@ -510,6 +510,21 @@ type TopRatedGame struct {
 	Rank             int            `json:"rank"`
 }
 
+// SimilarGame caches IGDB similar games for a local game.
+type SimilarGame struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	GameID       uint           `gorm:"index;not null" json:"gameId"`
+	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
+	IGDBGameID   int            `gorm:"not null" json:"igdbGameId"`
+	Name         string         `gorm:"size:255;not null" json:"name"`
+	CoverImageID string         `gorm:"size:128" json:"coverImageId"`
+	Rating       float64        `json:"rating"`
+	LocalGameID  *uint          `json:"localGameId,omitempty"`
+}
+
 // Core represents a libretro core.
 type Core struct {
 	ID          uint           `gorm:"primarykey" json:"id"`

@@ -469,6 +469,150 @@ func TestRateLimiting(t *testing.T) {
 	assert.GreaterOrEqual(t, elapsed.Milliseconds(), int64(200))
 }
 
+func TestGetSimilarGames_Success(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	requestCount := 0
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if requestCount == 1 {
+			// First request: return similar_games IDs
+			json.NewEncoder(w).Encode([]map[string]interface{}{
+				{"similar_games": []int{5678, 9012}},
+			})
+		} else {
+			// Second request: return game details
+			json.NewEncoder(w).Encode([]SimilarGame{
+				{
+					ID:          5678,
+					Name:        "Super Mario Bros. 2",
+					Cover:       &Image{ID: 1, ImageID: "co9999"},
+					TotalRating: 80.5,
+				},
+				{
+					ID:          9012,
+					Name:        "Kirby's Adventure",
+					Cover:       &Image{ID: 2, ImageID: "co8888"},
+					TotalRating: 82.0,
+				},
+			})
+		}
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	games, err := c.GetSimilarGames(1234)
+	require.NoError(t, err)
+	require.Len(t, games, 2)
+
+	assert.Equal(t, 5678, games[0].ID)
+	assert.Equal(t, "Super Mario Bros. 2", games[0].Name)
+	assert.NotNil(t, games[0].Cover)
+	assert.Equal(t, "co9999", games[0].Cover.ImageID)
+	assert.InDelta(t, 80.5, games[0].TotalRating, 0.01)
+
+	assert.Equal(t, 9012, games[1].ID)
+	assert.Equal(t, "Kirby's Adventure", games[1].Name)
+}
+
+func TestGetSimilarGames_NoSimilarGames(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return a game with no similar_games field
+		json.NewEncoder(w).Encode([]map[string]interface{}{
+			{},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	games, err := c.GetSimilarGames(1234)
+	require.NoError(t, err)
+	assert.Nil(t, games)
+}
+
+func TestGetSimilarGames_APIError(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal error"))
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	_, err := c.GetSimilarGames(1234)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
 func TestPlatformMapping(t *testing.T) {
 	// Verify key platform mappings exist
 	assert.Equal(t, 18, AbbreviationToIGDBPlatform["NES"])

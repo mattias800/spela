@@ -129,6 +129,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
+	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	stagingDir := filepath.Join(cfg.GameDirs[0], "staging")
 	uploadHandler := &UploadHandler{
 		DB:         cfg.DB,
@@ -177,6 +178,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
+		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
+		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
 		api.POST("/games/scan", gameHandler.ScanGames)
 
 		// Ratings

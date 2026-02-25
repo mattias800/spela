@@ -414,6 +414,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.SaveDataManagement(gameId))
                                         )
                                     },
+                                    onNavigateToGame = { targetGameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(targetGameId))
+                                        )
+                                    },
                                 )
                             }
 

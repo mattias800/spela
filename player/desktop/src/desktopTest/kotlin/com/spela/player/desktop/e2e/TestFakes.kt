@@ -220,6 +220,7 @@ class FakeAuthRepository : AuthRepository {
 class FakeGameRepository : GameRepository {
     var shouldFail = false
     var topRatedGames: List<TopRatedGame> = emptyList()
+    var screenshotUrls: List<String> = emptyList()
 
     val consoles = listOf(
         Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
@@ -322,7 +323,7 @@ class FakeGameRepository : GameRepository {
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> {
         val game = games.find { it.id == gameId }
             ?: return Result.failure(Exception("Game not found"))
-        return Result.success(GameDetail(game))
+        return Result.success(GameDetail(game, screenshots = screenshotUrls))
     }
 
     override suspend fun getRecentGames(): Result<List<Game>> {
@@ -346,6 +347,19 @@ class FakeGameRepository : GameRepository {
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(topRatedGames)
+    }
+
+    var similarGames: List<SimilarGame> = emptyList()
+    var developerGamesMap: Map<String, List<DeveloperGame>> = emptyMap()
+
+    override suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(similarGames)
+    }
+
+    override suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(developerGamesMap[gameId] ?: emptyList())
     }
 }
 

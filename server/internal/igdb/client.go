@@ -406,6 +406,122 @@ func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
 	return games, nil
 }
 
+// SimilarGame represents an IGDB similar game result.
+type SimilarGame struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Cover       *Image  `json:"cover"`
+	TotalRating float64 `json:"total_rating"`
+}
+
+// GetSimilarGames fetches similar games for a given IGDB game ID.
+func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	// Wait for rate limiter
+	<-c.rateLimiter
+
+	// First, get the similar_games IDs from the source game
+	query := fmt.Sprintf(
+		`fields similar_games; where id = %d;`,
+		igdbGameID,
+	)
+
+	slog.Info("IGDB similar games lookup", "igdbGameID", igdbGameID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var parentGames []struct {
+		SimilarGames []int `json:"similar_games"`
+	}
+	if err := json.Unmarshal(body, &parentGames); err != nil {
+		return nil, fmt.Errorf("decoding IGDB similar_games response: %w", err)
+	}
+
+	if len(parentGames) == 0 || len(parentGames[0].SimilarGames) == 0 {
+		return nil, nil
+	}
+
+	// Fetch details for the similar game IDs
+	<-c.rateLimiter
+
+	ids := parentGames[0].SimilarGames
+	if len(ids) > 20 {
+		ids = ids[:20]
+	}
+
+	idStrs := make([]string, len(ids))
+	for i, id := range ids {
+		idStrs[i] = fmt.Sprintf("%d", id)
+	}
+
+	detailQuery := fmt.Sprintf(
+		`fields name, cover.image_id, total_rating; where id = (%s); limit %d;`,
+		strings.Join(idStrs, ","), len(ids),
+	)
+
+	c.mu.Lock()
+	token = c.token.AccessToken
+	c.mu.Unlock()
+
+	req2, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(detailQuery))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB detail request: %w", err)
+	}
+	req2.Header.Set("Client-ID", c.ClientID)
+	req2.Header.Set("Authorization", "Bearer "+token)
+
+	resp2, err := c.HTTPClient.Do(req2)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for similar game details: %w", err)
+	}
+	defer resp2.Body.Close()
+
+	body2, err := io.ReadAll(resp2.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB detail response: %w", err)
+	}
+
+	if resp2.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp2.StatusCode, string(body2))
+	}
+
+	var games []SimilarGame
+	if err := json.Unmarshal(body2, &games); err != nil {
+		return nil, fmt.Errorf("decoding IGDB similar games detail: %w", err)
+	}
+
+	slog.Info("IGDB similar games response", "igdbGameID", igdbGameID, "resultCount", len(games))
+
+	return games, nil
+}
+
 // escapeQuery sanitizes user input for IGDB Apicalypse queries.
 // Escapes double quotes and removes semicolons to prevent query injection.
 func escapeQuery(s string) string {

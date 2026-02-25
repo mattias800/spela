@@ -211,6 +211,8 @@ class FakeGameRepository : GameRepository {
     override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> = Result.success(emptyList())
+    override suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>> = Result.success(emptyList())
+    override suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>> = Result.success(emptyList())
 }
 
 private class GameListTestGameStatsRepository : GameStatsRepository {
