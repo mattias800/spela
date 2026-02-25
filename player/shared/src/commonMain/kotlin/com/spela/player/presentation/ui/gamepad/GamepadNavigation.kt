@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -43,6 +44,8 @@ import com.spela.player.presentation.ui.theme.SpColor
 fun GamepadHandler(
     enabled: Boolean = true,
     onBack: (() -> Unit)? = null,
+    onNextSection: (() -> Unit)? = null,
+    onPreviousSection: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -74,6 +77,23 @@ fun GamepadHandler(
                     Key.Escape -> {
                         onBack?.invoke()
                         onBack != null
+                    }
+                    Key.RightBracket -> {
+                        onNextSection?.invoke()
+                        onNextSection != null
+                    }
+                    Key.LeftBracket -> {
+                        onPreviousSection?.invoke()
+                        onPreviousSection != null
+                    }
+                    Key.Tab -> {
+                        if (event.isShiftPressed) {
+                            onPreviousSection?.invoke()
+                            onPreviousSection != null
+                        } else {
+                            onNextSection?.invoke()
+                            onNextSection != null
+                        }
                     }
                     else -> false
                 }

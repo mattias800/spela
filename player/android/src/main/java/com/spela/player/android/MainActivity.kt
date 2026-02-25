@@ -165,6 +165,7 @@ class MainActivity : ComponentActivity() {
                     val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                     return super.dispatchKeyEvent(remapped)
                 }
+                KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> return true
             }
             // Let D-pad propagate to Compose for overlay navigation
             return super.onKeyDown(keyCode, event)
@@ -179,6 +180,14 @@ class MainActivity : ComponentActivity() {
             }
             KeyEvent.KEYCODE_BUTTON_B -> {
                 navigationViewModel.onIntent(NavigationIntent.GoBack)
+                return true
+            }
+            KeyEvent.KEYCODE_BUTTON_L1 -> {
+                navigationViewModel.onIntent(NavigationIntent.PreviousSection)
+                return true
+            }
+            KeyEvent.KEYCODE_BUTTON_R1 -> {
+                navigationViewModel.onIntent(NavigationIntent.NextSection)
                 return true
             }
         }
@@ -210,7 +219,7 @@ class MainActivity : ComponentActivity() {
             return super.onKeyUp(keyCode, event)
         }
 
-        // State 2: Game running, overlay shown — consume B/A events
+        // State 2: Game running, overlay shown — consume B/A/L1/R1 events
         if (isGameRunning) {
             when (keyCode) {
                 KeyEvent.KEYCODE_BUTTON_B -> return true
@@ -219,6 +228,7 @@ class MainActivity : ComponentActivity() {
                     val remapped = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                     return super.dispatchKeyEvent(remapped)
                 }
+                KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> return true
             }
             return super.onKeyUp(keyCode, event)
         }
@@ -231,6 +241,7 @@ class MainActivity : ComponentActivity() {
                 return super.dispatchKeyEvent(remapped)
             }
             KeyEvent.KEYCODE_BUTTON_B -> return true
+            KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> return true
         }
 
         return super.onKeyUp(keyCode, event)

@@ -271,7 +271,7 @@ class BiosWarningTest {
 
         // Navigate to Library (consoles tab)
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Library)
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
         )
         advanceFully(harness)
 
@@ -290,7 +290,7 @@ class BiosWarningTest {
         setContent { harness.App() }
 
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Library)
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
         )
         advanceFully(harness)
 

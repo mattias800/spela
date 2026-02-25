@@ -24,18 +24,18 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun libraryScreenShowsConsolesAfterLoad() = runComposeUiTest {
+    fun consolesScreenShowsConsolesAfterLoad() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
 
-        // Navigate to Library screen where consoles now live
+        // Navigate to Consoles screen
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Library)
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
         )
         advance(harness)
 
-        // Should show consoles in the Library Consoles tab
+        // Should show consoles
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
         onNodeWithText("Super Nintendo").assertIsDisplayed()
     }
@@ -53,14 +53,14 @@ class GameBrowsingAndSelectionTest {
     }
 
     @Test
-    fun tappingConsoleInLibraryNavigatesToConsoleScreen() = runComposeUiTest {
+    fun tappingConsoleInConsolesScreenNavigatesToConsoleScreen() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
 
-        // Navigate to Library screen where consoles now live
+        // Navigate to Consoles screen
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Library)
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
         )
         advance(harness)
 

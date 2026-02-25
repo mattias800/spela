@@ -543,8 +543,8 @@ private fun ComposeRule.doLogin(username: String, password: String) {
 // ── Navigation helpers ──
 
 fun ComposeRule.navigateToCastlevania() {
-    // Navigate to Library tab (consoles are in the Library tab, not Home)
-    tapOn("Library")
+    // Navigate to Consoles tab
+    tapOn("Consoles")
     waitForText("Consoles", TIMEOUT_MEDIUM)
 
     // Scroll to and tap the NES console card. We match on the card's content description
@@ -563,7 +563,7 @@ fun ComposeRule.navigateToCastlevania() {
 }
 
 fun ComposeRule.navigateToN64Game() {
-    tapOn("Library")
+    tapOn("Consoles")
     waitForText("Consoles", TIMEOUT_MEDIUM)
 
     scrollToAndTapMatchingBoth("Nintendo 64", "games")

@@ -17,6 +17,7 @@ import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
@@ -56,6 +57,7 @@ fun App() {
     val presenceService: PresenceService = koinInject()
     val connectivityMonitor: ConnectivityMonitor = koinInject()
     val saveDataViewModel: SaveDataViewModel = koinInject()
+    val navigationEventBus: NavigationEventBus = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -81,5 +83,6 @@ fun App() {
         presenceService = presenceService,
         connectivityMonitor = connectivityMonitor,
         saveDataViewModel = saveDataViewModel,
+        navigationEventBus = navigationEventBus,
     )
 }

@@ -4,7 +4,7 @@ sealed class SpScreen(val route: String) {
     data object ServerConnection : SpScreen("server_connection")
     data object Login : SpScreen("login")
     data object Home : SpScreen("home")
-    data object Library : SpScreen("library")
+    data object Consoles : SpScreen("consoles")
     data object AllGames : SpScreen("all_games")
     data object Favorites : SpScreen("favorites")
     data object PlayLater : SpScreen("play_later")
@@ -53,6 +53,8 @@ data class NavigationState(
 sealed interface NavigationIntent {
     data class NavigateTo(val screen: SpScreen) : NavigationIntent
     data object GoBack : NavigationIntent
+    data object NextSection : NavigationIntent
+    data object PreviousSection : NavigationIntent
     data class ShowOverlay(
         val gameId: String,
         val relayId: String? = null,

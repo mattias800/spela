@@ -9,6 +9,8 @@ import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.DesktopAchievementsController
 import com.spela.player.libretro.DesktopGamepadPoller
 import com.spela.player.libretro.DesktopLibretroController
+import com.spela.player.presentation.navigation.NavigationEventBus
+import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.libretro.DesktopScreenshotCapture
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.libretro.LibretroJni
@@ -138,7 +140,21 @@ actual fun platformModule(): Module = module {
     single<AchievementsController> { DesktopAchievementsController(get(), get(), get()) }
     single<ScreenshotCapture> { DesktopScreenshotCapture(get<LibretroController>() as DesktopLibretroController) }
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
-    single { DesktopGamepadPoller(get(), get(), get()) }
+    single {
+        val navViewModel = get<NavigationViewModel>()
+        val emulationState = get<kotlinx.coroutines.flow.MutableStateFlow<com.spela.player.presentation.state.EmulationState>>()
+        DesktopGamepadPoller(
+            jni = get(),
+            gamepadPortManager = get(),
+            controller = get(),
+            navigationEventBus = get<NavigationEventBus>(),
+            isEmulationActive = {
+                navViewModel.state.value.showInGameOverlay &&
+                    emulationState.value.isRunning &&
+                    !emulationState.value.showOverlay
+            },
+        )
+    }
     single {
         HttpClient(CIO) {
             install(HttpTimeout) {

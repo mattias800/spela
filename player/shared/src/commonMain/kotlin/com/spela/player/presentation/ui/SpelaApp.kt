@@ -48,9 +48,12 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpOfflineBanner
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.presentation.navigation.NavigationEvent
+import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.ConsoleScreen
 import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
+import com.spela.player.presentation.ui.screen.ConsolesScreen
 import com.spela.player.presentation.ui.screen.DownloadsScreen
 import com.spela.player.presentation.ui.screen.GameDetailScreen
 import com.spela.player.presentation.ui.screen.HomeScreen
@@ -68,7 +71,6 @@ import com.spela.player.presentation.ui.screen.AllGamesScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
 import com.spela.player.presentation.ui.screen.CollectionsScreen
 import com.spela.player.presentation.ui.screen.FavoritesScreen
-import com.spela.player.presentation.ui.screen.LibraryScreen
 import com.spela.player.presentation.ui.screen.LicensesScreen
 import com.spela.player.presentation.ui.screen.PlayLaterScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
@@ -133,6 +135,7 @@ fun SpelaApp(
     presenceService: PresenceService,
     connectivityMonitor: ConnectivityMonitor,
     saveDataViewModel: SaveDataViewModel? = null,
+    navigationEventBus: NavigationEventBus? = null,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
@@ -176,6 +179,18 @@ fun SpelaApp(
             }
         }
 
+        // Collect desktop gamepad navigation events
+        if (navigationEventBus != null) {
+            LaunchedEffect(navigationEventBus) {
+                navigationEventBus.events.collect { event ->
+                    when (event) {
+                        NavigationEvent.NextSection -> navigationViewModel.onIntent(NavigationIntent.NextSection)
+                        NavigationEvent.PreviousSection -> navigationViewModel.onIntent(NavigationIntent.PreviousSection)
+                    }
+                }
+            }
+        }
+
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
                 navState.currentScreen !is SpScreen.Login
 
@@ -191,6 +206,12 @@ fun SpelaApp(
             enabled = !navState.showInGameOverlay,
             onBack = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
+            } else null,
+            onNextSection = if (isGamepadScreen) {
+                { navigationViewModel.onIntent(NavigationIntent.NextSection) }
+            } else null,
+            onPreviousSection = if (isGamepadScreen) {
+                { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
         ) {
         Box(
@@ -528,23 +549,12 @@ fun SpelaApp(
                                 )
                             }
 
-                            is SpScreen.Library -> {
-                                LibraryScreen(
-                                    gameListViewModel = gameListViewModel,
-                                    collectionsViewModel = collectionsViewModel,
+                            is SpScreen.Consoles -> {
+                                ConsolesScreen(
+                                    viewModel = gameListViewModel,
                                     onConsoleSelected = { consoleId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
-                                        )
-                                    },
-                                    onGameSelected = { gameId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
-                                        )
-                                    },
-                                    onCollectionSelected = { collectionId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.CollectionDetail(collectionId))
                                         )
                                     },
                                 )
@@ -905,7 +915,8 @@ fun SpelaApp(
                         onTabSelected = { tab ->
                             val targetScreen = when (tab) {
                                 BottomNavTab.HOME -> SpScreen.Home
-                                BottomNavTab.LIBRARY -> SpScreen.Library
+                                BottomNavTab.CONSOLES -> SpScreen.Consoles
+                                BottomNavTab.COLLECTIONS -> SpScreen.Collections
                                 BottomNavTab.ACTIVITY -> SpScreen.Activity
                                 BottomNavTab.SETTINGS -> SpScreen.Settings
                             }
@@ -926,14 +937,8 @@ private fun shouldShowBottomNav(screen: SpScreen): Boolean = when (screen) {
     else -> true
 }
 
-private fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
-    is SpScreen.Library, is SpScreen.AllGames, is SpScreen.Favorites,
-    is SpScreen.PlayLater, is SpScreen.Collections, is SpScreen.CollectionDetail,
-    is SpScreen.Console -> BottomNavTab.LIBRARY
-    is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY
-    is SpScreen.Settings, is SpScreen.ConsoleSettings, is SpScreen.Licenses -> BottomNavTab.SETTINGS
-    else -> BottomNavTab.HOME
-}
+private fun activeTabForScreen(screen: SpScreen): BottomNavTab =
+    NavigationViewModel.activeTabForScreen(screen)
 
 @Composable
 private fun PlaceholderScreen(title: String) {

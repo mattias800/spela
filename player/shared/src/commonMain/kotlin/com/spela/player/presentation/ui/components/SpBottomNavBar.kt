@@ -14,10 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +39,8 @@ enum class BottomNavTab(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Filled.Home),
-    LIBRARY("Library", Icons.Filled.VideoLibrary),
+    CONSOLES("Consoles", Icons.Filled.SportsEsports),
+    COLLECTIONS("Collections", Icons.Filled.CollectionsBookmark),
     ACTIVITY("Activity", Icons.Filled.Notifications),
     SETTINGS("Settings", Icons.Filled.Settings),
 }

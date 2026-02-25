@@ -1,5 +1,7 @@
 package com.spela.player.libretro
 
+import com.spela.player.presentation.navigation.NavigationEvent
+import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +22,8 @@ class DesktopGamepadPoller(
     private val jni: LibretroJni,
     private val gamepadPortManager: GamepadPortManager,
     private val controller: LibretroController,
+    private val navigationEventBus: NavigationEventBus? = null,
+    private val isEmulationActive: () -> Boolean = { false },
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 8L // ~120 Hz
@@ -35,6 +39,10 @@ class DesktopGamepadPoller(
 
         /** Trigger threshold to consider as digital press. */
         private const val TRIGGER_THRESHOLD = 8000
+
+        /** SDL GameController button indices for shoulder buttons. */
+        private const val SDL_BUTTON_LEFT_SHOULDER = 9
+        private const val SDL_BUTTON_RIGHT_SHOULDER = 10
     }
 
     private var pollJob: Job? = null
@@ -42,6 +50,10 @@ class DesktopGamepadPoller(
 
     /** SDL controller IDs currently tracked, mapped to port manager device IDs. */
     private val knownControllers = mutableSetOf<Int>()
+
+    /** Edge detection for shoulder buttons in UI navigation mode. */
+    private var prevLeftShoulder = false
+    private var prevRightShoulder = false
 
     fun start(scope: CoroutineScope) {
         if (pollJob != null) return
@@ -126,6 +138,23 @@ class DesktopGamepadPoller(
             if (hasInput) {
                 gamepadPortManager.reportActivity(port)
             }
+        }
+
+        // UI navigation: emit shoulder button events when not in emulation
+        if (!isEmulationActive() && navigationEventBus != null && states.isNotEmpty()) {
+            val first = states[0]
+            val leftShoulder = first.buttons.getOrNull(SDL_BUTTON_LEFT_SHOULDER) == true
+            val rightShoulder = first.buttons.getOrNull(SDL_BUTTON_RIGHT_SHOULDER) == true
+
+            if (leftShoulder && !prevLeftShoulder) {
+                navigationEventBus.emit(NavigationEvent.PreviousSection)
+            }
+            if (rightShoulder && !prevRightShoulder) {
+                navigationEventBus.emit(NavigationEvent.NextSection)
+            }
+
+            prevLeftShoulder = leftShoulder
+            prevRightShoulder = rightShoulder
         }
 
         // Detect disconnections

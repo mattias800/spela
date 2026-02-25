@@ -187,6 +187,108 @@ class NavigationViewModelTest {
         assertEquals(backStackBefore, vm.state.value.backStack)
     }
 
+    @Test
+    fun nextSectionCyclesThroughAllSections() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Activity, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Settings, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun previousSectionCyclesBackward() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.PreviousSection)
+        assertEquals(SpScreen.Settings, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.PreviousSection)
+        assertEquals(SpScreen.Activity, vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun sectionCyclingClearsBackStack() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        assertTrue(vm.state.value.backStack.isNotEmpty())
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertTrue(vm.state.value.backStack.isEmpty())
+    }
+
+    @Test
+    fun goBackFromConsolesReturnsToHome() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Consoles))
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+        // Manually clear backstack to simulate section cycling
+        vm.onIntent(NavigationIntent.NextSection) // goes to Collections
+        vm.onIntent(NavigationIntent.PreviousSection) // goes back to Consoles with empty backstack
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+        assertTrue(vm.state.value.backStack.isEmpty())
+
+        vm.onIntent(NavigationIntent.GoBack)
+        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun goBackFromCollectionsReturnsToHome() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        // Navigate to Collections via section cycling (empty backstack)
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.NextSection) // Consoles
+        vm.onIntent(NavigationIntent.NextSection) // Collections
+        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
+        assertTrue(vm.state.value.backStack.isEmpty())
+
+        vm.onIntent(NavigationIntent.GoBack)
+        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun nextSectionFromSubScreenMapsToCorrectTab() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        // Navigate deep into a console screen (belongs to CONSOLES tab)
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Consoles))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+
+        // NextSection from Console (CONSOLES tab) should go to Collections
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
+        assertTrue(vm.state.value.backStack.isEmpty())
+    }
+
     // Minimal fakes that cause RestoreSessionUseCase to return NoSession
 
     private class NoSessionServerRepository : ServerRepository {

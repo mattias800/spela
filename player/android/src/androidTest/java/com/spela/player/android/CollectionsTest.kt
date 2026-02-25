@@ -38,8 +38,6 @@ class CollectionsTest {
     // ── Navigation helpers ──
 
     private fun navigateToCollectionsTab() {
-        rule.tapOn("Library")
-        rule.waitForText("Collections", timeout = 5_000)
         rule.tapOn("Collections")
         rule.waitForText("My Collections", timeout = 5_000)
     }
@@ -126,18 +124,14 @@ class CollectionsTest {
         rule.waitForIdle()
 
         // After successful delete, the LaunchedEffect in CollectionDetailScreen
-        // calls onBack(), navigating back to LibraryScreen. The library may restore
-        // to the Consoles tab (default) rather than the Collections tab, because
-        // AnimatedContent disposes the old composition and rememberSaveable may
-        // not preserve the tab index. Wait for the detail screen controls to
-        // disappear (selectedDetail becomes null after delete success).
+        // calls onBack(), navigating back to the Collections screen.
+        // Wait for the detail screen controls to disappear.
         rule.waitForNotVisible("Delete collection", timeout = 15_000)
 
         // Navigate to the Collections tab if not already there
         val hasMyCollections = rule.onAllNodesWithText("My Collections", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
         if (!hasMyCollections) {
-            rule.waitForText("Collections", timeout = 5_000)
             rule.tapOn("Collections")
             rule.waitForText("My Collections", timeout = 5_000)
         }
@@ -170,7 +164,6 @@ class CollectionsTest {
         val hasMyCollections = rule.onAllNodesWithText("My Collections", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
         if (!hasMyCollections) {
-            rule.waitForText("Collections", timeout = 5_000)
             rule.tapOn("Collections")
             rule.waitForText("My Collections", timeout = 5_000)
         }

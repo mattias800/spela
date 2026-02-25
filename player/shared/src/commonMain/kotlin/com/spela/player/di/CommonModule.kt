@@ -11,6 +11,7 @@ import com.spela.player.data.repository.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.*
 import com.spela.player.libretro.GamepadPortManager
+import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.viewmodel.*
@@ -27,6 +28,7 @@ import org.koin.dsl.module
 
 val commonModule = module {
     /* Utilities */
+    single { NavigationEventBus() }
     single<DispatcherProvider> { DefaultDispatcherProvider() }
     single { CoroutineScope(SupervisorJob() + get<DispatcherProvider>().main) }
     single { TokenManager() }

@@ -7,6 +7,7 @@ import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
+import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,10 @@ class NavigationViewModel(
 ) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
+
+    private val sections = listOf(
+        SpScreen.Home, SpScreen.Consoles, SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
+    )
 
     init {
         restoreSession()
@@ -72,7 +77,8 @@ class NavigationViewModel(
                         )
                     } else if (current.currentScreen is SpScreen.Settings ||
                         current.currentScreen is SpScreen.Downloads ||
-                        current.currentScreen is SpScreen.Library ||
+                        current.currentScreen is SpScreen.Consoles ||
+                        current.currentScreen is SpScreen.Collections ||
                         current.currentScreen is SpScreen.Activity
                     ) {
                         // When on a non-Home tab with empty back stack, return to Home
@@ -83,6 +89,32 @@ class NavigationViewModel(
                     } else {
                         current
                     }
+                }
+            }
+
+            NavigationIntent.NextSection -> {
+                _state.update { current ->
+                    val currentTab = activeTabForScreen(current.currentScreen)
+                    val currentIndex = BottomNavTab.entries.indexOf(currentTab)
+                    val nextIndex = (currentIndex + 1) % sections.size
+                    current.copy(
+                        currentScreen = sections[nextIndex],
+                        backStack = emptyList(),
+                        isGoingBack = false,
+                    )
+                }
+            }
+
+            NavigationIntent.PreviousSection -> {
+                _state.update { current ->
+                    val currentTab = activeTabForScreen(current.currentScreen)
+                    val currentIndex = BottomNavTab.entries.indexOf(currentTab)
+                    val prevIndex = (currentIndex - 1 + sections.size) % sections.size
+                    current.copy(
+                        currentScreen = sections[prevIndex],
+                        backStack = emptyList(),
+                        isGoingBack = false,
+                    )
                 }
             }
 
@@ -141,6 +173,16 @@ class NavigationViewModel(
                 }
             }
 
+        }
+    }
+
+    companion object {
+        fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
+            is SpScreen.Consoles, is SpScreen.Console -> BottomNavTab.CONSOLES
+            is SpScreen.Collections, is SpScreen.CollectionDetail -> BottomNavTab.COLLECTIONS
+            is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY
+            is SpScreen.Settings, is SpScreen.ConsoleSettings, is SpScreen.Licenses -> BottomNavTab.SETTINGS
+            else -> BottomNavTab.HOME
         }
     }
 
