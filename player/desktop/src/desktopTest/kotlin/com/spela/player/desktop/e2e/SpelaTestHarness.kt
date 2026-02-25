@@ -130,6 +130,7 @@ class SpelaTestHarness(
         getRecentAchievementsUseCase = GetRecentAchievementsUseCase(gameStatsRepo),
         challengeRepository = challengeRepo,
         scrapeService = scrapeService,
+        gameRepository = gameRepo,
         dispatchers = dispatchers,
         scope = scope,
         biosRepository = biosRepo,

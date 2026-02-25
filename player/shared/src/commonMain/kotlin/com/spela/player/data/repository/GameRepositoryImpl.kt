@@ -8,6 +8,7 @@ import com.spela.player.data.remote.dto.toGameDetail
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.repository.GameRepository
 import kotlin.time.Clock
 
@@ -124,6 +125,12 @@ class GameRepositoryImpl(
 
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = runCatching {
         apiClient.removeFromPlayLater(gameId)
+    }
+
+    override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
+        return runCatching {
+            apiClient.getTopRatedGames(consoleId).map { it.toDomain() }
+        }
     }
 
     // --- Cache helpers ---

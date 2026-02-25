@@ -219,6 +219,7 @@ class FakeAuthRepository : AuthRepository {
 
 class FakeGameRepository : GameRepository {
     var shouldFail = false
+    var topRatedGames: List<TopRatedGame> = emptyList()
 
     val consoles = listOf(
         Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
@@ -341,6 +342,11 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(topRatedGames)
+    }
 }
 
 class FakeDownloadRepository : DownloadRepository {

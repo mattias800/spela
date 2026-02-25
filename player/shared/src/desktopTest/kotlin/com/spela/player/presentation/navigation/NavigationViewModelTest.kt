@@ -368,6 +368,7 @@ class NavigationViewModelTest {
         override suspend fun getPlayLaterGames() = Result.success(emptyList<Game>())
         override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
+        override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
     }
 
     private class NoOpFileStorage : FileStorage {

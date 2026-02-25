@@ -165,6 +165,7 @@ private class StubGameRepository : GameRepository {
     override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> = Result.success(emptyList())
 }
 
 private class StubRatingRepository : RatingRepository {

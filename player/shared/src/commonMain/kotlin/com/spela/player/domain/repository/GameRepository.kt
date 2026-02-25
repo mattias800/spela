@@ -3,6 +3,7 @@ package com.spela.player.domain.repository
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.TopRatedGame
 
 interface GameRepository {
     suspend fun getConsoles(): Result<List<Console>>
@@ -22,4 +23,5 @@ interface GameRepository {
     suspend fun getPlayLaterGames(): Result<List<Game>>
     suspend fun addToPlayLater(gameId: String): Result<Unit>
     suspend fun removeFromPlayLater(gameId: String): Result<Unit>
+    suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>>
 }

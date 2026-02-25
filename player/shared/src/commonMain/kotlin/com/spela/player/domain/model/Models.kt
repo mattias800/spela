@@ -574,6 +574,16 @@ data class PublicProfileGame(
     val playTime: Long,
 )
 
+// Top Rated
+
+data class TopRatedGame(
+    val rank: Int,
+    val name: String,
+    val coverUrl: String? = null,
+    val rating: Double = 0.0,
+    val localGameId: String? = null,
+)
+
 // BIOS
 
 data class BiosConsoleStatus(

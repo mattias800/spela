@@ -105,7 +105,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		GameDirs: cfg.GameDirs,
 		Scraper:  cfg.Scraper,
 	}
-	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage}
+	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage, Scraper: cfg.Scraper}
 	userHandler := &UserHandler{DB: cfg.DB, Hub: cfg.Hub}
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	statsHandler := &StatsHandler{DB: cfg.DB}
@@ -166,6 +166,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)
 		api.GET("/consoles/:id/games", consoleHandler.ListConsoleGames)
+		api.GET("/consoles/:id/top-rated", consoleHandler.GetTopRated)
 
 		// Games
 		api.GET("/games", gameHandler.ListGames)

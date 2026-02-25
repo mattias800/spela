@@ -4,6 +4,7 @@ import com.spela.player.domain.model.Challenge
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.RecentAchievement
+import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.UserStats
 
 enum class ViewMode {
@@ -32,4 +33,6 @@ data class GameListState(
     val trendingChallenges: List<Challenge> = emptyList(),
     val isLoadingTrendingChallenges: Boolean = false,
     val consolesWithMissingBios: Set<String> = emptySet(),
+    val topRatedGames: List<TopRatedGame> = emptyList(),
+    val isLoadingTopRated: Boolean = false,
 )

@@ -32,6 +32,7 @@ import com.spela.player.domain.model.RelaySave
 import com.spela.player.domain.model.SaveData
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.ChallengeRepository
@@ -172,6 +173,7 @@ class StubGameRepository(private val consoleId: String = "nes") : GameRepository
     override suspend fun getPlayLaterGames() = Result.success(emptyList<Game>())
     override suspend fun addToPlayLater(gameId: String) = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
+    override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
 }
 
 class StubDownloadRepository : DownloadRepository {

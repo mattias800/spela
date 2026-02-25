@@ -4,6 +4,7 @@ import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.repository.ChallengeRepository
+import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.usecase.*
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.state.GameListState
@@ -29,6 +30,7 @@ class GameListViewModel(
     private val getRecentAchievementsUseCase: GetRecentAchievementsUseCase,
     private val challengeRepository: ChallengeRepository,
     private val scrapeService: ScrapeService,
+    private val gameRepository: GameRepository? = null,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
@@ -207,6 +209,20 @@ class GameListViewModel(
                     _state.update { it.copy(error = error.message, isLoading = false) }
                 },
             )
+        }
+        // Load top-rated games in parallel
+        gameRepository?.let { repo ->
+            scope.launch(dispatchers.io) {
+                _state.update { it.copy(isLoadingTopRated = true) }
+                repo.getTopRatedGames(consoleId).fold(
+                    onSuccess = { games ->
+                        _state.update { it.copy(topRatedGames = games, isLoadingTopRated = false) }
+                    },
+                    onFailure = {
+                        _state.update { it.copy(isLoadingTopRated = false) }
+                    },
+                )
+            }
         }
     }
 

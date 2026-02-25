@@ -872,6 +872,17 @@ data class RecentAchievementsResponse(
     val achievements: List<RecentAchievementDto> = emptyList(),
 )
 
+// Top Rated
+
+@Serializable
+data class TopRatedGameDto(
+    val rank: Int,
+    val name: String,
+    val coverUrl: String? = null,
+    val rating: Double = 0.0,
+    val localGameId: String? = null,
+)
+
 // Save Data (SRAM)
 
 @Serializable

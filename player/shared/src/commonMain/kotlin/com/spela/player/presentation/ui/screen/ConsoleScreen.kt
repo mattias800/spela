@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -68,6 +69,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
+import com.spela.player.presentation.ui.feature.home.TopRatedRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.GameGridItem
@@ -209,6 +211,23 @@ fun ConsoleScreen(
                             ) {
                                 ContinuePlayingRow(
                                     games = continuePlayingGames,
+                                    onGameSelected = onGameSelected,
+                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
+                                )
+                            }
+                        }
+                    }
+
+                    // Top Rated section
+                    if (state.topRatedGames.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SpTitledSection(
+                                title = "Top Rated",
+                                icon = Icons.Filled.Star,
+                                edgeToEdgeContent = true,
+                            ) {
+                                TopRatedRow(
+                                    games = state.topRatedGames,
                                     onGameSelected = onGameSelected,
                                     contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )

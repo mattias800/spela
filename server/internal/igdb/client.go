@@ -345,6 +345,67 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 	return games, nil
 }
 
+// TopGame represents an IGDB top-rated game result.
+type TopGame struct {
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Cover            *Image `json:"cover"`
+	TotalRating      float64 `json:"total_rating"`
+	TotalRatingCount int     `json:"total_rating_count"`
+}
+
+// GetTopGames fetches the top-rated games for a given IGDB platform.
+func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	// Wait for rate limiter
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name, cover.image_id, total_rating, total_rating_count; where platforms = (%d) & total_rating != null & total_rating_count > 5; sort total_rating desc; limit %d;`,
+		platformID, limit,
+	)
+
+	slog.Info("IGDB top games request", "platformID", platformID, "limit", limit)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var games []TopGame
+	if err := json.Unmarshal(body, &games); err != nil {
+		return nil, fmt.Errorf("decoding IGDB response: %w", err)
+	}
+
+	slog.Info("IGDB top games response", "platformID", platformID, "resultCount", len(games))
+
+	return games, nil
+}
+
 // escapeQuery sanitizes user input for IGDB Apicalypse queries.
 // Escapes double quotes and removes semicolons to prevent query injection.
 func escapeQuery(s string) string {

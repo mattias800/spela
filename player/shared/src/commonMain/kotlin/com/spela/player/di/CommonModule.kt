@@ -136,6 +136,7 @@ val commonModule = module {
             getRecentAchievementsUseCase = get(),
             challengeRepository = get(),
             scrapeService = get(),
+            gameRepository = get(),
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),

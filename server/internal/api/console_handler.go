@@ -7,11 +7,15 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"math"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
@@ -61,6 +65,7 @@ var previewFallbackGames = map[string]string{
 type ConsoleHandler struct {
 	DB      *gorm.DB
 	Storage *storage.Storage
+	Scraper *scraper.Scraper
 }
 
 // ListConsoles returns all consoles with game counts.
@@ -295,6 +300,193 @@ func (h *ConsoleHandler) GetConsoleLogoPng(c *gin.Context) {
 
 	c.Header("Cache-Control", "public, max-age=604800")
 	c.Data(http.StatusOK, "image/png", data)
+}
+
+// TopRatedGameResponse is the API response for a top-rated IGDB game.
+type TopRatedGameResponse struct {
+	Rank        int     `json:"rank"`
+	Name        string  `json:"name"`
+	CoverUrl    string  `json:"coverUrl"`
+	Rating      float64 `json:"rating"`
+	LocalGameId *string `json:"localGameId"`
+}
+
+// topRatedStaleness is how long cached top-rated data is considered fresh.
+const topRatedStaleness = 7 * 24 * time.Hour
+
+// GetTopRated returns the top-rated IGDB games for a console.
+// Results are cached in the local DB and refreshed when stale (>7 days).
+func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
+	consoleID := c.Param("id")
+
+	var console db.Console
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleID).First(&console).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
+		return
+	}
+
+	abbr := strings.ToUpper(console.Abbreviation)
+	igdbPlatformID, ok := igdb.AbbreviationToIGDBPlatform[abbr]
+	if !ok {
+		c.JSON(http.StatusOK, []TopRatedGameResponse{})
+		return
+	}
+
+	// Check local DB for cached top-rated games
+	var cached []db.TopRatedGame
+	h.DB.Where("console_id = ?", console.ID).Order("rank asc").Find(&cached)
+
+	fresh := len(cached) > 0 && time.Since(cached[0].UpdatedAt) < topRatedStaleness
+
+	// Lazily configure IGDB client if credentials are available but client isn't set up yet
+	if h.Scraper != nil && h.Scraper.IGDBClient == nil {
+		clientID, clientSecret := igdbCredentials(h.DB)
+		if clientID != "" && clientSecret != "" {
+			h.Scraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
+		}
+	}
+
+	if !fresh && h.Scraper != nil && h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
+		// Fetch a larger pool from IGDB, then apply Bayesian weighting to match
+		// the IGDB website's ranking (which favors well-known, highly-rated games
+		// over obscure titles with few but high ratings).
+		topGames, err := h.Scraper.IGDBClient.GetTopGames(igdbPlatformID, 100)
+		if err != nil {
+			slog.Warn("failed to fetch top-rated games from IGDB", "console", abbr, "error", err)
+			// Fall through to serve stale data if available
+		} else {
+			ranked := bayesianRank(topGames, 25)
+			h.upsertTopRatedGames(console.ID, ranked)
+			// Re-read from DB to get consistent data
+			h.DB.Where("console_id = ?", console.ID).Order("rank asc").Find(&cached)
+		}
+	}
+
+	// Cross-reference with local games
+	result := make([]TopRatedGameResponse, 0, len(cached))
+	for _, tr := range cached {
+		coverUrl := ""
+		if tr.CoverImageID != "" {
+			coverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
+		}
+
+		resp := TopRatedGameResponse{
+			Rank:     tr.Rank,
+			Name:     tr.Name,
+			CoverUrl: coverUrl,
+			Rating:   tr.TotalRating,
+		}
+
+		// Check for local game match by case-insensitive title
+		var localGame db.Game
+		if err := h.DB.Where("console_id = ? AND LOWER(title) = LOWER(?)", console.ID, tr.Name).First(&localGame).Error; err == nil {
+			id := fmt.Sprintf("%d", localGame.ID)
+			resp.LocalGameId = &id
+		}
+
+		result = append(result, resp)
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// upsertTopRatedGames inserts or updates top-rated games for a console.
+func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGame) {
+	for i, g := range games {
+		coverImageID := ""
+		if g.Cover != nil {
+			coverImageID = g.Cover.ImageID
+		}
+
+		tr := db.TopRatedGame{
+			ConsoleID:        consoleID,
+			IGDBGameID:       g.ID,
+			Name:             g.Name,
+			CoverImageID:     coverImageID,
+			TotalRating:      g.TotalRating,
+			TotalRatingCount: g.TotalRatingCount,
+			Rank:             i + 1,
+		}
+
+		// Upsert: update if exists, create if not
+		var existing db.TopRatedGame
+		err := h.DB.Where("console_id = ? AND igdb_game_id = ?", consoleID, g.ID).First(&existing).Error
+		if err == nil {
+			h.DB.Model(&existing).Updates(map[string]interface{}{
+				"name":               tr.Name,
+				"cover_image_id":     tr.CoverImageID,
+				"total_rating":       tr.TotalRating,
+				"total_rating_count": tr.TotalRatingCount,
+				"rank":               tr.Rank,
+			})
+		} else {
+			h.DB.Create(&tr)
+		}
+	}
+
+	// Remove old entries that are no longer in the top list
+	igdbIDs := make([]int, len(games))
+	for i, g := range games {
+		igdbIDs[i] = g.ID
+	}
+	if len(igdbIDs) > 0 {
+		h.DB.Where("console_id = ? AND igdb_game_id NOT IN ?", consoleID, igdbIDs).Delete(&db.TopRatedGame{})
+	}
+}
+
+// bayesianRank applies a Bayesian weighted rating to a pool of IGDB games and
+// returns the top N. This matches the IGDB website's ranking behaviour, which
+// penalises games with very few ratings even if their raw score is high.
+//
+// Formula: weighted = (v/(v+m)) * R + (m/(v+m)) * C
+//   - v = number of votes for this game
+//   - m = minimum votes required for a meaningful ranking (25th percentile)
+//   - R = game's average rating
+//   - C = mean rating across the entire pool
+func bayesianRank(games []igdb.TopGame, topN int) []igdb.TopGame {
+	if len(games) == 0 {
+		return games
+	}
+
+	// Compute mean rating (C) across the pool
+	var sumRating float64
+	counts := make([]int, len(games))
+	for i, g := range games {
+		sumRating += g.TotalRating
+		counts[i] = g.TotalRatingCount
+	}
+	C := sumRating / float64(len(games))
+
+	// m = 25th percentile of rating counts — ensures only reasonably well-known
+	// games can rank highly.
+	sort.Ints(counts)
+	m := float64(counts[len(counts)/4])
+	if m < 10 {
+		m = 10
+	}
+
+	type scored struct {
+		game   igdb.TopGame
+		weight float64
+	}
+	scored_games := make([]scored, len(games))
+	for i, g := range games {
+		v := float64(g.TotalRatingCount)
+		R := g.TotalRating
+		w := (v/(v+m))*R + (m/(v+m))*C
+		scored_games[i] = scored{game: g, weight: w}
+	}
+
+	sort.Slice(scored_games, func(i, j int) bool {
+		return scored_games[i].weight > scored_games[j].weight
+	})
+
+	n := int(math.Min(float64(topN), float64(len(scored_games))))
+	result := make([]igdb.TopGame, n)
+	for i := 0; i < n; i++ {
+		result[i] = scored_games[i].game
+	}
+	return result
 }
 
 // getUserID extracts the authenticated user's ID from the context.
