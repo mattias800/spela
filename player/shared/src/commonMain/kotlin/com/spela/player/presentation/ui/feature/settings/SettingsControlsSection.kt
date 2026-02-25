@@ -21,7 +21,7 @@ internal fun LazyListScope.controlsDefaultScopeItems(
 ) {
     if (presets.isNotEmpty()) {
         item {
-            SpCard(modifier = Modifier.testTag("controls_preset_card")) {
+            SpCard(onGradient = true, modifier = Modifier.testTag("controls_preset_card")) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

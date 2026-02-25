@@ -27,7 +27,7 @@ fun SpSessionCode(
     modifier: Modifier = Modifier,
     onShare: (() -> Unit)? = null,
 ) {
-    SpCard(modifier = modifier.fillMaxWidth()) {
+    SpCard(onGradient = true, modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

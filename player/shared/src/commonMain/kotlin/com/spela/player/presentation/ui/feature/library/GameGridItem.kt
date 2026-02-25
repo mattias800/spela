@@ -46,6 +46,7 @@ internal fun GameGridItem(
 
     SpCard(
         onClick = onClick,
+        onGradient = true,
         modifier = Modifier.semantics {
             contentDescription = "${game.title}${game.genre?.let { ", $it" } ?: ""}${if (game.isFavorite) ", favorited" else ""}"
             role = Role.Button

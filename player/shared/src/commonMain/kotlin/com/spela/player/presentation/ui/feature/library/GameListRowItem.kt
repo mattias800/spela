@@ -35,6 +35,7 @@ internal fun GameListRowItem(
 ) {
     SpCard(
         onClick = onClick,
+        onGradient = true,
         modifier = modifier
             .fillMaxWidth()
             .semantics {

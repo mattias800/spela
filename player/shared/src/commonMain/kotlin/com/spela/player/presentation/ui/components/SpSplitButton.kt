@@ -84,7 +84,7 @@ fun SpSplitButton(
         )
 
         // Divider between the two halves
-        val dividerColor = if (onGradient) Color.White.copy(alpha = 0.15f) else when (style) {
+        val dividerColor = if (onGradient) Color.White.copy(alpha = 0.35f) else when (style) {
             SpButtonStyle.Primary -> SpColor.OnPrimary.copy(alpha = 0.2f)
             SpButtonStyle.Secondary -> SpColor.OnSecondary.copy(alpha = 0.2f)
             SpButtonStyle.Outlined -> SpColor.Divider

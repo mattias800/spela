@@ -202,6 +202,7 @@ private fun NetplaySessionItem(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)

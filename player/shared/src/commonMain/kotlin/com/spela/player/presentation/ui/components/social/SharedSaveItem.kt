@@ -37,7 +37,7 @@ fun SharedSaveItem(
 ) {
     val description = "${sharedSave.name} by ${sharedSave.username}"
 
-    SpCard(modifier = modifier) {
+    SpCard(onGradient = true, modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

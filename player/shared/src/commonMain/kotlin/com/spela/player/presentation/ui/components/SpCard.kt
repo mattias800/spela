@@ -34,6 +34,7 @@ fun SpCard(
     onClick: (() -> Unit)? = null,
     cornerRadius: Dp = SpSpacing.CardCornerRadius,
     backgroundColor: Color = SpColor.Card,
+    onGradient: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -52,7 +53,29 @@ fun SpCard(
     )
 
     val shape = RoundedCornerShape(cornerRadius)
-    val resolvedBg = if (isHovered || isFocused) SpColor.CardHovered else backgroundColor
+
+    val resolvedBg = if (onGradient) {
+        val alpha by animateFloatAsState(
+            targetValue = when {
+                isPressed -> 0.05f
+                isHovered || isFocused -> 0.14f
+                else -> 0.09f
+            },
+            animationSpec = tween(150),
+            label = "cardGradientAlpha",
+        )
+        Color.White.copy(alpha = alpha)
+    } else {
+        if (isHovered || isFocused) SpColor.CardHovered else backgroundColor
+    }
+
+    val borderColor = if (isFocused) {
+        SpColor.Primary.copy(alpha = 0.85f)
+    } else if (onGradient) {
+        Color.White.copy(alpha = 0.08f)
+    } else {
+        SpColor.Divider.copy(alpha = 0.5f)
+    }
 
     Box(
         modifier = modifier
@@ -65,7 +88,7 @@ fun SpCard(
             )
             .border(
                 width = if (isFocused) 2.dp else 1.dp,
-                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else SpColor.Divider.copy(alpha = 0.5f),
+                color = borderColor,
                 shape = shape,
             )
             .clip(shape)
@@ -178,12 +201,14 @@ fun SpGradientCard(
 fun SpGameCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onGradient: Boolean = false,
     coverContent: @Composable () -> Unit,
     infoContent: @Composable () -> Unit,
 ) {
     SpCard(
         modifier = modifier,
         onClick = onClick,
+        onGradient = onGradient,
     ) {
         Column {
             coverContent()

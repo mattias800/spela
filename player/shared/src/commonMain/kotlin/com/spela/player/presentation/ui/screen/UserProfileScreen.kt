@@ -226,7 +226,7 @@ private fun StatCard(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    SpCard(modifier = modifier) {
+    SpCard(onGradient = true, modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,6 +284,7 @@ private fun ProfileGameItem(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = SpSpacing.XXSmall),

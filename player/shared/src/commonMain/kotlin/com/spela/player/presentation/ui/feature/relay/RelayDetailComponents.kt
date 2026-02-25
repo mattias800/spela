@@ -108,6 +108,7 @@ internal fun RelayHeader(
 
         if (turnHeld && !isMyTurn) {
             SpCard(
+                onGradient = true,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
@@ -281,6 +282,7 @@ internal fun RelaySaveItem(
     save: RelaySave,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),

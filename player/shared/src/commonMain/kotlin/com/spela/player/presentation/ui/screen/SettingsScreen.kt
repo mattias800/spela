@@ -335,6 +335,7 @@ fun SettingsScreen(
                 ) { console ->
                     SpCard(
                         onClick = { onNavigateToConsoleSettings(console.id) },
+                        onGradient = true,
                     ) {
                         Row(
                             modifier = Modifier
@@ -541,6 +542,7 @@ fun SettingsScreen(
             item {
                 SpCard(
                     onClick = onNavigateToLicenses,
+                    onGradient = true,
                 ) {
                     Row(
                         modifier = Modifier

@@ -132,6 +132,7 @@ fun ServerConnectionScreen(
                                 viewModel.onIntent(ServerConnectionIntent.SelectServer(server.id))
                                 onServerSelected()
                             },
+                            onGradient = true,
                         ) {
                             Row(
                                 modifier = Modifier

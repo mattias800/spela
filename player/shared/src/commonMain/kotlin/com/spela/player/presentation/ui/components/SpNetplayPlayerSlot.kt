@@ -54,6 +54,7 @@ fun SpNetplayPlayerSlot(
     }
 
     SpCard(
+        onGradient = true,
         modifier = borderModifier,
     ) {
         Row(

@@ -200,6 +200,7 @@ private fun RelayItem(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
@@ -260,6 +261,7 @@ private fun InvitationItem(
     onReject: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)

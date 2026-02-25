@@ -108,7 +108,7 @@ internal fun InputDelaySection(
         )
         Spacer(Modifier.height(SpSpacing.Small))
 
-        SpCard(modifier = Modifier.fillMaxWidth()) {
+        SpCard(onGradient = true, modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

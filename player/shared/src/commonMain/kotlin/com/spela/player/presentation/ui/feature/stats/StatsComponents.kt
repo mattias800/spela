@@ -68,6 +68,7 @@ internal fun MostPlayedGameItem(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
@@ -130,6 +131,7 @@ internal fun ActivePlayerItem(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)

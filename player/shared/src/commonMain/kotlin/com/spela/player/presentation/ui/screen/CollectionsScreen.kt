@@ -235,6 +235,7 @@ private fun CollectionListItem(
 ) {
     SpCard(
         onClick = onClick,
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .semantics {

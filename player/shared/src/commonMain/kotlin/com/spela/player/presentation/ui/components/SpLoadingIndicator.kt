@@ -143,7 +143,7 @@ fun SpShimmer(
 fun SpGameCardSkeleton(
     modifier: Modifier = Modifier,
 ) {
-    SpCard(modifier = modifier) {
+    SpCard(onGradient = true, modifier = modifier) {
         Column {
             SpShimmer(
                 modifier = Modifier.fillMaxWidth(),

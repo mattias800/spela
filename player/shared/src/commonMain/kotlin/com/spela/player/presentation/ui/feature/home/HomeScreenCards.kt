@@ -70,6 +70,7 @@ internal fun ContinuePlayingCard(
                 role = Role.Button
             },
         onClick = onClick,
+        onGradient = true,
     ) {
         Row(
             modifier = Modifier
@@ -151,6 +152,7 @@ internal fun GameCoverCard(
                 role = Role.Button
             },
         onClick = onClick,
+        onGradient = true,
     ) {
         Column {
             SpCoverArt(
@@ -189,6 +191,7 @@ internal fun NetplaySessionCard(
     onClick: () -> Unit,
 ) {
     SpCard(
+        onGradient = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
