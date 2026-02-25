@@ -1,28 +1,14 @@
 package com.spela.player.presentation.viewmodel
 
-import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
-import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
-import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
-import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.PreferencesRepository
-import com.spela.player.domain.repository.RelayRepository
-import com.spela.player.domain.repository.SaveDataRepository
-import com.spela.player.domain.usecase.LoadGameStateUseCase
-import com.spela.player.domain.usecase.PrepareGameUseCase
-import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.libretro.GamepadPortManager
-import com.spela.player.netplay.NetplayInputBuffer
-import com.spela.player.netplay.NetplaySignaling
-import com.spela.player.netplay.NetplayTransport
-import com.spela.player.netplay.RemoteInput
-import com.spela.player.netplay.WebSocketRelayTransport
-import com.spela.player.netplay.ControlMessage
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
@@ -36,7 +22,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,8 +33,6 @@ import kotlinx.coroutines.withContext
  */
 class EmulationViewModel(
     private val prepareGameUseCase: PrepareGameUseCase,
-    private val saveGameStateUseCase: SaveGameStateUseCase,
-    private val loadGameStateUseCase: LoadGameStateUseCase,
     private val getGameDetailUseCase: GetGameDetailUseCase,
     private val preferencesRepository: PreferencesRepository,
     private val achievementsRepository: AchievementsRepository,
@@ -57,32 +40,19 @@ class EmulationViewModel(
     private val libretroController: LibretroController,
     private val secondaryDisplay: PlatformSecondaryDisplay,
     private val presenceService: PresenceService,
-    private val relayRepository: RelayRepository,
-    private val challengeRepository: ChallengeRepository,
-    private val saveDataRepository: SaveDataRepository,
-    private val connectivityMonitor: ConnectivityMonitor,
     private val gamepadPortManager: GamepadPortManager,
-    private val screenshotCapture: ScreenshotCapture?,
-    private val apiClient: SpelaApiClient,
-    private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
+    private val saveManager: SaveManager,
+    private val challengeManager: ChallengeManager,
+    private val netplayManager: NetplayManager,
+    private val _state: MutableStateFlow<EmulationState>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
 ) {
-    private val _state = MutableStateFlow(EmulationState())
     val state: StateFlow<EmulationState> = _state.asStateFlow()
 
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
-    private var challengeTimerJob: Job? = null
-    private var challengeSaveData: ByteArray? = null
-    private var challengeCreationSaveData: ByteArray? = null
-    private var challengeCreationScreenshot: ByteArray? = null
-    private var currentCoreName: String = ""
-    private var relayHeartbeatJob: Job? = null
-    private var netplayTransport: NetplayTransport? = null
-    private var netplayInputCollectorJob: Job? = null
-    private var netplayControlCollectorJob: Job? = null
     private var skipBiosCheck = false
 
     init {
@@ -118,8 +88,8 @@ class EmulationViewModel(
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
             EmulationIntent.StopGame -> stopGame()
-            EmulationIntent.SaveState -> saveState()
-            EmulationIntent.LoadState -> loadState()
+            EmulationIntent.SaveState -> saveManager.saveState()
+            EmulationIntent.LoadState -> saveManager.loadState()
             EmulationIntent.ToggleOverlay -> {
                 val wasShowing = _state.value.showOverlay
                 _state.update { it.copy(showOverlay = !it.showOverlay) }
@@ -165,19 +135,14 @@ class EmulationViewModel(
             }
 
             // Challenge intents
-            EmulationIntent.CreateChallenge -> initChallengeCreation()
-            is EmulationIntent.SubmitChallenge -> submitChallenge(intent.name, intent.description, intent.type, intent.difficulty)
-            EmulationIntent.DismissChallengeCreation -> {
-                challengeCreationSaveData = null
-                challengeCreationScreenshot = null
-                _state.update { it.copy(showChallengeCreation = false, challengeCreationSuccess = false) }
-                resumeGame()
-            }
-            EmulationIntent.CompleteChallenge -> completeChallenge()
-            EmulationIntent.RestartChallenge -> restartChallenge()
+            EmulationIntent.CreateChallenge -> challengeManager.initChallengeCreation { pauseGame() }
+            is EmulationIntent.SubmitChallenge -> challengeManager.submitChallenge(intent.name, intent.description, intent.type, intent.difficulty) { resumeGame() }
+            EmulationIntent.DismissChallengeCreation -> challengeManager.dismissChallengeCreation { resumeGame() }
+            EmulationIntent.CompleteChallenge -> challengeManager.completeChallenge { pauseGame() }
+            EmulationIntent.RestartChallenge -> challengeManager.restartChallenge { resumeGame() }
             EmulationIntent.ShowGiveUpConfirm -> _state.update { it.copy(showGiveUpConfirm = true) }
             EmulationIntent.DismissGiveUpConfirm -> _state.update { it.copy(showGiveUpConfirm = false) }
-            EmulationIntent.ConfirmGiveUp -> giveUpChallenge()
+            EmulationIntent.ConfirmGiveUp -> challengeManager.giveUpChallenge { stopGame() }
             EmulationIntent.DismissChallengeResult -> _state.update { it.copy(challengeCompletedAttempt = null) }
 
             // BIOS
@@ -240,7 +205,7 @@ class EmulationViewModel(
                 consoleName = detail.game.consoleName
             }
 
-            // Pre-launch BIOS check (AC 4.2)
+            // Pre-launch BIOS check
             if (biosRepository != null && !skipBiosCheck) {
                 val missingFiles = biosRepository.preLaunchBiosCheck(consoleId)
                 if (missingFiles.isNotEmpty()) {
@@ -289,13 +254,9 @@ class EmulationViewModel(
                     try {
                         // Set core options BEFORE loadCore so they're already in
                         // the variable store when SET_VARIABLES runs during init.
-                        // The already_set check prevents defaults from overwriting.
                         if (isDualScreen) {
                             libretroController.setCoreVariable("desmume_screens_layout", "vertical")
                             libretroController.setCoreVariable("desmume_screens_gap", "0")
-                            // "touch" makes the core use RETRO_DEVICE_POINTER with absolute
-                            // coordinates. "mouse" (default) uses RETRO_DEVICE_MOUSE with
-                            // relative deltas which doesn't work for touchscreen input.
                             libretroController.setCoreVariable("desmume_pointer_type", "touch")
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
@@ -303,8 +264,6 @@ class EmulationViewModel(
                         libretroController.loadCore(corePath)
 
                         // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
-                        // because SwiftShader doesn't support required compute features.
-                        // Fall back to Angrylion software renderer for compatibility.
                         if (com.spela.player.util.isEmulator() && corePath.contains("mupen64plus")) {
                             libretroController.setCoreVariable("mupen64plus-rdp-plugin", "angrylion")
                             libretroController.setCoreVariable("mupen64plus-rsp-plugin", "parallel")
@@ -316,53 +275,25 @@ class EmulationViewModel(
                         libretroController.loadGame(gamePath)
 
                         // Load SRAM (save data) before starting emulation
-                        try {
-                            val localSram = saveDataRepository.loadLocalSRAM(gameId)
-                            if (localSram != null) {
-                                libretroController.setSRAM(localSram)
-                            } else if (connectivityMonitor.isOnline.value) {
-                                saveDataRepository.downloadActiveSaveData(gameId).onSuccess { sram ->
-                                    libretroController.setSRAM(sram)
-                                    saveDataRepository.saveLocalSRAM(gameId, sram)
-                                }
-                            }
-                        } catch (_: Exception) {
-                            // SRAM loading is best-effort
-                        }
+                        saveManager.loadSramOnStart(gameId)
 
                         // Store the core name for challenge creation
-                        currentCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
+                        challengeManager.currentCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
 
                         // Challenge mode: load challenge save state and start attempt
                         if (challengeId != null) {
-                            val saveBytes = challengeSaveDataArg
-                                ?: challengeRepository.downloadChallengeSave(challengeId).getOrNull()
-                            if (saveBytes != null) {
-                                this@EmulationViewModel.challengeSaveData = saveBytes
-                                libretroController.unserialize(saveBytes)
-                                // Start the attempt server-side
-                                challengeRepository.startAttempt(challengeId).onSuccess { attempt ->
-                                    withContext(dispatchers.main) {
-                                        _state.update { it.copy(challengeAttemptId = attempt.id) }
-                                    }
-                                }
-                            }
+                            challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
                         }
-
                         // Try to load auto-save: in relay mode, download relay auto-save
                         else if (relayId != null) {
-                            relayRepository.downloadRelayAutoSave(relayId).onSuccess { saveData ->
-                                libretroController.unserialize(saveData)
-                            }
+                            netplayManager.loadRelaySave(relayId)
                         } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad) {
-                            loadGameStateUseCase(gameId).onSuccess { saveData ->
-                                libretroController.unserialize(saveData)
-                            }
+                            saveManager.autoLoadSaveState(gameId)
                         }
 
                         // Set up netplay transport if in netplay mode
                         if (netplaySessionId != null) {
-                            setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
+                            netplayManager.setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
                         }
 
                         libretroController.start()
@@ -382,7 +313,7 @@ class EmulationViewModel(
 
                         // Start relay heartbeat if in relay mode
                         if (relayId != null) {
-                            startRelayHeartbeat(relayId)
+                            netplayManager.startRelayHeartbeat(relayId)
                         }
 
                         // Start FPS tracking and session timer
@@ -391,7 +322,7 @@ class EmulationViewModel(
 
                         // Start challenge timer if in challenge mode
                         if (challengeId != null) {
-                            startChallengeTimer()
+                            challengeManager.startChallengeTimer()
                         }
 
                         // Show secondary display if available
@@ -418,131 +349,6 @@ class EmulationViewModel(
                 },
             )
         }
-    }
-
-    /**
-     * Set up the netplay transport, connect to the WebSocket, configure lockstep mode
-     * on the controller, and start collecting remote inputs.
-     *
-     * For the host: sends initial state to the client via STATE_CHUNK messages.
-     * For the client: receives and applies the initial state from the host.
-     */
-    private suspend fun setupNetplayTransport(
-        sessionId: String,
-        localPort: Int,
-        inputDelay: Int,
-        isHost: Boolean,
-    ) {
-        val signaling = NetplaySignaling(
-            apiClient = apiClient,
-            engineFactory = engineFactory,
-            dispatchers = dispatchers,
-            scope = scope,
-            sessionId = sessionId,
-        )
-        val transport = WebSocketRelayTransport(signaling, scope)
-        this.netplayTransport = transport
-
-        // Connect to the WebSocket
-        transport.connect()
-
-        // Small delay to let the WebSocket connection establish
-        delay(500)
-
-        val inputBuffer = NetplayInputBuffer()
-
-        // Initial state sync: host serializes and sends, client waits to receive
-        if (isHost) {
-            val stateData = libretroController.serialize()
-            if (stateData != null) {
-                sendStateChunks(transport, stateData)
-            }
-        } else {
-            // Client waits for state chunks from host
-            val stateData = receiveStateChunks(transport)
-            if (stateData != null) {
-                libretroController.unserialize(stateData)
-            }
-        }
-
-        // Configure lockstep mode on the controller
-        libretroController.setNetplayMode(transport, inputBuffer, localPort, inputDelay)
-
-        // Collect remote inputs from transport and feed into input buffer
-        netplayInputCollectorJob = scope.launch(dispatchers.io) {
-            transport.remoteInputs.collect { remote ->
-                inputBuffer.setRemoteInput(remote.frame, remote.port, remote.input)
-            }
-        }
-
-        // Collect control messages for disconnect/reconnect handling
-        netplayControlCollectorJob = scope.launch(dispatchers.io) {
-            transport.controlMessages.collect { msg ->
-                when (msg) {
-                    is ControlMessage.PlayerLeft -> {
-                        withContext(dispatchers.main) {
-                            _state.update { it.copy(netplayPeerDisconnected = true) }
-                        }
-                    }
-                    is ControlMessage.PlayerJoined -> {
-                        withContext(dispatchers.main) {
-                            _state.update { it.copy(netplayPeerDisconnected = false) }
-                        }
-                    }
-                    else -> { /* other messages handled elsewhere */ }
-                }
-            }
-        }
-    }
-
-    private fun sendStateChunks(transport: NetplayTransport, stateData: ByteArray) {
-        val chunkSize = 16_384 // 16 KB chunks
-        val totalChunks = (stateData.size + chunkSize - 1) / chunkSize
-        for (i in 0 until totalChunks) {
-            val offset = i * chunkSize
-            val end = minOf(offset + chunkSize, stateData.size)
-            val chunk = stateData.copyOfRange(offset, end)
-            val encoded = com.spela.player.netplay.NetplayProtocol.encodeStateChunk(
-                chunkIndex = i,
-                totalChunks = totalChunks,
-                totalSize = stateData.size,
-                data = chunk,
-            )
-            transport.sendBinary(encoded)
-        }
-    }
-
-    private suspend fun receiveStateChunks(transport: NetplayTransport): ByteArray? {
-        val receivedChunks = mutableMapOf<Int, ByteArray>()
-        var totalChunks = -1
-        var totalSize = -1
-
-        // Wait for all state chunks with a timeout.
-        // Use takeWhile to break out of collect when all chunks arrive.
-        kotlinx.coroutines.withTimeoutOrNull(10_000) {
-            transport.remoteBinary.takeWhile { msg ->
-                val chunk = com.spela.player.netplay.NetplayProtocol.decodeStateChunk(msg.data)
-                if (chunk != null) {
-                    totalChunks = chunk.totalChunks
-                    totalSize = chunk.totalSize
-                    receivedChunks[chunk.chunkIndex] = chunk.data
-                }
-                // Continue collecting while we don't have all chunks yet
-                receivedChunks.size < totalChunks || totalChunks < 0
-            }.collect {}
-        } ?: return null
-
-        if (totalSize < 0 || receivedChunks.size < totalChunks) return null
-
-        // Reassemble in order
-        val result = ByteArray(totalSize)
-        var offset = 0
-        for (i in 0 until totalChunks) {
-            val chunkData = receivedChunks[i] ?: return null
-            chunkData.copyInto(result, offset)
-            offset += chunkData.size
-        }
-        return result
     }
 
     private fun pauseGame() {
@@ -590,20 +396,8 @@ class EmulationViewModel(
         dismissSecondaryDisplay()
         sessionTimerJob?.cancel()
         sessionTimerJob = null
-        challengeTimerJob?.cancel()
-        challengeTimerJob = null
-        challengeSaveData = null
-        challengeCreationSaveData = null
-        challengeCreationScreenshot = null
-        relayHeartbeatJob?.cancel()
-        relayHeartbeatJob = null
-        netplayInputCollectorJob?.cancel()
-        netplayInputCollectorJob = null
-        netplayControlCollectorJob?.cancel()
-        netplayControlCollectorJob = null
-        netplayTransport?.disconnect()
-        netplayTransport = null
-        libretroController.clearNetplayMode()
+        challengeManager.cleanup()
+        netplayManager.cleanup()
         presenceService.stopHeartbeat()
         scope.launch(dispatchers.io) {
             val currentState = _state.value
@@ -612,46 +406,13 @@ class EmulationViewModel(
 
             // Save before stopping
             if (relayId != null && turnToken != null) {
-                // Relay mode: upload auto-save to relay, then release turn
-                try {
-                    val saveData = libretroController.serialize()
-                    if (saveData != null) {
-                        relayRepository.uploadRelayAutoSave(relayId, turnToken, saveData)
-                    }
-                } catch (_: Exception) {
-                    // Best effort relay auto-save
-                }
-                try {
-                    relayRepository.releaseTurn(relayId)
-                } catch (_: Exception) {
-                    // Best effort release turn
-                }
+                netplayManager.saveRelayOnStop(relayId, turnToken)
             } else if (currentPreferences.autoSaveEnabled && !currentState.isChallengeMode) {
-                // Normal mode: auto-save to personal saves
-                val gameId = currentState.gameId
-                try {
-                    val saveData = libretroController.serialize()
-                    if (saveData != null) {
-                        saveGameStateUseCase(gameId, saveData)
-                    }
-                } catch (_: Exception) {
-                    // Best effort auto-save
-                }
+                saveManager.autoSaveOnStop(currentState.gameId)
             }
 
             // Save SRAM before stopping (best effort)
-            try {
-                val gameId = currentState.gameId
-                val sramData = libretroController.getSRAM()
-                if (sramData != null && sramData.isNotEmpty()) {
-                    saveDataRepository.saveLocalSRAM(gameId, sramData)
-                    if (connectivityMonitor.isOnline.value) {
-                        runCatching { saveDataRepository.uploadActiveSaveData(gameId, sramData) }
-                    }
-                }
-            } catch (_: Exception) {
-                // Best effort SRAM save
-            }
+            saveManager.saveSramOnStop(currentState.gameId)
 
             try {
                 achievementsController.deinit()
@@ -668,10 +429,6 @@ class EmulationViewModel(
                         fps = 0f,
                         frameTime = 0f,
                         isHardcoreMode = false,
-                        // Note: requestExit is NOT reset here — the LaunchedEffect in
-                        // SpelaApp observes it and calls HideOverlay + ClearExitRequest.
-                        // Resetting it here would race with the LaunchedEffect on a
-                        // single-threaded test dispatcher.
                         showExitConfirm = false,
                         showOverlay = false,
                         secondaryDisplayActive = false,
@@ -698,54 +455,6 @@ class EmulationViewModel(
                     )
                 }
             }
-        }
-    }
-
-    private fun saveState() {
-        if (_state.value.isChallengeMode) return
-        if (_state.value.isHardcoreMode) {
-            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
-            return
-        }
-        scope.launch(dispatchers.io) {
-            val gameId = _state.value.gameId
-            val saveData = libretroController.serialize() ?: return@launch
-            saveGameStateUseCase(gameId, saveData).fold(
-                onSuccess = {
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State saved") }
-                    }
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Failed to save: ${error.message}") }
-                    }
-                },
-            )
-        }
-    }
-
-    private fun loadState() {
-        if (_state.value.isChallengeMode) return
-        if (_state.value.isHardcoreMode) {
-            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
-            return
-        }
-        scope.launch(dispatchers.io) {
-            val gameId = _state.value.gameId
-            loadGameStateUseCase(gameId).fold(
-                onSuccess = { saveData ->
-                    libretroController.unserialize(saveData)
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State loaded") }
-                    }
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Failed to load save: ${error.message}") }
-                    }
-                },
-            )
         }
     }
 
@@ -820,198 +529,6 @@ class EmulationViewModel(
     private fun dismissSecondaryDisplay() {
         secondaryDisplay.dismiss()
         _state.update { it.copy(secondaryDisplayActive = false) }
-    }
-
-    // Challenge mode methods
-
-    private var challengeTimerPausedAccumulatedMs: Long = 0
-    private var challengeTimerPauseStartNanos: Long = 0
-
-    private fun startChallengeTimer() {
-        challengeTimerJob?.cancel()
-        val startNanos = System.nanoTime()
-        challengeTimerPausedAccumulatedMs = 0
-        challengeTimerPauseStartNanos = 0
-        challengeTimerJob = scope.launch(dispatchers.default) {
-            while (isActive) {
-                delay(100) // 100ms tick resolution for display-only timer
-                val current = _state.value
-                if (!current.isPaused && !current.showOverlay && current.isChallengeMode) {
-                    if (challengeTimerPauseStartNanos != 0L) {
-                        // Resuming from pause: accumulate the paused duration
-                        challengeTimerPausedAccumulatedMs += (System.nanoTime() - challengeTimerPauseStartNanos) / 1_000_000
-                        challengeTimerPauseStartNanos = 0
-                    }
-                    val elapsedMs = (System.nanoTime() - startNanos) / 1_000_000 - challengeTimerPausedAccumulatedMs
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(challengeElapsedMs = elapsedMs) }
-                    }
-                } else if (challengeTimerPauseStartNanos == 0L) {
-                    // Entering paused state: record when pause started
-                    challengeTimerPauseStartNanos = System.nanoTime()
-                }
-            }
-        }
-    }
-
-    private fun initChallengeCreation() {
-        pauseGame()
-        scope.launch(dispatchers.io) {
-            challengeCreationSaveData = libretroController.serialize()
-            challengeCreationScreenshot = screenshotCapture?.captureScreenshot()
-            withContext(dispatchers.main) {
-                _state.update {
-                    it.copy(
-                        showChallengeCreation = true,
-                        showOverlay = false,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun submitChallenge(name: String, description: String, type: String, difficulty: String) {
-        val saveData = challengeCreationSaveData ?: return
-        val screenshot = challengeCreationScreenshot
-        val gameId = _state.value.gameId
-        _state.update { it.copy(isCreatingChallenge = true) }
-        scope.launch(dispatchers.io) {
-            challengeRepository.createChallenge(
-                gameId = gameId,
-                name = name,
-                description = description,
-                type = type,
-                difficulty = difficulty,
-                coreName = currentCoreName,
-                saveData = saveData,
-                screenshotData = screenshot,
-            ).fold(
-                onSuccess = {
-                    challengeCreationSaveData = null
-                    challengeCreationScreenshot = null
-                    withContext(dispatchers.main) {
-                        _state.update {
-                            it.copy(
-                                showChallengeCreation = false,
-                                isCreatingChallenge = false,
-                                challengeCreationSuccess = true,
-                                statusMessage = "Challenge created!",
-                            )
-                        }
-                    }
-                    resumeGame()
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update {
-                            it.copy(
-                                isCreatingChallenge = false,
-                                error = "Failed to create challenge: ${error.message}",
-                            )
-                        }
-                    }
-                },
-            )
-        }
-    }
-
-    private fun completeChallenge() {
-        val challengeId = _state.value.challengeId ?: return
-        val attemptId = _state.value.challengeAttemptId ?: return
-        pauseGame()
-        challengeTimerJob?.cancel()
-        scope.launch(dispatchers.io) {
-            challengeRepository.completeAttempt(challengeId, attemptId).fold(
-                onSuccess = { attempt ->
-                    withContext(dispatchers.main) {
-                        _state.update {
-                            it.copy(
-                                challengeCompletedAttempt = attempt,
-                                showOverlay = false,
-                            )
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Failed to submit: ${error.message}") }
-                    }
-                    // Restart timer since submission failed
-                    startChallengeTimer()
-                    resumeGame()
-                },
-            )
-        }
-    }
-
-    private fun restartChallenge() {
-        val challengeId = _state.value.challengeId ?: return
-        val saveData = challengeSaveData ?: return
-        val currentAttemptId = _state.value.challengeAttemptId
-
-        challengeTimerJob?.cancel()
-
-        scope.launch(dispatchers.io) {
-            // Abandon current attempt first (await completion before starting new one)
-            if (currentAttemptId != null) {
-                challengeRepository.abandonAttempt(challengeId, currentAttemptId)
-            }
-
-            // Reload challenge save state
-            libretroController.unserialize(saveData)
-
-            // Start new server-side attempt
-            challengeRepository.startAttempt(challengeId).fold(
-                onSuccess = { attempt ->
-                    withContext(dispatchers.main) {
-                        _state.update {
-                            it.copy(
-                                challengeAttemptId = attempt.id,
-                                challengeElapsedMs = 0,
-                                showOverlay = false,
-                            )
-                        }
-                    }
-                    startChallengeTimer()
-                    resumeGame()
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Failed to restart: ${error.message}") }
-                    }
-                },
-            )
-        }
-    }
-
-    private fun giveUpChallenge() {
-        val challengeId = _state.value.challengeId ?: return
-        val attemptId = _state.value.challengeAttemptId
-
-        challengeTimerJob?.cancel()
-        _state.update { it.copy(showGiveUpConfirm = false, requestExit = true) }
-
-        if (attemptId != null) {
-            scope.launch(dispatchers.io) {
-                challengeRepository.abandonAttempt(challengeId, attemptId)
-            }
-        }
-
-        stopGame()
-    }
-
-    private fun startRelayHeartbeat(relayId: String) {
-        relayHeartbeatJob?.cancel()
-        relayHeartbeatJob = scope.launch(dispatchers.io) {
-            while (isActive) {
-                delay(60_000) // 60 seconds
-                try {
-                    relayRepository.heartbeat(relayId)
-                } catch (_: Exception) {
-                    // Best effort heartbeat
-                }
-            }
-        }
     }
 }
 

@@ -1,7 +1,10 @@
 package com.spela.player.presentation.viewmodel.emulation
 
+import com.spela.player.presentation.viewmodel.ChallengeManager
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
+import com.spela.player.presentation.viewmodel.NetplayManager
+import com.spela.player.presentation.viewmodel.SaveManager
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.api.SpelaApiClient
@@ -46,6 +49,7 @@ import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.secondarydisplay.FakePlatformSecondaryDisplay
+import com.spela.player.presentation.state.EmulationState
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineConfig
@@ -61,6 +65,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -478,14 +483,41 @@ class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
         connectivityMonitor = ConnectivityMonitor(apiClient, dispatchers, vmScope)
         presenceService = PresenceService(apiClient, StubMockEngineFactory, dispatchers, vmScope)
         val gamepadPortManager = GamepadPortManager(keyMappingRepository)
+        val mutableState = MutableStateFlow(EmulationState())
+
+        val saveManager = SaveManager(
+            saveGameStateUseCase = SaveGameStateUseCase(saveRepository = saveRepository),
+            loadGameStateUseCase = LoadGameStateUseCase(saveRepository = saveRepository),
+            saveDataRepository = saveDataRepository,
+            connectivityMonitor = connectivityMonitor,
+            libretroController = libretroController,
+            _state = mutableState,
+            dispatchers = dispatchers,
+            scope = vmScope,
+        )
+        val challengeManager = ChallengeManager(
+            challengeRepository = challengeRepository,
+            libretroController = libretroController,
+            screenshotCapture = screenshotCapture,
+            _state = mutableState,
+            dispatchers = dispatchers,
+            scope = vmScope,
+        )
+        val netplayManager = NetplayManager(
+            relayRepository = relayRepository,
+            libretroController = libretroController,
+            apiClient = apiClient,
+            engineFactory = StubMockEngineFactory,
+            _state = mutableState,
+            dispatchers = dispatchers,
+            scope = vmScope,
+        )
 
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
                 coreRepository = StubCoreRepository(),
             ),
-            saveGameStateUseCase = SaveGameStateUseCase(saveRepository = saveRepository),
-            loadGameStateUseCase = LoadGameStateUseCase(saveRepository = saveRepository),
             getGameDetailUseCase = GetGameDetailUseCase(gameRepository = gameRepository),
             preferencesRepository = preferencesRepository,
             achievementsRepository = achievementsRepository,
@@ -493,14 +525,11 @@ class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
             libretroController = libretroController,
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = presenceService,
-            relayRepository = relayRepository,
-            challengeRepository = challengeRepository,
-            saveDataRepository = saveDataRepository,
-            connectivityMonitor = connectivityMonitor,
-            screenshotCapture = screenshotCapture,
-            apiClient = apiClient,
             gamepadPortManager = gamepadPortManager,
-            engineFactory = StubMockEngineFactory,
+            saveManager = saveManager,
+            challengeManager = challengeManager,
+            netplayManager = netplayManager,
+            _state = mutableState,
             dispatchers = dispatchers,
             scope = vmScope,
             biosRepository = biosRepository,

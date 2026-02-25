@@ -14,6 +14,7 @@ import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
+import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.viewmodel.*
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineConfig
@@ -25,6 +26,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestDispatcher
 
 /**
@@ -166,10 +168,38 @@ class SpelaTestHarness(
     val keyMappingRepo = FakeKeyMappingRepository()
     val gamepadPortManager = GamepadPortManager(keyMappingRepo)
 
-    val emulationViewModel = EmulationViewModel(
-        prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
+    private val emulationState = MutableStateFlow(EmulationState())
+
+    private val saveManager = SaveManager(
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
         loadGameStateUseCase = LoadGameStateUseCase(saveRepo),
+        saveDataRepository = saveDataRepo,
+        connectivityMonitor = connectivityMonitor,
+        libretroController = libretroController,
+        _state = emulationState,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+    private val challengeManager = ChallengeManager(
+        challengeRepository = challengeRepo,
+        libretroController = libretroController,
+        screenshotCapture = null,
+        _state = emulationState,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+    private val netplayManager = NetplayManager(
+        relayRepository = relayRepo,
+        libretroController = libretroController,
+        apiClient = fakeApiClient,
+        engineFactory = stubEngineFactory,
+        _state = emulationState,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
+    val emulationViewModel = EmulationViewModel(
+        prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
         preferencesRepository = preferencesRepo,
         achievementsRepository = FakeAchievementsRepository(),
@@ -177,14 +207,11 @@ class SpelaTestHarness(
         libretroController = libretroController,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
-        relayRepository = relayRepo,
-        challengeRepository = challengeRepo,
-        saveDataRepository = saveDataRepo,
-        connectivityMonitor = connectivityMonitor,
         gamepadPortManager = gamepadPortManager,
-        screenshotCapture = null,
-        apiClient = fakeApiClient,
-        engineFactory = stubEngineFactory,
+        saveManager = saveManager,
+        challengeManager = challengeManager,
+        netplayManager = netplayManager,
+        _state = emulationState,
         dispatchers = dispatchers,
         scope = scope,
         biosRepository = biosRepo,

@@ -12,6 +12,7 @@ import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.*
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationViewModel
+import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.viewmodel.*
 import org.koin.core.qualifier.named
 import com.spela.player.util.DefaultDispatcherProvider
@@ -20,6 +21,7 @@ import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -160,11 +162,43 @@ val commonModule = module {
             biosRepository = get(),
         )
     }
+    single { MutableStateFlow(EmulationState()) }
+    single {
+        SaveManager(
+            saveGameStateUseCase = get(),
+            loadGameStateUseCase = get(),
+            saveDataRepository = get(),
+            connectivityMonitor = get(),
+            libretroController = get(),
+            _state = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    single {
+        ChallengeManager(
+            challengeRepository = get(),
+            libretroController = get(),
+            screenshotCapture = getOrNull<ScreenshotCapture>(),
+            _state = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    single {
+        NetplayManager(
+            relayRepository = get(),
+            libretroController = get(),
+            apiClient = get(),
+            engineFactory = get(),
+            _state = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
     single {
         EmulationViewModel(
             prepareGameUseCase = get(),
-            saveGameStateUseCase = get(),
-            loadGameStateUseCase = get(),
             getGameDetailUseCase = get(),
             preferencesRepository = get(),
             achievementsRepository = get(),
@@ -172,14 +206,11 @@ val commonModule = module {
             libretroController = get(),
             secondaryDisplay = get(),
             presenceService = get(),
-            relayRepository = get(),
-            challengeRepository = get(),
-            saveDataRepository = get(),
-            connectivityMonitor = get(),
             gamepadPortManager = get(),
-            screenshotCapture = getOrNull<ScreenshotCapture>(),
-            apiClient = get(),
-            engineFactory = get(),
+            saveManager = get(),
+            challengeManager = get(),
+            netplayManager = get(),
+            _state = get(),
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),
