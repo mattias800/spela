@@ -374,7 +374,7 @@ test.describe("Play Later Page", () => {
 });
 
 test.describe("Play Later on Game Detail Page", () => {
-  test("shows Play Later button that toggles to In Queue", async ({ page }) => {
+  test("shows Play Later item that toggles to In Queue", async ({ page }) => {
     const gameData = mockGame({ isInPlayLater: false });
     await setupGameDetailRoutes(page, gameData);
 
@@ -395,12 +395,16 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    // The "Play Later" button should be visible
-    const playLaterBtn = page.getByRole("button", { name: "Play Later" });
-    await expect(playLaterBtn).toBeVisible({ timeout: 10_000 });
+    // Open the actions menu, then find the Play Later menu item
+    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
+    await actionsBtn.click();
+
+    const playLaterItem = page.getByRole("menuitem", { name: "Play Later" });
+    await expect(playLaterItem).toBeVisible();
   });
 
-  test("shows In Queue button when game is already in play later", async ({
+  test("shows In Queue item when game is already in play later", async ({
     page,
   }) => {
     const gameData = mockGame({ isInPlayLater: true });
@@ -408,11 +412,15 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const inQueueBtn = page.getByRole("button", { name: "In Queue" });
-    await expect(inQueueBtn).toBeVisible({ timeout: 10_000 });
+    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
+    await actionsBtn.click();
+
+    const inQueueItem = page.getByRole("menuitem", { name: "In Queue" });
+    await expect(inQueueItem).toBeVisible();
   });
 
-  test("clicking Play Later button sends POST request", async ({ page }) => {
+  test("clicking Play Later item sends POST request", async ({ page }) => {
     let postCalled = false;
     const gameData = mockGame({ isInPlayLater: false });
     await setupGameDetailRoutes(page, gameData);
@@ -434,15 +442,19 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const playLaterBtn = page.getByRole("button", { name: "Play Later" });
-    await expect(playLaterBtn).toBeVisible({ timeout: 10_000 });
-    await playLaterBtn.click();
+    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
+    await actionsBtn.click();
+
+    const playLaterItem = page.getByRole("menuitem", { name: "Play Later" });
+    await expect(playLaterItem).toBeVisible();
+    await playLaterItem.click();
 
     await page.waitForTimeout(500);
     expect(postCalled).toBe(true);
   });
 
-  test("clicking In Queue button sends DELETE request", async ({ page }) => {
+  test("clicking In Queue item sends DELETE request", async ({ page }) => {
     let deleteCalled = false;
     const gameData = mockGame({ isInPlayLater: true });
     await setupGameDetailRoutes(page, gameData);
@@ -464,9 +476,13 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const inQueueBtn = page.getByRole("button", { name: "In Queue" });
-    await expect(inQueueBtn).toBeVisible({ timeout: 10_000 });
-    await inQueueBtn.click();
+    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
+    await actionsBtn.click();
+
+    const inQueueItem = page.getByRole("menuitem", { name: "In Queue" });
+    await expect(inQueueItem).toBeVisible();
+    await inQueueItem.click();
 
     await page.waitForTimeout(500);
     expect(deleteCalled).toBe(true);

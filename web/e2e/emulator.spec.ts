@@ -293,14 +293,26 @@ test.describe("Emulator Page", () => {
         timeout: 15_000,
       });
 
-      // Use evaluate to simulate the iframe sending a game-started message
-      await page.evaluate(() => {
-        window.postMessage({ type: "game-started" }, window.location.origin);
-      });
-
-      // Wait for Load button to become enabled
+      // Send game-started messages continuously until the button enables.
+      // initEmulator() resets status to "loading", so a single message can
+      // lose the race — we keep sending until the effect has settled.
       const loadButton = page.getByTitle("Load State");
-      await expect(loadButton).toBeEnabled({ timeout: 5_000 });
+      const interval = setInterval(async () => {
+        await page
+          .evaluate(() => {
+            window.postMessage(
+              { type: "game-started" },
+              window.location.origin,
+            );
+          })
+          .catch(() => {});
+      }, 200);
+
+      try {
+        await expect(loadButton).toBeEnabled({ timeout: 15_000 });
+      } finally {
+        clearInterval(interval);
+      }
 
       await loadButton.click();
 

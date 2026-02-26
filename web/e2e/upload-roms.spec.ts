@@ -104,11 +104,13 @@ test.describe("Upload ROMs Page", () => {
     await page.goto("/admin/upload");
 
     await expect(page.getByTestId("game-summary-card")).toBeVisible();
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Super Mario Bros." }),
+    ).toBeVisible();
     await expect(
       page.getByText("Nintendo Entertainment System"),
     ).toBeVisible();
-    await expect(page.getByTestId("verification-badge")).toHaveTextContent(
+    await expect(page.getByTestId("verification-badge")).toHaveText(
       "Verified",
     );
   });
@@ -118,9 +120,7 @@ test.describe("Upload ROMs Page", () => {
     await page.goto("/admin/upload");
 
     await expect(page.getByTestId("duplicate-badge")).toBeVisible();
-    await expect(page.getByTestId("duplicate-badge")).toHaveTextContent(
-      "Duplicate",
-    );
+    await expect(page.getByTestId("duplicate-badge")).toHaveText("Duplicate");
   });
 
   test("shows console selector for ambiguous extensions", async ({
@@ -138,9 +138,12 @@ test.describe("Upload ROMs Page", () => {
   test("sets console for ambiguous upload", async ({ page }) => {
     await mockUploadsEndpoint(page, [STAGED_UPLOAD_PENDING_CONSOLE]);
 
-    let consoleSetPayload: Record<string, unknown> | null = null;
+    const consoleSetPromise = page.waitForRequest(
+      (req) =>
+        req.url().includes("/api/admin/uploads/3/console") &&
+        req.method() === "POST",
+    );
     await page.route("**/api/admin/uploads/3/console", (route) => {
-      consoleSetPayload = route.request().postDataJSON();
       route.fulfill({
         status: 200,
         json: {
@@ -157,7 +160,10 @@ test.describe("Upload ROMs Page", () => {
     const selector = page.getByTestId("console-selector").locator("select");
     await selector.selectOption("genesis");
 
-    expect(consoleSetPayload).toEqual({ consoleId: "genesis" });
+    const consoleSetRequest = await consoleSetPromise;
+    expect(consoleSetRequest.postDataJSON()).toEqual({
+      consoleId: "genesis",
+    });
   });
 
   test("accept button sends accept request", async ({ page }) => {

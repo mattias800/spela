@@ -34,20 +34,34 @@ test.describe("Emulator Save State Sync", () => {
   async function simulatePlaying(page: import("@playwright/test").Page) {
     const saveButton = page.getByTitle("Save State");
 
-    await expect
-      .poll(
-        async () => {
-          await page.evaluate(() => {
-            window.postMessage(
-              { type: "game-started" },
-              window.location.origin,
-            );
-          });
-          return saveButton.isEnabled().catch(() => false);
-        },
-        { timeout: 15_000, intervals: [200, 500, 500, 1000] },
-      )
-      .toBe(true);
+    // Start sending game-started messages continuously. The initEmulator()
+    // useEffect resets status to "loading" when it fires, so we must keep
+    // sending messages until the button is stably enabled (i.e. init has
+    // settled and our message arrives after the reset).
+    const interval = setInterval(async () => {
+      await page
+        .evaluate(() => {
+          window.postMessage(
+            { type: "game-started" },
+            window.location.origin,
+          );
+        })
+        .catch(() => {});
+    }, 200);
+
+    try {
+      await expect(saveButton).toBeEnabled({ timeout: 15_000 });
+    } finally {
+      clearInterval(interval);
+    }
+
+    // Send one final message after init has settled to ensure stable state
+    await page.evaluate(() => {
+      window.postMessage(
+        { type: "game-started" },
+        window.location.origin,
+      );
+    });
   }
 
   test.describe("Auto-Save on Navigation", () => {

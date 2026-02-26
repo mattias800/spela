@@ -15,7 +15,7 @@ test.describe("Admin Scan Page", () => {
     page,
   }) => {
     // Slow down the scan endpoint to keep loading indicator visible
-    await page.route("**/api/games/scan", async (route) => {
+    await page.route("**/api/admin/games/scan", async (route) => {
       await new Promise((r) => setTimeout(r, 2_000));
       route.fulfill({
         status: 200,
@@ -33,7 +33,7 @@ test.describe("Admin Scan Page", () => {
   });
 
   test("shows scan results after scan completes", async ({ page }) => {
-    await page.route("**/api/games/scan", (route) => {
+    await page.route("**/api/admin/games/scan", (route) => {
       route.fulfill({
         status: 200,
         json: {
@@ -110,7 +110,7 @@ test.describe("Admin Scan Page", () => {
 
     await page.getByRole("button", { name: /Rescrape All Games/ }).click();
 
-    expect(scrapeURL).toContain("force=true");
+    expect(scrapeURL).toContain("mode=all");
   });
 
   test("shows no unscraped games message when 0 games scraped", async ({
