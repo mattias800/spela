@@ -4,7 +4,9 @@ import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.QuickSaveSlot
 import com.spela.player.domain.model.SaveState
+import com.spela.player.domain.model.StorageUsage
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.util.FileStorage
 import kotlin.time.Clock
@@ -43,6 +45,11 @@ class SaveRepositoryImpl(
 
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): Result<SaveState> {
+        return uploadSaveStateWithScreenshot(gameId, name, data, null)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
         // Save locally first
         val localResult = saveLocally(gameId, name, data, isAuto = false)
         val localSave = localResult.getOrNull() ?: return localResult
@@ -50,7 +57,7 @@ class SaveRepositoryImpl(
         // Try server upload if online
         if (connectivityMonitor.isOnline.value) {
             runCatching {
-                val serverSave = apiClient.uploadSaveState(gameId, name, data).toDomain()
+                val serverSave = apiClient.uploadSaveStateWithScreenshot(gameId, name, data, screenshot).toDomain()
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
             }
@@ -99,6 +106,11 @@ class SaveRepositoryImpl(
 
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> {
+        return uploadAutoSaveWithScreenshot(gameId, data, null)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
         // Save locally first
         val localResult = saveLocally(gameId, "Auto Save", data, isAuto = true)
         val localSave = localResult.getOrNull() ?: return localResult
@@ -106,7 +118,7 @@ class SaveRepositoryImpl(
         // Try server upload if online
         if (connectivityMonitor.isOnline.value) {
             runCatching {
-                val serverSave = apiClient.uploadAutoSave(gameId, data).toDomain()
+                val serverSave = apiClient.uploadAutoSaveWithScreenshot(gameId, data, screenshot).toDomain()
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
             }
@@ -169,6 +181,7 @@ class SaveRepositoryImpl(
                 createdAt = Instant.fromEpochMilliseconds(nowMillis),
                 fileSize = data.size.toLong(),
                 isAuto = isAuto,
+                isSynced = false,
             )
         }
 
@@ -180,6 +193,67 @@ class SaveRepositoryImpl(
 
     override suspend fun getPendingSyncCount(): Int {
         return database.spelaDatabaseQueries.getPendingSaveStateSyncs().executeAsList().size
+    }
+
+    // Feature 2: Rename
+    override suspend fun renameSaveState(gameId: String, saveId: String, name: String): Result<Unit> = runCatching {
+        apiClient.renameSaveState(gameId, saveId, name)
+    }
+
+    // Feature 4: Notes
+    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String): Result<Unit> = runCatching {
+        apiClient.updateSaveNotes(gameId, saveId, notes)
+    }
+
+    // Feature 5: Quick-save slots
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?): Result<SaveState> = runCatching {
+        apiClient.saveToSlot(gameId, slot, data, screenshot).toDomain()
+    }
+
+    override suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray> = runCatching {
+        apiClient.loadFromSlot(gameId, slot)
+    }
+
+    override suspend fun getSlots(gameId: String): Result<List<QuickSaveSlot>> = runCatching {
+        val saves = apiClient.getSlots(gameId).map { it.toDomain() }
+        (1..10).map { slotNum ->
+            QuickSaveSlot(
+                slot = slotNum,
+                saveState = saves.find { it.slot == slotNum },
+            )
+        }
+    }
+
+    // Feature 6: Auto-save history
+    override suspend fun getAutoSaveHistory(gameId: String): Result<List<SaveState>> = runCatching {
+        apiClient.getAutoSaveHistory(gameId).map { it.toDomain() }
+    }
+
+    // Feature 7: Bulk delete
+    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>): Result<Int> = runCatching {
+        // Also clean up local entries
+        saveIds.forEach { saveId ->
+            val saveIdStr = saveId.toString()
+            val localEntity = database.spelaDatabaseQueries
+                .getLocalSaveStatesForGame(gameId)
+                .executeAsList()
+                .find { it.id == saveIdStr || it.server_id == saveId }
+            if (localEntity != null) {
+                runCatching { fileStorage.deleteFile(localEntity.local_path) }
+                database.spelaDatabaseQueries.deleteLocalSaveState(localEntity.id)
+            }
+        }
+        apiClient.bulkDeleteSaves(gameId, saveIds)
+    }
+
+    // Feature 8: Storage usage
+    override suspend fun getStorageUsage(): Result<StorageUsage> = runCatching {
+        apiClient.getStorageUsage().toDomain()
+    }
+
+    // Feature 9: Import
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray): Result<SaveState> = runCatching {
+        apiClient.importSaveState(gameId, name, fileData).toDomain()
     }
 
     private fun markSynced(localId: String, serverId: Long, syncedAt: Instant) {
@@ -197,5 +271,6 @@ class SaveRepositoryImpl(
         createdAt = Instant.fromEpochMilliseconds(created_at),
         fileSize = file_size,
         isAuto = is_auto != 0L,
+        isSynced = sync_status == "synced",
     )
 }

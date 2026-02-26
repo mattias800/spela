@@ -431,6 +431,7 @@ class FakeSaveRepository : SaveRepository {
     var saves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
     private val localSaves = mutableMapOf<String, ByteArray>()
+    private val slotSaves = mutableMapOf<String, MutableMap<Int, Pair<SaveState, ByteArray>>>()
 
     override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> {
         return Result.success(saves[gameId] ?: emptyList())
@@ -451,6 +452,13 @@ class FakeSaveRepository : SaveRepository {
         return Result.success(save)
     }
 
+    override suspend fun uploadSaveStateWithScreenshot(
+        gameId: String,
+        name: String,
+        data: ByteArray,
+        screenshot: ByteArray?,
+    ): Result<SaveState> = uploadSaveState(gameId, name, data)
+
     override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> {
         return Result.success(ByteArray(256) { it.toByte() })
     }
@@ -470,6 +478,12 @@ class FakeSaveRepository : SaveRepository {
         )
         return Result.success(save)
     }
+
+    override suspend fun uploadAutoSaveWithScreenshot(
+        gameId: String,
+        data: ByteArray,
+        screenshot: ByteArray?,
+    ): Result<SaveState> = uploadAutoSave(gameId, data)
 
     fun preUploadAutoSave(gameId: String, data: ByteArray) {
         autoSaves[gameId] = data
@@ -498,6 +512,67 @@ class FakeSaveRepository : SaveRepository {
     }
 
     override suspend fun getPendingSyncCount(): Int = 0
+
+    // Feature 2: Rename
+    override suspend fun renameSaveState(gameId: String, saveId: String, name: String): Result<Unit> {
+        saves[gameId]?.replaceAll { if (it.id.toString() == saveId) it.copy(name = name) else it }
+        return Result.success(Unit)
+    }
+
+    // Feature 4: Notes
+    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String): Result<Unit> {
+        saves[gameId]?.replaceAll { if (it.id.toString() == saveId) it.copy(notes = notes.ifBlank { null }) else it }
+        return Result.success(Unit)
+    }
+
+    // Feature 5: Slots
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+        val save = SaveState(
+            id = (slot * 100).toLong(),
+            gameId = gameId.toLongOrNull() ?: 0L,
+            name = "Slot $slot",
+            slot = slot,
+        )
+        slotSaves.getOrPut(gameId) { mutableMapOf() }[slot] = Pair(save, data)
+        return Result.success(save)
+    }
+
+    override suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray> {
+        val pair = slotSaves[gameId]?.get(slot)
+            ?: return Result.failure(Exception("Slot $slot is empty"))
+        return Result.success(pair.second)
+    }
+
+    override suspend fun getSlots(gameId: String): Result<List<QuickSaveSlot>> {
+        val gameSlots = slotSaves[gameId] ?: emptyMap()
+        return Result.success((1..10).map { slot ->
+            QuickSaveSlot(slot = slot, saveState = gameSlots[slot]?.first)
+        })
+    }
+
+    // Feature 6: Auto-save history
+    override suspend fun getAutoSaveHistory(gameId: String): Result<List<SaveState>> {
+        val autoHistory = saves[gameId]?.filter { it.isAuto } ?: emptyList()
+        return Result.success(autoHistory)
+    }
+
+    // Feature 7: Bulk delete
+    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>): Result<Int> {
+        val toRemove = saveIds.toSet()
+        val count = saves[gameId]?.count { it.id in toRemove } ?: 0
+        saves[gameId]?.removeAll { it.id in toRemove }
+        return Result.success(count)
+    }
+
+    // Feature 8: Storage usage
+    override suspend fun getStorageUsage(): Result<StorageUsage> {
+        return Result.success(StorageUsage(totalBytes = 0, games = emptyList()))
+    }
+
+    // Feature 9: Import
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray): Result<SaveState> {
+        return uploadSaveState(gameId, name, fileData)
+    }
 }
 
 class FakeCoreRepository : CoreRepository {

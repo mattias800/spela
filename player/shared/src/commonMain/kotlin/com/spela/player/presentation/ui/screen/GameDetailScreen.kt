@@ -306,8 +306,29 @@ fun GameDetailScreen(
                 ) {
                     SaveStatesSection(
                         saveStates = state.saveStates,
+                        unsyncedCount = state.unsyncedSaveCount,
+                        isSelectionMode = state.isSelectionMode,
+                        selectedSaveIds = state.selectedSaveIds,
                         onDelete = { saveId ->
                             viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
+                        },
+                        onRename = { saveId, name ->
+                            viewModel.onIntent(GameDetailIntent.RenameSave(saveId, name))
+                        },
+                        onUpdateNotes = { saveId, notes ->
+                            viewModel.onIntent(GameDetailIntent.UpdateSaveNotes(saveId, notes))
+                        },
+                        onToggleSelection = { saveId ->
+                            viewModel.onIntent(GameDetailIntent.ToggleSaveSelection(saveId))
+                        },
+                        onToggleSelectionMode = {
+                            viewModel.onIntent(GameDetailIntent.ToggleSelectionMode)
+                        },
+                        onSelectAll = {
+                            viewModel.onIntent(GameDetailIntent.SelectAllSaves)
+                        },
+                        onDeleteSelected = {
+                            viewModel.onIntent(GameDetailIntent.DeleteSelectedSaves)
                         },
                     )
                 }

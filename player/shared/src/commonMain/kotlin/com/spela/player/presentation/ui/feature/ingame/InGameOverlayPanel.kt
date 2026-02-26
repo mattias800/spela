@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PlayArrow
@@ -241,6 +242,19 @@ internal fun InGameOverlayPanel(
                     )
                 } else {
                     // Normal mode: all action buttons
+                    // Slot indicator
+                    if (state.supportsSaveStates) {
+                        Text(
+                            text = "Slot ${state.activeSlot}",
+                            style = SpTypography.LabelMedium,
+                            color = SpColor.OnBackgroundSecondary,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Active quick-save slot: ${state.activeSlot}"
+                            },
+                        )
+                        Spacer(Modifier.height(SpSpacing.Small))
+                    }
+
                     // Action buttons (shared between landscape/portrait)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -250,10 +264,12 @@ internal fun InGameOverlayPanel(
                         OverlayActionButtons(
                             isFastForward = state.isFastForward,
                             supportsSaveStates = state.supportsSaveStates,
+                            rewindEnabled = state.rewindEnabled,
                             onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                             onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                             onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                            onRewind = { viewModel.onIntent(EmulationIntent.RewindStep) },
                             onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
                             onControls = {
                             viewModel.onIntent(
@@ -315,15 +331,20 @@ internal fun PerformanceBadge(
 internal fun RowScope.OverlayActionButtons(
     isFastForward: Boolean,
     supportsSaveStates: Boolean,
+    rewindEnabled: Boolean = false,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
     onToggleFastForward: () -> Unit,
+    onRewind: () -> Unit = {},
     onChallenge: () -> Unit,
     onControls: () -> Unit,
 ) {
     OverlayAction(label = "Save", icon = Icons.Filled.Save, onClick = onSave)
     OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
+    if (rewindEnabled) {
+        OverlayAction(label = "Rewind", icon = Icons.Filled.FastRewind, onClick = onRewind)
+    }
     OverlayAction(label = "Screenshot", icon = Icons.Filled.CameraAlt, onClick = onScreenshot)
     OverlayAction(
         label = if (isFastForward) "Normal" else "Fast",

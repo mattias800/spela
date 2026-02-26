@@ -127,6 +127,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
+	saveHandler := &SaveHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
@@ -199,10 +200,19 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Save states
 		api.GET("/games/:id/saves", gameHandler.ListSaves)
 		api.POST("/games/:id/saves", gameHandler.UploadSave)
-		api.GET("/games/:id/saves/:saveId", gameHandler.DownloadSave)
-		api.DELETE("/games/:id/saves/:saveId", gameHandler.DeleteSave)
-		api.POST("/games/:id/saves/auto", gameHandler.UploadAutoSave)
+		api.POST("/games/:id/saves/import", saveHandler.ImportSave)
 		api.GET("/games/:id/saves/auto", gameHandler.GetAutoSave)
+		api.POST("/games/:id/saves/auto", gameHandler.UploadAutoSave)
+		api.GET("/games/:id/saves/auto/history", saveHandler.GetAutoSaveHistory)
+		api.DELETE("/games/:id/saves/bulk", saveHandler.BulkDeleteSaves)
+		api.GET("/games/:id/saves/slots", saveHandler.ListSlotSaves)
+		api.PUT("/games/:id/saves/slot/:slot", saveHandler.UpsertSlotSave)
+		api.GET("/games/:id/saves/slot/:slot", saveHandler.DownloadSlotSave)
+		api.GET("/games/:id/saves/:saveId", gameHandler.DownloadSave)
+		api.PUT("/games/:id/saves/:saveId", saveHandler.RenameSave)
+		api.DELETE("/games/:id/saves/:saveId", gameHandler.DeleteSave)
+		api.PUT("/games/:id/saves/:saveId/notes", saveHandler.UpdateNotes)
+		api.GET("/games/:id/saves/:saveId/screenshot", saveHandler.GetSaveScreenshot)
 
 		// Save data (SRAM/battery saves)
 		api.GET("/games/:id/save-data", saveDataHandler.ListSaveData)
@@ -233,6 +243,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)
+		api.GET("/user/storage-usage", saveHandler.GetStorageUsage)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
@@ -285,6 +296,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/relays/:id/saves/auto", relayHandler.GetAutoSave)
 		api.POST("/relays/:id/saves/auto", relayHandler.UploadAutoSave)
 		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
+		api.PUT("/relays/:id/saves/:saveId/rename", saveHandler.RenameRelaySave)
 		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
 		api.POST("/relays/:id/saves/:saveId/copy-to-game", relayHandler.CopyRelaySaveToGame)
 		api.GET("/user/relay-invites", relayHandler.ListMyInvites)

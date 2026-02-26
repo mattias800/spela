@@ -73,6 +73,14 @@ data class EmulationState(
     val showMissingBiosDialog: Boolean = false,
     val missingBiosFiles: List<BiosMissingFile> = emptyList(),
     val missingBiosConsoleName: String = "",
+
+    /** Quick-save slots: currently selected slot number (1-10). */
+    val activeSlot: Int = 1,
+
+    /** Rewind: whether the rewind feature is enabled. */
+    val rewindEnabled: Boolean = false,
+    /** Rewind: whether rewind is currently active (holding down rewind). */
+    val isRewinding: Boolean = false,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

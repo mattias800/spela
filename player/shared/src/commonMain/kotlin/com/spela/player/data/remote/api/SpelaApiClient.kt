@@ -388,9 +388,123 @@ class SpelaApiClient(
         ).body()
     }
 
+    /** Backend expects multipart form upload with "save" file and optional "screenshot" file */
+    suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves",
+            formData = formData {
+                append("name", name)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
+    /** Backend expects multipart form upload with "save" file and optional "screenshot" file */
+    suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves/auto",
+            formData = formData {
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
     /** Returns the auto-save file as raw bytes */
     suspend fun downloadAutoSave(gameId: String): ByteArray {
         return client.get("$baseUrl/api/games/$gameId/saves/auto").body()
+    }
+
+    /** Rename a save state */
+    suspend fun renameSaveState(gameId: String, saveId: String, name: String) {
+        client.put("$baseUrl/api/games/$gameId/saves/$saveId") {
+            setBody(mapOf("name" to name))
+        }
+    }
+
+    /** Update notes on a save state */
+    suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) {
+        client.put("$baseUrl/api/games/$gameId/saves/$saveId/notes") {
+            setBody(mapOf("notes" to notes))
+        }
+    }
+
+    /** Quick-save to a numbered slot */
+    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray? = null): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves/slot/$slot",
+            formData = formData {
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"slot-$slot.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
+    /** Load from a numbered slot */
+    suspend fun loadFromSlot(gameId: String, slot: Int): ByteArray {
+        return client.get("$baseUrl/api/games/$gameId/saves/slot/$slot").body()
+    }
+
+    /** Get all quick-save slots for a game */
+    suspend fun getSlots(gameId: String): List<SaveStateDto> {
+        return client.get("$baseUrl/api/games/$gameId/saves/slots").body()
+    }
+
+    /** Get auto-save history for a game */
+    suspend fun getAutoSaveHistory(gameId: String): List<SaveStateDto> {
+        return client.get("$baseUrl/api/games/$gameId/saves/auto/history").body()
+    }
+
+    /** Bulk delete saves */
+    suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>): Int {
+        val response: Map<String, Int> = client.delete("$baseUrl/api/games/$gameId/saves/bulk") {
+            setBody(mapOf("ids" to saveIds))
+        }.body()
+        return response["deleted"] ?: 0
+    }
+
+    /** Get storage usage */
+    suspend fun getStorageUsage(): StorageUsageDto {
+        return client.get("$baseUrl/api/user/storage-usage").body()
+    }
+
+    /** Import a save state */
+    suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/games/$gameId/saves/import",
+            formData = formData {
+                append("name", name)
+                append("save", fileData, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"import.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        ).body()
     }
 
     // BIOS

@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.domain.repository.SaveDataRepository
+import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.presentation.state.EmulationState
@@ -20,6 +21,7 @@ class SaveManager(
     private val saveGameStateUseCase: SaveGameStateUseCase,
     private val loadGameStateUseCase: LoadGameStateUseCase,
     private val saveDataRepository: SaveDataRepository,
+    private val saveRepository: SaveRepository,
     private val connectivityMonitor: ConnectivityMonitor,
     private val libretroController: LibretroController,
     private val _state: MutableStateFlow<EmulationState>,
@@ -141,5 +143,19 @@ class SaveManager(
                 },
             )
         }
+    }
+
+    /**
+     * Save to a quick-save slot. Called from EmulationViewModel.
+     */
+    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray): Result<Unit> {
+        return saveRepository.saveToSlot(gameId, slot, data).map { }
+    }
+
+    /**
+     * Load from a quick-save slot. Called from EmulationViewModel.
+     */
+    suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray> {
+        return saveRepository.loadFromSlot(gameId, slot)
     }
 }

@@ -92,6 +92,28 @@ data class SaveState(
     val createdAt: Instant? = null,
     val fileSize: Long = 0,
     val isAuto: Boolean = false,
+    val notes: String? = null,
+    val screenshotUrl: String? = null,
+    val slot: Int? = null,
+    val isSynced: Boolean = true,
+)
+
+data class QuickSaveSlot(
+    val slot: Int,
+    val saveState: SaveState? = null,
+)
+
+data class StorageUsage(
+    val totalBytes: Long,
+    val games: List<GameStorageUsage>,
+)
+
+data class GameStorageUsage(
+    val gameId: Long,
+    val gameTitle: String,
+    val totalBytes: Long,
+    val saveStateBytes: Long = 0,
+    val sramBytes: Long = 0,
 )
 
 @Serializable

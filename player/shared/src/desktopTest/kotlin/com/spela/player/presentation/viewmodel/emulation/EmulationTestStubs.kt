@@ -30,8 +30,10 @@ import com.spela.player.domain.model.RelayDetail
 import com.spela.player.domain.model.RelayInvitation
 import com.spela.player.domain.model.RelaySave
 import com.spela.player.domain.model.SaveData
+import com.spela.player.domain.model.QuickSaveSlot
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.StorageUsage
 import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
@@ -211,9 +213,15 @@ class StubSaveRepository : SaveRepository {
 
     override suspend fun getSaveStates(gameId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray) = Result.success(SaveState(id = 1, gameId = 1, name = name))
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?) = Result.success(SaveState(id = 1, gameId = 1, name = name))
     override suspend fun downloadSaveState(gameId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun deleteSaveState(gameId: String, saveId: String) = Result.success(Unit)
     override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> {
+        uploadAutoSaveCallCount++
+        lastUploadedData = data
+        return uploadAutoSaveResult
+    }
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
         uploadAutoSaveCallCount++
         lastUploadedData = data
         return uploadAutoSaveResult
@@ -225,6 +233,15 @@ class StubSaveRepository : SaveRepository {
     override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean) = Result.success(SaveState(id = 1, gameId = 1, name = name))
     override suspend fun loadLocalAutoSave(gameId: String) = Result.failure<ByteArray>(Exception("none"))
     override suspend fun getPendingSyncCount() = 0
+    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
+    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?) = Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot"))
+    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(byteArrayOf(10, 20, 30))
+    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
+    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
+    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
+    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(id = 1, gameId = 1, name = name))
 }
 
 class StubSaveDataRepository : SaveDataRepository {
@@ -497,6 +514,7 @@ class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
             saveGameStateUseCase = SaveGameStateUseCase(saveRepository = saveRepository),
             loadGameStateUseCase = LoadGameStateUseCase(saveRepository = saveRepository),
             saveDataRepository = saveDataRepository,
+            saveRepository = saveRepository,
             connectivityMonitor = connectivityMonitor,
             libretroController = libretroController,
             _state = mutableState,

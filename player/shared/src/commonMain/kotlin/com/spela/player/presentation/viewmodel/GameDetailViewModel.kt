@@ -105,6 +105,19 @@ class GameDetailViewModel(
             GameDetailIntent.LoadSaveDataCount -> loadSaveDataCount()
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
+
+            // Feature 2: Rename
+            is GameDetailIntent.RenameSave -> renameSave(intent.saveId, intent.name)
+            // Feature 4: Notes
+            is GameDetailIntent.UpdateSaveNotes -> updateSaveNotes(intent.saveId, intent.notes)
+            // Feature 7: Bulk delete
+            GameDetailIntent.ToggleSelectionMode -> toggleSelectionMode()
+            is GameDetailIntent.ToggleSaveSelection -> toggleSaveSelection(intent.saveId)
+            GameDetailIntent.SelectAllSaves -> selectAllSaves()
+            GameDetailIntent.DeleteSelectedSaves -> deleteSelectedSaves()
+            // Feature 9: Export/Import
+            is GameDetailIntent.ExportSave -> { /* Export handled by UI layer with file dialog */ }
+            is GameDetailIntent.ImportSave -> importSave(intent.name, intent.fileData)
         }
     }
 
@@ -120,6 +133,7 @@ class GameDetailViewModel(
                     val myRating = detail.game.userRating
                     val summary = ratingRepository.getRatingSummary(gameId).getOrNull()
                     val sharedSaves = sharedSaveRepository.getSharedSaves(gameId).getOrDefault(emptyList())
+                    val unsyncedCount = saves.count { !it.isSynced }
                     _state.update {
                         it.copy(
                             gameDetail = detail,
@@ -129,6 +143,7 @@ class GameDetailViewModel(
                             myRating = myRating,
                             ratingSummary = summary,
                             isLoading = false,
+                            unsyncedSaveCount = unsyncedCount,
                         )
                     }
                     if (detail.game.scrapeAttempts == 0) {
@@ -177,7 +192,8 @@ class GameDetailViewModel(
         scope.launch(dispatchers.io) {
             val saves = saveRepository.getSaveStates(gameId).getOrDefault(emptyList())
             val isCached = downloadRepository.isGameCached(gameId)
-            _state.update { it.copy(saveStates = saves, isGameCached = isCached) }
+            val unsyncedCount = saves.count { !it.isSynced }
+            _state.update { it.copy(saveStates = saves, isGameCached = isCached, unsyncedSaveCount = unsyncedCount) }
         }
     }
 
@@ -705,6 +721,125 @@ class GameDetailViewModel(
                     _state.update {
                         it.copy(error = error.message, isCreatingChallenge = false)
                     }
+                },
+            )
+        }
+    }
+
+    // Feature 2: Rename save states
+    private fun renameSave(saveId: Long, name: String) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            saveRepository.renameSaveState(gameId, saveId.toString(), name).fold(
+                onSuccess = {
+                    _state.update { state ->
+                        state.copy(
+                            saveStates = state.saveStates.map {
+                                if (it.id == saveId) it.copy(name = name) else it
+                            },
+                            successMessage = "Save renamed",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    // Feature 4: Save state notes
+    private fun updateSaveNotes(saveId: Long, notes: String) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            saveRepository.updateSaveNotes(gameId, saveId.toString(), notes).fold(
+                onSuccess = {
+                    _state.update { state ->
+                        state.copy(
+                            saveStates = state.saveStates.map {
+                                if (it.id == saveId) it.copy(notes = notes.ifBlank { null }) else it
+                            },
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    // Feature 7: Bulk delete
+    private fun toggleSelectionMode() {
+        _state.update {
+            it.copy(
+                isSelectionMode = !it.isSelectionMode,
+                selectedSaveIds = emptySet(),
+            )
+        }
+    }
+
+    private fun toggleSaveSelection(saveId: Long) {
+        _state.update { state ->
+            val updated = if (saveId in state.selectedSaveIds) {
+                state.selectedSaveIds - saveId
+            } else {
+                state.selectedSaveIds + saveId
+            }
+            state.copy(selectedSaveIds = updated)
+        }
+    }
+
+    private fun selectAllSaves() {
+        _state.update { state ->
+            state.copy(
+                selectedSaveIds = state.saveStates
+                    .filter { !it.isAuto }
+                    .map { it.id }
+                    .toSet()
+            )
+        }
+    }
+
+    private fun deleteSelectedSaves() {
+        val gameId = currentGameId ?: return
+        val selectedIds = _state.value.selectedSaveIds.toList()
+        if (selectedIds.isEmpty()) return
+
+        scope.launch(dispatchers.io) {
+            saveRepository.bulkDeleteSaves(gameId, selectedIds).fold(
+                onSuccess = { count ->
+                    _state.update { state ->
+                        state.copy(
+                            saveStates = state.saveStates.filter { it.id !in selectedIds.toSet() },
+                            isSelectionMode = false,
+                            selectedSaveIds = emptySet(),
+                            successMessage = "$count saves deleted",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    // Feature 9: Import save
+    private fun importSave(name: String, fileData: ByteArray) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            saveRepository.importSaveState(gameId, name, fileData).fold(
+                onSuccess = { save ->
+                    _state.update { state ->
+                        state.copy(
+                            saveStates = state.saveStates + save,
+                            successMessage = "Save imported",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
                 },
             )
         }

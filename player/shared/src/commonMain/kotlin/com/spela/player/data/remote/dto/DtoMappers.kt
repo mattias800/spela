@@ -88,7 +88,26 @@ fun SaveStateDto.toDomain(): SaveState = SaveState(
     createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
     fileSize = fileSize,
     isAuto = isAuto,
+    notes = notes,
+    screenshotUrl = screenshotUrl,
+    slot = slot,
+    isSynced = true,
 )
+
+fun StorageUsageDto.toDomain(): com.spela.player.domain.model.StorageUsage =
+    com.spela.player.domain.model.StorageUsage(
+        totalBytes = totalBytes,
+        games = games.map { it.toDomain() },
+    )
+
+fun GameStorageUsageDto.toDomain(): com.spela.player.domain.model.GameStorageUsage =
+    com.spela.player.domain.model.GameStorageUsage(
+        gameId = gameId,
+        gameTitle = gameTitle,
+        totalBytes = totalBytes,
+        saveStateBytes = saveStateBytes,
+        sramBytes = sramBytes,
+    )
 
 fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     showPerformanceOverlay = showPerformanceOverlay,

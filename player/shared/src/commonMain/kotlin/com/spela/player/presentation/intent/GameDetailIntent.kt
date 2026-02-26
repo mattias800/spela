@@ -17,6 +17,22 @@ sealed interface GameDetailIntent {
     data class DeleteSharedSave(val saveId: String) : GameDetailIntent
     data class DeleteSave(val saveId: Long) : GameDetailIntent
 
+    // Feature 2: Rename save states
+    data class RenameSave(val saveId: Long, val name: String) : GameDetailIntent
+
+    // Feature 4: Save state notes
+    data class UpdateSaveNotes(val saveId: Long, val notes: String) : GameDetailIntent
+
+    // Feature 7: Bulk delete saves
+    data object ToggleSelectionMode : GameDetailIntent
+    data class ToggleSaveSelection(val saveId: Long) : GameDetailIntent
+    data object SelectAllSaves : GameDetailIntent
+    data object DeleteSelectedSaves : GameDetailIntent
+
+    // Feature 9: Export/Import
+    data class ExportSave(val saveId: Long) : GameDetailIntent
+    data class ImportSave(val name: String, val fileData: ByteArray) : GameDetailIntent
+
     // Add to Collection
     data object ShowAddToCollectionDialog : GameDetailIntent
     data object DismissAddToCollectionDialog : GameDetailIntent

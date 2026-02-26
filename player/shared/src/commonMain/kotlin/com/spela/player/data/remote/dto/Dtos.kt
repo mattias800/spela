@@ -121,8 +121,26 @@ data class SaveStateDto(
     val name: String,
     val fileSize: Long = 0,
     val isAuto: Boolean = false,
+    val notes: String? = null,
+    val screenshotUrl: String? = null,
+    val slot: Int? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+)
+
+@Serializable
+data class StorageUsageDto(
+    val totalBytes: Long,
+    val games: List<GameStorageUsageDto>,
+)
+
+@Serializable
+data class GameStorageUsageDto(
+    val gameId: Long,
+    val gameTitle: String,
+    val totalBytes: Long,
+    val saveStateBytes: Long = 0,
+    val sramBytes: Long = 0,
 )
 
 @Serializable

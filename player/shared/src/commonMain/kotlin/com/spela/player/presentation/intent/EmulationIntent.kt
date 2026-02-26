@@ -61,4 +61,13 @@ sealed interface EmulationIntent {
     // BIOS
     data object DismissMissingBiosDialog : EmulationIntent
     data object TryAnywayMissingBios : EmulationIntent
+
+    // Quick-save slots
+    data object QuickSave : EmulationIntent
+    data object QuickLoad : EmulationIntent
+    data class SelectSlot(val slot: Int) : EmulationIntent
+
+    // Rewind
+    data object RewindStep : EmulationIntent
+    data object ToggleRewind : EmulationIntent
 }

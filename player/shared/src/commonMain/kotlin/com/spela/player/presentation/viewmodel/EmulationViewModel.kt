@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val REWIND_BUFFER_SIZE = 300 // ~60 seconds at 5fps capture rate
+private const val REWIND_CAPTURE_INTERVAL_MS = 200L // Capture every 200ms (~5 per second)
+
 /**
  * Bridges between Compose UI and the platform-specific libretro core.
  * The actual emulation is driven by LibretroCore (platform-specific),
@@ -155,6 +158,15 @@ class EmulationViewModel(
                 val currentState = _state.value
                 startGame(currentState.gameId)
             }
+
+            // Quick-save slots
+            EmulationIntent.QuickSave -> quickSaveToSlot()
+            EmulationIntent.QuickLoad -> quickLoadFromSlot()
+            is EmulationIntent.SelectSlot -> _state.update { it.copy(activeSlot = intent.slot) }
+
+            // Rewind
+            EmulationIntent.RewindStep -> rewindStep()
+            EmulationIntent.ToggleRewind -> toggleRewindEnabled()
         }
     }
 
@@ -463,6 +475,90 @@ class EmulationViewModel(
         val newState = !_state.value.isFastForward
         libretroController.setFastForward(newState)
         _state.update { it.copy(isFastForward = newState) }
+    }
+
+    // Quick-save slots
+    private fun quickSaveToSlot() {
+        if (_state.value.isChallengeMode || _state.value.isNetplayMode) return
+        val gameId = _state.value.gameId
+        val slot = _state.value.activeSlot
+        scope.launch(dispatchers.io) {
+            val data = libretroController.serialize() ?: return@launch
+            saveManager.saveToSlot(gameId, slot, data).fold(
+                onSuccess = {
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "Saved to slot $slot") }
+                    }
+                },
+                onFailure = { error ->
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(error = "Quick-save failed: ${error.message}") }
+                    }
+                },
+            )
+        }
+    }
+
+    private fun quickLoadFromSlot() {
+        if (_state.value.isChallengeMode || _state.value.isNetplayMode) return
+        val gameId = _state.value.gameId
+        val slot = _state.value.activeSlot
+        scope.launch(dispatchers.io) {
+            saveManager.loadFromSlot(gameId, slot).fold(
+                onSuccess = { data ->
+                    libretroController.unserialize(data)
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "Loaded slot $slot") }
+                    }
+                },
+                onFailure = { error ->
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(error = "Quick-load failed: ${error.message}") }
+                    }
+                },
+            )
+        }
+    }
+
+    // Rewind
+    private val rewindBuffer = ArrayDeque<ByteArray>(REWIND_BUFFER_SIZE)
+    private var rewindCaptureJob: Job? = null
+
+    private fun toggleRewindEnabled() {
+        if (_state.value.isChallengeMode || _state.value.isNetplayMode) return
+        val newEnabled = !_state.value.rewindEnabled
+        _state.update { it.copy(rewindEnabled = newEnabled) }
+        if (newEnabled) {
+            startRewindCapture()
+        } else {
+            rewindCaptureJob?.cancel()
+            rewindCaptureJob = null
+            rewindBuffer.clear()
+        }
+    }
+
+    private fun startRewindCapture() {
+        rewindCaptureJob?.cancel()
+        rewindCaptureJob = scope.launch(dispatchers.default) {
+            while (isActive) {
+                delay(REWIND_CAPTURE_INTERVAL_MS)
+                if (!_state.value.isPaused && _state.value.isRunning && !_state.value.isRewinding) {
+                    val frame = libretroController.serialize()
+                    if (frame != null) {
+                        if (rewindBuffer.size >= REWIND_BUFFER_SIZE) {
+                            rewindBuffer.removeFirst()
+                        }
+                        rewindBuffer.addLast(frame)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun rewindStep() {
+        if (!_state.value.rewindEnabled || rewindBuffer.isEmpty()) return
+        val frame = rewindBuffer.removeLastOrNull() ?: return
+        libretroController.unserialize(frame)
     }
 
     private fun initAchievements(gameId: String) {

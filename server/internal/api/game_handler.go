@@ -290,6 +290,17 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	name := c.DefaultPostForm("name", header.Filename)
 	screenshotURL := c.PostForm("screenshotUrl")
 
+	// Handle optional screenshot upload
+	if screenshotURL == "" {
+		if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
+			defer ssFile.Close()
+			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, ssHeader.Filename)
+			if stored, writeErr := h.Storage.WriteImage(subpath, ssFile); writeErr == nil {
+				screenshotURL = stored
+			}
+		}
+	}
+
 	size, err := h.Storage.WriteSave(uid, uint(gid), header.Filename, file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
@@ -345,11 +356,18 @@ func (h *GameHandler) DeleteSave(c *gin.Context) {
 		return
 	}
 
+	// Clean up screenshot file if present
+	if save.ScreenshotURL != "" {
+		screenshotPath := h.Storage.ImagePath(save.ScreenshotURL)
+		h.Storage.DeleteSave(screenshotPath)
+	}
+
 	h.DB.Delete(&save)
 	c.JSON(http.StatusOK, gin.H{"message": "save deleted"})
 }
 
 // UploadAutoSave uploads an auto-save for a game.
+// Creates a new auto-save each time (keeping up to 5 per user per game).
 func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
@@ -368,8 +386,19 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	}
 	defer file.Close()
 
-	filename := "autosave.sav"
+	filename := fmt.Sprintf("autosave_%d.sav", time.Now().UnixNano())
 	screenshotURL := c.PostForm("screenshotUrl")
+
+	// Handle optional screenshot upload
+	if screenshotURL == "" {
+		if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
+			defer ssFile.Close()
+			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, ssHeader.Filename)
+			if stored, writeErr := h.Storage.WriteImage(subpath, ssFile); writeErr == nil {
+				screenshotURL = stored
+			}
+		}
+	}
 
 	size, err := h.Storage.WriteSave(uid, uint(gid), filename, file)
 	if err != nil {
@@ -379,37 +408,42 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 
 	savePath := h.Storage.SaveStatePath(uid, uint(gid), filename)
 
-	// Upsert: update existing auto-save or create new
-	var save db.SaveState
-	result := h.DB.Where("user_id = ? AND game_id = ? AND is_auto = ?", uid, gid, true).First(&save)
-	if result.Error == gorm.ErrRecordNotFound {
-		save = db.SaveState{
-			UserID:        uid,
-			GameID:        uint(gid),
-			Name:          "Auto Save",
-			FilePath:      savePath,
-			FileSize:      size,
-			ScreenshotURL: screenshotURL,
-			IsAuto:        true,
-		}
-		h.DB.Create(&save)
-	} else {
-		save.FilePath = savePath
-		save.FileSize = size
-		save.ScreenshotURL = screenshotURL
-		h.DB.Save(&save)
+	// Always create a new auto-save
+	save := db.SaveState{
+		UserID:        uid,
+		GameID:        uint(gid),
+		Name:          "Auto Save",
+		FilePath:      savePath,
+		FileSize:      size,
+		ScreenshotURL: screenshotURL,
+		IsAuto:        true,
+	}
+	h.DB.Create(&save)
+
+	// Clean up old auto-saves: keep only the last 5
+	const maxAutoSaves = 5
+	var oldSaves []db.SaveState
+	h.DB.Where("user_id = ? AND game_id = ? AND is_auto = ?", uid, gid, true).
+		Order("created_at DESC").
+		Offset(maxAutoSaves).
+		Find(&oldSaves)
+
+	for _, old := range oldSaves {
+		h.Storage.DeleteSave(old.FilePath)
+		h.DB.Delete(&old)
 	}
 
 	c.JSON(http.StatusOK, save)
 }
 
-// GetAutoSave returns the latest auto-save for a game.
+// GetAutoSave returns the most recent auto-save for a game.
 func (h *GameHandler) GetAutoSave(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
 
 	var save db.SaveState
 	if err := h.DB.Where("user_id = ? AND game_id = ? AND is_auto = ?", userID, gameID, true).
+		Order("created_at DESC").
 		First(&save).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no auto-save found"})
 		return

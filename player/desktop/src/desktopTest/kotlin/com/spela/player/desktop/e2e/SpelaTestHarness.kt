@@ -176,6 +176,7 @@ class SpelaTestHarness(
         saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
         loadGameStateUseCase = LoadGameStateUseCase(saveRepo),
         saveDataRepository = saveDataRepo,
+        saveRepository = saveRepo,
         connectivityMonitor = connectivityMonitor,
         libretroController = libretroController,
         _state = emulationState,

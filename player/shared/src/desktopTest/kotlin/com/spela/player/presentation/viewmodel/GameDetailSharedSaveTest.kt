@@ -273,16 +273,29 @@ private class TestSaveRepository : SaveRepository {
     override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> = Result.success(emptyList())
     override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): Result<SaveState> =
         Result.success(SaveState(1, 1, name))
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> =
+        Result.success(SaveState(1, 1, name))
     override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> =
         if (saveData != null) Result.success(saveData!!) else Result.success(ByteArray(0))
     override suspend fun deleteSaveState(gameId: String, saveId: String): Result<Unit> = Result.success(Unit)
     override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> =
+        Result.success(SaveState(1, 1, "auto"))
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> =
         Result.success(SaveState(1, 1, "auto"))
     override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
     override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
         Result.success(SaveState(1, 1, name))
     override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> = Result.failure(Exception("none"))
     override suspend fun getPendingSyncCount(): Int = 0
+    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
+    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?) = Result.success(SaveState(1, 1, "Slot $slot"))
+    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(ByteArray(0))
+    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
+    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
+    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
+    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
 }
 
 private class SharedSaveTestSaveDataRepository : SaveDataRepository {

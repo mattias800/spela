@@ -132,6 +132,8 @@ type SaveState struct {
 	FileSize      int64          `json:"fileSize"`
 	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
 	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
+	Notes         string         `gorm:"type:text" json:"notes,omitempty"`
+	Slot          *int           `json:"slot,omitempty"`
 }
 
 // Favorite represents a user's favorited game.

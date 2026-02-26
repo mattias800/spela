@@ -172,6 +172,7 @@ val commonModule = module {
             saveGameStateUseCase = get(),
             loadGameStateUseCase = get(),
             saveDataRepository = get(),
+            saveRepository = get(),
             connectivityMonitor = get(),
             libretroController = get(),
             _state = get(),
