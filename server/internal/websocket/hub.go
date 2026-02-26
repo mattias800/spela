@@ -174,16 +174,35 @@ func (h *Hub) GetUserGame(userID uint) uint {
 	return h.userGames[userID]
 }
 
+// maxConnectionsPerUser is the maximum number of concurrent WebSocket connections
+// allowed per user. This prevents a single compromised account from exhausting
+// server resources by opening many connections.
+const maxConnectionsPerUser = 10
+
 // HandleWebSocket upgrades an HTTP request to a WebSocket connection.
 func (h *Hub) HandleWebSocket(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	uid, _ := userID.(uint)
+
+	// Enforce per-user connection limit
+	h.mu.Lock()
+	count := 0
+	for client := range h.clients {
+		if client.UserID == uid {
+			count++
+		}
+	}
+	h.mu.Unlock()
+	if count >= maxConnectionsPerUser {
+		c.JSON(429, gin.H{"error": "too many WebSocket connections"})
+		return
+	}
+
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Error("websocket upgrade failed", "error", err)
 		return
 	}
-
-	userID, _ := c.Get("userId")
-	uid, _ := userID.(uint)
 
 	client := &Client{
 		Hub:    h,

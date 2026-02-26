@@ -57,6 +57,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		// HSTS — instruct browsers to always use HTTPS. Safe even behind a reverse
 		// proxy; browsers only honour this header on HTTPS responses.
 		c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		// Deny access to sensitive browser features
+		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
 		c.Next()
 	})
 
@@ -113,6 +115,9 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Rate limiter for file upload endpoints (prevents storage abuse)
 	uploadLimiter := NewRateLimiter(30, time.Minute)
 
+	// Global per-user rate limiter for authenticated API endpoints (prevents abuse from compromised accounts)
+	userLimiter := NewRateLimiter(300, time.Minute)
+
 	// Handlers
 	authHandler := &AuthHandler{DB: cfg.DB, JWTSecret: cfg.JWTSecret}
 	gameHandler := &GameHandler{
@@ -134,6 +139,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	if raClient == nil {
 		raClient = retroachievements.NewRAClient()
 	}
+	encryptionKey := auth.DeriveEncryptionKey(cfg.JWTSecret)
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
@@ -141,7 +147,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
 	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
-	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0]}
+	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0], EncryptionKey: encryptionKey}
 	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
@@ -187,6 +193,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
+	api.Use(userLimiter.UserRateLimit())
 	{
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)

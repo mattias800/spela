@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/storage"
@@ -23,9 +24,16 @@ import (
 
 // RAHandler handles RetroAchievements endpoints.
 type RAHandler struct {
-	DB       *gorm.DB
-	RAClient *retroachievements.RAClient
-	GameDir  string
+	DB            *gorm.DB
+	RAClient      *retroachievements.RAClient
+	GameDir       string
+	EncryptionKey []byte // AES-256 key for encrypting RA tokens at rest
+}
+
+// decryptRAToken decrypts the RA token from a credential record.
+// Handles both encrypted and legacy plaintext values transparently.
+func (h *RAHandler) decryptRAToken(cred *db.RetroAchievementCredential) (string, error) {
+	return auth.Decrypt(cred.RAToken, h.EncryptionKey)
 }
 
 // LinkAccount links a user's RetroAchievements account by exchanging credentials for a token.
@@ -48,12 +56,20 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 		return
 	}
 
+	// Encrypt the RA token before storing it in the database
+	encryptedToken, err := auth.Encrypt(token, h.EncryptionKey)
+	if err != nil {
+		slog.Error("failed to encrypt RA token", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
+		return
+	}
+
 	// Upsert credential
 	var cred db.RetroAchievementCredential
 	result := h.DB.Where("user_id = ?", uid).First(&cred)
 	if result.Error == nil {
 		cred.RAUsername = req.Username
-		cred.RAToken = token
+		cred.RAToken = encryptedToken
 		if err := h.DB.Save(&cred).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update RA credentials"})
 			return
@@ -62,7 +78,7 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 		cred = db.RetroAchievementCredential{
 			UserID:     uid,
 			RAUsername:  req.Username,
-			RAToken:    token,
+			RAToken:    encryptedToken,
 		}
 		if err := h.DB.Create(&cred).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
@@ -148,9 +164,17 @@ func (h *RAHandler) GetToken(c *gin.Context) {
 		return
 	}
 
+	// Decrypt the RA token (handles both encrypted and legacy plaintext values)
+	token, err := auth.Decrypt(cred.RAToken, h.EncryptionKey)
+	if err != nil {
+		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve RA token"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"username": cred.RAUsername,
-		"token":    cred.RAToken,
+		"token":    token,
 	})
 }
 
@@ -222,8 +246,16 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 		}
 	}
 
+	// Decrypt RA token for API call
+	raToken, err := h.decryptRAToken(&cred)
+	if err != nil {
+		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access RA credentials"})
+		return
+	}
+
 	// Fetch from RA API
-	gameInfo, _, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, cred.RAToken, raGameID)
+	gameInfo, _, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, raToken, raGameID)
 	if err != nil {
 		slog.Error("failed to fetch RA game info", "ra_game_id", raGameID, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch achievements from RetroAchievements"})
@@ -304,8 +336,16 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 		return
 	}
 
+	// Decrypt RA token for API call
+	raToken, err := h.decryptRAToken(&cred)
+	if err != nil {
+		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access RA credentials"})
+		return
+	}
+
 	// Fetch fresh progress from RA API
-	_, userProgress, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, cred.RAToken, raGameID)
+	_, userProgress, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, raToken, raGameID)
 	if err != nil {
 		slog.Error("failed to fetch RA progress", "ra_game_id", raGameID, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch progress from RetroAchievements"})

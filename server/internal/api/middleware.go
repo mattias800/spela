@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -96,6 +97,10 @@ func BodySizeLimiter(maxBytes int64) gin.HandlerFunc {
 	}
 }
 
+// maxRateLimitEntries is the maximum number of tracked IPs/keys in a rate limiter.
+// Under a DDoS from many unique IPs, this prevents unbounded memory growth.
+const maxRateLimitEntries = 100_000
+
 // RateLimiter implements a sliding window rate limiter using golang.org/x/time/rate.
 type RateLimiter struct {
 	visitors map[string]*rateLimitEntry
@@ -140,6 +145,10 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 		rl.mu.Lock()
 		e, exists := rl.visitors[ip]
 		if !exists {
+			// Evict oldest entry if we've hit the cap to prevent unbounded growth
+			if len(rl.visitors) >= maxRateLimitEntries {
+				rl.evictOldest()
+			}
 			limiter := rate.NewLimiter(rate.Every(rl.window/time.Duration(rl.limit)), rl.limit)
 			e = &rateLimitEntry{limiter: limiter, lastSeen: time.Now()}
 			rl.visitors[ip] = e
@@ -152,5 +161,54 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 			return
 		}
 		c.Next()
+	}
+}
+
+// UserRateLimit returns a Gin middleware that rate limits by authenticated user ID.
+// This protects against abuse from compromised accounts making unlimited requests.
+func (rl *RateLimiter) UserRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userId")
+		if !exists {
+			c.Next()
+			return
+		}
+		key := fmt.Sprintf("user:%d", userID.(uint))
+
+		rl.mu.Lock()
+		e, found := rl.visitors[key]
+		if !found {
+			if len(rl.visitors) >= maxRateLimitEntries {
+				rl.evictOldest()
+			}
+			limiter := rate.NewLimiter(rate.Every(rl.window/time.Duration(rl.limit)), rl.limit)
+			e = &rateLimitEntry{limiter: limiter, lastSeen: time.Now()}
+			rl.visitors[key] = e
+		}
+		e.lastSeen = time.Now()
+		rl.mu.Unlock()
+
+		if !e.limiter.Allow() {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			return
+		}
+		c.Next()
+	}
+}
+
+// evictOldest removes the oldest entry from the visitors map. Must be called with mu held.
+func (rl *RateLimiter) evictOldest() {
+	var oldestKey string
+	var oldestTime time.Time
+	first := true
+	for k, v := range rl.visitors {
+		if first || v.lastSeen.Before(oldestTime) {
+			oldestKey = k
+			oldestTime = v.lastSeen
+			first = false
+		}
+	}
+	if !first {
+		delete(rl.visitors, oldestKey)
 	}
 }

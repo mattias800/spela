@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -14,6 +15,13 @@ import (
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
+
+// generateTokenFamily creates a random token family ID for refresh token replay detection.
+func generateTokenFamily() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
 
 const (
 	maxLoginAttempts  = 5
@@ -148,11 +156,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Store hashed refresh token (only the hash is persisted; the raw token is returned to the client)
+	// Store hashed refresh token with a new token family for replay detection.
+	// The raw token is returned to the client; only the hash is persisted.
 	rt := db.RefreshToken{
-		UserID:    user.ID,
-		Token:     auth.HashRefreshToken(refreshToken),
-		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
+		UserID:      user.ID,
+		Token:       auth.HashRefreshToken(refreshToken),
+		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
+		TokenFamily: generateTokenFamily(),
 	}
 	h.DB.Create(&rt)
 
@@ -241,9 +251,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	rt := db.RefreshToken{
-		UserID:    user.ID,
-		Token:     auth.HashRefreshToken(refreshToken),
-		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
+		UserID:      user.ID,
+		Token:       auth.HashRefreshToken(refreshToken),
+		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
+		TokenFamily: generateTokenFamily(),
 	}
 	h.DB.Create(&rt)
 
@@ -255,6 +266,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 // Refresh exchanges a refresh token for new access and refresh tokens.
+// Uses token families for replay detection: if a consumed token is replayed,
+// all tokens in the family are revoked (indicating token theft).
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -263,9 +276,31 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
+	tokenHash := auth.HashRefreshToken(req.RefreshToken)
+
 	// Find and validate refresh token (stored as SHA-256 hash)
 	var rt db.RefreshToken
-	if err := h.DB.Where("token = ?", auth.HashRefreshToken(req.RefreshToken)).First(&rt).Error; err != nil {
+	if err := h.DB.Where("token = ?", tokenHash).First(&rt).Error; err != nil {
+		// Token not found — check if it was a consumed token (replay attack detection).
+		// Look for any consumed token with this hash to find the family.
+		var consumed db.RefreshToken
+		if h.DB.Unscoped().Where("token = ? AND consumed = ?", tokenHash, true).First(&consumed).Error == nil {
+			// Replay detected! Revoke all tokens in this family.
+			slog.Warn("refresh token replay detected, revoking token family",
+				"user_id", consumed.UserID, "family", consumed.TokenFamily)
+			h.DB.Where("token_family = ? AND user_id = ?", consumed.TokenFamily, consumed.UserID).
+				Delete(&db.RefreshToken{})
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	// Reject already-consumed tokens (shouldn't normally reach here due to the
+	// unique index, but defense-in-depth)
+	if rt.Consumed {
+		slog.Warn("consumed refresh token presented", "user_id", rt.UserID, "family", rt.TokenFamily)
+		h.DB.Where("token_family = ? AND user_id = ?", rt.TokenFamily, rt.UserID).
+			Delete(&db.RefreshToken{})
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
 	}
@@ -283,7 +318,8 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	}
 
 	if user.Disabled {
-		h.DB.Delete(&rt)
+		h.DB.Where("token_family = ? AND user_id = ?", rt.TokenFamily, rt.UserID).
+			Delete(&db.RefreshToken{})
 		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
 		return
 	}
@@ -300,13 +336,22 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
+	// Carry forward the same token family; mark old token as consumed
+	family := rt.TokenFamily
+	if family == "" {
+		// Backwards compatibility: assign a new family to legacy tokens without one
+		family = generateTokenFamily()
+	}
+
 	newRT := db.RefreshToken{
-		UserID:    user.ID,
-		Token:     auth.HashRefreshToken(newRefreshToken),
-		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
+		UserID:      user.ID,
+		Token:       auth.HashRefreshToken(newRefreshToken),
+		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
+		TokenFamily: family,
 	}
 	if err := h.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&rt).Error; err != nil {
+		// Mark old token as consumed (keep it for replay detection)
+		if err := tx.Model(&rt).Update("consumed", true).Error; err != nil {
 			return err
 		}
 		return tx.Create(&newRT).Error
@@ -345,6 +390,9 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 	go func() {
 		for {
 			time.Sleep(interval)
+			// Delete expired tokens and consumed tokens older than 7 days
+			// (consumed tokens are kept briefly for replay detection)
+			database.Where("consumed = ? AND created_at < ?", true, time.Now().Add(-7*24*time.Hour)).Delete(&db.RefreshToken{})
 			result := database.Where("expires_at < ?", time.Now()).Delete(&db.RefreshToken{})
 			if result.RowsAffected > 0 {
 				slog.Info("cleaned up expired refresh tokens", "count", result.RowsAffected)
@@ -461,9 +509,10 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 	}
 
 	rt := db.RefreshToken{
-		UserID:    user.ID,
-		Token:     auth.HashRefreshToken(refreshToken),
-		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
+		UserID:      user.ID,
+		Token:       auth.HashRefreshToken(refreshToken),
+		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
+		TokenFamily: generateTokenFamily(),
 	}
 	h.DB.Create(&rt)
 

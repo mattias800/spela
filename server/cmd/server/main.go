@@ -110,12 +110,19 @@ func main() {
 	// Start periodic expired refresh token cleanup (every hour)
 	api.StartTokenCleanup(database, 1*time.Hour)
 
+	// Derive WebSocket origins: prefer explicit WS origins, fall back to CORS origins.
+	// This ensures WebSocket origin checking is not more permissive than CORS by default.
+	effectiveWSOrigins := wsOrigins
+	if len(effectiveWSOrigins) == 0 && len(corsOrigins) > 0 {
+		effectiveWSOrigins = corsOrigins
+	}
+
 	// Initialize WebSocket hub
-	hub := websocket.NewHub(wsOrigins)
+	hub := websocket.NewHub(effectiveWSOrigins)
 	go hub.Run()
 
 	// Initialize Netplay WebSocket hub
-	netplayHub := websocket.NewNetplayHub(wsOrigins)
+	netplayHub := websocket.NewNetplayHub(effectiveWSOrigins)
 	netplayHub.StartCleanup(database)
 
 	// Create router

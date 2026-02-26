@@ -34,7 +34,7 @@ func HashPassword(password string) (string, error) {
 	if len(password) > MaxBcryptPasswordLen {
 		return "", fmt.Errorf("password exceeds maximum length of %d bytes", MaxBcryptPasswordLen)
 	}
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return "", fmt.Errorf("hashing password: %w", err)
 	}

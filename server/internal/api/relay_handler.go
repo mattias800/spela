@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -671,9 +672,9 @@ func (h *RelayHandler) UploadSave(c *gin.Context) {
 		return
 	}
 
-	// Verify turn token
+	// Verify turn token (constant-time comparison to prevent timing attacks)
 	turnToken := c.GetHeader("X-Turn-Token")
-	if turnToken == "" || turnToken != relay.TurnToken {
+	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(relay.TurnToken)) != 1 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "invalid turn token"})
 		return
 	}
@@ -738,6 +739,12 @@ func (h *RelayHandler) DownloadSave(c *gin.Context) {
 		return
 	}
 
+	// Validate the file path is within the save directory
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", save.Name))
 	c.File(save.FilePath)
 }
@@ -780,9 +787,9 @@ func (h *RelayHandler) UploadAutoSave(c *gin.Context) {
 		return
 	}
 
-	// Verify turn token
+	// Verify turn token (constant-time comparison to prevent timing attacks)
 	turnToken := c.GetHeader("X-Turn-Token")
-	if turnToken == "" || turnToken != relay.TurnToken {
+	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(relay.TurnToken)) != 1 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "invalid turn token"})
 		return
 	}
@@ -851,6 +858,12 @@ func (h *RelayHandler) GetAutoSave(c *gin.Context) {
 	var save db.RelaySave
 	if err := h.DB.Where("relay_id = ? AND is_auto = ?", relay.ID, true).First(&save).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no auto-save found"})
+		return
+	}
+
+	// Validate the file path is within the save directory
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 

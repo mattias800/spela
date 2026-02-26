@@ -172,13 +172,15 @@ type PlayHistory struct {
 
 // RefreshToken stores issued refresh tokens.
 type RefreshToken struct {
-	ID        uint           `gorm:"primarykey"`
-	CreatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	UserID    uint           `gorm:"index;not null"`
-	User      User           `gorm:"foreignKey:UserID"`
-	Token     string         `gorm:"uniqueIndex;size:512;not null"`
-	ExpiresAt time.Time      `gorm:"not null;index"`
+	ID          uint           `gorm:"primarykey"`
+	CreatedAt   time.Time
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	UserID      uint           `gorm:"index;not null"`
+	User        User           `gorm:"foreignKey:UserID"`
+	Token       string         `gorm:"uniqueIndex;size:512;not null"`
+	ExpiresAt   time.Time      `gorm:"not null;index"`
+	TokenFamily string         `gorm:"size:64;index"` // groups related tokens for replay detection
+	Consumed    bool           `gorm:"default:false"`  // marked true on rotation instead of deleted
 }
 
 // TokenBlacklist stores revoked access tokens until they expire naturally.

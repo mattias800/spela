@@ -413,7 +413,29 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 		return
 	}
 
-	if err := os.Remove(path); err != nil {
+	// Validate the resolved path stays within BiosDir (same check as GetBiosFile)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	absBiosDir, err := filepath.Abs(h.Storage.BiosDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
+		absPath = realPath
+	}
+	if realDir, e := filepath.EvalSymlinks(absBiosDir); e == nil {
+		absBiosDir = realDir
+	}
+	if !strings.HasPrefix(absPath, absBiosDir+string(filepath.Separator)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	if err := os.Remove(absPath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete file"})
 		return
 	}

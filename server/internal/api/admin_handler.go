@@ -48,7 +48,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
 		Username string `json:"username" binding:"required,min=3,max=64"`
 		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required,min=8"`
+		Password string `json:"password" binding:"required,min=8,max=72"`
 		Role     string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {

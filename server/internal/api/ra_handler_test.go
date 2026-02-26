@@ -11,9 +11,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/stretchr/testify/assert"
@@ -159,12 +161,19 @@ func TestLinkAccount_Success(t *testing.T) {
 	assert.Equal(t, true, resp["linked"])
 	assert.Equal(t, "rauser", resp["username"])
 
-	// Verify in DB
+	// Verify in DB — token should be encrypted, not plaintext
 	var cred db.RetroAchievementCredential
 	err := cfg.DB.First(&cred).Error
 	require.NoError(t, err)
 	assert.Equal(t, "rauser", cred.RAUsername)
-	assert.Equal(t, "ra-test-token-123", cred.RAToken)
+	assert.True(t, strings.HasPrefix(cred.RAToken, "enc:"), "stored RA token should be encrypted")
+	assert.NotEqual(t, "ra-test-token-123", cred.RAToken)
+
+	// Verify decryption produces the original token
+	encKey := auth.DeriveEncryptionKey(cfg.JWTSecret)
+	decrypted, err := auth.Decrypt(cred.RAToken, encKey)
+	require.NoError(t, err)
+	assert.Equal(t, "ra-test-token-123", decrypted)
 }
 
 func TestLinkAccount_InvalidCredentials(t *testing.T) {
