@@ -13,7 +13,7 @@ class DesktopFileStorage : FileStorage {
         val appDir = when {
             osName.contains("win") -> File(System.getenv("APPDATA") ?: "$home/AppData/Roaming", "Spela")
             osName.contains("mac") -> File(home, "Library/Application Support/Spela")
-            else -> File(home, ".local/share/spela")
+            else -> resolveLinuxDataDir(home)
         }
         appDir.apply { mkdirs() }
     }
@@ -76,4 +76,9 @@ class DesktopFileStorage : FileStorage {
     }
 
     override suspend fun isDirectory(path: String): Boolean = File(path).isDirectory
+}
+
+internal fun resolveLinuxDataDir(home: String, xdgDataHome: String? = System.getenv("XDG_DATA_HOME")): File {
+    val dataDir = xdgDataHome?.takeIf { it.isNotBlank() } ?: "$home/.local/share"
+    return File(dataDir, "spela")
 }

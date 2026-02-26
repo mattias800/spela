@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Spela
+GenericName=Game Emulator
+Comment=Self-hosted game emulation player
+Exec=spela %f
+Icon=com.spela.player
+Terminal=false
+Categories=Game;Emulator;
+Keywords=emulator;retro;gaming;libretro;
+MimeType=application/x-genesis-rom;application/x-nes-rom;application/x-snes-rom;application/x-gameboy-rom;
+StartupWMClass=spela

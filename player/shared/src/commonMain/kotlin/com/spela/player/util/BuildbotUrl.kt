@@ -16,7 +16,10 @@ fun buildbotCoreUrl(coreName: String, platform: String = currentPlatform(), arch
         "android" -> "$BUILDBOT_BASE/android/latest/$arch/${coreName}_libretro_android.so.zip"
         "macos" -> "$BUILDBOT_BASE/apple/osx/$arch/latest/${coreName}_libretro.dylib.zip"
         "windows" -> "$BUILDBOT_BASE/windows/$arch/latest/${coreName}_libretro.dll.zip"
-        else -> "$BUILDBOT_BASE/linux/$arch/latest/${coreName}_libretro.so.zip"
+        else -> {
+            val buildbotArch = if (arch == "arm64") "aarch64" else arch
+            "$BUILDBOT_BASE/linux/$buildbotArch/latest/${coreName}_libretro.so.zip"
+        }
     }
 }
 

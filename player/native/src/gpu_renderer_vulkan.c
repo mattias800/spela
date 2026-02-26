@@ -1309,12 +1309,28 @@ static VkInstance vulkan_create_instance_wrapper(
     gpu_renderer_t *r = (gpu_renderer_t *)opaque;
 
     /* Add surface extensions that the frontend needs */
+#if defined(__ANDROID__)
     static const char *surface_extensions[] = {
         VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef __ANDROID__
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-#endif
     };
+#elif defined(__linux__) && !defined(__ANDROID__)
+    extern const char *vulkan_desktop_get_surface_extension(void);
+    const char *linux_ext = vulkan_desktop_get_surface_extension();
+    const char *surface_extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        linux_ext,
+    };
+#elif defined(_WIN32)
+    static const char *surface_extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        "VK_KHR_win32_surface",
+    };
+#else
+    static const char *surface_extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+    };
+#endif
     uint32_t num_surface_ext = r->offscreen_mode ? 0 :
         (sizeof(surface_extensions) / sizeof(surface_extensions[0]));
 
@@ -1410,16 +1426,28 @@ static bool create_instance(gpu_renderer_t *r) {
 
     if (!r->offscreen_mode) {
         /* On-screen: need surface extensions */
+#if defined(__ANDROID__)
         static const char *surface_extensions[] = {
             VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef __ANDROID__
             VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-#elif defined(_WIN32)
-            "VK_KHR_win32_surface",
-#elif defined(__linux__)
-            "VK_KHR_xlib_surface",
-#endif
         };
+#elif defined(__linux__) && !defined(__ANDROID__)
+        extern const char *vulkan_desktop_get_surface_extension(void);
+        const char *linux_ext = vulkan_desktop_get_surface_extension();
+        const char *surface_extensions[] = {
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            linux_ext,
+        };
+#elif defined(_WIN32)
+        static const char *surface_extensions[] = {
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            "VK_KHR_win32_surface",
+        };
+#else
+        static const char *surface_extensions[] = {
+            VK_KHR_SURFACE_EXTENSION_NAME,
+        };
+#endif
         create_info.enabledExtensionCount = sizeof(surface_extensions) / sizeof(surface_extensions[0]);
         create_info.ppEnabledExtensionNames = surface_extensions;
     }

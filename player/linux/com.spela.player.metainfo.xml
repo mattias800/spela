@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.spela.player</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>Spela</name>
+  <summary>Self-hosted game emulation player</summary>
+  <description>
+    <p>
+      Spela is a native game emulation player that connects to your self-hosted
+      Spela server. Browse your game library, download and play games with
+      libretro-powered emulation, and sync save states across all your devices.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Native performance with Vulkan rendering and post-processing shaders</li>
+      <li>Support for NES, SNES, Game Boy, Genesis, N64, PlayStation, and more</li>
+      <li>Cloud save state sync across devices</li>
+      <li>Gamepad support via SDL2</li>
+      <li>CRT and LCD shaders for authentic retro visuals</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">com.spela.player.desktop</launchable>
+  <url type="homepage">https://github.com/spela-app/spela</url>
+  <url type="bugtracker">https://github.com/spela-app/spela/issues</url>
+  <provides>
+    <binary>spela</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-02-26">
+      <description>
+        <p>Initial Linux release with AppImage and Flatpak support.</p>
+      </description>
+    </release>
+  </releases>
+</component>

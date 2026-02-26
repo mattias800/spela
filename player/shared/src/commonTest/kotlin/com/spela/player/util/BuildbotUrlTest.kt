@@ -69,4 +69,18 @@ class BuildbotUrlTest {
     fun windowsFileName() {
         assertEquals("nestopia_libretro.dll", coreFileName("nestopia", "windows"))
     }
+
+    @Test
+    fun linuxArm64Url() {
+        val url = buildbotCoreUrl("nestopia", "linux", "arm64")
+        assertEquals(
+            "https://buildbot.libretro.com/nightly/linux/aarch64/latest/nestopia_libretro.so.zip",
+            url,
+        )
+    }
+
+    @Test
+    fun linuxArm64FileName() {
+        assertEquals("nestopia_libretro.so", coreFileName("nestopia", "linux"))
+    }
 }

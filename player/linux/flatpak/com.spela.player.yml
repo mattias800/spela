@@ -1,0 +1,50 @@
+app-id: com.spela.player
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk17
+command: spela
+
+finish-args:
+  - --device=dri            # Vulkan GPU access
+  - --socket=wayland        # Wayland display
+  - --socket=x11            # X11/XWayland fallback (JDK AWT needs this)
+  - --socket=pulseaudio     # Audio output
+  - --share=network         # Connect to Spela server
+  - --device=all            # Gamepad access (/dev/input)
+
+modules:
+  - name: SDL2
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DSDL_STATIC=OFF
+      - -DSDL_TEST=OFF
+    sources:
+      - type: archive
+        url: https://github.com/libsdl-org/SDL/releases/download/release-2.30.10/SDL2-2.30.10.tar.gz
+        sha256: f59d29ac24e96aa5a46295a38e0f14a5289c3f374edc56a5e3d2ef2e7da634cd
+
+  - name: spela
+    buildsystem: simple
+    build-commands:
+      - install -d /app/bin /app/lib /app/share/applications /app/share/metainfo
+        /app/share/icons/hicolor/256x256/apps
+      - cp -r distributable/* /app/
+      - install -m644 com.spela.player.desktop /app/share/applications/
+      - install -m644 com.spela.player.metainfo.xml /app/share/metainfo/
+      - |
+        cat > /app/bin/spela << 'EOF'
+        #!/bin/sh
+        export PATH="/app/jre/bin:$PATH"
+        exec /app/bin/Spela "$@"
+        EOF
+      - chmod +x /app/bin/spela
+    sources:
+      - type: dir
+        path: ../../desktop/build/compose/binaries/main/app/Spela
+        dest: distributable
+      - type: file
+        path: ../com.spela.player.desktop
+      - type: file
+        path: ../com.spela.player.metainfo.xml

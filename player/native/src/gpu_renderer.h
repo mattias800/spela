@@ -70,6 +70,11 @@ void gpu_renderer_wait_idle(gpu_renderer_t *r);
 /* Query state */
 bool gpu_renderer_is_active(gpu_renderer_t *r);
 
+/* Desktop Vulkan surface extension query (Linux: X11 vs Wayland) */
+#if defined(__linux__) && !defined(__ANDROID__)
+const char *vulkan_desktop_get_surface_extension(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

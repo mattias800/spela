@@ -46,6 +46,21 @@ endif()
 
 add_library(spela-libretro SHARED ${COMMON_SOURCES})
 
+# Optional Wayland header detection (Linux only, for Vulkan surface creation)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(WAYLAND_CLIENT QUIET wayland-client)
+        if(WAYLAND_CLIENT_FOUND)
+            message(STATUS "Wayland support enabled")
+            target_compile_definitions(spela-libretro PRIVATE HAS_WAYLAND)
+            target_include_directories(spela-libretro PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIRS})
+        else()
+            message(STATUS "Wayland support disabled (wayland-client headers not found)")
+        endif()
+    endif()
+endif()
+
 target_include_directories(spela-libretro PRIVATE
     src
     rcheevos/include

@@ -41,7 +41,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake libvulkan-dev libx11-dev
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config
 
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'
@@ -74,3 +75,159 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
+
+  build-appimage:
+    runs-on: ubuntu-latest
+    name: Build AppImage (x86_64)
+    needs: []
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            libfuse2
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-gradle-
+
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+
+      - name: Build AppImage
+        working-directory: player
+        run: bash linux/build-appimage.sh --arch x86_64
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-appimage-x86_64
+          path: player/desktop/build/appimage/Spela-x86_64.AppImage
+
+  build-flatpak:
+    runs-on: ubuntu-latest
+    name: Build Flatpak
+    needs: []
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            flatpak flatpak-builder
+
+      - name: Set up Flatpak
+        run: |
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y --noninteractive flathub \
+            org.freedesktop.Platform//24.08 \
+            org.freedesktop.Sdk//24.08 \
+            org.freedesktop.Sdk.Extension.openjdk17//24.08
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-gradle-
+
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+
+      - name: Build Flatpak
+        working-directory: player
+        run: bash linux/flatpak/build-flatpak.sh
+
+      - name: Upload Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-flatpak
+          path: player/desktop/build/flatpak/spela.flatpak
+
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    name: Build Linux ARM64
+    needs: []
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            libfuse2
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-ARM64-gradle-
+
+      - name: Run unit tests
+        working-directory: player
+        run: ./gradlew :shared:desktopTest :desktop:desktopTest
+
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+
+      - name: Build AppImage
+        working-directory: player
+        run: bash linux/build-appimage.sh --arch aarch64
+
+      - name: Upload DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-arm64-deb
+          path: player/desktop/build/compose/binaries/main/deb/*.deb
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-appimage-aarch64
+          path: player/desktop/build/appimage/Spela-aarch64.AppImage
