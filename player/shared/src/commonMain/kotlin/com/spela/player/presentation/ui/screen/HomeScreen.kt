@@ -198,7 +198,7 @@ fun HomeScreen(
                                             badge = {
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(8.dp)
+                                                        .size(SpSpacing.Small)
                                                         .align(Alignment.TopEnd)
                                                         .clip(CircleShape)
                                                         .background(SpColor.Primary),

@@ -410,9 +410,9 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 			Rating:   tr.TotalRating,
 		}
 
-		// Check for local game match by case-insensitive title across all consoles
+		// Check for local game match by case-insensitive title, scoped to the same console
 		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?)", tr.Name).First(&localGame).Error; err == nil {
+		if err := h.DB.Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).First(&localGame).Error; err == nil {
 			id := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &id
 		}
