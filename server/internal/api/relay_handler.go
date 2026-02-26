@@ -873,6 +873,12 @@ func (h *RelayHandler) CopyRelaySaveToGame(c *gin.Context) {
 		return
 	}
 
+	// Validate relay save path is within the save directory
+	if !storage.ValidateROMPath(relaySave.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	// Open the relay save file
 	file, err := h.Storage.ReadSave(relaySave.FilePath)
 	if err != nil {

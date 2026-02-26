@@ -54,6 +54,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		// Content Security Policy
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws:; frame-ancestors 'none'")
+		// HSTS — instruct browsers to always use HTTPS. Safe even behind a reverse
+		// proxy; browsers only honour this header on HTTPS responses.
+		c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		c.Next()
 	})
 
@@ -104,6 +107,9 @@ func NewRouter(cfg Config) *gin.Engine {
 
 	// Rate limiter for auth endpoints
 	authLimiter := NewRateLimiter(120, time.Minute)
+
+	// Rate limiter for file download endpoints (prevents bandwidth abuse)
+	downloadLimiter := NewRateLimiter(30, time.Minute)
 
 	// Handlers
 	authHandler := &AuthHandler{DB: cfg.DB, JWTSecret: cfg.JWTSecret}
@@ -161,6 +167,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.GET("/setup-status", authHandler.SetupStatus)
 	}
 
+	// Logout (requires auth, placed before main protected group for clarity)
+	logoutGroup := r.Group("/api/auth")
+	logoutGroup.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
+	logoutGroup.POST("/logout", authHandler.Logout)
+
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
 	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
 
@@ -173,7 +184,7 @@ func NewRouter(cfg Config) *gin.Engine {
 
 	// Protected routes
 	api := r.Group("/api")
-	api.Use(AuthMiddleware(cfg.JWTSecret))
+	api.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
 	{
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)
@@ -184,8 +195,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		// Games
 		api.GET("/games", gameHandler.ListGames)
 		api.GET("/games/:id", gameHandler.GetGame)
-		api.GET("/games/:id/download", gameHandler.DownloadGame)
-		api.GET("/games/:id/discs/:discNumber/download", gameHandler.DownloadDisc)
+		api.GET("/games/:id/download", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
+		api.GET("/games/:id/discs/:discNumber/download", downloadLimiter.RateLimit(), gameHandler.DownloadDisc)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
@@ -417,9 +428,16 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 	// Strip leading slash from the wildcard param
 	reqPath = strings.TrimPrefix(reqPath, "/")
 
-	// Resolve the absolute path and ensure it stays within ImageDir
+	// Resolve the absolute path and ensure it stays within ImageDir.
+	// Use EvalSymlinks to prevent symlink-based escapes.
 	absImageDir, _ := filepath.Abs(h.ImageDir)
+	if realDir, err := filepath.EvalSymlinks(absImageDir); err == nil {
+		absImageDir = realDir
+	}
 	absPath, _ := filepath.Abs(filepath.Join(h.ImageDir, reqPath))
+	if realPath, err := filepath.EvalSymlinks(absPath); err == nil {
+		absPath = realPath
+	}
 	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) && absPath != absImageDir {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return

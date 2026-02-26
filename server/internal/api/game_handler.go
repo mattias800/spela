@@ -246,8 +246,9 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 
 	result, err := h.Scanner.Scan()
 	if err != nil {
-		h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": err.Error()}})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "scan failed: " + err.Error()})
+		slog.Error("game library scan failed", "error", err)
+		h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": "library scan failed"}})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "scan failed"})
 		return
 	}
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,8 @@ func (h *IGDBHandler) TestIGDB(c *gin.Context) {
 	client := igdb.NewClient("", "")
 	defer client.Close()
 	if err := client.TestCredentials(req.ClientID, req.ClientSecret); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "error": err.Error()})
+		slog.Warn("IGDB credential test failed", "error", err)
+		c.JSON(http.StatusOK, gin.H{"success": false, "error": "credential validation failed"})
 		return
 	}
 

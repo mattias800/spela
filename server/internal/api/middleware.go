@@ -8,14 +8,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
+	"github.com/spela/server/internal/db"
 	"golang.org/x/time/rate"
+	"gorm.io/gorm"
 )
 
 // maxSaveUploadSize is the maximum allowed save state upload size (64 MB).
 const maxSaveUploadSize = 64 << 20
 
-// AuthMiddleware validates JWT tokens on protected routes.
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+// AuthMiddleware validates JWT tokens on protected routes and rejects disabled users.
+func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var token string
 		header := c.GetHeader("Authorization")
@@ -39,6 +41,23 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		claims, err := auth.ValidateAccessToken(token, jwtSecret)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			return
+		}
+
+		// Reject revoked (logged-out) access tokens
+		if IsTokenBlacklisted(database, token) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token has been revoked"})
+			return
+		}
+
+		// Reject disabled users even if their access token is still valid
+		var user db.User
+		if err := database.Select("id", "disabled").First(&user, claims.UserID).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			return
+		}
+		if user.Disabled {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
 			return
 		}
 

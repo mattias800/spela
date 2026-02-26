@@ -472,14 +472,36 @@ func (h *SaveHandler) GetSaveScreenshot(c *gin.Context) {
 		return
 	}
 
-	// ScreenshotURL is stored as a relative path within the save directory
+	// ScreenshotURL is stored as a relative path within the image directory
 	screenshotPath := save.ScreenshotURL
 	if !filepath.IsAbs(screenshotPath) {
 		screenshotPath = h.Storage.ImagePath(save.ScreenshotURL)
 	}
 
+	// Validate the resolved path stays within the image directory
+	absPath, err := filepath.Abs(screenshotPath)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	absImageDir, err := filepath.Abs(h.Storage.ImageDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
+		absPath = realPath
+	}
+	if realDir, e := filepath.EvalSymlinks(absImageDir); e == nil {
+		absImageDir = realDir
+	}
+	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	c.Header("Content-Type", "image/png")
-	c.File(screenshotPath)
+	c.File(absPath)
 }
 
 // RenameRelaySave renames a relay save state.

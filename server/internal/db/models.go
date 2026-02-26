@@ -178,7 +178,14 @@ type RefreshToken struct {
 	UserID    uint           `gorm:"index;not null"`
 	User      User           `gorm:"foreignKey:UserID"`
 	Token     string         `gorm:"uniqueIndex;size:512;not null"`
-	ExpiresAt time.Time      `gorm:"not null"`
+	ExpiresAt time.Time      `gorm:"not null;index"`
+}
+
+// TokenBlacklist stores revoked access tokens until they expire naturally.
+type TokenBlacklist struct {
+	ID        uint      `gorm:"primarykey"`
+	TokenHash string    `gorm:"uniqueIndex;size:64;not null"` // SHA-256 hex of the JWT
+	ExpiresAt time.Time `gorm:"not null;index"`
 }
 
 // ServerSetting stores key-value server configuration.

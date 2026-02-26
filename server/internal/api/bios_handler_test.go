@@ -55,7 +55,7 @@ func setupBiosTestEnv(t *testing.T) (*storage.Storage, *gorm.DB, *gin.Engine) {
 
 	// Authenticated routes
 	api := router.Group("/api")
-	api.Use(AuthMiddleware(biosTestJWTSecret))
+	api.Use(AuthMiddleware(biosTestJWTSecret, database))
 	{
 		api.GET("/bios", handler.ListBiosFiles)
 		api.GET("/bios/:filename", handler.GetBiosFile)

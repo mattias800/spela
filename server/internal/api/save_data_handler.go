@@ -142,6 +142,11 @@ func (h *SaveDataHandler) DownloadActiveSaveData(c *gin.Context) {
 		return
 	}
 
+	if !storage.ValidateROMPath(sd.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(sd.FilePath)))
 	c.File(sd.FilePath)
 }
@@ -154,6 +159,11 @@ func (h *SaveDataHandler) DownloadSaveData(c *gin.Context) {
 	var sd db.SaveData
 	if err := h.DB.Where("id = ? AND user_id = ?", sdID, userID).First(&sd).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "save data not found"})
+		return
+	}
+
+	if !storage.ValidateROMPath(sd.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 

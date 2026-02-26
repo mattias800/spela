@@ -1,9 +1,12 @@
 package api
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -348,19 +351,63 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 			if laResult.RowsAffected > 0 {
 				slog.Info("cleaned up stale login attempts", "count", laResult.RowsAffected)
 			}
+			// Clean up expired token blacklist entries
+			blResult := database.Where("expires_at < ?", time.Now()).Delete(&db.TokenBlacklist{})
+			if blResult.RowsAffected > 0 {
+				slog.Info("cleaned up expired blacklist entries", "count", blResult.RowsAffected)
+			}
 		}
 	}()
 }
 
-// Setup creates the initial owner account. Only works when no users exist.
-func (h *AuthHandler) Setup(c *gin.Context) {
-	var userCount int64
-	h.DB.Model(&db.User{}).Count(&userCount)
-	if userCount > 0 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "setup already completed"})
-		return
+// Logout revokes the current access token and deletes the user's refresh tokens.
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// Extract the raw access token to blacklist it
+	var token string
+	header := c.GetHeader("Authorization")
+	if header != "" {
+		parts := strings.SplitN(header, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			token = parts[1]
+		}
+	}
+	if token == "" {
+		token = c.Query("token")
 	}
 
+	userID, _ := c.Get("userId")
+	uid, _ := userID.(uint)
+
+	// Blacklist the access token so it cannot be reused for its remaining lifetime
+	if token != "" {
+		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
+		if err == nil && claims.ExpiresAt != nil {
+			hash := sha256.Sum256([]byte(token))
+			bl := db.TokenBlacklist{
+				TokenHash: hex.EncodeToString(hash[:]),
+				ExpiresAt: claims.ExpiresAt.Time,
+			}
+			h.DB.Create(&bl)
+		}
+	}
+
+	// Delete all refresh tokens for this user (log out everywhere)
+	h.DB.Where("user_id = ?", uid).Delete(&db.RefreshToken{})
+
+	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
+}
+
+// IsTokenBlacklisted checks if a JWT access token has been revoked.
+func IsTokenBlacklisted(database *gorm.DB, token string) bool {
+	hash := sha256.Sum256([]byte(token))
+	var count int64
+	database.Model(&db.TokenBlacklist{}).Where("token_hash = ?", hex.EncodeToString(hash[:])).Count(&count)
+	return count > 0
+}
+
+// Setup creates the initial owner account. Only works when no users exist.
+// Wrapped in a transaction to prevent TOCTOU race conditions.
+func (h *AuthHandler) Setup(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -374,13 +421,26 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 		return
 	}
 
-	user := db.User{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: hash,
-		Role:         db.RoleOwner,
-	}
-	if err := h.DB.Create(&user).Error; err != nil {
+	var user db.User
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		var userCount int64
+		tx.Model(&db.User{}).Count(&userCount)
+		if userCount > 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "setup already completed"})
+			return fmt.Errorf("setup already completed")
+		}
+
+		user = db.User{
+			Username:     req.Username,
+			Email:        req.Email,
+			PasswordHash: hash,
+			Role:         db.RoleOwner,
+		}
+		return tx.Create(&user).Error
+	}); err != nil {
+		if c.Writer.Written() {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}

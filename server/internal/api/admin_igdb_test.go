@@ -47,7 +47,7 @@ func setupIGDBTestEnv(t *testing.T, twitchServer *httptest.Server) (*gorm.DB, *g
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	api := router.Group("/api")
-	api.Use(AuthMiddleware(igdbTestJWTSecret))
+	api.Use(AuthMiddleware(igdbTestJWTSecret, database))
 	{
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())

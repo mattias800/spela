@@ -215,7 +215,8 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 			}
 		}
 
-		// Open and write file
+		// Open and write file. Use O_EXCL to atomically fail if the file was
+		// created between the Stat check and now (prevents TOCTOU race).
 		file, err := header.Open()
 		if err != nil {
 			results = append(results, StagedUploadResponse{
@@ -225,7 +226,7 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 			continue
 		}
 
-		dst, err := os.Create(destPath)
+		dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 		if err != nil {
 			file.Close()
 			results = append(results, StagedUploadResponse{

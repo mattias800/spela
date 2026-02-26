@@ -289,7 +289,29 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 		return
 	}
 
-	c.File(path)
+	// Validate the resolved path stays within BiosDir
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	absBiosDir, err := filepath.Abs(h.Storage.BiosDir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
+		absPath = realPath
+	}
+	if realDir, e := filepath.EvalSymlinks(absBiosDir); e == nil {
+		absBiosDir = realDir
+	}
+	if !strings.HasPrefix(absPath, absBiosDir+string(filepath.Separator)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	c.File(absPath)
 }
 
 // UploadBiosFile handles multipart file upload for BIOS files (admin only).

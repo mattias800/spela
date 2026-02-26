@@ -314,7 +314,8 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 		})
 		if err != nil {
-			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": err.Error()}})
+			slog.Error("metadata scrape failed", "error", err)
+			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "metadata scrape failed"}})
 			return
 		}
 		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})

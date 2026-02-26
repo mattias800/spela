@@ -62,6 +62,12 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password"})
 			return
 		}
+		// Check uniqueness before updating
+		var existing db.User
+		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existing).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			return
+		}
 		user.Email = req.Email
 	}
 	if req.AvatarURL != "" {

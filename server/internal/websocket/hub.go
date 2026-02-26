@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -197,10 +198,19 @@ func (h *Hub) HandleWebSocket(c *gin.Context) {
 	go client.readPump()
 }
 
-// maxHubMessageSize is the maximum allowed WebSocket frame size for the
-// event hub. Since the hub discards all incoming messages, this limit exists
-// purely to prevent a malicious client from consuming excessive memory.
-const maxHubMessageSize = 4096
+const (
+	// maxHubMessageSize is the maximum allowed WebSocket frame size for the
+	// event hub. Since the hub discards all incoming messages, this limit exists
+	// purely to prevent a malicious client from consuming excessive memory.
+	maxHubMessageSize = 4096
+
+	// pongWait is how long the server waits for a pong response before
+	// considering the connection dead.
+	pongWait = 60 * time.Second
+
+	// pingInterval is how often the server sends pings. Must be less than pongWait.
+	pingInterval = 30 * time.Second
+)
 
 func (c *Client) readPump() {
 	defer func() {
@@ -208,6 +218,11 @@ func (c *Client) readPump() {
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxHubMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		_, _, err := c.Conn.ReadMessage()
 		if err != nil {
@@ -218,10 +233,26 @@ func (c *Client) readPump() {
 }
 
 func (c *Client) writePump() {
-	defer c.Conn.Close()
-	for msg := range c.Send {
-		if err := c.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-			break
+	ticker := time.NewTicker(pingInterval)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+	for {
+		select {
+		case msg, ok := <-c.Send:
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			if err := c.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }

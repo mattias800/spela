@@ -17,8 +17,15 @@ type Storage struct {
 }
 
 // NewStorage creates a new storage instance, creating directories as needed.
+// Save and BIOS directories use 0700 (owner-only) for security; image and core
+// directories use 0755 since they may need web server read access.
 func NewStorage(saveDir, coreDir, imageDir, biosDir string) (*Storage, error) {
-	for _, dir := range []string{saveDir, coreDir, imageDir, biosDir} {
+	for _, dir := range []string{saveDir, biosDir} {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return nil, fmt.Errorf("creating directory %s: %w", dir, err)
+		}
+	}
+	for _, dir := range []string{coreDir, imageDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, fmt.Errorf("creating directory %s: %w", dir, err)
 		}
@@ -113,7 +120,7 @@ func (s *Storage) WriteSave(userID, gameID uint, filename string, data io.Reader
 		return 0, fmt.Errorf("invalid save path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return 0, fmt.Errorf("creating save directory: %w", err)
 	}
 
@@ -170,7 +177,7 @@ func (s *Storage) WriteSharedSave(gameID, saveID uint, filename string, data io.
 		return "", 0, fmt.Errorf("invalid shared save path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return "", 0, fmt.Errorf("creating shared save directory: %w", err)
 	}
 
@@ -210,7 +217,7 @@ func (s *Storage) WriteRelaySave(relayID uint, filename string, data io.Reader) 
 		return "", 0, fmt.Errorf("invalid relay save path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return "", 0, fmt.Errorf("creating relay save directory: %w", err)
 	}
 
@@ -262,7 +269,7 @@ func (s *Storage) WriteChallengeSave(challengeID uint, data io.Reader) (string, 
 		return "", 0, fmt.Errorf("invalid challenge save path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return "", 0, fmt.Errorf("creating challenge save directory: %w", err)
 	}
 
@@ -296,7 +303,7 @@ func (s *Storage) WriteChallengeScreenshot(challengeID uint, data io.Reader) (st
 		return "", fmt.Errorf("invalid challenge screenshot path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return "", fmt.Errorf("creating challenge screenshot directory: %w", err)
 	}
 
@@ -344,7 +351,7 @@ func (s *Storage) WriteSaveData(userID, gameID uint, filename string, data io.Re
 		return 0, fmt.Errorf("invalid save data path: outside save directory")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return 0, fmt.Errorf("creating save data directory: %w", err)
 	}
 

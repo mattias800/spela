@@ -226,6 +226,11 @@ func (r *NetplayRoom) sendTo(targetUID uint, data []byte, msgType int) {
 
 // --- Client message pumps ---
 
+const (
+	netplayPongWait    = 60 * time.Second
+	netplayPingInterval = 30 * time.Second
+)
+
 func (c *NetplayClient) netplayReadPump(hub *NetplayHub, room *NetplayRoom) {
 	defer func() {
 		remaining := room.removeClient(c.UserID)
@@ -245,6 +250,11 @@ func (c *NetplayClient) netplayReadPump(hub *NetplayHub, room *NetplayRoom) {
 	}()
 
 	c.Conn.SetReadLimit(maxNetplayMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(netplayPongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(netplayPongWait))
+		return nil
+	})
 	limiter := rate.NewLimiter(rate.Limit(netplayMsgRateLimit), netplayMsgBurst)
 
 	for {
@@ -291,10 +301,26 @@ func (c *NetplayClient) netplayReadPump(hub *NetplayHub, room *NetplayRoom) {
 }
 
 func (c *NetplayClient) netplayWritePump() {
-	defer c.Conn.Close()
-	for env := range c.Send {
-		if err := c.Conn.WriteMessage(env.messageType, env.data); err != nil {
-			break
+	ticker := time.NewTicker(netplayPingInterval)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+	for {
+		select {
+		case env, ok := <-c.Send:
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			if err := c.Conn.WriteMessage(env.messageType, env.data); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }

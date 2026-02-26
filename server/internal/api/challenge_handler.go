@@ -423,8 +423,13 @@ func (h *ChallengeHandler) DownloadChallengeSave(c *gin.Context) {
 		return
 	}
 
+	path := h.Storage.ChallengeSavePath(challenge.ID)
+	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
 	c.Header("Content-Disposition", "attachment; filename=\"challenge_save\"")
-	c.File(h.Storage.ChallengeSavePath(challenge.ID))
+	c.File(path)
 }
 
 // GetChallengeScreenshot serves the challenge's screenshot.
@@ -442,7 +447,12 @@ func (h *ChallengeHandler) GetChallengeScreenshot(c *gin.Context) {
 		return
 	}
 
-	c.File(h.Storage.ChallengeScreenshotPath(challenge.ID))
+	path := h.Storage.ChallengeScreenshotPath(challenge.ID)
+	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	c.File(path)
 }
 
 // StartAttempt begins a new challenge attempt (server records StartedAt).

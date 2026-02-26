@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -133,7 +134,14 @@ func main() {
 	})
 
 	slog.Info("server listening", "port", port)
-	if err := router.Run(":" + port); err != nil {
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 120 * time.Second, // generous for large file downloads
+		IdleTimeout:  120 * time.Second,
+	}
+	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
