@@ -204,13 +204,20 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 		return
 	}
 
-	// Join the session
+	// Join the session atomically — conditional UPDATE prevents race where two
+	// players pass the nil check concurrently.
 	now := time.Now()
-	h.DB.Model(&session).Updates(map[string]interface{}{
-		"client_user_id": uid,
-		"status":         "in_progress",
-		"started_at":     now,
-	})
+	result := h.DB.Model(&db.NetplaySession{}).
+		Where("id = ? AND client_user_id IS NULL AND status = ?", session.ID, "waiting").
+		Updates(map[string]interface{}{
+			"client_user_id": uid,
+			"status":         "in_progress",
+			"started_at":     now,
+		})
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "this session already has two players"})
+		return
+	}
 	session.ClientUserID = &uid
 	session.Status = "in_progress"
 	session.StartedAt = &now

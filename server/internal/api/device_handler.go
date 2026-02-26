@@ -50,6 +50,13 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 			return
 		}
 	} else {
+		// Enforce per-user device limit to prevent abuse
+		var count int64
+		h.DB.Model(&db.Device{}).Where("user_id = ?", uid).Count(&count)
+		if count >= 50 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "device limit reached (max 50)"})
+			return
+		}
 		// New device — create
 		device = db.Device{
 			UserID:     uid,

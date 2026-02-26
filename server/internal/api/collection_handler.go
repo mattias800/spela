@@ -167,18 +167,21 @@ func (h *CollectionHandler) GetCollection(c *gin.Context) {
 		return
 	}
 
+	// Check ownership/visibility before loading expensive relationships
 	var collection db.GameCollection
-	if err := h.DB.Preload("User").Preload("Items", func(db *gorm.DB) *gorm.DB {
-		return db.Order("position ASC")
-	}).Preload("Items.Game").Preload("Items.Game.Console").First(&collection, cid).Error; err != nil {
+	if err := h.DB.First(&collection, cid).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
 		return
 	}
-
 	if collection.UserID != uid && !collection.IsPublic {
 		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
 		return
 	}
+
+	// Authorized — load full data
+	h.DB.Preload("User").Preload("Items", func(db *gorm.DB) *gorm.DB {
+		return db.Order("position ASC")
+	}).Preload("Items.Game").Preload("Items.Game.Console").First(&collection, cid)
 
 	games := make([]db.Game, 0, len(collection.Items))
 	for _, item := range collection.Items {

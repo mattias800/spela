@@ -15,7 +15,7 @@ services:
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:-change-me-in-production}
       - SPELA_GAME_DIRS=/app/games
-      - SPELA_CORS_ORIGINS=${SPELA_CORS_ORIGINS:-*}
+      - SPELA_CORS_ORIGINS=${SPELA_CORS_ORIGINS:?Set SPELA_CORS_ORIGINS to your frontend URL (e.g. https://spela.example.com)}
       - SPELA_WS_ORIGINS=${SPELA_WS_ORIGINS:-}
       - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
       - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}

@@ -447,13 +447,18 @@ func parseJSONMap(s string) map[string]string {
 // privateNetworks defines the IP ranges considered internal/private.
 var privateNetworks = func() []*net.IPNet {
 	cidrs := []string{
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-		"169.254.0.0/16",
-		"127.0.0.0/8",
-		"::1/128",
-		"fc00::/7",
+		"0.0.0.0/8",       // Current network
+		"10.0.0.0/8",      // Private (RFC 1918)
+		"100.64.0.0/10",   // Carrier-grade NAT (RFC 6598)
+		"127.0.0.0/8",     // Loopback
+		"169.254.0.0/16",  // Link-local
+		"172.16.0.0/12",   // Private (RFC 1918)
+		"192.0.0.0/24",    // IETF protocol assignments
+		"192.168.0.0/16",  // Private (RFC 1918)
+		"198.18.0.0/15",   // Benchmarking (RFC 2544)
+		"::1/128",         // IPv6 loopback
+		"fc00::/7",        // IPv6 unique local
+		"fe80::/10",       // IPv6 link-local
 	}
 	var nets []*net.IPNet
 	for _, cidr := range cidrs {
@@ -479,6 +484,11 @@ func isPrivateURL(rawURL string) bool {
 		return true
 	}
 	for _, ip := range ips {
+		// Normalize IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1) to
+		// their IPv4 form so they match the IPv4 CIDR ranges above.
+		if v4 := ip.To4(); v4 != nil {
+			ip = v4
+		}
 		for _, n := range privateNetworks {
 			if n.Contains(ip) {
 				return true

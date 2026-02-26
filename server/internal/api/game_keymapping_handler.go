@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -33,7 +32,8 @@ func (h *GameKeyMappingHandler) GetGameKeyMapping(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "no key mapping found for this game"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("fetching key mapping: %v", err)})
+		slog.Error("fetching key mapping", "error", err, "userId", uid, "gameId", gameID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch key mapping"})
 		return
 	}
 
@@ -71,7 +71,8 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 
 	customJSON, err := json.Marshal(req.CustomMapping)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("marshalling custom mapping: %v", err)})
+		slog.Error("marshalling custom mapping", "error", err, "userId", uid)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process key mapping"})
 		return
 	}
 
@@ -82,7 +83,8 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 		existing.CustomMapping = string(customJSON)
 		existing.DeletedAt = gorm.DeletedAt{}
 		if err := h.DB.Unscoped().Save(&existing).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("updating key mapping: %v", err)})
+			slog.Error("updating key mapping", "error", err, "userId", uid, "gameId", game.ID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update key mapping"})
 			return
 		}
 	} else {
@@ -92,7 +94,8 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 			CustomMapping: string(customJSON),
 		}
 		if err := h.DB.Create(&pref).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("creating key mapping: %v", err)})
+			slog.Error("creating key mapping", "error", err, "userId", uid, "gameId", game.ID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create key mapping"})
 			return
 		}
 	}
