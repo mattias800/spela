@@ -341,7 +341,8 @@ func TestUpdateProfile(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{
-		"email": "updated@example.com",
+		"email":           "updated@example.com",
+		"currentPassword": "password123",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/profile", bytes.NewReader(body))
@@ -353,6 +354,52 @@ func TestUpdateProfile(t *testing.T) {
 	var user map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &user)
 	assert.Equal(t, "updated@example.com", user["email"])
+}
+
+func TestUpdateProfile_EmailChangeRequiresPassword(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Try to change email without password
+	body, _ := json.Marshal(map[string]string{
+		"email": "hacker@example.com",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/profile", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// Try with wrong password
+	body, _ = json.Marshal(map[string]string{
+		"email":           "hacker@example.com",
+		"currentPassword": "wrongpassword",
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/profile", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestUpdateProfile_AvatarWithoutPassword(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Updating avatar should NOT require password
+	body, _ := json.Marshal(map[string]string{
+		"avatarUrl": "https://example.com/avatar.png",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/profile", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestAdminEndpoint_NonAdmin(t *testing.T) {

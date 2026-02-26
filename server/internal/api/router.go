@@ -52,6 +52,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		c.Header("X-Frame-Options", "DENY")
 		// Minimal referrer info to external sites
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		// Content Security Policy
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws:; frame-ancestors 'none'")
 		c.Next()
 	})
 

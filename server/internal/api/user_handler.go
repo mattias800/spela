@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
@@ -41,8 +42,9 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	var req struct {
-		Email     string `json:"email"`
-		AvatarURL string `json:"avatarUrl"`
+		Email           string `json:"email"`
+		AvatarURL       string `json:"avatarUrl"`
+		CurrentPassword string `json:"currentPassword"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -51,6 +53,15 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	if req.Email != "" {
+		// Require password confirmation to change email
+		if req.CurrentPassword == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is required to change email"})
+			return
+		}
+		if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password"})
+			return
+		}
 		user.Email = req.Email
 	}
 	if req.AvatarURL != "" {

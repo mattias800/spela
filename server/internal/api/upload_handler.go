@@ -19,7 +19,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxROMUploadSize = 4 << 30 // 4 GB
+const maxROMUploadSize = 2 << 30 // 2 GB
 
 // UploadHandler handles ROM upload staging endpoints (admin only).
 type UploadHandler struct {
@@ -163,7 +163,7 @@ func detectConsole(database *gorm.DB, ext string) (*uint, bool) {
 // UploadROMs handles multipart file uploads of ROM files to the staging area.
 // POST /api/admin/uploads
 func (h *UploadHandler) UploadROMs(c *gin.Context) {
-	if err := os.MkdirAll(h.StagingDir, 0755); err != nil {
+	if err := os.MkdirAll(h.StagingDir, 0700); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create staging directory"})
 		return
 	}

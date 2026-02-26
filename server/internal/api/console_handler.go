@@ -158,7 +158,8 @@ func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
 
 	slog.Info("downloading preview screenshot from CDN", "console", console.Abbreviation, "url", imageURL)
 
-	resp, err := http.Get(imageURL)
+	httpClient := &http.Client{Timeout: 15 * time.Second}
+	resp, err := httpClient.Get(imageURL)
 	if err != nil {
 		slog.Warn("failed to download preview screenshot", "console", console.Abbreviation, "error", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "failed to download preview"})

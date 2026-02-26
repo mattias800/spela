@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -14,6 +15,12 @@ import (
 const (
 	maxLoginAttempts  = 5
 	loginLockDuration = 15 * time.Minute
+
+	// dummyBcryptHash is a pre-computed bcrypt hash used when a login attempt
+	// targets a non-existent username. Running bcrypt.CompareHashAndPassword
+	// against this hash ensures the response time is indistinguishable from a
+	// real password check, preventing timing-based username enumeration.
+	dummyBcryptHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
 
 // isLockedOut checks whether the account is currently locked in the database.
@@ -97,7 +104,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	var user db.User
-	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+	userFound := h.DB.Where("username = ?", req.Username).First(&user).Error == nil
+
+	if !userFound {
+		// Run bcrypt against a dummy hash to prevent timing-based username enumeration.
+		// Without this, an attacker can distinguish "user not found" (fast) from
+		// "wrong password" (slow bcrypt) by measuring response time.
+		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
@@ -153,49 +166,58 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Check if username or email already exists
-	var count int64
-	h.DB.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
-		return
-	}
-
-	// Check if registration is enabled (skip for first user)
-	var totalUsers int64
-	h.DB.Model(&db.User{}).Count(&totalUsers)
-	if totalUsers > 0 {
-		var setting db.ServerSetting
-		if err := h.DB.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
-			if setting.Value == "false" {
-				c.JSON(http.StatusForbidden, gin.H{"error": "registration is disabled"})
-				return
-			}
-		}
-	}
-
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
-	// First user becomes owner
-	role := db.RoleUser
-	var userCount int64
-	h.DB.Model(&db.User{}).Count(&userCount)
-	if userCount == 0 {
-		role = db.RoleOwner
-	}
+	// Use a transaction to atomically check registration eligibility, determine
+	// the role (first user becomes owner), and create the user. This prevents a
+	// TOCTOU race where two simultaneous registrations could both see userCount=0
+	// and both get the owner role.
+	var user db.User
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// Check if username or email already exists
+		var count int64
+		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
+			return fmt.Errorf("duplicate")
+		}
 
-	user := db.User{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: hash,
-		Role:         role,
-	}
+		// Check if registration is enabled (skip for first user)
+		var totalUsers int64
+		tx.Model(&db.User{}).Count(&totalUsers)
+		if totalUsers > 0 {
+			var setting db.ServerSetting
+			if err := tx.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
+				if setting.Value == "false" {
+					c.JSON(http.StatusForbidden, gin.H{"error": "registration is disabled"})
+					return fmt.Errorf("disabled")
+				}
+			}
+		}
 
-	if err := h.DB.Create(&user).Error; err != nil {
+		// First user becomes owner — determined atomically inside the transaction
+		role := db.RoleUser
+		if totalUsers == 0 {
+			role = db.RoleOwner
+		}
+
+		user = db.User{
+			Username:     req.Username,
+			Email:        req.Email,
+			PasswordHash: hash,
+			Role:         role,
+		}
+
+		return tx.Create(&user).Error
+	}); err != nil {
+		// If the transaction callback already sent an HTTP response, don't double-respond
+		if c.Writer.Written() {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}

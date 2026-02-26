@@ -56,6 +56,12 @@ func main() {
 			os.Exit(1)
 		}
 		slog.Warn("using default JWT secret - set SPELA_JWT_SECRET for production")
+	} else if len(jwtSecret) < 32 {
+		if os.Getenv("GIN_MODE") == "release" {
+			slog.Error("FATAL: JWT secret must be at least 32 characters; set a stronger SPELA_JWT_SECRET")
+			os.Exit(1)
+		}
+		slog.Warn("JWT secret is shorter than 32 characters - use a longer secret for production")
 	}
 
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)

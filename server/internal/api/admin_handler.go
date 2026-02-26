@@ -141,6 +141,10 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		user.Email = req.Email
 	}
 	if req.Password != "" {
+		if user.Role == db.RoleOwner {
+			c.JSON(http.StatusForbidden, gin.H{"error": "cannot change the owner's password"})
+			return
+		}
 		if len(req.Password) < 8 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
 			return

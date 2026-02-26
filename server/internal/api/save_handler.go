@@ -150,6 +150,10 @@ func (h *SaveHandler) BulkDeleteSaves(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ids array cannot be empty"})
 		return
 	}
+	if len(body.IDs) > 100 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "too many IDs, maximum is 100"})
+		return
+	}
 
 	// Find all saves owned by user with given IDs (excluding auto-saves)
 	var saves []db.SaveState

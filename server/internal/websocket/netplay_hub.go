@@ -10,7 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/spela/server/internal/db"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
+)
+
+const (
+	// maxNetplayMessageSize is the maximum allowed WebSocket frame size (64 KB).
+	maxNetplayMessageSize = 64 * 1024
+	// netplayMsgRateLimit is the maximum netplay messages per second per client.
+	netplayMsgRateLimit = 60
+	// netplayMsgBurst is the burst allowance for the per-client rate limiter.
+	netplayMsgBurst = 120
 )
 
 // NetplayMessage represents a JSON message in a netplay session.
@@ -234,10 +244,18 @@ func (c *NetplayClient) netplayReadPump(hub *NetplayHub, room *NetplayRoom) {
 		slog.Info("netplay client disconnected", "sessionId", c.SessionID, "userId", c.UserID)
 	}()
 
+	c.Conn.SetReadLimit(maxNetplayMessageSize)
+	limiter := rate.NewLimiter(rate.Limit(netplayMsgRateLimit), netplayMsgBurst)
+
 	for {
 		messageType, data, err := c.Conn.ReadMessage()
 		if err != nil {
 			break
+		}
+
+		// Drop messages that exceed the per-client rate limit
+		if !limiter.Allow() {
+			continue
 		}
 
 		if messageType == websocket.BinaryMessage {

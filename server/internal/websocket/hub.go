@@ -197,11 +197,17 @@ func (h *Hub) HandleWebSocket(c *gin.Context) {
 	go client.readPump()
 }
 
+// maxHubMessageSize is the maximum allowed WebSocket frame size for the
+// event hub. Since the hub discards all incoming messages, this limit exists
+// purely to prevent a malicious client from consuming excessive memory.
+const maxHubMessageSize = 4096
+
 func (c *Client) readPump() {
 	defer func() {
 		c.Hub.unregister <- c
 		c.Conn.Close()
 	}()
+	c.Conn.SetReadLimit(maxHubMessageSize)
 	for {
 		_, _, err := c.Conn.ReadMessage()
 		if err != nil {
