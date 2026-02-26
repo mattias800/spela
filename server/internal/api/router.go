@@ -276,7 +276,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		// User
 		api.GET("/user/profile", userHandler.GetProfile)
 		api.PUT("/user/profile", userHandler.UpdateProfile)
-		api.PUT("/user/password", userHandler.ChangePassword)
+		api.PUT("/user/password", authLimiter.RateLimit(), userHandler.ChangePassword)
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)

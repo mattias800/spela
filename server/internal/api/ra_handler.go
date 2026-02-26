@@ -172,6 +172,10 @@ func (h *RAHandler) GetToken(c *gin.Context) {
 		return
 	}
 
+	// Prevent caching of sensitive credential by proxies and browsers.
+	c.Header("Cache-Control", "no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+
 	c.JSON(http.StatusOK, gin.H{
 		"username": cred.RAUsername,
 		"token":    token,

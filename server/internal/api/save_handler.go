@@ -60,10 +60,10 @@ func (h *SaveHandler) RenameSave(c *gin.Context) {
 	}
 
 	var body struct {
-		Name string `json:"name" binding:"required"`
+		Name string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required and must be 255 characters or fewer"})
 		return
 	}
 
@@ -541,10 +541,10 @@ func (h *SaveHandler) RenameRelaySave(c *gin.Context) {
 	}
 
 	var body struct {
-		Name string `json:"name" binding:"required"`
+		Name string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required and must be 255 characters or fewer"})
 		return
 	}
 

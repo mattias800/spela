@@ -33,7 +33,7 @@ func (h *RelayHandler) CreateRelay(c *gin.Context) {
 
 	var req struct {
 		GameID string `json:"gameId" binding:"required"`
-		Name   string `json:"name" binding:"required"`
+		Name   string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: gameId and name are required"})
@@ -187,6 +187,10 @@ func (h *RelayHandler) UpdateRelay(c *gin.Context) {
 	}
 
 	if req.Name != nil {
+		if len(*req.Name) > 255 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "name must be 255 characters or fewer"})
+			return
+		}
 		relay.Name = *req.Name
 	}
 	if req.Status != nil {
@@ -536,32 +540,60 @@ func (h *RelayHandler) TakeTurn(c *gin.Context) {
 	}
 
 	now := time.Now()
+	token := generateTurnToken()
 
-	// Check if turn is currently held by someone else
-	if relay.ActiveUserID != nil && *relay.ActiveUserID != uid {
-		// Check if the turn is stale (expired)
-		if relay.TurnTakenAt != nil && relay.TurnTakenAt.Add(RelayTurnTimeout).After(now) {
-			// Turn is still active and held by someone else
+	// Atomically acquire the turn inside a transaction. The WHERE clause
+	// ensures that only one concurrent request can succeed — the loser sees
+	// RowsAffected == 0 and gets a conflict response.
+	var previousUserID *uint
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// Re-read the relay inside the transaction for consistency
+		var fresh db.Relay
+		if err := tx.First(&fresh, relay.ID).Error; err != nil {
+			return err
+		}
+
+		if fresh.ActiveUserID != nil && *fresh.ActiveUserID != uid {
+			if fresh.TurnTakenAt != nil && fresh.TurnTakenAt.Add(RelayTurnTimeout).After(now) {
+				return fmt.Errorf("turn_held")
+			}
+			// Turn is stale — record previous holder for broadcast
+			prev := *fresh.ActiveUserID
+			previousUserID = &prev
+		}
+
+		// Atomic update: only succeed if relay state hasn't changed
+		result := tx.Model(&db.Relay{}).
+			Where("id = ? AND updated_at = ?", fresh.ID, fresh.UpdatedAt).
+			Updates(map[string]interface{}{
+				"active_user_id": uid,
+				"turn_token":     token,
+				"turn_taken_at":  now,
+			})
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("turn_conflict")
+		}
+		return nil
+	})
+	if err != nil {
+		if err.Error() == "turn_held" {
 			c.JSON(http.StatusConflict, gin.H{"error": "turn is currently held by another user"})
 			return
 		}
-		// Turn is stale — force-release and broadcast expiry
-		previousUserID := *relay.ActiveUserID
-		if h.Hub != nil {
-			h.Hub.Broadcast(ws.Event{Type: "relay_turn_expired", Payload: gin.H{
-				"relayId":        strconv.FormatUint(uint64(relay.ID), 10),
-				"previousUserId": strconv.FormatUint(uint64(previousUserID), 10),
-			}})
+		if err.Error() == "turn_conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": "turn was acquired by another user, please retry"})
+			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to acquire turn"})
+		return
 	}
 
-	// Grant the turn
-	token := generateTurnToken()
-	h.DB.Model(&relay).Updates(map[string]interface{}{
-		"active_user_id": uid,
-		"turn_token":     token,
-		"turn_taken_at":  now,
-	})
+	if previousUserID != nil && h.Hub != nil {
+		h.Hub.Broadcast(ws.Event{Type: "relay_turn_expired", Payload: gin.H{
+			"relayId":        strconv.FormatUint(uint64(relay.ID), 10),
+			"previousUserId": strconv.FormatUint(uint64(*previousUserID), 10),
+		}})
+	}
 
 	var user db.User
 	h.DB.First(&user, uid)

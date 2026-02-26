@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -12,12 +13,28 @@ import (
 )
 
 // Initialize opens the SQLite database and runs auto-migrations.
+// The database file is restricted to owner-only access (0600) to prevent
+// other users on the system from reading tokens and password hashes.
 func Initialize(dbPath string) (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
+	}
+
+	// Restrict database file permissions to owner-only (0600).
+	if err := os.Chmod(dbPath, 0600); err != nil {
+		slog.Warn("failed to set database file permissions", "path", dbPath, "error", err)
+	}
+	// SQLite also creates -journal and -wal files; restrict those too.
+	for _, suffix := range []string{"-journal", "-wal", "-shm"} {
+		sidePath := dbPath + suffix
+		if _, statErr := os.Stat(sidePath); statErr == nil {
+			if err := os.Chmod(sidePath, 0600); err != nil {
+				slog.Warn("failed to set database sidecar permissions", "path", sidePath, "error", err)
+			}
+		}
 	}
 
 	slog.Info("running database migrations")

@@ -536,11 +536,14 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		return
 	}
 
+	// maxPlayTimeSeconds caps total play time at ~100 years to prevent overflow.
+	const maxPlayTimeSeconds int64 = 100 * 365 * 24 * 3600
+
 	var req struct {
-		Seconds int64 `json:"seconds" binding:"required,min=1"`
+		Seconds int64 `json:"seconds" binding:"required,min=1,max=86400"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be a positive integer"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be between 1 and 86400"})
 		return
 	}
 
@@ -558,7 +561,11 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 			return
 		}
 	} else {
-		ph.PlayTime += req.Seconds
+		newTotal := ph.PlayTime + req.Seconds
+		if newTotal > maxPlayTimeSeconds {
+			newTotal = maxPlayTimeSeconds
+		}
+		ph.PlayTime = newTotal
 		ph.LastPlayed = time.Now()
 		if err := h.DB.Save(&ph).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update play time"})

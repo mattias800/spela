@@ -21,8 +21,8 @@ func (h *CollectionHandler) CreateCollection(c *gin.Context) {
 	uid := getUserID(c)
 
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Description string `json:"description"`
+		Name        string `json:"name" binding:"required,max=255"`
+		Description string `json:"description" binding:"max=2048"`
 		IsPublic    bool   `json:"isPublic"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -227,6 +227,15 @@ func (h *CollectionHandler) UpdateCollection(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if req.Name != nil && len(*req.Name) > 255 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name must be 255 characters or fewer"})
+		return
+	}
+	if req.Description != nil && len(*req.Description) > 2048 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
 		return
 	}
 

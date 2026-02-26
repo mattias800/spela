@@ -55,6 +55,11 @@ func lockoutDuration(failedCount int) time.Duration {
 	}
 }
 
+// loginAttemptMaxAge is the maximum time a failed login counter persists.
+// After this duration without new failures, the counter is fully reset to
+// prevent indefinite escalation for accounts with occasional typos.
+const loginAttemptMaxAge = 24 * time.Hour
+
 // isLockedOut checks whether the account is currently locked in the database.
 func (h *AuthHandler) isLockedOut(username string) bool {
 	hashed := hashUsername(username)
@@ -62,12 +67,20 @@ func (h *AuthHandler) isLockedOut(username string) bool {
 	if err := h.DB.Where("username = ?", hashed).First(&attempt).Error; err != nil {
 		return false
 	}
+	// Reset counter if the last failure was more than 24 hours ago
+	if time.Since(attempt.UpdatedAt) > loginAttemptMaxAge {
+		h.DB.Where("username = ?", hashed).Updates(map[string]interface{}{
+			"failed_count": 0,
+			"locked_until": time.Time{},
+		})
+		return false
+	}
 	if attempt.FailedCount < maxLoginAttempts {
 		return false
 	}
 	if time.Now().After(attempt.LockedUntil) {
 		// Lockout expired — do NOT reset the counter so subsequent failures
-		// escalate the lockout duration.
+		// escalate the lockout duration (up to loginAttemptMaxAge).
 		return false
 	}
 	return true

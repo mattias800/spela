@@ -54,29 +54,36 @@ func main() {
 		Level: slog.LevelInfo,
 	})))
 
-	// Warn about insecure default JWT secret
+	// Enforce secure JWT secret — always required, regardless of GIN_MODE.
+	// Self-hosted users may not know to set GIN_MODE=release, so we never
+	// allow a known default or short secret to protect against token forgery.
 	if jwtSecret == "change-me-in-production" {
-		if os.Getenv("GIN_MODE") == "release" {
-			slog.Error("FATAL: using default JWT secret in release mode; set SPELA_JWT_SECRET")
-			os.Exit(1)
-		}
-		slog.Warn("using default JWT secret - set SPELA_JWT_SECRET for production")
-	} else if len(jwtSecret) < 32 {
-		if os.Getenv("GIN_MODE") == "release" {
-			slog.Error("FATAL: JWT secret must be at least 32 characters; set a stronger SPELA_JWT_SECRET")
-			os.Exit(1)
-		}
-		slog.Warn("JWT secret is shorter than 32 characters - use a longer secret for production")
+		slog.Error("FATAL: using default JWT secret; set SPELA_JWT_SECRET to a random value (>= 32 chars)")
+		os.Exit(1)
+	}
+	if len(jwtSecret) < 32 {
+		slog.Error("FATAL: JWT secret must be at least 32 characters; set a stronger SPELA_JWT_SECRET")
+		os.Exit(1)
 	}
 
-	// Derive or use explicit encryption key
+	// Derive or use explicit encryption key.
+	// A separate key is strongly recommended so that JWT secret rotation
+	// does not require re-encrypting stored data.
 	var encryptionKey []byte
 	if encryptionKeyRaw != "" {
 		encryptionKey = []byte(encryptionKeyRaw)
 		if len(encryptionKey) < 32 {
+			if os.Getenv("GIN_MODE") == "release" {
+				slog.Error("FATAL: SPELA_ENCRYPTION_KEY must be at least 32 bytes in release mode")
+				os.Exit(1)
+			}
 			slog.Warn("SPELA_ENCRYPTION_KEY is shorter than 32 bytes; consider a longer key")
 		}
 	} else {
+		if os.Getenv("GIN_MODE") == "release" {
+			slog.Error("FATAL: SPELA_ENCRYPTION_KEY must be set in release mode (separate from JWT secret)")
+			os.Exit(1)
+		}
 		slog.Warn("SPELA_ENCRYPTION_KEY not set; deriving from JWT secret (set a separate key for production)")
 	}
 

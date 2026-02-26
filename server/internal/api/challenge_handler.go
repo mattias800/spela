@@ -140,6 +140,10 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	}
 
 	description := c.PostForm("description")
+	if len(description) > 2048 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
+		return
+	}
 	coreName := c.PostForm("coreName")
 
 	var expiresAt *time.Time
@@ -360,6 +364,10 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		challenge.Name = name
 	}
 	if req.Description != nil {
+		if len(*req.Description) > 2048 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
+			return
+		}
 		challenge.Description = *req.Description
 	}
 	if req.Status != nil {
