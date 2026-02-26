@@ -3,7 +3,6 @@ package websocket
 import (
 	"encoding/json"
 	"log/slog"
-	"net/http"
 	"sync"
 	"time"
 
@@ -72,18 +71,7 @@ func NewNetplayHub(allowedOrigins []string) *NetplayHub {
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
-			CheckOrigin: func(r *http.Request) bool {
-				if len(allowedOrigins) == 0 {
-					return true
-				}
-				origin := r.Header.Get("Origin")
-				for _, allowed := range allowedOrigins {
-					if allowed == "*" || allowed == origin {
-						return true
-					}
-				}
-				return false
-			},
+			CheckOrigin: checkOrigin(allowedOrigins),
 		},
 	}
 }

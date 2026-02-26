@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spela/server/internal/api"
@@ -166,10 +169,27 @@ func main() {
 		WriteTimeout: 120 * time.Second, // generous for large file downloads
 		IdleTimeout:  120 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil {
+
+	// Graceful shutdown: listen for SIGINT/SIGTERM and drain in-flight requests
+	// before exiting. This prevents data loss (e.g. interrupted save uploads)
+	// when the server is stopped or restarted.
+	shutdownCh := make(chan os.Signal, 1)
+	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-shutdownCh
+		slog.Info("shutdown signal received, draining connections", "signal", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			slog.Error("graceful shutdown failed", "error", err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("server stopped gracefully")
 }
 
 func getEnv(key, defaultVal string) string {

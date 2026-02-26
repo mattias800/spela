@@ -44,7 +44,8 @@ type Client struct {
 }
 
 // NewHub creates a new WebSocket hub. allowedOrigins controls which
-// origins are accepted for WebSocket upgrades. An empty slice allows all.
+// origins are accepted for WebSocket upgrades. An empty slice rejects all
+// cross-origin requests (secure default, consistent with CORS behaviour).
 func NewHub(allowedOrigins []string) *Hub {
 	h := &Hub{
 		clients:    make(map[*Client]bool),
@@ -56,20 +57,34 @@ func NewHub(allowedOrigins []string) *Hub {
 	h.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			if len(allowedOrigins) == 0 {
-				return true
-			}
-			origin := r.Header.Get("Origin")
-			for _, allowed := range allowedOrigins {
-				if allowed == "*" || allowed == origin {
-					return true
-				}
-			}
-			return false
-		},
+		CheckOrigin: checkOrigin(allowedOrigins),
 	}
 	return h
+}
+
+// checkOrigin returns an origin checker for WebSocket upgrades. An empty
+// allowedOrigins list only allows same-origin requests (secure default).
+func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+
+		// No Origin header means same-origin request — always allow.
+		if origin == "" {
+			return true
+		}
+
+		// No configured origins: reject all cross-origin requests.
+		if len(allowedOrigins) == 0 {
+			return false
+		}
+
+		for _, allowed := range allowedOrigins {
+			if allowed == "*" || allowed == origin {
+				return true
+			}
+		}
+		return false
+	}
 }
 
 // Run starts the hub event loop. Call this in a goroutine.

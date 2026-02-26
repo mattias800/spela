@@ -11,6 +11,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
+	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -89,7 +90,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	}
 
 	// Serve images — save screenshots require auth + ownership; everything else is public
-	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret}
+	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret, DB: cfg.DB}
 	r.GET("/api/images/*filepath", imageHandler.ServeImage)
 
 	// Health check (public, no auth required)
@@ -437,6 +438,7 @@ func NewRouter(cfg Config) *gin.Engine {
 type ImageHandler struct {
 	ImageDir  string
 	JWTSecret string
+	DB        *gorm.DB
 }
 
 // ServeImage serves image files. Paths under save-screenshots/ require auth + ownership.
@@ -500,6 +502,25 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			return
+		}
+
+		// Reject revoked tokens and disabled/changed users (same checks as AuthMiddleware)
+		if IsTokenBlacklisted(h.DB, token) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token has been revoked"})
+			return
+		}
+		var user db.User
+		if err := h.DB.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			return
+		}
+		if user.Disabled {
+			c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+			return
+		}
+		if claims.TokenVersion != user.TokenVersion {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token has been invalidated"})
 			return
 		}
 
