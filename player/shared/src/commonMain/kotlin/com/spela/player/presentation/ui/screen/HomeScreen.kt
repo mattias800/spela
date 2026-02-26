@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.filled.WifiTethering
@@ -63,6 +64,7 @@ import com.spela.player.presentation.ui.feature.home.GameCarouselRow
 import com.spela.player.presentation.ui.feature.home.NetplaySessionCard
 import com.spela.player.presentation.ui.feature.home.PersonalStatsCard
 import com.spela.player.presentation.ui.feature.home.RecentAchievementsRow
+import com.spela.player.presentation.ui.feature.home.TopRatedRow
 import com.spela.player.presentation.ui.feature.home.TrendingChallengesRow
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -142,7 +144,11 @@ fun HomeScreen(
                 ) {
                     val isEmpty = state.recentGames.isEmpty() &&
                             state.favoriteGames.isEmpty() &&
-                            state.playLaterGames.isEmpty()
+                            state.playLaterGames.isEmpty() &&
+                            state.recentAchievements.isEmpty() &&
+                            state.trendingChallenges.isEmpty() &&
+                            socialState.onlineUsers.isEmpty() &&
+                            socialState.activityEvents.isEmpty()
 
                     if (isEmpty && !state.isLoading) {
                         Box(
@@ -203,7 +209,9 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Netplay section
+                            // ── ZONE 1: Your Games ───────────────────────────
+
+                            // Netplay section (time-sensitive, shown first when active)
                             if (activeNetplaySessions.isNotEmpty()) {
                                 item {
                                     SpTitledSection(
@@ -235,31 +243,60 @@ fun HomeScreen(
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     ) {
                                         ContinuePlayingRow(
-                                            games = state.recentGames.take(10),
+                                            games = state.recentGames.take(6),
                                             onGameSelected = onGameSelected,
                                         )
                                     }
                                 }
                             }
 
-                            // Personal Stats section
-                            if (state.personalStats != null) {
+                            // Play Later section
+                            if (state.playLaterGames.isNotEmpty()) {
                                 item {
                                     SpTitledSection(
-                                        title = "Your Stats",
-                                        icon = Icons.Filled.BarChart,
+                                        title = "Play Later",
+                                        icon = Icons.Filled.WatchLater,
+                                        edgeToEdgeContent = true,
                                         titleTrailing = {
                                             SeeAllLink(
-                                                label = "Your Stats",
-                                                onClick = onNavigateToStats,
+                                                label = "Play Later",
+                                                onClick = onNavigateToPlayLater,
                                             )
                                         },
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     ) {
-                                        PersonalStatsCard(stats = state.personalStats!!)
+                                        GameCarouselRow(
+                                            games = state.playLaterGames.take(6),
+                                            onGameSelected = onGameSelected,
+                                        )
                                     }
                                 }
                             }
+
+                            // Favorites section
+                            if (state.favoriteGames.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Favorites",
+                                        icon = Icons.Filled.Favorite,
+                                        edgeToEdgeContent = true,
+                                        titleTrailing = {
+                                            SeeAllLink(
+                                                label = "Favorites",
+                                                onClick = onNavigateToFavorites,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        GameCarouselRow(
+                                            games = state.favoriteGames.take(6),
+                                            onGameSelected = onGameSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // ── ZONE 2: Discover ─────────────────────────────
 
                             // Recent Achievements section
                             if (state.recentAchievements.isNotEmpty()) {
@@ -304,28 +341,24 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Play Later section
-                            if (state.playLaterGames.isNotEmpty()) {
+                            // Top Rated section
+                            if (state.topRatedGames.isNotEmpty()) {
                                 item {
                                     SpTitledSection(
-                                        title = "Play Later",
-                                        icon = Icons.Filled.WatchLater,
+                                        title = "Top Rated",
+                                        icon = Icons.Filled.Star,
                                         edgeToEdgeContent = true,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Play Later",
-                                                onClick = onNavigateToPlayLater,
-                                            )
-                                        },
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     ) {
-                                        GameCarouselRow(
-                                            games = state.playLaterGames.take(6),
+                                        TopRatedRow(
+                                            games = state.topRatedGames,
                                             onGameSelected = onGameSelected,
                                         )
                                     }
                                 }
                             }
+
+                            // ── ZONE 3: Community & Reflection ───────────────
 
                             // Online Now section
                             if (socialState.onlineUsers.isNotEmpty()) {
@@ -361,7 +394,7 @@ fun HomeScreen(
                                         Column(
                                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                                         ) {
-                                            socialState.activityEvents.take(3).forEach { event ->
+                                            socialState.activityEvents.take(2).forEach { event ->
                                                 ActivityEventItem(event = event)
                                             }
                                         }
@@ -369,25 +402,21 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Favorites section
-                            if (state.favoriteGames.isNotEmpty()) {
+                            // Personal Stats section
+                            if (state.personalStats != null) {
                                 item {
                                     SpTitledSection(
-                                        title = "Favorites",
-                                        icon = Icons.Filled.Favorite,
-                                        edgeToEdgeContent = true,
+                                        title = "Your Stats",
+                                        icon = Icons.Filled.BarChart,
                                         titleTrailing = {
                                             SeeAllLink(
-                                                label = "Favorites",
-                                                onClick = onNavigateToFavorites,
+                                                label = "Your Stats",
+                                                onClick = onNavigateToStats,
                                             )
                                         },
                                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                     ) {
-                                        GameCarouselRow(
-                                            games = state.favoriteGames.take(6),
-                                            onGameSelected = onGameSelected,
-                                        )
+                                        PersonalStatsCard(stats = state.personalStats!!)
                                     }
                                 }
                             }

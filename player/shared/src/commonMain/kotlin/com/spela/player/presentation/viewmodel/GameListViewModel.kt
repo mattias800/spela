@@ -171,6 +171,20 @@ class GameListViewModel(
                 },
             )
         }
+        // Global top-rated games for dashboard discovery section
+        gameRepository?.let { repo ->
+            scope.launch(dispatchers.io) {
+                _state.update { it.copy(isLoadingTopRated = true) }
+                repo.getTopRatedGamesGlobal().fold(
+                    onSuccess = { games ->
+                        _state.update { it.copy(topRatedGames = games, isLoadingTopRated = false) }
+                    },
+                    onFailure = {
+                        _state.update { it.copy(isLoadingTopRated = false) }
+                    },
+                )
+            }
+        }
     }
 
     private fun loadConsoles() {

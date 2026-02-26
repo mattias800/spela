@@ -26,6 +26,7 @@ interface GameRepository {
     suspend fun addToPlayLater(gameId: String): Result<Unit>
     suspend fun removeFromPlayLater(gameId: String): Result<Unit>
     suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>>
+    suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>>
     suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>>
     suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>>
 }

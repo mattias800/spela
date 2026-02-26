@@ -135,6 +135,12 @@ class GameRepositoryImpl(
         }
     }
 
+    override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> {
+        return runCatching {
+            apiClient.getTopRatedGamesGlobal().map { it.toDomain() }
+        }
+    }
+
     override suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>> {
         return runCatching {
             apiClient.getSimilarGames(gameId).map { it.toDomain() }

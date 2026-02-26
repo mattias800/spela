@@ -326,8 +326,10 @@ class FakeGameRepository : GameRepository {
         return Result.success(GameDetail(game, screenshots = screenshotUrls))
     }
 
+    var recentGamesOverride: List<Game>? = null
+
     override suspend fun getRecentGames(): Result<List<Game>> {
-        return Result.success(games.take(2))
+        return Result.success(recentGamesOverride ?: games.take(2))
     }
 
     override suspend fun getFavoriteGames(): Result<List<Game>> {
@@ -347,6 +349,13 @@ class FakeGameRepository : GameRepository {
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(topRatedGames)
+    }
+
+    var globalTopRatedGames: List<TopRatedGame> = emptyList()
+
+    override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(globalTopRatedGames)
     }
 
     var similarGames: List<SimilarGame> = emptyList()

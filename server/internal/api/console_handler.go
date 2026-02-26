@@ -390,6 +390,39 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetTopRatedGlobal returns the top 20 top-rated IGDB games across all consoles.
+// Results are pulled from the existing cached top-rated data and sorted by rating.
+func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
+	var cached []db.TopRatedGame
+	h.DB.Order("total_rating desc").Limit(20).Find(&cached)
+
+	result := make([]TopRatedGameResponse, 0, len(cached))
+	for i, tr := range cached {
+		coverUrl := ""
+		if tr.CoverImageID != "" {
+			coverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
+		}
+
+		resp := TopRatedGameResponse{
+			Rank:     i + 1,
+			Name:     tr.Name,
+			CoverUrl: coverUrl,
+			Rating:   tr.TotalRating,
+		}
+
+		// Check for local game match by case-insensitive title across all consoles
+		var localGame db.Game
+		if err := h.DB.Where("LOWER(title) = LOWER(?)", tr.Name).First(&localGame).Error; err == nil {
+			id := fmt.Sprintf("%d", localGame.ID)
+			resp.LocalGameId = &id
+		}
+
+		result = append(result, resp)
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // upsertTopRatedGames inserts or updates top-rated games for a console.
 func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGame) {
 	for i, g := range games {
