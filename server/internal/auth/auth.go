@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -93,4 +94,12 @@ func GenerateRefreshToken() (string, error) {
 		return "", fmt.Errorf("generating refresh token: %w", err)
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// HashRefreshToken returns the SHA-256 hash of a refresh token for safe storage.
+// The raw token is returned to the client, but only the hash is persisted in the
+// database. This prevents token theft if the database is leaked.
+func HashRefreshToken(token string) string {
+	h := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(h[:])
 }

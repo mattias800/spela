@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
+	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
@@ -176,6 +177,13 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 
 	// Compute MD5 hash of the ROM file
 	romPath := filepath.Join(h.GameDir, game.FilePath)
+	if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
+		slog.Warn("RA: ROM path failed validation", "path", romPath, "gameId", gameID)
+		c.JSON(http.StatusOK, gin.H{
+			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
+		})
+		return
+	}
 	hash, err := computeMD5(romPath)
 	if err != nil {
 		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
@@ -277,6 +285,11 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 
 	// Compute MD5 hash of the ROM file
 	romPath := filepath.Join(h.GameDir, game.FilePath)
+	if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
+		slog.Warn("RA: ROM path failed validation", "path", romPath, "gameId", gameID)
+		c.JSON(http.StatusOK, []any{})
+		return
+	}
 	hash, err := computeMD5(romPath)
 	if err != nil {
 		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)

@@ -38,6 +38,7 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
@@ -134,6 +135,12 @@ func (h *SharedSaveHandler) DownloadSharedSave(c *gin.Context) {
 	var save db.SharedSaveState
 	if err := h.DB.First(&save, saveID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "shared save not found"})
+		return
+	}
+
+	// Validate the file path is within the save directory
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 

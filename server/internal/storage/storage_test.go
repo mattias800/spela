@@ -67,9 +67,17 @@ func TestDeleteSave(t *testing.T) {
 }
 
 func TestDeleteSave_NonExistent(t *testing.T) {
+	saveDir := t.TempDir()
+	store := &Storage{SaveDir: saveDir}
+	// Use a path inside the save directory that doesn't exist on disk
+	err := store.DeleteSave(filepath.Join(saveDir, "nonexistent.sav"))
+	assert.NoError(t, err)
+}
+
+func TestDeleteSave_OutsideSaveDir(t *testing.T) {
 	store := &Storage{SaveDir: t.TempDir()}
 	err := store.DeleteSave("/nonexistent/path.sav")
-	assert.NoError(t, err)
+	assert.Error(t, err, "deleting a path outside the save directory should fail")
 }
 
 // BUG: SaveStatePath does not sanitize the filename parameter.

@@ -100,8 +100,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		}
 
 		c.JSON(200, gin.H{
-			"status":  status,
-			"version": "0.1.0",
+			"status": status,
 		})
 	})
 
@@ -110,6 +109,9 @@ func NewRouter(cfg Config) *gin.Engine {
 
 	// Rate limiter for file download endpoints (prevents bandwidth abuse)
 	downloadLimiter := NewRateLimiter(30, time.Minute)
+
+	// Rate limiter for file upload endpoints (prevents storage abuse)
+	uploadLimiter := NewRateLimiter(30, time.Minute)
 
 	// Handlers
 	authHandler := &AuthHandler{DB: cfg.DB, JWTSecret: cfg.JWTSecret}
@@ -211,21 +213,21 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/games/:id/ratings", ratingHandler.DeleteRating)
 
 		// Shared saves
-		api.POST("/games/:id/shared-saves", sharedSaveHandler.ShareSave)
+		api.POST("/games/:id/shared-saves", uploadLimiter.RateLimit(), sharedSaveHandler.ShareSave)
 		api.GET("/games/:id/shared-saves", sharedSaveHandler.ListSharedSaves)
 		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
 		api.DELETE("/games/:id/shared-saves/:saveId", sharedSaveHandler.DeleteSharedSave)
 
 		// Save states
 		api.GET("/games/:id/saves", gameHandler.ListSaves)
-		api.POST("/games/:id/saves", gameHandler.UploadSave)
-		api.POST("/games/:id/saves/import", saveHandler.ImportSave)
+		api.POST("/games/:id/saves", uploadLimiter.RateLimit(), gameHandler.UploadSave)
+		api.POST("/games/:id/saves/import", uploadLimiter.RateLimit(), saveHandler.ImportSave)
 		api.GET("/games/:id/saves/auto", gameHandler.GetAutoSave)
-		api.POST("/games/:id/saves/auto", gameHandler.UploadAutoSave)
+		api.POST("/games/:id/saves/auto", uploadLimiter.RateLimit(), gameHandler.UploadAutoSave)
 		api.GET("/games/:id/saves/auto/history", saveHandler.GetAutoSaveHistory)
 		api.DELETE("/games/:id/saves/bulk", saveHandler.BulkDeleteSaves)
 		api.GET("/games/:id/saves/slots", saveHandler.ListSlotSaves)
-		api.PUT("/games/:id/saves/slot/:slot", saveHandler.UpsertSlotSave)
+		api.PUT("/games/:id/saves/slot/:slot", uploadLimiter.RateLimit(), saveHandler.UpsertSlotSave)
 		api.GET("/games/:id/saves/slot/:slot", saveHandler.DownloadSlotSave)
 		api.GET("/games/:id/saves/:saveId", gameHandler.DownloadSave)
 		api.PUT("/games/:id/saves/:saveId", saveHandler.RenameSave)
@@ -235,8 +237,8 @@ func NewRouter(cfg Config) *gin.Engine {
 
 		// Save data (SRAM/battery saves)
 		api.GET("/games/:id/save-data", saveDataHandler.ListSaveData)
-		api.POST("/games/:id/save-data", saveDataHandler.UploadSaveData)
-		api.POST("/games/:id/save-data/active", saveDataHandler.UploadActiveSaveData)
+		api.POST("/games/:id/save-data", uploadLimiter.RateLimit(), saveDataHandler.UploadSaveData)
+		api.POST("/games/:id/save-data/active", uploadLimiter.RateLimit(), saveDataHandler.UploadActiveSaveData)
 		api.GET("/games/:id/save-data/active", saveDataHandler.DownloadActiveSaveData)
 		api.GET("/games/:id/save-data/:sdId/download", saveDataHandler.DownloadSaveData)
 		api.PUT("/games/:id/save-data/:sdId/activate", saveDataHandler.ActivateSaveData)
@@ -311,9 +313,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/relays/:id/release-turn", relayHandler.ReleaseTurn)
 		api.POST("/relays/:id/heartbeat", relayHandler.Heartbeat)
 		api.GET("/relays/:id/saves", relayHandler.ListSaves)
-		api.POST("/relays/:id/saves", relayHandler.UploadSave)
+		api.POST("/relays/:id/saves", uploadLimiter.RateLimit(), relayHandler.UploadSave)
 		api.GET("/relays/:id/saves/auto", relayHandler.GetAutoSave)
-		api.POST("/relays/:id/saves/auto", relayHandler.UploadAutoSave)
+		api.POST("/relays/:id/saves/auto", uploadLimiter.RateLimit(), relayHandler.UploadAutoSave)
 		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
 		api.PUT("/relays/:id/saves/:saveId/rename", saveHandler.RenameRelaySave)
 		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)

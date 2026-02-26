@@ -43,20 +43,23 @@ func (h *AuthHandler) isLockedOut(username string) bool {
 	return true
 }
 
-// recordFailedLogin increments the failed login counter in the database.
+// recordFailedLogin atomically increments the failed login counter and locks the
+// account if the threshold is reached. The transaction prevents concurrent login
+// attempts from bypassing the lockout limit.
 func (h *AuthHandler) recordFailedLogin(username string) {
-	var attempt db.LoginAttempt
-	result := h.DB.Where("username = ?", username).First(&attempt)
-	if result.Error != nil {
-		attempt = db.LoginAttempt{Username: username, FailedCount: 1}
-		h.DB.Create(&attempt)
-		return
-	}
-	attempt.FailedCount++
-	if attempt.FailedCount >= maxLoginAttempts {
-		attempt.LockedUntil = time.Now().Add(loginLockDuration)
-	}
-	h.DB.Save(&attempt)
+	h.DB.Transaction(func(tx *gorm.DB) error {
+		var attempt db.LoginAttempt
+		result := tx.Where("username = ?", username).First(&attempt)
+		if result.Error != nil {
+			attempt = db.LoginAttempt{Username: username, FailedCount: 1}
+			return tx.Create(&attempt).Error
+		}
+		attempt.FailedCount++
+		if attempt.FailedCount >= maxLoginAttempts {
+			attempt.LockedUntil = time.Now().Add(loginLockDuration)
+		}
+		return tx.Save(&attempt).Error
+	})
 }
 
 // clearFailedLogins resets the failed login counter on successful login.
@@ -72,13 +75,13 @@ type AuthHandler struct {
 
 type loginRequest struct {
 	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Password string `json:"password" binding:"required,max=72"`
 }
 
 type registerRequest struct {
-	Username string `json:"username" binding:"required,min=3,max=64"`
+	Username string `json:"username" binding:"required,min=3,max=64,alphanum"`
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Password string `json:"password" binding:"required,min=8,max=72"`
 }
 
 type refreshRequest struct {
@@ -145,10 +148,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Store refresh token
+	// Store hashed refresh token (only the hash is persisted; the raw token is returned to the client)
 	rt := db.RefreshToken{
 		UserID:    user.ID,
-		Token:     refreshToken,
+		Token:     auth.HashRefreshToken(refreshToken),
 		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
 	}
 	h.DB.Create(&rt)
@@ -239,7 +242,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	rt := db.RefreshToken{
 		UserID:    user.ID,
-		Token:     refreshToken,
+		Token:     auth.HashRefreshToken(refreshToken),
 		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
 	}
 	h.DB.Create(&rt)
@@ -260,9 +263,9 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	// Find and validate refresh token
+	// Find and validate refresh token (stored as SHA-256 hash)
 	var rt db.RefreshToken
-	if err := h.DB.Where("token = ?", req.RefreshToken).First(&rt).Error; err != nil {
+	if err := h.DB.Where("token = ?", auth.HashRefreshToken(req.RefreshToken)).First(&rt).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
 	}
@@ -299,7 +302,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 	newRT := db.RefreshToken{
 		UserID:    user.ID,
-		Token:     newRefreshToken,
+		Token:     auth.HashRefreshToken(newRefreshToken),
 		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
 	}
 	if err := h.DB.Transaction(func(tx *gorm.DB) error {
@@ -459,7 +462,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 
 	rt := db.RefreshToken{
 		UserID:    user.ID,
-		Token:     refreshToken,
+		Token:     auth.HashRefreshToken(refreshToken),
 		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
 	}
 	h.DB.Create(&rt)

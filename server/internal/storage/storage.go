@@ -140,6 +140,9 @@ func (s *Storage) WriteSave(userID, gameID uint, filename string, data io.Reader
 
 // ReadSave opens a save state file for reading.
 func (s *Storage) ReadSave(path string) (*os.File, error) {
+	if err := s.validatePathInSaveDir(path); err != nil {
+		return nil, err
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening save file: %w", err)
@@ -149,6 +152,9 @@ func (s *Storage) ReadSave(path string) (*os.File, error) {
 
 // DeleteSave removes a save state file.
 func (s *Storage) DeleteSave(path string) error {
+	if err := s.validatePathInSaveDir(path); err != nil {
+		return err
+	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("deleting save file: %w", err)
 	}
@@ -237,6 +243,9 @@ func (s *Storage) WriteRelaySave(relayID uint, filename string, data io.Reader) 
 
 // DeleteRelaySave removes a relay save state file.
 func (s *Storage) DeleteRelaySave(filePath string) error {
+	if err := s.validatePathInSaveDir(filePath); err != nil {
+		return err
+	}
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("deleting relay save file: %w", err)
 	}
@@ -323,6 +332,9 @@ func (s *Storage) WriteChallengeScreenshot(challengeID uint, data io.Reader) (st
 // DeleteChallengeSave removes a challenge's save directory and all its contents.
 func (s *Storage) DeleteChallengeSave(challengeID uint) error {
 	dir := filepath.Join(s.SaveDir, "challenges", fmt.Sprintf("challenge_%d", challengeID))
+	if err := s.validatePathInSaveDir(dir); err != nil {
+		return err
+	}
 	if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("deleting challenge save directory: %w", err)
 	}
@@ -371,6 +383,9 @@ func (s *Storage) WriteSaveData(userID, gameID uint, filename string, data io.Re
 
 // ReadSaveData opens a save data file for reading.
 func (s *Storage) ReadSaveData(path string) (*os.File, error) {
+	if err := s.validatePathInSaveDir(path); err != nil {
+		return nil, err
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening save data file: %w", err)
@@ -380,6 +395,9 @@ func (s *Storage) ReadSaveData(path string) (*os.File, error) {
 
 // DeleteSaveData removes a save data file.
 func (s *Storage) DeleteSaveData(path string) error {
+	if err := s.validatePathInSaveDir(path); err != nil {
+		return err
+	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("deleting save data file: %w", err)
 	}
@@ -418,6 +436,24 @@ func RelativeGamePath(absPath string, gameDirs []string) string {
 		}
 	}
 	return absPath
+}
+
+// validatePathInSaveDir verifies that the given path resolves to within the
+// save directory. This is a defense-in-depth check to prevent arbitrary file
+// access/deletion if a database-stored path is ever corrupted.
+func (s *Storage) validatePathInSaveDir(path string) error {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("resolving path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) && absPath != absSaveDir {
+		return fmt.Errorf("path outside save directory: %s", path)
+	}
+	return nil
 }
 
 // ValidateROMPath checks that a ROM path is within allowed game directories.
