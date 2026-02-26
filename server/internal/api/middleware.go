@@ -29,8 +29,8 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 			}
 		}
 
-		// Fall back to query parameter (used by browser WebSocket connections)
-		if token == "" {
+		// Fall back to query parameter only for WebSocket upgrades
+		if token == "" && strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
 			token = c.Query("token")
 		}
 
@@ -53,12 +53,18 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 
 		// Reject disabled users even if their access token is still valid
 		var user db.User
-		if err := database.Select("id", "disabled").First(&user, claims.UserID).Error; err != nil {
+		if err := database.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 			return
 		}
 		if user.Disabled {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+			return
+		}
+
+		// Reject tokens minted before a role/password/disabled change
+		if claims.TokenVersion != user.TokenVersion {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token has been invalidated"})
 			return
 		}
 

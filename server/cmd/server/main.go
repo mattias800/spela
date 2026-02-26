@@ -29,6 +29,7 @@ func main() {
 	datDir := getEnv("SPELA_DAT_DIR", "./dats")
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
 	corsOriginsRaw := getEnv("SPELA_CORS_ORIGINS", "")
+	encryptionKeyRaw := os.Getenv("SPELA_ENCRYPTION_KEY")
 	challengeRateLimitRaw := getEnv("SPELA_CHALLENGE_RATE_LIMIT_SEC", "30")
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
@@ -63,6 +64,22 @@ func main() {
 			os.Exit(1)
 		}
 		slog.Warn("JWT secret is shorter than 32 characters - use a longer secret for production")
+	}
+
+	// Derive or use explicit encryption key
+	var encryptionKey []byte
+	if encryptionKeyRaw != "" {
+		encryptionKey = []byte(encryptionKeyRaw)
+		if len(encryptionKey) < 32 {
+			slog.Warn("SPELA_ENCRYPTION_KEY is shorter than 32 bytes; consider a longer key")
+		}
+	} else {
+		slog.Warn("SPELA_ENCRYPTION_KEY not set; deriving from JWT secret (set a separate key for production)")
+	}
+
+	// Warn if CORS origins are not configured
+	if len(corsOrigins) == 0 {
+		slog.Warn("SPELA_CORS_ORIGINS not set; cross-origin requests will be rejected")
 	}
 
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)
@@ -127,15 +144,16 @@ func main() {
 
 	// Create router
 	router := api.NewRouter(api.Config{
-		DB:          database,
-		JWTSecret:   jwtSecret,
-		GameDirs:    gameDirs,
-		Storage:     store,
-		Scanner:     gameScanner,
-		Scraper:     metaScraper,
-		Hub:         hub,
-		NetplayHub:  netplayHub,
-		CoreDir:     coreDir,
+		DB:            database,
+		JWTSecret:     jwtSecret,
+		EncryptionKey: encryptionKey,
+		GameDirs:      gameDirs,
+		Storage:       store,
+		Scanner:       gameScanner,
+		Scraper:       metaScraper,
+		Hub:           hub,
+		NetplayHub:    netplayHub,
+		CoreDir:       coreDir,
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 	})

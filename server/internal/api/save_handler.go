@@ -434,6 +434,11 @@ func (h *SaveHandler) DownloadSlotSave(c *gin.Context) {
 		return
 	}
 
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
 	c.File(save.FilePath)
 }
@@ -489,7 +494,12 @@ func (h *SaveHandler) GetSaveScreenshot(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
+	if _, statErr := os.Stat(absPath); statErr == nil {
+		realPath, err := filepath.EvalSymlinks(absPath)
+		if err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
 		absPath = realPath
 	}
 	if realDir, e := filepath.EvalSymlinks(absImageDir); e == nil {

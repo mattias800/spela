@@ -16,6 +16,11 @@ const encryptionPrefix = "enc:"
 
 // DeriveEncryptionKey derives a 256-bit AES key from the JWT secret.
 // This uses a SHA-256 hash to ensure consistent key length regardless of secret length.
+//
+// Migration path: set the SPELA_ENCRYPTION_KEY environment variable to use a
+// separate key. When set, the router passes it directly to handlers instead of
+// calling this function. Existing encrypted values remain decryptable because
+// AES-GCM ciphertext is key-specific — re-encrypt data after rotating keys.
 func DeriveEncryptionKey(jwtSecret string) []byte {
 	h := sha256.Sum256([]byte("spela-encryption:" + jwtSecret))
 	return h[:]

@@ -1,11 +1,15 @@
 package api
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,8 +21,9 @@ import (
 
 // UserHandler handles user profile and preference endpoints.
 type UserHandler struct {
-	DB  *gorm.DB
-	Hub *ws.Hub
+	DB        *gorm.DB
+	Hub       *ws.Hub
+	JWTSecret string
 }
 
 // GetProfile returns the current user's profile.
@@ -80,6 +85,10 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL too long"})
 			return
 		}
+		if isPrivateURL(req.AvatarURL) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL must not point to internal networks"})
+			return
+		}
 		user.AvatarURL = req.AvatarURL
 	}
 
@@ -89,6 +98,74 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, ToUserResponse(user))
+}
+
+// changePasswordRequest is the JSON body for PUT /api/user/password.
+type changePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required,min=8,max=72"`
+}
+
+// ChangePassword lets the authenticated user change their own password.
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	var user db.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	var req changePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect current password"})
+		return
+	}
+
+	hash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	user.PasswordHash = hash
+	user.TokenVersion++
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
+
+	// Revoke all refresh tokens for this user
+	h.DB.Where("user_id = ?", user.ID).Delete(&db.RefreshToken{})
+
+	// Blacklist the current access token
+	var token string
+	header := c.GetHeader("Authorization")
+	if header != "" {
+		parts := strings.SplitN(header, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			token = parts[1]
+		}
+	}
+	if token != "" {
+		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
+		if err == nil && claims.ExpiresAt != nil {
+			tokenHash := sha256.Sum256([]byte(token))
+			bl := db.TokenBlacklist{
+				TokenHash: hex.EncodeToString(tokenHash[:]),
+				ExpiresAt: claims.ExpiresAt.Time,
+			}
+			h.DB.Create(&bl)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
 }
 
 // preferencesResponse is the JSON shape for the preferences endpoints.
@@ -365,6 +442,50 @@ func parseJSONMap(s string) map[string]string {
 		return map[string]string{}
 	}
 	return m
+}
+
+// privateNetworks defines the IP ranges considered internal/private.
+var privateNetworks = func() []*net.IPNet {
+	cidrs := []string{
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"169.254.0.0/16",
+		"127.0.0.0/8",
+		"::1/128",
+		"fc00::/7",
+	}
+	var nets []*net.IPNet
+	for _, cidr := range cidrs {
+		_, n, _ := net.ParseCIDR(cidr)
+		nets = append(nets, n)
+	}
+	return nets
+}()
+
+// isPrivateURL returns true if the URL's hostname resolves to a private/internal IP.
+func isPrivateURL(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return true
+	}
+	hostname := parsed.Hostname()
+	if strings.EqualFold(hostname, "localhost") {
+		return true
+	}
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		// Cannot resolve — treat as potentially private
+		return true
+	}
+	for _, ip := range ips {
+		for _, n := range privateNetworks {
+			if n.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // GetRecentGames returns the user's recently played games as a flat Game array.

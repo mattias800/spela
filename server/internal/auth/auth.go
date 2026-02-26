@@ -18,9 +18,10 @@ const (
 
 // Claims represents JWT claims.
 type Claims struct {
-	UserID   uint   `json:"userId"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	UserID       uint   `json:"userId"`
+	Username     string `json:"username"`
+	Role         string `json:"role"`
+	TokenVersion int    `json:"tokenVersion"`
 	jwt.RegisteredClaims
 }
 
@@ -47,11 +48,16 @@ func CheckPassword(password, hash string) bool {
 }
 
 // GenerateAccessToken creates a signed JWT access token.
-func GenerateAccessToken(userID uint, username, role, secret string) (string, error) {
+func GenerateAccessToken(userID uint, username, role, secret string, tokenVersion ...int) (string, error) {
+	tv := 0
+	if len(tokenVersion) > 0 {
+		tv = tokenVersion[0]
+	}
 	claims := Claims{
-		UserID:   userID,
-		Username: username,
-		Role:     role,
+		UserID:       userID,
+		Username:     username,
+		Role:         role,
+		TokenVersion: tv,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(AccessTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

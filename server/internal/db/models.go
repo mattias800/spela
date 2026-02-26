@@ -29,6 +29,7 @@ type User struct {
 	PasswordHash string         `gorm:"not null" json:"-"`
 	Role         string         `gorm:"size:16;default:user" json:"role"` // "owner", "admin", or "user"
 	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
+	TokenVersion        int            `gorm:"default:0" json:"-"`
 	Disabled            bool           `gorm:"default:false" json:"disabled"`
 	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`

@@ -24,8 +24,7 @@ func generateTokenFamily() string {
 }
 
 const (
-	maxLoginAttempts  = 5
-	loginLockDuration = 15 * time.Minute
+	maxLoginAttempts = 5
 
 	// dummyBcryptHash is a pre-computed bcrypt hash used when a login attempt
 	// targets a non-existent username. Running bcrypt.CompareHashAndPassword
@@ -34,18 +33,41 @@ const (
 	dummyBcryptHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
 
+// hashUsername returns a SHA-256 hex digest of the username so raw usernames
+// are never stored in the login_attempts table.
+func hashUsername(username string) string {
+	h := sha256.Sum256([]byte(username))
+	return hex.EncodeToString(h[:])
+}
+
+// lockoutDuration returns an escalating lockout window based on the number of
+// failed login attempts.
+func lockoutDuration(failedCount int) time.Duration {
+	switch {
+	case failedCount >= 20:
+		return 120 * time.Minute
+	case failedCount >= 15:
+		return 60 * time.Minute
+	case failedCount >= 10:
+		return 30 * time.Minute
+	default:
+		return 15 * time.Minute
+	}
+}
+
 // isLockedOut checks whether the account is currently locked in the database.
 func (h *AuthHandler) isLockedOut(username string) bool {
+	hashed := hashUsername(username)
 	var attempt db.LoginAttempt
-	if err := h.DB.Where("username = ?", username).First(&attempt).Error; err != nil {
+	if err := h.DB.Where("username = ?", hashed).First(&attempt).Error; err != nil {
 		return false
 	}
 	if attempt.FailedCount < maxLoginAttempts {
 		return false
 	}
 	if time.Now().After(attempt.LockedUntil) {
-		// Lockout expired, reset
-		h.DB.Model(&attempt).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
+		// Lockout expired — do NOT reset the counter so subsequent failures
+		// escalate the lockout duration.
 		return false
 	}
 	return true
@@ -55,16 +77,17 @@ func (h *AuthHandler) isLockedOut(username string) bool {
 // account if the threshold is reached. The transaction prevents concurrent login
 // attempts from bypassing the lockout limit.
 func (h *AuthHandler) recordFailedLogin(username string) {
+	hashed := hashUsername(username)
 	h.DB.Transaction(func(tx *gorm.DB) error {
 		var attempt db.LoginAttempt
-		result := tx.Where("username = ?", username).First(&attempt)
+		result := tx.Where("username = ?", hashed).First(&attempt)
 		if result.Error != nil {
-			attempt = db.LoginAttempt{Username: username, FailedCount: 1}
+			attempt = db.LoginAttempt{Username: hashed, FailedCount: 1}
 			return tx.Create(&attempt).Error
 		}
 		attempt.FailedCount++
 		if attempt.FailedCount >= maxLoginAttempts {
-			attempt.LockedUntil = time.Now().Add(loginLockDuration)
+			attempt.LockedUntil = time.Now().Add(lockoutDuration(attempt.FailedCount))
 		}
 		return tx.Save(&attempt).Error
 	})
@@ -72,7 +95,8 @@ func (h *AuthHandler) recordFailedLogin(username string) {
 
 // clearFailedLogins resets the failed login counter on successful login.
 func (h *AuthHandler) clearFailedLogins(username string) {
-	h.DB.Where("username = ?", username).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
+	hashed := hashUsername(username)
+	h.DB.Where("username = ?", hashed).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
 }
 
 // AuthHandler handles authentication endpoints.
@@ -144,7 +168,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// Successful login — clear any failed attempts
 	h.clearFailedLogins(req.Username)
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return
@@ -324,7 +348,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return

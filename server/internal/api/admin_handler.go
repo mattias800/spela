@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -65,31 +66,38 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Check for duplicates
-	var count int64
-	h.DB.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
-		return
-	}
-
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
-	user := db.User{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: hash,
-		Role:         req.Role,
-	}
-	if err := h.DB.Create(&user).Error; err != nil {
+	adminID, _ := c.Get("userId")
+	var user db.User
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		var count int64
+		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
+			return fmt.Errorf("duplicate")
+		}
+
+		user = db.User{
+			Username:     req.Username,
+			Email:        req.Email,
+			PasswordHash: hash,
+			Role:         req.Role,
+		}
+		return tx.Create(&user).Error
+	}); err != nil {
+		if c.Writer.Written() {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
 
+	slog.Info("audit: admin created user", "admin_id", adminID, "username", req.Username, "role", req.Role)
 	c.JSON(http.StatusCreated, ToUserResponse(user))
 }
 
@@ -164,10 +172,18 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		user.Disabled = *req.Disabled
 	}
 
+	// Invalidate all existing tokens if security-sensitive fields changed
+	if req.Role != "" || req.Password != "" || req.Disabled != nil {
+		user.TokenVersion++
+	}
+
 	if err := h.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
 		return
 	}
+
+	slog.Info("audit: admin updated user", "admin_id", currentUserID, "target_user", user.Username,
+		"changed_role", req.Role != "", "changed_password", req.Password != "", "changed_disabled", req.Disabled != nil)
 
 	c.JSON(http.StatusOK, ToUserResponse(user))
 }
@@ -201,9 +217,17 @@ func (h *AdminHandler) GetSettings(c *gin.Context) {
 // secretMaskPlaceholder is the masked value returned for secret settings in GET responses.
 const secretMaskPlaceholder = "********"
 
+// allowedSettingKeys is the allowlist of setting keys that may be written via the admin API.
+var allowedSettingKeys = map[string]bool{
+	"registration_enabled": true,
+	"igdb_client_id":       true,
+	"igdb_client_secret":   true,
+}
+
 // UpdateSettings updates server settings (admin only).
 // Secret keys whose value equals the mask placeholder are skipped to prevent
 // overwriting the real secret with the masked value.
+// Only keys in allowedSettingKeys are accepted.
 func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	var req map[string]string
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -212,7 +236,12 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
+	adminID, _ := c.Get("userId")
+	var changedKeys []string
 	for key, value := range req {
+		if !allowedSettingKeys[key] {
+			continue
+		}
 		// Skip secret keys when value is the mask placeholder — the frontend
 		// loaded "********" from GET and is sending it back unchanged.
 		if secretSettingKeys[key] && value == secretMaskPlaceholder {
@@ -220,8 +249,10 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 		}
 		setting := db.ServerSetting{Key: key, Value: value}
 		h.DB.Where("key = ?", key).Assign(setting).FirstOrCreate(&setting)
+		changedKeys = append(changedKeys, key)
 	}
 
+	slog.Info("audit: admin updated settings", "admin_id", adminID, "changed_keys", changedKeys)
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }
 
@@ -321,6 +352,8 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
 	}()
 
+	adminID, _ := c.Get("userId")
+	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode)
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background", "total": total})
 }
 
@@ -371,19 +404,83 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	}
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		tx.Where("user_id = ?", user.ID).Delete(&db.Favorite{})
-		tx.Where("user_id = ?", user.ID).Delete(&db.PlayHistory{})
+		uid := user.ID
 
+		// Per-user preferences
+		tx.Where("user_id = ?", uid).Delete(&db.ConsoleShaderPreference{})
+		tx.Where("user_id = ?", uid).Delete(&db.ConsoleKeyMappingPreference{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameKeyMappingPreference{})
+
+		// Devices + device shader preferences
+		var devices []db.Device
+		tx.Where("user_id = ?", uid).Find(&devices)
+		for _, d := range devices {
+			tx.Where("device_id = ?", d.ID).Delete(&db.DeviceShaderPreference{})
+		}
+		tx.Where("user_id = ?", uid).Delete(&db.Device{})
+
+		// Social / community data
+		tx.Where("user_id = ?", uid).Delete(&db.Favorite{})
+		tx.Where("user_id = ?", uid).Delete(&db.PlayHistory{})
+		tx.Where("user_id = ?", uid).Delete(&db.GameRating{})
+		tx.Where("user_id = ?", uid).Delete(&db.PlayLaterItem{})
+		tx.Where("user_id = ?", uid).Delete(&db.ActivityEvent{})
+
+		// Collections (+ items for owned collections)
+		var collections []db.GameCollection
+		tx.Where("user_id = ?", uid).Find(&collections)
+		for _, col := range collections {
+			tx.Where("collection_id = ?", col.ID).Delete(&db.CollectionItem{})
+		}
+		tx.Where("user_id = ?", uid).Delete(&db.GameCollection{})
+
+		// Save states (+ delete files)
 		var saves []db.SaveState
-		tx.Where("user_id = ?", user.ID).Find(&saves)
+		tx.Where("user_id = ?", uid).Find(&saves)
 		for _, save := range saves {
 			if h.Storage != nil {
 				h.Storage.DeleteSave(save.FilePath)
 			}
 		}
-		tx.Where("user_id = ?", user.ID).Delete(&db.SaveState{})
+		tx.Where("user_id = ?", uid).Delete(&db.SaveState{})
 
-		tx.Where("user_id = ?", user.ID).Delete(&db.RefreshToken{})
+		// Shared save states (+ delete files)
+		var sharedSaves []db.SharedSaveState
+		tx.Where("user_id = ?", uid).Find(&sharedSaves)
+		for _, ss := range sharedSaves {
+			if h.Storage != nil {
+				h.Storage.DeleteSave(ss.FilePath)
+			}
+		}
+		tx.Where("user_id = ?", uid).Delete(&db.SharedSaveState{})
+
+		// Save data (SRAM)
+		var saveData []db.SaveData
+		tx.Where("user_id = ?", uid).Find(&saveData)
+		for _, sd := range saveData {
+			if h.Storage != nil {
+				h.Storage.DeleteSave(sd.FilePath)
+			}
+		}
+		tx.Where("user_id = ?", uid).Delete(&db.SaveData{})
+
+		// RetroAchievements
+		tx.Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
+
+		// Challenges
+		tx.Where("user_id = ?", uid).Delete(&db.ChallengeAttempt{})
+
+		// Relays
+		tx.Where("user_id = ?", uid).Delete(&db.RelayMember{})
+		tx.Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.RelayInvite{})
+
+		// Netplay
+		tx.Where("host_user_id = ? OR client_user_id = ?", uid, uid).Delete(&db.NetplaySession{})
+
+		// Auth / security
+		tx.Where("user_id = ?", uid).Delete(&db.RefreshToken{})
+
+		// Finally delete the user
 		tx.Delete(&user)
 		return nil
 	})
@@ -392,6 +489,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
+	slog.Info("audit: admin deleted user", "admin_id", currentUserID, "target_user", user.Username)
 	c.JSON(http.StatusOK, gin.H{"message": "user deleted"})
 }
 

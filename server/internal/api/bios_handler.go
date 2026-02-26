@@ -300,7 +300,12 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
+	if _, statErr := os.Stat(absPath); statErr == nil {
+		realPath, evalErr := filepath.EvalSymlinks(absPath)
+		if evalErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
 		absPath = realPath
 	}
 	if realDir, e := filepath.EvalSymlinks(absBiosDir); e == nil {

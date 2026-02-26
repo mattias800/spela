@@ -345,6 +345,11 @@ func (h *GameHandler) DownloadSave(c *gin.Context) {
 		return
 	}
 
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
 	c.File(save.FilePath)
 }
@@ -461,6 +466,11 @@ func (h *GameHandler) GetAutoSave(c *gin.Context) {
 		Order("created_at DESC").
 		First(&save).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no auto-save found"})
+		return
+	}
+
+	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
 		return
 	}
 

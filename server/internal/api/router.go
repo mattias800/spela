@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -20,15 +21,16 @@ import (
 
 // Config holds configuration for the API router.
 type Config struct {
-	DB          *gorm.DB
-	JWTSecret   string
-	GameDirs    []string
-	Storage     *storage.Storage
-	Scanner     *scanner.Scanner
-	Scraper     *scraper.Scraper
-	Hub         *ws.Hub
-	NetplayHub  *ws.NetplayHub
-	CoreDir     string
+	DB            *gorm.DB
+	JWTSecret     string
+	EncryptionKey []byte // separate AES key; falls back to DeriveEncryptionKey(JWTSecret) if nil
+	GameDirs      []string
+	Storage       *storage.Storage
+	Scanner       *scanner.Scanner
+	Scraper       *scraper.Scraper
+	Hub           *ws.Hub
+	NetplayHub    *ws.NetplayHub
+	CoreDir       string
 	CORSOrigins                  []string
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
@@ -66,26 +68,25 @@ func NewRouter(cfg Config) *gin.Engine {
 	// File upload endpoints (multipart) are excluded and use their own limits.
 	r.Use(BodySizeLimiter(MaxJSONBodySize))
 
-	// CORS - configurable origins; AllowCredentials only when origins are explicit
+	// CORS - configurable origins; empty = reject all cross-origin requests (no CORS headers sent)
 	corsOrigins := cfg.CORSOrigins
-	if len(corsOrigins) == 0 {
-		corsOrigins = []string{"*"}
-	}
-	allowCreds := true
-	for _, o := range corsOrigins {
-		if o == "*" {
-			allowCreds = false
-			break
+	if len(corsOrigins) > 0 {
+		allowCreds := true
+		for _, o := range corsOrigins {
+			if o == "*" {
+				allowCreds = false
+				break
+			}
 		}
+		r.Use(cors.New(cors.Config{
+			AllowOrigins:     corsOrigins,
+			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Turn-Token"},
+			ExposeHeaders:    []string{"Content-Length"},
+			AllowCredentials: allowCreds,
+			MaxAge:           12 * time.Hour,
+		}))
 	}
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     corsOrigins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Turn-Token"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: allowCreds,
-		MaxAge:           12 * time.Hour,
-	}))
 
 	// Serve images — save screenshots require auth + ownership; everything else is public
 	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret}
@@ -106,8 +107,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		})
 	})
 
-	// Rate limiter for auth endpoints
+	// Rate limiter for auth endpoints (login, register, setup)
 	authLimiter := NewRateLimiter(120, time.Minute)
+
+	// Separate higher-limit rate limiter for token refresh (called frequently during normal use)
+	refreshLimiter := NewRateLimiter(300, time.Minute)
 
 	// Rate limiter for file download endpoints (prevents bandwidth abuse)
 	downloadLimiter := NewRateLimiter(30, time.Minute)
@@ -129,7 +133,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		Scraper:  cfg.Scraper,
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage, Scraper: cfg.Scraper}
-	userHandler := &UserHandler{DB: cfg.DB, Hub: cfg.Hub}
+	userHandler := &UserHandler{DB: cfg.DB, Hub: cfg.Hub, JWTSecret: cfg.JWTSecret}
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	statsHandler := &StatsHandler{DB: cfg.DB}
 	adminHandler := &AdminHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub, Storage: cfg.Storage}
@@ -139,7 +143,10 @@ func NewRouter(cfg Config) *gin.Engine {
 	if raClient == nil {
 		raClient = retroachievements.NewRAClient()
 	}
-	encryptionKey := auth.DeriveEncryptionKey(cfg.JWTSecret)
+	encryptionKey := cfg.EncryptionKey
+	if len(encryptionKey) == 0 {
+		encryptionKey = auth.DeriveEncryptionKey(cfg.JWTSecret)
+	}
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
@@ -171,7 +178,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.POST("/login", authLimiter.RateLimit(), authHandler.Login)
 		authGroup.POST("/register", authLimiter.RateLimit(), authHandler.Register)
 		authGroup.POST("/setup", authLimiter.RateLimit(), authHandler.Setup)
-		authGroup.POST("/refresh", authLimiter.RateLimit(), authHandler.Refresh)
+		authGroup.POST("/refresh", refreshLimiter.RateLimit(), authHandler.Refresh)
 		authGroup.GET("/setup-status", authHandler.SetupStatus)
 	}
 
@@ -268,6 +275,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		// User
 		api.GET("/user/profile", userHandler.GetProfile)
 		api.PUT("/user/profile", userHandler.UpdateProfile)
+		api.PUT("/user/password", userHandler.ChangePassword)
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)
@@ -444,7 +452,12 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 		absImageDir = realDir
 	}
 	absPath, _ := filepath.Abs(filepath.Join(h.ImageDir, reqPath))
-	if realPath, err := filepath.EvalSymlinks(absPath); err == nil {
+	if _, statErr := os.Stat(absPath); statErr == nil {
+		realPath, err := filepath.EvalSymlinks(absPath)
+		if err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
 		absPath = realPath
 	}
 	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) && absPath != absImageDir {
