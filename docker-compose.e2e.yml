@@ -14,7 +14,7 @@ services:
     environment:
       - SPELA_PORT=8080
       - SPELA_DB_PATH=/app/data/spela.db
-      - SPELA_JWT_SECRET=e2e-test-secret
+      - SPELA_JWT_SECRET=e2e-test-secret-that-is-at-least-32-chars-long
       - SPELA_GAME_DIRS=/app/games
       - SPELA_IMAGE_DIR=/app/images
       - SPELA_CORS_ORIGINS=http://localhost:5173
