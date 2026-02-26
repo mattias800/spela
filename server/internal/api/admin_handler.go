@@ -52,7 +52,8 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		Role     string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -108,7 +109,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		Disabled *bool  `json:"disabled"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -201,7 +203,8 @@ const secretMaskPlaceholder = "********"
 func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	var req map[string]string
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -497,7 +500,8 @@ func (h *AdminHandler) SetGameCover(c *gin.Context) {
 		Source string `json:"source" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 

@@ -65,7 +65,7 @@ func (h *CollectionHandler) ListMyCollections(c *gin.Context) {
 
 	query := h.DB.Model(&db.GameCollection{}).Where("user_id = ?", uid)
 	if search != "" {
-		query = query.Where("name LIKE ?", "%"+search+"%")
+		query = query.Where("name LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 	}
 
 	var total int64
@@ -75,7 +75,7 @@ func (h *CollectionHandler) ListMyCollections(c *gin.Context) {
 	if err := h.DB.Where("user_id = ?", uid).
 		Scopes(func(d *gorm.DB) *gorm.DB {
 			if search != "" {
-				return d.Where("name LIKE ?", "%"+search+"%")
+				return d.Where("name LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 			}
 			return d
 		}).
@@ -119,7 +119,7 @@ func (h *CollectionHandler) ListPublicCollections(c *gin.Context) {
 
 	query := h.DB.Model(&db.GameCollection{}).Where("is_public = ?", true)
 	if search != "" {
-		query = query.Where("name LIKE ?", "%"+search+"%")
+		query = query.Where("name LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 	}
 
 	var total int64
@@ -129,7 +129,7 @@ func (h *CollectionHandler) ListPublicCollections(c *gin.Context) {
 	if err := h.DB.Where("is_public = ?", true).
 		Scopes(func(d *gorm.DB) *gorm.DB {
 			if search != "" {
-				return d.Where("name LIKE ?", "%"+search+"%")
+				return d.Where("name LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 			}
 			return d
 		}).

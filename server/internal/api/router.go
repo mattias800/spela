@@ -1,11 +1,15 @@
 package api
 
 import (
+	"net/http"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -76,8 +80,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Serve downloaded images (public, no auth required — just box art)
-	r.Static("/api/images", cfg.Storage.ImageDir)
+	// Serve images — save screenshots require auth + ownership; everything else is public
+	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret}
+	r.GET("/api/images/*filepath", imageHandler.ServeImage)
 
 	// Health check (public, no auth required)
 	r.GET("/api/health", func(c *gin.Context) {
@@ -150,7 +155,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.POST("/login", authLimiter.RateLimit(), authHandler.Login)
 		authGroup.POST("/register", authLimiter.RateLimit(), authHandler.Register)
 		authGroup.POST("/setup", authLimiter.RateLimit(), authHandler.Setup)
-		authGroup.POST("/refresh", authHandler.Refresh)
+		authGroup.POST("/refresh", authLimiter.RateLimit(), authHandler.Refresh)
 		authGroup.GET("/setup-status", authHandler.SetupStatus)
 	}
 
@@ -396,4 +401,72 @@ func NewRouter(cfg Config) *gin.Engine {
 	}
 
 	return r
+}
+
+// ImageHandler serves images with access control for save screenshots.
+type ImageHandler struct {
+	ImageDir  string
+	JWTSecret string
+}
+
+// ServeImage serves image files. Paths under save-screenshots/ require auth + ownership.
+func (h *ImageHandler) ServeImage(c *gin.Context) {
+	reqPath := c.Param("filepath")
+	// Strip leading slash from the wildcard param
+	reqPath = strings.TrimPrefix(reqPath, "/")
+
+	// Resolve the absolute path and ensure it stays within ImageDir
+	absImageDir, _ := filepath.Abs(h.ImageDir)
+	absPath, _ := filepath.Abs(filepath.Join(h.ImageDir, reqPath))
+	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) && absPath != absImageDir {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	// Save screenshots require authentication and ownership check
+	if strings.HasPrefix(reqPath, "save-screenshots/") {
+		// Extract user_id from path pattern: save-screenshots/user_{id}/...
+		parts := strings.SplitN(reqPath, "/", 3)
+		if len(parts) < 2 || !strings.HasPrefix(parts[1], "user_") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+		pathUserIDStr := strings.TrimPrefix(parts[1], "user_")
+		pathUserID, err := strconv.ParseUint(pathUserIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+
+		// Require auth
+		var token string
+		header := c.GetHeader("Authorization")
+		if header != "" {
+			hParts := strings.SplitN(header, " ", 2)
+			if len(hParts) == 2 && hParts[0] == "Bearer" {
+				token = hParts[1]
+			}
+		}
+		if token == "" {
+			token = c.Query("token")
+		}
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+			return
+		}
+
+		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			return
+		}
+
+		// Only the owning user or an admin can access save screenshots
+		if uint64(claims.UserID) != pathUserID && claims.Role != "admin" && claims.Role != "owner" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+	}
+
+	c.File(absPath)
 }

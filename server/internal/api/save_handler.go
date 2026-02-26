@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -13,6 +14,32 @@ import (
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
+
+// defaultMaxSaveStorageMB is the default per-user storage quota in MB.
+// Can be overridden via SPELA_MAX_SAVE_STORAGE_MB environment variable.
+const defaultMaxSaveStorageMB = 1024
+
+// maxSaveStorageBytes returns the configured per-user storage quota in bytes.
+func maxSaveStorageBytes() int64 {
+	mb := int64(defaultMaxSaveStorageMB)
+	if envVal := os.Getenv("SPELA_MAX_SAVE_STORAGE_MB"); envVal != "" {
+		if parsed, err := strconv.ParseInt(envVal, 10, 64); err == nil && parsed > 0 {
+			mb = parsed
+		}
+	}
+	return mb << 20
+}
+
+// checkStorageQuota verifies that adding additionalBytes would not exceed the user's quota.
+func checkStorageQuota(database *gorm.DB, userID uint, additionalBytes int64) error {
+	var totalBytes int64
+	database.Model(&db.SaveState{}).Where("user_id = ?", userID).
+		Select("COALESCE(SUM(file_size), 0)").Scan(&totalBytes)
+	if totalBytes+additionalBytes > maxSaveStorageBytes() {
+		return fmt.Errorf("storage quota exceeded")
+	}
+	return nil
+}
 
 // SaveHandler handles save state management endpoints (rename, notes, slots, bulk, etc.).
 type SaveHandler struct {
@@ -276,6 +303,11 @@ func (h *SaveHandler) ImportSave(c *gin.Context) {
 		return
 	}
 
+	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		return
+	}
+
 	name := c.DefaultPostForm("name", header.Filename)
 
 	size, err := h.Storage.WriteSave(uid, uint(gid), header.Filename, file)
@@ -322,12 +354,17 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, _, err := c.Request.FormFile("save")
+	file, fileHeader, err := c.Request.FormFile("save")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
 		return
 	}
 	defer file.Close()
+
+	if err := checkStorageQuota(h.DB, uid, fileHeader.Size); err != nil {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		return
+	}
 
 	filename := fmt.Sprintf("slot_%d.sav", slotNum)
 
@@ -335,7 +372,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 	var screenshotURL string
 	if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
 		defer ssFile.Close()
-		subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, ssHeader.Filename)
+		subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, filepath.Base(ssHeader.Filename))
 		if stored, writeErr := h.Storage.WriteImage(subpath, ssFile); writeErr == nil {
 			screenshotURL = stored
 		}

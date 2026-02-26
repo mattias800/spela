@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +33,8 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 		Platform   string `json:"platform" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -108,7 +110,8 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 		Name string `json:"name" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -183,7 +186,8 @@ func (h *DeviceHandler) UpdateDevicePreferences(c *gin.Context) {
 		ConsoleShaders map[string]string `json:"consoleShaders"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 

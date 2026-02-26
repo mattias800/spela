@@ -3,7 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,69 +11,47 @@ import (
 	"gorm.io/gorm"
 )
 
-// loginAttemptTracker tracks failed login attempts per username for account lockout.
-type loginAttemptTracker struct {
-	mu       sync.Mutex
-	attempts map[string]*loginAttemptEntry
-}
-
-type loginAttemptEntry struct {
-	count     int
-	lockedAt  time.Time
-	lastTried time.Time
-}
-
 const (
 	maxLoginAttempts  = 5
 	loginLockDuration = 15 * time.Minute
 )
 
-var loginTracker = &loginAttemptTracker{
-	attempts: make(map[string]*loginAttemptEntry),
-}
-
-// recordFailedLogin increments the counter. Returns true if now locked out.
-func (t *loginAttemptTracker) recordFailedLogin(username string) bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	entry, ok := t.attempts[username]
-	if !ok {
-		entry = &loginAttemptEntry{}
-		t.attempts[username] = entry
-	}
-	entry.count++
-	entry.lastTried = time.Now()
-	if entry.count >= maxLoginAttempts {
-		entry.lockedAt = time.Now()
-		return true
-	}
-	return false
-}
-
-// isLockedOut returns true if the account is currently locked.
-func (t *loginAttemptTracker) isLockedOut(username string) bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	entry, ok := t.attempts[username]
-	if !ok {
+// isLockedOut checks whether the account is currently locked in the database.
+func (h *AuthHandler) isLockedOut(username string) bool {
+	var attempt db.LoginAttempt
+	if err := h.DB.Where("username = ?", username).First(&attempt).Error; err != nil {
 		return false
 	}
-	if entry.count < maxLoginAttempts {
+	if attempt.FailedCount < maxLoginAttempts {
 		return false
 	}
-	if time.Since(entry.lockedAt) > loginLockDuration {
+	if time.Now().After(attempt.LockedUntil) {
 		// Lockout expired, reset
-		delete(t.attempts, username)
+		h.DB.Model(&attempt).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
 		return false
 	}
 	return true
 }
 
-// clearFailedLogins resets the counter on successful login.
-func (t *loginAttemptTracker) clearFailedLogins(username string) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	delete(t.attempts, username)
+// recordFailedLogin increments the failed login counter in the database.
+func (h *AuthHandler) recordFailedLogin(username string) {
+	var attempt db.LoginAttempt
+	result := h.DB.Where("username = ?", username).First(&attempt)
+	if result.Error != nil {
+		attempt = db.LoginAttempt{Username: username, FailedCount: 1}
+		h.DB.Create(&attempt)
+		return
+	}
+	attempt.FailedCount++
+	if attempt.FailedCount >= maxLoginAttempts {
+		attempt.LockedUntil = time.Now().Add(loginLockDuration)
+	}
+	h.DB.Save(&attempt)
+}
+
+// clearFailedLogins resets the failed login counter on successful login.
+func (h *AuthHandler) clearFailedLogins(username string) {
+	h.DB.Where("username = ?", username).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
 }
 
 // AuthHandler handles authentication endpoints.
@@ -108,25 +85,26 @@ type authResponse struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
 	// Check account lockout before proceeding
-	if loginTracker.isLockedOut(req.Username) {
+	if h.isLockedOut(req.Username) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "account temporarily locked due to too many failed login attempts"})
 		return
 	}
 
 	var user db.User
 	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		loginTracker.recordFailedLogin(req.Username)
+		h.recordFailedLogin(req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
-		loginTracker.recordFailedLogin(req.Username)
+		h.recordFailedLogin(req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -137,7 +115,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Successful login — clear any failed attempts
-	loginTracker.clearFailedLogins(req.Username)
+	h.clearFailedLogins(req.Username)
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
 	if err != nil {
@@ -170,7 +148,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -251,7 +230,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -268,9 +248,6 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	// Delete old refresh token (rotation)
-	h.DB.Delete(&rt)
-
 	var user db.User
 	if err := h.DB.First(&user, rt.UserID).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
@@ -278,6 +255,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	}
 
 	if user.Disabled {
+		h.DB.Delete(&rt)
 		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
 		return
 	}
@@ -299,7 +277,15 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		Token:     newRefreshToken,
 		ExpiresAt: time.Now().Add(auth.RefreshTokenDuration),
 	}
-	h.DB.Create(&newRT)
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&rt).Error; err != nil {
+			return err
+		}
+		return tx.Create(&newRT).Error
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rotate token"})
+		return
+	}
 
 	c.JSON(http.StatusOK, authResponse{
 		AccessToken:  accessToken,
@@ -335,6 +321,11 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 			if result.RowsAffected > 0 {
 				slog.Info("cleaned up expired refresh tokens", "count", result.RowsAffected)
 			}
+			// Clean up stale login attempt entries (lockout expired and counter reset)
+			laResult := database.Where("locked_until < ? AND failed_count = 0", time.Now()).Delete(&db.LoginAttempt{})
+			if laResult.RowsAffected > 0 {
+				slog.Info("cleaned up stale login attempts", "count", laResult.RowsAffected)
+			}
 		}
 	}()
 }
@@ -350,7 +341,8 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 

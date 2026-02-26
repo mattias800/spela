@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
+	"net/url"
 	"sort"
 	"time"
 
@@ -43,7 +45,8 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		AvatarURL string `json:"avatarUrl"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -51,6 +54,15 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		user.Email = req.Email
 	}
 	if req.AvatarURL != "" {
+		parsed, err := url.Parse(req.AvatarURL)
+		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL must be a valid HTTP(S) URL"})
+			return
+		}
+		if len(req.AvatarURL) > 512 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL too long"})
+			return
+		}
 		user.AvatarURL = req.AvatarURL
 	}
 
@@ -148,7 +160,8 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		ConsoleKeyMappings     map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 

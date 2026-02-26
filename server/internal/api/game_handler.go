@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		}
 	}
 	if search := c.Query("search"); search != "" {
-		query = query.Where("title LIKE ?", "%"+search+"%")
+		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 	}
 	if genre := c.Query("genre"); genre != "" {
 		query = query.Where("genre = ?", genre)
@@ -90,7 +91,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		countQuery = countQuery.Where("console_id = ?", consoleID)
 	}
 	if search := c.Query("search"); search != "" {
-		countQuery = countQuery.Where("title LIKE ?", "%"+search+"%")
+		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 	}
 	if genre := c.Query("genre"); genre != "" {
 		countQuery = countQuery.Where("genre = ?", genre)
@@ -190,7 +191,8 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		CoreOverride  string  `json:"coreOverride"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
@@ -288,6 +290,11 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	}
 	defer file.Close()
 
+	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		return
+	}
+
 	name := c.DefaultPostForm("name", header.Filename)
 	screenshotURL := c.PostForm("screenshotUrl")
 
@@ -295,7 +302,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	if screenshotURL == "" {
 		if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
 			defer ssFile.Close()
-			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, ssHeader.Filename)
+			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, filepath.Base(ssHeader.Filename))
 			if stored, writeErr := h.Storage.WriteImage(subpath, ssFile); writeErr == nil {
 				screenshotURL = stored
 			}
@@ -381,12 +388,17 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, _, err := c.Request.FormFile("save")
+	file, autoHeader, err := c.Request.FormFile("save")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
 		return
 	}
 	defer file.Close()
+
+	if err := checkStorageQuota(h.DB, uid, autoHeader.Size); err != nil {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		return
+	}
 
 	filename := fmt.Sprintf("autosave_%d.sav", time.Now().UnixNano())
 	screenshotURL := c.PostForm("screenshotUrl")
@@ -395,7 +407,7 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	if screenshotURL == "" {
 		if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
 			defer ssFile.Close()
-			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, ssHeader.Filename)
+			subpath := fmt.Sprintf("save-screenshots/user_%d/game_%d/%s", uid, gid, filepath.Base(ssHeader.Filename))
 			if stored, writeErr := h.Storage.WriteImage(subpath, ssFile); writeErr == nil {
 				screenshotURL = stored
 			}
@@ -776,4 +788,12 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 		AveragePlayTime: averagePlayTime,
 		TopPlayers:      topPlayers,
 	})
+}
+
+// escapeLikePattern escapes SQL LIKE wildcard characters in user input.
+func escapeLikePattern(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
 }

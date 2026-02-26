@@ -209,7 +209,7 @@ func (h *SocialHandler) SearchUsers(c *gin.Context) {
 	}
 
 	var users []db.User
-	if err := h.DB.Where("username LIKE ? AND id != ? AND disabled = ?", query+"%", uid, false).
+	if err := h.DB.Where("username LIKE ? ESCAPE '\\' AND id != ? AND disabled = ?", escapeLikePattern(query)+"%", uid, false).
 		Limit(10).
 		Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})

@@ -39,6 +39,15 @@ type User struct {
 	CustomKeyMapping    string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
 }
 
+// LoginAttempt tracks failed login attempts per username for account lockout.
+type LoginAttempt struct {
+	ID          uint      `gorm:"primarykey"`
+	Username    string    `gorm:"size:64;uniqueIndex"`
+	FailedCount int       `gorm:"default:0"`
+	LockedUntil time.Time
+	UpdatedAt   time.Time
+}
+
 // Console represents a detected game console/platform.
 type Console struct {
 	ID             uint           `gorm:"primarykey" json:"id"`

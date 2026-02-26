@@ -110,7 +110,8 @@ func (h *RAHandler) UpdateSettings(c *gin.Context) {
 		HardcoreEnabled *bool `json:"hardcoreEnabled"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		slog.Debug("request binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 

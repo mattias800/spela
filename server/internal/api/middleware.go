@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
+	"golang.org/x/time/rate"
 )
 
 // maxSaveUploadSize is the maximum allowed save state upload size (64 MB).
@@ -76,33 +77,33 @@ func BodySizeLimiter(maxBytes int64) gin.HandlerFunc {
 	}
 }
 
-// RateLimiter implements a simple token bucket rate limiter.
+// RateLimiter implements a sliding window rate limiter using golang.org/x/time/rate.
 type RateLimiter struct {
-	visitors map[string]*visitor
+	visitors map[string]*rateLimitEntry
 	mu       sync.Mutex
-	rate     int
+	limit    int
 	window   time.Duration
 }
 
-type visitor struct {
-	count    int
+type rateLimitEntry struct {
+	limiter  *rate.Limiter
 	lastSeen time.Time
 }
 
-// NewRateLimiter creates a rate limiter that allows `rate` requests per `window`.
-func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
+// NewRateLimiter creates a rate limiter that allows `limit` requests per `window`.
+func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
-		visitors: make(map[string]*visitor),
-		rate:     rate,
+		visitors: make(map[string]*rateLimitEntry),
+		limit:    limit,
 		window:   window,
 	}
-	// Cleanup old entries periodically
+	// Cleanup stale entries periodically
 	go func() {
 		for {
 			time.Sleep(window)
 			rl.mu.Lock()
-			for ip, v := range rl.visitors {
-				if time.Since(v.lastSeen) > window {
+			for ip, e := range rl.visitors {
+				if time.Since(e.lastSeen) > window {
 					delete(rl.visitors, ip)
 				}
 			}
@@ -118,22 +119,19 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 		ip := c.ClientIP()
 
 		rl.mu.Lock()
-		v, exists := rl.visitors[ip]
-		if !exists || time.Since(v.lastSeen) > rl.window {
-			rl.visitors[ip] = &visitor{count: 1, lastSeen: time.Now()}
-			rl.mu.Unlock()
-			c.Next()
-			return
+		e, exists := rl.visitors[ip]
+		if !exists {
+			limiter := rate.NewLimiter(rate.Every(rl.window/time.Duration(rl.limit)), rl.limit)
+			e = &rateLimitEntry{limiter: limiter, lastSeen: time.Now()}
+			rl.visitors[ip] = e
 		}
+		e.lastSeen = time.Now()
+		rl.mu.Unlock()
 
-		v.count++
-		v.lastSeen = time.Now()
-		if v.count > rl.rate {
-			rl.mu.Unlock()
+		if !e.limiter.Allow() {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
 			return
 		}
-		rl.mu.Unlock()
 		c.Next()
 	}
 }
