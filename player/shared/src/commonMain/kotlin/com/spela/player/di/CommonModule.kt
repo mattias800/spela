@@ -175,6 +175,7 @@ val commonModule = module {
             saveRepository = get(),
             connectivityMonitor = get(),
             libretroController = get(),
+            screenshotCapture = getOrNull<ScreenshotCapture>(),
             _state = get(),
             dispatchers = get(),
             scope = get(),

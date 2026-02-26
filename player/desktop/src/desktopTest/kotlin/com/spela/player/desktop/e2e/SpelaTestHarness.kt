@@ -179,6 +179,7 @@ class SpelaTestHarness(
         saveRepository = saveRepo,
         connectivityMonitor = connectivityMonitor,
         libretroController = libretroController,
+        screenshotCapture = null,
         _state = emulationState,
         dispatchers = dispatchers,
         scope = scope,

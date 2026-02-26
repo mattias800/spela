@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
@@ -24,6 +25,7 @@ class SaveManager(
     private val saveRepository: SaveRepository,
     private val connectivityMonitor: ConnectivityMonitor,
     private val libretroController: LibretroController,
+    private val screenshotCapture: ScreenshotCapture?,
     private val _state: MutableStateFlow<EmulationState>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
@@ -84,7 +86,8 @@ class SaveManager(
         try {
             val saveData = libretroController.serialize()
             if (saveData != null) {
-                saveGameStateUseCase(gameId, saveData)
+                val screenshot = screenshotCapture?.captureScreenshot()
+                saveGameStateUseCase(gameId, saveData, screenshot)
             }
         } catch (_: Exception) {
             // Best effort auto-save
@@ -103,7 +106,8 @@ class SaveManager(
         scope.launch(dispatchers.io) {
             val gameId = _state.value.gameId
             val saveData = libretroController.serialize() ?: return@launch
-            saveGameStateUseCase(gameId, saveData).fold(
+            val screenshot = screenshotCapture?.captureScreenshot()
+            saveGameStateUseCase(gameId, saveData, screenshot).fold(
                 onSuccess = {
                     withContext(dispatchers.main) {
                         _state.update { it.copy(statusMessage = "State saved") }
@@ -149,7 +153,8 @@ class SaveManager(
      * Save to a quick-save slot. Called from EmulationViewModel.
      */
     suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray): Result<Unit> {
-        return saveRepository.saveToSlot(gameId, slot, data).map { }
+        val screenshot = screenshotCapture?.captureScreenshot()
+        return saveRepository.saveToSlot(gameId, slot, data, screenshot).map { }
     }
 
     /**

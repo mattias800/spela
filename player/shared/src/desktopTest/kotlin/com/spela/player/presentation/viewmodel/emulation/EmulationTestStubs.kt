@@ -517,6 +517,7 @@ class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
             saveRepository = saveRepository,
             connectivityMonitor = connectivityMonitor,
             libretroController = libretroController,
+            screenshotCapture = screenshotCapture,
             _state = mutableState,
             dispatchers = dispatchers,
             scope = vmScope,
