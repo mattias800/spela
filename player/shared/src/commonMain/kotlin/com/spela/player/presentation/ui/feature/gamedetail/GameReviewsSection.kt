@@ -26,12 +26,10 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import kotlin.time.Clock
-import kotlin.time.Duration
-import kotlin.time.Instant
 
 @Composable
 internal fun GameReviewsSection(
@@ -153,23 +151,5 @@ private fun ReviewItem(
                 }
             }
         }
-    }
-}
-
-private fun formatRelativeTime(isoTimestamp: String): String {
-    return try {
-        val instant = Instant.parse(isoTimestamp)
-        val now = Clock.System.now()
-        val duration: Duration = now - instant
-        val seconds = duration.inWholeSeconds
-        when {
-            seconds < 60 -> "just now"
-            seconds < 3600 -> "${seconds / 60}m ago"
-            seconds < 86400 -> "${seconds / 3600}h ago"
-            seconds < 604800 -> "${seconds / 86400}d ago"
-            else -> "${seconds / 604800}w ago"
-        }
-    } catch (_: Exception) {
-        ""
     }
 }

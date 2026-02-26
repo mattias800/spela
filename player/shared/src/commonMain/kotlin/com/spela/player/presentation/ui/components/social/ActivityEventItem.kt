@@ -123,17 +123,21 @@ private fun getEventIconAndColor(eventType: String): Pair<ImageVector, androidx.
 internal fun formatRelativeTime(isoTimestamp: String): String {
     return try {
         val instant = kotlin.time.Instant.parse(isoTimestamp)
-        val now = Clock.System.now()
-        val duration: Duration = now - instant
-        val seconds = duration.inWholeSeconds
-        when {
-            seconds < 60 -> "just now"
-            seconds < 3600 -> "${seconds / 60}m ago"
-            seconds < 86400 -> "${seconds / 3600}h ago"
-            seconds < 604800 -> "${seconds / 86400}d ago"
-            else -> "${seconds / 604800}w ago"
-        }
+        formatRelativeTime(instant)
     } catch (_: Exception) {
         ""
+    }
+}
+
+internal fun formatRelativeTime(instant: kotlin.time.Instant): String {
+    val now = Clock.System.now()
+    val duration: Duration = now - instant
+    val seconds = duration.inWholeSeconds
+    return when {
+        seconds < 60 -> "just now"
+        seconds < 3600 -> "${seconds / 60}m ago"
+        seconds < 86400 -> "${seconds / 3600}h ago"
+        seconds < 604800 -> "${seconds / 86400}d ago"
+        else -> "${seconds / 604800}w ago"
     }
 }

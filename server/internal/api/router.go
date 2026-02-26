@@ -286,6 +286,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/relays/:id/saves/auto", relayHandler.UploadAutoSave)
 		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
 		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
+		api.POST("/relays/:id/saves/:saveId/copy-to-game", relayHandler.CopyRelaySaveToGame)
 		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
 		api.GET("/user/relay-invites/count", relayHandler.GetPendingInviteCount)
 		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)

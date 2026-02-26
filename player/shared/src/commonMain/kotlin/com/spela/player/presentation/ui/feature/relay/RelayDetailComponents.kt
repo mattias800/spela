@@ -15,7 +15,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +42,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpTextField
+import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -280,6 +284,8 @@ internal fun InviteSection(
 @Composable
 internal fun RelaySaveItem(
     save: RelaySave,
+    isCopying: Boolean = false,
+    onCopyToGame: (() -> Unit)? = null,
 ) {
     SpCard(
         onGradient = true,
@@ -310,13 +316,39 @@ internal fun RelaySaveItem(
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
                 Text(
-                    text = "by ${save.username}",
+                    text = buildString {
+                        append("by ${save.username}")
+                        val age = formatRelativeTime(save.createdAt)
+                        if (age.isNotEmpty()) append(" · $age")
+                    },
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )
             }
             if (save.isAuto) {
                 SpChip(text = "Auto", color = SpColor.Primary)
+            }
+            if (onCopyToGame != null) {
+                if (isCopying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = SpColor.Primary,
+                    )
+                } else {
+                    IconButton(
+                        onClick = onCopyToGame,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Copy ${save.name} to your library"
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = null,
+                            tint = SpColor.OnBackgroundTertiary,
+                        )
+                    }
+                }
             }
         }
     }

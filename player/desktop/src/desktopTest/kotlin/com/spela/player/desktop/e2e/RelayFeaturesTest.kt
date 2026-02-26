@@ -11,6 +11,9 @@ import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 
 /**
  * E2E tests for the Relay feature on desktop.
@@ -409,6 +412,124 @@ class RelayFeaturesTest {
         onNodeWithText("by player").assertExists()
         onNodeWithText("Auto Save").assertExists()
         onNodeWithText("Auto").assertExists()
+    }
+
+    // ---- Relay detail: invite section ----
+
+    // ---- Relay detail: save age display ----
+
+    @Test
+    fun relayDetailScreenShowsSaveAge() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        val threeHoursAgo = (Clock.System.now() - 3.hours).toString()
+        harness.relayRepo.relayDetail = RelayDetail(
+            id = "r1",
+            name = "Test Relay",
+            gameId = "1",
+            gameTitle = "Castlevania",
+            ownerId = "1",
+            ownerUsername = "player",
+            memberCount = 1,
+            members = emptyList(),
+        )
+        harness.relayRepo.relaySaves = listOf(
+            RelaySave(
+                id = 1,
+                relayId = "r1",
+                username = "player",
+                name = "Boss fight save",
+                fileSize = 4096,
+                isAuto = false,
+                createdAt = threeHoursAgo,
+            ),
+        )
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.RelayDetail("r1"))
+        )
+        advance(harness)
+
+        onNodeWithText("Boss fight save").assertExists()
+        onNodeWithText("by player · 3h ago", substring = true).assertExists()
+    }
+
+    // ---- Relay detail: copy save to game ----
+
+    @Test
+    fun relayDetailScreenShowsCopyButtonOnSaves() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.relayRepo.relayDetail = RelayDetail(
+            id = "r1",
+            name = "Test Relay",
+            gameId = "1",
+            gameTitle = "Castlevania",
+            ownerId = "1",
+            ownerUsername = "player",
+            memberCount = 1,
+            members = emptyList(),
+        )
+        harness.relayRepo.relaySaves = listOf(
+            RelaySave(
+                id = 1,
+                relayId = "r1",
+                username = "player",
+                name = "Boss fight save",
+                fileSize = 4096,
+                isAuto = false,
+            ),
+        )
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.RelayDetail("r1"))
+        )
+        advance(harness)
+
+        onNodeWithContentDescription("Copy Boss fight save to your library").assertExists()
+    }
+
+    @Test
+    fun relayDetailScreenCopySaveShowsSuccessMessage() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.relayRepo.relayDetail = RelayDetail(
+            id = "r1",
+            name = "Test Relay",
+            gameId = "1",
+            gameTitle = "Castlevania",
+            ownerId = "1",
+            ownerUsername = "player",
+            memberCount = 1,
+            members = emptyList(),
+        )
+        harness.relayRepo.relaySaves = listOf(
+            RelaySave(
+                id = 1,
+                relayId = "r1",
+                username = "player",
+                name = "Boss fight save",
+                fileSize = 4096,
+                isAuto = false,
+            ),
+        )
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.RelayDetail("r1"))
+        )
+        advance(harness)
+
+        onNodeWithContentDescription("Copy Boss fight save to your library").assertExists()
+        onNodeWithContentDescription("Copy Boss fight save to your library").performClick()
+        // Advance test dispatcher only (not Compose clock) to process ViewModel coroutine
+        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
+        harness.testDispatcher.scheduler.runCurrent()
+
+        val state = harness.relayDetailViewModel.state.value
+        assertEquals("Save copied to your library", state.successMessage)
     }
 
     // ---- Relay detail: invite section ----

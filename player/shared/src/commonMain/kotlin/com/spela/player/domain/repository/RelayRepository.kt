@@ -27,4 +27,5 @@ interface RelayRepository {
     suspend fun downloadRelaySave(relayId: String, saveId: Long): Result<ByteArray>
     suspend fun downloadRelayAutoSave(relayId: String): Result<ByteArray>
     suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray): Result<RelaySave>
+    suspend fun copyRelaySaveToGame(relayId: String, saveId: Long): Result<Unit>
 }

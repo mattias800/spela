@@ -155,7 +155,15 @@ fun RelayDetailScreen(
                                 state.saves,
                                 key = { "save-${it.id}" },
                             ) { save ->
-                                RelaySaveItem(save = save)
+                                RelaySaveItem(
+                                    save = save,
+                                    isCopying = state.copyingSaveId == save.id,
+                                    onCopyToGame = {
+                                        viewModel.onIntent(
+                                            RelayDetailIntent.CopySaveToGame(relayId, save.id)
+                                        )
+                                    },
+                                )
                             }
                         }
                     }

@@ -856,6 +856,54 @@ func (h *RelayHandler) GetAutoSave(c *gin.Context) {
 	c.File(save.FilePath)
 }
 
+// CopyRelaySaveToGame copies a relay save into the user's personal save library.
+func (h *RelayHandler) CopyRelaySaveToGame(c *gin.Context) {
+	uid := getUserID(c)
+	relay, ok := h.loadRelayWithMemberCheck(c, uid)
+	if !ok {
+		return
+	}
+
+	saveID := c.Param("saveId")
+	var relaySave db.RelaySave
+	if err := h.DB.Where("id = ? AND relay_id = ?", saveID, relay.ID).First(&relaySave).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		return
+	}
+
+	// Open the relay save file
+	file, err := h.Storage.ReadSave(relaySave.FilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read relay save file"})
+		return
+	}
+	defer file.Close()
+
+	// Copy to personal saves
+	filename := fmt.Sprintf("relay_%d_%s.sav", relay.ID, relaySave.Name)
+	size, err := h.Storage.WriteSave(uid, relay.GameID, filename, file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to copy save to personal library"})
+		return
+	}
+
+	savePath := h.Storage.SaveStatePath(uid, relay.GameID, filename)
+	save := db.SaveState{
+		UserID:   uid,
+		GameID:   relay.GameID,
+		Name:     relaySave.Name + " (from relay)",
+		FilePath: savePath,
+		FileSize: size,
+		IsAuto:   false,
+	}
+	if err := h.DB.Create(&save).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, save)
+}
+
 // --- Helpers ---
 
 // loadRelayWithMemberCheck loads a relay by :id param and verifies the user is a member.

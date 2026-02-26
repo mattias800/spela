@@ -1577,3 +1577,134 @@ func TestRelay_RemoveMember_ReleasesTurn(t *testing.T) {
 	// Owner can take the turn (not deadlocked)
 	takeTurn(t, router, token1, relayID)
 }
+
+// --- Copy relay save to game tests ---
+
+func TestRelay_CopySaveToGame_Success(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Copy Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	relay := createRelay(t, router, token, gameID, "Copy Save Relay")
+	relayID := relay["id"].(string)
+
+	turnToken := takeTurn(t, router, token, relayID)
+
+	// Upload a relay save
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "boss.sav")
+	part.Write([]byte("boss fight save data"))
+	writer.WriteField("name", "Boss Fight")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	saveID := saveResp["id"].(string)
+
+	// Copy relay save to personal library
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves/"+saveID+"/copy-to-game", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var copiedSave map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &copiedSave)
+	assert.Equal(t, "Boss Fight (from relay)", copiedSave["name"])
+	assert.Equal(t, false, copiedSave["isAuto"])
+	assert.Equal(t, float64(len("boss fight save data")), copiedSave["fileSize"])
+
+	// Verify the save appears in personal game saves
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/games/"+gameID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var gameSaves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &gameSaves)
+	assert.Len(t, gameSaves, 1)
+	assert.Equal(t, "Boss Fight (from relay)", gameSaves[0]["name"])
+}
+
+func TestRelay_CopySaveToGame_NotMember(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Copy NonMember Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	relay := createRelay(t, router, token1, gameID, "Copy NonMember Relay")
+	relayID := relay["id"].(string)
+
+	turnToken := takeTurn(t, router, token1, relayID)
+
+	// Upload a relay save
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "save.sav")
+	part.Write([]byte("save data"))
+	writer.WriteField("name", "My Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	saveID := saveResp["id"].(string)
+
+	// Non-member tries to copy - should get 403
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves/"+saveID+"/copy-to-game", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestRelay_CopySaveToGame_SaveNotFound(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Copy NotFound Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	relay := createRelay(t, router, token, gameID, "Copy NotFound Relay")
+	relayID := relay["id"].(string)
+
+	// Try to copy non-existent save
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves/99999/copy-to-game", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}

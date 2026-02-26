@@ -18,6 +18,7 @@ sealed interface RelayDetailIntent {
     data class LeaveRelay(val relayId: String) : RelayDetailIntent
     data class TakeTurn(val relayId: String) : RelayDetailIntent
     data class ReleaseTurn(val relayId: String) : RelayDetailIntent
+    data class CopySaveToGame(val relayId: String, val saveId: Long) : RelayDetailIntent
     data object DismissError : RelayDetailIntent
     data object DismissSuccess : RelayDetailIntent
 }

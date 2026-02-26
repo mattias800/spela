@@ -5,12 +5,15 @@ import com.spela.player.domain.model.GameRating
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.Relay
+import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.TopPlayer
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 
 /**
  * E2E tests for Game Detail community sections:
@@ -222,5 +225,38 @@ class GameDetailCommunitySectionsTest {
         scrollToSection(hasTestTag("game_relays_section"))
         onNodeWithTag("relay_item_relay1").assertIsDisplayed()
         onNodeWithTag("relay_item_relay1").assertHasClickAction()
+    }
+
+    // --- Save State Age Display ---
+
+    @Test
+    fun saveStateShowsRelativeAge() = runComposeUiTest {
+        val harness = createHarnessOnGameDetail()
+        val twoDaysAgo = Clock.System.now() - 2.days
+        harness.saveRepo.saves["1"] = mutableListOf(
+            SaveState(
+                id = 1,
+                gameId = 1,
+                name = "Boss Save",
+                createdAt = twoDaysAgo,
+                fileSize = 2048,
+                isAuto = false,
+            ),
+            SaveState(
+                id = 2,
+                gameId = 1,
+                name = "Auto Save",
+                createdAt = twoDaysAgo,
+                fileSize = 2048,
+                isAuto = true,
+            ),
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness)
+
+        scrollToSection(hasText("Manual Save · 2d ago", substring = true))
+        onNodeWithText("Manual Save · 2d ago", substring = true).assertExists()
+        onNodeWithText("Auto Save · 2d ago", substring = true).assertExists()
     }
 }

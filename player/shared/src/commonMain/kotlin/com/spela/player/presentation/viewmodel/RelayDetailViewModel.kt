@@ -27,6 +27,7 @@ class RelayDetailViewModel(
             is RelayDetailIntent.LeaveRelay -> leaveRelay(intent.relayId)
             is RelayDetailIntent.TakeTurn -> takeTurn(intent.relayId)
             is RelayDetailIntent.ReleaseTurn -> releaseTurn(intent.relayId)
+            is RelayDetailIntent.CopySaveToGame -> copySaveToGame(intent.relayId, intent.saveId)
             RelayDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             RelayDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
@@ -98,6 +99,20 @@ class RelayDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isTakingTurn = false) }
+                },
+            )
+        }
+    }
+
+    private fun copySaveToGame(relayId: String, saveId: Long) {
+        _state.update { it.copy(copyingSaveId = saveId) }
+        scope.launch(dispatchers.io) {
+            relayRepository.copyRelaySaveToGame(relayId, saveId).fold(
+                onSuccess = {
+                    _state.update { it.copy(copyingSaveId = null, successMessage = "Save copied to your library") }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(copyingSaveId = null, error = error.message) }
                 },
             )
         }

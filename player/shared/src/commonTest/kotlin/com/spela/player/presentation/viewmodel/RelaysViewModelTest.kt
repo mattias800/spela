@@ -267,4 +267,6 @@ class FakeRelayRepo : RelayRepository {
     override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray): Result<RelaySave> =
         if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
+    override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long): Result<Unit> =
+        if (shouldFail) Result.failure(Exception("Network error")) else Result.success(Unit)
 }

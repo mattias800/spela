@@ -350,6 +350,7 @@ class StubRelayRepository : RelayRepository {
         uploadRelayAutoSaveCallCount++
         return Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
     }
+    override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) = Result.success(Unit)
 }
 
 class StubChallengeRepository : ChallengeRepository {

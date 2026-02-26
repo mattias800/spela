@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.Share
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
+import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpInnerCard
@@ -225,7 +226,10 @@ private fun SaveStateItem(
                     color = SpColor.OnCard,
                 )
                 Text(
-                    text = if (saveState.isAuto) "Auto Save" else "Manual Save",
+                    text = buildString {
+                        append(if (saveState.isAuto) "Auto Save" else "Manual Save")
+                        saveState.createdAt?.let { append(" · ${formatRelativeTime(it)}") }
+                    },
                     style = SpTypography.BodySmall,
                     color = SpColor.OnBackgroundTertiary,
                 )

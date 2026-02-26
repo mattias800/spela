@@ -660,6 +660,10 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/relays/$relayId/saves/auto").body()
     }
 
+    suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) {
+        client.post("$baseUrl/api/relays/$relayId/saves/$saveId/copy-to-game")
+    }
+
     suspend fun uploadRelayAutoSave(
         relayId: String,
         turnToken: String,

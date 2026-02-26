@@ -100,6 +100,10 @@ class RelayRepositoryImpl(
         apiClient.downloadRelayAutoSave(relayId)
     }
 
+    override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long): Result<Unit> = runCatching {
+        apiClient.copyRelaySaveToGame(relayId, saveId)
+    }
+
     override suspend fun uploadRelayAutoSave(
         relayId: String,
         turnToken: String,
