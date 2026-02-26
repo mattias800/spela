@@ -26,7 +26,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, ToUserResponse(user))
 }
 
 // UpdateProfile updates the current user's profile.
@@ -59,7 +59,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, ToUserResponse(user))
 }
 
 // preferencesResponse is the JSON shape for the preferences endpoints.

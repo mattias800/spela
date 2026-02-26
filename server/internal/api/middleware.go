@@ -10,6 +10,9 @@ import (
 	"github.com/spela/server/internal/auth"
 )
 
+// maxSaveUploadSize is the maximum allowed save state upload size (64 MB).
+const maxSaveUploadSize = 64 << 20
+
 // AuthMiddleware validates JWT tokens on protected routes.
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -52,6 +55,22 @@ func AdminMiddleware() gin.HandlerFunc {
 		if role != "admin" && role != "owner" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin access required"})
 			return
+		}
+		c.Next()
+	}
+}
+
+// MaxJSONBodySize limits the request body size for non-multipart JSON endpoints.
+// This prevents abuse via oversized payloads. File upload endpoints use their own
+// limits via http.MaxBytesReader.
+const MaxJSONBodySize = 1 << 20 // 1 MB
+
+// BodySizeLimiter returns middleware that limits the request body to maxBytes.
+// Multipart requests (file uploads) are excluded since they have their own limits.
+func BodySizeLimiter(maxBytes int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Body != nil && !strings.HasPrefix(c.ContentType(), "multipart/") {
+			c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
 		}
 		c.Next()
 	}

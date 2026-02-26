@@ -471,7 +471,6 @@ func TestHealthEndpoint(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp["status"])
-	assert.Equal(t, "ok", resp["database"])
 	assert.Equal(t, "0.1.0", resp["version"])
 }
 

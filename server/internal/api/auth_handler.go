@@ -1,7 +1,9 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,71 @@ import (
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
+
+// loginAttemptTracker tracks failed login attempts per username for account lockout.
+type loginAttemptTracker struct {
+	mu       sync.Mutex
+	attempts map[string]*loginAttemptEntry
+}
+
+type loginAttemptEntry struct {
+	count     int
+	lockedAt  time.Time
+	lastTried time.Time
+}
+
+const (
+	maxLoginAttempts  = 5
+	loginLockDuration = 15 * time.Minute
+)
+
+var loginTracker = &loginAttemptTracker{
+	attempts: make(map[string]*loginAttemptEntry),
+}
+
+// recordFailedLogin increments the counter. Returns true if now locked out.
+func (t *loginAttemptTracker) recordFailedLogin(username string) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	entry, ok := t.attempts[username]
+	if !ok {
+		entry = &loginAttemptEntry{}
+		t.attempts[username] = entry
+	}
+	entry.count++
+	entry.lastTried = time.Now()
+	if entry.count >= maxLoginAttempts {
+		entry.lockedAt = time.Now()
+		return true
+	}
+	return false
+}
+
+// isLockedOut returns true if the account is currently locked.
+func (t *loginAttemptTracker) isLockedOut(username string) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	entry, ok := t.attempts[username]
+	if !ok {
+		return false
+	}
+	if entry.count < maxLoginAttempts {
+		return false
+	}
+	if time.Since(entry.lockedAt) > loginLockDuration {
+		// Lockout expired, reset
+		delete(t.attempts, username)
+		return false
+	}
+	return true
+}
+
+// clearFailedLogins resets the counter on successful login.
+func (t *loginAttemptTracker) clearFailedLogins(username string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	delete(t.attempts, username)
+}
 
 // AuthHandler handles authentication endpoints.
 type AuthHandler struct {
@@ -45,13 +112,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check account lockout before proceeding
+	if loginTracker.isLockedOut(req.Username) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "account temporarily locked due to too many failed login attempts"})
+		return
+	}
+
 	var user db.User
 	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		loginTracker.recordFailedLogin(req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
+		loginTracker.recordFailedLogin(req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -60,6 +135,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
 		return
 	}
+
+	// Successful login — clear any failed attempts
+	loginTracker.clearFailedLogins(req.Username)
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
 	if err != nil {
@@ -245,6 +323,20 @@ func (h *AuthHandler) SetupStatus(c *gin.Context) {
 		"needsSetup":          userCount == 0,
 		"registrationEnabled": registrationEnabled,
 	})
+}
+
+// StartTokenCleanup starts a background goroutine that periodically deletes
+// expired refresh tokens from the database to prevent unbounded growth.
+func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
+	go func() {
+		for {
+			time.Sleep(interval)
+			result := database.Where("expires_at < ?", time.Now()).Delete(&db.RefreshToken{})
+			if result.RowsAffected > 0 {
+				slog.Info("cleaned up expired refresh tokens", "count", result.RowsAffected)
+			}
+		}
+	}()
 }
 
 // Setup creates the initial owner account. Only works when no users exist.

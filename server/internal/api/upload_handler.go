@@ -168,6 +168,7 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxROMUploadSize)
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "multipart form required"})
@@ -445,7 +446,8 @@ func (h *UploadHandler) AcceptUpload(c *gin.Context) {
 
 	game, err := h.acceptStaged(&staged)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept upload: " + err.Error()})
+		slog.Warn("failed to accept upload", "id", id, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept upload"})
 		return
 	}
 

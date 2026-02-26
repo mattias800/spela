@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -38,12 +37,23 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Only trust proxies on private/loopback networks (Docker internal, localhost).
 	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "::1/128"})
 
-	// COOP/COEP headers — required for SharedArrayBuffer (EmulatorJS threaded cores)
+	// Security headers
 	r.Use(func(c *gin.Context) {
+		// COOP/COEP — required for SharedArrayBuffer (EmulatorJS threaded cores)
 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
 		c.Header("Cross-Origin-Embedder-Policy", "credentialless")
+		// Prevent MIME type sniffing
+		c.Header("X-Content-Type-Options", "nosniff")
+		// Prevent clickjacking
+		c.Header("X-Frame-Options", "DENY")
+		// Minimal referrer info to external sites
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		c.Next()
 	})
+
+	// Global request body size limit for JSON endpoints (1 MB).
+	// File upload endpoints (multipart) are excluded and use their own limits.
+	r.Use(BodySizeLimiter(MaxJSONBodySize))
 
 	// CORS - configurable origins; AllowCredentials only when origins are explicit
 	corsOrigins := cfg.CORSOrigins
@@ -71,24 +81,17 @@ func NewRouter(cfg Config) *gin.Engine {
 
 	// Health check (public, no auth required)
 	r.GET("/api/health", func(c *gin.Context) {
+		status := "ok"
 		sqlDB, err := cfg.DB.DB()
-		dbStatus := "ok"
 		if err != nil {
-			dbStatus = "error: " + err.Error()
+			status = "degraded"
 		} else if err := sqlDB.Ping(); err != nil {
-			dbStatus = "error: " + err.Error()
+			status = "degraded"
 		}
 
-		var gameCount, userCount int64
-		cfg.DB.Model(&db.Game{}).Count(&gameCount)
-		cfg.DB.Model(&db.User{}).Count(&userCount)
-
 		c.JSON(200, gin.H{
-			"status":   "ok",
-			"version":  "0.1.0",
-			"database": dbStatus,
-			"games":    gameCount,
-			"users":    userCount,
+			"status":  status,
+			"version": "0.1.0",
 		})
 	})
 
@@ -176,13 +179,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id", gameHandler.GetGame)
 		api.GET("/games/:id/download", gameHandler.DownloadGame)
 		api.GET("/games/:id/discs/:discNumber/download", gameHandler.DownloadDisc)
-		api.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
 		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
 		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
-		api.POST("/games/scan", gameHandler.ScanGames)
 
 		// Ratings
 		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)
@@ -355,6 +356,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())
 		{
+			admin.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
+			admin.POST("/games/scan", gameHandler.ScanGames)
 			admin.GET("/users", adminHandler.ListUsers)
 			admin.POST("/users", adminHandler.CreateUser)
 			admin.PUT("/users/:id", adminHandler.UpdateUser)

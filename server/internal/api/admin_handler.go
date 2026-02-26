@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -398,7 +399,8 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	h.tryConfigureIGDB()
 
 	if err := h.Scraper.ScrapeGame(&game); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "scrape failed: " + err.Error()})
+		slog.Warn("scrape failed", "game", game.Title, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "scrape failed"})
 		return
 	}
 

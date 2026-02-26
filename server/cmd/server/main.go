@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spela/server/internal/api"
 	"github.com/spela/server/internal/db"
@@ -98,6 +99,9 @@ func main() {
 	// Initialize scraper
 	metaScraper := scraper.NewScraper(database, store, datDir, gameDirs)
 	go metaScraper.DATCache.RefreshAll()
+
+	// Start periodic expired refresh token cleanup (every hour)
+	api.StartTokenCleanup(database, 1*time.Hour)
 
 	// Initialize WebSocket hub
 	hub := websocket.NewHub(wsOrigins)

@@ -75,7 +75,7 @@ export function useScanLibrary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.post<Record<string, unknown>>("/games/scan"),
+    mutationFn: () => api.post<Record<string, unknown>>("/admin/games/scan"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["consoles"] });
@@ -246,7 +246,7 @@ export function useUpdateGameMetadata() {
       gameId: string;
       metadata: Record<string, unknown>;
     }) => {
-      await api.post(`/games/${gameId}/metadata`, metadata);
+      await api.post(`/admin/games/${gameId}/metadata`, metadata);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });

@@ -263,6 +263,7 @@ func (h *SaveHandler) ImportSave(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
@@ -320,6 +321,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, _, err := c.Request.FormFile("save")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})

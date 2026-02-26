@@ -526,6 +526,7 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 // Escapes double quotes and removes semicolons to prevent query injection.
 func escapeQuery(s string) string {
 	s = strings.ReplaceAll(s, ";", "")
+	s = strings.ReplaceAll(s, `\`, `\\`)
 	s = strings.ReplaceAll(s, `"`, `\"`)
 	return s
 }
