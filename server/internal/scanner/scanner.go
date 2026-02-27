@@ -291,9 +291,12 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 		}
 	}
 
-	// Remove games whose files no longer exist
+	// Remove games whose files no longer exist.
+	// Use Unscoped to include soft-deleted games — if a game was previously
+	// soft-deleted and the file is still gone, hard-delete it to free the
+	// unique index slot. If the file came back, it was already restored above.
 	var allGames []db.Game
-	if err := s.DB.Find(&allGames).Error; err != nil {
+	if err := s.DB.Unscoped().Find(&allGames).Error; err != nil {
 		return nil, fmt.Errorf("loading existing games: %w", err)
 	}
 	for _, g := range allGames {
@@ -301,11 +304,14 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 			// Resolve relative path to absolute for filesystem check
 			absPath, resolveErr := storage.ResolveGamePath(g.FilePath, s.GameDirs)
 			if resolveErr != nil || func() bool { _, err := os.Stat(absPath); return os.IsNotExist(err) }() {
-				slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
-				// Delete associated discs first
-				s.DB.Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
-				s.DB.Delete(&g)
-				result.RemovedGames++
+				if !g.DeletedAt.Valid {
+					slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
+					result.RemovedGames++
+				}
+				// Hard-delete game and associated discs so the unique index
+				// is freed and future scans can recreate them cleanly.
+				s.DB.Unscoped().Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
+				s.DB.Unscoped().Delete(&g)
 			}
 		}
 	}
@@ -502,11 +508,57 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 	// Compute relative paths for DB storage
 	m3uRelPath := storage.RelativeGamePath(m3uPath, s.GameDirs)
 
-	// Check if game already exists
+	// Check if game already exists (including soft-deleted — the unique index
+	// on file_path covers soft-deleted rows, so we must see them to avoid
+	// creation failures and to restore games whose files reappear).
 	var existing db.Game
-	if err := s.DB.Where("file_path = ?", m3uRelPath).First(&existing).Error; err == nil {
-		// Game exists, update if needed
+	if err := s.DB.Unscoped().Where("file_path = ?", m3uRelPath).First(&existing).Error; err == nil {
+		// Restore if soft-deleted (file is back on disk)
+		if existing.DeletedAt.Valid {
+			slog.Info("restoring previously removed multi-disc game",
+				"title", existing.Title, "gameId", existing.ID)
+			s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+		}
 		foundPaths[m3uRelPath] = true
+
+		// Ensure disc records exist — they may be missing if the game was
+		// created before multi-disc support or if disc records were deleted.
+		var discCount int64
+		s.DB.Unscoped().Model(&db.GameDisc{}).Where("game_id = ?", existing.ID).Count(&discCount)
+		if discCount == 0 && len(discFiles) > 0 {
+			slog.Info("creating missing disc records for existing multi-disc game",
+				"title", existing.Title, "gameId", existing.ID, "discs", len(discFiles))
+			var totalSize int64
+			for i, df := range discFiles {
+				_, discSize, err := DiscCompanionFiles(df)
+				if err != nil {
+					slog.Warn("failed to get disc companion files", "path", df, "error", err)
+					continue
+				}
+				totalSize += discSize
+				disc := db.GameDisc{
+					GameID:     existing.ID,
+					DiscNumber: i + 1,
+					FilePath:   storage.RelativeGamePath(df, s.GameDirs),
+					FileName:   filepath.Base(df),
+					FileSize:   discSize,
+				}
+				if err := s.DB.Create(&disc).Error; err != nil {
+					slog.Warn("failed to create disc entry", "game", existing.Title, "disc", disc.DiscNumber, "error", err)
+				}
+			}
+			if existing.DiscCount == 0 || existing.FileSize == 0 {
+				s.DB.Model(&existing).Updates(map[string]interface{}{
+					"disc_count": len(discFiles),
+					"file_size":  totalSize,
+				})
+			}
+		} else if discCount > 0 {
+			// Restore any soft-deleted disc records
+			s.DB.Unscoped().Model(&db.GameDisc{}).
+				Where("game_id = ? AND deleted_at IS NOT NULL", existing.ID).
+				Update("deleted_at", nil)
+		}
 		return
 	}
 
@@ -615,10 +667,17 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 		relPath := storage.RelativeGamePath(path, s.GameDirs)
 		foundPaths[relPath] = true
 
-		// Check if game already exists
+		// Check if game already exists (including soft-deleted — unique index
+		// on file_path covers soft-deleted rows).
 		var existing db.Game
-		if err := s.DB.Where("file_path = ?", relPath).First(&existing).Error; err == nil {
-			// Game exists, check if file size changed
+		if err := s.DB.Unscoped().Where("file_path = ?", relPath).First(&existing).Error; err == nil {
+			// Restore if soft-deleted (file is back on disk)
+			if existing.DeletedAt.Valid {
+				slog.Info("restoring previously removed game",
+					"title", existing.Title, "path", relPath)
+				s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+			}
+			// Check if file size changed
 			if existing.FileSize != info.Size() {
 				existing.FileSize = info.Size()
 				s.DB.Save(&existing)

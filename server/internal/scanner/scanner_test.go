@@ -718,6 +718,208 @@ func TestScan_NonPSPCHDNoWarning(t *testing.T) {
 	assert.Empty(t, PSPCHDAchievementsWarning(chdPath, "SAT"), "SAT console should never get PSP CHD warning")
 }
 
+// When a multi-disc game exists in the DB but has no GameDisc records
+// (e.g., created before multi-disc support), a rescan should backfill them.
+func TestScan_RescanCreatesDiscRecordsForExistingGame(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc files on disk
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.cue"), []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.cue"), []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	// Create .m3u file
+	m3uContent := "disc1.cue\ndisc2.cue\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Metal Gear Solid.m3u"), []byte(m3uContent), 0644))
+
+	// Manually insert the game WITHOUT disc records — simulates a game
+	// created before multi-disc support or with an interrupted scan
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	existingGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Metal Gear Solid",
+		FileName:  "Metal Gear Solid.m3u",
+		FilePath:  filepath.Join("psx", "Metal Gear Solid.m3u"),
+		FileSize:  0,
+		DiscCount: 0,
+	}
+	require.NoError(t, database.Create(&existingGame).Error)
+
+	// Verify: game exists, no disc records
+	var discCount int64
+	database.Model(&db.GameDisc{}).Where("game_id = ?", existingGame.ID).Count(&discCount)
+	require.Equal(t, int64(0), discCount, "should have no disc records before scan")
+
+	// Scan — should detect the existing game and backfill disc records
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, result.NewGames, "should not create a new game")
+	assert.Equal(t, 1, result.TotalGames)
+
+	// Verify disc records were created
+	var discs []db.GameDisc
+	database.Where("game_id = ?", existingGame.ID).Order("disc_number").Find(&discs)
+	assert.Len(t, discs, 2, "should have 2 disc records after scan")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "disc1.cue", discs[0].FileName)
+	assert.Equal(t, 2, discs[1].DiscNumber)
+	assert.Equal(t, "disc2.cue", discs[1].FileName)
+
+	// Verify disc count and file size were updated
+	var updatedGame db.Game
+	database.First(&updatedGame, existingGame.ID)
+	assert.Equal(t, 2, updatedGame.DiscCount, "disc count should be updated")
+	assert.Greater(t, updatedGame.FileSize, int64(0), "file size should be updated")
+
+	// Rescan should be idempotent — no duplicate disc records
+	_, err = s.Scan()
+	require.NoError(t, err)
+
+	var discsAfterRescan []db.GameDisc
+	database.Where("game_id = ?", existingGame.ID).Find(&discsAfterRescan)
+	assert.Len(t, discsAfterRescan, 2, "rescan should not create duplicate disc records")
+}
+
+// Scanning must be deterministic: the end state depends only on what files
+// are on disk, not on previous DB state. This test verifies the full cycle:
+// scan → remove files → scan (removes) → restore files → scan (recreates).
+func TestScan_Deterministic_RemoveAndRestore(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	romPath := filepath.Join(nesDir, "Mario.nes")
+	require.NoError(t, os.WriteFile(romPath, []byte("rom data"), 0644))
+
+	s := NewScanner(database, []string{dir})
+
+	// Scan 1: game appears
+	r1, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r1.NewGames)
+	assert.Equal(t, 1, r1.TotalGames)
+
+	var game1 db.Game
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("nes", "Mario.nes")).First(&game1).Error)
+
+	// Remove the file
+	require.NoError(t, os.Remove(romPath))
+
+	// Scan 2: game is removed
+	r2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r2.RemovedGames)
+	assert.Equal(t, 0, r2.TotalGames)
+
+	// Game should be fully gone (hard-deleted), not just soft-deleted
+	var ghostCount int64
+	database.Unscoped().Model(&db.Game{}).Where("file_path = ?", filepath.Join("nes", "Mario.nes")).Count(&ghostCount)
+	assert.Equal(t, int64(0), ghostCount, "game should be hard-deleted, not soft-deleted")
+
+	// Restore the file
+	require.NoError(t, os.WriteFile(romPath, []byte("rom data"), 0644))
+
+	// Scan 3: game reappears as new
+	r3, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r3.NewGames)
+	assert.Equal(t, 1, r3.TotalGames)
+
+	var game3 db.Game
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("nes", "Mario.nes")).First(&game3).Error)
+	assert.Equal(t, "Mario", game3.Title)
+}
+
+// Same determinism test for multi-disc games.
+func TestScan_Deterministic_MultiDisc_RemoveAndRestore(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	disc1Bin := filepath.Join(psxDir, "disc1.bin")
+	disc1Cue := filepath.Join(psxDir, "disc1.cue")
+	disc2Bin := filepath.Join(psxDir, "disc2.bin")
+	disc2Cue := filepath.Join(psxDir, "disc2.cue")
+	m3uPath := filepath.Join(psxDir, "FF7.m3u")
+
+	writeDiscFiles := func() {
+		require.NoError(t, os.WriteFile(disc1Bin, []byte("bin1"), 0644))
+		require.NoError(t, os.WriteFile(disc1Cue, []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+		require.NoError(t, os.WriteFile(disc2Bin, []byte("bin2data"), 0644))
+		require.NoError(t, os.WriteFile(disc2Cue, []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+		require.NoError(t, os.WriteFile(m3uPath, []byte("disc1.cue\ndisc2.cue\n"), 0644))
+	}
+
+	removeDiscFiles := func() {
+		os.Remove(disc1Bin)
+		os.Remove(disc1Cue)
+		os.Remove(disc2Bin)
+		os.Remove(disc2Cue)
+		os.Remove(m3uPath)
+	}
+
+	writeDiscFiles()
+	s := NewScanner(database, []string{dir})
+
+	// Scan 1: game + discs created
+	r1, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r1.NewGames)
+
+	var game1 db.Game
+	require.NoError(t, database.First(&game1).Error)
+	var discs1 []db.GameDisc
+	database.Where("game_id = ?", game1.ID).Find(&discs1)
+	assert.Len(t, discs1, 2)
+
+	// Remove all files
+	removeDiscFiles()
+
+	// Scan 2: game removed
+	r2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r2.RemovedGames)
+	assert.Equal(t, 0, r2.TotalGames)
+
+	// Both game and disc records should be hard-deleted
+	var ghostGames, ghostDiscs int64
+	database.Unscoped().Model(&db.Game{}).Count(&ghostGames)
+	database.Unscoped().Model(&db.GameDisc{}).Count(&ghostDiscs)
+	assert.Equal(t, int64(0), ghostGames, "game should be hard-deleted")
+	assert.Equal(t, int64(0), ghostDiscs, "disc records should be hard-deleted")
+
+	// Restore files
+	writeDiscFiles()
+
+	// Scan 3: game + discs recreated
+	r3, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r3.NewGames)
+	assert.Equal(t, 1, r3.TotalGames)
+
+	var game3 db.Game
+	require.NoError(t, database.First(&game3).Error)
+	assert.Equal(t, 2, game3.DiscCount)
+
+	var discs3 []db.GameDisc
+	database.Where("game_id = ?", game3.ID).Order("disc_number").Find(&discs3)
+	assert.Len(t, discs3, 2, "disc records should be recreated")
+	assert.Equal(t, 1, discs3[0].DiscNumber)
+	assert.Equal(t, 2, discs3[1].DiscNumber)
+}
+
 func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
 	database := setupTestDB(t)
 	dir := t.TempDir()

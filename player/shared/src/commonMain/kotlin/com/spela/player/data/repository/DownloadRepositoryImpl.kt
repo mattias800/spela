@@ -91,14 +91,12 @@ class DownloadRepositoryImpl(
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         fileStorage.createDirectory(gameDir)
 
-        // Download .m3u file
-        val m3uData = apiClient.downloadM3U(gameId)
         val m3uPath = "$gameDir/game.m3u"
-        fileStorage.writeFile(m3uPath, m3uData)
-
         val totalDiscs = game.discs.size
 
-        // Download each disc
+        // Download each disc FIRST — write M3U only after all discs succeed.
+        // Writing M3U early would make getLocalGamePath treat the game as cached
+        // even if disc downloads fail or are still in progress.
         for ((index, disc) in game.discs.sortedBy { it.discNumber }.withIndex()) {
             downloads.update {
                 it + (gameId to DownloadProgress(
@@ -134,7 +132,7 @@ class DownloadRepositoryImpl(
             }
         }
 
-        // Rewrite .m3u to use local filenames
+        // Write .m3u with local filenames — only after all discs downloaded
         val m3uContent = game.discs.sortedBy { it.discNumber }
             .joinToString("\n") { it.fileName } + "\n"
         fileStorage.writeFile(m3uPath, m3uContent.encodeToByteArray())
@@ -169,9 +167,17 @@ class DownloadRepositoryImpl(
 
     override suspend fun getLocalGamePath(gameId: String): String? {
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
-        // Check multi-disc first
+        // Check multi-disc first: M3U must exist AND disc images must be present.
+        // Without this check, a partial download (M3U written but discs not yet
+        // downloaded) would be treated as a valid cached game.
         val multiPath = "$gameDir/game.m3u"
-        if (fileStorage.fileExists(multiPath)) return multiPath
+        if (fileStorage.fileExists(multiPath)) {
+            val files = fileStorage.listFiles(gameDir)
+            val hasDiscImages = files.any { it != "game.m3u" }
+            if (hasDiscImages) return multiPath
+            // M3U exists but no disc images — partial/failed download
+            println("[Download] getLocalGamePath: $multiPath exists but no disc images, treating as not cached")
+        }
         // Check single-disc in subdirectory (new format: /$gameId/$fileName)
         if (fileStorage.isDirectory(gameDir)) {
             val files = fileStorage.listFiles(gameDir)

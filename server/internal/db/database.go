@@ -145,7 +145,7 @@ func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
 			}
 			slog.Info("removing duplicate game during path migration",
 				"title", victim.Title, "id", victim.ID, "path", relPath)
-			database.Where("game_id = ?", victim.ID).Delete(&GameDisc{})
+			database.Unscoped().Where("game_id = ?", victim.ID).Delete(&GameDisc{})
 			database.Unscoped().Delete(&victim)
 			if victim.ID == g.ID {
 				continue
@@ -252,7 +252,7 @@ func DeduplicateGames(database *gorm.DB) error {
 			mergeGameData(database, keeper.ID, dup.ID)
 			mergeGameMetadata(database, &keeper, &dup)
 			// Hard-delete the duplicate
-			database.Where("game_id = ?", dup.ID).Delete(&GameDisc{})
+			database.Unscoped().Where("game_id = ?", dup.ID).Delete(&GameDisc{})
 			database.Unscoped().Delete(&dup)
 		}
 	}

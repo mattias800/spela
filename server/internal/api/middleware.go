@@ -29,8 +29,10 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 			}
 		}
 
-		// Fall back to query parameter only for WebSocket upgrades
-		if token == "" && strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
+		// Fall back to query parameter for WebSocket upgrades and file
+		// downloads (EmulatorJS, <img>/<audio>/<video> tags cannot set
+		// Authorization headers when loading resources by URL).
+		if token == "" {
 			token = c.Query("token")
 		}
 
