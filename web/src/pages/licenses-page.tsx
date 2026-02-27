@@ -17,6 +17,20 @@ const credits: CreditEntry[] = [
       "Console hardware icons used in the library view.",
   },
   {
+    name: "console-logos",
+    url: "https://github.com/PRO100BYTE/console-logos",
+    license: "Free to use",
+    description:
+      "Console logo SVGs by Dan Patrick used in console detail pages.",
+  },
+  {
+    name: "Icons8",
+    url: "https://icons8.com",
+    license: "Free with attribution",
+    description:
+      "GameCube and 3DS console icons used in the library view.",
+  },
+  {
     name: "EmulatorJS",
     url: "https://emulatorjs.org",
     license: "GPL-3.0",

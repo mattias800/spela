@@ -518,17 +518,14 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("save_state_support", true)
 				slog.Info("backfilled SaveStateSupport", "name", existing.Name)
 			}
-			// Backfill .m3u extension for disc-based consoles
-			if strings.Contains(c.Extensions, ".m3u") && !strings.Contains(existing.Extensions, ".m3u") {
-				newExts := existing.Extensions + ",.m3u"
-				db.Model(&existing).Update("extensions", newExts)
-				slog.Info("backfilled .m3u extension", "name", existing.Name)
-			}
-			// Backfill .chd extension for disc-based consoles
-			if strings.Contains(c.Extensions, ".chd") && !strings.Contains(existing.Extensions, ".chd") {
-				newExts := existing.Extensions + ",.chd"
-				db.Model(&existing).Update("extensions", newExts)
-				slog.Info("backfilled .chd extension", "name", existing.Name)
+			// Backfill any new extensions from the seed that are missing in the DB
+			for _, ext := range strings.Split(c.Extensions, ",") {
+				ext = strings.TrimSpace(ext)
+				if ext != "" && !strings.Contains(existing.Extensions, ext) {
+					existing.Extensions = existing.Extensions + "," + ext
+					db.Model(&existing).Update("extensions", existing.Extensions)
+					slog.Info("backfilled extension", "name", existing.Name, "ext", ext)
+				}
 			}
 		}
 	}

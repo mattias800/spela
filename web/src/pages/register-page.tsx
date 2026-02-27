@@ -32,7 +32,11 @@ export function RegisterPage() {
       await register(username, email, password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Registration failed",
+      );
     } finally {
       setLoading(false);
     }

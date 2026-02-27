@@ -30,7 +30,7 @@ if [ "$SPELA_SEED" = "true" ]; then
         echo "Scanning for games..."
         SCAN_RESULT=$(wget -qO- --post-data='' \
             --header="Authorization: Bearer $TOKEN" \
-            http://localhost:${SPELA_PORT:-8080}/api/games/scan 2>/dev/null)
+            http://localhost:${SPELA_PORT:-8080}/api/admin/games/scan 2>/dev/null)
         echo "Scan result: $SCAN_RESULT"
     else
         echo "Warning: could not login to trigger game scan"
