@@ -37,6 +37,7 @@ class ConnectivityMonitor(
     val onReconnect: SharedFlow<Unit> = _onReconnect.asSharedFlow()
 
     private var consecutiveFailures = 0
+    private var authFailureSuppressed = false
 
     private companion object {
         const val POLL_INTERVAL_ONLINE_MS = 30_000L
@@ -52,6 +53,7 @@ class ConnectivityMonitor(
                     val reachable = apiClient.healthCheck()
                     if (reachable) {
                         consecutiveFailures = 0
+                        authFailureSuppressed = false
                         if (!wasConnected && _connectionState.value !is ConnectionState.AuthFailed
                             && _connectionState.value !is ConnectionState.DatabaseError
                         ) {
@@ -106,6 +108,7 @@ class ConnectivityMonitor(
     }
 
     fun reportAuthFailure(reason: AuthFailureReason) {
+        if (authFailureSuppressed) return
         _connectionState.value = ConnectionState.AuthFailed(reason)
     }
 
@@ -115,6 +118,7 @@ class ConnectivityMonitor(
 
     fun clearAuthFailure() {
         if (_connectionState.value is ConnectionState.AuthFailed) {
+            authFailureSuppressed = true
             _connectionState.value = ConnectionState.Online
             _onReconnect.tryEmit(Unit)
         }

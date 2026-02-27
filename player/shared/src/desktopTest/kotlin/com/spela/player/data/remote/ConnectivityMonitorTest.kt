@@ -102,6 +102,22 @@ class ConnectivityMonitorTest {
     }
 
     @Test
+    fun clearAuthFailureSuppressesReReporting() = runTest(testDispatcher) {
+        val monitor = createMonitor(this)
+
+        monitor.reportAuthFailure(AuthFailureReason.SESSION_EXPIRED)
+        assertTrue(monitor.connectionState.value is ConnectionState.AuthFailed)
+
+        // User dismisses dialog
+        monitor.clearAuthFailure()
+        assertTrue(monitor.connectionState.value is ConnectionState.Online)
+
+        // Subsequent auth failure should be suppressed (e.g. health check with expired token)
+        monitor.reportAuthFailure(AuthFailureReason.REFRESH_FAILED)
+        assertTrue(monitor.connectionState.value is ConnectionState.Online)
+    }
+
+    @Test
     fun clearDatabaseErrorTransitionsToOnline() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
         monitor.reportDatabaseError("Schema mismatch")
