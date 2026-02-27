@@ -107,10 +107,17 @@
         });
 
         function initEmulator(config) {
+          // Use pre-loaded data if provided (disc switch flow)
+          if (config.romData) {
+            var blob = new Blob([config.romData], { type: "application/zip" });
+            window.EJS_gameUrl = URL.createObjectURL(blob);
+          } else {
+            window.EJS_gameUrl = config.romUrl;
+          }
+
           // Set EmulatorJS configuration globals
           window.EJS_player = "#game";
           window.EJS_core = config.core;
-          window.EJS_gameUrl = config.romUrl;
           window.EJS_gameName = config.gameName;
           window.EJS_color = "#00a3e0"; // brand-cyan
           window.EJS_startOnLoaded = true;
@@ -241,8 +248,18 @@
             sendToParent({ type: "emulator-ready" });
           };
 
+          var pendingDiscSwitch = (typeof config.targetDisc === "number") ? config.targetDisc : null;
+
           window.EJS_onGameStart = function () {
             sendToParent({ type: "game-started" });
+            if (pendingDiscSwitch !== null) {
+              setTimeout(function () {
+                if (window.EJS_emulator && window.EJS_emulator.gameManager) {
+                  window.EJS_emulator.gameManager.setCurrentDisk(pendingDiscSwitch);
+                }
+                pendingDiscSwitch = null;
+              }, 500);
+            }
           };
 
           window.EJS_onSaveState = function () {

@@ -628,16 +628,9 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		return
 	}
 
-	if len(companions) == 1 {
-		// Single file (.iso, .chd, etc.) — serve directly
-		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
-		c.File(companions[0])
-		return
-	}
-
-	// Multiple files (.cue + .bin) — choose archive format.
 	// EmulatorJS (browser emulation) supports zip but not tar, so the web
-	// frontend requests format=zip. The native player app uses the default tar.
+	// frontend requests format=zip. This must be checked before the single-file
+	// early return so that even single-file discs (.iso, .chd) get zipped.
 	format := c.Query("format")
 	if format == "zip" {
 		c.Header("Content-Type", "application/zip")
@@ -647,6 +640,13 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		if err := serveZip(c.Writer, companions); err != nil {
 			slog.Warn("error streaming zip for disc", "disc", discNumber, "error", err)
 		}
+		return
+	}
+
+	if len(companions) == 1 {
+		// Single file (.iso, .chd, etc.) — serve directly
+		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
+		c.File(companions[0])
 		return
 	}
 

@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button, Skeleton } from "@/components/ui";
 import { useGame, useGameSaves } from "@/hooks/use-games";
@@ -9,6 +9,7 @@ import { useBiosFiles, useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
 import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
+import { useDiscManager } from "@/hooks/use-disc-manager";
 import { usePlaySession } from "@/hooks/use-play-session";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useToast } from "@/components/ui";
@@ -49,7 +50,14 @@ export function PlayPage() {
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isExitSaving, setIsExitSaving] = useState(false);
+  const [isSwitchingDisc, setIsSwitchingDisc] = useState(false);
+  const [currentDisc, setCurrentDisc] = useState(1);
   const sessionStartRef = useRef<number>(Date.now());
+  const pendingDiscSwitchRef = useRef<{
+    targetDisc: number; // 0-indexed for EmulatorJS
+    saveData: string;
+  } | null>(null);
+  const buildMultiDiscBundleRef = useRef<() => ArrayBuffer | null>(() => null);
 
   // Resolve the EmulatorJS core identifier for this game's console
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
@@ -90,9 +98,29 @@ export function PlayPage() {
       sessionStartRef.current = Date.now();
     },
     onSaveStateResponse: (data, screenshot) => {
+      // Check if this save state is part of a disc switch flow
+      if (pendingDiscSwitchRef.current) {
+        pendingDiscSwitchRef.current.saveData = data;
+
+        // Reload iframe — the init useEffect will detect the pending
+        // disc switch and build the combined bundle there
+        setIframeLoaded(false);
+        const iframe = emulator.iframeRef.current;
+        if (iframe) {
+          iframe.src = "/emulator.html";
+        }
+        return;
+      }
+
       saveManager.handleSaveStateData(data, screenshot);
     },
     onSaveStateError: (err) => {
+      if (pendingDiscSwitchRef.current) {
+        pendingDiscSwitchRef.current = null;
+        setIsSwitchingDisc(false);
+        toast("error", `Disc switch failed: ${err}`);
+        return;
+      }
       toast("error", `Save failed: ${err}`);
     },
     onError: (err) => {
@@ -116,14 +144,82 @@ export function PlayPage() {
     requestSaveState: emulator.requestSaveState,
   });
 
+  const discManager = useDiscManager({
+    game,
+    emulatorStatus: emulator.status,
+    onDiscError: (discNumber, error) => {
+      toast("error", `Disc ${discNumber} download failed: ${error}`);
+    },
+  });
+  buildMultiDiscBundleRef.current = discManager.buildMultiDiscBundle;
+
   usePlaySession(id, emulator.status);
   const { handleFullscreen } = useFullscreen(emulator.iframeRef);
   const gamepadConnected = useGamepadConnected();
+
+  const handleDiscSwitch = useCallback(
+    (targetDiscNumber: number) => {
+      if (isSwitchingDisc || !discManager.allDiscsReady) return;
+      setIsSwitchingDisc(true);
+
+      // Store target disc (0-indexed for EmulatorJS) — currentDisc is
+      // updated after the switch succeeds in the init useEffect
+      pendingDiscSwitchRef.current = {
+        targetDisc: targetDiscNumber - 1,
+        saveData: "",
+      };
+
+      // Pause and request save state — the flow continues in onSaveStateResponse
+      emulator.pause();
+      emulator.requestSaveState();
+    },
+    [isSwitchingDisc, discManager.allDiscsReady, emulator],
+  );
 
   // Initialize emulator once iframe is loaded and we have game data
   useEffect(() => {
     if (!iframeLoaded || !game || !isSupported || !emulatorJsCore) return;
 
+    // Disc switch flow: reload with combined bundle + save state + target disc
+    if (pendingDiscSwitchRef.current && pendingDiscSwitchRef.current.saveData) {
+      const { targetDisc, saveData } = pendingDiscSwitchRef.current;
+      const bundle = buildMultiDiscBundleRef.current();
+      if (!bundle) {
+        toast("error", "Failed to build multi-disc bundle");
+        pendingDiscSwitchRef.current = null;
+        setIsSwitchingDisc(false);
+        return;
+      }
+
+      const token = api.getAccessToken();
+      const tokenSuffix = token
+        ? `?token=${encodeURIComponent(token)}`
+        : "";
+      const biosUrls =
+        biosFiles && biosFiles.length > 0
+          ? biosFiles.map((f) => getBiosFileUrl(f.name) + tokenSuffix)
+          : undefined;
+
+      // Update currentDisc now that the switch is committed
+      setCurrentDisc(targetDisc + 1); // convert back to 1-indexed
+      pendingDiscSwitchRef.current = null;
+
+      emulator.initEmulator({
+        romUrl: "", // unused when romData is provided
+        romData: bundle,
+        targetDisc,
+        core: emulatorJsCore!,
+        gameName: game!.title,
+        saveStateData: saveData,
+        biosUrls,
+        preferences: emulatorPrefs,
+      });
+
+      setIsSwitchingDisc(false);
+      return;
+    }
+
+    // Normal initialization flow
     async function init() {
       const token = api.getAccessToken();
       const tokenSuffix = token
@@ -266,6 +362,11 @@ export function PlayPage() {
           handleFullscreen();
           emulator.focusEmulator();
         }}
+        discStates={discManager.isMultiDisc ? discManager.discStates : undefined}
+        currentDisc={discManager.isMultiDisc ? currentDisc : undefined}
+        isSwitchingDisc={isSwitchingDisc}
+        onSwitchDisc={discManager.isMultiDisc ? handleDiscSwitch : undefined}
+        onRetryDisc={discManager.isMultiDisc ? discManager.retryDisc : undefined}
       />
 
       <div className="flex-1 relative bg-black">
@@ -276,6 +377,8 @@ export function PlayPage() {
           biosMissing={biosMissing}
           missingBiosFiles={missingBiosFiles}
           isAdmin={isAdmin}
+          isSwitchingDisc={isSwitchingDisc}
+          switchingToDisc={pendingDiscSwitchRef.current ? pendingDiscSwitchRef.current.targetDisc + 1 : currentDisc}
           onRetry={() => {
             setIframeLoaded(false);
             const iframe = emulator.iframeRef.current;

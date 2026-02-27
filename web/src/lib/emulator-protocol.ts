@@ -10,6 +10,8 @@
 export interface InitEmulatorMessage {
   type: "init";
   romUrl: string;
+  romData?: ArrayBuffer; // pre-loaded ROM zip data (skip download if provided)
+  targetDisc?: number; // 0-indexed disc to switch to after game starts
   core: string;
   gameName: string;
   saveStateData?: string; // base64-encoded save state to auto-load
