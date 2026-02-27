@@ -17,11 +17,13 @@
 #   TURN_EXTERNAL_IP        — public IP if behind NAT (coturn auto-detects on most VPS)
 
 services:
-  # ── Go API server ──────────────────────────────────────────────
-  server:
+  # ── Spela (Go API + frontend in one container) ──────────────────
+  spela:
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     volumes:
       - spela-data:/app/data
       - spela-saves:/app/saves
@@ -32,6 +34,7 @@ services:
     environment:
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in Portainer stack env}
+      - SPELA_ENCRYPTION_KEY=${SPELA_ENCRYPTION_KEY:?Set SPELA_ENCRYPTION_KEY in Portainer stack env}
       - SPELA_DB_PATH=/app/data/spela.db
       - SPELA_GAME_DIRS=/app/games
       - SPELA_SAVE_DIR=/app/saves
@@ -55,18 +58,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # ── Web frontend (nginx serving built React app) ───────────────
-  web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    ports:
-      - "8080:80"
-    depends_on:
-      server:
-        condition: service_healthy
-    restart: unless-stopped
 
   # ── TURN server for WebRTC NAT traversal (netplay Phase 2) ────
   coturn:

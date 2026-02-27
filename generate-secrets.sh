@@ -15,6 +15,7 @@ generate_secret() {
 }
 
 SPELA_JWT_SECRET=$(generate_secret 48)
+SPELA_ENCRYPTION_KEY=$(generate_secret 48)
 TURN_SECRET=$(generate_secret 48)
 
 cat <<EOF
@@ -22,6 +23,9 @@ cat <<EOF
 
 # JWT signing key (required)
 SPELA_JWT_SECRET=$SPELA_JWT_SECRET
+
+# Encryption key for stored credentials (required)
+SPELA_ENCRYPTION_KEY=$SPELA_ENCRYPTION_KEY
 
 # TURN server shared secret for HMAC-SHA1 credentials (required for netplay)
 TURN_SECRET=$TURN_SECRET
