@@ -739,6 +739,12 @@ func (s *Scanner) identifyConsole(path, ext string) string {
 		return abbrev
 	}
 
+	// Try grandparent directory (handles layouts like ps2/GameName/game.bin)
+	grandparentDir := strings.ToLower(filepath.Base(filepath.Dir(filepath.Dir(path))))
+	if abbrev, ok := directoryConsoleMap[grandparentDir]; ok {
+		return abbrev
+	}
+
 	// Then try file extension
 	if abbrev, ok := ConsoleExtMap[ext]; ok {
 		return abbrev
