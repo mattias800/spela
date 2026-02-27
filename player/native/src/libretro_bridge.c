@@ -236,7 +236,7 @@ static bool environment_callback(unsigned cmd, void *data) {
 
                 /* N64 renderer selection per platform:
                  * - macOS: Angrylion (software) — avoids GL compositing issues with GLideN64
-                 * - Android: paraLLEl-RDP (Vulkan) — triggers our Vulkan HW render pipeline
+                 * - Android: GLideN64 (GLES) — proven HW render path on Android
                  * - Other: leave core defaults (GLideN64 / GLES3) */
                 {
                     const struct retro_variable *v3 = (const struct retro_variable *)data;
@@ -261,6 +261,23 @@ static bool environment_callback(unsigned cmd, void *data) {
                         }
                     }
                 }
+
+#ifdef __ANDROID__
+                /* PS1 (Beetle PSX HW) renderer selection on Android:
+                 * Force OpenGL (GLES) renderer to avoid Granite Vulkan crashes
+                 * on Adreno GPUs. The GLES HW renderer uses the same proven
+                 * EGL pbuffer + Vulkan presentation pipeline as N64/GLideN64. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "beetle_psx_hw_renderer")) {
+                            LOGI("Beetle PSX HW detected, forcing OpenGL (GLES) renderer on Android");
+                            core_variables_set("beetle_psx_hw_renderer", "hardware_gl");
+                            break;
+                        }
+                    }
+                }
+#endif
 
             }
             return true;
@@ -305,6 +322,29 @@ static bool environment_callback(unsigned cmd, void *data) {
             *(unsigned *)data = 0;
             return true;
         }
+
+        case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
+            /* Tell cores which HW render context we prefer.
+             * On Android: prefer GLES3 — our EGL pbuffer + Vulkan presentation
+             * pipeline is proven (used by GLideN64/N64). Avoids Granite Vulkan
+             * crashes on Adreno GPUs (beetle_psx_hw, etc.).
+             * On desktop: prefer OpenGL Core for maximum compatibility.
+             * Cores that unconditionally use Vulkan (paraLLEl-RDP) ignore this
+             * and go through SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE instead. */
+#ifdef __ANDROID__
+            *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;
+#else
+            *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
+#endif
+            LOGI("Reporting preferred HW render: %u", *(unsigned *)data);
+            return true;
+        }
+
+        case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+            /* Core signals it accesses the GPU context from multiple threads
+             * (e.g. Granite's background pipeline compilation). Acknowledge so
+             * the core knows the frontend is aware. */
+            return true;
 
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE: {
 #ifdef __ANDROID__
@@ -505,6 +545,17 @@ JNI_FUNC(void, nativeInit)(JNIEnv *env, jobject thiz) {
     input_init();
     g_core.retro_init();
     g_core.initialized = true;
+
+    /* Re-bind callbacks after retro_init(). Some cores (e.g. Beetle PSX HW
+     * in Vulkan mode) reset their internal callback storage during retro_init(),
+     * clearing the video_refresh pointer set during core_load(). Re-binding
+     * ensures all callbacks are valid before retro_load_game()/retro_run(). */
+    g_core.retro_set_video_refresh(video_refresh_callback);
+    g_core.retro_set_audio_sample(audio_sample_callback);
+    g_core.retro_set_audio_sample_batch(audio_sample_batch_callback);
+    g_core.retro_set_input_poll(input_poll_callback);
+    g_core.retro_set_input_state(input_state_callback);
+
     LOGI("Core initialized");
 }
 

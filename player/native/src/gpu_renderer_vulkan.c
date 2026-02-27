@@ -803,7 +803,7 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
     r->hw_vk_interface = (struct retro_hw_render_interface_vulkan){
         .interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN,
         .interface_version = 5,
-        .get_instance_proc_addr = vkGetInstanceProcAddr,
+        .get_instance_proc_addr = wrapped_vkGetInstanceProcAddr,
         .instance = r->instance,
         .gpu = r->physical_device,
         .device = r->device,
@@ -1663,7 +1663,7 @@ static bool create_device(gpu_renderer_t *r) {
             r->instance,
             r->physical_device,
             r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
-            vkGetInstanceProcAddr,
+            wrapped_vkGetInstanceProcAddr,
             vulkan_create_device_wrapper,
             r);  /* opaque = renderer, so wrapper can add swapchain ext */
 
@@ -1684,7 +1684,7 @@ static bool create_device(gpu_renderer_t *r) {
             r->instance,
             VK_NULL_HANDLE,  /* let core choose GPU */
             r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
-            vkGetInstanceProcAddr,
+            wrapped_vkGetInstanceProcAddr,
             vulkan_create_device_wrapper,
             r);
         if (ok && vk_context.device) {
@@ -1720,7 +1720,7 @@ static bool create_device(gpu_renderer_t *r) {
             r->instance,
             r->physical_device,
             r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
-            vkGetInstanceProcAddr,
+            wrapped_vkGetInstanceProcAddr,
             r->offscreen_mode ? NULL : &required_ext,
             r->offscreen_mode ? 0 : 1,
             NULL, 0,       /* no required layers */
