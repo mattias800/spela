@@ -269,6 +269,93 @@ func TestScrapeIGDB_DiscSystem_SkipsCRC(t *testing.T) {
 	assert.Equal(t, "igdb:10", game.ScraperID)
 }
 
+func TestScrapeIGDB_CRCMatch_PersistsPathImmediately(t *testing.T) {
+	// Verify that after CRC rename, the DB record is updated immediately
+	// (not deferred to the final Save). This prevents download 404s if the
+	// later scrape steps fail.
+	gameDir := t.TempDir()
+	nesDir := filepath.Join(gameDir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0o755))
+	romContent := []byte("hello") // CRC32 = 3610A686
+	romPath := filepath.Join(nesDir, "castlevania.nes")
+	require.NoError(t, os.WriteFile(romPath, romContent, 0o644))
+
+	datDir := t.TempDir()
+	systemName := AbbreviationToLibRetro["NES"]
+	datPath := filepath.Join(datDir, systemName+".dat")
+	datContent := `game (
+	name "Castlevania (USA)"
+	rom ( name "Castlevania (USA).nes" size 5 crc 3610A686 md5 x sha1 y )
+)
+`
+	require.NoError(t, os.WriteFile(datPath, []byte(datContent), 0o644))
+
+	// IGDB mock — return error to simulate IGDB failure after CRC rename
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return a valid IGDB result so scrape completes
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{ID: 1, Name: "Castlevania"},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+
+	gameDirs := []string{gameDir}
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "castlevania",
+		FileName:  "castlevania.nes",
+		FilePath:  filepath.Join("nes", "castlevania.nes"),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(datDir, &http.Client{Timeout: 5 * time.Second}),
+		GameDirs:   gameDirs,
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	// Reload the game from DB to verify the path was persisted
+	var reloaded db.Game
+	require.NoError(t, database.First(&reloaded, game.ID).Error)
+	assert.Equal(t, "Castlevania (USA).nes", reloaded.FileName)
+	assert.Equal(t, filepath.Join("nes", "Castlevania (USA).nes"), reloaded.FilePath)
+}
+
 func TestScrapeIGDB_CRCMatch_SameNameNoRename(t *testing.T) {
 	// When CRC matches but file already has the canonical name, no rename needed
 	gameDir := t.TempDir()

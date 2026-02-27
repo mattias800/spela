@@ -10,7 +10,7 @@ import (
 
 // bestIGDBMatch picks the IGDB search result whose name is most similar to the
 // query (the cleaned filename). It reuses normalizeName and jaroWinkler from
-// namematch.go with the same tiered scoring logic used for LibRetro matching.
+// namematch.go with tiered scoring logic.
 func bestIGDBMatch(query string, games []igdb.Game) igdb.Game {
 	if len(games) == 1 {
 		slog.Info("IGDB match: single result", "query", query, "match", games[0].Name, "igdbId", games[0].ID)
@@ -37,7 +37,7 @@ func bestIGDBMatch(query string, games []igdb.Game) igdb.Game {
 			if shorter > longer {
 				shorter, longer = longer, shorter
 			}
-			score = 0.85 + 0.10*float64(shorter)/float64(longer)
+			score = 0.90 + 0.05*float64(shorter)/float64(longer)
 			tier = "prefix"
 		case strings.Contains(n, normalizedQuery) || strings.Contains(normalizedQuery, n):
 			shorter := len(normalizedQuery)
@@ -45,7 +45,7 @@ func bestIGDBMatch(query string, games []igdb.Game) igdb.Game {
 			if shorter > longer {
 				shorter, longer = longer, shorter
 			}
-			score = 0.85 + 0.10*float64(shorter)/float64(longer)
+			score = 0.80 + 0.05*float64(shorter)/float64(longer)
 			tier = "contains"
 		default:
 			score = jaroWinkler(normalizedQuery, n)
@@ -54,7 +54,7 @@ func bestIGDBMatch(query string, games []igdb.Game) igdb.Game {
 
 		slog.Debug("IGDB match candidate", "query", normalizedQuery, "candidate", g.Name, "normalized", n, "tier", tier, "score", fmt.Sprintf("%.4f", score), "igdbId", g.ID)
 
-		if score > bestScore {
+		if isBetterIGDBMatch(score, g, bestScore, games[bestIdx]) {
 			bestScore = score
 			bestIdx = i
 		}
@@ -62,4 +62,41 @@ func bestIGDBMatch(query string, games []igdb.Game) igdb.Game {
 
 	slog.Info("IGDB match selected", "query", query, "match", games[bestIdx].Name, "score", fmt.Sprintf("%.4f", bestScore), "igdbId", games[bestIdx].ID)
 	return games[bestIdx]
+}
+
+// isBetterIGDBMatch returns true if candidate (with candidateScore) is a better
+// match than current best (with bestScore). When scores are equal, it applies
+// tiebreakers: prefer released games, then earlier release date, then shorter name.
+func isBetterIGDBMatch(candidateScore float64, candidate igdb.Game, bestScore float64, best igdb.Game) bool {
+	if candidateScore > bestScore {
+		return true
+	}
+	if candidateScore < bestScore {
+		return false
+	}
+
+	// Tiebreaker 1: prefer released games (non-zero FirstReleaseDate) over unreleased
+	candidateReleased := candidate.FirstReleaseDate > 0
+	bestReleased := best.FirstReleaseDate > 0
+	if candidateReleased && !bestReleased {
+		return true
+	}
+	if !candidateReleased && bestReleased {
+		return false
+	}
+
+	// Tiebreaker 2: among released games, prefer earlier release (likely the original)
+	if candidateReleased && bestReleased && candidate.FirstReleaseDate < best.FirstReleaseDate {
+		return true
+	}
+	if candidateReleased && bestReleased && candidate.FirstReleaseDate > best.FirstReleaseDate {
+		return false
+	}
+
+	// Tiebreaker 3: prefer shorter name (less likely to be a sequel/subtitle variant)
+	if len(candidate.Name) < len(best.Name) {
+		return true
+	}
+
+	return false
 }

@@ -247,17 +247,17 @@ func findBestMatch(normalizedQuery string, entries []nameEntry, threshold float6
 			if shorter > longer {
 				shorter, longer = longer, shorter
 			}
-			score = 0.85 + 0.10*float64(shorter)/float64(longer)
+			score = 0.90 + 0.05*float64(shorter)/float64(longer)
 		} else if strings.Contains(e.Normalized, normalizedQuery) || strings.Contains(normalizedQuery, e.Normalized) {
-			// Tier 2b: Contains match
+			// Tier 3: Contains match (lower base than prefix)
 			shorter := len(normalizedQuery)
 			longer := len(e.Normalized)
 			if shorter > longer {
 				shorter, longer = longer, shorter
 			}
-			score = 0.85 + 0.10*float64(shorter)/float64(longer)
+			score = 0.80 + 0.05*float64(shorter)/float64(longer)
 		} else {
-			// Tier 3: Jaro-Winkler fuzzy
+			// Tier 4: Jaro-Winkler fuzzy
 			score = jaroWinkler(normalizedQuery, e.Normalized)
 		}
 

@@ -293,8 +293,23 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 					newAbsPath := filepath.Join(filepath.Dir(absFilePath), entry.ROMName)
 					if newAbsPath != absFilePath {
 						if err := os.Rename(absFilePath, newAbsPath); err == nil {
+							oldRelPath := game.FilePath
+							oldName := game.FileName
 							game.FilePath = storage.RelativeGamePath(newAbsPath, s.GameDirs)
 							game.FileName = entry.ROMName
+
+							// Persist new path immediately so the DB never references a stale file location.
+							if dbErr := s.DB.Model(game).Updates(map[string]interface{}{
+								"file_path": game.FilePath,
+								"file_name": game.FileName,
+							}).Error; dbErr != nil {
+								slog.Warn("failed to persist renamed path, rolling back rename", "error", dbErr)
+								if rbErr := os.Rename(newAbsPath, absFilePath); rbErr != nil {
+									slog.Error("rollback rename also failed", "error", rbErr)
+								}
+								game.FilePath = oldRelPath
+								game.FileName = oldName
+							}
 						} else {
 							slog.Warn("failed to rename ROM to canonical name", "from", absFilePath, "to", newAbsPath, "error", err)
 						}
@@ -313,16 +328,14 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
-	// For CRC-verified games, try exact name match first. IGDB's text search
-	// can omit the original game (e.g. "Super Mario 64" returns the unreleased
-	// sequel but not the original).
+	// Always try exact name match first. IGDB's fulltext search can omit the
+	// original game (e.g. "Super Mario 64" returns the unreleased sequel but
+	// not the original).
 	var games []igdb.Game
 	var err error
-	if game.VerificationStatus == "verified" {
-		games, err = s.IGDBClient.SearchGameExact(searchName, platformID)
-		if err != nil {
-			slog.Warn("IGDB exact search failed, falling back to text search", "game", searchName, "error", err)
-		}
+	games, err = s.IGDBClient.SearchGameExact(searchName, platformID)
+	if err != nil {
+		slog.Warn("IGDB exact search failed, falling back to text search", "game", searchName, "error", err)
 	}
 
 	// Fall back to text search if exact match found nothing
