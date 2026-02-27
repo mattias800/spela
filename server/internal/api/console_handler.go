@@ -46,6 +46,7 @@ var previewFallbackGames = map[string]string{
 	"DC":    "Sonic Adventure (USA)",
 	"VB":    "Mario's Tennis (USA)",
 	"3DS":   "Super Mario 3D Land",
+	"GC":    "Super Smash Bros. Melee (USA)",
 	"A52":   "Pac-Man (USA)",
 	"A78":   "Ms. Pac-Man (USA)",
 	"LYNX":  "California Games (USA, Europe)",

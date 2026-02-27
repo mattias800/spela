@@ -476,7 +476,8 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", SaveStateSupport: true},
 		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", SaveStateSupport: true},
-		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cia", DefaultCore: "citra", EmulatorJSCore: "", FolderName: "3ds", ColorTheme: "#ce181e", SaveStateSupport: true},
+		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "citra", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", SaveStateSupport: true},
+		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", SaveStateSupport: true},
 		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", SaveStateSupport: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", SaveStateSupport: true},
@@ -509,7 +510,7 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
 				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
 			}
-			if existing.FolderName == "" && c.FolderName != "" {
+			if c.FolderName != "" && existing.FolderName != c.FolderName {
 				db.Model(&existing).Update("folder_name", c.FolderName)
 				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
 			}

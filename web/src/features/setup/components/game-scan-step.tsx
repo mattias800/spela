@@ -32,12 +32,7 @@ export function GameScanStep({ onSkip, onComplete }: GameScanStepProps) {
   }
 
   const gamesFound = scanResult
-    ? Object.entries(scanResult)
-        .filter(([key]) => key !== "message")
-        .reduce(
-          (sum, [, val]) => sum + (typeof val === "number" ? val : 0),
-          0,
-        )
+    ? ((scanResult.totalGames as number) ?? null)
     : null;
 
   return (
@@ -82,21 +77,23 @@ export function GameScanStep({ onSkip, onComplete }: GameScanStepProps) {
               {gamesFound === 1 ? "game" : "games"} found
             </span>
           </div>
-          {scanResult && gamesFound !== null && gamesFound > 0 && (
-            <div className="mt-2 ml-6 space-y-0.5">
-              {Object.entries(scanResult)
-                .filter(
-                  ([key, val]) =>
-                    key !== "message" && typeof val === "number" && val > 0,
-                )
-                .map(([console_, count]) => (
-                  <p key={console_} className="text-xs text-surface-400">
-                    {console_}: {count as number}{" "}
-                    {(count as number) === 1 ? "game" : "games"}
-                  </p>
-                ))}
+          <div className="mt-2 ml-6 space-y-0.5">
+              {(scanResult.newGames as number) > 0 && (
+                <p className="text-xs text-surface-400">
+                  New: {scanResult.newGames as number}
+                </p>
+              )}
+              {(scanResult.updatedGames as number) > 0 && (
+                <p className="text-xs text-surface-400">
+                  Updated: {scanResult.updatedGames as number}
+                </p>
+              )}
+              {(scanResult.removedGames as number) > 0 && (
+                <p className="text-xs text-surface-400">
+                  Removed: {scanResult.removedGames as number}
+                </p>
+              )}
             </div>
-          )}
         </div>
       )}
 

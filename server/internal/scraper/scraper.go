@@ -13,6 +13,7 @@ import (
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -67,6 +68,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"DC":    "Sega - Dreamcast",
 	"VB":    "Nintendo - Virtual Boy",
 	"3DS":   "Nintendo - Nintendo 3DS",
+	"GC":    "Nintendo - GameCube",
 	"A52":   "Atari - 5200",
 	"A78":   "Atari - 7800",
 	"LYNX":  "Atari - Lynx",
@@ -279,6 +281,7 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 
 	// CRC-based identification: look up ROM in No-Intro DAT
 	searchName := cleanName
+	crcVerified := false
 	if idx, err := s.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
 		// Resolve relative path to absolute for filesystem access
 		absFilePath, resolveErr := storage.ResolveGamePath(game.FilePath, s.GameDirs)
@@ -288,6 +291,10 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 				if entry, ok := idx.LookupCRC(crc); ok {
 					slog.Info("CRC match found in No-Intro DAT", "game", game.FileName, "crc", crc, "canonical", entry.ROMName)
 					game.VerificationStatus = "verified"
+					crcVerified = true
+
+					// Set authoritative title from the canonical DAT name
+					game.Title = scanner.GameTitle(entry.ROMName)
 
 					// Rename ROM file to canonical No-Intro name
 					newAbsPath := filepath.Join(filepath.Dir(absFilePath), entry.ROMName)
@@ -357,8 +364,10 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	// Set scraper ID
 	game.ScraperID = fmt.Sprintf("igdb:%d", match.ID)
 
-	// Populate metadata — don't overwrite existing non-empty fields with empty values
-	if match.Name != "" {
+	// Populate metadata — don't overwrite existing non-empty fields with empty values.
+	// When CRC-verified, only overwrite the title if the IGDB name is an exact match
+	// (e.g. don't replace "Aladdin" with "Aladdin 2000" from a fuzzy IGDB result).
+	if match.Name != "" && (!crcVerified || normalizeName(match.Name) == normalizeName(searchName)) {
 		game.Title = match.Name
 	}
 	if match.Summary != "" {

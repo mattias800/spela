@@ -42,6 +42,7 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"DC":     23,
 	"VB":     87,
 	"3DS":    37,
+	"GC":     21,
 	"PS2":    8,
 	"C64":    15,
 	"AMIGA":  16,

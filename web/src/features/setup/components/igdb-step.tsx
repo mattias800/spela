@@ -6,7 +6,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui";
-import { useTestIgdbCredentials, useUpdateSettings } from "@/hooks/use-admin";
+import {
+  useIgdbStatus,
+  useTestIgdbCredentials,
+  useUpdateSettings,
+} from "@/hooks/use-admin";
 
 interface IgdbStepProps {
   onSkip: () => void;
@@ -14,6 +18,7 @@ interface IgdbStepProps {
 }
 
 export function IgdbStep({ onSkip, onSave }: IgdbStepProps) {
+  const { data: igdbStatus, isLoading: igdbStatusLoading } = useIgdbStatus();
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">(
@@ -24,6 +29,34 @@ export function IgdbStep({ onSkip, onSave }: IgdbStepProps) {
   const [instructionsExpanded, setInstructionsExpanded] = useState(true);
   const testMutation = useTestIgdbCredentials();
   const updateSettings = useUpdateSettings();
+
+  if (!igdbStatusLoading && igdbStatus?.configured && igdbStatus?.source === "env") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-surface-100">
+            IGDB Metadata
+          </h2>
+          <p className="mt-1 text-sm text-surface-400">
+            IGDB provides game descriptions, cover art, and metadata.
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-success-500/10 border border-success-500/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-success-500" />
+            <span className="text-sm font-medium text-success-500">
+              IGDB is already configured via environment variables.
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end pt-2">
+          <Button onClick={onSave}>Continue</Button>
+        </div>
+      </div>
+    );
+  }
 
   function handleTest() {
     setTestStatus("idle");

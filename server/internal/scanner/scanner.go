@@ -50,6 +50,13 @@ var ConsoleExtMap = map[string]string{
 	".cso": "PSP",
 	".pbp": "PSX",
 	".cue": "PSX", // .cue files indicate PSX disc images
+	".3ds": "3DS",
+	".cci": "3DS",
+	".cia": "3DS",
+	".gcm": "GC",
+	".gcz": "GC",
+	".rvz": "GC",
+	".ciso": "GC",
 }
 
 // RomExtensions is the set of file extensions recognized as ROM/disc files.
@@ -70,6 +77,8 @@ var RomExtensions = map[string]bool{
 	".zip": true, ".7z": true,
 	".chd": true,
 	".m3u": true,
+	".3ds": true, ".cci": true, ".cia": true,
+	".gcm": true, ".gcz": true, ".rvz": true, ".ciso": true,
 }
 
 // directoryConsoleMap maps directory names to console abbreviations.
@@ -106,6 +115,10 @@ var directoryConsoleMap = map[string]string{
 	"scd":       "SCD",
 	"ps2":       "PS2",
 	"pcfx":      "PCFX",
+	"n3ds":      "3DS",
+	"3ds":       "3DS",
+	"gc":        "GC",
+	"gamecube":  "GC",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
