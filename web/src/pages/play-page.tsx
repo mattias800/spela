@@ -129,7 +129,15 @@ export function PlayPage() {
       const tokenSuffix = token
         ? `?token=${encodeURIComponent(token)}`
         : "";
-      const romUrl = `/api/games/${game!.id}/download${tokenSuffix}`;
+      // Multi-disc games (e.g. PS1 .m3u): load disc 1 via the disc endpoint.
+      // The main /download endpoint serves the .m3u playlist file which
+      // EmulatorJS can't use (it needs the actual disc image).
+      // For multi-file disc formats (cue+bin), request format=zip since
+      // EmulatorJS can extract zip but not tar.
+      const isMultiDisc = game!.discCount > 0 && game!.discs && game!.discs.length > 0;
+      const romUrl = isMultiDisc
+        ? `/api/games/${game!.id}/discs/1/download?format=zip${token ? `&token=${encodeURIComponent(token)}` : ""}`
+        : `/api/games/${game!.id}/download${tokenSuffix}`;
       const saveStateData = await saveManager.loadInitialSave(isFreshStart);
 
       // Build authenticated BIOS file URLs

@@ -2,6 +2,7 @@ package api
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"io"
 	"log/slog"
@@ -634,7 +635,22 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		return
 	}
 
-	// Multiple files (.cue + .bin) — serve as tar stream
+	// Multiple files (.cue + .bin) — choose archive format.
+	// EmulatorJS (browser emulation) supports zip but not tar, so the web
+	// frontend requests format=zip. The native player app uses the default tar.
+	format := c.Query("format")
+	if format == "zip" {
+		c.Header("Content-Type", "application/zip")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".zip"))
+		c.Status(http.StatusOK)
+
+		if err := serveZip(c.Writer, companions); err != nil {
+			slog.Warn("error streaming zip for disc", "disc", discNumber, "error", err)
+		}
+		return
+	}
+
+	// Default: tar stream (used by native player app)
 	c.Header("Content-Type", "application/x-tar")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".tar"))
 	c.Status(http.StatusOK)
@@ -671,6 +687,44 @@ func serveTar(w io.Writer, filePaths []string) error {
 		if _, err := io.Copy(tw, f); err != nil {
 			f.Close()
 			return fmt.Errorf("writing file %s to tar: %w", path, err)
+		}
+		f.Close()
+	}
+
+	return nil
+}
+
+// serveZip streams files as a zip archive. Used by EmulatorJS which supports
+// zip extraction but not tar.
+func serveZip(w io.Writer, filePaths []string) error {
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+
+	for _, path := range filePaths {
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("stat file %s: %w", path, err)
+		}
+
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return fmt.Errorf("creating zip header for %s: %w", path, err)
+		}
+		header.Name = filepath.Base(path)
+		header.Method = zip.Store // no compression — ROM data doesn't compress well
+
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			return fmt.Errorf("writing zip header for %s: %w", path, err)
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("opening file %s: %w", path, err)
+		}
+		if _, err := io.Copy(writer, f); err != nil {
+			f.Close()
+			return fmt.Errorf("writing file %s to zip: %w", path, err)
 		}
 		f.Close()
 	}
