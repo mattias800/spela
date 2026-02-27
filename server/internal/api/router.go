@@ -32,6 +32,7 @@ type Config struct {
 	Hub           *ws.Hub
 	NetplayHub    *ws.NetplayHub
 	CoreDir       string
+	FrontendDir   string // path to Vite dist/ output; empty = disabled
 	CORSOrigins                  []string
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
@@ -431,7 +432,44 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/ws", cfg.Hub.HandleWebSocket)
 	}
 
+	// Serve frontend static files when configured (unified single-container deployment)
+	if cfg.FrontendDir != "" {
+		r.NoRoute(serveFrontend(cfg.FrontendDir))
+	}
+
 	return r
+}
+
+// serveFrontend returns a Gin handler that serves static files from the given
+// directory with SPA fallback (unknown paths serve index.html). Hashed assets
+// under /assets/ get long-lived cache headers.
+func serveFrontend(frontendDir string) gin.HandlerFunc {
+	fs := http.Dir(frontendDir)
+	fileServer := http.FileServer(fs)
+
+	return func(c *gin.Context) {
+		reqPath := c.Request.URL.Path
+
+		// Never intercept API or WebSocket routes
+		if strings.HasPrefix(reqPath, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+
+		// Try to serve the file directly
+		filePath := filepath.Join(frontendDir, filepath.Clean(reqPath))
+		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+			// Hashed assets get immutable cache headers
+			if strings.HasPrefix(reqPath, "/assets/") {
+				c.Header("Cache-Control", "public, immutable, max-age=604800")
+			}
+			fileServer.ServeHTTP(c.Writer, c.Request)
+			return
+		}
+
+		// SPA fallback: serve index.html for any non-file path
+		c.File(filepath.Join(frontendDir, "index.html"))
+	}
 }
 
 // ImageHandler serves images with access control for save screenshots.

@@ -33,6 +33,7 @@ func main() {
 	wsOriginsRaw := getEnv("SPELA_WS_ORIGINS", "")
 	corsOriginsRaw := getEnv("SPELA_CORS_ORIGINS", "")
 	encryptionKeyRaw := os.Getenv("SPELA_ENCRYPTION_KEY")
+	frontendDir := os.Getenv("SPELA_FRONTEND_DIR")
 	challengeRateLimitRaw := getEnv("SPELA_CHALLENGE_RATE_LIMIT_SEC", "30")
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
@@ -152,6 +153,11 @@ func main() {
 	netplayHub := websocket.NewNetplayHub(effectiveWSOrigins)
 	netplayHub.StartCleanup(database)
 
+	// Log frontend serving mode
+	if frontendDir != "" {
+		slog.Info("serving frontend from disk", "dir", frontendDir)
+	}
+
 	// Create router
 	router := api.NewRouter(api.Config{
 		DB:            database,
@@ -164,6 +170,7 @@ func main() {
 		Hub:           hub,
 		NetplayHub:    netplayHub,
 		CoreDir:       coreDir,
+		FrontendDir:   frontendDir,
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 	})
