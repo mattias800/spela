@@ -108,6 +108,50 @@ class BiosWarningTest {
     }
 
     @Test
+    fun playButtonDisabledWhenRequiredBiosMissing() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        // Pre-cache game so Play button is available
+        harness.downloadRepo.preCacheGame("1")
+
+        // Configure missing BIOS for the NES console
+        harness.biosRepo.consolesWithMissingBios = mapOf(
+            "nes" to BiosConsoleStatus(
+                consoleId = "nes",
+                consoleName = "NES",
+                biosRequired = true,
+                status = "missing",
+                missingFiles = listOf(
+                    BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
+                ),
+            ),
+        )
+
+        setContent { harness.App() }
+
+        navigateToGameDetail(harness, gameId = "1")
+
+        // The play button should be disabled with BIOS-specific content description
+        onNodeWithContentDescription("Play disabled, BIOS required").assertIsDisplayed()
+    }
+
+    @Test
+    fun playButtonEnabledWhenNoBiosMissing() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        // Pre-cache game so Play button is available
+        harness.downloadRepo.preCacheGame("1")
+
+        // No missing BIOS configured
+        setContent { harness.App() }
+
+        navigateToGameDetail(harness, gameId = "1")
+
+        // The play button should be enabled
+        onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
+    }
+
+    @Test
     fun missingBiosDialogShowsWhenLaunchingGameWithMissingBios() = runComposeUiTest {
         val harness = createLoggedInHarness()
 

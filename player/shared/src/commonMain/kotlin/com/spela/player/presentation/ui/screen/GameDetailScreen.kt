@@ -626,15 +626,21 @@ private fun GameInfoContent(
                 add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
             }
 
+            val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
             val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
             val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
             SpSplitButton(
                 text = if (hasSaves) "Resume" else "Play",
                 onClick = { onPlay(gameId) },
+                enabled = !hasRequiredBiosMissing,
                 modifier = Modifier
                     .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
                     .semantics {
-                        contentDescription = if (hasSaves) "Resume ${game.title}" else "Play ${game.title}"
+                        contentDescription = when {
+                            hasRequiredBiosMissing -> "Play disabled, BIOS required"
+                            hasSaves -> "Resume ${game.title}"
+                            else -> "Play ${game.title}"
+                        }
                     },
                 menuItems = menuItems,
                 onGradient = true,

@@ -38,6 +38,7 @@ interface GameHeroProps {
   isScraping: boolean;
   hasAchievements?: boolean;
   hasSaves?: boolean;
+  biosMissing?: boolean;
   onPlay: () => void;
   onPlayFresh?: () => void;
   onScrape: () => void;
@@ -57,6 +58,7 @@ export function GameHero({
   isScraping,
   hasAchievements,
   hasSaves,
+  biosMissing,
   onPlay,
   onPlayFresh,
   onScrape,
@@ -191,11 +193,13 @@ export function GameHero({
                 variant="primary"
                 size="sm"
                 onClick={onPlay}
-                disabled={!canPlayInBrowser}
+                disabled={!canPlayInBrowser || biosMissing}
                 title={
-                  canPlayInBrowser
-                    ? "Resume game with latest save"
-                    : `${game.consoleName} is not supported for browser play`
+                  biosMissing
+                    ? "Missing required BIOS files"
+                    : canPlayInBrowser
+                      ? "Resume game with latest save"
+                      : `${game.consoleName} is not supported for browser play`
                 }
                 data-testid="resume-btn"
                 menuItems={[
@@ -218,11 +222,13 @@ export function GameHero({
                 variant="primary"
                 size="sm"
                 onClick={onPlay}
-                disabled={!canPlayInBrowser}
+                disabled={!canPlayInBrowser || biosMissing}
                 title={
-                  canPlayInBrowser
-                    ? "Play in Browser"
-                    : `${game.consoleName} is not supported for browser play`
+                  biosMissing
+                    ? "Missing required BIOS files"
+                    : canPlayInBrowser
+                      ? "Play in Browser"
+                      : `${game.consoleName} is not supported for browser play`
                 }
                 data-testid="play-in-browser-btn"
               >

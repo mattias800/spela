@@ -180,6 +180,7 @@ export function GameDetailPage() {
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         hasSaves={(saves?.length ?? 0) > 0}
+        biosMissing={showBiosWarning}
         onPlay={() => navigate(`/games/${game.id}/play`)}
         onPlayFresh={() => navigate(`/games/${game.id}/play?fresh=true`)}
         onScrape={() => scrapeGame.mutate(game.id)}
