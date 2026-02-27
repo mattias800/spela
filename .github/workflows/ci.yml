@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: go mod download
       - run: go test ./...
 
   web-test:
