@@ -204,8 +204,8 @@ class SyncEngineTest {
 
         assertNull(syncEngine.syncState.value.lastSyncedAt)
 
-        connectivityMonitor.reportOffline()
-        connectivityMonitor.reportOnline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
+        connectivityMonitor.forceConnectionState(ConnectionState.Online)
         advanceUntilIdle()
 
         assertNotNull(syncEngine.syncState.value.lastSyncedAt)

@@ -2,9 +2,10 @@ package com.spela.player.di
 
 import android.view.KeyEvent
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.spela.player.data.local.DatabaseHealthCheck
+import com.spela.player.data.local.DatabaseResetHelper
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.libretro.AndroidAchievementsController
 import com.spela.player.libretro.AndroidLibretroController
@@ -53,14 +54,15 @@ actual fun platformModule(): Module = module {
                 )
                 val missingTables = expectedTables - existingTables
                 if (missingTables.isNotEmpty()) {
-                    println("Spela: Database schema incompatible, missing tables: $missingTables. Deleting database.")
-                    context.deleteDatabase("spela.db")
+                    println("Spela: Database schema incompatible, missing tables: $missingTables.")
+                    DatabaseHealthCheck.reportError("Database schema incompatible: missing tables $missingTables. Please reset the app.")
                 }
             } catch (e: Exception) {
-                println("Spela: Failed to validate database, deleting: ${e.message}")
-                context.deleteDatabase("spela.db")
+                println("Spela: Failed to validate database: ${e.message}")
+                DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
             }
         }
+        DatabaseResetHelper.init(context)
         AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
     }
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
@@ -70,7 +72,9 @@ actual fun platformModule(): Module = module {
         SpelaApiClient(
             engineFactory = OkHttp,
             tokenManager = get(),
-            authEventBus = get<AuthEventBus>(),
+            onAuthFailure = { reason ->
+                get<com.spela.player.data.remote.ConnectivityMonitor>().reportAuthFailure(reason)
+            },
             onTokenRefreshed = { accessToken, refreshToken ->
                 db.spelaDatabaseQueries.insertTokens(accessToken, refreshToken, "")
             },

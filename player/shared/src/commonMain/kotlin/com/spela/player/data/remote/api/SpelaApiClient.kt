@@ -1,8 +1,7 @@
 package com.spela.player.data.remote.api
 
+import com.spela.player.data.remote.AuthFailureReason
 import com.spela.player.data.remote.dto.*
-import com.spela.player.data.remote.interceptor.AuthEvent
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.util.FileStorage
 import io.ktor.client.*
@@ -25,7 +24,7 @@ import kotlinx.serialization.json.jsonPrimitive
 class SpelaApiClient(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val tokenManager: TokenManager,
-    private val authEventBus: AuthEventBus = AuthEventBus(),
+    val onAuthFailure: ((AuthFailureReason) -> Unit)? = null,
     private val onTokenRefreshed: (suspend (String, String) -> Unit)? = null,
 ) {
     private var baseUrl: String = ""
@@ -54,7 +53,7 @@ class SpelaApiClient(
                 refreshTokens {
                     val refreshToken = tokenManager.refreshToken ?: run {
                         tokenManager.clearTokens()
-                        authEventBus.emit(AuthEvent.SessionExpired)
+                        onAuthFailure?.invoke(AuthFailureReason.SESSION_EXPIRED)
                         return@refreshTokens null
                     }
 
@@ -70,7 +69,7 @@ class SpelaApiClient(
                         BearerTokens(response.accessToken, response.refreshToken)
                     } catch (_: Exception) {
                         tokenManager.clearTokens()
-                        authEventBus.emit(AuthEvent.SessionExpired)
+                        onAuthFailure?.invoke(AuthFailureReason.REFRESH_FAILED)
                         null
                     }
                 }

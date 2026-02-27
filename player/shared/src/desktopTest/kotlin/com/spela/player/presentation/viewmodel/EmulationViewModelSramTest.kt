@@ -77,7 +77,7 @@ class EmulationViewModelSramTest {
     fun startGameSkipsSramDownloadWhenOffline() = runTest(testDispatcher) {
         builder.saveDataRepository.loadLocalSRAMResult = null
         val vm = builder.build()
-        builder.connectivityMonitor.reportOffline()
+        builder.connectivityMonitor.forceConnectionState(com.spela.player.data.remote.ConnectionState.Offline)
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
         advanceTimeBy(100)
@@ -126,7 +126,7 @@ class EmulationViewModelSramTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
         advanceTimeBy(100)
-        builder.connectivityMonitor.reportOffline()
+        builder.connectivityMonitor.forceConnectionState(com.spela.player.data.remote.ConnectionState.Offline)
 
         vm.onIntent(EmulationIntent.StopGame)
         advanceTimeBy(100)

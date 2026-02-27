@@ -2,8 +2,9 @@ package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import com.spela.player.data.remote.AuthFailureReason
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
@@ -1268,21 +1269,47 @@ class FakeSaveDataRepository : SaveDataRepository {
 }
 
 class FakeConnectivityMonitor {
+    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Online)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val _onReconnect = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val onReconnect: kotlinx.coroutines.flow.SharedFlow<Unit> = _onReconnect.asSharedFlow()
 
     fun start() {}
-    fun reportOffline() { _isOnline.value = false }
-    fun reportOnline() {
-        val wasOffline = !_isOnline.value
-        _isOnline.value = true
-        if (wasOffline) _onReconnect.tryEmit(Unit)
+
+    fun setConnectionState(state: ConnectionState) {
+        _connectionState.value = state
+        _isOnline.value = state.isConnected
     }
 
     fun setOnline(online: Boolean) {
-        if (online) reportOnline() else reportOffline()
+        if (online) {
+            setConnectionState(ConnectionState.Online)
+        } else {
+            setConnectionState(ConnectionState.Offline)
+        }
+    }
+
+    fun reportAuthFailure(reason: AuthFailureReason) {
+        setConnectionState(ConnectionState.AuthFailed(reason))
+    }
+
+    fun reportDatabaseError(message: String) {
+        setConnectionState(ConnectionState.DatabaseError(message))
+    }
+
+    fun clearAuthFailure() {
+        if (_connectionState.value is ConnectionState.AuthFailed) {
+            setConnectionState(ConnectionState.Online)
+            _onReconnect.tryEmit(Unit)
+        }
+    }
+
+    fun clearDatabaseError() {
+        if (_connectionState.value is ConnectionState.DatabaseError) {
+            setConnectionState(ConnectionState.Online)
+        }
     }
 }
 
@@ -1305,5 +1332,5 @@ private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineC
 }
 
 fun createFakeApiClient(): SpelaApiClient {
-    return SpelaApiClient(StubMockEngineFactory, TokenManager(), AuthEventBus())
+    return SpelaApiClient(StubMockEngineFactory, TokenManager())
 }

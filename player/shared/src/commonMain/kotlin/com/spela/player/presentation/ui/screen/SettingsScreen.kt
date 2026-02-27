@@ -78,6 +78,7 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
+    val connectionState by viewModel.connectionState.collectAsState()
     val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
     val listState = rememberLazyListState(
@@ -506,7 +507,7 @@ fun SettingsScreen(
                     ) {
                         SpSyncStatusIndicator(
                             syncState = syncState,
-                            isOnline = isOnline,
+                            connectionState = connectionState,
                         )
                         Spacer(Modifier.height(SpSpacing.Medium))
                         SpButton(

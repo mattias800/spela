@@ -5,7 +5,6 @@ import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
@@ -75,7 +74,6 @@ class NavigationViewModelTest {
             restoreSessionUseCase = restoreSessionUseCase,
             connectivityMonitor = connectivityMonitor,
             syncEngine = syncEngine,
-            authEventBus = AuthEventBus(),
             dispatchers = testDispatchers,
             scope = scope,
         )

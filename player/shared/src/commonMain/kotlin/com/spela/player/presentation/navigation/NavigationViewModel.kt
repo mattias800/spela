@@ -1,9 +1,10 @@
 package com.spela.player.presentation.navigation
 
+import com.spela.player.data.local.DatabaseHealthCheck
+import com.spela.player.data.local.DatabaseResetHelper
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
-import com.spela.player.data.remote.interceptor.AuthEvent
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
@@ -20,7 +21,6 @@ class NavigationViewModel(
     private val restoreSessionUseCase: RestoreSessionUseCase,
     private val connectivityMonitor: ConnectivityMonitor,
     private val syncEngine: SyncEngine,
-    private val authEventBus: AuthEventBus,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
@@ -34,14 +34,14 @@ class NavigationViewModel(
 
     init {
         restoreSession()
-        observeAuthEvents()
+        observeAuthState()
     }
 
-    private fun observeAuthEvents() {
+    private fun observeAuthState() {
         scope.launch(dispatchers.main) {
-            authEventBus.events.collect { event ->
-                when (event) {
-                    AuthEvent.SessionExpired -> {
+            connectivityMonitor.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.AuthFailed -> {
                         _state.update {
                             it.copy(
                                 currentScreen = SpScreen.Login,
@@ -50,6 +50,7 @@ class NavigationViewModel(
                             )
                         }
                     }
+                    else -> { /* handled by UI components */ }
                 }
             }
         }
@@ -186,8 +187,25 @@ class NavigationViewModel(
         }
     }
 
+    fun resetDatabase() {
+        DatabaseResetHelper.resetDatabase()
+        _state.update {
+            it.copy(
+                currentScreen = SpScreen.ServerConnection,
+                backStack = emptyList(),
+                showInGameOverlay = false,
+            )
+        }
+    }
+
     private fun restoreSession() {
         scope.launch(dispatchers.io) {
+            // Check for database errors before restoring session
+            val dbError = DatabaseHealthCheck.error.value
+            if (dbError != null) {
+                connectivityMonitor.reportDatabaseError(dbError)
+            }
+
             val result = restoreSessionUseCase()
             val screen = when (result) {
                 RestoreSessionResult.Success -> SpScreen.Home

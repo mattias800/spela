@@ -2,6 +2,7 @@ package com.spela.player.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
@@ -59,7 +60,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun uploadSaveStateOfflineSavesLocally() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
         val data = "save-data".toByteArray()
 
         val result = repo.uploadSaveState("42", "My Save", data)
@@ -75,7 +76,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun uploadSaveStateOfflineDoesNotThrow() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
         val data = "offline-save".toByteArray()
 
         val result = repo.uploadSaveState("10", "Offline Save", data)
@@ -87,7 +88,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun uploadAutoSaveReplacesPreviousLocalAutoSave() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
 
         repo.uploadAutoSave("7", "first-auto".toByteArray())
         repo.uploadAutoSave("7", "second-auto".toByteArray())
@@ -100,7 +101,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun getSaveStatesOfflineReturnsLocalSaves() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
 
         val nowMillis = kotlin.time.Clock.System.now().toEpochMilliseconds()
         database.spelaDatabaseQueries.insertLocalSaveState(
@@ -154,7 +155,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun downloadAutoSaveReturnsLocalAutoSave() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
         val data = "auto-save-bytes".toByteArray()
 
         repo.saveLocally("33", "Auto Save", data, isAuto = true)
@@ -167,7 +168,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun downloadAutoSaveOfflineNoLocalFails() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
 
         val result = repo.downloadAutoSave("99")
 
@@ -225,7 +226,7 @@ class SaveRepositoryOfflineTest {
 
     @Test
     fun deleteSaveStateDeletesLocalFileAndDbEntry() = runTest(testDispatcher) {
-        connectivityMonitor.reportOffline()
+        connectivityMonitor.forceConnectionState(ConnectionState.Offline)
         val data = "to-be-deleted".toByteArray()
 
         val saveResult = repo.saveLocally("50", "Delete Me", data, isAuto = false)

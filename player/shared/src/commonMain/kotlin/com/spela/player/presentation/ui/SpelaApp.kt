@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -44,9 +48,15 @@ import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpBottomNavBar
+import com.spela.player.presentation.ui.components.SpAuthExpiredDialog
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpDatabaseErrorScreen
 import com.spela.player.presentation.ui.components.SpOfflineBanner
+import com.spela.player.presentation.ui.components.SpServerWarningCard
 import com.spela.player.presentation.ui.components.SpSnackbar
+import com.spela.player.presentation.ui.components.SpSnackbarData
+import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.navigation.NavigationEventBus
@@ -220,9 +230,65 @@ fun SpelaApp(
                 .background(SpColor.Background),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Offline banner
-                val isOnline by connectivityMonitor.isOnline.collectAsState()
-                SpOfflineBanner(isOffline = !isOnline)
+                // Connection state
+                val currentConnectionState by connectivityMonitor.connectionState.collectAsState()
+                var serverWarningDismissed by remember { mutableStateOf(false) }
+                var snackbarData by remember { mutableStateOf<SpSnackbarData?>(null) }
+
+                // "Back online" snackbar: fires when transitioning to Online
+                LaunchedEffect(currentConnectionState) {
+                    if (currentConnectionState is ConnectionState.Online) {
+                        // Only show if we're past initial load
+                        if (!navState.isRestoringSession) {
+                            snackbarData = SpSnackbarData(
+                                message = "Back online",
+                                type = SpSnackbarType.Success,
+                                durationMs = 3000L,
+                            )
+                        }
+                    }
+                    // Reset dismiss when state changes away from ServerUnreachable
+                    if (currentConnectionState !is ConnectionState.ServerUnreachable) {
+                        serverWarningDismissed = false
+                    }
+                }
+
+                // Priority: DatabaseError (full-screen) > AuthFailed (dialog) > ServerUnreachable (card) > Offline (banner)
+                if (currentConnectionState is ConnectionState.DatabaseError) {
+                    SpDatabaseErrorScreen(
+                        message = (currentConnectionState as ConnectionState.DatabaseError).message,
+                        onResetApp = { navigationViewModel.resetDatabase() },
+                    )
+                } else {
+
+                if (currentConnectionState is ConnectionState.AuthFailed) {
+                    SpAuthExpiredDialog(
+                        onSignIn = {
+                            connectivityMonitor.clearAuthFailure()
+                            navigationViewModel.onIntent(
+                                NavigationIntent.NavigateTo(SpScreen.Login)
+                            )
+                        },
+                        onContinueOffline = {
+                            connectivityMonitor.clearAuthFailure()
+                        },
+                    )
+                }
+
+                // Offline banner (muted grey)
+                SpOfflineBanner(connectionState = currentConnectionState)
+
+                // Server unreachable card (dismissible per-session)
+                if (currentConnectionState is ConnectionState.ServerUnreachable && !serverWarningDismissed) {
+                    SpServerWarningCard(
+                        onCheckServerSettings = {
+                            navigationViewModel.onIntent(
+                                NavigationIntent.NavigateTo(SpScreen.Settings)
+                            )
+                        },
+                        onDismiss = { serverWarningDismissed = true },
+                    )
+                }
 
                 Box(modifier = Modifier.weight(1f)) {
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
@@ -912,6 +978,14 @@ fun SpelaApp(
                     }
                 }
 
+                // "Back online" snackbar
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                    SpSnackbar(
+                        data = snackbarData,
+                        onDismiss = { snackbarData = null },
+                    )
+                }
+
                 // Bottom navigation bar
                 val showBottomNav = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
                 if (showBottomNav) {
@@ -931,6 +1005,7 @@ fun SpelaApp(
                         },
                     )
                 }
+                } // else (not DatabaseError)
             }
         }
         }

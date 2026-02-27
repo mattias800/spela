@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.device.DeviceManager
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.SyncState
@@ -177,6 +178,7 @@ class SettingsViewModel(
 
     val syncState: StateFlow<SyncState> = syncEngine.syncState
     val isOnline: StateFlow<Boolean> = connectivityMonitor.isOnline
+    val connectionState: StateFlow<ConnectionState> = connectivityMonitor.connectionState
 
     private fun syncNow() {
         scope.launch(dispatchers.io) {

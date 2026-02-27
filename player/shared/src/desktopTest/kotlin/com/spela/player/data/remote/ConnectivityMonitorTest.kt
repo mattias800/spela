@@ -44,70 +44,116 @@ class ConnectivityMonitorTest {
     @Test
     fun defaultIsOnline() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
+        assertTrue(monitor.connectionState.value.isConnected)
         assertTrue(monitor.isOnline.value)
     }
 
     @Test
-    fun reportOfflineSetsOffline() = runTest(testDispatcher) {
+    fun reportAuthFailureSetsAuthFailed() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
-        monitor.reportOffline()
-        assertFalse(monitor.isOnline.value)
+        monitor.reportAuthFailure(AuthFailureReason.SESSION_EXPIRED)
+        assertTrue(monitor.connectionState.value is ConnectionState.AuthFailed)
+        assertFalse(monitor.connectionState.value.isConnected)
     }
 
     @Test
-    fun reportOnlineSetsOnlineAfterOffline() = runTest(testDispatcher) {
+    fun reportDatabaseErrorSetsDatabaseError() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
-        monitor.reportOffline()
-        assertFalse(monitor.isOnline.value)
-
-        monitor.reportOnline()
-        assertTrue(monitor.isOnline.value)
+        monitor.reportDatabaseError("Schema mismatch")
+        assertTrue(monitor.connectionState.value is ConnectionState.DatabaseError)
+        assertEquals(
+            "Schema mismatch",
+            (monitor.connectionState.value as ConnectionState.DatabaseError).message,
+        )
     }
 
     @Test
-    fun offlineToOnlineEmitsOnReconnect() = runTest(testDispatcher) {
+    fun clearAuthFailureTransitionsToOnline() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
         val events = mutableListOf<Unit>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
             monitor.onReconnect.collect { events.add(it) }
         }
 
-        monitor.reportOffline()
-        monitor.reportOnline()
+        monitor.reportAuthFailure(AuthFailureReason.SESSION_EXPIRED)
+        assertTrue(monitor.connectionState.value is ConnectionState.AuthFailed)
 
+        monitor.clearAuthFailure()
+        assertTrue(monitor.connectionState.value is ConnectionState.Online)
         assertEquals(1, events.size)
+
         job.cancel()
     }
 
     @Test
-    fun onlineToOnlineDoesNotEmitOnReconnect() = runTest(testDispatcher) {
+    fun clearAuthFailureNoOpWhenNotAuthFailed() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
         val events = mutableListOf<Unit>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
             monitor.onReconnect.collect { events.add(it) }
         }
 
-        // Already online by default, calling reportOnline should not emit
-        monitor.reportOnline()
-
+        // Already online, clearAuthFailure should not emit
+        monitor.clearAuthFailure()
+        assertTrue(monitor.connectionState.value is ConnectionState.Online)
         assertEquals(0, events.size)
+
         job.cancel()
     }
 
     @Test
-    fun multipleOfflineOnlineCyclesEmitCorrectCount() = runTest(testDispatcher) {
+    fun clearDatabaseErrorTransitionsToOnline() = runTest(testDispatcher) {
         val monitor = createMonitor(this)
-        val events = mutableListOf<Unit>()
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            monitor.onReconnect.collect { events.add(it) }
-        }
+        monitor.reportDatabaseError("Schema mismatch")
+        assertTrue(monitor.connectionState.value is ConnectionState.DatabaseError)
 
-        repeat(3) {
-            monitor.reportOffline()
-            monitor.reportOnline()
-        }
+        monitor.clearDatabaseError()
+        assertTrue(monitor.connectionState.value is ConnectionState.Online)
+    }
 
-        assertEquals(3, events.size)
-        job.cancel()
+    @Test
+    fun connectionStateConvenienceProperties() = runTest(testDispatcher) {
+        val monitor = createMonitor(this)
+
+        // Online
+        assertTrue(monitor.connectionState.value.isConnected)
+        assertTrue(monitor.connectionState.value.hasNetwork)
+        assertTrue(monitor.connectionState.value.canReachServer)
+
+        // AuthFailed
+        monitor.reportAuthFailure(AuthFailureReason.SESSION_EXPIRED)
+        assertFalse(monitor.connectionState.value.isConnected)
+        assertTrue(monitor.connectionState.value.hasNetwork)
+        assertFalse(monitor.connectionState.value.canReachServer)
+    }
+
+    @Test
+    fun classifyExceptionMapsCorrectly() = runTest(testDispatcher) {
+        val monitor = createMonitor(this)
+
+        assertTrue(
+            monitor.classifyException(java.net.UnknownHostException("DNS failure")) is ConnectionState.Offline
+        )
+        assertTrue(
+            monitor.classifyException(java.net.ConnectException("Connection refused")) is ConnectionState.ServerUnreachable
+        )
+        assertTrue(
+            monitor.classifyException(RuntimeException("Unknown error")) is ConnectionState.ServerUnreachable
+        )
+    }
+
+    @Test
+    fun isOnlineDerivedFlowReflectsConnectionState() = runTest(testDispatcher) {
+        val monitor = createMonitor(this)
+
+        assertTrue(monitor.isOnline.value)
+
+        monitor.reportAuthFailure(AuthFailureReason.SESSION_EXPIRED)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(monitor.isOnline.value)
+
+        monitor.clearAuthFailure()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(monitor.isOnline.value)
     }
 }

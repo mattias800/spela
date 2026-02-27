@@ -1,9 +1,9 @@
 package com.spela.player.di
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.spela.player.data.local.DatabaseHealthCheck
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.interceptor.AuthEventBus
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.DesktopAchievementsController
@@ -59,27 +59,21 @@ actual fun platformModule(): Module = module {
                 val missingTables = expectedTables - existingTables
                 if (missingTables.isNotEmpty()) {
                     checkDriver.close()
-                    println("Spela: Database schema incompatible, missing tables: $missingTables. Deleting database.")
-                    dbFile.delete()
-                    java.io.File("$dbPath-wal").delete()
-                    java.io.File("$dbPath-shm").delete()
+                    println("Spela: Database schema incompatible, missing tables: $missingTables.")
+                    DatabaseHealthCheck.reportError("Database schema incompatible: missing tables $missingTables. Please reset the app.")
                 } else {
                     // Also check for missing columns in key tables
                     val columnsValid = validateColumns(checkDriver, "CachedConsoleEntity", setOf("logo_url")) &&
                         validateColumns(checkDriver, "CachedGameEntity", setOf("cover_aspect_ratio"))
                     checkDriver.close()
                     if (!columnsValid) {
-                        println("Spela: Database schema incompatible, missing columns. Deleting database.")
-                        dbFile.delete()
-                        java.io.File("$dbPath-wal").delete()
-                        java.io.File("$dbPath-shm").delete()
+                        println("Spela: Database schema incompatible, missing columns.")
+                        DatabaseHealthCheck.reportError("Database schema incompatible: missing columns. Please reset the app.")
                     }
                 }
             } catch (e: Exception) {
-                println("Spela: Failed to validate database, deleting: ${e.message}")
-                dbFile.delete()
-                java.io.File("$dbPath-wal").delete()
-                java.io.File("$dbPath-shm").delete()
+                println("Spela: Failed to validate database: ${e.message}")
+                DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
             }
         }
 
@@ -128,7 +122,9 @@ actual fun platformModule(): Module = module {
         SpelaApiClient(
             engineFactory = CIO,
             tokenManager = get(),
-            authEventBus = get<AuthEventBus>(),
+            onAuthFailure = { reason ->
+                get<com.spela.player.data.remote.ConnectivityMonitor>().reportAuthFailure(reason)
+            },
             onTokenRefreshed = { accessToken, refreshToken ->
                 db.spelaDatabaseQueries.insertTokens(accessToken, refreshToken, "")
             },

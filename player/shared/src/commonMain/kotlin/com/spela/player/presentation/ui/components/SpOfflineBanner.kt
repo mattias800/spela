@@ -15,19 +15,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.spela.player.data.remote.ConnectionState
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
-private val OfflineBannerBackground = Color(0xFF92400E)
-private val OfflineBannerText = Color(0xFFFEF3C7)
+private val OfflineBannerBackground = SpColor.SurfaceVariant
+private val OfflineBannerText = SpColor.OnBackgroundSecondary
 
 @Composable
 fun SpOfflineBanner(
-    isOffline: Boolean,
+    connectionState: ConnectionState,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
-        visible = isOffline,
+        visible = connectionState is ConnectionState.Offline,
         enter = expandVertically(),
         exit = shrinkVertically(),
     ) {
@@ -41,7 +43,7 @@ fun SpOfflineBanner(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Offline \u2014 Using cached data",
+                text = "No internet \u2014 Playing offline",
                 style = SpTypography.LabelSmall,
                 color = OfflineBannerText,
             )

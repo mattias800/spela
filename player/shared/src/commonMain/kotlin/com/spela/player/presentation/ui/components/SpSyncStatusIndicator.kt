@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.SyncState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -25,10 +26,18 @@ import com.spela.player.presentation.ui.theme.SpTypography
 @Composable
 fun SpSyncStatusIndicator(
     syncState: SyncState,
-    isOnline: Boolean,
+    connectionState: ConnectionState,
     modifier: Modifier = Modifier,
 ) {
     val pendingTotal = syncState.pendingSaveStates + syncState.pendingSaveData
+
+    val (status, label) = when (connectionState) {
+        is ConnectionState.Online -> ConnectionStatus.CONNECTED to "Online"
+        is ConnectionState.Offline -> ConnectionStatus.DISCONNECTED to "Offline"
+        is ConnectionState.ServerUnreachable -> ConnectionStatus.DISCONNECTED to "Server Unreachable"
+        is ConnectionState.AuthFailed -> ConnectionStatus.DISCONNECTED to "Auth Expired"
+        is ConnectionState.DatabaseError -> ConnectionStatus.DISCONNECTED to "Database Error"
+    }
 
     Column(
         modifier = modifier
@@ -41,8 +50,8 @@ fun SpSyncStatusIndicator(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             SpConnectionBadge(
-                status = if (isOnline) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED,
-                label = if (isOnline) "Online" else "Offline",
+                status = status,
+                label = label,
             )
 
             if (syncState.isSyncing) {
