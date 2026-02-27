@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -99,7 +100,7 @@ fun SpCard(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = onClick,
-                    )
+                    ).focusable(interactionSource = interactionSource)
                 } else Modifier
             )
     ) {
@@ -157,7 +158,7 @@ fun SpInnerCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ) else Modifier
+                ).focusable(interactionSource = interactionSource) else Modifier
             )
     ) {
         content()
@@ -190,7 +191,7 @@ fun SpGradientCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ) else Modifier
+                ).focusable(interactionSource = interactionSource) else Modifier
             )
     ) {
         content()

@@ -3,6 +3,9 @@ package com.spela.player.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,21 +36,32 @@ fun SpChip(
     onGradient: Boolean = false,
 ) {
     val shape = RoundedCornerShape(SpSpacing.RadiusPill)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
     val backgroundColor = when {
         onGradient -> Color.White.copy(alpha = if (isSelected) 0.12f else 0.06f)
         isSelected -> color.copy(alpha = 0.2f)
         else -> Color.Transparent
     }
-    val borderColor = if (onGradient) Color.White.copy(alpha = 0.20f) else if (isSelected) color else SpColor.Divider
+    val borderColor = when {
+        isFocused -> SpColor.Primary.copy(alpha = 0.85f)
+        onGradient -> Color.White.copy(alpha = 0.20f)
+        isSelected -> color
+        else -> SpColor.Divider
+    }
     val textColor = if (onGradient) Color.White.copy(alpha = 0.90f) else if (isSelected) color else SpColor.OnBackgroundSecondary
 
     Box(
         modifier = modifier
             .clip(shape)
             .background(backgroundColor)
-            .border(1.dp, borderColor, shape)
+            .border(if (isFocused) 2.dp else 1.dp, borderColor, shape)
             .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+                if (onClick != null) Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ).focusable(interactionSource = interactionSource) else Modifier
             )
             .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
         contentAlignment = Alignment.Center,
