@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.spela.player.data.local.DatabaseHealthCheck
 import com.spela.player.data.local.DatabaseResetHelper
+import com.spela.player.data.local.ExpectedSchema
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
@@ -31,31 +32,10 @@ actual fun platformModule(): Module = module {
         val dbFile = context.getDatabasePath("spela.db")
         if (dbFile.exists()) {
             try {
-                val db = android.database.sqlite.SQLiteDatabase.openDatabase(
-                    dbFile.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
-                )
-                val cursor = db.rawQuery(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%'",
-                    null
-                )
-                val existingTables = mutableSetOf<String>()
-                while (cursor.moveToNext()) {
-                    existingTables.add(cursor.getString(0))
-                }
-                cursor.close()
-                db.close()
-
-                val expectedTables = setOf(
-                    "ServerConnectionEntity", "DownloadEntity", "AuthTokenEntity",
-                    "PlayHistoryEntity", "ShaderOverrideEntity", "KeyMappingEntity",
-                    "GameKeyMappingEntity", "DeviceInfoEntity", "CachedPreferencesEntity",
-                    "CachedConsoleEntity", "CachedGameEntity", "LocalSaveStateEntity",
-                    "LocalSaveDataEntity",
-                )
-                val missingTables = expectedTables - existingTables
-                if (missingTables.isNotEmpty()) {
-                    println("Spela: Database schema incompatible, missing tables: $missingTables.")
-                    DatabaseHealthCheck.reportError("Database schema incompatible: missing tables $missingTables. Please reset the app.")
+                val errorMessage = validateSchemaAndroid(dbFile.path)
+                if (errorMessage != null) {
+                    println("Spela: $errorMessage")
+                    DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
                 }
             } catch (e: Exception) {
                 println("Spela: Failed to validate database: ${e.message}")
@@ -121,5 +101,51 @@ actual fun platformModule(): Module = module {
             LibretroButtons.L3 to KeyEvent.KEYCODE_BUTTON_THUMBL,
             LibretroButtons.R3 to KeyEvent.KEYCODE_BUTTON_THUMBR,
         )
+    }
+}
+
+/**
+ * Validates the existing database against [ExpectedSchema].
+ * Returns an error message if incompatible, or null if OK.
+ */
+private fun validateSchemaAndroid(dbPath: String): String? {
+    val db = android.database.sqlite.SQLiteDatabase.openDatabase(
+        dbPath, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+    )
+    try {
+        // Check tables
+        val tablesCursor = db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%'",
+            null,
+        )
+        val existingTables = mutableSetOf<String>()
+        while (tablesCursor.moveToNext()) {
+            existingTables.add(tablesCursor.getString(0))
+        }
+        tablesCursor.close()
+
+        val missingTables = ExpectedSchema.tables.keys - existingTables
+        if (missingTables.isNotEmpty()) {
+            return "Database schema incompatible: missing tables $missingTables."
+        }
+
+        // Check every table's columns
+        for ((table, expectedColumns) in ExpectedSchema.tables) {
+            val columnsCursor = db.rawQuery("PRAGMA table_info($table)", null)
+            val actualColumns = mutableSetOf<String>()
+            while (columnsCursor.moveToNext()) {
+                actualColumns.add(columnsCursor.getString(1))
+            }
+            columnsCursor.close()
+
+            val missingColumns = expectedColumns - actualColumns
+            if (missingColumns.isNotEmpty()) {
+                return "Database schema incompatible: table $table missing columns $missingColumns."
+            }
+        }
+
+        return null
+    } finally {
+        db.close()
     }
 }

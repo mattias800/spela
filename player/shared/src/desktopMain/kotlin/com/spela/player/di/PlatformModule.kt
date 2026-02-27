@@ -2,6 +2,7 @@ package com.spela.player.di
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.DatabaseHealthCheck
+import com.spela.player.data.local.ExpectedSchema
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
@@ -36,40 +37,11 @@ actual fun platformModule(): Module = module {
         if (dbFile.exists()) {
             try {
                 val checkDriver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
-                val existingTables = checkDriver.executeQuery(
-                    identifier = null,
-                    sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-                    mapper = { cursor ->
-                        val tables = mutableSetOf<String>()
-                        while (cursor.next().value) {
-                            cursor.getString(0)?.let { tables.add(it) }
-                        }
-                        app.cash.sqldelight.db.QueryResult.Value(tables)
-                    },
-                    parameters = 0,
-                ).value
-
-                val expectedTables = setOf(
-                    "ServerConnectionEntity", "DownloadEntity", "AuthTokenEntity",
-                    "PlayHistoryEntity", "ShaderOverrideEntity", "KeyMappingEntity",
-                    "GameKeyMappingEntity", "DeviceInfoEntity", "CachedPreferencesEntity",
-                    "CachedConsoleEntity", "CachedGameEntity", "LocalSaveStateEntity",
-                    "LocalSaveDataEntity",
-                )
-                val missingTables = expectedTables - existingTables
-                if (missingTables.isNotEmpty()) {
-                    checkDriver.close()
-                    println("Spela: Database schema incompatible, missing tables: $missingTables.")
-                    DatabaseHealthCheck.reportError("Database schema incompatible: missing tables $missingTables. Please reset the app.")
-                } else {
-                    // Also check for missing columns in key tables
-                    val columnsValid = validateColumns(checkDriver, "CachedConsoleEntity", setOf("logo_url")) &&
-                        validateColumns(checkDriver, "CachedGameEntity", setOf("cover_aspect_ratio"))
-                    checkDriver.close()
-                    if (!columnsValid) {
-                        println("Spela: Database schema incompatible, missing columns.")
-                        DatabaseHealthCheck.reportError("Database schema incompatible: missing columns. Please reset the app.")
-                    }
+                val errorMessage = validateSchemaWithDriver(checkDriver)
+                checkDriver.close()
+                if (errorMessage != null) {
+                    println("Spela: $errorMessage")
+                    DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
                 }
             } catch (e: Exception) {
                 println("Spela: Failed to validate database: ${e.message}")
@@ -167,22 +139,48 @@ actual fun platformModule(): Module = module {
     }
 }
 
-private fun validateColumns(driver: JdbcSqliteDriver, table: String, expectedColumns: Set<String>): Boolean {
-    val columns = driver.executeQuery(
+/**
+ * Validates the existing database against [ExpectedSchema].
+ * Returns an error message if incompatible, or null if OK.
+ */
+private fun validateSchemaWithDriver(driver: JdbcSqliteDriver): String? {
+    val existingTables = driver.executeQuery(
         identifier = null,
-        sql = "PRAGMA table_info($table)",
+        sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
         mapper = { cursor ->
-            val cols = mutableSetOf<String>()
+            val tables = mutableSetOf<String>()
             while (cursor.next().value) {
-                cursor.getString(1)?.let { cols.add(it) }
+                cursor.getString(0)?.let { tables.add(it) }
             }
-            app.cash.sqldelight.db.QueryResult.Value(cols)
+            app.cash.sqldelight.db.QueryResult.Value(tables)
         },
         parameters = 0,
     ).value
-    val missing = expectedColumns - columns
-    if (missing.isNotEmpty()) {
-        println("Spela: Table $table missing columns: $missing")
+
+    val missingTables = ExpectedSchema.tables.keys - existingTables
+    if (missingTables.isNotEmpty()) {
+        return "Database schema incompatible: missing tables $missingTables."
     }
-    return missing.isEmpty()
+
+    // Check every table's columns
+    for ((table, expectedColumns) in ExpectedSchema.tables) {
+        val actualColumns = driver.executeQuery(
+            identifier = null,
+            sql = "PRAGMA table_info($table)",
+            mapper = { cursor ->
+                val cols = mutableSetOf<String>()
+                while (cursor.next().value) {
+                    cursor.getString(1)?.let { cols.add(it) }
+                }
+                app.cash.sqldelight.db.QueryResult.Value(cols)
+            },
+            parameters = 0,
+        ).value
+        val missingColumns = expectedColumns - actualColumns
+        if (missingColumns.isNotEmpty()) {
+            return "Database schema incompatible: table $table missing columns $missingColumns."
+        }
+    }
+
+    return null
 }
