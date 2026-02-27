@@ -286,6 +286,17 @@ class EmulationViewModel(
                         println("[Emulation] Loading game: path=$gamePath core=$corePath")
                         libretroController.loadGame(gamePath)
 
+                        // Set HW render state early so Compose creates the
+                        // VulkanEmulationSurface before emulation starts.
+                        // Without this, GLES HW render cores (GLideN64) produce
+                        // frames that can't be displayed until the surface exists.
+                        val hwRender = libretroController.isHwRenderEnabled()
+                        if (hwRender) {
+                            withContext(dispatchers.main) {
+                                _state.update { it.copy(isHwRenderEnabled = true) }
+                            }
+                        }
+
                         // Load SRAM (save data) before starting emulation
                         saveManager.loadSramOnStart(gameId)
 
@@ -310,7 +321,6 @@ class EmulationViewModel(
 
                         libretroController.start()
                         val saveStatesSupported = libretroController.supportsSaveStates()
-                        val hwRender = libretroController.isHwRenderEnabled()
                         withContext(dispatchers.main) {
                             _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
                         }

@@ -639,6 +639,14 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer))) {
         return;
     }
+    /* GLES HW render: skip frames until GPU renderer is ready for presentation.
+     * The GLES context is created during loadGame() but the Vulkan presentation
+     * surface isn't available until surfaceCreated() fires and gpuInit() runs.
+     * Running the core now would produce frames that can't be displayed. */
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx &&
+        (!g_gpu_renderer || !gpu_renderer_is_active(g_gpu_renderer))) {
+        return;
+    }
     /* GLES HW render: make context current before retro_run */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         hw_gl_make_current(g_core.hw_gl_ctx);
