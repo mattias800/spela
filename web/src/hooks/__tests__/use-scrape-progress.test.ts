@@ -1,7 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useScrapeProgress } from "../use-scrape-progress";
-import type { ScrapePhase } from "../use-scrape-progress";
 
 // Capture WebSocket event handlers registered by the hook
 const wsHandlers: Record<string, (payload: unknown) => void> = {};
@@ -29,11 +28,6 @@ beforeEach(() => {
   }
   mockUseScrapeStatus.mockReturnValue({ data: undefined });
 });
-
-function expectPhase(phase: ScrapePhase) {
-  return (result: { current: ReturnType<typeof useScrapeProgress> }) =>
-    expect(result.current.phase).toBe(phase);
-}
 
 describe("useScrapeProgress", () => {
   it("starts with idle phase", () => {

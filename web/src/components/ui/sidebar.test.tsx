@@ -2,20 +2,20 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { Home, Library, Settings } from "lucide-react";
 import { Sidebar } from "./sidebar";
 
 const defaultLinks = [
   {
-    section: undefined,
     items: [
       {
         to: "/",
-        icon: () => <svg data-testid="icon-dashboard" />,
+        icon: Home,
         label: "Dashboard",
       },
       {
         to: "/library",
-        icon: () => <svg data-testid="icon-library" />,
+        icon: Library,
         label: "Library",
       },
     ],
@@ -25,7 +25,7 @@ const defaultLinks = [
     items: [
       {
         to: "/admin/settings",
-        icon: () => <svg data-testid="icon-settings" />,
+        icon: Settings,
         label: "Settings",
       },
     ],

@@ -88,7 +88,7 @@ describe("VerificationBadge", () => {
 
   it("closes overlay when clicking outside", async () => {
     const game = makeGame({ verificationStatus: "unverified" });
-    const { container } = renderWithQuery(
+    renderWithQuery(
       <div>
         <div data-testid="outside">Outside</div>
         <VerificationBadge game={game} isAdmin={true} />

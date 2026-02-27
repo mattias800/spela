@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Settings, Plus, X } from "lucide-react";
 import {
-  Badge,
   Button,
   Card,
   CardHeader,
