@@ -4,7 +4,6 @@
 .vscode/
 
 # Go
-server/go.sum
 server/.playwright-cli/
 
 # Database
