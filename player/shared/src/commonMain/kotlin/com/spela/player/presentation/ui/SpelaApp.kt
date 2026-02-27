@@ -118,6 +118,9 @@ import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
+import com.spela.player.libretro.GamepadPortManager
+import com.spela.player.presentation.ui.components.SpSectionIndicator
+import kotlinx.coroutines.delay
 
 @Composable
 fun SpelaApp(
@@ -146,11 +149,38 @@ fun SpelaApp(
     connectivityMonitor: ConnectivityMonitor,
     saveDataViewModel: SaveDataViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
+    gamepadPortManager: GamepadPortManager? = null,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
     SpelaTheme(theme = currentTheme) {
         val navState by navigationViewModel.state.collectAsState()
+
+        // Gamepad connection state for section indicator
+        val gamepadAssignments by gamepadPortManager?.assignments?.collectAsState()
+            ?: remember { mutableStateOf(emptyList<GamepadPortManager.PortAssignment>()) }
+        val hasGamepad = gamepadAssignments.isNotEmpty()
+
+        // Auto-hide timer for section indicator
+        var sectionIndicatorVisible by remember { mutableStateOf(false) }
+
+        LaunchedEffect(hasGamepad) {
+            if (hasGamepad) {
+                sectionIndicatorVisible = true
+                delay(3000)
+                sectionIndicatorVisible = false
+            } else {
+                sectionIndicatorVisible = false
+            }
+        }
+
+        LaunchedEffect(navState.currentScreen, hasGamepad) {
+            if (hasGamepad) {
+                sectionIndicatorVisible = true
+                delay(3000)
+                sectionIndicatorVisible = false
+            }
+        }
 
         // Hidden indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
@@ -986,9 +1016,9 @@ fun SpelaApp(
                     )
                 }
 
-                // Bottom navigation bar
-                val showBottomNav = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
-                if (showBottomNav) {
+                // Bottom navigation bar (hidden when gamepad connected)
+                val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
+                if (showNavArea && !hasGamepad) {
                     SpBottomNavBar(
                         activeTab = activeTabForScreen(navState.currentScreen),
                         onTabSelected = { tab ->
@@ -1006,6 +1036,21 @@ fun SpelaApp(
                     )
                 }
                 } // else (not DatabaseError)
+            }
+
+            // Section indicator overlay (shown when gamepad connected)
+            val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
+            if (showNavArea && hasGamepad) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    SpSectionIndicator(
+                        activeTab = activeTabForScreen(navState.currentScreen),
+                        visible = sectionIndicatorVisible,
+                        modifier = Modifier.padding(top = SpSpacing.Default),
+                    )
+                }
             }
         }
         }

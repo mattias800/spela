@@ -363,6 +363,7 @@ class SpelaTestHarness(
             presenceService = presenceService,
             connectivityMonitor = connectivityMonitor,
             saveDataViewModel = saveDataViewModel,
+            gamepadPortManager = gamepadPortManager,
         )
         }
     }
