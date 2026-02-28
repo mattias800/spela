@@ -1,0 +1,358 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # ── Tests ──────────────────────────────────────────────────────
+
+  go-test:
+    name: Go tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: go mod download
+      - run: go test ./...
+
+  web-test:
+    name: Web unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test
+
+  player-test:
+    name: Player unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: player
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: player-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            player-gradle-
+      - name: Run shared desktop tests
+        run: ./gradlew :shared:desktopTest
+
+  # ── Docker ─────────────────────────────────────────────────────
+
+  docker:
+    name: Docker image
+    needs: [go-test, web-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version from tag
+        id: meta
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+
+  # ── Android ────────────────────────────────────────────────────
+
+  build-android:
+    name: Android APK
+    needs: [player-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            android-gradle-
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > player/android/release.keystore
+            echo "ANDROID_KEYSTORE_PATH=$(pwd)/player/android/release.keystore" >> "$GITHUB_ENV"
+          fi
+      - name: Build release APK
+        working-directory: player
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew :android:assembleRelease
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-android-apk
+          path: player/android/build/outputs/apk/release/*.apk
+
+  # ── Desktop (macOS, Linux x86_64, Windows) ─────────────────────
+
+  build-desktop:
+    name: Desktop (${{ matrix.os }})
+    needs: [player-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            format: packageDmg
+            artifact-name: spela-macos-dmg
+            artifact-path: player/desktop/build/compose/binaries/main/dmg/*.dmg
+          - os: ubuntu-latest
+            format: packageDeb
+            artifact-name: spela-linux-deb
+            artifact-path: player/desktop/build/compose/binaries/main/deb/*.deb
+          - os: windows-latest
+            format: packageMsi
+            artifact-name: spela-windows-msi
+            artifact-path: player/desktop/build/compose/binaries/main/msi/*.msi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config
+      - name: Install Vulkan SDK (Windows)
+        if: runner.os == 'Windows'
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.290.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build package
+        working-directory: player
+        run: ./gradlew ${{ matrix.format }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+
+  # ── Linux AppImage (x86_64) ────────────────────────────────────
+
+  build-appimage:
+    name: Linux AppImage (x86_64)
+    needs: [player-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-gradle-
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+      - name: Build AppImage
+        working-directory: player
+        run: bash linux/build-appimage.sh --arch x86_64
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-appimage-x86_64
+          path: player/desktop/build/appimage/Spela-x86_64.AppImage
+
+  # ── Linux Flatpak ──────────────────────────────────────────────
+
+  build-flatpak:
+    name: Linux Flatpak
+    needs: [player-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            flatpak flatpak-builder
+      - name: Set up Flatpak
+        run: |
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y --noninteractive flathub \
+            org.freedesktop.Platform//24.08 \
+            org.freedesktop.Sdk//24.08 \
+            org.freedesktop.Sdk.Extension.openjdk17//24.08
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-gradle-
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+      - name: Build Flatpak
+        working-directory: player
+        run: bash linux/flatpak/build-flatpak.sh
+      - name: Upload Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-flatpak
+          path: player/desktop/build/flatpak/spela.flatpak
+
+  # ── Linux ARM64 ────────────────────────────────────────────────
+
+  build-linux-arm64:
+    name: Linux ARM64
+    needs: [player-test]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            Linux-ARM64-gradle-
+      - name: Build distributable
+        working-directory: player
+        run: ./gradlew createDistributable
+      - name: Build DEB
+        working-directory: player
+        run: ./gradlew packageDeb
+      - name: Build AppImage
+        working-directory: player
+        run: bash linux/build-appimage.sh --arch aarch64
+      - name: Upload DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-arm64-deb
+          path: player/desktop/build/compose/binaries/main/deb/*.deb
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: spela-linux-appimage-aarch64
+          path: player/desktop/build/appimage/Spela-aarch64.AppImage
+
+  # ── GitHub Release ─────────────────────────────────────────────
+
+  create-release:
+    name: Create GitHub Release
+    needs:
+      - docker
+      - build-android
+      - build-desktop
+      - build-appimage
+      - build-flatpak
+      - build-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect release files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( \
+            -name "*.apk" -o -name "*.dmg" -o -name "*.deb" \
+            -o -name "*.msi" -o -name "*.AppImage" -o -name "*.flatpak" \
+          \) -exec cp {} release/ \;
+          echo "Release artifacts:"
+          ls -lh release/
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/*

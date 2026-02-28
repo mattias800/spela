@@ -1,8 +1,6 @@
 name: Desktop Build (macOS, Linux, Windows)
 
 on:
-  push:
-    branches: [release]
   workflow_dispatch:
 
 jobs:
