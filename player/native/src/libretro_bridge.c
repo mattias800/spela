@@ -392,18 +392,24 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
             /* Tell cores which HW render context we prefer.
-             * On Android: prefer Vulkan — zero-copy compositing via VkImage,
-             * no readback overhead. Cores that support both Vulkan and GLES
-             * (e.g. Dolphin) will choose Vulkan. GLES-only cores (e.g. GLideN64)
-             * ignore this preference and request GLES via SET_HW_RENDER, which
-             * we also accept (the GLES pbuffer readback path remains active).
+             * On Android: prefer Vulkan ONLY for Dolphin (GameCube/Wii) which
+             * benefits from zero-copy compositing via VkImage. All other cores
+             * get GLES3 — DS cores (melonDS) and others work best with GLES.
+             * GLES-only cores ignore this preference and request GLES via
+             * SET_HW_RENDER regardless, so the pbuffer readback path works.
              * On desktop: prefer OpenGL Core for maximum compatibility. */
 #ifdef __ANDROID__
-            *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
+            if (g_core.system_info.library_name &&
+                strcmp(g_core.system_info.library_name, "Dolphin") == 0) {
+                *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
+            } else {
+                *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;
+            }
 #else
             *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
-            LOGI("Reporting preferred HW render: %u", *(unsigned *)data);
+            LOGI("Reporting preferred HW render: %u (core: %s)", *(unsigned *)data,
+                 g_core.system_info.library_name ? g_core.system_info.library_name : "unknown");
             return true;
         }
 
@@ -611,6 +617,13 @@ static int core_load(const char *path) {
     LOAD_SYM(retro_get_memory_data);
     LOAD_SYM(retro_get_memory_size);
 
+    /* Get system info BEFORE registering callbacks — the environment callback
+     * may query the core name (e.g. GET_PREFERRED_HW_RENDER uses it to choose
+     * Vulkan vs GLES). retro_get_system_info is a pure info function that can
+     * be called at any time without initialization. */
+    g_core.retro_get_system_info(&g_core.system_info);
+    LOGI("Core: %s v%s", g_core.system_info.library_name, g_core.system_info.library_version);
+
     /* Register callbacks before retro_init */
     g_core.retro_set_environment(environment_callback);
     g_core.retro_set_video_refresh(video_refresh_callback);
@@ -620,9 +633,6 @@ static int core_load(const char *path) {
     g_core.retro_set_input_state(input_state_callback);
 
     LOGI("Core loaded successfully, API version: %u", g_core.retro_api_version());
-
-    g_core.retro_get_system_info(&g_core.system_info);
-    LOGI("Core: %s v%s", g_core.system_info.library_name, g_core.system_info.library_version);
 
     return 0;
 }

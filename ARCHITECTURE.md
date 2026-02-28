@@ -131,6 +131,32 @@ POST   /api/admin/scrape                # Admin: trigger metadata scrape
 - Render to platform-native surface (SurfaceView on Android, OpenGL on desktop)
 - Audio through platform audio APIs (Oboe on Android, OpenAL on desktop)
 - Input mapping from platform controllers to libretro's input abstraction
+- Single native bridge (`player/native/src/libretro_bridge.c`) handles all cores — per-core quirks are conditional branches, not separate implementations
+
+##### Per-Core Graphics API Selection (Android)
+
+The bridge tells cores which HW render context to prefer via `RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER`. This is configured per-core in `libretro_bridge.c` (`environment_callback`, case `RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER`):
+
+| Core | Preferred API | Reason |
+|------|--------------|--------|
+| Dolphin (GameCube/Wii) | Vulkan | Zero-copy compositing via VkImage, best performance |
+| All other cores | GLES3 | Broad compatibility; DS, N64, PSX etc. work reliably with GLES |
+
+On desktop, all cores prefer OpenGL Core.
+
+Cores that only support one API will ignore this preference and request what they need via `SET_HW_RENDER` — the bridge accepts both Vulkan and GLES paths regardless of the preference.
+
+**To change a core's preferred API**, modify the `GET_PREFERRED_HW_RENDER` handler in `libretro_bridge.c` and add a `strcmp` check for the core's `library_name`. The core name is available via `g_core.system_info.library_name` (populated by `retro_get_system_info` before callbacks are registered).
+
+##### Per-Core Renderer Variables
+
+Some cores have internal renderer selection via core variables (separate from the HW render preference above). These are set in the `SET_VARIABLES` handler in `libretro_bridge.c`:
+
+| Core | Variable | Value | Reason |
+|------|----------|-------|--------|
+| mupen64plus_next (N64) | `mupen64plus-rdp-plugin` | `gliden64` (Android), `angrylion` (macOS) | GLES HW render on Android; software on macOS to avoid GL compositing issues |
+| beetle_psx_hw (PS1) | `beetle_psx_hw_renderer` | `hardware_gl` (Android) | Avoids Granite Vulkan crashes on Adreno GPUs |
+| Dolphin (GC/Wii) | `dolphin_cpu_thread` | `disabled` (Android) | Prevents deadlock with single-threaded libretro frontend |
 
 ### 4. Supported Platforms/Consoles (Initial)
 | Console | Extensions | Recommended Core |
