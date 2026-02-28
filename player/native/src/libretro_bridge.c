@@ -955,13 +955,6 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         hw_gl_debug_reset_frame();
 #endif
     }
-    static int run_count = 0;
-    run_count++;
-    if (run_count <= 3) {
-        LOGI("nativeRun: calling retro_run #%d (hw_enabled=%d hw_active=%d)",
-             run_count, g_core.hw_render_enabled,
-             g_gpu_renderer ? gpu_renderer_is_hw_render_active(g_gpu_renderer) : -1);
-    }
     g_core.retro_run();
     g_first_frame_run = true;
     /* Release GL context after retro_run() so subsequent GPU operations

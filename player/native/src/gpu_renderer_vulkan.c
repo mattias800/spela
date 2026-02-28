@@ -1,9 +1,41 @@
 /*
- * Vulkan GPU renderer for Android.
+ * Vulkan GPU renderer (cross-platform: Android + macOS via MoltenVK).
  *
  * Implements the gpu_renderer interface using Vulkan 1.0.
- * Software-rendered cores upload frames via staging buffer.
- * Real SPIR-V fragment shaders replace CPU overlays.
+ * Two rendering modes:
+ *
+ * 1. On-screen (Android): Real VkSurface + swapchain. Software-rendered cores
+ *    upload frames via staging buffer; gpu_renderer_render() presents to screen.
+ *
+ * 2. Offscreen (macOS desktop): No real surface. Frames are rendered to an
+ *    offscreen VkImage, read back to CPU via vkCmdCopyImageToBuffer, and passed
+ *    to Kotlin/Compose via gpu_renderer_render_to_bgra().
+ *
+ * For HW render cores (e.g. Dolphin), the core renders to its own VkImage and
+ * delivers it via set_image(). We composite it through our shader pipeline
+ * (offscreen) or present it directly (on-screen).
+ *
+ * == Dolphin Vulkan interception (IMPORTANT - do not break!) ==
+ *
+ * Dolphin's libretro port intercepts Vulkan API calls via LIBRETRO_VK_WARP_FUNC.
+ * The interception pattern is:
+ *   PFN_vk* fptr = (PFN_vk*)get_proc_addr(device, "vkFoo");
+ *   if (!fptr) return fptr;  // <-- guard: NULL = skip interception!
+ *   wrapped_fptr = make_interceptor(fptr);
+ *
+ * In offscreen mode, VK_KHR_surface is NOT enabled on the VkInstance, so
+ * vkGetInstanceProcAddr returns NULL for surface functions. Similarly,
+ * VK_KHR_swapchain may return NULL for swap chain functions. This causes
+ * Dolphin's entire interception chain to be skipped → no frames delivered.
+ *
+ * Solution: wrapped_vkGetInstanceProcAddr and wrapped_vkGetDeviceProcAddr
+ * return stub implementations (non-NULL) when real functions return NULL.
+ * The stubs are never actually called — Dolphin's interceptors replace them.
+ * They just need to be non-NULL to pass the guard check.
+ *
+ * Additionally, create_device receives a dummy VkSurfaceKHR (0xDEADBEEF)
+ * instead of VK_NULL_HANDLE in offscreen mode, because a NULL surface tells
+ * Dolphin "no presentation needed" and it skips swap chain creation entirely.
  *
  * Threading model:
  *   - gpu_renderer_upload_frame() called from emulation thread
@@ -762,18 +794,6 @@ static void hw_vulkan_set_image(void *handle,
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
-    static int set_image_count = 0;
-    set_image_count++;
-    if (set_image_count <= 5 || set_image_count == 60) {
-        VK_LOGI("set_image #%d: view=%p layout=%d sems=%u qf=%u "
-                "ci_fmt=%d ci_type=%d",
-                set_image_count,
-                image ? (void*)(uintptr_t)image->image_view : NULL,
-                image ? (int)image->image_layout : -1,
-                num_semaphores, src_queue_family,
-                image ? (int)image->create_info.format : -1,
-                image ? (int)image->create_info.viewType : -1);
-    }
     if (image) {
         r->hw_current_image = *image;
     }
@@ -800,20 +820,12 @@ static void hw_vulkan_wait_sync_index(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r || !r->device) return;
-    static int wsi_count = 0;
-    wsi_count++;
-    if (wsi_count <= 10 || wsi_count == 60 || wsi_count % 300 == 0) {
-        VK_LOGI("wait_sync_index #%d: slot=%u ENTER", wsi_count, r->current_frame);
-    }
     VkResult wr = vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
                     VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
     if (wr == VK_TIMEOUT) {
-        VK_LOGE("wait_sync_index #%d: TIMEOUT on fence slot %u!", wsi_count, r->current_frame);
+        VK_LOGE("wait_sync_index: TIMEOUT on fence slot %u", r->current_frame);
     } else if (wr != VK_SUCCESS) {
-        VK_LOGE("wait_sync_index #%d: fence wait error %d slot %u", wsi_count, wr, r->current_frame);
-    }
-    if (wsi_count <= 10 || wsi_count == 60 || wsi_count % 300 == 0) {
-        VK_LOGI("wait_sync_index #%d: slot=%u EXIT (result=%d)", wsi_count, r->current_frame, wr);
+        VK_LOGE("wait_sync_index: fence wait error %d slot %u", wr, r->current_frame);
     }
 }
 
@@ -822,11 +834,6 @@ static void hw_vulkan_set_command_buffers(void *handle,
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
-    static int scb_count = 0;
-    scb_count++;
-    if (scb_count <= 5 || scb_count == 60) {
-        VK_LOGI("set_command_buffers #%d: num_cmd=%u", scb_count, num_cmd);
-    }
     r->hw_core_cmd_count = num_cmd < MAX_FRAMES_IN_FLIGHT ?
         num_cmd : MAX_FRAMES_IN_FLIGHT;
     for (uint32_t i = 0; i < r->hw_core_cmd_count; i++) {
@@ -837,11 +844,6 @@ static void hw_vulkan_set_command_buffers(void *handle,
 static void hw_vulkan_lock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    static int lq_count = 0;
-    lq_count++;
-    if (lq_count <= 5 || lq_count == 60 || lq_count % 300 == 0) {
-        VK_LOGI("lock_queue #%d", lq_count);
-    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_lock(&r->queue_mutex);
     }
@@ -850,11 +852,6 @@ static void hw_vulkan_lock_queue(void *handle) {
 static void hw_vulkan_unlock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
-    static int uq_count = 0;
-    uq_count++;
-    if (uq_count <= 5 || uq_count == 60 || uq_count % 300 == 0) {
-        VK_LOGI("unlock_queue #%d", uq_count);
-    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_unlock(&r->queue_mutex);
     }
@@ -989,12 +986,7 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
 /* Offscreen HW render: composite core's VkImage to offscreen framebuffer,
  * copy to readback buffer for CPU access via gpu_renderer_render_to_bgra. */
 static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned width, unsigned height) {
-    static int hw_off_count = 0;
-    hw_off_count++;
-    bool verbose = (hw_off_count <= 10 || hw_off_count == 60 || hw_off_count == 300);
-
     if (!r->hw_current_image.image_view) {
-        if (verbose) VK_LOGW("hw_render_frame_offscreen #%d: no image_view", hw_off_count);
         return;
     }
 
@@ -1207,18 +1199,12 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
         .pSignalSemaphores = signal_sems,
     };
 
-    if (verbose) {
-        VK_LOGI("hw_render_frame_offscreen #%d: %ux%u submit (cmds=%u waits=%u sigs=%u)",
-                hw_off_count, width, height, submit_cmd_count,
-                r->hw_wait_semaphore_count, signal_count);
-    }
-
     pthread_mutex_lock(&r->queue_mutex);
     VkResult result = vkQueueSubmit(r->graphics_queue, 1, &submit_info, r->offscreen_fence);
     pthread_mutex_unlock(&r->queue_mutex);
 
     if (result != VK_SUCCESS) {
-        VK_LOGE("hw_render_frame_offscreen #%d: vkQueueSubmit failed: %d", hw_off_count, result);
+        VK_LOGE("hw_render_frame_offscreen: vkQueueSubmit failed: %d", result);
         return;
     }
 
@@ -1234,10 +1220,6 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
     r->frame_width = width;
     r->frame_height = height;
     r->hw_offscreen_frame_ready = true;
-
-    if (verbose) {
-        VK_LOGI("hw_render_frame_offscreen #%d: done (%ux%u)", hw_off_count, width, height);
-    }
 }
 
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
@@ -1248,53 +1230,37 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         gpu_renderer_hw_render_frame_offscreen(r, width, height);
         return;
     }
-    static int hw_frame_count = 0;
-    hw_frame_count++;
     if (!r->hw_current_image.image_view) {
-        static int no_image_count = 0;
-        if (++no_image_count <= 5 || no_image_count % 300 == 0) {
-            VK_LOGW("hw_render_frame #%d: no image_view (set_image not called yet?) #%d", hw_frame_count, no_image_count);
-        }
         return;
-    }
-
-    bool verbose = (hw_frame_count <= 10 || hw_frame_count == 60 || hw_frame_count == 300);
-    if (verbose) {
-        VK_LOGI("hw_render_frame #%d: %ux%u view=%p slot=%u", hw_frame_count, width, height,
-                (void*)(uintptr_t)r->hw_current_image.image_view, r->current_frame);
     }
 
     r->frame_width = width;
     r->frame_height = height;
 
     /* Wait for the previous frame using this slot to finish */
-    if (verbose) VK_LOGI("hw_render_frame #%d: WaitFence[%u] ENTER", hw_frame_count, r->current_frame);
     VkResult fence_result = vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
                     VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
     if (fence_result == VK_TIMEOUT) {
-        VK_LOGE("hw_render_frame #%d: WaitFence[%u] TIMEOUT! Deadlock?", hw_frame_count, r->current_frame);
+        VK_LOGE("hw_render_frame: WaitFence timeout on slot %u", r->current_frame);
         return;
     } else if (fence_result != VK_SUCCESS) {
-        VK_LOGE("hw_render_frame #%d: WaitFence[%u] error=%d", hw_frame_count, r->current_frame, fence_result);
+        VK_LOGE("hw_render_frame: WaitFence error=%d slot %u", fence_result, r->current_frame);
         return;
     }
-    if (verbose) VK_LOGI("hw_render_frame #%d: WaitFence[%u] OK", hw_frame_count, r->current_frame);
 
     /* Acquire next swapchain image */
     uint32_t image_index;
-    if (verbose) VK_LOGI("hw_render_frame #%d: AcquireImage ENTER", hw_frame_count);
     VkResult result = vkAcquireNextImageKHR(r->device, r->swapchain, (uint64_t)2000000000,
         r->image_available_semaphores[r->current_frame], VK_NULL_HANDLE, &image_index);
-    if (verbose) VK_LOGI("hw_render_frame #%d: AcquireImage result=%d idx=%u", hw_frame_count, result, image_index);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
         return;
     } else if (result == VK_TIMEOUT) {
-        VK_LOGE("hw_render_frame #%d: AcquireImage TIMEOUT!", hw_frame_count);
+        VK_LOGE("hw_render_frame: AcquireImage timeout");
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        VK_LOGE("HW render: vkAcquireNextImageKHR failed: %d", result);
+        VK_LOGE("hw_render_frame: vkAcquireNextImageKHR failed: %d", result);
         return;
     }
 
@@ -1351,11 +1317,7 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         shader_idx = GPU_SHADER_NONE;
     }
     if (!r->pipelines[shader_idx]) {
-        VK_LOGE("HW render: pipeline[%d] is NULL (all %d pipelines: %p %p %p %p %p %p), skipping frame",
-                shader_idx, NUM_SHADERS,
-                (void *)(uintptr_t)r->pipelines[0], (void *)(uintptr_t)r->pipelines[1],
-                (void *)(uintptr_t)r->pipelines[2], (void *)(uintptr_t)r->pipelines[3],
-                (void *)(uintptr_t)r->pipelines[4], (void *)(uintptr_t)r->pipelines[5]);
+        VK_LOGE("hw_render_frame: pipeline[%d] is NULL, skipping frame", shader_idx);
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
         return;
@@ -1447,20 +1409,15 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pSignalSemaphores = signal_sems,
     };
 
-    if (verbose) VK_LOGI("hw_render_frame #%d: QueueSubmit ENTER (cmds=%u waits=%u sigs=%u)",
-                         hw_frame_count, submit_cmd_count, wait_count, signal_count);
     pthread_mutex_lock(&r->queue_mutex);
     result = vkQueueSubmit(r->graphics_queue, 1, &submit_info,
                            r->in_flight_fences[r->current_frame]);
     pthread_mutex_unlock(&r->queue_mutex);
 
     if (result != VK_SUCCESS) {
-        VK_LOGE("hw_render_frame #%d: vkQueueSubmit FAILED: %d (fence[%u] will never signal!)",
-                hw_frame_count, result, r->current_frame);
-        /* Fence was reset but submit failed — re-signal it to prevent deadlock */
+        VK_LOGE("hw_render_frame: vkQueueSubmit failed: %d", result);
         return;
     }
-    if (verbose) VK_LOGI("hw_render_frame #%d: QueueSubmit OK", hw_frame_count);
 
     /* Present */
     VkSemaphore present_wait[] = { r->render_finished_semaphores[r->current_frame] };
@@ -1473,11 +1430,9 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pImageIndices = &image_index,
     };
 
-    if (verbose) VK_LOGI("hw_render_frame #%d: QueuePresent ENTER", hw_frame_count);
     pthread_mutex_lock(&r->queue_mutex);
     result = vkQueuePresentKHR(r->graphics_queue, &present_info);
     pthread_mutex_unlock(&r->queue_mutex);
-    if (verbose) VK_LOGI("hw_render_frame #%d: QueuePresent result=%d", hw_frame_count, result);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
@@ -1652,6 +1607,20 @@ bool gpu_renderer_reinit_vulkan(gpu_renderer_t *r) {
     return true;
 }
 
+/*
+ * Read back the latest rendered frame as BGRA pixels (desktop offscreen path).
+ *
+ * Called by the Kotlin emulation loop (renderGpuFrameToBgra) after each retro_run().
+ * The caller uses nativeGetVideoWidth()/nativeGetVideoHeight() (from video_state)
+ * to pre-allocate the output buffer. Those dimensions MUST be set in
+ * video_refresh_callback before this function is called — see libretro_video.c.
+ *
+ * Two sub-paths:
+ * - HW render: readback was already done in hw_render_frame_offscreen() during
+ *   video_refresh_callback. We just memcpy from the persistently-mapped buffer.
+ * - Software: we render the uploaded frame through our shader pipeline and
+ *   do a GPU->CPU readback here.
+ */
 size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
     unsigned *out_width, unsigned *out_height) {
     if (!r || !r->active || !r->offscreen_mode) return 0;
@@ -2199,7 +2168,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkCreateSurface(
 {
     (void)instance; (void)pCreateInfo; (void)pAllocator;
     *pSurface = (VkSurfaceKHR)(uintptr_t)0xDEADBEEF;
-    VK_LOGW("STUB CALLED: vkCreateSurface -> dummy surface 0xDEADBEEF");
     return VK_SUCCESS;
 }
 
@@ -2207,7 +2175,6 @@ static VKAPI_ATTR void VKAPI_CALL stub_vkDestroySurfaceKHR(
     VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks *pAllocator)
 {
     (void)instance; (void)surface; (void)pAllocator;
-    VK_LOGW("STUB CALLED: vkDestroySurfaceKHR");
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceSupportKHR(
@@ -2216,7 +2183,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceSupportKHR(
 {
     (void)physicalDevice; (void)queueFamilyIndex; (void)surface;
     *pSupported = VK_TRUE;
-    VK_LOGW("STUB CALLED: vkGetPhysicalDeviceSurfaceSupportKHR -> TRUE");
     return VK_SUCCESS;
 }
 
@@ -2225,7 +2191,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceCapabilitie
     VkSurfaceCapabilitiesKHR *pSurfaceCapabilities)
 {
     (void)physicalDevice; (void)surface;
-    VK_LOGW("STUB CALLED: vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
     *pSurfaceCapabilities = (VkSurfaceCapabilitiesKHR){
         .minImageCount = 2,
         .maxImageCount = 8,
@@ -2291,7 +2256,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkCreateSwapchainKHR(
 {
     (void)device; (void)pCreateInfo; (void)pAllocator;
     *pSwapchain = (VkSwapchainKHR)(uintptr_t)0xDEADC0DE;
-    VK_LOGW("STUB CALLED: vkCreateSwapchainKHR (core should intercept!)");
     return VK_SUCCESS;
 }
 
@@ -2299,7 +2263,6 @@ static VKAPI_ATTR void VKAPI_CALL stub_vkDestroySwapchainKHR(
     VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks *pAllocator)
 {
     (void)device; (void)swapchain; (void)pAllocator;
-    VK_LOGW("STUB CALLED: vkDestroySwapchainKHR");
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetSwapchainImagesKHR(
@@ -2307,7 +2270,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetSwapchainImagesKHR(
     uint32_t *pSwapchainImageCount, VkImage *pSwapchainImages)
 {
     (void)device; (void)swapchain; (void)pSwapchainImages;
-    VK_LOGW("STUB CALLED: vkGetSwapchainImagesKHR (core should intercept!)");
     *pSwapchainImageCount = 0;
     return VK_SUCCESS;
 }
@@ -2317,7 +2279,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkAcquireNextImageKHR(
     VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex)
 {
     (void)device; (void)swapchain; (void)timeout; (void)semaphore; (void)fence;
-    VK_LOGW("STUB CALLED: vkAcquireNextImageKHR (core should intercept!)");
     *pImageIndex = 0;
     return VK_SUCCESS;
 }
@@ -2326,7 +2287,6 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkQueuePresentKHR(
     VkQueue queue, const VkPresentInfoKHR *pPresentInfo)
 {
     (void)queue; (void)pPresentInfo;
-    VK_LOGW("STUB CALLED: vkQueuePresentKHR (core should intercept!)");
     return VK_SUCCESS;
 }
 
@@ -2334,104 +2294,74 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkQueuePresentKHR(
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
     VkDevice device, const char *pName);
 
-/* Wrapped vkGetInstanceProcAddr that returns our filtered functions
- * and provides stub surface functions for offscreen HW render cores */
+/*
+ * Wrapped vkGetInstanceProcAddr: intercepts lookups from HW render cores.
+ *
+ * Two responsibilities:
+ * 1. Return wrapped_vkGetDeviceProcAddr when queried for "vkGetDeviceProcAddr"
+ *    so that device-level stub lookups also go through our wrapper.
+ * 2. Return stub surface functions when the real ones are NULL (offscreen mode
+ *    has no VK_KHR_surface). This is CRITICAL for Dolphin's interception chain —
+ *    see file header comment for the full explanation.
+ *
+ * On Android (non-offscreen), the real functions are always non-NULL,
+ * so these stubs are never returned. Safe for all platforms.
+ */
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
     VkInstance instance, const char *pName)
 {
-    static int gipa_count = 0;
-    gipa_count++;
-
     if (strcmp(pName, "vkEnumerateDeviceExtensionProperties") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkEnumerateDeviceExtensionProperties;
     }
-    /* Return our wrapped vkGetDeviceProcAddr so cores get our stubs for
-     * swap chain functions when VK_KHR_swapchain is not on the device. */
     if (strcmp(pName, "vkGetDeviceProcAddr") == 0) {
-        VK_LOGW("wrapped_vkGetInstanceProcAddr #%d: returning wrapped_vkGetDeviceProcAddr", gipa_count);
         return (PFN_vkVoidFunction)wrapped_vkGetDeviceProcAddr;
     }
 
     PFN_vkVoidFunction result = vkGetInstanceProcAddr(instance, pName);
 
-    /* If the real function is NULL, provide stub implementations for surface
-     * functions. This is critical for cores like Dolphin that guard their
-     * interception with `if (!fptr) return fptr;` — without non-NULL pointers,
-     * the entire swap chain interception chain is skipped. */
+    /* Provide stubs for surface functions that return NULL in offscreen mode */
     if (!result) {
-        if (strcmp(pName, "vkDestroySurfaceKHR") == 0) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strcmp(pName, "vkDestroySurfaceKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkDestroySurfaceKHR;
-        }
-        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceSupportKHR") == 0) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceSupportKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceSupportKHR;
-        }
-        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-        }
-        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceFormatsKHR;
-        }
-        if (strcmp(pName, "vkGetPhysicalDeviceSurfacePresentModesKHR") == 0) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfacePresentModesKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfacePresentModesKHR;
-        }
         /* Catch ALL platform surface creation functions (Metal, X11, Win32, etc.) */
-        if (strstr(pName, "vkCreate") && strstr(pName, "Surface")) {
-            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+        if (strstr(pName, "vkCreate") && strstr(pName, "Surface"))
             return (PFN_vkVoidFunction)stub_vkCreateSurface;
-        }
-        if (gipa_count <= 60) {
-            VK_LOGW("GIPA #%d: '%s' returned NULL (no stub)", gipa_count, pName);
-        }
-    } else if (gipa_count <= 60) {
-        VK_LOGW("GIPA #%d: '%s' -> OK", gipa_count, pName);
     }
 
     return result;
 }
 
-/* Wrapped vkGetDeviceProcAddr that provides stub swap chain functions
- * for offscreen HW render. When VK_KHR_swapchain is not enabled on the
- * device, these stubs give cores like Dolphin non-NULL function pointers
- * that their interception chain can wrap. */
+/*
+ * Wrapped vkGetDeviceProcAddr: provides stub swap chain functions for
+ * offscreen HW render. Same rationale as wrapped_vkGetInstanceProcAddr —
+ * cores need non-NULL function pointers to install their interceptors.
+ * On Android (non-offscreen), VK_KHR_swapchain is always enabled, so
+ * real functions are returned and stubs are never used.
+ */
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
     VkDevice device, const char *pName)
 {
-    static int gdpa_count = 0;
-    gdpa_count++;
-
     PFN_vkVoidFunction result = vkGetDeviceProcAddr(device, pName);
 
     if (!result) {
-        if (strcmp(pName, "vkCreateSwapchainKHR") == 0) {
-            VK_LOGW("GDPA: returning STUB for vkCreateSwapchainKHR");
+        if (strcmp(pName, "vkCreateSwapchainKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkCreateSwapchainKHR;
-        }
-        if (strcmp(pName, "vkDestroySwapchainKHR") == 0) {
-            VK_LOGW("GDPA: returning STUB for vkDestroySwapchainKHR");
+        if (strcmp(pName, "vkDestroySwapchainKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkDestroySwapchainKHR;
-        }
-        if (strcmp(pName, "vkGetSwapchainImagesKHR") == 0) {
-            VK_LOGW("GDPA: returning STUB for vkGetSwapchainImagesKHR");
+        if (strcmp(pName, "vkGetSwapchainImagesKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkGetSwapchainImagesKHR;
-        }
-        if (strcmp(pName, "vkAcquireNextImageKHR") == 0) {
-            VK_LOGW("GDPA: returning STUB for vkAcquireNextImageKHR");
+        if (strcmp(pName, "vkAcquireNextImageKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkAcquireNextImageKHR;
-        }
-        if (strcmp(pName, "vkQueuePresentKHR") == 0) {
-            VK_LOGW("GDPA: returning STUB for vkQueuePresentKHR");
+        if (strcmp(pName, "vkQueuePresentKHR") == 0)
             return (PFN_vkVoidFunction)stub_vkQueuePresentKHR;
-        }
-        if (gdpa_count <= 30 || strstr(pName, "Swapchain") || strstr(pName, "Present")) {
-            VK_LOGW("GDPA #%d: '%s' returned NULL (no stub)", gdpa_count, pName);
-        }
-    } else if (gdpa_count <= 30 || strstr(pName, "Swapchain") || strstr(pName, "Present") || strstr(pName, "Queue")) {
-        VK_LOGW("GDPA #%d: '%s' -> OK", gdpa_count, pName);
     }
 
     return result;
