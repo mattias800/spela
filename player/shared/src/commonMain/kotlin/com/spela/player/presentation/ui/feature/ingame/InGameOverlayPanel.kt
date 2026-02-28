@@ -340,8 +340,10 @@ internal fun RowScope.OverlayActionButtons(
     onChallenge: () -> Unit,
     onControls: () -> Unit,
 ) {
-    OverlayAction(label = "Save", icon = Icons.Filled.Save, onClick = onSave)
-    OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
+    if (supportsSaveStates) {
+        OverlayAction(label = "Save", icon = Icons.Filled.Save, onClick = onSave)
+        OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
+    }
     if (rewindEnabled) {
         OverlayAction(label = "Rewind", icon = Icons.Filled.FastRewind, onClick = onRewind)
     }

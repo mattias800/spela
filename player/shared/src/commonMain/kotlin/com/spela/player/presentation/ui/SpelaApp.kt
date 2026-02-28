@@ -41,6 +41,7 @@ import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.intent.GameDetailIntent
+import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
@@ -378,6 +379,12 @@ fun SpelaApp(
                                 }
                                 LaunchedEffect(Unit) {
                                     netplayViewModel.onIntent(NetplayIntent.LoadSessions)
+                                }
+                                // Refresh dashboard when returning from emulation
+                                LaunchedEffect(navState.showInGameOverlay) {
+                                    if (!navState.showInGameOverlay) {
+                                        gameListViewModel.onIntent(GameListIntent.LoadDashboard)
+                                    }
                                 }
                                 HomeScreen(
                                     viewModel = gameListViewModel,

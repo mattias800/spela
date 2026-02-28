@@ -664,7 +664,8 @@ class FakeLibretroController : LibretroController {
         isFastForward = enabled
     }
 
-    override fun supportsSaveStates(): Boolean = true
+    var supportsSaveStatesResult = true
+    override fun supportsSaveStates(): Boolean = supportsSaveStatesResult
 
     override fun performanceStats(): Flow<Pair<Float, Float>> = MutableStateFlow(59.9f to 16.5f)
 }

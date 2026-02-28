@@ -198,6 +198,7 @@ class EmulationViewModel(
                 error = null,
                 statusMessage = null,
                 isFastForward = false,
+                supportsSaveStates = true,
             )
         }
 
@@ -310,7 +311,10 @@ class EmulationViewModel(
                         // Try to load auto-save: in relay mode, download relay auto-save
                         else if (relayId != null) {
                             netplayManager.loadRelaySave(relayId)
-                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad) {
+                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad && !hwRender) {
+                            // For non-HW cores, load save state immediately.
+                            // HW render cores (e.g. Dolphin) boot asynchronously — their
+                            // GPU thread isn't ready for retro_unserialize yet. Deferred below.
                             saveManager.autoLoadSaveState(gameId)
                         }
 
@@ -336,6 +340,15 @@ class EmulationViewModel(
                         val saveStatesSupported = libretroController.supportsSaveStates()
                         withContext(dispatchers.main) {
                             _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
+                        }
+
+                        // Deferred auto-load for HW render cores (e.g. Dolphin).
+                        // These cores boot asynchronously and crash if retro_unserialize
+                        // is called before their GPU thread is fully initialized.
+                        if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
+                            && challengeId == null && relayId == null
+                        ) {
+                            saveManager.autoLoadSaveState(gameId)
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)

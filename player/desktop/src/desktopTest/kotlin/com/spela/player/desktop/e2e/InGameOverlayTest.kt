@@ -149,4 +149,21 @@ class InGameOverlayTest {
         // Overlay should be hidden
         onNodeWithText("Exit Game").assertDoesNotExist()
     }
+
+    @Test
+    fun overlayHidesSaveLoadForNonSaveStateConsoles() = runComposeUiTest {
+        val harness = createHarnessWithGameReady()
+
+        // Configure controller to report no save state support (e.g. GameCube via Dolphin)
+        harness.libretroController.supportsSaveStatesResult = false
+
+        startGame(harness)
+
+        // Save and Load buttons should NOT be present
+        onNodeWithContentDescription("Save").assertDoesNotExist()
+        onNodeWithContentDescription("Load").assertDoesNotExist()
+
+        // Other action buttons should still be present
+        onNodeWithContentDescription("Screenshot").assertIsDisplayed()
+    }
 }

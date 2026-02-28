@@ -217,4 +217,25 @@ class EmulationViewModelGameLifecycleTest {
         assertTrue(vm.state.value.error!!.contains("Failed to start emulation"))
         builder.tearDown()
     }
+
+    @Test
+    fun startGameResetsSupportsSaveStatesToTrue() = runTest(testDispatcher) {
+        // First game: core does NOT support save states
+        builder.libretroController.supportsSaveStatesResult = false
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        advanceTimeBy(4000) // Wait past the 3-second probe
+        assertFalse(vm.state.value.supportsSaveStates, "First game should not support save states")
+
+        // Stop the first game
+        vm.onIntent(EmulationIntent.StopGame)
+        advanceTimeBy(100)
+
+        // Second game: core DOES support save states
+        builder.libretroController.supportsSaveStatesResult = true
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        // Immediately after startGame, supportsSaveStates should be reset to true
+        assertTrue(vm.state.value.supportsSaveStates, "supportsSaveStates should reset to true on new game start")
+        builder.tearDown()
+    }
 }
