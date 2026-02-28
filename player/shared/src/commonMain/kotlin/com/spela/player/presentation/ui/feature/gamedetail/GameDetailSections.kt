@@ -84,7 +84,7 @@ fun ScreenshotsSection(screenshots: List<String>) {
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(screenshots.size, key = { screenshots[it] }) { index ->
+        items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
             SpInnerCard(
                 modifier = Modifier.width(280.dp),
                 onClick = { lightboxIndex = index },
