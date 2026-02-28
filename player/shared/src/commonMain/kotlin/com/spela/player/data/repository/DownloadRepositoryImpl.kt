@@ -34,8 +34,15 @@ class DownloadRepositoryImpl(
         val gameDetail = apiClient.getGameDetail(gameId)
         println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
 
+        val discs = gameDetail.discs
         if (gameDetail.discCount >= 2) {
             downloadMultiDiscGame(gameId, gameTitle, gameDetail)
+        } else if (discs.isNotEmpty() && discs.size == 1) {
+            // Single disc with disc record — use disc endpoint (handles .cue tar bundles)
+            downloadSingleDiscWithDiscRecord(gameId, gameTitle, gameDetail)
+        } else if (gameDetail.fileName.endsWith(".cue", ignoreCase = true)) {
+            // .cue without disc records (old DB entry) — game endpoint returns tar
+            downloadCueGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         } else {
             downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         }
@@ -85,6 +92,75 @@ class DownloadRepositoryImpl(
         }
 
         return path
+    }
+
+    /**
+     * Downloads a single-disc game that has a GameDisc record on the server.
+     * For .cue files, uses the disc endpoint which returns a tar bundle.
+     * For other formats, uses the disc endpoint which returns the file directly.
+     */
+    private suspend fun downloadSingleDiscWithDiscRecord(
+        gameId: String,
+        gameTitle: String,
+        game: GameDto,
+    ): String {
+        val disc = game.discs.first()
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
+        if (fileStorage.fileExists(gameDir) && !fileStorage.isDirectory(gameDir)) {
+            fileStorage.deleteFile(gameDir)
+        }
+        fileStorage.createDirectory(gameDir)
+
+        if (disc.fileName.endsWith(".cue", ignoreCase = true)) {
+            // Tar archive (cue+bin) — stream-extract directly to disk
+            apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
+                downloads.update {
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: disc.fileSize))
+                }
+            }
+        } else {
+            // Single file — stream to disk
+            val discPath = "$gameDir/${disc.fileName}"
+            apiClient.downloadDiscToFile(gameId, disc.discNumber, fileStorage, discPath) { downloaded, total ->
+                downloads.update {
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: disc.fileSize))
+                }
+            }
+        }
+
+        downloads.update {
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, game.fileSize, game.fileSize))
+        }
+        return gameDir
+    }
+
+    /**
+     * Downloads a .cue game that has no disc records (old DB entry).
+     * The game download endpoint now returns a tar bundle for .cue files.
+     */
+    private suspend fun downloadCueGameFromGameEndpoint(
+        gameId: String,
+        gameTitle: String,
+        fileName: String,
+        expectedSize: Long,
+    ): String {
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
+        if (fileStorage.fileExists(gameDir) && !fileStorage.isDirectory(gameDir)) {
+            fileStorage.deleteFile(gameDir)
+        }
+        fileStorage.createDirectory(gameDir)
+
+        apiClient.downloadGameAndExtract(gameId, fileStorage, gameDir) { downloaded, total ->
+            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else null
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal ?: -1))
+            }
+        }
+
+        downloads.update {
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, expectedSize, expectedSize))
+        }
+        return gameDir
     }
 
     private suspend fun downloadMultiDiscGame(gameId: String, gameTitle: String, game: GameDto): String {
@@ -182,7 +258,10 @@ class DownloadRepositoryImpl(
         if (fileStorage.isDirectory(gameDir)) {
             val files = fileStorage.listFiles(gameDir)
             println("[Download] getLocalGamePath: gameDir=$gameDir isDir=true files=$files")
-            val gameFile = files.firstOrNull { it != "game.m3u" }
+            // Prefer .cue files — the emulator expects the .cue path to find companions
+            val gameFile = files.filter { it != "game.m3u" }
+                .sortedByDescending { it.endsWith(".cue", ignoreCase = true) }
+                .firstOrNull()
             if (gameFile != null) return "$gameDir/$gameFile"
         } else {
             val exists = fileStorage.fileExists(gameDir)

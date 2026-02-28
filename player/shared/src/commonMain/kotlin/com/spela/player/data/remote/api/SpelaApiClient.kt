@@ -1084,53 +1084,87 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
             }
-            val totalBytes = response.contentLength()
-            val channel = response.bodyAsChannel()
-            var downloaded = 0L
+            extractTarFromResponse(response, fileStorage, outputDir, onProgress)
+        }
+    }
 
-            // Tar format: 512-byte header, file data (padded to 512), repeat
-            while (true) {
-                // Read 512-byte tar header
-                val header = ByteArray(512)
-                val headerRead = channel.readFully(header, 0, 512)
-                downloaded += 512
-                onProgress(downloaded, totalBytes)
+    /**
+     * Downloads a game tar archive (for .cue+.bin games without disc records)
+     * and extracts files directly to outputDir.
+     */
+    suspend fun downloadGameAndExtract(
+        gameId: String,
+        fileStorage: FileStorage,
+        outputDir: String,
+        onProgress: (Long, Long?) -> Unit = { _, _ -> },
+    ) {
+        client.prepareGet("$baseUrl/api/games/$gameId/download") {
+            timeout {
+                requestTimeoutMillis = Long.MAX_VALUE
+            }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("Game download failed: HTTP ${response.status.value}")
+            }
+            extractTarFromResponse(response, fileStorage, outputDir, onProgress)
+        }
+    }
 
-                // End-of-archive: all-zero block
-                if (header.all { it == 0.toByte() }) break
+    /**
+     * Extracts files from a tar archive response, streaming directly to disk.
+     */
+    private suspend fun extractTarFromResponse(
+        response: HttpResponse,
+        fileStorage: FileStorage,
+        outputDir: String,
+        onProgress: (Long, Long?) -> Unit,
+    ) {
+        val totalBytes = response.contentLength()
+        val channel = response.bodyAsChannel()
+        var downloaded = 0L
 
-                // Extract filename (bytes 0-99, null-terminated)
-                val nameEnd = header.indexOf(0.toByte()).let { if (it < 0 || it > 100) 100 else it }
-                val name = header.copyOfRange(0, nameEnd).decodeToString().trim()
-                if (name.isEmpty()) break
+        // Tar format: 512-byte header, file data (padded to 512), repeat
+        while (true) {
+            // Read 512-byte tar header
+            val header = ByteArray(512)
+            channel.readFully(header, 0, 512)
+            downloaded += 512
+            onProgress(downloaded, totalBytes)
 
-                // Extract file size (bytes 124-135, octal ASCII)
-                val sizeStr = header.copyOfRange(124, 136).decodeToString().trim().trimEnd(0.toChar())
-                val fileSize = sizeStr.toLongOrNull(8) ?: 0L
+            // End-of-archive: all-zero block
+            if (header.all { it == 0.toByte() }) break
 
-                if (fileSize > 0) {
-                    // Stream file content directly to disk
-                    val filePath = "$outputDir/$name"
-                    fileStorage.writeFileStreaming(filePath) { append ->
-                        var remaining = fileSize
-                        val buffer = ByteArray(65536)
-                        while (remaining > 0) {
-                            val toRead = minOf(remaining, buffer.size.toLong()).toInt()
-                            val bytesRead = channel.readAvailable(buffer, 0, toRead)
-                            if (bytesRead == -1) break
-                            append(buffer, 0, bytesRead)
-                            remaining -= bytesRead
-                            downloaded += bytesRead
-                            onProgress(downloaded, totalBytes)
-                        }
+            // Extract filename (bytes 0-99, null-terminated)
+            val nameEnd = header.indexOf(0.toByte()).let { if (it < 0 || it > 100) 100 else it }
+            val name = header.copyOfRange(0, nameEnd).decodeToString().trim()
+            if (name.isEmpty()) break
+
+            // Extract file size (bytes 124-135, octal ASCII)
+            val sizeStr = header.copyOfRange(124, 136).decodeToString().trim().trimEnd(0.toChar())
+            val fileSize = sizeStr.toLongOrNull(8) ?: 0L
+
+            if (fileSize > 0) {
+                // Stream file content directly to disk
+                val filePath = "$outputDir/$name"
+                fileStorage.writeFileStreaming(filePath) { append ->
+                    var remaining = fileSize
+                    val buffer = ByteArray(65536)
+                    while (remaining > 0) {
+                        val toRead = minOf(remaining, buffer.size.toLong()).toInt()
+                        val bytesRead = channel.readAvailable(buffer, 0, toRead)
+                        if (bytesRead == -1) break
+                        append(buffer, 0, bytesRead)
+                        remaining -= bytesRead
+                        downloaded += bytesRead
+                        onProgress(downloaded, totalBytes)
                     }
-                    // Skip padding to next 512-byte boundary
-                    val padding = ((512 - (fileSize % 512)) % 512).toInt()
-                    if (padding > 0) {
-                        val skip = ByteArray(padding)
-                        channel.readFully(skip, 0, padding)
-                        downloaded += padding
-                    }
+                }
+                // Skip padding to next 512-byte boundary
+                val padding = ((512 - (fileSize % 512)) % 512).toInt()
+                if (padding > 0) {
+                    val skip = ByteArray(padding)
+                    channel.readFully(skip, 0, padding)
+                    downloaded += padding
                 }
             }
         }

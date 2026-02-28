@@ -1,12 +1,16 @@
 package api
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spela/server/internal/db"
@@ -2397,4 +2401,107 @@ func registerAndGetToken(t *testing.T, router http.Handler) string {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	return resp["accessToken"].(string)
+}
+
+// TestDownloadGame_CueBinServeTar verifies that downloading a .cue game
+// returns a tar archive containing both the .cue and .bin files.
+func TestDownloadGame_CueBinServeTar(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create .cue + .bin files in the game directory
+	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binContent := []byte("fake binary disc data for testing")
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.bin"), binContent, 0644))
+
+	cueContent := "FILE \"game.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.cue"), []byte(cueContent), 0644))
+
+	// Create a game entry pointing to the .cue file
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	game := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Test Game",
+		FileName:  "game.cue",
+		FilePath:  filepath.Join("psx", "game.cue"),
+		FileSize:  int64(len(cueContent)) + int64(len(binContent)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Download the game — should return a tar archive
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/x-tar", w.Header().Get("Content-Type"))
+
+	// Parse the tar and verify both files are present
+	tarReader := tar.NewReader(w.Body)
+	fileNames := make(map[string]bool)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			break
+		}
+		fileNames[header.Name] = true
+	}
+	assert.True(t, fileNames["game.cue"], "tar should contain game.cue")
+	assert.True(t, fileNames["game.bin"], "tar should contain game.bin")
+	assert.Len(t, fileNames, 2, "tar should contain exactly 2 files")
+}
+
+// TestDownloadGame_CueBinServeZip verifies the zip format option for .cue downloads.
+func TestDownloadGame_CueBinServeZip(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binContent := []byte("fake binary disc data")
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.bin"), binContent, 0644))
+
+	cueContent := "FILE \"game.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.cue"), []byte(cueContent), 0644))
+
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	game := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Test Game Zip",
+		FileName:  "game.cue",
+		FilePath:  filepath.Join("psx", "game.cue"),
+		FileSize:  int64(len(cueContent)) + int64(len(binContent)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Download with format=zip
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download?format=zip", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/zip", w.Header().Get("Content-Type"))
+
+	// Parse the zip and verify both files are present
+	zipReader, err := zip.NewReader(bytes.NewReader(w.Body.Bytes()), int64(w.Body.Len()))
+	require.NoError(t, err)
+
+	fileNames := make(map[string]bool)
+	for _, f := range zipReader.File {
+		fileNames[f.Name] = true
+	}
+	assert.True(t, fileNames["game.cue"], "zip should contain game.cue")
+	assert.True(t, fileNames["game.bin"], "zip should contain game.bin")
+	assert.Len(t, fileNames, 2, "zip should contain exactly 2 files")
 }

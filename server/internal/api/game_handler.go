@@ -165,6 +165,38 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		}
 	}
 
+	// For .cue files, serve a tar/zip bundle with companion .bin files.
+	// This handles both new games (with disc records) and old DB entries
+	// (without disc records) that were created before the scanner change.
+	if strings.HasSuffix(strings.ToLower(game.FileName), ".cue") {
+		companions, _, err := scanner.DiscCompanionFiles(absPath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
+			return
+		}
+
+		format := c.Query("format")
+		if format == "zip" {
+			c.Header("Content-Type", "application/zip")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".zip"))
+			c.Status(http.StatusOK)
+			if err := serveZip(c.Writer, companions); err != nil {
+				slog.Warn("error streaming zip for .cue game", "game", game.Title, "error", err)
+			}
+			return
+		}
+
+		if len(companions) > 1 {
+			c.Header("Content-Type", "application/x-tar")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".tar"))
+			c.Status(http.StatusOK)
+			if err := serveTar(c.Writer, companions); err != nil {
+				slog.Warn("error streaming tar for .cue game", "game", game.Title, "error", err)
+			}
+			return
+		}
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
 	c.File(absPath)
 }
