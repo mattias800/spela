@@ -169,6 +169,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
             libwayland-dev wayland-protocols libsdl2-dev pkg-config
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install molten-vk sdl2
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'
         uses: humbletim/setup-vulkan-sdk@v1.2.0

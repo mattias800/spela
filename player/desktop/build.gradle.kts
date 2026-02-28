@@ -121,9 +121,29 @@ tasks.withType<Test> {
     }
 }
 
-// Make the run task depend on building the native library.
-tasks.matching { it.name == "run" || it.name == "desktopRun" || it.name == "hotRunDesktop" }.configureEach {
+// Make run, packaging, and distribution tasks depend on building the native library.
+tasks.matching {
+    it.name == "run" || it.name == "desktopRun" || it.name == "hotRunDesktop" ||
+        it.name == "createDistributable" || it.name == "packageDmg" ||
+        it.name == "packageDeb" || it.name == "packageMsi"
+}.configureEach {
     dependsOn(buildNativeLibrary)
+}
+
+// macOS: set VK_ICD_FILENAMES so the Vulkan loader can find MoltenVK.
+// Homebrew installs the ICD manifest in its own etc/ dir, which the loader
+// doesn't search by default.
+if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+    val icdCandidates = listOf(
+        "/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json",  // Homebrew ARM
+        "/usr/local/etc/vulkan/icd.d/MoltenVK_icd.json",     // Homebrew Intel
+    )
+    val icdPath = icdCandidates.firstOrNull { file(it).exists() }
+    if (icdPath != null) {
+        tasks.withType<JavaExec>().configureEach {
+            environment("VK_ICD_FILENAMES", icdPath)
+        }
+    }
 }
 
 // Pass native library path to Compose Hot Reload tasks.
