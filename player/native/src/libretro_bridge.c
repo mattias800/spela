@@ -7,9 +7,7 @@
  * Reference: RetroArch's core_ctl.c and runloop.c
  */
 
-#ifdef __ANDROID__
 #include <vulkan/vulkan.h>
-#endif
 
 #include "libretro_bridge.h"
 #include "libretro_achievements.h"
@@ -23,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
 #ifdef __ANDROID__
 #include <android/native_window_jni.h>
 #else
@@ -45,9 +45,10 @@ static FILE *bridge_log_get(void) {
     }
     return g_bridge_log_file ? g_bridge_log_file : stderr;
 }
-#define LOGI(...) do { FILE *f = bridge_log_get(); fprintf(f, __VA_ARGS__); fprintf(f, "\n"); } while(0)
-#define LOGW(...) do { FILE *f = bridge_log_get(); fprintf(f, "WARN: " __VA_ARGS__); fprintf(f, "\n"); } while(0)
-#define LOGE(...) do { FILE *f = bridge_log_get(); fprintf(f, "ERROR: " __VA_ARGS__); fprintf(f, "\n"); } while(0)
+/* Log to both bridge log file AND stderr so output appears in Gradle console */
+#define LOGI(...) do { FILE *f = bridge_log_get(); fprintf(f, __VA_ARGS__); fprintf(f, "\n"); fprintf(stderr, "[SpelaBridge] " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define LOGW(...) do { FILE *f = bridge_log_get(); fprintf(f, "WARN: " __VA_ARGS__); fprintf(f, "\n"); fprintf(stderr, "[SpelaBridge] WARN: " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define LOGE(...) do { FILE *f = bridge_log_get(); fprintf(f, "ERROR: " __VA_ARGS__); fprintf(f, "\n"); fprintf(stderr, "[SpelaBridge] ERROR: " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
 #endif
 
 /* Global core instance */
@@ -295,6 +296,7 @@ static bool environment_callback(unsigned cmd, void *data) {
                         }
                     }
                 }
+#endif
 
                 /* Dolphin: disable separate CPU thread to avoid deadlock.
                  * In libretro mode, retro_run() is called synchronously by
@@ -315,7 +317,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                         core_variables_set("dolphin_main_cpu_thread", "disabled");
                     }
                 }
-#endif
 
             }
             return true;
@@ -392,22 +393,19 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
             /* Tell cores which HW render context we prefer.
-             * On Android: prefer Vulkan ONLY for Dolphin (GameCube/Wii) which
-             * benefits from zero-copy compositing via VkImage. All other cores
-             * get GLES3 — DS cores (melonDS) and others work best with GLES.
-             * GLES-only cores ignore this preference and request GLES via
-             * SET_HW_RENDER regardless, so the pbuffer readback path works.
-             * On desktop: prefer OpenGL Core for maximum compatibility. */
-#ifdef __ANDROID__
+             * Prefer Vulkan for Dolphin (GameCube/Wii) on all platforms — it
+             * provides zero-copy compositing via VkImage (macOS via MoltenVK).
+             * Other cores: GLES3 on Android, OpenGL Core on desktop. */
             if (g_core.system_info.library_name &&
                 strstr(g_core.system_info.library_name, "dolphin") != NULL) {
                 *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
             } else {
+#ifdef __ANDROID__
                 *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;
-            }
 #else
-            *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
+                *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
+            }
             LOGI("Reporting preferred HW render: %u (core: %s)", *(unsigned *)data,
                  g_core.system_info.library_name ? g_core.system_info.library_name : "unknown");
             return true;
@@ -420,7 +418,6 @@ static bool environment_callback(unsigned cmd, void *data) {
             return true;
 
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE: {
-#ifdef __ANDROID__
             /* Core provides context negotiation interface so it can participate
              * in VkDevice creation (request extensions, features, or create the
              * device itself). Required by paraLLEl-RDP in mupen64plus-next. */
@@ -432,7 +429,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                      iface->interface_version);
                 return true;
             }
-#endif
             return false;
         }
 
@@ -440,8 +436,7 @@ static bool environment_callback(unsigned cmd, void *data) {
             struct retro_hw_render_callback *cb = (struct retro_hw_render_callback *)data;
             LOGI("Core requests HW render context type: %u (v%u.%u)",
                  cb->context_type, cb->version_major, cb->version_minor);
-#ifdef __ANDROID__
-            /* Accept Vulkan context type on Android */
+            /* Accept Vulkan context type on all platforms */
             if (cb->context_type == RETRO_HW_CONTEXT_VULKAN) {
                 g_core.hw_render_callback = *cb;
                 /* Vulkan does not use get_current_framebuffer or get_proc_address */
@@ -462,6 +457,7 @@ static bool environment_callback(unsigned cmd, void *data) {
                      cb->bottom_left_origin, cb->cache_context);
                 return true;
             }
+#ifdef __ANDROID__
             /* Accept GLES context types on Android (e.g. GLideN64) */
             if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ||
                 cb->context_type == RETRO_HW_CONTEXT_OPENGLES3 ||
@@ -501,10 +497,30 @@ static bool environment_callback(unsigned cmd, void *data) {
         }
 
         case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE: {
-#ifdef __ANDROID__
             if (g_core.hw_render_enabled &&
                 g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
                 g_gpu_renderer) {
+                /* Lazy init: if the GPU renderer exists but HW render isn't
+                 * initialized yet, do it now. On desktop, the GPU renderer is
+                 * created by the composable before core load, so HW render
+                 * must be initialized when the core first requests the interface. */
+                if (!gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+                    /* Pass negotiation interface if the core provided one */
+                    if (g_core.hw_vk_negotiation) {
+                        gpu_renderer_set_vk_negotiation(g_gpu_renderer,
+                            g_core.hw_vk_negotiation);
+                    }
+                    if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+                        if (g_core.hw_render_callback.context_reset) {
+                            g_core.hw_render_callback.context_reset();
+                        }
+                        LOGI("Vulkan HW render context initialized lazily "
+                             "(on GET_HW_RENDER_INTERFACE)");
+                    } else {
+                        LOGE("Failed to init Vulkan HW render context lazily");
+                        return false;
+                    }
+                }
                 void *iface = gpu_renderer_hw_vulkan_get_interface(g_gpu_renderer);
                 if (iface) {
                     *(const struct retro_hw_render_interface_vulkan **)data = iface;
@@ -512,7 +528,6 @@ static bool environment_callback(unsigned cmd, void *data) {
                     return true;
                 }
             }
-#endif
             return false;
         }
 
@@ -545,9 +560,85 @@ static bool environment_callback(unsigned cmd, void *data) {
     } \
 } while(0)
 
+/* Pre-load MoltenVK so cores (e.g. Dolphin) that dlopen("libvulkan.dylib")
+ * or call vkCreateInstance can find Vulkan function pointers.
+ *
+ * IMPORTANT: We load libMoltenVK.dylib (the ICD), NOT libvulkan.dylib
+ * (the Vulkan loader). The Vulkan loader on macOS requires the
+ * VK_KHR_portability_enumeration extension to be enabled in
+ * vkCreateInstance — cores like Dolphin don't set this flag, causing
+ * VK_ERROR_INCOMPATIBLE_DRIVER. MoltenVK loaded directly doesn't
+ * have this restriction. */
+static void preload_vulkan_library(void) {
+#ifdef __APPLE__
+    static bool tried = false;
+    if (tried) return;
+    tried = true;
+
+    /* Log environment variables for diagnostics */
+    const char *dyld_lib = getenv("DYLD_LIBRARY_PATH");
+    const char *dyld_fallback = getenv("DYLD_FALLBACK_LIBRARY_PATH");
+    LOGI("DYLD_LIBRARY_PATH=%s", dyld_lib ? dyld_lib : "(null)");
+    LOGI("DYLD_FALLBACK_LIBRARY_PATH=%s", dyld_fallback ? dyld_fallback : "(null)");
+
+    /* On macOS, cores like Dolphin dlopen("libvulkan.dylib") and call
+     * vkCreateInstance themselves. The Vulkan loader requires the
+     * VK_KHR_portability_enumeration flag, which cores don't set, causing
+     * VK_ERROR_INCOMPATIBLE_DRIVER. To fix this, we create a temp dir
+     * with libvulkan.dylib symlinked to MoltenVK, then set
+     * DYLD_FALLBACK_LIBRARY_PATH so dlopen finds MoltenVK instead. */
+    const char *mvk_paths[] = {
+        "/opt/homebrew/lib/libMoltenVK.dylib",  /* Homebrew ARM */
+        "/usr/local/lib/libMoltenVK.dylib",     /* Homebrew Intel */
+    };
+    const char *mvk_found = NULL;
+    for (int i = 0; i < 2; i++) {
+        if (access(mvk_paths[i], F_OK) == 0) {
+            mvk_found = mvk_paths[i];
+            break;
+        }
+    }
+    if (mvk_found) {
+        /* Tell Dolphin to load MoltenVK directly via its LIBVULKAN_PATH env var.
+         * Dolphin checks this before trying system library paths. */
+        setenv("LIBVULKAN_PATH", mvk_found, 1);
+        LOGI("Set LIBVULKAN_PATH=%s", mvk_found);
+
+        /* Create shim dir with both versioned and unversioned symlinks.
+         * Dolphin tries libvulkan.1.dylib first, then libvulkan.dylib. */
+        const char *shim_dir = "/tmp/spela-vulkan";
+        mkdir(shim_dir, 0755);
+        const char *shim_names[] = { "libvulkan.dylib", "libvulkan.1.dylib" };
+        for (int i = 0; i < 2; i++) {
+            char shim_path[256];
+            snprintf(shim_path, sizeof(shim_path), "%s/%s", shim_dir, shim_names[i]);
+            unlink(shim_path);
+            if (symlink(mvk_found, shim_path) == 0) {
+                LOGI("Created shim: %s -> %s", shim_path, mvk_found);
+            }
+        }
+
+        /* Set DYLD_FALLBACK_LIBRARY_PATH with shim dir FIRST */
+        char fallback[512];
+        snprintf(fallback, sizeof(fallback), "%s:/opt/homebrew/lib:/usr/local/lib", shim_dir);
+        setenv("DYLD_FALLBACK_LIBRARY_PATH", fallback, 1);
+        LOGI("Set DYLD_FALLBACK_LIBRARY_PATH=%s", fallback);
+
+        /* Pre-load MoltenVK with RTLD_GLOBAL so symbols are available */
+        void *h = dlopen(mvk_found, RTLD_NOW | RTLD_GLOBAL);
+        if (h) {
+            LOGI("Pre-loaded MoltenVK: %s", mvk_found);
+        }
+    } else {
+        LOGW("MoltenVK not found at any known path");
+    }
+#endif
+}
+
 /* Load the libretro core from the given shared library path */
 static int core_load(const char *path) {
     g_first_frame_run = false;
+    preload_vulkan_library();
     if (g_core.handle) {
         LOGW("Core already loaded, unloading first");
         if (g_core.game_loaded) {
@@ -738,15 +829,39 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
             LOGI("Set controller port device (JOYPAD) for ports 0-3");
         }
 
+        /* Initialize Vulkan HW render context if the core requested it.
+         * On desktop, the GPU renderer is created before core load (offscreen mode),
+         * so we must reinitialize the Vulkan context using the core's v2 negotiation
+         * interface. This ensures core and frontend share the same VkInstance/VkDevice.
+         * Without this reinit, nativeRun() skips all frames (HW render not active)
+         * and retro_run() never executes — a deadlock. */
+        if (g_core.hw_render_enabled &&
+            g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
+            g_gpu_renderer) {
+            if (g_core.hw_vk_negotiation) {
+                gpu_renderer_set_vk_negotiation(g_gpu_renderer,
+                    g_core.hw_vk_negotiation);
+                /* Reinit Vulkan context so create_instance/create_device use the
+                 * negotiation callbacks — core and frontend share VkInstance. */
+                if (!gpu_renderer_reinit_vulkan(g_gpu_renderer)) {
+                    LOGE("Failed to reinit Vulkan context with negotiation");
+                }
+            }
+            if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+                if (g_core.hw_render_callback.context_reset) {
+                    g_core.hw_render_callback.context_reset();
+                }
+                LOGI("Vulkan HW render context initialized after game load");
+            } else {
+                LOGE("Failed to init Vulkan HW render context after game load");
+            }
+        }
+
         /* Initialize OpenGL/GLES HW render context if the core requested it.
          * On Android, this only applies to GLES context types (GLideN64);
          * Vulkan HW render (paraLLEl-RDP) is initialized later in gpuInit. */
-#ifdef __ANDROID__
         if (g_core.hw_render_enabled &&
             g_core.hw_render_callback.context_type != RETRO_HW_CONTEXT_VULKAN) {
-#else
-        if (g_core.hw_render_enabled) {
-#endif
             g_core.hw_gl_ctx = hw_gl_create();
             if (g_core.hw_gl_ctx) {
                 unsigned vmaj = g_core.hw_render_callback.version_major;
@@ -811,7 +926,6 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 
 JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-#ifdef __ANDROID__
     /* Vulkan HW render: skip frames until Vulkan HW context is ready */
     if (g_core.hw_render_enabled &&
         g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
@@ -824,6 +938,7 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         }
         return;
     }
+#ifdef __ANDROID__
     /* GLES HW render: skip frames until GPU renderer is ready for presentation.
      * The GLES context is created during loadGame() but the Vulkan presentation
      * surface isn't available until surfaceCreated() fires and gpuInit() runs.
@@ -832,16 +947,21 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         (!g_gpu_renderer || !gpu_renderer_is_active(g_gpu_renderer))) {
         return;
     }
-    /* GLES HW render: make context current before retro_run */
-    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
-        hw_gl_make_current(g_core.hw_gl_ctx);
-    }
-#else
-    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
-        hw_gl_make_current(g_core.hw_gl_ctx);
-        hw_gl_debug_reset_frame();
-    }
 #endif
+    /* GL/GLES HW render: make context current before retro_run */
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+#ifndef __ANDROID__
+        hw_gl_debug_reset_frame();
+#endif
+    }
+    static int run_count = 0;
+    run_count++;
+    if (run_count <= 3) {
+        LOGI("nativeRun: calling retro_run #%d (hw_enabled=%d hw_active=%d)",
+             run_count, g_core.hw_render_enabled,
+             g_gpu_renderer ? gpu_renderer_is_hw_render_active(g_gpu_renderer) : -1);
+    }
     g_core.retro_run();
     g_first_frame_run = true;
     /* Release GL context after retro_run() so subsequent GPU operations
@@ -859,7 +979,6 @@ JNI_FUNC(void, nativeReset)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-#ifdef __ANDROID__
     /* Tear down Vulkan HW render context before unloading game */
     if (g_core.hw_render_enabled && g_gpu_renderer &&
         gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
@@ -877,7 +996,6 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
         g_core.hw_render_enabled = false;
         LOGI("Vulkan HW render context destroyed");
     }
-#endif
     /* Tear down OpenGL/GLES HW render context before unloading game */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
         if (g_core.hw_render_callback.context_destroy) {
@@ -898,7 +1016,6 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
 JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     if (!g_core.initialized) return;
     if (g_core.game_loaded) {
-#ifdef __ANDROID__
         /* Clean up Vulkan HW render if still active */
         if (g_core.hw_render_enabled && g_gpu_renderer &&
             gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
@@ -911,7 +1028,6 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             g_core.hw_render_enabled = false;
         }
-#endif
         /* Clean up GL/GLES HW render if still active */
         if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
             if (g_core.hw_render_callback.context_destroy) {
@@ -932,9 +1048,7 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     audio_deinit();
 
     /* Clear pointers into core's memory before dlclose */
-#ifdef __ANDROID__
     g_core.hw_vk_negotiation = NULL;
-#endif
     g_core.hw_render_enabled = false;
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 
@@ -1201,12 +1315,8 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
      * release our local reference */
     ANativeWindow_release(window);
 #else
-    /* Desktop: determine backend based on platform */
-#ifdef __APPLE__
-    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_METAL);
-#else
+    /* Desktop: Vulkan on all platforms (macOS via MoltenVK) */
     g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
-#endif
     if (!g_gpu_renderer) {
         LOGE("Failed to create GPU renderer");
         return JNI_FALSE;
@@ -1347,7 +1457,6 @@ JNI_FUNC(jboolean, nativeGpuResume)(JNIEnv *env, jobject thiz, jobject surface) 
 
 JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
     if (g_gpu_renderer) {
-#ifdef __ANDROID__
         /* Destroy Vulkan HW render context before releasing surface */
         if (g_core.hw_render_enabled && gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
             gpu_renderer_wait_idle(g_gpu_renderer);
@@ -1361,7 +1470,6 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             LOGI("Vulkan HW render context destroyed (surface deinit)");
         }
-#endif
         video_set_gpu_renderer(NULL);
         gpu_renderer_deinit_surface(g_gpu_renderer);
         gpu_renderer_destroy(g_gpu_renderer);
@@ -1379,14 +1487,15 @@ JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width
         g_gpu_renderer = NULL;
     }
 
-#ifdef __APPLE__
-    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_METAL);
-#else
     g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
-#endif
     if (!g_gpu_renderer) {
         LOGE("Failed to create GPU renderer for offscreen");
         return JNI_FALSE;
+    }
+
+    /* Pass context negotiation interface to GPU renderer before device creation */
+    if (g_core.hw_vk_negotiation) {
+        gpu_renderer_set_vk_negotiation(g_gpu_renderer, g_core.hw_vk_negotiation);
     }
 
     if (!gpu_renderer_init_offscreen(g_gpu_renderer, (int)width, (int)height)) {
@@ -1397,6 +1506,21 @@ JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width
     }
 
     video_set_gpu_renderer(g_gpu_renderer);
+
+    /* Initialize Vulkan HW render if core requested it */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN) {
+        if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_reset) {
+                g_core.hw_render_callback.context_reset();
+            }
+            LOGI("Vulkan HW render context initialized for core (offscreen)");
+        } else {
+            LOGE("Failed to init Vulkan HW render context (offscreen)");
+            g_core.hw_render_enabled = false;
+        }
+    }
+
     LOGI("Offscreen GPU renderer initialized successfully");
     return JNI_TRUE;
 }

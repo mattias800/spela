@@ -83,10 +83,25 @@ gpu_renderer_t *video_get_gpu_renderer(void) {
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
 
+    static int vr_count = 0;
+    vr_count++;
+    if (vr_count <= 5 || vr_count % 300 == 0) {
+        fprintf(stderr, "[SpelaBridge] video_refresh #%d: data=%p hw_valid=%d hw_enabled=%d "
+                "gpu=%p active=%d hw_active=%d %ux%u\n",
+                vr_count, data, (data == RETRO_HW_FRAME_BUFFER_VALID),
+                g_core.hw_render_enabled,
+                (void*)video_state.gpu_renderer,
+                video_state.gpu_renderer ? gpu_renderer_is_active(video_state.gpu_renderer) : -1,
+                video_state.gpu_renderer ? gpu_renderer_is_hw_render_active(video_state.gpu_renderer) : -1,
+                width, height);
+    }
+
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
         /* Vulkan HW render path: core rendered to its own VkImage */
         if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer) &&
             gpu_renderer_is_hw_render_active(video_state.gpu_renderer)) {
+            video_state.width = width;
+            video_state.height = height;
             gpu_renderer_hw_render_frame(video_state.gpu_renderer, width, height);
             return;
         }

@@ -65,6 +65,11 @@ struct retro_hw_render_context_negotiation_interface_vulkan;
 void gpu_renderer_set_vk_negotiation(gpu_renderer_t *r,
     const struct retro_hw_render_context_negotiation_interface_vulkan *iface);
 
+/* Reinitialize Vulkan context (instance, device, pipelines) in-place.
+ * Used when the core provides a v2 negotiation interface after the renderer
+ * was already initialized — tears down and recreates with negotiation. */
+bool gpu_renderer_reinit_vulkan(gpu_renderer_t *r);
+
 /* Vulkan HW render support (Phase 4) */
 bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r);
 void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);

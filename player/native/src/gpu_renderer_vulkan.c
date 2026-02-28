@@ -13,6 +13,8 @@
 
 #ifdef __ANDROID__
 #define VK_USE_PLATFORM_ANDROID_KHR
+#elif defined(__APPLE__)
+#define VK_USE_PLATFORM_METAL_EXT
 #endif
 
 #include <vulkan/vulkan.h>
@@ -163,6 +165,7 @@ struct gpu_renderer {
 
     /* Vulkan HW render state (Phase 4) */
     bool hw_render_active;
+    bool hw_offscreen_frame_ready; /* offscreen HW frame readback is valid */
     bool hw_bottom_left_origin; /* core renders with OpenGL-style Y-up */
     struct retro_hw_render_interface_vulkan hw_vk_interface;
     struct retro_vulkan_image hw_current_image;
@@ -221,6 +224,8 @@ static bool create_offscreen_render_pass(gpu_renderer_t *r);
 static bool create_readback_buffer(gpu_renderer_t *r, VkDeviceSize size);
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
     VkInstance instance, const char *pName);
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
+    VkDevice device, const char *pName);
 static void cleanup_offscreen(gpu_renderer_t *r);
 
 /* ===== Public API ===== */
@@ -281,9 +286,13 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
     };
     VK_CHECK(vkCreateAndroidSurfaceKHR(r->instance, &surface_info, NULL, &r->surface));
 #else
-    /* Desktop surface creation is handled by gpu_renderer_vulkan_desktop.c */
-    VK_LOGE("Desktop Vulkan surface creation not implemented in this file");
-    return false;
+    /* Desktop: platform-specific surface creation (Linux/macOS/Windows) */
+    extern VkSurfaceKHR vulkan_desktop_create_surface(VkInstance, void *);
+    r->surface = vulkan_desktop_create_surface(r->instance, native_surface);
+    if (r->surface == VK_NULL_HANDLE) {
+        VK_LOGE("Desktop Vulkan surface creation failed");
+        return false;
+    }
 #endif
 
     if (!select_physical_device(r)) return false;
@@ -358,9 +367,13 @@ bool gpu_renderer_resume_surface(gpu_renderer_t *r, void *native_surface) {
         return false;
     }
 #else
-    (void)native_surface;
-    VK_LOGE("resume_surface not implemented on desktop");
-    return false;
+    /* Desktop: recreate surface via platform-specific code */
+    extern VkSurfaceKHR vulkan_desktop_create_surface(VkInstance, void *);
+    r->surface = vulkan_desktop_create_surface(r->instance, native_surface);
+    if (r->surface == VK_NULL_HANDLE) {
+        VK_LOGE("Failed to create desktop surface for resume");
+        return false;
+    }
 #endif
     if (!create_swapchain(r)) return false;
     if (!create_framebuffers(r)) return false;
@@ -919,7 +932,7 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
         .instance = r->instance,
         .gpu = r->physical_device,
         .device = r->device,
-        .get_device_proc_addr = vkGetDeviceProcAddr,
+        .get_device_proc_addr = wrapped_vkGetDeviceProcAddr,
         .queue_index = r->queue_family_index,
         .queue = r->graphics_queue,
         .handle = r,
@@ -940,10 +953,27 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
     r->hw_wait_semaphore_count = 0;
     r->hw_core_cmd_count = 0;
 
+    /* In offscreen mode, create in_flight_fences for core sync callbacks
+     * (wait_sync_index uses these). They aren't created by create_sync_objects
+     * because that's only called in the swapchain init path. */
+    if (r->offscreen_mode) {
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            VkFenceCreateInfo fence_info = {
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+            };
+            if (vkCreateFence(r->device, &fence_info, NULL, &r->in_flight_fences[i]) != VK_SUCCESS) {
+                VK_LOGE("Failed to create in-flight fence %d for offscreen HW render", i);
+                return false;
+            }
+        }
+    }
+
     r->hw_render_active = true;
-    VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x, bottom_left=%d)",
+    r->hw_offscreen_frame_ready = false;
+    VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x, bottom_left=%d, offscreen=%d)",
             r->queue_family_index, (1u << MAX_FRAMES_IN_FLIGHT) - 1,
-            r->hw_bottom_left_origin);
+            r->hw_bottom_left_origin, r->offscreen_mode);
     return true;
 }
 
@@ -956,8 +986,268 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
     return &r->hw_vk_interface;
 }
 
+/* Offscreen HW render: composite core's VkImage to offscreen framebuffer,
+ * copy to readback buffer for CPU access via gpu_renderer_render_to_bgra. */
+static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned width, unsigned height) {
+    static int hw_off_count = 0;
+    hw_off_count++;
+    bool verbose = (hw_off_count <= 10 || hw_off_count == 60 || hw_off_count == 300);
+
+    if (!r->hw_current_image.image_view) {
+        if (verbose) VK_LOGW("hw_render_frame_offscreen #%d: no image_view", hw_off_count);
+        return;
+    }
+
+    /* Resize offscreen target if core output dimensions changed */
+    if ((int)width != r->offscreen_width || (int)height != r->offscreen_height) {
+        VK_LOGI("hw_render_frame_offscreen: resizing offscreen target %dx%d -> %ux%u",
+                r->offscreen_width, r->offscreen_height, width, height);
+        vkDeviceWaitIdle(r->device);
+        /* Destroy old offscreen resources */
+        if (r->offscreen_framebuffer) {
+            vkDestroyFramebuffer(r->device, r->offscreen_framebuffer, NULL);
+            r->offscreen_framebuffer = VK_NULL_HANDLE;
+        }
+        if (r->offscreen_image_view) {
+            vkDestroyImageView(r->device, r->offscreen_image_view, NULL);
+            r->offscreen_image_view = VK_NULL_HANDLE;
+        }
+        if (r->offscreen_image) {
+            vkDestroyImage(r->device, r->offscreen_image, NULL);
+            r->offscreen_image = VK_NULL_HANDLE;
+        }
+        if (r->offscreen_image_memory) {
+            vkFreeMemory(r->device, r->offscreen_image_memory, NULL);
+            r->offscreen_image_memory = VK_NULL_HANDLE;
+        }
+        if (!create_offscreen_target(r, (int)width, (int)height)) {
+            VK_LOGE("hw_render_frame_offscreen: failed to resize offscreen target");
+            return;
+        }
+        r->offscreen_width = (int)width;
+        r->offscreen_height = (int)height;
+    }
+
+    unsigned w = (unsigned)r->offscreen_width;
+    unsigned h = (unsigned)r->offscreen_height;
+    size_t needed = (size_t)w * h * 4;
+
+    /* Ensure readback buffer is large enough */
+    if (needed > r->readback_size) {
+        if (r->readback_buffer) {
+            vkDestroyBuffer(r->device, r->readback_buffer, NULL);
+            r->readback_buffer = VK_NULL_HANDLE;
+        }
+        if (r->readback_memory) {
+            vkUnmapMemory(r->device, r->readback_memory);
+            vkFreeMemory(r->device, r->readback_memory, NULL);
+            r->readback_memory = VK_NULL_HANDLE;
+            r->readback_mapped = NULL;
+        }
+        if (!create_readback_buffer(r, needed)) {
+            VK_LOGE("hw_render_frame_offscreen: failed to create readback buffer");
+            return;
+        }
+    }
+
+    /* Wait for previous offscreen render to complete */
+    vkWaitForFences(r->device, 1, &r->offscreen_fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(r->device, 1, &r->offscreen_fence);
+
+    /* Update descriptor set to sample from core's VkImageView */
+    VkSampler sampler = r->sampler_nearest;
+    if (r->current_shader == GPU_SHADER_BILINEAR ||
+        r->current_shader == GPU_SHADER_SHARP_BILINEAR) {
+        sampler = r->sampler_linear;
+    }
+    VkDescriptorImageInfo desc_image_info = {
+        .sampler = sampler,
+        .imageView = r->hw_current_image.image_view,
+        .imageLayout = r->hw_current_image.image_layout,
+    };
+    VkWriteDescriptorSet desc_write = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = r->hw_descriptor_sets[0],
+        .dstBinding = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &desc_image_info,
+    };
+    vkUpdateDescriptorSets(r->device, 1, &desc_write, 0, NULL);
+
+    /* Record command buffer */
+    VkCommandBuffer cmd = r->offscreen_cmd;
+    vkResetCommandBuffer(cmd, 0);
+
+    VkCommandBufferBeginInfo begin_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    vkBeginCommandBuffer(cmd, &begin_info);
+
+    /* Render pass: composite core's image to offscreen framebuffer */
+    VkClearValue clear_value = { .color = { .float32 = { 0.0f, 0.0f, 0.0f, 1.0f } } };
+    VkRenderPassBeginInfo rp_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = r->offscreen_render_pass,
+        .framebuffer = r->offscreen_framebuffer,
+        .renderArea = { .offset = { 0, 0 }, .extent = { w, h } },
+        .clearValueCount = 1,
+        .pClearValues = &clear_value,
+    };
+    vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    int shader_idx = r->current_shader;
+    if (shader_idx < 0 || shader_idx >= NUM_SHADERS || !r->pipelines[shader_idx]) {
+        shader_idx = GPU_SHADER_NONE;
+    }
+    if (!r->pipelines[shader_idx]) {
+        VK_LOGE("hw_render_frame_offscreen: pipeline[%d] is NULL", shader_idx);
+        vkCmdEndRenderPass(cmd);
+        vkEndCommandBuffer(cmd);
+        return;
+    }
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[shader_idx]);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        r->pipeline_layout, 0, 1, &r->hw_descriptor_sets[0], 0, NULL);
+
+    push_constants_t pc = {
+        .texture_size = { (float)width, (float)height },
+        .flip_y = 0.0f, /* HW render: core's VkImage is already correct orientation */
+    };
+    vkCmdPushConstants(cmd, r->pipeline_layout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(push_constants_t), &pc);
+
+    VkViewport viewport = {
+        .x = 0, .y = 0,
+        .width = (float)w, .height = (float)h,
+        .minDepth = 0.0f, .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor = { .offset = { 0, 0 }, .extent = { w, h } };
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+    vkCmdEndRenderPass(cmd);
+
+    /* Transition offscreen image for transfer read */
+    VkImageMemoryBarrier barrier = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = r->offscreen_image,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+    vkCmdPipelineBarrier(cmd,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, NULL, 0, NULL, 1, &barrier);
+
+    /* Copy offscreen image to readback buffer */
+    VkBufferImageCopy copy_region = {
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { w, h, 1 },
+    };
+    vkCmdCopyImageToBuffer(cmd, r->offscreen_image,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, r->readback_buffer, 1, &copy_region);
+
+    vkEndCommandBuffer(cmd);
+
+    /* Build submit with core's command buffers first, then our composite */
+    VkCommandBuffer submit_cmds[MAX_FRAMES_IN_FLIGHT + 1];
+    uint32_t submit_cmd_count = 0;
+    for (uint32_t i = 0; i < r->hw_core_cmd_count; i++) {
+        submit_cmds[submit_cmd_count++] = r->hw_core_cmd_buffers[i];
+    }
+    submit_cmds[submit_cmd_count++] = cmd;
+    r->hw_core_cmd_count = 0;
+
+    /* Wait on core's semaphores */
+    VkPipelineStageFlags wait_stages[MAX_HW_SEMAPHORES];
+    for (uint32_t i = 0; i < r->hw_wait_semaphore_count; i++) {
+        wait_stages[i] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+
+    /* Signal core's semaphore if requested */
+    uint32_t signal_count = 0;
+    VkSemaphore signal_sems[1];
+    if (r->hw_signal_semaphores[r->current_frame]) {
+        signal_sems[signal_count++] = r->hw_signal_semaphores[r->current_frame];
+    }
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = r->hw_wait_semaphore_count,
+        .pWaitSemaphores = r->hw_wait_semaphores,
+        .pWaitDstStageMask = wait_stages,
+        .commandBufferCount = submit_cmd_count,
+        .pCommandBuffers = submit_cmds,
+        .signalSemaphoreCount = signal_count,
+        .pSignalSemaphores = signal_sems,
+    };
+
+    if (verbose) {
+        VK_LOGI("hw_render_frame_offscreen #%d: %ux%u submit (cmds=%u waits=%u sigs=%u)",
+                hw_off_count, width, height, submit_cmd_count,
+                r->hw_wait_semaphore_count, signal_count);
+    }
+
+    pthread_mutex_lock(&r->queue_mutex);
+    VkResult result = vkQueueSubmit(r->graphics_queue, 1, &submit_info, r->offscreen_fence);
+    pthread_mutex_unlock(&r->queue_mutex);
+
+    if (result != VK_SUCCESS) {
+        VK_LOGE("hw_render_frame_offscreen #%d: vkQueueSubmit failed: %d", hw_off_count, result);
+        return;
+    }
+
+    /* Wait for completion (synchronous readback) */
+    vkWaitForFences(r->device, 1, &r->offscreen_fence, VK_TRUE, UINT64_MAX);
+
+    /* Reset per-frame HW state */
+    r->hw_current_image.image_view = VK_NULL_HANDLE;
+    r->hw_wait_semaphore_count = 0;
+    r->hw_signal_semaphores[r->current_frame] = VK_NULL_HANDLE;
+    r->current_frame = (r->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    r->frame_width = width;
+    r->frame_height = height;
+    r->hw_offscreen_frame_ready = true;
+
+    if (verbose) {
+        VK_LOGI("hw_render_frame_offscreen #%d: done (%ux%u)", hw_off_count, width, height);
+    }
+}
+
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
     if (!r || !r->active || !r->hw_render_active) return;
+
+    /* Offscreen mode: render to offscreen framebuffer + readback */
+    if (r->offscreen_mode) {
+        gpu_renderer_hw_render_frame_offscreen(r, width, height);
+        return;
+    }
     static int hw_frame_count = 0;
     hw_frame_count++;
     if (!r->hw_current_image.image_view) {
@@ -1216,12 +1506,23 @@ void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r) {
     }
     memset(r->hw_descriptor_sets, 0, sizeof(r->hw_descriptor_sets));
 
+    /* Destroy in_flight_fences we created for offscreen HW render */
+    if (r->offscreen_mode) {
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            if (r->in_flight_fences[i]) {
+                vkDestroyFence(r->device, r->in_flight_fences[i], NULL);
+                r->in_flight_fences[i] = VK_NULL_HANDLE;
+            }
+        }
+    }
+
     memset(&r->hw_current_image, 0, sizeof(r->hw_current_image));
     memset(r->hw_signal_semaphores, 0, sizeof(r->hw_signal_semaphores));
     memset(r->hw_core_cmd_buffers, 0, sizeof(r->hw_core_cmd_buffers));
     r->hw_wait_semaphore_count = 0;
     r->hw_core_cmd_count = 0;
     r->hw_render_active = false;
+    r->hw_offscreen_frame_ready = false;
 
     VK_LOGI("Vulkan HW render deinitialized");
 }
@@ -1286,9 +1587,90 @@ bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height) {
     return true;
 }
 
+bool gpu_renderer_reinit_vulkan(gpu_renderer_t *r) {
+    if (!r) return false;
+
+    VK_LOGI("Reinitializing Vulkan context for negotiation");
+
+    /* Tear down all Vulkan resources */
+    gpu_renderer_deinit_surface(r);
+
+    if (r->device) {
+        if (r->vk_negotiation && r->vk_negotiation->destroy_device) {
+            r->vk_negotiation->destroy_device();
+        }
+        vkDestroyDevice(r->device, NULL);
+        r->device = VK_NULL_HANDLE;
+        r->graphics_queue = VK_NULL_HANDLE;
+    }
+    if (r->instance) {
+        vkDestroyInstance(r->instance, NULL);
+        r->instance = VK_NULL_HANDLE;
+        r->physical_device = VK_NULL_HANDLE;
+    }
+
+    /* Recreate with negotiation (now set on r->vk_negotiation) */
+    if (!create_instance(r)) return false;
+    if (!select_physical_device(r)) return false;
+    if (!create_device(r)) return false;
+
+    if (r->offscreen_mode) {
+        if (!create_command_pool(r)) return false;
+        if (!create_offscreen_render_pass(r)) return false;
+        if (!create_descriptor_layout(r)) return false;
+        if (!create_pipeline_layout(r)) return false;
+        if (!create_pipelines(r)) return false;
+        if (!create_offscreen_target(r, r->offscreen_width, r->offscreen_height)) return false;
+        if (!create_samplers(r)) return false;
+        if (!create_descriptor_pool(r)) return false;
+
+        VkFenceCreateInfo fence_info = {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+        };
+        if (vkCreateFence(r->device, &fence_info, NULL, &r->offscreen_fence) != VK_SUCCESS) {
+            VK_LOGE("Failed to create offscreen fence during reinit");
+            return false;
+        }
+
+        VkCommandBufferAllocateInfo alloc_info = {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .commandPool = r->command_pool,
+            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = 1,
+        };
+        if (vkAllocateCommandBuffers(r->device, &alloc_info, &r->offscreen_cmd) != VK_SUCCESS) {
+            VK_LOGE("Failed to allocate offscreen cmd buffer during reinit");
+            return false;
+        }
+
+        r->surface_initialized = true;
+        r->active = true;
+    }
+
+    VK_LOGI("Vulkan context reinitialized with negotiation");
+    return true;
+}
+
 size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
     unsigned *out_width, unsigned *out_height) {
-    if (!r || !r->active || !r->offscreen_mode || !r->frame_uploaded) return 0;
+    if (!r || !r->active || !r->offscreen_mode) return 0;
+
+    /* HW render path: frame was already composited + readback'd in hw_render_frame_offscreen */
+    if (r->hw_render_active && r->hw_offscreen_frame_ready) {
+        unsigned w = (unsigned)r->offscreen_width;
+        unsigned h = (unsigned)r->offscreen_height;
+        size_t needed = (size_t)w * h * 4;
+        if (out_capacity < needed || !r->readback_mapped) return 0;
+        memcpy(out_data, r->readback_mapped, needed);
+        if (out_width) *out_width = w;
+        if (out_height) *out_height = h;
+        r->hw_offscreen_frame_ready = false;
+        return needed;
+    }
+
+    /* Software render path */
+    if (!r->frame_uploaded) return 0;
 
     unsigned w = (unsigned)r->offscreen_width;
     unsigned h = (unsigned)r->offscreen_height;
@@ -1355,7 +1737,7 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 
     push_constants_t pc = {
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
-        .flip_y = 1.0f,
+        .flip_y = 0.0f,  /* Offscreen/desktop: Vulkan uses top-left origin, no flip needed */
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -1466,7 +1848,15 @@ static VkInstance vulkan_create_instance_wrapper(
         VK_KHR_SURFACE_EXTENSION_NAME,
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
     };
-#elif defined(__linux__) && !defined(__ANDROID__)
+#elif defined(__APPLE__)
+    extern const char *vulkan_desktop_get_surface_extension(void);
+    const char *macos_ext = vulkan_desktop_get_surface_extension();
+    const char *surface_extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        macos_ext,
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+    };
+#elif defined(__linux__)
     extern const char *vulkan_desktop_get_surface_extension(void);
     const char *linux_ext = vulkan_desktop_get_surface_extension();
     const char *surface_extensions[] = {
@@ -1484,7 +1874,7 @@ static VkInstance vulkan_create_instance_wrapper(
     };
 #endif
     uint32_t num_surface_ext = r->offscreen_mode ? 0 :
-        (sizeof(surface_extensions) / sizeof(surface_extensions[0]));
+        sizeof(surface_extensions) / sizeof(surface_extensions[0]);
 
     VkInstanceCreateInfo patched_info = *create_info;
     const char **ext_list = NULL;
@@ -1583,7 +1973,15 @@ static bool create_instance(gpu_renderer_t *r) {
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
         };
-#elif defined(__linux__) && !defined(__ANDROID__)
+#elif defined(__APPLE__)
+        extern const char *vulkan_desktop_get_surface_extension(void);
+        const char *macos_ext = vulkan_desktop_get_surface_extension();
+        const char *surface_extensions[] = {
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            macos_ext,
+            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+        };
+#elif defined(__linux__)
         extern const char *vulkan_desktop_get_surface_extension(void);
         const char *linux_ext = vulkan_desktop_get_surface_extension();
         const char *surface_extensions[] = {
@@ -1604,6 +2002,11 @@ static bool create_instance(gpu_renderer_t *r) {
         create_info.ppEnabledExtensionNames = surface_extensions;
     }
     /* Offscreen: no extensions needed */
+
+#ifdef __APPLE__
+    /* MoltenVK requires portability enumeration to discover the MoltenVK ICD */
+    create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
 
     VK_CHECK(vkCreateInstance(&create_info, NULL, &r->instance));
     VK_LOGI("Vulkan instance created (offscreen=%d)", r->offscreen_mode);
@@ -1694,7 +2097,12 @@ static VkDevice vulkan_create_device_wrapper(
     VkDeviceCreateInfo patched_info = *create_info;
     const char **ext_list = NULL;
 
-    if (!has_swapchain && !r->offscreen_mode) {
+    /* Always add VK_KHR_swapchain, even in offscreen mode.
+     * Cores like Dolphin intercept vkCreateSwapchainKHR and vkQueuePresentKHR to
+     * create a fake swap chain for frame delivery via video_cb. For the interception
+     * to work, vkGetDeviceProcAddr must return non-NULL for these functions, which
+     * requires VK_KHR_swapchain to be enabled on the device. */
+    if (!has_swapchain) {
         /* Add swapchain extension to the core's list */
         uint32_t new_count = create_info->enabledExtensionCount + 1;
         ext_list = (const char **)malloc(new_count * sizeof(const char *));
@@ -1775,14 +2183,258 @@ static VKAPI_ATTR VkResult VKAPI_CALL wrapped_vkEnumerateDeviceExtensionProperti
     return result;
 }
 
-/* Wrapped vkGetInstanceProcAddr that returns our filtered functions */
+/* ===== Stub surface functions for offscreen HW render =====
+ * Cores like Dolphin intercept Vulkan surface and swap chain functions to create
+ * a fake swap chain for frame delivery (via video_cb). Their interceptor guards
+ * with `if (!fptr) return fptr;` — if the real function pointer is NULL (because
+ * VK_KHR_surface is not enabled on the VkInstance in offscreen mode), the
+ * interception is skipped and the entire frame delivery pipeline breaks.
+ *
+ * These stubs provide non-NULL function pointers that return plausible dummy
+ * values, allowing the core's interception chain to work without a real surface. */
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkCreateSurface(
+    VkInstance instance, const void *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator, VkSurfaceKHR *pSurface)
+{
+    (void)instance; (void)pCreateInfo; (void)pAllocator;
+    *pSurface = (VkSurfaceKHR)(uintptr_t)0xDEADBEEF;
+    VK_LOGW("STUB CALLED: vkCreateSurface -> dummy surface 0xDEADBEEF");
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL stub_vkDestroySurfaceKHR(
+    VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks *pAllocator)
+{
+    (void)instance; (void)surface; (void)pAllocator;
+    VK_LOGW("STUB CALLED: vkDestroySurfaceKHR");
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceSupportKHR(
+    VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex,
+    VkSurfaceKHR surface, VkBool32 *pSupported)
+{
+    (void)physicalDevice; (void)queueFamilyIndex; (void)surface;
+    *pSupported = VK_TRUE;
+    VK_LOGW("STUB CALLED: vkGetPhysicalDeviceSurfaceSupportKHR -> TRUE");
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+    VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+    VkSurfaceCapabilitiesKHR *pSurfaceCapabilities)
+{
+    (void)physicalDevice; (void)surface;
+    VK_LOGW("STUB CALLED: vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+    *pSurfaceCapabilities = (VkSurfaceCapabilitiesKHR){
+        .minImageCount = 2,
+        .maxImageCount = 8,
+        .currentExtent = { 640, 480 },
+        .minImageExtent = { 1, 1 },
+        .maxImageExtent = { 4096, 4096 },
+        .maxImageArrayLayers = 1,
+        .supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+        .currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+        .supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .supportedUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+    };
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfaceFormatsKHR(
+    VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+    uint32_t *pSurfaceFormatCount, VkSurfaceFormatKHR *pSurfaceFormats)
+{
+    (void)physicalDevice; (void)surface;
+    if (!pSurfaceFormats) {
+        *pSurfaceFormatCount = 1;
+        return VK_SUCCESS;
+    }
+    if (*pSurfaceFormatCount >= 1) {
+        pSurfaceFormats[0] = (VkSurfaceFormatKHR){
+            .format = VK_FORMAT_B8G8R8A8_UNORM,
+            .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+        };
+        *pSurfaceFormatCount = 1;
+    }
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetPhysicalDeviceSurfacePresentModesKHR(
+    VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+    uint32_t *pPresentModeCount, VkPresentModeKHR *pPresentModes)
+{
+    (void)physicalDevice; (void)surface;
+    if (!pPresentModes) {
+        *pPresentModeCount = 1;
+        return VK_SUCCESS;
+    }
+    if (*pPresentModeCount >= 1) {
+        pPresentModes[0] = VK_PRESENT_MODE_FIFO_KHR;
+        *pPresentModeCount = 1;
+    }
+    return VK_SUCCESS;
+}
+
+/* ===== Stub swap chain device functions for offscreen HW render =====
+ * These are device-level stubs for VK_KHR_swapchain functions. When the device
+ * was created without VK_KHR_swapchain (offscreen mode), vkGetDeviceProcAddr
+ * returns NULL for swap chain functions. Cores like Dolphin intercept these
+ * to create fake swap chains, but the interception guard skips NULL pointers.
+ * These stubs are never actually called — the core replaces them with its own
+ * interceptor implementations. They just need to be non-NULL. */
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkCreateSwapchainKHR(
+    VkDevice device, const VkSwapchainCreateInfoKHR *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator, VkSwapchainKHR *pSwapchain)
+{
+    (void)device; (void)pCreateInfo; (void)pAllocator;
+    *pSwapchain = (VkSwapchainKHR)(uintptr_t)0xDEADC0DE;
+    VK_LOGW("STUB CALLED: vkCreateSwapchainKHR (core should intercept!)");
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL stub_vkDestroySwapchainKHR(
+    VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks *pAllocator)
+{
+    (void)device; (void)swapchain; (void)pAllocator;
+    VK_LOGW("STUB CALLED: vkDestroySwapchainKHR");
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkGetSwapchainImagesKHR(
+    VkDevice device, VkSwapchainKHR swapchain,
+    uint32_t *pSwapchainImageCount, VkImage *pSwapchainImages)
+{
+    (void)device; (void)swapchain; (void)pSwapchainImages;
+    VK_LOGW("STUB CALLED: vkGetSwapchainImagesKHR (core should intercept!)");
+    *pSwapchainImageCount = 0;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkAcquireNextImageKHR(
+    VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout,
+    VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex)
+{
+    (void)device; (void)swapchain; (void)timeout; (void)semaphore; (void)fence;
+    VK_LOGW("STUB CALLED: vkAcquireNextImageKHR (core should intercept!)");
+    *pImageIndex = 0;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL stub_vkQueuePresentKHR(
+    VkQueue queue, const VkPresentInfoKHR *pPresentInfo)
+{
+    (void)queue; (void)pPresentInfo;
+    VK_LOGW("STUB CALLED: vkQueuePresentKHR (core should intercept!)");
+    return VK_SUCCESS;
+}
+
+/* Forward declaration — defined below but needed by wrapped_vkGetInstanceProcAddr */
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
+    VkDevice device, const char *pName);
+
+/* Wrapped vkGetInstanceProcAddr that returns our filtered functions
+ * and provides stub surface functions for offscreen HW render cores */
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
     VkInstance instance, const char *pName)
 {
+    static int gipa_count = 0;
+    gipa_count++;
+
     if (strcmp(pName, "vkEnumerateDeviceExtensionProperties") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkEnumerateDeviceExtensionProperties;
     }
-    return vkGetInstanceProcAddr(instance, pName);
+    /* Return our wrapped vkGetDeviceProcAddr so cores get our stubs for
+     * swap chain functions when VK_KHR_swapchain is not on the device. */
+    if (strcmp(pName, "vkGetDeviceProcAddr") == 0) {
+        VK_LOGW("wrapped_vkGetInstanceProcAddr #%d: returning wrapped_vkGetDeviceProcAddr", gipa_count);
+        return (PFN_vkVoidFunction)wrapped_vkGetDeviceProcAddr;
+    }
+
+    PFN_vkVoidFunction result = vkGetInstanceProcAddr(instance, pName);
+
+    /* If the real function is NULL, provide stub implementations for surface
+     * functions. This is critical for cores like Dolphin that guard their
+     * interception with `if (!fptr) return fptr;` — without non-NULL pointers,
+     * the entire swap chain interception chain is skipped. */
+    if (!result) {
+        if (strcmp(pName, "vkDestroySurfaceKHR") == 0) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkDestroySurfaceKHR;
+        }
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceSupportKHR") == 0) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceSupportKHR;
+        }
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+        }
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfaceFormatsKHR;
+        }
+        if (strcmp(pName, "vkGetPhysicalDeviceSurfacePresentModesKHR") == 0) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkGetPhysicalDeviceSurfacePresentModesKHR;
+        }
+        /* Catch ALL platform surface creation functions (Metal, X11, Win32, etc.) */
+        if (strstr(pName, "vkCreate") && strstr(pName, "Surface")) {
+            VK_LOGW("GIPA #%d: returning STUB for %s", gipa_count, pName);
+            return (PFN_vkVoidFunction)stub_vkCreateSurface;
+        }
+        if (gipa_count <= 60) {
+            VK_LOGW("GIPA #%d: '%s' returned NULL (no stub)", gipa_count, pName);
+        }
+    } else if (gipa_count <= 60) {
+        VK_LOGW("GIPA #%d: '%s' -> OK", gipa_count, pName);
+    }
+
+    return result;
+}
+
+/* Wrapped vkGetDeviceProcAddr that provides stub swap chain functions
+ * for offscreen HW render. When VK_KHR_swapchain is not enabled on the
+ * device, these stubs give cores like Dolphin non-NULL function pointers
+ * that their interception chain can wrap. */
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
+    VkDevice device, const char *pName)
+{
+    static int gdpa_count = 0;
+    gdpa_count++;
+
+    PFN_vkVoidFunction result = vkGetDeviceProcAddr(device, pName);
+
+    if (!result) {
+        if (strcmp(pName, "vkCreateSwapchainKHR") == 0) {
+            VK_LOGW("GDPA: returning STUB for vkCreateSwapchainKHR");
+            return (PFN_vkVoidFunction)stub_vkCreateSwapchainKHR;
+        }
+        if (strcmp(pName, "vkDestroySwapchainKHR") == 0) {
+            VK_LOGW("GDPA: returning STUB for vkDestroySwapchainKHR");
+            return (PFN_vkVoidFunction)stub_vkDestroySwapchainKHR;
+        }
+        if (strcmp(pName, "vkGetSwapchainImagesKHR") == 0) {
+            VK_LOGW("GDPA: returning STUB for vkGetSwapchainImagesKHR");
+            return (PFN_vkVoidFunction)stub_vkGetSwapchainImagesKHR;
+        }
+        if (strcmp(pName, "vkAcquireNextImageKHR") == 0) {
+            VK_LOGW("GDPA: returning STUB for vkAcquireNextImageKHR");
+            return (PFN_vkVoidFunction)stub_vkAcquireNextImageKHR;
+        }
+        if (strcmp(pName, "vkQueuePresentKHR") == 0) {
+            VK_LOGW("GDPA: returning STUB for vkQueuePresentKHR");
+            return (PFN_vkVoidFunction)stub_vkQueuePresentKHR;
+        }
+        if (gdpa_count <= 30 || strstr(pName, "Swapchain") || strstr(pName, "Present")) {
+            VK_LOGW("GDPA #%d: '%s' returned NULL (no stub)", gdpa_count, pName);
+        }
+    } else if (gdpa_count <= 30 || strstr(pName, "Swapchain") || strstr(pName, "Present") || strstr(pName, "Queue")) {
+        VK_LOGW("GDPA #%d: '%s' -> OK", gdpa_count, pName);
+    }
+
+    return result;
 }
 
 static bool create_device(gpu_renderer_t *r) {
@@ -1806,15 +2458,22 @@ static bool create_device(gpu_renderer_t *r) {
         r->vk_negotiation->create_device2) {
         struct retro_vulkan_context vk_context = {0};
 
+        /* In offscreen mode, pass a dummy surface so the core creates a swap chain.
+         * Cores like Dolphin skip swap chain creation when surface is VK_NULL_HANDLE,
+         * which breaks their frame delivery pipeline (no vkQueuePresentKHR calls). */
+        VkSurfaceKHR negotiation_surface = r->offscreen_mode ?
+            (VkSurfaceKHR)(uintptr_t)0xDEADBEEF : r->surface;
+
         VK_LOGI("Calling core create_device2 v%u (instance=%p, gpu=%p, surface=%p)",
                 r->vk_negotiation->interface_version,
-                (void *)r->instance, (void *)r->physical_device, (void *)r->surface);
+                (void *)r->instance, (void *)r->physical_device,
+                (void *)(uintptr_t)negotiation_surface);
 
         bool ok = r->vk_negotiation->create_device2(
             &vk_context,
             r->instance,
             r->physical_device,
-            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            negotiation_surface,
             wrapped_vkGetInstanceProcAddr,
             vulkan_create_device_wrapper,
             r);  /* opaque = renderer, so wrapper can add swapchain ext */
@@ -1835,7 +2494,7 @@ static bool create_device(gpu_renderer_t *r) {
             &vk_context,
             r->instance,
             VK_NULL_HANDLE,  /* let core choose GPU */
-            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            negotiation_surface,
             wrapped_vkGetInstanceProcAddr,
             vulkan_create_device_wrapper,
             r);
@@ -1864,17 +2523,22 @@ static bool create_device(gpu_renderer_t *r) {
          * unintended driver behavior by enabling features the core doesn't need. */
         VkPhysicalDeviceFeatures features = {0};
 
+        /* Same as v2: pass dummy surface in offscreen mode so core creates a swap chain */
+        VkSurfaceKHR negotiation_surface = r->offscreen_mode ?
+            (VkSurfaceKHR)(uintptr_t)0xDEADBEEF : r->surface;
+
         VK_LOGI("Calling core create_device v1 (instance=%p, gpu=%p, surface=%p)",
-                (void *)r->instance, (void *)r->physical_device, (void *)r->surface);
+                (void *)r->instance, (void *)r->physical_device,
+                (void *)(uintptr_t)negotiation_surface);
 
         bool ok = r->vk_negotiation->create_device(
             &vk_context,
             r->instance,
             r->physical_device,
-            r->offscreen_mode ? VK_NULL_HANDLE : r->surface,
+            negotiation_surface,
             wrapped_vkGetInstanceProcAddr,
-            r->offscreen_mode ? NULL : &required_ext,
-            r->offscreen_mode ? 0 : 1,
+            &required_ext,
+            1,             /* always request VK_KHR_swapchain */
             NULL, 0,       /* no required layers */
             &features);    /* zeros (no required features) — core needs this non-NULL */
 
