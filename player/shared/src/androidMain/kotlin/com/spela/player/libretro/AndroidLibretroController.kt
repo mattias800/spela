@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.SurfaceView
 import com.spela.player.netplay.InputState
 import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplayTransport
@@ -56,6 +57,10 @@ class AndroidLibretroController(
 
     /** Callback invoked on the emulation thread when the remote peer times out. */
     var onNetplayPeerTimeout: (() -> Unit)? = null
+
+    /** SurfaceView used for GPU rendering (GLES/Vulkan). Set by VulkanEmulationSurface. */
+    @Volatile
+    var vulkanSurfaceView: SurfaceView? = null
 
     private var emulationThread: Thread? = null
     private var targetFps = 60.0
@@ -144,6 +149,7 @@ class AndroidLibretroController(
     }
 
     override fun stop() {
+        Log.i(TAG, "stop() called")
         running = false
         netplayTransport?.disconnect()
         // No timeout: we MUST wait for retro_run() to return before calling
@@ -151,12 +157,20 @@ class AndroidLibretroController(
         // frame on slow devices. Calling unload while retro_run() is active
         // causes SIGSEGV in the core.
         emulationThread?.join()
+        Log.i(TAG, "emulation thread joined")
         emulationThread = null
         audioOutput?.stop()
         audioOutput = null
         clearNetplayMode()
         jni.nativeUnloadGame()
+        Log.i(TAG, "game unloaded")
         jni.nativeDeinit()
+        Log.i(TAG, "core deinitialized")
+        // Destroy GPU renderer after core is fully unloaded. nativeDeinit already
+        // handled HW render cleanup (context_destroy, hw_vulkan_deinit), so this
+        // just tears down the remaining Vulkan infrastructure (device, instance).
+        jni.nativeGpuDeinit()
+        Log.i(TAG, "GPU renderer destroyed")
         mainHandler.post { _frameBitmap.value = null }
         frontBitmap?.recycle()
         frontBitmap = null

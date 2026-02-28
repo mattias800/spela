@@ -8,8 +8,10 @@ import com.spela.player.data.local.ExpectedSchema
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.libretro.AndroidAchievementsController
 import com.spela.player.libretro.AndroidLibretroController
+import com.spela.player.libretro.AndroidScreenshotCapture
 import com.spela.player.libretro.LibretroJni
 import com.spela.player.platform.secondarydisplay.AndroidSecondaryDisplay
 import com.spela.player.platform.secondarydisplay.SecondaryDisplayManager
@@ -63,6 +65,7 @@ actual fun platformModule(): Module = module {
     single<FileStorage> { AndroidFileStorage(get()) }
     single { LibretroJni() }
     single<LibretroController> { AndroidLibretroController(get(), get()) }
+    single<ScreenshotCapture> { AndroidScreenshotCapture(get<LibretroController>() as AndroidLibretroController) }
     single<AchievementsController> { AndroidAchievementsController(get(), get(), get()) }
     single { SecondaryDisplayManager(get()) }
     single<PlatformSecondaryDisplay> {
