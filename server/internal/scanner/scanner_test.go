@@ -1152,3 +1152,88 @@ func TestScan_StandaloneCueBin_BackfillDiscRecord(t *testing.T) {
 	assert.Equal(t, 1, updatedGame.DiscCount)
 	assert.Greater(t, updatedGame.FileSize, int64(0))
 }
+
+func TestDiscCompanionFiles_Gdi(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create track files
+	track1 := filepath.Join(dir, "track01.bin")
+	require.NoError(t, os.WriteFile(track1, []byte("track 1 data here"), 0644))
+	track2 := filepath.Join(dir, "track02.raw")
+	require.NoError(t, os.WriteFile(track2, []byte("track 2 raw data here!"), 0644))
+	track3 := filepath.Join(dir, "track03.bin")
+	require.NoError(t, os.WriteFile(track3, []byte("track 3 data"), 0644))
+
+	// Create .gdi file
+	gdiPath := filepath.Join(dir, "game.gdi")
+	gdiContent := "3\n1 0 4 2352 track01.bin 0\n2 450 0 2352 track02.raw 0\n3 45000 4 2352 track03.bin 0\n"
+	require.NoError(t, os.WriteFile(gdiPath, []byte(gdiContent), 0644))
+
+	files, totalSize, err := DiscCompanionFiles(gdiPath)
+	require.NoError(t, err)
+	assert.Len(t, files, 4, "should return .gdi + 3 track files")
+	assert.Contains(t, files, gdiPath)
+	assert.Contains(t, files, track1)
+	assert.Contains(t, files, track2)
+	assert.Contains(t, files, track3)
+
+	gdiInfo, _ := os.Stat(gdiPath)
+	t1Info, _ := os.Stat(track1)
+	t2Info, _ := os.Stat(track2)
+	t3Info, _ := os.Stat(track3)
+	expectedSize := gdiInfo.Size() + t1Info.Size() + t2Info.Size() + t3Info.Size()
+	assert.Equal(t, expectedSize, totalSize)
+}
+
+// Standalone .gdi with track files in a dreamcast/ dir should create a single
+// game entry with DiscCount=1, a GameDisc record, and claim all track files.
+func TestScan_StandaloneGdiBin(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	dcDir := filepath.Join(dir, "dreamcast")
+	require.NoError(t, os.MkdirAll(dcDir, 0755))
+
+	// Create track files
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track01.bin"), []byte("track 1 data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track02.raw"), []byte("track 2 data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track03.bin"), []byte("track 3 data"), 0644))
+
+	// Create .gdi file
+	gdiContent := "3\n1 0 4 2352 track01.bin 0\n2 450 0 2352 track02.raw 0\n3 45000 4 2352 track03.bin 0\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "Sonic Adventure.gdi"), []byte(gdiContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Should create exactly 1 game — the .gdi — not separate entries for track files
+	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game for standalone .gdi")
+	assert.Equal(t, 1, result.TotalGames)
+
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1)
+	assert.Equal(t, "Sonic Adventure", games[0].Title)
+	assert.Equal(t, "Sonic Adventure.gdi", games[0].FileName)
+	assert.Equal(t, 1, games[0].DiscCount)
+	assert.Greater(t, games[0].FileSize, int64(0), "file size should include .gdi + tracks")
+
+	// Verify correct console
+	var dcConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "DC").First(&dcConsole).Error)
+	assert.Equal(t, dcConsole.ID, games[0].ConsoleID)
+
+	// Verify a GameDisc record was created
+	var discs []db.GameDisc
+	database.Where("game_id = ?", games[0].ID).Find(&discs)
+	require.Len(t, discs, 1, "should have 1 disc record")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "Sonic Adventure.gdi", discs[0].FileName)
+
+	// Rescan should be idempotent
+	result2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
+	assert.Equal(t, 1, result2.TotalGames)
+}

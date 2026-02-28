@@ -165,10 +165,11 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		}
 	}
 
-	// For .cue files, serve a tar/zip bundle with companion .bin files.
+	// For .cue/.gdi files, serve a tar/zip bundle with companion track files.
 	// This handles both new games (with disc records) and old DB entries
 	// (without disc records) that were created before the scanner change.
-	if strings.HasSuffix(strings.ToLower(game.FileName), ".cue") {
+	lower := strings.ToLower(game.FileName)
+	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
 		companions, _, err := scanner.DiscCompanionFiles(absPath)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})

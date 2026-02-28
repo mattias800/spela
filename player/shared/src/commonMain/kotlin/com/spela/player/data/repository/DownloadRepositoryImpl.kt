@@ -40,8 +40,9 @@ class DownloadRepositoryImpl(
         } else if (discs.isNotEmpty() && discs.size == 1) {
             // Single disc with disc record — use disc endpoint (handles .cue tar bundles)
             downloadSingleDiscWithDiscRecord(gameId, gameTitle, gameDetail)
-        } else if (gameDetail.fileName.endsWith(".cue", ignoreCase = true)) {
-            // .cue without disc records (old DB entry) — game endpoint returns tar
+        } else if (gameDetail.fileName.endsWith(".cue", ignoreCase = true) ||
+            gameDetail.fileName.endsWith(".gdi", ignoreCase = true)) {
+            // .cue/.gdi without disc records (old DB entry) — game endpoint returns tar
             downloadCueGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         } else {
             downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
@@ -111,8 +112,9 @@ class DownloadRepositoryImpl(
         }
         fileStorage.createDirectory(gameDir)
 
-        if (disc.fileName.endsWith(".cue", ignoreCase = true)) {
-            // Tar archive (cue+bin) — stream-extract directly to disk
+        if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
+            disc.fileName.endsWith(".gdi", ignoreCase = true)) {
+            // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk
             apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
                 downloads.update {
                     it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: disc.fileSize))
@@ -186,8 +188,9 @@ class DownloadRepositoryImpl(
                 ))
             }
 
-            if (disc.fileName.endsWith(".cue", ignoreCase = true)) {
-                // Tar archive (cue+bin) - stream-extract directly to disk
+            if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
+                disc.fileName.endsWith(".gdi", ignoreCase = true)) {
+                // Tar archive (cue+bin or gdi+tracks) - stream-extract directly to disk
                 apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
                     downloads.update {
                         it + (gameId to DownloadProgress(
@@ -264,9 +267,12 @@ class DownloadRepositoryImpl(
         if (fileStorage.isDirectory(gameDir)) {
             val files = fileStorage.listFiles(gameDir)
             println("[Download] getLocalGamePath: gameDir=$gameDir isDir=true files=$files")
-            // Prefer .cue files — the emulator expects the .cue path to find companions
+            // Prefer .cue/.gdi files — the emulator expects the entry file path to find companions
             val gameFile = files.filter { it != "game.m3u" }
-                .sortedByDescending { it.endsWith(".cue", ignoreCase = true) }
+                .sortedByDescending {
+                    it.endsWith(".cue", ignoreCase = true) ||
+                        it.endsWith(".gdi", ignoreCase = true)
+                }
                 .firstOrNull()
             if (gameFile != null) return "$gameDir/$gameFile"
         } else {

@@ -50,6 +50,8 @@ var ConsoleExtMap = map[string]string{
 	".cso": "PSP",
 	".pbp": "PSX",
 	".cue": "PSX", // .cue files indicate PSX disc images
+	".gdi": "DC",
+	".cdi": "DC",
 	".3ds": "3DS",
 	".cci": "3DS",
 	".cia": "3DS",
@@ -73,7 +75,7 @@ var RomExtensions = map[string]bool{
 	".pce": true,
 	".a26": true,
 	".cso": true, ".iso": true,
-	".pbp": true, ".cue": true,
+	".pbp": true, ".cue": true, ".gdi": true, ".cdi": true,
 	".zip": true, ".7z": true,
 	".chd": true,
 	".m3u": true,
@@ -191,7 +193,7 @@ func parseM3U(m3uPath string) ([]string, error) {
 // For .iso/.chd/.pbp, it returns just the file itself.
 func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 	ext := strings.ToLower(filepath.Ext(discEntryPath))
-	if ext != ".cue" {
+	if ext != ".cue" && ext != ".gdi" {
 		// Single file disc format
 		info, err := os.Stat(discEntryPath)
 		if err != nil {
@@ -200,39 +202,72 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 		return []string{discEntryPath}, info.Size(), nil
 	}
 
-	// Parse .cue file for FILE directives
-	f, err := os.Open(discEntryPath)
-	if err != nil {
-		return nil, 0, fmt.Errorf("opening .cue file: %w", err)
-	}
-	defer f.Close()
-
 	dir := filepath.Dir(discEntryPath)
 	files := []string{discEntryPath}
 	var totalSize int64
 
 	info, err := os.Stat(discEntryPath)
 	if err != nil {
-		return nil, 0, fmt.Errorf("stat .cue file: %w", err)
+		return nil, 0, fmt.Errorf("stat %s file: %w", ext, err)
 	}
 	totalSize += info.Size()
 
-	cueFilePattern := regexp.MustCompile(`(?i)^\s*FILE\s+"([^"]+)"`)
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		matches := cueFilePattern.FindStringSubmatch(sc.Text())
-		if matches == nil {
-			continue
+	f, err := os.Open(discEntryPath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("opening %s file: %w", ext, err)
+	}
+	defer f.Close()
+
+	if ext == ".gdi" {
+		// GDI format: first line is track count, subsequent lines are
+		// TRACK LBA TYPE SECTOR_SIZE FILENAME OFFSET
+		sc := bufio.NewScanner(f)
+		lineNum := 0
+		for sc.Scan() {
+			lineNum++
+			line := strings.TrimSpace(sc.Text())
+			if line == "" {
+				continue
+			}
+			if lineNum == 1 {
+				// First non-blank line is the track count — skip it
+				continue
+			}
+			// Parse track line: fields are space-separated, filename is field 4 (0-indexed)
+			fields := strings.Fields(line)
+			if len(fields) < 5 {
+				continue
+			}
+			trackFile := strings.Trim(fields[4], "\"")
+			trackPath := trackFile
+			if !filepath.IsAbs(trackPath) {
+				trackPath = filepath.Join(dir, trackPath)
+			}
+			trackPath = filepath.Clean(trackPath)
+			files = append(files, trackPath)
+			if trackInfo, err := os.Stat(trackPath); err == nil {
+				totalSize += trackInfo.Size()
+			}
 		}
-		binName := matches[1]
-		binPath := binName
-		if !filepath.IsAbs(binPath) {
-			binPath = filepath.Join(dir, binPath)
-		}
-		binPath = filepath.Clean(binPath)
-		files = append(files, binPath)
-		if binInfo, err := os.Stat(binPath); err == nil {
-			totalSize += binInfo.Size()
+	} else {
+		// Parse .cue file for FILE directives
+		cueFilePattern := regexp.MustCompile(`(?i)^\s*FILE\s+"([^"]+)"`)
+		sc := bufio.NewScanner(f)
+		for sc.Scan() {
+			matches := cueFilePattern.FindStringSubmatch(sc.Text())
+			if matches == nil {
+				continue
+			}
+			binName := matches[1]
+			binPath := binName
+			if !filepath.IsAbs(binPath) {
+				binPath = filepath.Join(dir, binPath)
+			}
+			binPath = filepath.Clean(binPath)
+			files = append(files, binPath)
+			if binInfo, err := os.Stat(binPath); err == nil {
+				totalSize += binInfo.Size()
+			}
 		}
 	}
 
@@ -346,7 +381,7 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 // scanMultiDisc performs pass 1: discovers multi-disc games via .m3u files, disc patterns,
 // and standalone .cue files (which need companion .bin files bundled).
 func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult) error {
-	// Collect .m3u files, disc-pattern ROM files, and standalone .cue files
+	// Collect .m3u files, disc-pattern ROM files, and standalone .cue/.gdi files
 	var m3uFiles []string
 	var cueFiles []string
 	discGroups := make(map[discGroupKey][]string) // grouped by (dir, baseTitle)
@@ -368,7 +403,7 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			return nil
 		}
 
-		if ext == ".cue" {
+		if ext == ".cue" || ext == ".gdi" {
 			cueFiles = append(cueFiles, path)
 		}
 
@@ -494,23 +529,23 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 		s.createMultiDiscGame(m3uPath, files, console, foundPaths, result)
 	}
 
-	// Process standalone .cue files not already claimed by .m3u or disc patterns.
-	// A standalone .cue+.bin needs a Game with DiscCount=1 and a GameDisc record
-	// so the download handler serves a tar bundle (not just the .cue file).
+	// Process standalone .cue/.gdi files not already claimed by .m3u or disc patterns.
+	// A standalone .cue+.bin or .gdi+tracks needs a Game with DiscCount=1 and a GameDisc
+	// record so the download handler serves a tar bundle (not just the entry file).
 	for _, cuePath := range cueFiles {
 		if claimedPaths[cuePath] {
 			continue
 		}
 
-		// Get companion files (.bin files referenced in the .cue)
+		// Get companion files (track files referenced in the .cue/.gdi)
 		companions, totalSize, err := DiscCompanionFiles(cuePath)
 		if err != nil {
-			slog.Warn("failed to get companion files for .cue", "path", cuePath, "error", err)
+			slog.Warn("failed to get companion files for disc entry", "path", cuePath, "error", err)
 			continue
 		}
 
-		// Claim the .cue and all companion files to prevent pass 2 from
-		// creating separate game entries for .bin files
+		// Claim the entry file and all companion files to prevent pass 2 from
+		// creating separate game entries for track files
 		for _, c := range companions {
 			claimedPaths[c] = true
 		}
