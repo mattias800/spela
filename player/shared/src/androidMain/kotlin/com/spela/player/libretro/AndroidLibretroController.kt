@@ -79,6 +79,17 @@ class AndroidLibretroController(
     /* Audio output */
     private var audioOutput: AudioOutput? = null
 
+    /* Emulation-thread dispatch: some cores (Dolphin) require retro_serialize,
+     * retro_unserialize, and retro_serialize_size to run on the same thread as
+     * retro_run. This queue lets any thread submit work to the emulation thread. */
+    private class EmulationThreadRequest(
+        val action: () -> Any?,
+        val latch: java.util.concurrent.CountDownLatch = java.util.concurrent.CountDownLatch(1),
+        var result: Any? = null,
+    )
+
+    private val emulationThreadQueue = java.util.concurrent.LinkedBlockingQueue<EmulationThreadRequest>()
+
     /* Reusable IntArray buffer for pixel conversion (avoids allocation per frame) */
     private var pixelBuffer = IntArray(0)
 
@@ -120,6 +131,7 @@ class AndroidLibretroController(
     override fun start() {
         running = true
         paused = false
+        emulationThreadQueue.clear()
         netplayDisconnected = false
         mainHandler.post { _physicalControllerActive.value = false }
         lastPhysicalInputNanos = 0L
@@ -151,6 +163,11 @@ class AndroidLibretroController(
     override fun stop() {
         Log.i(TAG, "stop() called")
         running = false
+        // Drain pending emulation-thread requests so callers don't block
+        while (true) {
+            val req = emulationThreadQueue.poll() ?: break
+            req.latch.countDown()
+        }
         netplayTransport?.disconnect()
         // No timeout: we MUST wait for retro_run() to return before calling
         // nativeUnloadGame(). Heavy cores (N64 Angrylion) may take 10-30s per
@@ -180,11 +197,30 @@ class AndroidLibretroController(
         lastFrameHeight = 0
     }
 
-    override fun supportsSaveStates(): Boolean = jni.nativeSerializeSize() > 0
+    /**
+     * Dispatch a block to the emulation thread and wait for the result.
+     * If the emulation thread isn't alive, runs the block on the calling thread.
+     */
+    private fun <T> runOnEmulationThread(timeoutSeconds: Long = 5, block: () -> T): T? {
+        if (emulationThread?.isAlive != true) {
+            @Suppress("UNCHECKED_CAST")
+            return block()
+        }
+        val req = EmulationThreadRequest(action = { block() })
+        emulationThreadQueue.add(req)
+        val completed = req.latch.await(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+        @Suppress("UNCHECKED_CAST")
+        return if (completed) req.result as? T else null
+    }
 
-    override fun serialize(): ByteArray? = jni.nativeSerialize()
+    override fun supportsSaveStates(): Boolean =
+        runOnEmulationThread { jni.nativeSerializeSize() > 0 } ?: true
 
-    override fun unserialize(data: ByteArray): Boolean = jni.nativeUnserialize(data)
+    override fun serialize(): ByteArray? =
+        runOnEmulationThread { jni.nativeSerialize() }
+
+    override fun unserialize(data: ByteArray): Boolean =
+        runOnEmulationThread { jni.nativeUnserialize(data) } ?: false
 
     override fun setFastForward(enabled: Boolean) {
         fastForward = enabled
@@ -287,6 +323,15 @@ class AndroidLibretroController(
         var fpsTimer = System.nanoTime()
 
         while (running) {
+            // Process pending emulation-thread requests (serialize, unserialize, etc.).
+            // Must run here (same thread as retro_run) because some cores
+            // (Dolphin) deadlock if these are called from another thread.
+            val req = emulationThreadQueue.poll()
+            if (req != null) {
+                req.result = req.action()
+                req.latch.countDown()
+            }
+
             if (paused) {
                 Thread.sleep(16)
                 continue

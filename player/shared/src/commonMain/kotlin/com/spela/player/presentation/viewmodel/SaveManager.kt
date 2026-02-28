@@ -73,9 +73,17 @@ class SaveManager(
      * Called from within an IO coroutine.
      */
     suspend fun autoLoadSaveState(gameId: String) {
-        loadGameStateUseCase(gameId).onSuccess { saveData ->
-            libretroController.unserialize(saveData)
-        }
+        println("[SaveManager] autoLoadSaveState: loading game $gameId")
+        loadGameStateUseCase(gameId).fold(
+            onSuccess = { saveData ->
+                println("[SaveManager] autoLoadSaveState: got ${saveData.size} bytes, unserializing")
+                val ok = libretroController.unserialize(saveData)
+                println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
+            },
+            onFailure = { e ->
+                println("[SaveManager] autoLoadSaveState: failed: ${e.message}")
+            },
+        )
     }
 
     /**
@@ -84,13 +92,16 @@ class SaveManager(
      */
     suspend fun autoSaveOnStop(gameId: String) {
         try {
+            println("[SaveManager] autoSaveOnStop: serializing game $gameId")
             val saveData = libretroController.serialize()
+            println("[SaveManager] autoSaveOnStop: serialize returned ${saveData?.size ?: "null"} bytes")
             if (saveData != null) {
-                val screenshot = screenshotCapture?.captureScreenshot()
-                saveGameStateUseCase(gameId, saveData, screenshot)
+                // Save to local filesystem + SQLite only (fast, no network).
+                val result = saveRepository.saveLocally(gameId, "Auto Save", saveData, isAuto = true)
+                println("[SaveManager] autoSaveOnStop: saveLocally result=${result.isSuccess}")
             }
-        } catch (_: Exception) {
-            // Best effort auto-save
+        } catch (e: Exception) {
+            println("[SaveManager] autoSaveOnStop: exception: ${e.message}")
         }
     }
 

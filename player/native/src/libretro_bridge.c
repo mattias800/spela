@@ -939,7 +939,22 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 
     if (g_core.handle) {
+#ifdef __ANDROID__
+        /* HW render cores (e.g. Dolphin) use Granite for background shader
+         * compilation. retro_deinit() signals shutdown but does not join all
+         * threads — calling dlclose() unmaps the code while threads are still
+         * running, causing SIGSEGV. Skip dlclose for these cores; the library
+         * stays loaded until the process exits. dlopen() with the same path
+         * reuses the loaded library (increments ref count), so restarting
+         * the same core works correctly. */
+        if (g_gpu_renderer) {
+            LOGI("Skipping dlclose for HW render core (background threads may still be running)");
+        } else {
+            dlclose(g_core.handle);
+        }
+#else
         dlclose(g_core.handle);
+#endif
         g_core.handle = NULL;
     }
     LOGI("Core deinitialized");
