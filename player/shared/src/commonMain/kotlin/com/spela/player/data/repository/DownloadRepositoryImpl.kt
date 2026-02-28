@@ -169,15 +169,19 @@ class DownloadRepositoryImpl(
 
         val m3uPath = "$gameDir/game.m3u"
         val totalDiscs = game.discs.size
+        val totalSize = game.fileSize
+        var completedBytes = 0L
 
         // Download each disc FIRST — write M3U only after all discs succeed.
         // Writing M3U early would make getLocalGamePath treat the game as cached
         // even if disc downloads fail or are still in progress.
         for ((index, disc) in game.discs.sortedBy { it.discNumber }.withIndex()) {
+            val discOffset = completedBytes
+
             downloads.update {
                 it + (gameId to DownloadProgress(
                     gameId, gameTitle, DownloadState.DOWNLOADING,
-                    bytesDownloaded = 0, totalBytes = disc.fileSize,
+                    bytesDownloaded = discOffset, totalBytes = totalSize,
                     currentDisc = disc.discNumber, totalDiscs = totalDiscs,
                 ))
             }
@@ -188,7 +192,7 @@ class DownloadRepositoryImpl(
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
-                            bytesDownloaded = downloaded, totalBytes = total ?: disc.fileSize,
+                            bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
                             currentDisc = disc.discNumber, totalDiscs = totalDiscs,
                         ))
                     }
@@ -200,12 +204,14 @@ class DownloadRepositoryImpl(
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
-                            bytesDownloaded = downloaded, totalBytes = total ?: disc.fileSize,
+                            bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
                             currentDisc = disc.discNumber, totalDiscs = totalDiscs,
                         ))
                     }
                 }
             }
+
+            completedBytes += disc.fileSize
         }
 
         // Write .m3u with local filenames — only after all discs downloaded
