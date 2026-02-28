@@ -53,6 +53,12 @@ static FILE *bridge_log_get(void) {
 /* Global core instance */
 libretro_core_t g_core = {0};
 
+#ifdef __ANDROID__
+/* Global JavaVM pointer - needed to pass to cores that require JNI thread
+ * attachment (e.g. Play! PS2). Captured from JNIEnv in nativeLoadCore(). */
+static JavaVM *g_jvm = NULL;
+#endif
+
 /* GPU renderer instance - used by both env callbacks and JNI methods */
 static gpu_renderer_t *g_gpu_renderer = NULL;
 
@@ -557,6 +563,32 @@ static int core_load(const char *path) {
         return -1;
     }
 
+#ifdef __ANDROID__
+    /* Pass the JavaVM pointer to cores that need it for thread attachment.
+     * dlopen() doesn't trigger JNI_OnLoad like System.loadLibrary() would,
+     * so we must do this manually. */
+    if (g_jvm) {
+        /* Try JNI_OnLoad first (standard JNI mechanism) */
+        typedef jint (*JNI_OnLoad_fn)(JavaVM *, void *);
+        JNI_OnLoad_fn core_onload = (JNI_OnLoad_fn)dlsym(g_core.handle, "JNI_OnLoad");
+        if (core_onload) {
+            LOGI("Core exports JNI_OnLoad, calling with JavaVM*");
+            core_onload(g_jvm, NULL);
+        }
+
+        /* Play! PS2 core: call Framework::CJavaVM::SetJavaVM(JavaVM*) directly.
+         * Play! stores a static JavaVM* pointer via this method, which its
+         * PS2VM worker thread needs for JNI AttachCurrentThread(). */
+        typedef void (*SetJavaVM_fn)(JavaVM *);
+        SetJavaVM_fn set_jvm = (SetJavaVM_fn)dlsym(g_core.handle,
+            "_ZN9Framework7CJavaVM9SetJavaVMEP7_JavaVM");
+        if (set_jvm) {
+            LOGI("Play! core detected, passing JavaVM to CJavaVM::SetJavaVM");
+            set_jvm(g_jvm);
+        }
+    }
+#endif
+
     LOAD_SYM(retro_init);
     LOAD_SYM(retro_deinit);
     LOAD_SYM(retro_api_version);
@@ -600,6 +632,14 @@ static int core_load(const char *path) {
 #define JNI_FUNC(ret, name) JNIEXPORT ret JNICALL Java_com_spela_player_libretro_LibretroJni_##name
 
 JNI_FUNC(jboolean, nativeLoadCore)(JNIEnv *env, jobject thiz, jstring corePath) {
+#ifdef __ANDROID__
+    /* Capture JavaVM pointer from JNIEnv - needed for cores like Play! PS2
+     * that spawn worker threads requiring JNI attachment. */
+    if (!g_jvm) {
+        (*env)->GetJavaVM(env, &g_jvm);
+    }
+#endif
+
     const char *path = (*env)->GetStringUTFChars(env, corePath, NULL);
     int result = core_load(path);
     (*env)->ReleaseStringUTFChars(env, corePath, path);
