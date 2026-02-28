@@ -122,6 +122,16 @@ class SaveDataRepositoryImpl(
         return database.spelaDatabaseQueries.getPendingSaveDataSyncs().executeAsList().size
     }
 
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? {
+        val userDir = "${fileStorage.getSavesDir()}/User"
+        return fileStorage.zipDirectoryToBytes(userDir)
+    }
+
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {
+        val userDir = "${fileStorage.getSavesDir()}/User"
+        fileStorage.unzipBytesToDirectory(data, userDir)
+    }
+
     private fun com.spela.player.LocalSaveDataEntity.toSaveData(): SaveData = SaveData(
         id = server_id ?: id.hashCode().toLong(),
         gameId = game_id.toLongOrNull() ?: 0L,

@@ -69,4 +69,40 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
     }
 
     override suspend fun isDirectory(path: String): Boolean = File(path).isDirectory
+
+    override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = withContext(Dispatchers.IO) {
+        val dir = File(dirPath)
+        if (!dir.exists() || !dir.isDirectory) return@withContext null
+        val files = dir.walkTopDown().filter { it.isFile }.toList()
+        if (files.isEmpty()) return@withContext null
+        val baos = java.io.ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(baos).use { zos ->
+            for (file in files) {
+                val entryName = file.relativeTo(dir).path
+                zos.putNextEntry(java.util.zip.ZipEntry(entryName))
+                file.inputStream().use { it.copyTo(zos) }
+                zos.closeEntry()
+            }
+        }
+        baos.toByteArray()
+    }
+
+    override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) = withContext(Dispatchers.IO) {
+        val target = File(targetDir)
+        target.mkdirs()
+        java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(data)).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                val outFile = File(target, entry.name)
+                if (entry.isDirectory) {
+                    outFile.mkdirs()
+                } else {
+                    outFile.parentFile?.mkdirs()
+                    outFile.outputStream().use { zis.copyTo(it) }
+                }
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+    }
 }

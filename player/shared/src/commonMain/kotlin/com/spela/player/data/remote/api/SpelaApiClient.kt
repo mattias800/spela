@@ -379,7 +379,11 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSaveState(gameId: String, saveId: String): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/saves/$saveId").body()
+        val response = client.get("$baseUrl/api/games/$gameId/saves/$saveId")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Save state download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     suspend fun deleteSaveState(gameId: String, saveId: String) {
@@ -440,7 +444,11 @@ class SpelaApiClient(
 
     /** Returns the auto-save file as raw bytes */
     suspend fun downloadAutoSave(gameId: String): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/saves/auto").body()
+        val response = client.get("$baseUrl/api/games/$gameId/saves/auto")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Auto-save download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     /** Rename a save state */
@@ -1023,7 +1031,11 @@ class SpelaApiClient(
     }
 
     suspend fun downloadActiveSaveData(gameId: String): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/save-data/active").body()
+        val response = client.get("$baseUrl/api/games/$gameId/save-data/active")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Active save data download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     suspend fun uploadSaveData(gameId: String, name: String, data: ByteArray): SaveDataDto {
@@ -1040,7 +1052,11 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSaveData(gameId: String, saveDataId: String): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/save-data/$saveDataId/download").body()
+        val response = client.get("$baseUrl/api/games/$gameId/save-data/$saveDataId/download")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Save data download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
     }
 
     suspend fun activateSaveData(gameId: String, saveDataId: String) {

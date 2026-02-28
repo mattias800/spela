@@ -251,8 +251,13 @@ class StubSaveDataRepository : SaveDataRepository {
     var downloadActiveSaveDataCallCount = 0; private set
     var lastSavedSRAMData: ByteArray? = null; private set
 
+    var zipSaveDirectoryCallCount = 0; private set
+    var unzipToSaveDirectoryCallCount = 0; private set
+    var lastUnzippedData: ByteArray? = null; private set
+
     var loadLocalSRAMResult: ByteArray? = null
     var downloadActiveSaveDataResult: Result<ByteArray> = Result.success(ByteArray(0))
+    var zipSaveDirectoryResult: ByteArray? = null
 
     override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
     override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): Result<SaveData> {
@@ -276,6 +281,14 @@ class StubSaveDataRepository : SaveDataRepository {
         return loadLocalSRAMResult
     }
     override suspend fun getPendingSyncCount() = 0
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? {
+        zipSaveDirectoryCallCount++
+        return zipSaveDirectoryResult
+    }
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {
+        unzipToSaveDirectoryCallCount++
+        lastUnzippedData = data
+    }
 }
 
 class StubPreferencesRepository : PreferencesRepository {
@@ -473,6 +486,8 @@ private class StubFileStorage : com.spela.player.util.FileStorage {
     override suspend fun getFileSize(path: String): Long = 0
     override suspend fun listFiles(path: String): List<String> = emptyList()
     override suspend fun isDirectory(path: String): Boolean = false
+    override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+    override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
 }
 
 // ── ViewModel Builder ───────────────────────────────────────────────────────

@@ -691,6 +691,8 @@ class FakeFileStorage : FileStorage {
     override suspend fun getFileSize(path: String): Long = 0
     override suspend fun listFiles(path: String): List<String> = emptyList()
     override suspend fun isDirectory(path: String): Boolean = false
+    override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+    override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
 }
 
 class FakePreferencesRepository : PreferencesRepository {
@@ -1255,6 +1257,8 @@ class FakeSaveDataRepository : SaveDataRepository {
     override suspend fun loadLocalSRAM(gameId: String): ByteArray? = localSram[gameId]
 
     override suspend fun getPendingSyncCount(): Int = 0
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {}
 
     fun preAddSaveData(
         id: Long = 1,
