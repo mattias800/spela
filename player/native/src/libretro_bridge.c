@@ -572,16 +572,13 @@ static int core_load(const char *path) {
 #ifdef __ANDROID__
     /* Pass the JavaVM pointer to cores that need it for thread attachment.
      * dlopen() doesn't trigger JNI_OnLoad like System.loadLibrary() would,
-     * so we must do this manually. */
+     * so we must do this manually.
+     *
+     * NOTE: Do NOT call JNI_OnLoad generically — cores like Dolphin export
+     * JNI_OnLoad but expect app-specific Java classes (e.g.
+     * org.dolphinemu.dolphinemu.NativeLibrary) which don't exist in our app.
+     * Instead, use core-specific symbol lookups for cores that need the JVM. */
     if (g_jvm) {
-        /* Try JNI_OnLoad first (standard JNI mechanism) */
-        typedef jint (*JNI_OnLoad_fn)(JavaVM *, void *);
-        JNI_OnLoad_fn core_onload = (JNI_OnLoad_fn)dlsym(g_core.handle, "JNI_OnLoad");
-        if (core_onload) {
-            LOGI("Core exports JNI_OnLoad, calling with JavaVM*");
-            core_onload(g_jvm, NULL);
-        }
-
         /* Play! PS2 core: call Framework::CJavaVM::SetJavaVM(JavaVM*) directly.
          * Play! stores a static JavaVM* pointer via this method, which its
          * PS2VM worker thread needs for JNI AttachCurrentThread(). */
