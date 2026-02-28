@@ -229,6 +229,21 @@ object DefaultKeyMappings {
         ) + leftStickButtons,
     )
 
+    val GC = ConsoleButtonLayout(
+        consoleId = "gc",
+        displayName = "GameCube",
+        buttons = dpadButtons + listOf(
+            ButtonInfo(LibretroButtons.A, "A"),
+            ButtonInfo(LibretroButtons.B, "B"),
+            ButtonInfo(LibretroButtons.X, "X"),
+            ButtonInfo(LibretroButtons.Y, "Y"),
+            ButtonInfo(LibretroButtons.L, "L"),
+            ButtonInfo(LibretroButtons.R, "R"),
+            ButtonInfo(LibretroButtons.R2, "Z"),
+            ButtonInfo(LibretroButtons.START, "Start"),
+        ) + leftStickButtons + rightStickButtons,
+    )
+
     val SATURN = ConsoleButtonLayout(
         consoleId = "sat",
         displayName = "Saturn",
@@ -248,7 +263,7 @@ object DefaultKeyMappings {
     /** All known console layouts, indexed by console ID. */
     val allLayouts: Map<String, ConsoleButtonLayout> = listOf(
         NES, SNES, N64, GENESIS, GAMEBOY, GBA, PSX, PSP, NDS,
-        THREEDS, DREAMCAST, SATURN,
+        THREEDS, DREAMCAST, SATURN, GC,
     ).associateBy { it.consoleId }
 
     /**

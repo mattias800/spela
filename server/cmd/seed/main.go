@@ -79,6 +79,7 @@ func main() {
 		{Name: "genesis_plus_gx", DisplayName: "Genesis Plus GX", Description: "Sega 8/16-bit emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "beetle_psx_hw", DisplayName: "Beetle PSX HW", Description: "PlayStation emulator with hardware rendering", Platforms: "windows,linux,macos"},
 		{Name: "desmume", DisplayName: "DeSmuME", Description: "Nintendo DS emulator", Platforms: "windows,linux,macos"},
+		{Name: "dolphin", DisplayName: "Dolphin", Description: "GameCube and Wii emulator", Platforms: "windows,linux,macos,android"},
 	}
 	for _, core := range cores {
 		result := database.Where("name = ?", core.Name).FirstOrCreate(&core)

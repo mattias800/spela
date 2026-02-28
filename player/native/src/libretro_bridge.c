@@ -69,6 +69,11 @@ static struct {
 static int core_variable_count = 0;
 static bool core_variables_dirty = false;
 
+/* Track whether retro_run() has completed at least once.
+ * Some cores (e.g. Dolphin) crash if retro_serialize_size() is called
+ * before the core has fully initialized via its first retro_run(). */
+static bool g_first_frame_run = false;
+
 void core_variables_set(const char *key, const char *value) {
     /* Update existing variable if key matches */
     for (int i = 0; i < core_variable_count; i++) {
@@ -161,6 +166,13 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {
             *(const char **)data = g_core.save_dir;
+            return true;
+        }
+
+        case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY: {
+            /* Dolphin and other cores use this for supplementary data (Sys/).
+             * Point to system_dir which is where BIOS/system files live. */
+            *(const char **)data = g_core.system_dir;
             return true;
         }
 
@@ -277,6 +289,26 @@ static bool environment_callback(unsigned cmd, void *data) {
                         }
                     }
                 }
+
+                /* Dolphin: disable separate CPU thread to avoid deadlock.
+                 * In libretro mode, retro_run() is called synchronously by
+                 * the frontend. With dual-core enabled, Dolphin's CPU thread
+                 * and video thread deadlock ~24 frames in because retro_run()
+                 * IS the video thread — there's no separate one. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    bool is_dolphin = false;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "dolphin")) {
+                            is_dolphin = true;
+                            break;
+                        }
+                    }
+                    if (is_dolphin) {
+                        LOGI("Dolphin core detected, disabling dual-core CPU thread");
+                        core_variables_set("dolphin_main_cpu_thread", "disabled");
+                    }
+                }
 #endif
 
             }
@@ -307,6 +339,20 @@ static bool environment_callback(unsigned cmd, void *data) {
             /* No rumble support — return false so core falls back gracefully */
             return false;
 
+        case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
+            /* Return bitmask of supported input device types.
+             * We support joypad, analog, and pointer (touch). */
+            *(uint64_t *)data = (1 << RETRO_DEVICE_JOYPAD) |
+                                (1 << RETRO_DEVICE_ANALOG) |
+                                (1 << RETRO_DEVICE_POINTER);
+            return true;
+        }
+
+        case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
+            /* Core describes available controller types per port.
+             * Acknowledge so the core knows we received the info. */
+            return true;
+
         case RETRO_ENVIRONMENT_SET_GEOMETRY: {
             /* Core is informing us of a geometry change */
             struct retro_game_geometry *geom = (struct retro_game_geometry *)data;
@@ -323,16 +369,31 @@ static bool environment_callback(unsigned cmd, void *data) {
             return true;
         }
 
+        case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
+            /* Acknowledge achievement support query — we have RetroAchievements */
+            return true;
+
+        case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE: {
+            /* Tell core both audio and video are enabled.
+             * Bit 0 = video enabled, bit 1 = audio enabled. */
+            *(int *)data = 3;
+            return true;
+        }
+
+        case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+            /* Core declares serialization quirks — acknowledge */
+            return true;
+
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
             /* Tell cores which HW render context we prefer.
-             * On Android: prefer GLES3 — our EGL pbuffer + Vulkan presentation
-             * pipeline is proven (used by GLideN64/N64). Avoids Granite Vulkan
-             * crashes on Adreno GPUs (beetle_psx_hw, etc.).
-             * On desktop: prefer OpenGL Core for maximum compatibility.
-             * Cores that unconditionally use Vulkan (paraLLEl-RDP) ignore this
-             * and go through SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE instead. */
+             * On Android: prefer Vulkan — zero-copy compositing via VkImage,
+             * no readback overhead. Cores that support both Vulkan and GLES
+             * (e.g. Dolphin) will choose Vulkan. GLES-only cores (e.g. GLideN64)
+             * ignore this preference and request GLES via SET_HW_RENDER, which
+             * we also accept (the GLES pbuffer readback path remains active).
+             * On desktop: prefer OpenGL Core for maximum compatibility. */
 #ifdef __ANDROID__
-            *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;
+            *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
 #else
             *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
@@ -377,8 +438,16 @@ static bool environment_callback(unsigned cmd, void *data) {
                 cb->get_current_framebuffer = NULL;
                 cb->get_proc_address = NULL;
                 g_core.hw_render_enabled = true;
-                LOGI("Accepted Vulkan HW render (type=%u, depth=%d, stencil=%d)",
-                     cb->context_type, cb->depth, cb->stencil);
+                /* Tell GPU renderer about Y-axis convention so it can flip
+                 * the viewport when compositing HW-rendered frames. */
+                if (g_gpu_renderer) {
+                    gpu_renderer_set_hw_bottom_left_origin(g_gpu_renderer,
+                        cb->bottom_left_origin);
+                }
+                LOGI("Accepted Vulkan HW render (type=%u, depth=%d, stencil=%d, "
+                     "bottom_left_origin=%d, cache_context=%d)",
+                     cb->context_type, cb->depth, cb->stencil,
+                     cb->bottom_left_origin, cb->cache_context);
                 return true;
             }
             /* Accept GLES context types on Android (e.g. GLideN64) */
@@ -466,6 +535,7 @@ static bool environment_callback(unsigned cmd, void *data) {
 
 /* Load the libretro core from the given shared library path */
 static int core_load(const char *path) {
+    g_first_frame_run = false;
     if (g_core.handle) {
         LOGW("Core already loaded, unloading first");
         if (g_core.game_loaded) {
@@ -688,6 +758,12 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (g_core.hw_render_enabled &&
         g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
         (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer))) {
+        static int vk_skip_count = 0;
+        if (++vk_skip_count <= 5 || vk_skip_count % 300 == 0) {
+            LOGI("VK HW: skipping frame %d (renderer=%p active=%d)",
+                 vk_skip_count, (void*)g_gpu_renderer,
+                 g_gpu_renderer ? gpu_renderer_is_hw_render_active(g_gpu_renderer) : -1);
+        }
         return;
     }
     /* GLES HW render: skip frames until GPU renderer is ready for presentation.
@@ -708,7 +784,23 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         hw_gl_debug_reset_frame();
     }
 #endif
+#ifdef __ANDROID__
+    {
+        static int run_count = 0;
+        run_count++;
+        if (run_count <= 100 || run_count % 300 == 0) {
+            LOGI("retro_run ENTER: frame %d", run_count);
+        }
+        g_core.retro_run();
+        g_first_frame_run = true;
+        if (run_count <= 100 || run_count % 300 == 0) {
+            LOGI("retro_run EXIT: frame %d", run_count);
+        }
+    }
+#else
     g_core.retro_run();
+    g_first_frame_run = true;
+#endif
     /* Release GL context after retro_run() so subsequent GPU operations
      * (nativeGpuRenderToBgra) aren't affected by an active GL context */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
@@ -812,6 +904,9 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(jlong, nativeSerializeSize)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return 0;
+    /* Don't call retro_serialize_size before the core has run at least one frame.
+     * Some cores (e.g. Dolphin) boot asynchronously and crash if queried too early. */
+    if (!g_first_frame_run) return 0;
     return (jlong)g_core.retro_serialize_size();
 }
 
@@ -1148,7 +1243,22 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
 
 JNI_FUNC(void, nativeGpuRender)(JNIEnv *env, jobject thiz) {
     if (g_gpu_renderer) {
+#ifdef __ANDROID__
+        static int gpu_render_count = 0;
+        gpu_render_count++;
+        if (gpu_render_count <= 20 || gpu_render_count == 60) {
+            LOGI("nativeGpuRender ENTER #%d (active=%d hw=%d)",
+                 gpu_render_count,
+                 gpu_renderer_is_active(g_gpu_renderer),
+                 gpu_renderer_is_hw_render_active(g_gpu_renderer));
+        }
+#endif
         gpu_renderer_render(g_gpu_renderer);
+#ifdef __ANDROID__
+        if (gpu_render_count <= 20 || gpu_render_count == 60) {
+            LOGI("nativeGpuRender EXIT #%d", gpu_render_count);
+        }
+#endif
     }
 }
 

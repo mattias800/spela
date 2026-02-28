@@ -320,9 +320,17 @@ class EmulationViewModel(
                         }
 
                         libretroController.start()
+                        // Don't probe save state support immediately — some cores (e.g. Dolphin)
+                        // boot asynchronously and crash if retro_serialize_size is called too early.
+                        // Default to true, then re-check after the core has had time to initialize.
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = true, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
+                        }
+                        // Re-check save state support after core has run a few frames
+                        kotlinx.coroutines.delay(3000)
                         val saveStatesSupported = libretroController.supportsSaveStates()
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
+                            _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)

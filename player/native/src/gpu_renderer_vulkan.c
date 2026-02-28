@@ -63,9 +63,10 @@
  * in HW render callbacks instead of the handle parameter. */
 static struct gpu_renderer *g_hw_renderer = NULL;
 
-/* Push constant data passed to fragment shaders */
+/* Push constant data passed to vertex + fragment shaders */
 typedef struct {
     float texture_size[2];
+    float flip_y; /* 1.0 = flip Y (default for software), 0.0 = no flip (HW render) */
 } push_constants_t;
 
 struct gpu_renderer {
@@ -162,6 +163,7 @@ struct gpu_renderer {
 
     /* Vulkan HW render state (Phase 4) */
     bool hw_render_active;
+    bool hw_bottom_left_origin; /* core renders with OpenGL-style Y-up */
     struct retro_hw_render_interface_vulkan hw_vk_interface;
     struct retro_vulkan_image hw_current_image;
     VkSemaphore hw_wait_semaphores[MAX_HW_SEMAPHORES];
@@ -211,6 +213,8 @@ static bool copy_buffer_to_image(gpu_renderer_t *r, VkBuffer buffer,
 static bool create_offscreen_target(gpu_renderer_t *r, int width, int height);
 static bool create_offscreen_render_pass(gpu_renderer_t *r);
 static bool create_readback_buffer(gpu_renderer_t *r, VkDeviceSize size);
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
+    VkInstance instance, const char *pName);
 static void cleanup_offscreen(gpu_renderer_t *r);
 
 /* ===== Public API ===== */
@@ -574,11 +578,13 @@ void gpu_renderer_render(gpu_renderer_t *r) {
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
         r->pipeline_layout, 0, 1, &r->descriptor_set, 0, NULL);
 
-    /* Push constants: texture size for shader effects */
+    /* Push constants: texture size for shader effects + Y flip for software path */
     push_constants_t pc = {
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
+        .flip_y = 1.0f,
     };
-    vkCmdPushConstants(cmd, r->pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+    vkCmdPushConstants(cmd, r->pipeline_layout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(push_constants_t), &pc);
 
     /* Set viewport to maintain aspect ratio */
@@ -646,9 +652,9 @@ void gpu_renderer_render(gpu_renderer_t *r) {
     };
 
     result = vkQueuePresentKHR(r->graphics_queue, &present_info);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
-    } else if (result != VK_SUCCESS) {
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         VK_LOGE("vkQueuePresentKHR failed: %d", result);
     }
 
@@ -677,6 +683,18 @@ static void hw_vulkan_set_image(void *handle,
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
+    static int set_image_count = 0;
+    set_image_count++;
+    if (set_image_count <= 5 || set_image_count == 60) {
+        VK_LOGI("set_image #%d: view=%p layout=%d sems=%u qf=%u "
+                "ci_fmt=%d ci_type=%d",
+                set_image_count,
+                image ? (void*)(uintptr_t)image->image_view : NULL,
+                image ? (int)image->image_layout : -1,
+                num_semaphores, src_queue_family,
+                image ? (int)image->create_info.format : -1,
+                image ? (int)image->create_info.viewType : -1);
+    }
     if (image) {
         r->hw_current_image = *image;
     }
@@ -703,8 +721,21 @@ static void hw_vulkan_wait_sync_index(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r || !r->device) return;
-    vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
-                    VK_TRUE, UINT64_MAX);
+    static int wsi_count = 0;
+    wsi_count++;
+    if (wsi_count <= 10 || wsi_count == 60 || wsi_count % 300 == 0) {
+        VK_LOGI("wait_sync_index #%d: slot=%u ENTER", wsi_count, r->current_frame);
+    }
+    VkResult wr = vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
+                    VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
+    if (wr == VK_TIMEOUT) {
+        VK_LOGE("wait_sync_index #%d: TIMEOUT on fence slot %u!", wsi_count, r->current_frame);
+    } else if (wr != VK_SUCCESS) {
+        VK_LOGE("wait_sync_index #%d: fence wait error %d slot %u", wsi_count, wr, r->current_frame);
+    }
+    if (wsi_count <= 10 || wsi_count == 60 || wsi_count % 300 == 0) {
+        VK_LOGI("wait_sync_index #%d: slot=%u EXIT (result=%d)", wsi_count, r->current_frame, wr);
+    }
 }
 
 static void hw_vulkan_set_command_buffers(void *handle,
@@ -712,6 +743,11 @@ static void hw_vulkan_set_command_buffers(void *handle,
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r) return;
+    static int scb_count = 0;
+    scb_count++;
+    if (scb_count <= 5 || scb_count == 60) {
+        VK_LOGI("set_command_buffers #%d: num_cmd=%u", scb_count, num_cmd);
+    }
     r->hw_core_cmd_count = num_cmd < MAX_FRAMES_IN_FLIGHT ?
         num_cmd : MAX_FRAMES_IN_FLIGHT;
     for (uint32_t i = 0; i < r->hw_core_cmd_count; i++) {
@@ -722,6 +758,11 @@ static void hw_vulkan_set_command_buffers(void *handle,
 static void hw_vulkan_lock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
+    static int lq_count = 0;
+    lq_count++;
+    if (lq_count <= 5 || lq_count == 60 || lq_count % 300 == 0) {
+        VK_LOGI("lock_queue #%d", lq_count);
+    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_lock(&r->queue_mutex);
     }
@@ -730,6 +771,11 @@ static void hw_vulkan_lock_queue(void *handle) {
 static void hw_vulkan_unlock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
+    static int uq_count = 0;
+    uq_count++;
+    if (uq_count <= 5 || uq_count == 60 || uq_count % 300 == 0) {
+        VK_LOGI("unlock_queue #%d", uq_count);
+    }
     if (r && r->queue_mutex_initialized) {
         pthread_mutex_unlock(&r->queue_mutex);
     }
@@ -829,9 +875,14 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
     r->hw_core_cmd_count = 0;
 
     r->hw_render_active = true;
-    VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x)",
-            r->queue_family_index, (1u << MAX_FRAMES_IN_FLIGHT) - 1);
+    VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x, bottom_left=%d)",
+            r->queue_family_index, (1u << MAX_FRAMES_IN_FLIGHT) - 1,
+            r->hw_bottom_left_origin);
     return true;
+}
+
+void gpu_renderer_set_hw_bottom_left_origin(gpu_renderer_t *r, bool bottom_left) {
+    if (r) r->hw_bottom_left_origin = bottom_left;
 }
 
 void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
@@ -841,28 +892,50 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
 
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
     if (!r || !r->active || !r->hw_render_active) return;
+    static int hw_frame_count = 0;
+    hw_frame_count++;
     if (!r->hw_current_image.image_view) {
         static int no_image_count = 0;
-        if (++no_image_count <= 3) {
-            VK_LOGW("hw_render_frame: no image_view (set_image not called yet?) #%d", no_image_count);
+        if (++no_image_count <= 5 || no_image_count % 300 == 0) {
+            VK_LOGW("hw_render_frame #%d: no image_view (set_image not called yet?) #%d", hw_frame_count, no_image_count);
         }
         return;
+    }
+
+    bool verbose = (hw_frame_count <= 10 || hw_frame_count == 60 || hw_frame_count == 300);
+    if (verbose) {
+        VK_LOGI("hw_render_frame #%d: %ux%u view=%p slot=%u", hw_frame_count, width, height,
+                (void*)(uintptr_t)r->hw_current_image.image_view, r->current_frame);
     }
 
     r->frame_width = width;
     r->frame_height = height;
 
     /* Wait for the previous frame using this slot to finish */
-    vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
-                    VK_TRUE, UINT64_MAX);
+    if (verbose) VK_LOGI("hw_render_frame #%d: WaitFence[%u] ENTER", hw_frame_count, r->current_frame);
+    VkResult fence_result = vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
+                    VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
+    if (fence_result == VK_TIMEOUT) {
+        VK_LOGE("hw_render_frame #%d: WaitFence[%u] TIMEOUT! Deadlock?", hw_frame_count, r->current_frame);
+        return;
+    } else if (fence_result != VK_SUCCESS) {
+        VK_LOGE("hw_render_frame #%d: WaitFence[%u] error=%d", hw_frame_count, r->current_frame, fence_result);
+        return;
+    }
+    if (verbose) VK_LOGI("hw_render_frame #%d: WaitFence[%u] OK", hw_frame_count, r->current_frame);
 
     /* Acquire next swapchain image */
     uint32_t image_index;
-    VkResult result = vkAcquireNextImageKHR(r->device, r->swapchain, UINT64_MAX,
+    if (verbose) VK_LOGI("hw_render_frame #%d: AcquireImage ENTER", hw_frame_count);
+    VkResult result = vkAcquireNextImageKHR(r->device, r->swapchain, (uint64_t)2000000000,
         r->image_available_semaphores[r->current_frame], VK_NULL_HANDLE, &image_index);
+    if (verbose) VK_LOGI("hw_render_frame #%d: AcquireImage result=%d idx=%u", hw_frame_count, result, image_index);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
+        return;
+    } else if (result == VK_TIMEOUT) {
+        VK_LOGE("hw_render_frame #%d: AcquireImage TIMEOUT!", hw_frame_count);
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         VK_LOGE("HW render: vkAcquireNextImageKHR failed: %d", result);
@@ -938,8 +1011,10 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
 
     push_constants_t pc = {
         .texture_size = { (float)width, (float)height },
+        .flip_y = 0.0f, /* HW render: core's VkImage is already correct orientation */
     };
-    vkCmdPushConstants(cmd, r->pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+    vkCmdPushConstants(cmd, r->pipeline_layout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(push_constants_t), &pc);
 
     /* Viewport with aspect ratio */
@@ -1015,14 +1090,20 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pSignalSemaphores = signal_sems,
     };
 
+    if (verbose) VK_LOGI("hw_render_frame #%d: QueueSubmit ENTER (cmds=%u waits=%u sigs=%u)",
+                         hw_frame_count, submit_cmd_count, wait_count, signal_count);
     pthread_mutex_lock(&r->queue_mutex);
     result = vkQueueSubmit(r->graphics_queue, 1, &submit_info,
                            r->in_flight_fences[r->current_frame]);
     pthread_mutex_unlock(&r->queue_mutex);
 
     if (result != VK_SUCCESS) {
-        VK_LOGE("HW render: vkQueueSubmit failed: %d", result);
+        VK_LOGE("hw_render_frame #%d: vkQueueSubmit FAILED: %d (fence[%u] will never signal!)",
+                hw_frame_count, result, r->current_frame);
+        /* Fence was reset but submit failed — re-signal it to prevent deadlock */
+        return;
     }
+    if (verbose) VK_LOGI("hw_render_frame #%d: QueueSubmit OK", hw_frame_count);
 
     /* Present */
     VkSemaphore present_wait[] = { r->render_finished_semaphores[r->current_frame] };
@@ -1035,13 +1116,15 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pImageIndices = &image_index,
     };
 
+    if (verbose) VK_LOGI("hw_render_frame #%d: QueuePresent ENTER", hw_frame_count);
     pthread_mutex_lock(&r->queue_mutex);
     result = vkQueuePresentKHR(r->graphics_queue, &present_info);
     pthread_mutex_unlock(&r->queue_mutex);
+    if (verbose) VK_LOGI("hw_render_frame #%d: QueuePresent result=%d", hw_frame_count, result);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
-    } else if (result != VK_SUCCESS) {
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         VK_LOGE("HW render: vkQueuePresentKHR failed: %d", result);
     }
 
@@ -1205,8 +1288,10 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 
     push_constants_t pc = {
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
+        .flip_y = 1.0f,
     };
-    vkCmdPushConstants(cmd, r->pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+    vkCmdPushConstants(cmd, r->pipeline_layout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(push_constants_t), &pc);
 
     /* Set viewport to maintain aspect ratio */
@@ -1856,6 +1941,19 @@ static bool create_swapchain(gpu_renderer_t *r) {
         image_count = capabilities.maxImageCount;
     }
 
+    /* Use IDENTITY preTransform and let the compositor handle rotation.
+     * Using currentTransform (e.g. ROTATE_90) would require us to pre-rotate
+     * all rendering, AND Vulkan HW render cores (Dolphin/Granite) detect the
+     * surface transform and pre-rotate their offscreen images, causing double
+     * rotation when we composite them. IDENTITY avoids this entirely.
+     * We already handle VK_SUBOPTIMAL_KHR (don't recreate swapchain). */
+    VkSurfaceTransformFlagBitsKHR pre_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    if (!(capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)) {
+        pre_transform = capabilities.currentTransform;
+    }
+    VK_LOGI("create_swapchain: extent=%ux%u currentTransform=0x%x preTransform=0x%x",
+            extent.width, extent.height, capabilities.currentTransform, pre_transform);
+
     VkSwapchainCreateInfoKHR create_info = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = r->surface,
@@ -1866,7 +1964,7 @@ static bool create_swapchain(gpu_renderer_t *r) {
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+        .preTransform = pre_transform,
         .compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
         .presentMode = present_mode,
         .clipped = VK_TRUE,
@@ -1986,7 +2084,7 @@ static bool create_descriptor_layout(gpu_renderer_t *r) {
 
 static bool create_pipeline_layout(gpu_renderer_t *r) {
     VkPushConstantRange push_range = {
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         .offset = 0,
         .size = sizeof(push_constants_t),
     };

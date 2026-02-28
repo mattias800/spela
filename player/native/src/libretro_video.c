@@ -22,6 +22,12 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#define VID_TAG "SpelaVideo"
+#define VID_LOGI(...) __android_log_print(ANDROID_LOG_INFO, VID_TAG, __VA_ARGS__)
+#endif
+
 static struct {
     void    *frame_buffer;
     size_t   frame_buffer_size;
@@ -83,6 +89,18 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
     if (!data) return;
 
 #ifdef __ANDROID__
+    {
+        static int vr_count = 0;
+        vr_count++;
+        if (vr_count <= 5 || vr_count == 60 || vr_count == 300) {
+            VID_LOGI("video_refresh #%d: data=%p hw_valid=%d hw_en=%d %ux%u gpu=%p",
+                     vr_count, data,
+                     data == RETRO_HW_FRAME_BUFFER_VALID,
+                     g_core.hw_render_enabled,
+                     width, height,
+                     (void*)video_state.gpu_renderer);
+        }
+    }
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
         /* Vulkan HW render path: core rendered to its own VkImage */
         if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer) &&
@@ -90,9 +108,12 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             gpu_renderer_hw_render_frame(video_state.gpu_renderer, width, height);
             return;
         }
-        /* GLES HW render path: readback from pbuffer, upload through Vulkan pipeline */
+        /* GLES HW render path: readback from pbuffer, upload through Vulkan pipeline.
+         * Read pixels FIRST from the current pbuffer (the core just rendered to it),
+         * then resize the pbuffer for the next frame if dimensions changed. */
         if (g_core.hw_gl_ctx) {
-            hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
+            static int gles_frame_count = 0;
+            gles_frame_count++;
 
             size_t needed = (size_t)width * height * 4;
             if (needed > video_state.frame_buffer_size) {
@@ -105,6 +126,18 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             unsigned rb_w = 0, rb_h = 0;
             unsigned pixels = hw_gl_read_pixels(g_core.hw_gl_ctx, video_state.frame_buffer,
                                                 video_state.frame_buffer_size, &rb_w, &rb_h);
+
+            /* Log first few frames and periodically for diagnostics */
+            if (gles_frame_count <= 5 || gles_frame_count == 60 || gles_frame_count == 300) {
+                uint32_t nonzero = 0;
+                uint32_t *px = (uint32_t *)video_state.frame_buffer;
+                for (unsigned i = 0; i < rb_w * rb_h && i < 100000; i++) {
+                    if (px[i] != 0 && px[i] != 0xFF000000) nonzero++;
+                }
+                VID_LOGI("GLES readback frame %d: core=%ux%u pb=%ux%u pixels=%u nonzero=%u",
+                         gles_frame_count, width, height, rb_w, rb_h, pixels, nonzero);
+            }
+
             if (pixels > 0) {
                 video_state.width = rb_w;
                 video_state.height = rb_h;
@@ -115,6 +148,9 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
                         rb_w, rb_h, rb_w * 4, RETRO_PIXEL_FORMAT_XRGB8888);
                 }
             }
+
+            /* Resize pbuffer for next frame if core reported different dimensions */
+            hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
             return;
         }
     }
