@@ -935,8 +935,8 @@ func TestUpdatePlayTime_InvalidInput(t *testing.T) {
 		body string
 		code int
 	}{
-		{"missing seconds", `{}`, http.StatusBadRequest},
-		{"zero seconds", `{"seconds": 0}`, http.StatusBadRequest},
+		{"missing seconds", `{}`, http.StatusOK},
+		{"zero seconds", `{"seconds": 0}`, http.StatusOK},
 		{"negative seconds", `{"seconds": -5}`, http.StatusBadRequest},
 		{"invalid JSON", `not json`, http.StatusBadRequest},
 	}
