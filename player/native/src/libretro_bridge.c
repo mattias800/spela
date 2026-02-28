@@ -835,23 +835,8 @@ JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
         hw_gl_debug_reset_frame();
     }
 #endif
-#ifdef __ANDROID__
-    {
-        static int run_count = 0;
-        run_count++;
-        if (run_count <= 100 || run_count % 300 == 0) {
-            LOGI("retro_run ENTER: frame %d", run_count);
-        }
-        g_core.retro_run();
-        g_first_frame_run = true;
-        if (run_count <= 100 || run_count % 300 == 0) {
-            LOGI("retro_run EXIT: frame %d", run_count);
-        }
-    }
-#else
     g_core.retro_run();
     g_first_frame_run = true;
-#endif
     /* Release GL context after retro_run() so subsequent GPU operations
      * (nativeGpuRenderToBgra) aren't affected by an active GL context */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
@@ -1294,22 +1279,7 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
 
 JNI_FUNC(void, nativeGpuRender)(JNIEnv *env, jobject thiz) {
     if (g_gpu_renderer) {
-#ifdef __ANDROID__
-        static int gpu_render_count = 0;
-        gpu_render_count++;
-        if (gpu_render_count <= 20 || gpu_render_count == 60) {
-            LOGI("nativeGpuRender ENTER #%d (active=%d hw=%d)",
-                 gpu_render_count,
-                 gpu_renderer_is_active(g_gpu_renderer),
-                 gpu_renderer_is_hw_render_active(g_gpu_renderer));
-        }
-#endif
         gpu_renderer_render(g_gpu_renderer);
-#ifdef __ANDROID__
-        if (gpu_render_count <= 20 || gpu_render_count == 60) {
-            LOGI("nativeGpuRender EXIT #%d", gpu_render_count);
-        }
-#endif
     }
 }
 
