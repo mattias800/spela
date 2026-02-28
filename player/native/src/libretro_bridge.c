@@ -680,6 +680,17 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
              g_core.av_info.timing.fps,
              g_core.av_info.timing.sample_rate);
 
+        /* Set controller port device type for all ports.
+         * Cores like Dolphin require this handshake to enable input.
+         * RETRO_DEVICE_JOYPAD (1) is the standard digital gamepad.
+         * This must be called after retro_load_game(). */
+        if (g_core.retro_set_controller_port_device) {
+            for (unsigned port = 0; port < 4; port++) {
+                g_core.retro_set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+            }
+            LOGI("Set controller port device (JOYPAD) for ports 0-3");
+        }
+
         /* Initialize OpenGL/GLES HW render context if the core requested it.
          * On Android, this only applies to GLES context types (GLideN64);
          * Vulkan HW render (paraLLEl-RDP) is initialized later in gpuInit. */
