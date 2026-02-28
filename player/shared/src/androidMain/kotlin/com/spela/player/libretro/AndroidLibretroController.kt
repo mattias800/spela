@@ -225,6 +225,8 @@ class AndroidLibretroController(
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
     fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()
+    fun gpuSuspend() = jni.nativeGpuSuspend()
+    fun gpuResume(surface: Any): Boolean = jni.nativeGpuResume(surface)
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
     override fun isHwRenderEnabled(): Boolean = jni.nativeIsHwRenderEnabled()

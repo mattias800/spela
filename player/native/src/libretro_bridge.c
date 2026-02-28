@@ -1302,6 +1302,34 @@ JNI_FUNC(void, nativeGpuResize)(JNIEnv *env, jobject thiz, jint width, jint heig
     }
 }
 
+JNI_FUNC(void, nativeGpuSuspend)(JNIEnv *env, jobject thiz) {
+    if (g_gpu_renderer) {
+        gpu_renderer_suspend_surface(g_gpu_renderer);
+        LOGI("GPU surface suspended");
+    }
+}
+
+JNI_FUNC(jboolean, nativeGpuResume)(JNIEnv *env, jobject thiz, jobject surface) {
+#ifdef __ANDROID__
+    if (!g_gpu_renderer) return JNI_FALSE;
+    ANativeWindow *window = ANativeWindow_fromSurface(env, surface);
+    if (!window) {
+        LOGE("Failed to get ANativeWindow for resume");
+        return JNI_FALSE;
+    }
+    bool ok = gpu_renderer_resume_surface(g_gpu_renderer, window);
+    ANativeWindow_release(window);
+    if (ok) {
+        LOGI("GPU surface resumed");
+    } else {
+        LOGE("Failed to resume GPU surface");
+    }
+    return ok ? JNI_TRUE : JNI_FALSE;
+#else
+    return JNI_FALSE;
+#endif
+}
+
 JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
     if (g_gpu_renderer) {
 #ifdef __ANDROID__

@@ -39,6 +39,13 @@ bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_deinit_surface(gpu_renderer_t *r);
 
+/* Surface suspend/resume — used when the surface is temporarily destroyed
+ * (e.g. Android SurfaceView hidden for overlay). Destroys only the swapchain
+ * and VkSurface, keeping the Vulkan device and HW render context alive.
+ * This avoids calling context_destroy/context_reset on the core. */
+void gpu_renderer_suspend_surface(gpu_renderer_t *r);
+bool gpu_renderer_resume_surface(gpu_renderer_t *r, void *native_surface);
+
 /* Rendering */
 void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
     unsigned width, unsigned height, size_t pitch, unsigned pixel_format);

@@ -18,7 +18,10 @@ import com.spela.player.presentation.ui.feature.shader.gpuShaderId
  * swapchain above the app window. Without this, the SurfaceView renders behind
  * the app window, and the opaque Compose/theme layers occlude it.
  *
- * Compose overlays (touch gamepad, HUD, settings) render on top of this surface.
+ * When the in-game overlay is shown, we toggle [SurfaceView.setZOrderOnTop] to
+ * push the surface behind Compose content so the overlay is visible. This avoids
+ * destroying the surface (and the Vulkan context), which would crash HW render
+ * cores like Dolphin that can't handle context teardown/rebuild.
  */
 @Composable
 fun VulkanEmulationSurface(
@@ -34,6 +37,18 @@ fun VulkanEmulationSurface(
                 holder.addCallback(object : SurfaceHolder.Callback {
                     override fun surfaceCreated(holder: SurfaceHolder) {
                         Log.i(TAG, "Vulkan surface created")
+                        if (controller.gpuIsActive()) {
+                            Log.i(TAG, "GPU already active, skipping init")
+                            return
+                        }
+                        // Try to resume a suspended renderer first
+                        val resumed = controller.gpuResume(holder.surface)
+                        if (resumed) {
+                            controller.gpuSetShader(selectedShader.gpuShaderId)
+                            Log.i(TAG, "Vulkan GPU renderer resumed")
+                            return
+                        }
+                        // First-time init
                         val success = controller.gpuInit(holder.surface)
                         if (success) {
                             controller.gpuSetShader(selectedShader.gpuShaderId)
@@ -58,22 +73,20 @@ fun VulkanEmulationSurface(
                     override fun surfaceDestroyed(holder: SurfaceHolder) {
                         Log.i(TAG, "Vulkan surface destroyed")
                         if (controller.gpuIsActive()) {
-                            controller.gpuDeinit()
+                            // Suspend instead of full deinit — keeps Vulkan device
+                            // and HW render context alive so the core isn't disrupted.
+                            controller.gpuSuspend()
                         }
                     }
                 })
             }
         },
         update = { surfaceView ->
-            // Hide the SurfaceView when an overlay is showing. Since setZOrderOnTop(true)
-            // renders the Surface above the entire Compose layer, the overlay (which is
-            // Compose content) would be invisible behind it. INVISIBLE keeps the Surface
-            // alive (no surfaceDestroyed) while letting Compose overlays render on top.
-            surfaceView.visibility = if (isOverlayVisible) {
-                android.view.View.INVISIBLE
-            } else {
-                android.view.View.VISIBLE
-            }
+            // Toggle z-ordering instead of visibility. When the overlay is showing,
+            // push the SurfaceView behind Compose so the overlay is visible on top.
+            // This keeps the surface alive (no surfaceDestroyed), avoiding Vulkan
+            // context teardown that crashes HW render cores like Dolphin.
+            surfaceView.setZOrderOnTop(!isOverlayVisible)
         },
         modifier = modifier.fillMaxSize(),
     )
@@ -84,6 +97,16 @@ fun VulkanEmulationSurface(
             controller.gpuSetShader(selectedShader.gpuShaderId)
         }
         onDispose { }
+    }
+
+    // Full cleanup when this composable is permanently removed from the tree
+    DisposableEffect(Unit) {
+        onDispose {
+            Log.i(TAG, "VulkanEmulationSurface composable disposed")
+            if (controller.gpuIsActive()) {
+                controller.gpuDeinit()
+            }
+        }
     }
 }
 

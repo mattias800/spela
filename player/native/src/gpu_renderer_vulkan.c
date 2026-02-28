@@ -321,6 +321,54 @@ void gpu_renderer_resize(gpu_renderer_t *r, int width, int height) {
     recreate_swapchain(r);
 }
 
+void gpu_renderer_suspend_surface(gpu_renderer_t *r) {
+    if (!r || !r->surface_initialized) return;
+    /* Stop rendering FIRST so the core's render thread won't enter
+     * hw_render_frame / gpu_renderer_render while we tear down. */
+    r->active = false;
+    /* Serialize with any in-flight queue submission from the render thread */
+    if (r->queue_mutex_initialized) pthread_mutex_lock(&r->queue_mutex);
+    if (r->device) vkDeviceWaitIdle(r->device);
+    if (r->queue_mutex_initialized) pthread_mutex_unlock(&r->queue_mutex);
+    cleanup_swapchain(r);
+    if (r->surface) {
+        vkDestroySurfaceKHR(r->instance, r->surface, NULL);
+        r->surface = VK_NULL_HANDLE;
+    }
+#ifdef __ANDROID__
+    if (r->native_window) {
+        ANativeWindow_release(r->native_window);
+        r->native_window = NULL;
+    }
+#endif
+    VK_LOGI("Surface suspended (swapchain+surface destroyed, device kept)");
+}
+
+bool gpu_renderer_resume_surface(gpu_renderer_t *r, void *native_surface) {
+    if (!r || !r->surface_initialized) return false;
+#ifdef __ANDROID__
+    r->native_window = (ANativeWindow *)native_surface;
+    ANativeWindow_acquire(r->native_window);
+    VkAndroidSurfaceCreateInfoKHR surface_info = {
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .window = r->native_window,
+    };
+    if (vkCreateAndroidSurfaceKHR(r->instance, &surface_info, NULL, &r->surface) != VK_SUCCESS) {
+        VK_LOGE("Failed to create Android surface for resume");
+        return false;
+    }
+#else
+    (void)native_surface;
+    VK_LOGE("resume_surface not implemented on desktop");
+    return false;
+#endif
+    if (!create_swapchain(r)) return false;
+    if (!create_framebuffers(r)) return false;
+    r->active = true;
+    VK_LOGI("Surface resumed (swapchain=%ux%u)", r->swapchain_extent.width, r->swapchain_extent.height);
+    return true;
+}
+
 void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
     if (!r || !r->surface_initialized) return;
     if (r->device) {
