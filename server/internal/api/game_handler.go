@@ -302,6 +302,9 @@ func (h *GameHandler) ListSaves(c *gin.Context) {
 		return
 	}
 
+	for i := range saves {
+		saves[i].ScreenshotURL = resolveImageURL(saves[i].ScreenshotURL)
+	}
 	c.JSON(http.StatusOK, saves)
 }
 
@@ -365,6 +368,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 		return
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusCreated, save)
 }
 
@@ -487,6 +491,7 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 		h.DB.Delete(&old)
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusOK, save)
 }
 

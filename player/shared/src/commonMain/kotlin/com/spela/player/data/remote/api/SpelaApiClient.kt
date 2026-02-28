@@ -103,6 +103,18 @@ class SpelaApiClient(
         return "$baseUrl$path"
     }
 
+    /**
+     * Resolves a URL and appends the auth token as a query parameter.
+     * Save screenshots are served via the auth-protected image handler,
+     * which accepts a `?token=` query param for image requests.
+     */
+    fun resolveAuthenticatedUrl(path: String?): String? {
+        val resolved = resolveUrl(path) ?: return null
+        val token = tokenManager.accessToken ?: return resolved
+        val separator = if ('?' in resolved) '&' else '?'
+        return "${resolved}${separator}token=$token"
+    }
+
     // Health
 
     suspend fun healthCheck(): Boolean {

@@ -30,6 +30,13 @@ export function SaveStatesList({ saves, gameId }: SaveStatesListProps) {
         <div className="space-y-2">
           {saves.map((save) => (
             <div key={save.id} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-800/30 hover:bg-surface-800/50 transition-colors">
+                {save.screenshotUrl && (
+                  <img
+                    src={`${save.screenshotUrl}${save.screenshotUrl.includes("?") ? "&" : "?"}token=${localStorage.getItem("accessToken")}`}
+                    alt=""
+                    className="w-16 h-12 rounded object-cover bg-surface-800 flex-shrink-0"
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-surface-100">
                     {save.name}

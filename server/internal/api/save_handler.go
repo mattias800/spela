@@ -78,6 +78,7 @@ func (h *SaveHandler) RenameSave(c *gin.Context) {
 		return
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusOK, save)
 }
 
@@ -112,6 +113,7 @@ func (h *SaveHandler) UpdateNotes(c *gin.Context) {
 		return
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusOK, save)
 }
 
@@ -130,6 +132,9 @@ func (h *SaveHandler) GetAutoSaveHistory(c *gin.Context) {
 		return
 	}
 
+	for i := range saves {
+		saves[i].ScreenshotURL = resolveImageURL(saves[i].ScreenshotURL)
+	}
 	c.JSON(http.StatusOK, saves)
 }
 
@@ -334,6 +339,7 @@ func (h *SaveHandler) ImportSave(c *gin.Context) {
 		return
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusCreated, save)
 }
 
@@ -412,6 +418,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 		h.DB.Save(&save)
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusOK, save)
 }
 
@@ -457,6 +464,9 @@ func (h *SaveHandler) ListSlotSaves(c *gin.Context) {
 		return
 	}
 
+	for i := range saves {
+		saves[i].ScreenshotURL = resolveImageURL(saves[i].ScreenshotURL)
+	}
 	c.JSON(http.StatusOK, saves)
 }
 

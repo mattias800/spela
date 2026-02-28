@@ -86,6 +86,7 @@ export interface SaveState {
   name: string;
   fileSize: number;
   isAuto: boolean;
+  screenshotUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
