@@ -176,6 +176,12 @@ struct gpu_renderer {
     pthread_mutex_t queue_mutex;
     bool queue_mutex_initialized;
 
+    /* Actual surface dimensions (what the user sees, from SurfaceView callback).
+     * May differ from swapchain_extent when preTransform = IDENTITY and the
+     * compositor handles rotation. Used for viewport/aspect ratio calculations. */
+    uint32_t surface_width;
+    uint32_t surface_height;
+
     /* Native window handle */
 #ifdef __ANDROID__
     ANativeWindow *native_window;
@@ -296,13 +302,21 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
 
     r->surface_initialized = true;
     r->active = true;
-    VK_LOGI("Vulkan GPU renderer initialized (%ux%u)",
-            r->swapchain_extent.width, r->swapchain_extent.height);
+    /* Initialize surface dimensions from swapchain extent (correct at startup) */
+    if (r->surface_width == 0) {
+        r->surface_width = r->swapchain_extent.width;
+        r->surface_height = r->swapchain_extent.height;
+    }
+    VK_LOGI("Vulkan GPU renderer initialized (swapchain=%ux%u, surface=%ux%u)",
+            r->swapchain_extent.width, r->swapchain_extent.height,
+            r->surface_width, r->surface_height);
     return true;
 }
 
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height) {
     if (!r || !r->surface_initialized) return;
+    r->surface_width = (uint32_t)width;
+    r->surface_height = (uint32_t)height;
     VK_LOGI("Surface resize: %dx%d", width, height);
     recreate_swapchain(r);
 }
@@ -587,11 +601,15 @@ void gpu_renderer_render(gpu_renderer_t *r) {
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(push_constants_t), &pc);
 
-    /* Set viewport to maintain aspect ratio */
+    /* Set viewport to maintain aspect ratio.
+     * Use surface dimensions (actual visible area) rather than swapchain extent,
+     * because with preTransform=IDENTITY the swapchain extent may not match
+     * the visible area after rotation. Fall back to swapchain extent if
+     * surface dimensions aren't set yet. */
     float src_w = r->source_rect_set ? (float)r->source_w : (float)r->frame_width;
     float src_h = r->source_rect_set ? (float)r->source_h : (float)r->frame_height;
-    float dst_w = (float)r->swapchain_extent.width;
-    float dst_h = (float)r->swapchain_extent.height;
+    float dst_w = r->surface_width  ? (float)r->surface_width  : (float)r->swapchain_extent.width;
+    float dst_h = r->surface_height ? (float)r->surface_height : (float)r->swapchain_extent.height;
     float scale_x = dst_w / src_w;
     float scale_y = dst_h / src_h;
     float scale = scale_x < scale_y ? scale_x : scale_y;
@@ -1017,11 +1035,12 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(push_constants_t), &pc);
 
-    /* Viewport with aspect ratio */
+    /* Viewport with aspect ratio — use surface dimensions (actual visible area).
+     * Fall back to swapchain extent if surface dimensions aren't set yet. */
     float src_w = r->source_rect_set ? (float)r->source_w : (float)width;
     float src_h = r->source_rect_set ? (float)r->source_h : (float)height;
-    float dst_w = (float)r->swapchain_extent.width;
-    float dst_h = (float)r->swapchain_extent.height;
+    float dst_w = r->surface_width  ? (float)r->surface_width  : (float)r->swapchain_extent.width;
+    float dst_h = r->surface_height ? (float)r->surface_height : (float)r->swapchain_extent.height;
     float scale_x = dst_w / src_w;
     float scale_y = dst_h / src_h;
     float scale = scale_x < scale_y ? scale_x : scale_y;
@@ -1928,9 +1947,29 @@ static bool create_swapchain(gpu_renderer_t *r) {
     /* Choose present mode: prefer FIFO (vsync) */
     VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
-    /* Choose extent */
-    VkExtent2D extent = capabilities.currentExtent;
-    if (extent.width == UINT32_MAX) {
+    /* Choose extent.
+     * On Android with preTransform=IDENTITY, capabilities.currentExtent often
+     * lags one rotation behind the actual surface dimensions. Use the surface
+     * dimensions from the SurfaceView callback (stored in surface_width/height)
+     * when available, clamped to the capability limits. */
+    VkExtent2D extent;
+    if (r->surface_width > 0 && r->surface_height > 0) {
+        extent.width = r->surface_width;
+        extent.height = r->surface_height;
+        /* Clamp to capability limits */
+        if (extent.width < capabilities.minImageExtent.width)
+            extent.width = capabilities.minImageExtent.width;
+        if (extent.height < capabilities.minImageExtent.height)
+            extent.height = capabilities.minImageExtent.height;
+        if (capabilities.maxImageExtent.width > 0 &&
+            extent.width > capabilities.maxImageExtent.width)
+            extent.width = capabilities.maxImageExtent.width;
+        if (capabilities.maxImageExtent.height > 0 &&
+            extent.height > capabilities.maxImageExtent.height)
+            extent.height = capabilities.maxImageExtent.height;
+    } else if (capabilities.currentExtent.width != UINT32_MAX) {
+        extent = capabilities.currentExtent;
+    } else {
         extent.width = 800;
         extent.height = 600;
     }
@@ -1951,8 +1990,11 @@ static bool create_swapchain(gpu_renderer_t *r) {
     if (!(capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)) {
         pre_transform = capabilities.currentTransform;
     }
-    VK_LOGI("create_swapchain: extent=%ux%u currentTransform=0x%x preTransform=0x%x",
-            extent.width, extent.height, capabilities.currentTransform, pre_transform);
+    VK_LOGI("create_swapchain: extent=%ux%u (surface=%ux%u caps=%ux%u) currentTransform=0x%x preTransform=0x%x",
+            extent.width, extent.height,
+            r->surface_width, r->surface_height,
+            capabilities.currentExtent.width, capabilities.currentExtent.height,
+            capabilities.currentTransform, pre_transform);
 
     VkSwapchainCreateInfoKHR create_info = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
