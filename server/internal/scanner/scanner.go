@@ -541,6 +541,13 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 					"title", existing.Title, "gameId", existing.ID)
 				s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
 			}
+			// Fix console if directory indicates a different one (e.g. .cue in ps2/
+			// was previously identified as PSX via extension mapping)
+			if existing.ConsoleID != console.ID {
+				slog.Info("updating console for .cue game",
+					"title", existing.Title, "from", existing.ConsoleID, "to", console.ID)
+				s.DB.Model(&existing).Update("console_id", console.ID)
+			}
 			// Backfill disc record if missing
 			var discCount int64
 			s.DB.Model(&db.GameDisc{}).Where("game_id = ?", existing.ID).Count(&discCount)
@@ -562,40 +569,39 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 					})
 				}
 			}
-			continue
+		} else {
+			// Create new game with disc record
+			title := GameTitle(filepath.Base(cuePath))
+			game := db.Game{
+				ConsoleID: console.ID,
+				Title:     title,
+				FileName:  filepath.Base(cuePath),
+				FilePath:  relPath,
+				FileSize:  totalSize,
+				DiscCount: 1,
+			}
+			if err := s.DB.Create(&game).Error; err != nil {
+				slog.Warn("failed to create .cue game", "path", cuePath, "error", err)
+				continue
+			}
+
+			disc := db.GameDisc{
+				GameID:     game.ID,
+				DiscNumber: 1,
+				FilePath:   relPath,
+				FileName:   filepath.Base(cuePath),
+				FileSize:   totalSize,
+			}
+			if err := s.DB.Create(&disc).Error; err != nil {
+				slog.Warn("failed to create disc entry for .cue game", "path", cuePath, "error", err)
+			}
+
+			result.NewGames++
+			slog.Info("found standalone .cue game", "title", title, "console", console.Abbreviation)
 		}
 
-		// Create new game with disc record
-		title := GameTitle(filepath.Base(cuePath))
-		game := db.Game{
-			ConsoleID: console.ID,
-			Title:     title,
-			FileName:  filepath.Base(cuePath),
-			FilePath:  relPath,
-			FileSize:  totalSize,
-			DiscCount: 1,
-		}
-		if err := s.DB.Create(&game).Error; err != nil {
-			slog.Warn("failed to create .cue game", "path", cuePath, "error", err)
-			continue
-		}
-
-		disc := db.GameDisc{
-			GameID:     game.ID,
-			DiscNumber: 1,
-			FilePath:   relPath,
-			FileName:   filepath.Base(cuePath),
-			FileSize:   totalSize,
-		}
-		if err := s.DB.Create(&disc).Error; err != nil {
-			slog.Warn("failed to create disc entry for .cue game", "path", cuePath, "error", err)
-		}
-
-		result.NewGames++
-		slog.Info("found standalone .cue game", "title", title, "console", console.Abbreviation)
-
-		// Clean up old standalone entries for companion files (e.g. orphaned .bin game entries).
-		// Exclude the .cue itself — it's the new game's own path.
+		// Always clean up old standalone entries for companion files (e.g. orphaned
+		// .bin game entries), regardless of whether the .cue game already existed.
 		var binCompanions []string
 		for _, c := range companions {
 			if c != cuePath {

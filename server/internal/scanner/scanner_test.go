@@ -1047,6 +1047,61 @@ func TestScan_StandaloneCueBin_CleansUpOldBinEntry(t *testing.T) {
 	assert.Equal(t, 1, result.RemovedGames, "old .bin entry should be removed")
 }
 
+// When both a .cue and .bin entry exist from a prior scan, the .bin entry should
+// be removed even though the .cue entry already exists (no new game created).
+func TestScan_StandaloneCueBin_CleansUpBinWhenCueExists(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binPath := filepath.Join(psxDir, "SSX.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary game data"), 0644))
+
+	cuePath := filepath.Join(psxDir, "SSX.cue")
+	cueContent := "FILE \"SSX.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	// Simulate old scanner: created BOTH a .cue entry and a .bin entry
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	oldCueGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "SSX",
+		FileName:  "SSX.cue",
+		FilePath:  filepath.Join("psx", "SSX.cue"),
+		FileSize:  50,
+	}
+	require.NoError(t, database.Create(&oldCueGame).Error)
+
+	oldBinGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "SSX",
+		FileName:  "SSX.bin",
+		FilePath:  filepath.Join("psx", "SSX.bin"),
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&oldBinGame).Error)
+
+	var countBefore int64
+	database.Model(&db.Game{}).Count(&countBefore)
+	require.Equal(t, int64(2), countBefore)
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Only the .cue game should remain; the .bin entry should be cleaned up
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1, "should have exactly 1 game after cleanup")
+	assert.Equal(t, "SSX.cue", games[0].FileName, "remaining game should be the .cue")
+	assert.Equal(t, 0, result.NewGames, "no new game created — .cue already existed")
+	assert.Equal(t, 1, result.RemovedGames, "old .bin entry should be removed")
+}
+
 // Standalone .cue game that already exists in DB (from prior scan) should get
 // disc records backfilled.
 func TestScan_StandaloneCueBin_BackfillDiscRecord(t *testing.T) {
