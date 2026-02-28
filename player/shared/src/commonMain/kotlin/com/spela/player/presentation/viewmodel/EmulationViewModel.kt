@@ -326,6 +326,11 @@ class EmulationViewModel(
                         withContext(dispatchers.main) {
                             _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = true, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
                         }
+                        // Show secondary display as soon as possible — must be before
+                        // the 3-second delay below, otherwise the display stays blank
+                        // until achievements/heartbeats finish initializing.
+                        showSecondaryDisplayIfAvailable()
+
                         // Re-check save state support after core has run a few frames
                         kotlinx.coroutines.delay(3000)
                         val saveStatesSupported = libretroController.supportsSaveStates()
@@ -354,9 +359,6 @@ class EmulationViewModel(
                         if (challengeId != null) {
                             challengeManager.startChallengeTimer()
                         }
-
-                        // Show secondary display if available
-                        showSecondaryDisplayIfAvailable()
                     } catch (e: Exception) {
                         val errorMsg = if (_state.value.missingBiosFiles.isNotEmpty()) {
                             "Emulation failed -- this is likely because required BIOS files are missing"

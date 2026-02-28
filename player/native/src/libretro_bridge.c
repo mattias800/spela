@@ -400,7 +400,7 @@ static bool environment_callback(unsigned cmd, void *data) {
              * On desktop: prefer OpenGL Core for maximum compatibility. */
 #ifdef __ANDROID__
             if (g_core.system_info.library_name &&
-                strcmp(g_core.system_info.library_name, "Dolphin") == 0) {
+                strstr(g_core.system_info.library_name, "dolphin") != NULL) {
                 *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
             } else {
                 *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;

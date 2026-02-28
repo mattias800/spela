@@ -139,7 +139,7 @@ The bridge tells cores which HW render context to prefer via `RETRO_ENVIRONMENT_
 
 | Core | Preferred API | Reason |
 |------|--------------|--------|
-| Dolphin (GameCube/Wii) | Vulkan | Zero-copy compositing via VkImage, best performance |
+| Dolphin (GameCube/Wii) `dolphin-emu` | Vulkan | Zero-copy compositing via VkImage, best performance |
 | All other cores | GLES3 | Broad compatibility; DS, N64, PSX etc. work reliably with GLES |
 
 On desktop, all cores prefer OpenGL Core.
