@@ -36,6 +36,23 @@
       (function () {
         "use strict";
 
+        // Ensure WebGL contexts preserve their drawing buffer so that
+        // canvas.toDataURL() returns actual frame content for save-state
+        // screenshots instead of a cleared (transparent) buffer.
+        var _origGetContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+          if (
+            type === "webgl" ||
+            type === "webgl2" ||
+            type === "experimental-webgl"
+          ) {
+            attrs = Object.assign({}, attrs || {}, {
+              preserveDrawingBuffer: true,
+            });
+          }
+          return _origGetContext.call(this, type, attrs);
+        };
+
         var parentOrigin = window.location.origin;
 
         /** Send a typed message to the parent window. */

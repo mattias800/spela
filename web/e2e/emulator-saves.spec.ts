@@ -545,6 +545,37 @@ test.describe("Emulator Save State Sync", () => {
     });
   });
 
+  test.describe("Screenshot Content", () => {
+    test("WebGL contexts have preserveDrawingBuffer for screenshot capture", async ({
+      page,
+    }) => {
+      const gameId = await navigateToPlayPage(page);
+
+      await page.goto(`/games/${gameId}/play`);
+      await expect(
+        page.locator('iframe[src="/emulator.html"]'),
+      ).toBeVisible({ timeout: 15_000 });
+
+      // Access the iframe's frame context
+      const frame = page
+        .frames()
+        .find((f) => f.url().includes("emulator.html"));
+      expect(frame).toBeTruthy();
+
+      // Create a WebGL canvas inside the iframe and check that
+      // preserveDrawingBuffer is enabled. Without this attribute,
+      // canvas.toDataURL() returns transparent pixels after the browser
+      // composites the frame, producing empty save state screenshots.
+      const preserveDrawingBuffer = await frame!.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl");
+        return gl?.getContextAttributes()?.preserveDrawingBuffer ?? false;
+      });
+
+      expect(preserveDrawingBuffer).toBe(true);
+    });
+  });
+
   test.describe("Saving Indicator", () => {
     test("shows saving indicator when a save is in progress", async ({
       page,
