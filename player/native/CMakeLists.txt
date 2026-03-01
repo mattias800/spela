@@ -150,10 +150,11 @@ else()
                 dl
             )
         else()
-            # Windows: Vulkan (GL loaded at runtime via LoadLibrary)
+            # Windows: Vulkan + opengl32 (for wglGetProcAddress)
             target_link_libraries(spela-libretro
                 ${JNI_LIBRARIES}
                 ${Vulkan_LIBRARIES}
+                opengl32
             )
         endif()
     endif()
