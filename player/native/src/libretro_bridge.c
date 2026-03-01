@@ -7,9 +7,10 @@
  * Reference: RetroArch's core_ctl.c and runloop.c
  */
 
-#include "libretro_bridge.h"  /* includes sp_platform.h → windows.h on Win32 */
-
+#include "sp_platform.h"      /* must precede vulkan.h on Win32 (provides windows.h) */
 #include <vulkan/vulkan.h>
+
+#include "libretro_bridge.h"
 #include "libretro_achievements.h"
 #include "gpu_renderer.h"
 
