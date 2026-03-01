@@ -15,6 +15,8 @@
 #   SPELA_BASE_PATH         — host base path for all data (default: /docker/spela)
 #   SPELA_GAMES_PATH        — host path to ROM directory (default: $SPELA_BASE_PATH/games)
 #   SPELA_BIOS_PATH         — host path to BIOS directory (default: $SPELA_BASE_PATH/bios)
+#   SPELA_IGDB_CLIENT_ID    — IGDB / Twitch API credentials (game metadata)
+#   SPELA_IGDB_CLIENT_SECRET
 #   SPELA_SCRAPER_DEV_ID    — ScreenScraper dev credentials
 #   SPELA_SCRAPER_DEV_PASS
 #   SPELA_SCRAPER_USER
@@ -48,6 +50,8 @@ services:
       - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
       - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
       - SPELA_SCRAPER_USER_PASS=${SPELA_SCRAPER_USER_PASS:-}
+      - SPELA_IGDB_CLIENT_ID=${SPELA_IGDB_CLIENT_ID:-}
+      - SPELA_IGDB_CLIENT_SECRET=${SPELA_IGDB_CLIENT_SECRET:-}
       # TURN server credentials endpoint config
       - TURN_ENABLED=${TURN_ENABLED:-true}
       - TURN_HOST=${TURN_HOST:-}
