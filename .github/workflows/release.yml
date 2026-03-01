@@ -365,12 +365,23 @@ jobs:
             -o -name "*.msi" -o -name "*.AppImage" -o -name "*.flatpak" \
           \) -exec cp {} release/ \;
           cd release
+          # Rename APK (no version in build output filename)
           [ -f android-release.apk ] && mv android-release.apk "spela-${VERSION}-android.apk"
           [ -f app-release.apk ] && mv app-release.apk "spela-${VERSION}-android.apk"
+          # Rename AppImage/Flatpak (no version in build output filename)
           for f in Spela-x86_64.AppImage Spela-aarch64.AppImage; do
             [ -f "$f" ] && mv "$f" "${f/Spela-/Spela-${VERSION}-}"
           done
           [ -f spela.flatpak ] && mv spela.flatpak "spela-${VERSION}.flatpak"
+          # Fix DMG/MSI/DEB filenames: packaging bumps 0.x.y → 1.x.y for macOS
+          # compatibility, so replace the bumped version with the real tag version
+          if [[ "$VERSION" == 0.* ]]; then
+            PKG_VERSION="1${VERSION#0}"
+            for f in *; do
+              new="${f//$PKG_VERSION/$VERSION}"
+              [ "$f" != "$new" ] && mv "$f" "$new"
+            done
+          fi
           echo "Release artifacts:"
           ls -lh .
       - name: Create Release
