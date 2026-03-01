@@ -132,7 +132,8 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Spela"
-            packageVersion = "1.0.0"
+            val appVersion = project.findProperty("appVersion")?.toString() ?: "1.0.0"
+            packageVersion = appVersion
 
             macOS {
                 bundleID = "com.spela.player"

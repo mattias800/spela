@@ -128,7 +128,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :android:assembleRelease
+        run: ./gradlew :android:assembleRelease -PappVersion=${GITHUB_REF_NAME#v}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -196,7 +196,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build package
         working-directory: player
-        run: ./gradlew ${{ matrix.format }}
+        run: ./gradlew ${{ matrix.format }} -PappVersion=${GITHUB_REF_NAME#v}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -231,7 +231,7 @@ jobs:
             Linux-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable
+        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
       - name: Build AppImage
         working-directory: player
         run: bash linux/build-appimage.sh --arch x86_64
@@ -277,7 +277,7 @@ jobs:
             Linux-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable
+        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
       - name: Build Flatpak
         working-directory: player
         run: bash linux/flatpak/build-flatpak.sh
@@ -318,10 +318,10 @@ jobs:
             Linux-ARM64-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable
+        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
       - name: Build DEB
         working-directory: player
-        run: ./gradlew packageDeb
+        run: ./gradlew packageDeb -PappVersion=${GITHUB_REF_NAME#v}
       - name: Build AppImage
         working-directory: player
         run: bash linux/build-appimage.sh --arch aarch64
@@ -358,13 +358,21 @@ jobs:
           merge-multiple: true
       - name: Collect release files
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p release
           find artifacts -type f \( \
             -name "*.apk" -o -name "*.dmg" -o -name "*.deb" \
             -o -name "*.msi" -o -name "*.AppImage" -o -name "*.flatpak" \
           \) -exec cp {} release/ \;
+          cd release
+          [ -f android-release.apk ] && mv android-release.apk "spela-${VERSION}-android.apk"
+          [ -f app-release.apk ] && mv app-release.apk "spela-${VERSION}-android.apk"
+          for f in Spela-x86_64.AppImage Spela-aarch64.AppImage; do
+            [ -f "$f" ] && mv "$f" "${f/Spela-/Spela-${VERSION}-}"
+          done
+          [ -f spela.flatpak ] && mv spela.flatpak "spela-${VERSION}.flatpak"
           echo "Release artifacts:"
-          ls -lh release/
+          ls -lh .
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
