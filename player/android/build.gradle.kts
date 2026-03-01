@@ -42,7 +42,8 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.0"
+        val appVersion = project.findProperty("appVersion")?.toString() ?: "0.0.0-dev"
+        versionName = appVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
