@@ -15,14 +15,18 @@
 /* Only compile on non-Android, non-Apple desktop */
 #if !defined(__ANDROID__) && !defined(__APPLE__)
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
 #include <vulkan/vulkan.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifdef _WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan_win32.h>
-#include <windows.h>
 #elif defined(__linux__)
 
 /* X11 — always available */
