@@ -7,14 +7,14 @@ A Steam-like experience for retro games. Host your game library on a server, man
 
 ### 1. Backend Server (Go)
 - **Framework**: Gin (HTTP) + GORM (ORM)
-- **Database**: SQLite (default, self-hosted friendly) with PostgreSQL option
+- **Database**: SQLite (self-hosted friendly)
 - **Auth**: JWT tokens with refresh token rotation
 - **File Storage**: Local filesystem with configurable paths
 
 #### Key Features
 - Automatic game detection: scans configured directories for ROMs
 - Identifies console/platform by file extension and directory structure
-- Metadata scraping from public databases (IGDB, TheGamesDB, ScreenScraper)
+- Metadata scraping from public databases (IGDB and LibRetro Thumbnails)
 - User management with roles (admin, user)
 - Save state & save game sync per user per game
 - Cover art, screenshots, and game info storage
@@ -131,26 +131,36 @@ POST   /api/admin/scrape                # Admin: trigger metadata scrape
 - Render to platform-native surface (SurfaceView on Android, OpenGL on desktop)
 - Audio through platform audio APIs (Oboe on Android, OpenAL on desktop)
 - Input mapping from platform controllers to libretro's input abstraction
+- Single native bridge (`player/native/src/libretro_bridge.c`) handles all cores — per-core quirks are conditional branches, not separate implementations
 
-### 4. Supported Platforms/Consoles (Initial)
-| Console | Extensions | Recommended Core |
-|---------|-----------|-----------------|
-| NES | .nes, .fds | nestopia |
-| SNES | .sfc, .smc | snes9x |
-| Game Boy | .gb | gambatte |
-| Game Boy Color | .gbc | gambatte |
-| Game Boy Advance | .gba | mgba |
-| Nintendo 64 | .n64, .z64, .v64 | mupen64plus_next |
-| Nintendo DS | .nds | desmume |
-| Sega Master System | .sms | genesis_plus_gx |
-| Sega Genesis/Mega Drive | .md, .gen, .bin | genesis_plus_gx |
-| Sega Saturn | .iso, .bin/.cue | beetle_saturn |
-| PlayStation | .bin/.cue, .iso, .pbp | beetle_psx_hw |
-| PSP | .iso, .cso | ppsspp |
-| Neo Geo | .zip | fbneo |
-| Arcade (MAME) | .zip | mame2003_plus |
-| TurboGrafx-16 | .pce | beetle_pce |
-| Atari 2600 | .a26, .bin | stella |
+##### Per-Core Graphics API Selection (Android)
+
+The bridge tells cores which HW render context to prefer via `RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER`. This is configured per-core in `libretro_bridge.c` (`environment_callback`, case `RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER`):
+
+| Core | Preferred API | Reason |
+|------|--------------|--------|
+| Dolphin (GameCube/Wii) `dolphin-emu` | Vulkan | Zero-copy compositing via VkImage, best performance |
+| All other cores | GLES3 | Broad compatibility; DS, N64, PSX etc. work reliably with GLES |
+
+On desktop, all cores prefer OpenGL Core.
+
+Cores that only support one API will ignore this preference and request what they need via `SET_HW_RENDER` — the bridge accepts both Vulkan and GLES paths regardless of the preference.
+
+**To change a core's preferred API**, modify the `GET_PREFERRED_HW_RENDER` handler in `libretro_bridge.c` and add a `strcmp` check for the core's `library_name`. The core name is available via `g_core.system_info.library_name` (populated by `retro_get_system_info` before callbacks are registered).
+
+##### Per-Core Renderer Variables
+
+Some cores have internal renderer selection via core variables (separate from the HW render preference above). These are set in the `SET_VARIABLES` handler in `libretro_bridge.c`:
+
+| Core | Variable | Value | Reason |
+|------|----------|-------|--------|
+| mupen64plus_next (N64) | `mupen64plus-rdp-plugin` | `gliden64` (Android), `angrylion` (macOS) | GLES HW render on Android; software on macOS to avoid GL compositing issues |
+| beetle_psx_hw (PS1) | `beetle_psx_hw_renderer` | `hardware_gl` (Android) | Avoids Granite Vulkan crashes on Adreno GPUs |
+| Dolphin (GC/Wii) | `dolphin_cpu_thread` | `disabled` (Android) | Prevents deadlock with single-threaded libretro frontend |
+
+### 4. Supported Platforms/Consoles
+
+See the [Supported Consoles](README.md#supported-consoles) table in README.md for the full list of 36 supported systems.
 
 ### 5. Console/Platform Mapping
 Each console has:
@@ -171,7 +181,7 @@ Each console has:
 ## Tech Stack Summary
 | Component | Technology |
 |-----------|-----------|
-| Backend | Go 1.22+, Gin, GORM, SQLite/PostgreSQL |
+| Backend | Go 1.22+, Gin, GORM, SQLite |
 | Web Frontend | React 19, TypeScript, Vite, Tailwind CSS |
 | Player App | Kotlin Multiplatform, Compose Multiplatform |
 | Emulation | libretro (cores loaded dynamically) |
@@ -213,9 +223,9 @@ spela/
 │   ├── desktop/              # Desktop app module
 │   └── build.gradle.kts
 ├── docs/                      # Documentation
-│   ├── API.md
-│   ├── SETUP.md
-│   └── PLAYER_APP.md
+│   ├── DEPLOY.md              # Production deployment guide
+│   └── DEVELOPMENT.md         # Development setup guide
 ├── ARCHITECTURE.md            # This file
+├── CONTRIBUTING.md            # Contribution guidelines
 └── CLAUDE.md                  # Project conventions
 ```

@@ -87,7 +87,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } catch {
       message = body;
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message || `Request failed (${res.status})`);
   }
 
   if (res.status === 204) {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"io"
 	"log/slog"
@@ -164,6 +165,39 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		}
 	}
 
+	// For .cue/.gdi files, serve a tar/zip bundle with companion track files.
+	// This handles both new games (with disc records) and old DB entries
+	// (without disc records) that were created before the scanner change.
+	lower := strings.ToLower(game.FileName)
+	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
+		companions, _, err := scanner.DiscCompanionFiles(absPath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
+			return
+		}
+
+		format := c.Query("format")
+		if format == "zip" {
+			c.Header("Content-Type", "application/zip")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".zip"))
+			c.Status(http.StatusOK)
+			if err := serveZip(c.Writer, companions); err != nil {
+				slog.Warn("error streaming zip for .cue game", "game", game.Title, "error", err)
+			}
+			return
+		}
+
+		if len(companions) > 1 {
+			c.Header("Content-Type", "application/x-tar")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".tar"))
+			c.Status(http.StatusOK)
+			if err := serveTar(c.Writer, companions); err != nil {
+				slog.Warn("error streaming tar for .cue game", "game", game.Title, "error", err)
+			}
+			return
+		}
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
 	c.File(absPath)
 }
@@ -268,6 +302,9 @@ func (h *GameHandler) ListSaves(c *gin.Context) {
 		return
 	}
 
+	for i := range saves {
+		saves[i].ScreenshotURL = resolveImageURL(saves[i].ScreenshotURL)
+	}
 	c.JSON(http.StatusOK, saves)
 }
 
@@ -331,6 +368,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 		return
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusCreated, save)
 }
 
@@ -453,6 +491,7 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 		h.DB.Delete(&old)
 	}
 
+	save.ScreenshotURL = resolveImageURL(save.ScreenshotURL)
 	c.JSON(http.StatusOK, save)
 }
 
@@ -540,10 +579,10 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 	const maxPlayTimeSeconds int64 = 100 * 365 * 24 * 3600
 
 	var req struct {
-		Seconds int64 `json:"seconds" binding:"required,min=1,max=86400"`
+		Seconds int64 `json:"seconds" binding:"min=0,max=86400"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be between 1 and 86400"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be between 0 and 86400"})
 		return
 	}
 
@@ -627,6 +666,21 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		return
 	}
 
+	// EmulatorJS (browser emulation) supports zip but not tar, so the web
+	// frontend requests format=zip. This must be checked before the single-file
+	// early return so that even single-file discs (.iso, .chd) get zipped.
+	format := c.Query("format")
+	if format == "zip" {
+		c.Header("Content-Type", "application/zip")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".zip"))
+		c.Status(http.StatusOK)
+
+		if err := serveZip(c.Writer, companions); err != nil {
+			slog.Warn("error streaming zip for disc", "disc", discNumber, "error", err)
+		}
+		return
+	}
+
 	if len(companions) == 1 {
 		// Single file (.iso, .chd, etc.) — serve directly
 		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
@@ -634,7 +688,7 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 		return
 	}
 
-	// Multiple files (.cue + .bin) — serve as tar stream
+	// Default: tar stream (used by native player app)
 	c.Header("Content-Type", "application/x-tar")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".tar"))
 	c.Status(http.StatusOK)
@@ -671,6 +725,44 @@ func serveTar(w io.Writer, filePaths []string) error {
 		if _, err := io.Copy(tw, f); err != nil {
 			f.Close()
 			return fmt.Errorf("writing file %s to tar: %w", path, err)
+		}
+		f.Close()
+	}
+
+	return nil
+}
+
+// serveZip streams files as a zip archive. Used by EmulatorJS which supports
+// zip extraction but not tar.
+func serveZip(w io.Writer, filePaths []string) error {
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+
+	for _, path := range filePaths {
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("stat file %s: %w", path, err)
+		}
+
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return fmt.Errorf("creating zip header for %s: %w", path, err)
+		}
+		header.Name = filepath.Base(path)
+		header.Method = zip.Store // no compression — ROM data doesn't compress well
+
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			return fmt.Errorf("writing zip header for %s: %w", path, err)
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("opening file %s: %w", path, err)
+		}
+		if _, err := io.Copy(writer, f); err != nil {
+			f.Close()
+			return fmt.Errorf("writing file %s to zip: %w", path, err)
 		}
 		f.Close()
 	}

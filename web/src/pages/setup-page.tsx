@@ -33,7 +33,9 @@ export function SetupPage() {
       await setup(username, email, password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
+      setError(
+        err instanceof Error && err.message ? err.message : "Setup failed",
+      );
     } finally {
       setLoading(false);
     }

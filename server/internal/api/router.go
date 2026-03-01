@@ -164,6 +164,13 @@ func NewRouter(cfg Config) *gin.Engine {
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
+	setupHandler := &SetupHandler{
+		DB:            cfg.DB,
+		JWTSecret:     cfg.JWTSecret,
+		EncryptionKey: cfg.EncryptionKey,
+		GameDirs:      cfg.GameDirs,
+		Storage:       cfg.Storage,
+	}
 	stagingDir := filepath.Join(cfg.GameDirs[0], "staging")
 	uploadHandler := &UploadHandler{
 		DB:         cfg.DB,
@@ -183,6 +190,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		authGroup.POST("/refresh", refreshLimiter.RateLimit(), authHandler.Refresh)
 		authGroup.GET("/setup-status", authHandler.SetupStatus)
 	}
+
+	// Setup diagnostics (public during first-time setup, admin-only after)
+	r.GET("/api/setup/diagnostics", setupHandler.Diagnostics)
 
 	// Logout (requires auth, placed before main protected group for clarity)
 	logoutGroup := r.Group("/api/auth")

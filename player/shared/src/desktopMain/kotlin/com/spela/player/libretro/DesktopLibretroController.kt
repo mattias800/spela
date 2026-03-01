@@ -132,10 +132,10 @@ class DesktopLibretroController(
         // a crash in the core.
         emulationThread?.join()
         emulationThread = null
-        // GPU deinit AFTER emulation thread is dead — no Metal race
-        if (jni.nativeGpuIsActive()) {
-            jni.nativeGpuDeinit()
-        }
+        // Don't deinit GPU here — it persists across game sessions on desktop.
+        // The composable's onDispose handles GPU cleanup when the user leaves
+        // the emulation screen. This prevents stop() (called as precautionary
+        // cleanup in startGame) from destroying the renderer mid-lifecycle.
         clearNetplayMode()
         jni.nativeUnloadGame()
         jni.nativeDeinit()

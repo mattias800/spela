@@ -118,6 +118,11 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-red-500 to-red-800",
     color: "#ef4444",
   },
+  gc: {
+    icon: Gamepad2,
+    gradient: "from-indigo-500 to-purple-800",
+    color: "#6f5fa6",
+  },
   a52: {
     icon: Tv,
     gradient: "from-amber-700 to-amber-950",

@@ -10,15 +10,14 @@ This guide covers deploying Spela on a server for yourself and your friends. Spe
 
 ## Architecture Overview
 
-A Spela deployment has three services:
+A Spela deployment has two services:
 
 | Service | Purpose | Port |
 |---------|---------|------|
-| **server** | Go API backend -- handles auth, game library, saves, netplay sessions | 8080 (internal) |
-| **web** | nginx serving the React frontend + proxying API requests to server | 8080 (exposed) |
+| **spela** | Go backend + React frontend in a single container | 8080 |
 | **coturn** | TURN server for netplay NAT traversal (optional, for multiplayer) | 3478, 5349, 49152-49252 |
 
-The **web** container is the single entry point. It serves the frontend and proxies all `/api/*` requests (including WebSocket connections) to the server container. You point your reverse proxy (nginx proxy manager, Traefik, Caddy, etc.) at port 8080.
+The **spela** container is the single entry point. It serves both the API and the frontend. You point your reverse proxy (nginx proxy manager, Traefik, Caddy, etc.) at port 8080.
 
 ## ROM Organization
 
@@ -187,7 +186,7 @@ Caddy handles HTTPS automatically.
 
 ### Traefik
 
-Add labels to the `web` service in your compose override:
+Add labels to the `spela` service in your compose override:
 
 ```yaml
 labels:
@@ -283,7 +282,7 @@ docker volume inspect spela-data --format '{{ .Mountpoint }}'
 sudo cp /var/lib/docker/volumes/spela-data/_data/spela.db /backups/spela.db
 
 # Or use docker cp
-docker cp spela-server-1:/app/data/spela.db /backups/spela.db
+docker cp spela-1:/app/data/spela.db /backups/spela.db
 ```
 
 ### Restoring
@@ -338,14 +337,14 @@ Scraping is rate-limited by ScreenScraper's API. Large libraries may take a whil
 
 ### Games not appearing after scan
 
-- Check that your ROM directory is mounted correctly: `docker exec spela-server-1 ls /app/games`
+- Check that your ROM directory is mounted correctly: `docker exec spela-1 ls /app/games`
 - ROMs must be in console-named subdirectories (`nes/`, `snes/`, etc.)
 - Verify file extensions are supported (see [Supported Consoles](../README.md#supported-consoles))
 
 ### Metadata not loading
 
 - Verify ScreenScraper credentials are set
-- Check server logs: `docker logs spela-server-1`
+- Check server logs: `docker logs spela-1`
 - ScreenScraper has rate limits -- large libraries may take multiple scraping passes
 
 ### WebSocket connection issues

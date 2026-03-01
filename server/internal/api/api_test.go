@@ -1,12 +1,16 @@
 package api
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spela/server/internal/db"
@@ -931,8 +935,8 @@ func TestUpdatePlayTime_InvalidInput(t *testing.T) {
 		body string
 		code int
 	}{
-		{"missing seconds", `{}`, http.StatusBadRequest},
-		{"zero seconds", `{"seconds": 0}`, http.StatusBadRequest},
+		{"missing seconds", `{}`, http.StatusOK},
+		{"zero seconds", `{"seconds": 0}`, http.StatusOK},
 		{"negative seconds", `{"seconds": -5}`, http.StatusBadRequest},
 		{"invalid JSON", `not json`, http.StatusBadRequest},
 	}
@@ -2397,4 +2401,167 @@ func registerAndGetToken(t *testing.T, router http.Handler) string {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	return resp["accessToken"].(string)
+}
+
+// TestDownloadGame_CueBinServeTar verifies that downloading a .cue game
+// returns a tar archive containing both the .cue and .bin files.
+func TestDownloadGame_CueBinServeTar(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create .cue + .bin files in the game directory
+	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binContent := []byte("fake binary disc data for testing")
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.bin"), binContent, 0644))
+
+	cueContent := "FILE \"game.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.cue"), []byte(cueContent), 0644))
+
+	// Create a game entry pointing to the .cue file
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	game := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Test Game",
+		FileName:  "game.cue",
+		FilePath:  filepath.Join("psx", "game.cue"),
+		FileSize:  int64(len(cueContent)) + int64(len(binContent)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Download the game — should return a tar archive
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/x-tar", w.Header().Get("Content-Type"))
+
+	// Parse the tar and verify both files are present
+	tarReader := tar.NewReader(w.Body)
+	fileNames := make(map[string]bool)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			break
+		}
+		fileNames[header.Name] = true
+	}
+	assert.True(t, fileNames["game.cue"], "tar should contain game.cue")
+	assert.True(t, fileNames["game.bin"], "tar should contain game.bin")
+	assert.Len(t, fileNames, 2, "tar should contain exactly 2 files")
+}
+
+// TestDownloadGame_CueBinServeZip verifies the zip format option for .cue downloads.
+func TestDownloadGame_CueBinServeZip(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binContent := []byte("fake binary disc data")
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.bin"), binContent, 0644))
+
+	cueContent := "FILE \"game.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.cue"), []byte(cueContent), 0644))
+
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	game := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Test Game Zip",
+		FileName:  "game.cue",
+		FilePath:  filepath.Join("psx", "game.cue"),
+		FileSize:  int64(len(cueContent)) + int64(len(binContent)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Download with format=zip
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download?format=zip", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/zip", w.Header().Get("Content-Type"))
+
+	// Parse the zip and verify both files are present
+	zipReader, err := zip.NewReader(bytes.NewReader(w.Body.Bytes()), int64(w.Body.Len()))
+	require.NoError(t, err)
+
+	fileNames := make(map[string]bool)
+	for _, f := range zipReader.File {
+		fileNames[f.Name] = true
+	}
+	assert.True(t, fileNames["game.cue"], "zip should contain game.cue")
+	assert.True(t, fileNames["game.bin"], "zip should contain game.bin")
+	assert.Len(t, fileNames, 2, "zip should contain exactly 2 files")
+}
+
+// TestDownloadGame_GdiBinServeTar verifies that downloading a .gdi game
+// returns a tar archive containing the .gdi and all track files.
+func TestDownloadGame_GdiBinServeTar(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create .gdi + track files in the game directory
+	dcDir := filepath.Join(cfg.GameDirs[0], "dreamcast")
+	require.NoError(t, os.MkdirAll(dcDir, 0755))
+
+	track1Content := []byte("fake track 1 binary data")
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track01.bin"), track1Content, 0644))
+	track2Content := []byte("fake track 2 binary data here")
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track02.raw"), track2Content, 0644))
+	track3Content := []byte("fake track 3 data")
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track03.bin"), track3Content, 0644))
+
+	gdiContent := "3\n1 0 4 2352 track01.bin 0\n2 450 0 2352 track02.raw 0\n3 45000 4 2352 track03.bin 0\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "game.gdi"), []byte(gdiContent), 0644))
+
+	// Create a game entry pointing to the .gdi file
+	var dcConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "DC").First(&dcConsole).Error)
+
+	game := db.Game{
+		ConsoleID: dcConsole.ID,
+		Title:     "Test DC Game",
+		FileName:  "game.gdi",
+		FilePath:  filepath.Join("dreamcast", "game.gdi"),
+		FileSize:  int64(len(gdiContent)) + int64(len(track1Content)) + int64(len(track2Content)) + int64(len(track3Content)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Download the game — should return a tar archive
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/x-tar", w.Header().Get("Content-Type"))
+
+	// Parse the tar and verify all files are present
+	tarReader := tar.NewReader(w.Body)
+	tarFileNames := make(map[string]bool)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			break
+		}
+		tarFileNames[header.Name] = true
+	}
+	assert.True(t, tarFileNames["game.gdi"], "tar should contain game.gdi")
+	assert.True(t, tarFileNames["track01.bin"], "tar should contain track01.bin")
+	assert.True(t, tarFileNames["track02.raw"], "tar should contain track02.raw")
+	assert.True(t, tarFileNames["track03.bin"], "tar should contain track03.bin")
+	assert.Len(t, tarFileNames, 4, "tar should contain exactly 4 files")
 }

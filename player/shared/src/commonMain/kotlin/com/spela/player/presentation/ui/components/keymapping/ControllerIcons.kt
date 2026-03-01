@@ -1308,8 +1308,8 @@ object ControllerIcons {
         "nes" -> Nes
         "snes" -> Snes
         "n64" -> N64
-        "genesis" -> Genesis
-        "psx", "psp" -> Psx
+        "genesis", "gen", "sat" -> Genesis
+        "psx", "psp", "dc" -> Psx
         "gb", "gba", "gbc" -> Snes
         else -> Snes
     }

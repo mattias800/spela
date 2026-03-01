@@ -349,6 +349,8 @@ class NavigationViewModelTest {
         override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
         override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
         override suspend fun getPendingSyncCount() = 0
+        override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
+        override suspend fun unzipToSaveDirectory(data: ByteArray) {}
     }
 
     private class NoOpPreferencesRepository : PreferencesRepository {
@@ -401,5 +403,7 @@ class NavigationViewModelTest {
         override suspend fun getFileSize(path: String) = 0L
         override suspend fun listFiles(path: String) = emptyList<String>()
         override suspend fun isDirectory(path: String) = false
+        override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+        override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
     }
 }

@@ -6,6 +6,7 @@ export interface SaveQueueItem {
   data: string; // base64
   isAuto: boolean;
   name?: string;
+  screenshot?: string; // data URL (data:image/png;base64,...)
   retries: number;
 }
 
@@ -46,6 +47,11 @@ export function useSaveQueue({
       if (item.name) {
         formData.append("name", item.name);
       }
+      if (item.screenshot) {
+        const ssBase64 = item.screenshot.replace(/^data:image\/\w+;base64,/, "");
+        const ssBytes = Uint8Array.from(atob(ssBase64), (c) => c.charCodeAt(0));
+        formData.append("screenshot", new Blob([ssBytes], { type: "image/png" }), "screenshot.png");
+      }
 
       const endpoint = item.isAuto
         ? `/games/${item.gameId}/saves/auto`
@@ -72,7 +78,7 @@ export function useSaveQueue({
   }, [onSaveSuccess, onSaveError]);
 
   const enqueueSave = useCallback(
-    (gameId: string, data: string, isAuto: boolean, name?: string) => {
+    (gameId: string, data: string, isAuto: boolean, name?: string, screenshot?: string) => {
       if (!gameId || !data) return;
 
       if (isAuto) {
@@ -84,6 +90,7 @@ export function useSaveQueue({
         data,
         isAuto,
         name,
+        screenshot,
         retries: 0,
       });
 

@@ -24,7 +24,10 @@ class SaveRepositoryImpl(
     override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> {
         return runCatching {
             val serverSaves = if (connectivityMonitor.isOnline.value) {
-                runCatching { apiClient.getSaveStates(gameId).map { it.toDomain() } }.getOrNull()
+                runCatching {
+                    apiClient.getSaveStates(gameId).map { it.toDomain() }
+                        .map { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
+                }.getOrNull()
             } else null
 
             val localSaves = database.spelaDatabaseQueries
@@ -58,6 +61,7 @@ class SaveRepositoryImpl(
         if (connectivityMonitor.isOnline.value) {
             runCatching {
                 val serverSave = apiClient.uploadSaveStateWithScreenshot(gameId, name, data, screenshot).toDomain()
+                    .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
             }
@@ -119,6 +123,7 @@ class SaveRepositoryImpl(
         if (connectivityMonitor.isOnline.value) {
             runCatching {
                 val serverSave = apiClient.uploadAutoSaveWithScreenshot(gameId, data, screenshot).toDomain()
+                    .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
             }
@@ -208,6 +213,7 @@ class SaveRepositoryImpl(
     // Feature 5: Quick-save slots
     override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?): Result<SaveState> = runCatching {
         apiClient.saveToSlot(gameId, slot, data, screenshot).toDomain()
+            .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
     }
 
     override suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray> = runCatching {
@@ -216,6 +222,7 @@ class SaveRepositoryImpl(
 
     override suspend fun getSlots(gameId: String): Result<List<QuickSaveSlot>> = runCatching {
         val saves = apiClient.getSlots(gameId).map { it.toDomain() }
+            .map { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
         (1..10).map { slotNum ->
             QuickSaveSlot(
                 slot = slotNum,
@@ -227,6 +234,7 @@ class SaveRepositoryImpl(
     // Feature 6: Auto-save history
     override suspend fun getAutoSaveHistory(gameId: String): Result<List<SaveState>> = runCatching {
         apiClient.getAutoSaveHistory(gameId).map { it.toDomain() }
+            .map { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
     }
 
     // Feature 7: Bulk delete
@@ -254,6 +262,7 @@ class SaveRepositoryImpl(
     // Feature 9: Import
     override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray): Result<SaveState> = runCatching {
         apiClient.importSaveState(gameId, name, fileData).toDomain()
+            .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
     }
 
     private fun markSynced(localId: String, serverId: Long, syncedAt: Instant) {

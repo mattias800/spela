@@ -1,6 +1,8 @@
 import { Save, FolderOpen, Maximize, Loader2, Gamepad2 } from "lucide-react";
 import { Button, BackButton } from "@/components/ui";
+import { DiscSwitchButton } from "./disc-switch-button";
 import type { EmulatorStatus } from "@/hooks/use-emulator-iframe";
+import type { DiscState } from "@/hooks/use-disc-manager";
 import type { Game } from "@/types/api";
 
 interface PlayToolbarProps {
@@ -13,6 +15,11 @@ interface PlayToolbarProps {
   onSave: () => void;
   onLoad: () => void;
   onFullscreen: () => void;
+  discStates?: DiscState[];
+  currentDisc?: number;
+  isSwitchingDisc?: boolean;
+  onSwitchDisc?: (discNumber: number) => void;
+  onRetryDisc?: (discNumber: number) => void;
 }
 
 export function PlayToolbar({
@@ -25,6 +32,11 @@ export function PlayToolbar({
   onSave,
   onLoad,
   onFullscreen,
+  discStates,
+  currentDisc,
+  isSwitchingDisc,
+  onSwitchDisc,
+  onRetryDisc,
 }: PlayToolbarProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
@@ -44,6 +56,16 @@ export function PlayToolbar({
             <Loader2 className="h-3 w-3 animate-spin" />
             Saving...
           </span>
+        )}
+        {discStates && currentDisc && onSwitchDisc && (
+          <DiscSwitchButton
+            game={game}
+            discStates={discStates}
+            currentDisc={currentDisc}
+            isSwitching={isSwitchingDisc ?? false}
+            onSwitchDisc={onSwitchDisc}
+            onRetryDisc={onRetryDisc}
+          />
         )}
       </div>
 

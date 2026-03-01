@@ -409,6 +409,9 @@ func (h *AuthHandler) SetupStatus(c *gin.Context) {
 	var userCount int64
 	h.DB.Model(&db.User{}).Count(&userCount)
 
+	var gameCount int64
+	h.DB.Model(&db.Game{}).Count(&gameCount)
+
 	registrationEnabled := true
 	var setting db.ServerSetting
 	if err := h.DB.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
@@ -418,6 +421,7 @@ func (h *AuthHandler) SetupStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"needsSetup":          userCount == 0,
 		"registrationEnabled": registrationEnabled,
+		"gameCount":           gameCount,
 	})
 }
 

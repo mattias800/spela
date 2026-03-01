@@ -56,6 +56,7 @@ class EmulationViewModel(
 
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
+    private var stopJob: Job? = null
     private var skipBiosCheck = false
 
     init {
@@ -186,6 +187,7 @@ class EmulationViewModel(
             it.copy(
                 gameId = gameId,
                 isLoading = true,
+                isPaused = false,
                 showOverlay = false,
                 showExitConfirm = false,
                 relayId = relayId,
@@ -198,10 +200,26 @@ class EmulationViewModel(
                 error = null,
                 statusMessage = null,
                 isFastForward = false,
+                supportsSaveStates = true,
+                isHwRenderEnabled = false,
             )
         }
 
         scope.launch(dispatchers.io) {
+            // Ensure any previous emulation is fully stopped before starting a new one.
+            // stopGame() runs asynchronously (auto-save, network uploads) — if the user
+            // starts a new game before it finishes, the old emulation thread may still be
+            // alive, causing a crash when we load a new core/game.
+            //
+            // Cancel the old stopJob to prevent it from calling stop() later, which
+            // would kill the NEW emulation thread and unload the NEW game.
+            // Note: the auto-save in stopGame() runs in a separate saveJob that is
+            // NOT cancelled here, so save data is preserved across restarts.
+            stopJob?.cancel()
+            stopJob = null
+            libretroController.stop()
+            println("[Emulation] Previous emulation stopped (if any)")
+
             // Fetch user preferences (fallback to defaults on error)
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
@@ -291,9 +309,11 @@ class EmulationViewModel(
                         // Without this, GLES HW render cores (GLideN64) produce
                         // frames that can't be displayed until the surface exists.
                         val hwRender = libretroController.isHwRenderEnabled()
+                        println("[Emulation] isHwRenderEnabled=$hwRender after loadGame")
                         if (hwRender) {
                             withContext(dispatchers.main) {
                                 _state.update { it.copy(isHwRenderEnabled = true) }
+                                println("[Emulation] State updated: isHwRenderEnabled=true")
                             }
                         }
 
@@ -310,7 +330,10 @@ class EmulationViewModel(
                         // Try to load auto-save: in relay mode, download relay auto-save
                         else if (relayId != null) {
                             netplayManager.loadRelaySave(relayId)
-                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad) {
+                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad && !hwRender) {
+                            // For non-HW cores, load save state immediately.
+                            // HW render cores (e.g. Dolphin) boot asynchronously — their
+                            // GPU thread isn't ready for retro_unserialize yet. Deferred below.
                             saveManager.autoLoadSaveState(gameId)
                         }
 
@@ -320,9 +343,35 @@ class EmulationViewModel(
                         }
 
                         libretroController.start()
-                        val saveStatesSupported = libretroController.supportsSaveStates()
+                        // Don't probe save state support immediately — some cores (e.g. Dolphin)
+                        // boot asynchronously and crash if retro_serialize_size is called too early.
+                        // Default to true, then re-check after the core has had time to initialize.
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = saveStatesSupported, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
+                            _state.update { it.copy(isRunning = true, isLoading = false, supportsSaveStates = true, sessionElapsedSeconds = 0, isHwRenderEnabled = hwRender) }
+                        }
+                        // Show secondary display as soon as possible — must be before
+                        // the 3-second delay below, otherwise the display stays blank
+                        // until achievements/heartbeats finish initializing.
+                        showSecondaryDisplayIfAvailable()
+
+                        // Re-check save state support after core has run a few frames
+                        println("[Emulation] Starting 3-second delay for HW render init")
+                        kotlinx.coroutines.delay(3000)
+                        println("[Emulation] 3-second delay completed, checking save state support")
+                        val saveStatesSupported = libretroController.supportsSaveStates()
+                        println("[Emulation] saveStatesSupported=$saveStatesSupported")
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
+                        }
+
+                        // Deferred auto-load for HW render cores (e.g. Dolphin).
+                        // These cores boot asynchronously and crash if retro_unserialize
+                        // is called before their GPU thread is fully initialized.
+                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId relayId=$relayId")
+                        if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
+                            && challengeId == null && relayId == null
+                        ) {
+                            saveManager.autoLoadSaveState(gameId)
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)
@@ -346,9 +395,6 @@ class EmulationViewModel(
                         if (challengeId != null) {
                             challengeManager.startChallengeTimer()
                         }
-
-                        // Show secondary display if available
-                        showSecondaryDisplayIfAvailable()
                     } catch (e: Exception) {
                         val errorMsg = if (_state.value.missingBiosFiles.isNotEmpty()) {
                             "Emulation failed -- this is likely because required BIOS files are missing"
@@ -414,6 +460,7 @@ class EmulationViewModel(
     }
 
     private fun stopGame() {
+        println("[Emulation] stopGame() called")
         // Dismiss secondary display immediately on the main thread, before async save operations
         dismissSecondaryDisplay()
         sessionTimerJob?.cancel()
@@ -421,12 +468,15 @@ class EmulationViewModel(
         challengeManager.cleanup()
         netplayManager.cleanup()
         presenceService.stopHeartbeat()
-        scope.launch(dispatchers.io) {
+        stopJob = scope.launch(dispatchers.io) {
             val currentState = _state.value
             val relayId = currentState.relayId
             val turnToken = currentState.turnToken
 
-            // Save before stopping
+            // Save before stopping. autoSaveOnStop serializes synchronously (fast,
+            // game is paused) then fires off the upload in the background. This means
+            // stopJob completes quickly even if the upload is slow, so startGame()
+            // won't hang if it cancels this job during a restart.
             if (relayId != null && turnToken != null) {
                 netplayManager.saveRelayOnStop(relayId, turnToken)
             } else if (currentPreferences.autoSaveEnabled && !currentState.isChallengeMode) {

@@ -1,4 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 
 plugins {
@@ -121,9 +123,74 @@ tasks.withType<Test> {
     }
 }
 
-// Make the run task depend on building the native library.
-tasks.matching { it.name == "run" || it.name == "desktopRun" || it.name == "hotRunDesktop" }.configureEach {
+// Make run, packaging, and distribution tasks depend on building the native library.
+tasks.matching {
+    it.name == "run" || it.name == "desktopRun" || it.name == "hotRunDesktop" ||
+        it.name == "createDistributable" || it.name == "packageDmg" ||
+        it.name == "packageDeb" || it.name == "packageMsi"
+}.configureEach {
     dependsOn(buildNativeLibrary)
+}
+
+// macOS Vulkan setup: Make libretro cores (e.g. Dolphin) that dlopen("libvulkan.dylib")
+// load MoltenVK directly instead of the Vulkan loader. The Vulkan loader requires
+// VK_KHR_portability_enumeration which cores like Dolphin don't enable, causing
+// VK_ERROR_INCOMPATIBLE_DRIVER. MoltenVK loaded directly has no such restriction.
+if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+    val icdCandidates = listOf(
+        "/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json",  // Homebrew ARM
+        "/usr/local/etc/vulkan/icd.d/MoltenVK_icd.json",     // Homebrew Intel
+    )
+    val icdPath = icdCandidates.firstOrNull { file(it).exists() }
+    if (icdPath != null) {
+        tasks.withType<JavaExec>().configureEach {
+            environment("VK_ICD_FILENAMES", icdPath)
+        }
+    }
+
+    // Create a shim directory where libvulkan.dylib symlinks to libMoltenVK.dylib.
+    // By placing this shim dir FIRST in DYLD_FALLBACK_LIBRARY_PATH, cores that
+    // dlopen("libvulkan.dylib") will find MoltenVK instead of the Vulkan loader.
+    // This bypasses the loader's VK_KHR_portability_enumeration requirement.
+    // (DYLD_LIBRARY_PATH won't work here — macOS SIP strips it for hardened JVMs.)
+    val moltenvkCandidates = listOf(
+        "/opt/homebrew/lib/libMoltenVK.dylib",  // Homebrew ARM
+        "/usr/local/lib/libMoltenVK.dylib",     // Homebrew Intel
+    )
+    val moltenvkPath = moltenvkCandidates.firstOrNull { file(it).exists() }
+    val homebrewLib = listOf("/opt/homebrew/lib", "/usr/local/lib")
+        .filter { file(it).isDirectory }
+        .joinToString(":")
+
+    if (moltenvkPath != null) {
+        val shimDir = layout.buildDirectory.dir("vulkan-shim").get().asFile
+        shimDir.mkdirs()
+        // Create symlinks for both unversioned and versioned library names.
+        // Dolphin tries libvulkan.1.dylib first, then libvulkan.dylib.
+        for (linkName in listOf("libvulkan.dylib", "libvulkan.1.dylib")) {
+            val shimLink = File(shimDir, linkName)
+            if (!shimLink.exists()) {
+                Files.createSymbolicLink(
+                    shimLink.toPath(),
+                    Path.of(moltenvkPath)
+                )
+            }
+        }
+        // Shim dir first so libvulkan.dylib resolves to MoltenVK,
+        // then Homebrew lib for other libraries cores may need.
+        val fallbackPath = listOf(shimDir.absolutePath, homebrewLib)
+            .filter { it.isNotEmpty() }
+            .joinToString(":")
+        tasks.withType<JavaExec>().configureEach {
+            environment("DYLD_FALLBACK_LIBRARY_PATH", fallbackPath)
+            // Dolphin checks LIBVULKAN_PATH first before trying system paths.
+            environment("LIBVULKAN_PATH", moltenvkPath)
+        }
+    } else if (homebrewLib.isNotEmpty()) {
+        tasks.withType<JavaExec>().configureEach {
+            environment("DYLD_FALLBACK_LIBRARY_PATH", homebrewLib)
+        }
+    }
 }
 
 // Pass native library path to Compose Hot Reload tasks.

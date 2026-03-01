@@ -33,17 +33,27 @@ class SaveManager(
     /**
      * Load SRAM (save data) before starting emulation.
      * Tries local first, falls back to server if online.
+     * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)
+     * and gets extracted to the save directory instead of loaded as SRAM.
      * Called from within an IO coroutine in startGame().
      */
     suspend fun loadSramOnStart(gameId: String) {
         try {
             val localSram = saveDataRepository.loadLocalSRAM(gameId)
             if (localSram != null) {
-                libretroController.setSRAM(localSram)
+                if (isZipData(localSram)) {
+                    saveDataRepository.unzipToSaveDirectory(localSram)
+                } else {
+                    libretroController.setSRAM(localSram)
+                }
             } else if (connectivityMonitor.isOnline.value) {
-                saveDataRepository.downloadActiveSaveData(gameId).onSuccess { sram ->
-                    libretroController.setSRAM(sram)
-                    saveDataRepository.saveLocalSRAM(gameId, sram)
+                saveDataRepository.downloadActiveSaveData(gameId).onSuccess { data ->
+                    if (isZipData(data)) {
+                        saveDataRepository.unzipToSaveDirectory(data)
+                    } else {
+                        libretroController.setSRAM(data)
+                    }
+                    saveDataRepository.saveLocalSRAM(gameId, data)
                 }
             }
         } catch (_: Exception) {
@@ -53,6 +63,8 @@ class SaveManager(
 
     /**
      * Save SRAM on stop (best effort). Called from within an IO coroutine.
+     * If the core doesn't provide SRAM (e.g. Dolphin), falls back to zipping
+     * the save directory and uploading that instead.
      */
     suspend fun saveSramOnStop(gameId: String) {
         try {
@@ -61,6 +73,15 @@ class SaveManager(
                 saveDataRepository.saveLocalSRAM(gameId, sramData)
                 if (connectivityMonitor.isOnline.value) {
                     runCatching { saveDataRepository.uploadActiveSaveData(gameId, sramData) }
+                }
+            } else {
+                // Directory-save fallback for cores like Dolphin
+                val zipData = saveDataRepository.zipSaveDirectory(gameId)
+                if (zipData != null) {
+                    saveDataRepository.saveLocalSRAM(gameId, zipData)
+                    if (connectivityMonitor.isOnline.value) {
+                        runCatching { saveDataRepository.uploadActiveSaveData(gameId, zipData) }
+                    }
                 }
             }
         } catch (_: Exception) {
@@ -73,9 +94,17 @@ class SaveManager(
      * Called from within an IO coroutine.
      */
     suspend fun autoLoadSaveState(gameId: String) {
-        loadGameStateUseCase(gameId).onSuccess { saveData ->
-            libretroController.unserialize(saveData)
-        }
+        println("[SaveManager] autoLoadSaveState: loading game $gameId")
+        loadGameStateUseCase(gameId).fold(
+            onSuccess = { saveData ->
+                println("[SaveManager] autoLoadSaveState: got ${saveData.size} bytes, unserializing")
+                val ok = libretroController.unserialize(saveData)
+                println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
+            },
+            onFailure = { e ->
+                println("[SaveManager] autoLoadSaveState: failed: ${e.message}")
+            },
+        )
     }
 
     /**
@@ -84,13 +113,16 @@ class SaveManager(
      */
     suspend fun autoSaveOnStop(gameId: String) {
         try {
+            println("[SaveManager] autoSaveOnStop: serializing game $gameId")
             val saveData = libretroController.serialize()
+            println("[SaveManager] autoSaveOnStop: serialize returned ${saveData?.size ?: "null"} bytes")
             if (saveData != null) {
-                val screenshot = screenshotCapture?.captureScreenshot()
-                saveGameStateUseCase(gameId, saveData, screenshot)
+                // Save to local filesystem + SQLite only (fast, no network).
+                val result = saveRepository.saveLocally(gameId, "Auto Save", saveData, isAuto = true)
+                println("[SaveManager] autoSaveOnStop: saveLocally result=${result.isSuccess}")
             }
-        } catch (_: Exception) {
-            // Best effort auto-save
+        } catch (e: Exception) {
+            println("[SaveManager] autoSaveOnStop: exception: ${e.message}")
         }
     }
 
@@ -163,4 +195,12 @@ class SaveManager(
     suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray> {
         return saveRepository.loadFromSlot(gameId, slot)
     }
+
+    /** Check if data starts with ZIP magic bytes (PK\x03\x04). */
+    private fun isZipData(data: ByteArray): Boolean =
+        data.size >= 4 &&
+            data[0] == 0x50.toByte() &&
+            data[1] == 0x4B.toByte() &&
+            data[2] == 0x03.toByte() &&
+            data[3] == 0x04.toByte()
 }

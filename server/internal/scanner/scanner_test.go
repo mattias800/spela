@@ -718,6 +718,208 @@ func TestScan_NonPSPCHDNoWarning(t *testing.T) {
 	assert.Empty(t, PSPCHDAchievementsWarning(chdPath, "SAT"), "SAT console should never get PSP CHD warning")
 }
 
+// When a multi-disc game exists in the DB but has no GameDisc records
+// (e.g., created before multi-disc support), a rescan should backfill them.
+func TestScan_RescanCreatesDiscRecordsForExistingGame(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create disc files on disk
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.bin"), []byte("bin1data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc1.cue"), []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.bin"), []byte("bin2data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "disc2.cue"), []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+
+	// Create .m3u file
+	m3uContent := "disc1.cue\ndisc2.cue\n"
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Metal Gear Solid.m3u"), []byte(m3uContent), 0644))
+
+	// Manually insert the game WITHOUT disc records — simulates a game
+	// created before multi-disc support or with an interrupted scan
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	existingGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Metal Gear Solid",
+		FileName:  "Metal Gear Solid.m3u",
+		FilePath:  filepath.Join("psx", "Metal Gear Solid.m3u"),
+		FileSize:  0,
+		DiscCount: 0,
+	}
+	require.NoError(t, database.Create(&existingGame).Error)
+
+	// Verify: game exists, no disc records
+	var discCount int64
+	database.Model(&db.GameDisc{}).Where("game_id = ?", existingGame.ID).Count(&discCount)
+	require.Equal(t, int64(0), discCount, "should have no disc records before scan")
+
+	// Scan — should detect the existing game and backfill disc records
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, result.NewGames, "should not create a new game")
+	assert.Equal(t, 1, result.TotalGames)
+
+	// Verify disc records were created
+	var discs []db.GameDisc
+	database.Where("game_id = ?", existingGame.ID).Order("disc_number").Find(&discs)
+	assert.Len(t, discs, 2, "should have 2 disc records after scan")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "disc1.cue", discs[0].FileName)
+	assert.Equal(t, 2, discs[1].DiscNumber)
+	assert.Equal(t, "disc2.cue", discs[1].FileName)
+
+	// Verify disc count and file size were updated
+	var updatedGame db.Game
+	database.First(&updatedGame, existingGame.ID)
+	assert.Equal(t, 2, updatedGame.DiscCount, "disc count should be updated")
+	assert.Greater(t, updatedGame.FileSize, int64(0), "file size should be updated")
+
+	// Rescan should be idempotent — no duplicate disc records
+	_, err = s.Scan()
+	require.NoError(t, err)
+
+	var discsAfterRescan []db.GameDisc
+	database.Where("game_id = ?", existingGame.ID).Find(&discsAfterRescan)
+	assert.Len(t, discsAfterRescan, 2, "rescan should not create duplicate disc records")
+}
+
+// Scanning must be deterministic: the end state depends only on what files
+// are on disk, not on previous DB state. This test verifies the full cycle:
+// scan → remove files → scan (removes) → restore files → scan (recreates).
+func TestScan_Deterministic_RemoveAndRestore(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	romPath := filepath.Join(nesDir, "Mario.nes")
+	require.NoError(t, os.WriteFile(romPath, []byte("rom data"), 0644))
+
+	s := NewScanner(database, []string{dir})
+
+	// Scan 1: game appears
+	r1, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r1.NewGames)
+	assert.Equal(t, 1, r1.TotalGames)
+
+	var game1 db.Game
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("nes", "Mario.nes")).First(&game1).Error)
+
+	// Remove the file
+	require.NoError(t, os.Remove(romPath))
+
+	// Scan 2: game is removed
+	r2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r2.RemovedGames)
+	assert.Equal(t, 0, r2.TotalGames)
+
+	// Game should be fully gone (hard-deleted), not just soft-deleted
+	var ghostCount int64
+	database.Unscoped().Model(&db.Game{}).Where("file_path = ?", filepath.Join("nes", "Mario.nes")).Count(&ghostCount)
+	assert.Equal(t, int64(0), ghostCount, "game should be hard-deleted, not soft-deleted")
+
+	// Restore the file
+	require.NoError(t, os.WriteFile(romPath, []byte("rom data"), 0644))
+
+	// Scan 3: game reappears as new
+	r3, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r3.NewGames)
+	assert.Equal(t, 1, r3.TotalGames)
+
+	var game3 db.Game
+	require.NoError(t, database.Where("file_path = ?", filepath.Join("nes", "Mario.nes")).First(&game3).Error)
+	assert.Equal(t, "Mario", game3.Title)
+}
+
+// Same determinism test for multi-disc games.
+func TestScan_Deterministic_MultiDisc_RemoveAndRestore(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	disc1Bin := filepath.Join(psxDir, "disc1.bin")
+	disc1Cue := filepath.Join(psxDir, "disc1.cue")
+	disc2Bin := filepath.Join(psxDir, "disc2.bin")
+	disc2Cue := filepath.Join(psxDir, "disc2.cue")
+	m3uPath := filepath.Join(psxDir, "FF7.m3u")
+
+	writeDiscFiles := func() {
+		require.NoError(t, os.WriteFile(disc1Bin, []byte("bin1"), 0644))
+		require.NoError(t, os.WriteFile(disc1Cue, []byte("FILE \"disc1.bin\" BINARY\n"), 0644))
+		require.NoError(t, os.WriteFile(disc2Bin, []byte("bin2data"), 0644))
+		require.NoError(t, os.WriteFile(disc2Cue, []byte("FILE \"disc2.bin\" BINARY\n"), 0644))
+		require.NoError(t, os.WriteFile(m3uPath, []byte("disc1.cue\ndisc2.cue\n"), 0644))
+	}
+
+	removeDiscFiles := func() {
+		os.Remove(disc1Bin)
+		os.Remove(disc1Cue)
+		os.Remove(disc2Bin)
+		os.Remove(disc2Cue)
+		os.Remove(m3uPath)
+	}
+
+	writeDiscFiles()
+	s := NewScanner(database, []string{dir})
+
+	// Scan 1: game + discs created
+	r1, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r1.NewGames)
+
+	var game1 db.Game
+	require.NoError(t, database.First(&game1).Error)
+	var discs1 []db.GameDisc
+	database.Where("game_id = ?", game1.ID).Find(&discs1)
+	assert.Len(t, discs1, 2)
+
+	// Remove all files
+	removeDiscFiles()
+
+	// Scan 2: game removed
+	r2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r2.RemovedGames)
+	assert.Equal(t, 0, r2.TotalGames)
+
+	// Both game and disc records should be hard-deleted
+	var ghostGames, ghostDiscs int64
+	database.Unscoped().Model(&db.Game{}).Count(&ghostGames)
+	database.Unscoped().Model(&db.GameDisc{}).Count(&ghostDiscs)
+	assert.Equal(t, int64(0), ghostGames, "game should be hard-deleted")
+	assert.Equal(t, int64(0), ghostDiscs, "disc records should be hard-deleted")
+
+	// Restore files
+	writeDiscFiles()
+
+	// Scan 3: game + discs recreated
+	r3, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 1, r3.NewGames)
+	assert.Equal(t, 1, r3.TotalGames)
+
+	var game3 db.Game
+	require.NoError(t, database.First(&game3).Error)
+	assert.Equal(t, 2, game3.DiscCount)
+
+	var discs3 []db.GameDisc
+	database.Where("game_id = ?", game3.ID).Order("disc_number").Find(&discs3)
+	assert.Len(t, discs3, 2, "disc records should be recreated")
+	assert.Equal(t, 1, discs3[0].DiscNumber)
+	assert.Equal(t, 2, discs3[1].DiscNumber)
+}
+
 func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
 	database := setupTestDB(t)
 	dir := t.TempDir()
@@ -748,4 +950,290 @@ func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
 	var games []db.Game
 	database.Find(&games)
 	assert.Len(t, games, 1, "only 1 game should exist after two scans")
+}
+
+// Standalone .cue+.bin files (no .m3u, no disc pattern) should create a single
+// game entry with DiscCount=1 and a GameDisc record. The companion .bin file
+// must NOT create a separate game entry.
+func TestScan_StandaloneCueBin(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create a standalone .cue + .bin pair (single disc, no disc pattern)
+	binPath := filepath.Join(psxDir, "Crash Bandicoot.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary game data"), 0644))
+
+	cuePath := filepath.Join(psxDir, "Crash Bandicoot.cue")
+	cueContent := "FILE \"Crash Bandicoot.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Should create exactly 1 game (the .cue), NOT 2 (one for .cue, one for .bin)
+	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game for standalone .cue+.bin")
+	assert.Equal(t, 1, result.TotalGames)
+
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1)
+	assert.Equal(t, "Crash Bandicoot", games[0].Title)
+	assert.Equal(t, 1, games[0].DiscCount)
+	assert.Greater(t, games[0].FileSize, int64(0), "file size should include .cue + .bin")
+
+	// Verify a GameDisc record was created
+	var discs []db.GameDisc
+	database.Where("game_id = ?", games[0].ID).Find(&discs)
+	require.Len(t, discs, 1, "should have 1 disc record")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "Crash Bandicoot.cue", discs[0].FileName)
+
+	// Rescan should be idempotent
+	result2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
+	assert.Equal(t, 1, result2.TotalGames)
+}
+
+// When a standalone .cue+.bin game existed as a .bin-only entry (from a prior scan),
+// the new scan should remove the orphaned .bin entry and create the .cue game.
+func TestScan_StandaloneCueBin_CleansUpOldBinEntry(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binPath := filepath.Join(psxDir, "Crash Bandicoot.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary game data"), 0644))
+
+	cuePath := filepath.Join(psxDir, "Crash Bandicoot.cue")
+	cueContent := "FILE \"Crash Bandicoot.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	// Simulate an old scanner that created a standalone .bin entry
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	oldBinGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Crash Bandicoot",
+		FileName:  "Crash Bandicoot.bin",
+		FilePath:  filepath.Join("psx", "Crash Bandicoot.bin"),
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&oldBinGame).Error)
+
+	// Verify old entry exists
+	var countBefore int64
+	database.Model(&db.Game{}).Count(&countBefore)
+	require.Equal(t, int64(1), countBefore)
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// The old .bin entry should be removed and replaced by the .cue entry
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1, "should have exactly 1 game after cleanup")
+	assert.Equal(t, "Crash Bandicoot.cue", games[0].FileName, "remaining game should be the .cue")
+	assert.Equal(t, 1, games[0].DiscCount)
+	assert.Equal(t, 1, result.NewGames)
+	assert.Equal(t, 1, result.RemovedGames, "old .bin entry should be removed")
+}
+
+// When both a .cue and .bin entry exist from a prior scan, the .bin entry should
+// be removed even though the .cue entry already exists (no new game created).
+func TestScan_StandaloneCueBin_CleansUpBinWhenCueExists(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binPath := filepath.Join(psxDir, "SSX.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary game data"), 0644))
+
+	cuePath := filepath.Join(psxDir, "SSX.cue")
+	cueContent := "FILE \"SSX.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	// Simulate old scanner: created BOTH a .cue entry and a .bin entry
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	oldCueGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "SSX",
+		FileName:  "SSX.cue",
+		FilePath:  filepath.Join("psx", "SSX.cue"),
+		FileSize:  50,
+	}
+	require.NoError(t, database.Create(&oldCueGame).Error)
+
+	oldBinGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "SSX",
+		FileName:  "SSX.bin",
+		FilePath:  filepath.Join("psx", "SSX.bin"),
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&oldBinGame).Error)
+
+	var countBefore int64
+	database.Model(&db.Game{}).Count(&countBefore)
+	require.Equal(t, int64(2), countBefore)
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Only the .cue game should remain; the .bin entry should be cleaned up
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1, "should have exactly 1 game after cleanup")
+	assert.Equal(t, "SSX.cue", games[0].FileName, "remaining game should be the .cue")
+	assert.Equal(t, 0, result.NewGames, "no new game created — .cue already existed")
+	assert.Equal(t, 1, result.RemovedGames, "old .bin entry should be removed")
+}
+
+// Standalone .cue game that already exists in DB (from prior scan) should get
+// disc records backfilled.
+func TestScan_StandaloneCueBin_BackfillDiscRecord(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	binPath := filepath.Join(psxDir, "Crash.bin")
+	require.NoError(t, os.WriteFile(binPath, []byte("binary data"), 0644))
+
+	cuePath := filepath.Join(psxDir, "Crash.cue")
+	cueContent := "FILE \"Crash.bin\" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n"
+	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
+
+	// Manually insert game WITHOUT disc record — simulates old scan
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	existingGame := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Crash",
+		FileName:  "Crash.cue",
+		FilePath:  filepath.Join("psx", "Crash.cue"),
+		FileSize:  0,
+		DiscCount: 0,
+	}
+	require.NoError(t, database.Create(&existingGame).Error)
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, result.NewGames, "should not create a new game")
+	assert.Equal(t, 1, result.TotalGames)
+
+	// Verify disc record was backfilled
+	var discs []db.GameDisc
+	database.Where("game_id = ?", existingGame.ID).Find(&discs)
+	require.Len(t, discs, 1, "should have backfilled 1 disc record")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "Crash.cue", discs[0].FileName)
+
+	// Verify disc count and file size were updated
+	var updatedGame db.Game
+	database.First(&updatedGame, existingGame.ID)
+	assert.Equal(t, 1, updatedGame.DiscCount)
+	assert.Greater(t, updatedGame.FileSize, int64(0))
+}
+
+func TestDiscCompanionFiles_Gdi(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create track files
+	track1 := filepath.Join(dir, "track01.bin")
+	require.NoError(t, os.WriteFile(track1, []byte("track 1 data here"), 0644))
+	track2 := filepath.Join(dir, "track02.raw")
+	require.NoError(t, os.WriteFile(track2, []byte("track 2 raw data here!"), 0644))
+	track3 := filepath.Join(dir, "track03.bin")
+	require.NoError(t, os.WriteFile(track3, []byte("track 3 data"), 0644))
+
+	// Create .gdi file
+	gdiPath := filepath.Join(dir, "game.gdi")
+	gdiContent := "3\n1 0 4 2352 track01.bin 0\n2 450 0 2352 track02.raw 0\n3 45000 4 2352 track03.bin 0\n"
+	require.NoError(t, os.WriteFile(gdiPath, []byte(gdiContent), 0644))
+
+	files, totalSize, err := DiscCompanionFiles(gdiPath)
+	require.NoError(t, err)
+	assert.Len(t, files, 4, "should return .gdi + 3 track files")
+	assert.Contains(t, files, gdiPath)
+	assert.Contains(t, files, track1)
+	assert.Contains(t, files, track2)
+	assert.Contains(t, files, track3)
+
+	gdiInfo, _ := os.Stat(gdiPath)
+	t1Info, _ := os.Stat(track1)
+	t2Info, _ := os.Stat(track2)
+	t3Info, _ := os.Stat(track3)
+	expectedSize := gdiInfo.Size() + t1Info.Size() + t2Info.Size() + t3Info.Size()
+	assert.Equal(t, expectedSize, totalSize)
+}
+
+// Standalone .gdi with track files in a dreamcast/ dir should create a single
+// game entry with DiscCount=1, a GameDisc record, and claim all track files.
+func TestScan_StandaloneGdiBin(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	dcDir := filepath.Join(dir, "dreamcast")
+	require.NoError(t, os.MkdirAll(dcDir, 0755))
+
+	// Create track files
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track01.bin"), []byte("track 1 data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track02.raw"), []byte("track 2 data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "track03.bin"), []byte("track 3 data"), 0644))
+
+	// Create .gdi file
+	gdiContent := "3\n1 0 4 2352 track01.bin 0\n2 450 0 2352 track02.raw 0\n3 45000 4 2352 track03.bin 0\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "Sonic Adventure.gdi"), []byte(gdiContent), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+
+	// Should create exactly 1 game — the .gdi — not separate entries for track files
+	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game for standalone .gdi")
+	assert.Equal(t, 1, result.TotalGames)
+
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1)
+	assert.Equal(t, "Sonic Adventure", games[0].Title)
+	assert.Equal(t, "Sonic Adventure.gdi", games[0].FileName)
+	assert.Equal(t, 1, games[0].DiscCount)
+	assert.Greater(t, games[0].FileSize, int64(0), "file size should include .gdi + tracks")
+
+	// Verify correct console
+	var dcConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "DC").First(&dcConsole).Error)
+	assert.Equal(t, dcConsole.ID, games[0].ConsoleID)
+
+	// Verify a GameDisc record was created
+	var discs []db.GameDisc
+	database.Where("game_id = ?", games[0].ID).Find(&discs)
+	require.Len(t, discs, 1, "should have 1 disc record")
+	assert.Equal(t, 1, discs[0].DiscNumber)
+	assert.Equal(t, "Sonic Adventure.gdi", discs[0].FileName)
+
+	// Rescan should be idempotent
+	result2, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
+	assert.Equal(t, 1, result2.TotalGames)
 }

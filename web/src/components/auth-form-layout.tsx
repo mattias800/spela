@@ -37,12 +37,12 @@ export function AuthFormLayout({
 
         {/* Form */}
         <div className="rounded-2xl bg-surface-900/50 border border-surface-800/50 p-8 space-y-5 backdrop-blur-xl">
+          {children}
           {error && (
             <div className="rounded-xl bg-danger-500/10 border border-danger-500/30 px-4 py-3 text-sm text-danger-500">
               {error}
             </div>
           )}
-          {children}
           {footer}
         </div>
       </div>

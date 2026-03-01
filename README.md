@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <a href="#supported-consoles">35 Consoles</a> &bull;
+  <a href="#supported-consoles">36 Consoles</a> &bull;
   <a href="#features">Features</a> &bull;
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="docs/DEPLOY.md">Deploy Guide</a>
@@ -26,6 +26,16 @@ Think of it as your own personal Steam for retro games.
 </p>
 <p align="center">
   <img src="docs/screenshots/library.png" alt="Console browser" width="720" />
+</p>
+
+### Player App (Android)
+
+<p align="center">
+  <img src="docs/screenshots/android-library.png" alt="Android console browser" width="355" />
+  <img src="docs/screenshots/android-games.png" alt="Android SNES game grid" width="355" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/android-game-detail.png" alt="Android game detail" width="355" />
 </p>
 
 ## Why Spela?
@@ -86,7 +96,7 @@ Think of it as your own personal Steam for retro games.
 
 ## Supported Consoles
 
-35 systems across 8 families. Each console shows whether it supports **save states** and **browser play** (via EmulatorJS, no install needed).
+36 systems across 8 families. Each console shows whether it supports **save states** and **browser play** (via EmulatorJS, no install needed).
 
 ### Nintendo
 
@@ -100,7 +110,8 @@ Think of it as your own personal Steam for retro games.
 | Nintendo 64 | Mupen64Plus | :white_check_mark: | :white_check_mark: | `.n64` `.z64` `.v64` |
 | Nintendo DS | DeSmuME | :white_check_mark: | :white_check_mark: | `.nds` |
 | Virtual Boy | Beetle VB | :white_check_mark: | :white_check_mark: | `.vb` `.vboy` |
-| Nintendo 3DS | Citra | :white_check_mark: | | `.3ds` `.cia` |
+| Nintendo GameCube | Dolphin | :white_check_mark: | | `.iso` `.gcm` `.gcz` `.ciso` `.rvz` |
+| Nintendo 3DS | Citra | :white_check_mark: | | `.3ds` `.cci` `.cia` |
 | Pokemon Mini | PokeMini | :white_check_mark: | | `.min` |
 
 ### Sega
@@ -110,18 +121,18 @@ Think of it as your own personal Steam for retro games.
 | Sega Master System | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.sms` |
 | Sega Genesis / Mega Drive | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.md` `.gen` `.bin` |
 | Game Gear | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.gg` |
-| Sega CD | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.iso` `.bin` `.cue` `.chd` |
-| Sega 32X | PicoDrive | :white_check_mark: | :white_check_mark: | `.32x` `.bin` |
-| Sega Saturn | Beetle Saturn | :white_check_mark: | :white_check_mark: | `.iso` `.bin/.cue` |
-| Dreamcast | Flycast | :white_check_mark: | | `.gdi` `.cdi` `.chd` |
+| Sega CD | Genesis Plus GX | :white_check_mark: | :white_check_mark: | `.iso` `.bin` `.cue` `.m3u` |
+| Sega 32X | PicoDrive | :white_check_mark: | :white_check_mark: | `.32x` |
+| Sega Saturn | Beetle Saturn | :white_check_mark: | :white_check_mark: | `.iso` `.bin` `.cue` `.chd` `.m3u` |
+| Dreamcast | Flycast | :white_check_mark: | | `.gdi` `.cdi` `.chd` `.cue` `.bin` `.m3u` |
 
 ### Sony
 
 | Console | Core | Save States | Browser Play | Extensions |
 |---------|------|:-----------:|:------------:|------------|
-| PlayStation | Beetle PSX | :white_check_mark: | :white_check_mark: | `.bin/.cue` `.iso` `.pbp` |
-| PlayStation 2 | PCSX2 | :white_check_mark: | | `.iso` `.bin` `.chd` |
-| PSP | PPSSPP | :white_check_mark: | :white_check_mark: | `.iso` `.cso` |
+| PlayStation | Beetle PSX | :white_check_mark: | :white_check_mark: | `.bin` `.cue` `.iso` `.pbp` `.m3u` |
+| PlayStation 2 | Play! | :white_check_mark: | | `.iso` `.bin` `.chd` |
+| PSP | PPSSPP | :white_check_mark: | :white_check_mark: | `.iso` `.cso` `.chd` |
 
 ### Atari
 
@@ -131,14 +142,14 @@ Think of it as your own personal Steam for retro games.
 | Atari 5200 | A5200 | :white_check_mark: | :white_check_mark: | `.a52` `.bin` |
 | Atari 7800 | ProSystem | :white_check_mark: | :white_check_mark: | `.a78` `.bin` |
 | Atari Lynx | Handy | :white_check_mark: | :white_check_mark: | `.lnx` |
-| Atari Jaguar | Virtual Jaguar | | :white_check_mark: | `.j64` `.jag` |
+| Atari Jaguar | Virtual Jaguar | | | `.j64` `.jag` |
 
 ### NEC
 
 | Console | Core | Save States | Browser Play | Extensions |
 |---------|------|:-----------:|:------------:|------------|
 | TurboGrafx-16 | Beetle PCE | :white_check_mark: | :white_check_mark: | `.pce` |
-| PC-FX | Beetle PC-FX | :white_check_mark: | :white_check_mark: | `.cue` `.iso` `.chd` |
+| PC-FX | Beetle PC-FX | :white_check_mark: | :white_check_mark: | `.iso` `.cue` `.m3u` |
 
 ### SNK
 
@@ -153,10 +164,10 @@ Think of it as your own personal Steam for retro games.
 |---------|------|:-----------:|:------------:|------------|
 | Arcade (MAME) | MAME 2003+ | :white_check_mark: | :white_check_mark: | `.zip` |
 | WonderSwan | Beetle WonderSwan | :white_check_mark: | :white_check_mark: | `.ws` `.wsc` |
-| ColecoVision | GearColeco | :white_check_mark: | :white_check_mark: | `.col` `.cv` `.bin` |
+| ColecoVision | BlueMSX | :white_check_mark: | | `.col` `.rom` |
 | Commodore 64 | VICE | :white_check_mark: | :white_check_mark: | `.d64` `.t64` `.prg` `.crt` |
-| Commodore Amiga | PUAE | :white_check_mark: | :white_check_mark: | `.adf` `.hdf` `.ipf` `.lha` `.zip` |
-| DOS | DOSBox Pure | :white_check_mark: | :white_check_mark: | `.zip` `.exe` `.com` `.bat` |
+| Commodore Amiga | PUAE | :white_check_mark: | | `.adf` `.hdf` `.lha` |
+| DOS | DOSBox Pure | :white_check_mark: | :white_check_mark: | `.exe` `.com` `.bat` `.conf` |
 
 ## Quick Start
 
@@ -200,37 +211,21 @@ Download the player app on your device, point it at your server, and start playi
 
 For production deployment with HTTPS, TURN server, and Portainer, see the **[Deploy Guide](docs/DEPLOY.md)**.
 
-## Tech Stack
+## Documentation
 
-| Component | Technology |
-|-----------|------------|
-| Backend | Go, Gin, GORM, SQLite |
-| Web Frontend | React, TypeScript, Vite, Tailwind CSS |
-| Player App | Kotlin Multiplatform, Compose Multiplatform, libretro |
-| Real-Time | WebSocket |
-| Auth | JWT with refresh token rotation |
-| TURN Server | coturn (for netplay NAT traversal) |
-
-## Development
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
-
-```bash
-# Backend
-cd server && go run ./cmd/server
-
-# Web frontend
-cd web && npm install && npm run dev
-
-# Player app
-# See player/README.md for build instructions
-```
+| Guide | Description |
+|-------|-------------|
+| [Deploy Guide](docs/DEPLOY.md) | Production deployment, HTTPS, TURN server, backups |
+| [Development Guide](docs/DEVELOPMENT.md) | Building from source, architecture, testing |
+| [Contributing](CONTRIBUTING.md) | Code style, commit conventions, pull requests |
 
 ## Acknowledgments
 
 Spela is built with and uses the following open-source projects:
 
 - **[retro-game-console-icons](https://github.com/KyleBing/retro-game-console-icons)** (GPL-3.0) — Console hardware icons
+- **[console-logos](https://github.com/PRO100BYTE/console-logos)** — Console logo SVGs by Dan Patrick
+- **[Icons8](https://icons8.com)** — GameCube and 3DS console icons
 - **[EmulatorJS](https://emulatorjs.org)** (GPL-3.0) — Browser-based emulation frontend
 - **[libretro / RetroArch](https://www.libretro.com)** (GPL-3.0) — Emulation API and cores
 - **[RetroAchievements](https://retroachievements.org)** — Achievement system for retro games

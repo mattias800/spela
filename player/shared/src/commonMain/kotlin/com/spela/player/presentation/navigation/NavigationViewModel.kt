@@ -172,6 +172,10 @@ class NavigationViewModel(
                         )
                     }
                 }
+                // Sync pending save states to the server after leaving a game.
+                // Auto-save writes to local storage only (fast), so the upload
+                // happens here in the background.
+                scope.launch(dispatchers.io) { syncEngine.syncAll() }
             }
 
         }

@@ -398,6 +398,184 @@ test.describe("Emulator Save State Sync", () => {
     });
   });
 
+  test.describe("Screenshot Upload", () => {
+    test("includes screenshot in save state upload when available", async ({
+      page,
+    }) => {
+      const gameId = await navigateToPlayPage(page);
+
+      // Intercept save uploads
+      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+        if (route.request().method() === "POST") {
+          route.fulfill({
+            status: 201,
+            json: {
+              id: 50,
+              gameId: parseInt(gameId),
+              userId: 1,
+              name: "save",
+              fileSize: 2048,
+              isAuto: false,
+              screenshotUrl: "/images/save-screenshots/user_1/game_1/screenshot.png",
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      await page.goto(`/games/${gameId}/play`);
+      await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await simulatePlaying(page);
+
+      // Intercept FormData.append to capture all appended keys
+      await page.evaluate(() => {
+        const origAppend = FormData.prototype.append;
+        (window as unknown as Record<string, unknown>).__formDataKeys = [] as string[];
+        FormData.prototype.append = function (name: string, ...rest: unknown[]) {
+          (window as unknown as Record<string, string[]>).__formDataKeys.push(name);
+          return origAppend.call(this, name, ...rest);
+        };
+      });
+
+      // Click Save State
+      await page.getByTitle("Save State").click();
+
+      // Simulate emulator responding with save data AND a screenshot (data URL)
+      await page.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "red";
+        ctx.fillRect(0, 0, 1, 1);
+        const screenshotDataUrl = canvas.toDataURL("image/png");
+
+        window.postMessage(
+          {
+            type: "save-state-response",
+            data: btoa("save-state-with-screenshot"),
+            screenshot: screenshotDataUrl,
+          },
+          window.location.origin,
+        );
+      });
+
+      // Wait for the save queue to process
+      await page.waitForTimeout(3_000);
+
+      const formDataKeys = await page.evaluate(
+        () => (window as unknown as Record<string, string[]>).__formDataKeys,
+      );
+      expect(formDataKeys).toContain("save");
+      expect(formDataKeys).toContain("screenshot");
+    });
+
+    test("uploads save without screenshot when screenshot is empty", async ({
+      page,
+    }) => {
+      const gameId = await navigateToPlayPage(page);
+
+      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+        if (route.request().method() === "POST") {
+          route.fulfill({
+            status: 201,
+            json: {
+              id: 51,
+              gameId: parseInt(gameId),
+              userId: 1,
+              name: "save",
+              fileSize: 2048,
+              isAuto: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      await page.goto(`/games/${gameId}/play`);
+      await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await simulatePlaying(page);
+
+      // Intercept fetch to capture FormData keys
+      await page.evaluate(() => {
+        const origFetch = window.fetch;
+        (window as unknown as Record<string, unknown>).__capturedFormDataKeys = [] as string[];
+        window.fetch = async function (...args: Parameters<typeof fetch>) {
+          const [, options] = args;
+          if (options?.body instanceof FormData) {
+            (window as unknown as Record<string, string[]>).__capturedFormDataKeys = Array.from(options.body.keys());
+          }
+          return origFetch.apply(this, args as [RequestInfo | URL, RequestInit?]);
+        };
+      });
+
+      await page.getByTitle("Save State").click();
+
+      // Simulate emulator responding WITHOUT a screenshot
+      await page.evaluate(() => {
+        window.postMessage(
+          {
+            type: "save-state-response",
+            data: btoa("save-state-without-screenshot"),
+            screenshot: "",
+          },
+          window.location.origin,
+        );
+      });
+
+      await page.waitForTimeout(3_000);
+
+      const formDataKeys = await page.evaluate(
+        () => (window as unknown as Record<string, string[]>).__capturedFormDataKeys,
+      );
+      expect(formDataKeys).toContain("save");
+      expect(formDataKeys).not.toContain("screenshot");
+    });
+  });
+
+  test.describe("Screenshot Content", () => {
+    test("WebGL contexts have preserveDrawingBuffer for screenshot capture", async ({
+      page,
+    }) => {
+      const gameId = await navigateToPlayPage(page);
+
+      await page.goto(`/games/${gameId}/play`);
+      await expect(
+        page.locator('iframe[src="/emulator.html"]'),
+      ).toBeVisible({ timeout: 15_000 });
+
+      // Access the iframe's frame context
+      const frame = page
+        .frames()
+        .find((f) => f.url().includes("emulator.html"));
+      expect(frame).toBeTruthy();
+
+      // Create a WebGL canvas inside the iframe and check that
+      // preserveDrawingBuffer is enabled. Without this attribute,
+      // canvas.toDataURL() returns transparent pixels after the browser
+      // composites the frame, producing empty save state screenshots.
+      const preserveDrawingBuffer = await frame!.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl");
+        return gl?.getContextAttributes()?.preserveDrawingBuffer ?? false;
+      });
+
+      expect(preserveDrawingBuffer).toBe(true);
+    });
+  });
+
   test.describe("Saving Indicator", () => {
     test("shows saving indicator when a save is in progress", async ({
       page,

@@ -23,4 +23,6 @@ interface FileStorage {
     suspend fun getFileSize(path: String): Long
     suspend fun listFiles(path: String): List<String>
     suspend fun isDirectory(path: String): Boolean
+    suspend fun zipDirectoryToBytes(dirPath: String): ByteArray?
+    suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String)
 }

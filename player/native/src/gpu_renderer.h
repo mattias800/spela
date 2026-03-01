@@ -39,6 +39,13 @@ bool gpu_renderer_init_offscreen(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height);
 void gpu_renderer_deinit_surface(gpu_renderer_t *r);
 
+/* Surface suspend/resume — used when the surface is temporarily destroyed
+ * (e.g. Android SurfaceView hidden for overlay). Destroys only the swapchain
+ * and VkSurface, keeping the Vulkan device and HW render context alive.
+ * This avoids calling context_destroy/context_reset on the core. */
+void gpu_renderer_suspend_surface(gpu_renderer_t *r);
+bool gpu_renderer_resume_surface(gpu_renderer_t *r, void *native_surface);
+
 /* Rendering */
 void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
     unsigned width, unsigned height, size_t pitch, unsigned pixel_format);
@@ -58,12 +65,18 @@ struct retro_hw_render_context_negotiation_interface_vulkan;
 void gpu_renderer_set_vk_negotiation(gpu_renderer_t *r,
     const struct retro_hw_render_context_negotiation_interface_vulkan *iface);
 
+/* Reinitialize Vulkan context (instance, device, pipelines) in-place.
+ * Used when the core provides a v2 negotiation interface after the renderer
+ * was already initialized — tears down and recreates with negotiation. */
+bool gpu_renderer_reinit_vulkan(gpu_renderer_t *r);
+
 /* Vulkan HW render support (Phase 4) */
 bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r);
 void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height);
 void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r);
 bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r);
+void gpu_renderer_set_hw_bottom_left_origin(gpu_renderer_t *r, bool bottom_left);
 /* Wait for GPU to finish all pending work (call before context_destroy) */
 void gpu_renderer_wait_idle(gpu_renderer_t *r);
 

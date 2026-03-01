@@ -1,5 +1,7 @@
 # Testing Guide
 
+> New to Spela development? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup instructions.
+
 This document describes how to run all tests across the Spela project. A feature is **not done** until all tests pass with zero regressions.
 
 ## Quick Reference

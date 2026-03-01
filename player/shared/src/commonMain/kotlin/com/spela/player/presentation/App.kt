@@ -26,6 +26,7 @@ import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
+import com.spela.player.libretro.GamepadPortManager
 import org.koin.compose.koinInject
 
 /**
@@ -58,6 +59,7 @@ fun App() {
     val connectivityMonitor: ConnectivityMonitor = koinInject()
     val saveDataViewModel: SaveDataViewModel = koinInject()
     val navigationEventBus: NavigationEventBus = koinInject()
+    val gamepadPortManager: GamepadPortManager = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -84,5 +86,6 @@ fun App() {
         connectivityMonitor = connectivityMonitor,
         saveDataViewModel = saveDataViewModel,
         navigationEventBus = navigationEventBus,
+        gamepadPortManager = gamepadPortManager,
     )
 }

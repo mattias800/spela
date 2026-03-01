@@ -50,6 +50,15 @@ var ConsoleExtMap = map[string]string{
 	".cso": "PSP",
 	".pbp": "PSX",
 	".cue": "PSX", // .cue files indicate PSX disc images
+	".gdi": "DC",
+	".cdi": "DC",
+	".3ds": "3DS",
+	".cci": "3DS",
+	".cia": "3DS",
+	".gcm": "GC",
+	".gcz": "GC",
+	".rvz": "GC",
+	".ciso": "GC",
 }
 
 // RomExtensions is the set of file extensions recognized as ROM/disc files.
@@ -66,10 +75,12 @@ var RomExtensions = map[string]bool{
 	".pce": true,
 	".a26": true,
 	".cso": true, ".iso": true,
-	".pbp": true, ".cue": true,
+	".pbp": true, ".cue": true, ".gdi": true, ".cdi": true,
 	".zip": true, ".7z": true,
 	".chd": true,
 	".m3u": true,
+	".3ds": true, ".cci": true, ".cia": true,
+	".gcm": true, ".gcz": true, ".rvz": true, ".ciso": true,
 }
 
 // directoryConsoleMap maps directory names to console abbreviations.
@@ -106,6 +117,10 @@ var directoryConsoleMap = map[string]string{
 	"scd":       "SCD",
 	"ps2":       "PS2",
 	"pcfx":      "PCFX",
+	"n3ds":      "3DS",
+	"3ds":       "3DS",
+	"gc":        "GC",
+	"gamecube":  "GC",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
@@ -178,7 +193,7 @@ func parseM3U(m3uPath string) ([]string, error) {
 // For .iso/.chd/.pbp, it returns just the file itself.
 func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 	ext := strings.ToLower(filepath.Ext(discEntryPath))
-	if ext != ".cue" {
+	if ext != ".cue" && ext != ".gdi" {
 		// Single file disc format
 		info, err := os.Stat(discEntryPath)
 		if err != nil {
@@ -187,39 +202,72 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 		return []string{discEntryPath}, info.Size(), nil
 	}
 
-	// Parse .cue file for FILE directives
-	f, err := os.Open(discEntryPath)
-	if err != nil {
-		return nil, 0, fmt.Errorf("opening .cue file: %w", err)
-	}
-	defer f.Close()
-
 	dir := filepath.Dir(discEntryPath)
 	files := []string{discEntryPath}
 	var totalSize int64
 
 	info, err := os.Stat(discEntryPath)
 	if err != nil {
-		return nil, 0, fmt.Errorf("stat .cue file: %w", err)
+		return nil, 0, fmt.Errorf("stat %s file: %w", ext, err)
 	}
 	totalSize += info.Size()
 
-	cueFilePattern := regexp.MustCompile(`(?i)^\s*FILE\s+"([^"]+)"`)
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		matches := cueFilePattern.FindStringSubmatch(sc.Text())
-		if matches == nil {
-			continue
+	f, err := os.Open(discEntryPath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("opening %s file: %w", ext, err)
+	}
+	defer f.Close()
+
+	if ext == ".gdi" {
+		// GDI format: first line is track count, subsequent lines are
+		// TRACK LBA TYPE SECTOR_SIZE FILENAME OFFSET
+		sc := bufio.NewScanner(f)
+		lineNum := 0
+		for sc.Scan() {
+			lineNum++
+			line := strings.TrimSpace(sc.Text())
+			if line == "" {
+				continue
+			}
+			if lineNum == 1 {
+				// First non-blank line is the track count — skip it
+				continue
+			}
+			// Parse track line: fields are space-separated, filename is field 4 (0-indexed)
+			fields := strings.Fields(line)
+			if len(fields) < 5 {
+				continue
+			}
+			trackFile := strings.Trim(fields[4], "\"")
+			trackPath := trackFile
+			if !filepath.IsAbs(trackPath) {
+				trackPath = filepath.Join(dir, trackPath)
+			}
+			trackPath = filepath.Clean(trackPath)
+			files = append(files, trackPath)
+			if trackInfo, err := os.Stat(trackPath); err == nil {
+				totalSize += trackInfo.Size()
+			}
 		}
-		binName := matches[1]
-		binPath := binName
-		if !filepath.IsAbs(binPath) {
-			binPath = filepath.Join(dir, binPath)
-		}
-		binPath = filepath.Clean(binPath)
-		files = append(files, binPath)
-		if binInfo, err := os.Stat(binPath); err == nil {
-			totalSize += binInfo.Size()
+	} else {
+		// Parse .cue file for FILE directives
+		cueFilePattern := regexp.MustCompile(`(?i)^\s*FILE\s+"([^"]+)"`)
+		sc := bufio.NewScanner(f)
+		for sc.Scan() {
+			matches := cueFilePattern.FindStringSubmatch(sc.Text())
+			if matches == nil {
+				continue
+			}
+			binName := matches[1]
+			binPath := binName
+			if !filepath.IsAbs(binPath) {
+				binPath = filepath.Join(dir, binPath)
+			}
+			binPath = filepath.Clean(binPath)
+			files = append(files, binPath)
+			if binInfo, err := os.Stat(binPath); err == nil {
+				totalSize += binInfo.Size()
+			}
 		}
 	}
 
@@ -291,9 +339,12 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 		}
 	}
 
-	// Remove games whose files no longer exist
+	// Remove games whose files no longer exist.
+	// Use Unscoped to include soft-deleted games — if a game was previously
+	// soft-deleted and the file is still gone, hard-delete it to free the
+	// unique index slot. If the file came back, it was already restored above.
 	var allGames []db.Game
-	if err := s.DB.Find(&allGames).Error; err != nil {
+	if err := s.DB.Unscoped().Find(&allGames).Error; err != nil {
 		return nil, fmt.Errorf("loading existing games: %w", err)
 	}
 	for _, g := range allGames {
@@ -301,11 +352,14 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 			// Resolve relative path to absolute for filesystem check
 			absPath, resolveErr := storage.ResolveGamePath(g.FilePath, s.GameDirs)
 			if resolveErr != nil || func() bool { _, err := os.Stat(absPath); return os.IsNotExist(err) }() {
-				slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
-				// Delete associated discs first
-				s.DB.Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
-				s.DB.Delete(&g)
-				result.RemovedGames++
+				if !g.DeletedAt.Valid {
+					slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
+					result.RemovedGames++
+				}
+				// Hard-delete game and associated discs so the unique index
+				// is freed and future scans can recreate them cleanly.
+				s.DB.Unscoped().Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
+				s.DB.Unscoped().Delete(&g)
 			}
 		}
 	}
@@ -324,10 +378,12 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 	return result, nil
 }
 
-// scanMultiDisc performs pass 1: discovers multi-disc games via .m3u files and disc patterns.
+// scanMultiDisc performs pass 1: discovers multi-disc games via .m3u files, disc patterns,
+// and standalone .cue files (which need companion .bin files bundled).
 func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult) error {
-	// Collect .m3u files and disc-pattern ROM files
+	// Collect .m3u files, disc-pattern ROM files, and standalone .cue/.gdi files
 	var m3uFiles []string
+	var cueFiles []string
 	discGroups := make(map[discGroupKey][]string) // grouped by (dir, baseTitle)
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -345,6 +401,10 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 		if ext == ".m3u" {
 			m3uFiles = append(m3uFiles, path)
 			return nil
+		}
+
+		if ext == ".cue" || ext == ".gdi" {
+			cueFiles = append(cueFiles, path)
 		}
 
 		// Check for disc pattern in filename
@@ -469,6 +529,123 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 		s.createMultiDiscGame(m3uPath, files, console, foundPaths, result)
 	}
 
+	// Process standalone .cue/.gdi files not already claimed by .m3u or disc patterns.
+	// A standalone .cue+.bin or .gdi+tracks needs a Game with DiscCount=1 and a GameDisc
+	// record so the download handler serves a tar bundle (not just the entry file).
+	for _, cuePath := range cueFiles {
+		if claimedPaths[cuePath] {
+			continue
+		}
+
+		// Get companion files (track files referenced in the .cue/.gdi)
+		companions, totalSize, err := DiscCompanionFiles(cuePath)
+		if err != nil {
+			slog.Warn("failed to get companion files for disc entry", "path", cuePath, "error", err)
+			continue
+		}
+
+		// Claim the entry file and all companion files to prevent pass 2 from
+		// creating separate game entries for track files
+		for _, c := range companions {
+			claimedPaths[c] = true
+		}
+
+		// Determine console
+		ext := strings.ToLower(filepath.Ext(cuePath))
+		abbrev := s.identifyConsole(cuePath, ext)
+		if abbrev == "" {
+			continue
+		}
+		console, exists := consoleMap[abbrev]
+		if !exists {
+			continue
+		}
+		if !consoleHasExtension(console, ext) {
+			continue
+		}
+
+		relPath := storage.RelativeGamePath(cuePath, s.GameDirs)
+		foundPaths[relPath] = true
+
+		// Check if game already exists
+		var existing db.Game
+		if err := s.DB.Unscoped().Where("file_path = ?", relPath).First(&existing).Error; err == nil {
+			// Restore if soft-deleted
+			if existing.DeletedAt.Valid {
+				slog.Info("restoring previously removed .cue game",
+					"title", existing.Title, "gameId", existing.ID)
+				s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+			}
+			// Fix console if directory indicates a different one (e.g. .cue in ps2/
+			// was previously identified as PSX via extension mapping)
+			if existing.ConsoleID != console.ID {
+				slog.Info("updating console for .cue game",
+					"title", existing.Title, "from", existing.ConsoleID, "to", console.ID)
+				s.DB.Model(&existing).Update("console_id", console.ID)
+			}
+			// Backfill disc record if missing
+			var discCount int64
+			s.DB.Model(&db.GameDisc{}).Where("game_id = ?", existing.ID).Count(&discCount)
+			if discCount == 0 {
+				slog.Info("creating disc record for standalone .cue game",
+					"title", existing.Title, "gameId", existing.ID)
+				disc := db.GameDisc{
+					GameID:     existing.ID,
+					DiscNumber: 1,
+					FilePath:   relPath,
+					FileName:   filepath.Base(cuePath),
+					FileSize:   totalSize,
+				}
+				s.DB.Create(&disc)
+				if existing.DiscCount == 0 || existing.FileSize == 0 {
+					s.DB.Model(&existing).Updates(map[string]interface{}{
+						"disc_count": 1,
+						"file_size":  totalSize,
+					})
+				}
+			}
+		} else {
+			// Create new game with disc record
+			title := GameTitle(filepath.Base(cuePath))
+			game := db.Game{
+				ConsoleID: console.ID,
+				Title:     title,
+				FileName:  filepath.Base(cuePath),
+				FilePath:  relPath,
+				FileSize:  totalSize,
+				DiscCount: 1,
+			}
+			if err := s.DB.Create(&game).Error; err != nil {
+				slog.Warn("failed to create .cue game", "path", cuePath, "error", err)
+				continue
+			}
+
+			disc := db.GameDisc{
+				GameID:     game.ID,
+				DiscNumber: 1,
+				FilePath:   relPath,
+				FileName:   filepath.Base(cuePath),
+				FileSize:   totalSize,
+			}
+			if err := s.DB.Create(&disc).Error; err != nil {
+				slog.Warn("failed to create disc entry for .cue game", "path", cuePath, "error", err)
+			}
+
+			result.NewGames++
+			slog.Info("found standalone .cue game", "title", title, "console", console.Abbreviation)
+		}
+
+		// Always clean up old standalone entries for companion files (e.g. orphaned
+		// .bin game entries), regardless of whether the .cue game already existed.
+		var binCompanions []string
+		for _, c := range companions {
+			if c != cuePath {
+				binCompanions = append(binCompanions, c)
+			}
+		}
+		s.removeOldDiscGames(binCompanions, cuePath, result)
+	}
+
 	return nil
 }
 
@@ -502,11 +679,57 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 	// Compute relative paths for DB storage
 	m3uRelPath := storage.RelativeGamePath(m3uPath, s.GameDirs)
 
-	// Check if game already exists
+	// Check if game already exists (including soft-deleted — the unique index
+	// on file_path covers soft-deleted rows, so we must see them to avoid
+	// creation failures and to restore games whose files reappear).
 	var existing db.Game
-	if err := s.DB.Where("file_path = ?", m3uRelPath).First(&existing).Error; err == nil {
-		// Game exists, update if needed
+	if err := s.DB.Unscoped().Where("file_path = ?", m3uRelPath).First(&existing).Error; err == nil {
+		// Restore if soft-deleted (file is back on disk)
+		if existing.DeletedAt.Valid {
+			slog.Info("restoring previously removed multi-disc game",
+				"title", existing.Title, "gameId", existing.ID)
+			s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+		}
 		foundPaths[m3uRelPath] = true
+
+		// Ensure disc records exist — they may be missing if the game was
+		// created before multi-disc support or if disc records were deleted.
+		var discCount int64
+		s.DB.Unscoped().Model(&db.GameDisc{}).Where("game_id = ?", existing.ID).Count(&discCount)
+		if discCount == 0 && len(discFiles) > 0 {
+			slog.Info("creating missing disc records for existing multi-disc game",
+				"title", existing.Title, "gameId", existing.ID, "discs", len(discFiles))
+			var totalSize int64
+			for i, df := range discFiles {
+				_, discSize, err := DiscCompanionFiles(df)
+				if err != nil {
+					slog.Warn("failed to get disc companion files", "path", df, "error", err)
+					continue
+				}
+				totalSize += discSize
+				disc := db.GameDisc{
+					GameID:     existing.ID,
+					DiscNumber: i + 1,
+					FilePath:   storage.RelativeGamePath(df, s.GameDirs),
+					FileName:   filepath.Base(df),
+					FileSize:   discSize,
+				}
+				if err := s.DB.Create(&disc).Error; err != nil {
+					slog.Warn("failed to create disc entry", "game", existing.Title, "disc", disc.DiscNumber, "error", err)
+				}
+			}
+			if existing.DiscCount == 0 || existing.FileSize == 0 {
+				s.DB.Model(&existing).Updates(map[string]interface{}{
+					"disc_count": len(discFiles),
+					"file_size":  totalSize,
+				})
+			}
+		} else if discCount > 0 {
+			// Restore any soft-deleted disc records
+			s.DB.Unscoped().Model(&db.GameDisc{}).
+				Where("game_id = ? AND deleted_at IS NOT NULL", existing.ID).
+				Update("deleted_at", nil)
+		}
 		return
 	}
 
@@ -615,10 +838,17 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 		relPath := storage.RelativeGamePath(path, s.GameDirs)
 		foundPaths[relPath] = true
 
-		// Check if game already exists
+		// Check if game already exists (including soft-deleted — unique index
+		// on file_path covers soft-deleted rows).
 		var existing db.Game
-		if err := s.DB.Where("file_path = ?", relPath).First(&existing).Error; err == nil {
-			// Game exists, check if file size changed
+		if err := s.DB.Unscoped().Where("file_path = ?", relPath).First(&existing).Error; err == nil {
+			// Restore if soft-deleted (file is back on disk)
+			if existing.DeletedAt.Valid {
+				slog.Info("restoring previously removed game",
+					"title", existing.Title, "path", relPath)
+				s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+			}
+			// Check if file size changed
 			if existing.FileSize != info.Size() {
 				existing.FileSize = info.Size()
 				s.DB.Save(&existing)
@@ -664,6 +894,12 @@ func (s *Scanner) identifyConsole(path, ext string) string {
 	// First try parent directory name
 	parentDir := strings.ToLower(filepath.Base(filepath.Dir(path)))
 	if abbrev, ok := directoryConsoleMap[parentDir]; ok {
+		return abbrev
+	}
+
+	// Try grandparent directory (handles layouts like ps2/GameName/game.bin)
+	grandparentDir := strings.ToLower(filepath.Base(filepath.Dir(filepath.Dir(path))))
+	if abbrev, ok := directoryConsoleMap[grandparentDir]; ok {
 		return abbrev
 	}
 

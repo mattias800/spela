@@ -39,7 +39,11 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
   const sendMessage = useCallback((msg: ParentToIframeMessage) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(msg, window.location.origin);
+    const transfer: Transferable[] = [];
+    if ("romData" in msg && msg.romData instanceof ArrayBuffer) {
+      transfer.push(msg.romData);
+    }
+    iframe.contentWindow.postMessage(msg, window.location.origin, transfer);
   }, []);
 
   // Listen for messages from the iframe
@@ -92,6 +96,8 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
   const initEmulator = useCallback(
     (config: {
       romUrl: string;
+      romData?: ArrayBuffer;
+      targetDisc?: number;
       core: string;
       gameName: string;
       saveStateData?: string;

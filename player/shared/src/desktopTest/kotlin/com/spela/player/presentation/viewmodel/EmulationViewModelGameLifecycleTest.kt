@@ -8,7 +8,6 @@ import com.spela.player.presentation.intent.EmulationIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -24,13 +23,12 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class EmulationViewModelGameLifecycleTest {
 
-    private val testDispatcher = StandardTestDispatcher()
     private lateinit var builder: EmulationViewModelTestBuilder
 
     @BeforeTest
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        builder = EmulationViewModelTestBuilder(testDispatcher)
+        builder = EmulationViewModelTestBuilder()
+        Dispatchers.setMain(StandardTestDispatcher())
     }
 
     @AfterTest
@@ -40,181 +38,185 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
-    fun startGameSetsIsLoadingTrue() = runTest(testDispatcher) {
+    fun startGameSetsIsLoadingTrue() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
         // Before any dispatching, isLoading should be set synchronously
         assertTrue(vm.state.value.isLoading)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameSetsIsRunningTrueAfterLoad() = runTest(testDispatcher) {
+    fun startGameSetsIsRunningTrueAfterLoad() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isRunning)
         assertFalse(vm.state.value.isLoading)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameSetsGameIdInState() = runTest(testDispatcher) {
+    fun startGameSetsGameIdInState() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("my-game-42"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertEquals("my-game-42", vm.state.value.gameId)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameFetchesGameDetail() = runTest(testDispatcher) {
+    fun startGameFetchesGameDetail() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertEquals("Test Game", vm.state.value.gameTitle)
         assertEquals("nes", vm.state.value.consoleId)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameLoadsUserPreferences() = runTest(testDispatcher) {
+    fun startGameLoadsUserPreferences() = runTest {
         builder.preferencesRepository.preferencesResult = Result.success(
             UserPreferences(showPerformanceOverlay = true)
         )
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.showPerformanceOverlay)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameResolvesShader() = runTest(testDispatcher) {
+    fun startGameResolvesShader() = runTest {
         builder.preferencesRepository.resolveShaderResult = ShaderPreset.CRT_SIMPLE
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertEquals(ShaderPreset.CRT_SIMPLE, vm.state.value.selectedShader)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameCallsLoadCoreThenLoadGameThenStart() = runTest(testDispatcher) {
+    fun startGameCallsLoadCoreThenLoadGameThenStart() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertEquals(1, builder.libretroController.loadCoreCallCount)
         assertEquals(1, builder.libretroController.loadGameCallCount)
         assertEquals(1, builder.libretroController.startCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameDetectsDualScreenConsoleNds() = runTest(testDispatcher) {
+    fun startGameDetectsDualScreenConsoleNds() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "nds")
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isDualScreenConsole)
         assertEquals(192, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameDetectsDualScreenConsole3ds() = runTest(testDispatcher) {
+    fun startGameDetectsDualScreenConsole3ds() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "3ds")
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isDualScreenConsole)
         assertEquals(240, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameSetsSessionElapsedSecondsToZero() = runTest(testDispatcher) {
+    fun startGameSetsSessionElapsedSecondsToZero() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertEquals(0, vm.state.value.sessionElapsedSeconds)
-        builder.tearDown()
     }
 
     @Test
-    fun sessionTimerIncrementsEverySecond() = runTest(testDispatcher) {
+    fun sessionTimerIncrementsEverySecond() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isRunning)
-        // Advance 3 seconds
-        advanceTimeBy(3000)
+        // Advance past the 3s delay + 3 timer ticks (at t=4000, 5000, 6000)
+        builder.advanceTimeBy(6100)
         assertTrue(vm.state.value.sessionElapsedSeconds >= 3)
-        builder.tearDown()
     }
 
     @Test
-    fun sessionTimerStopsOnStopGame() = runTest(testDispatcher) {
+    fun sessionTimerStopsOnStopGame() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
-        advanceTimeBy(2000)
+        builder.advanceTimeBy(100)
+        builder.advanceTimeBy(5000)
         val elapsed = vm.state.value.sessionElapsedSeconds
-        assertTrue(elapsed >= 2)
+        assertTrue(elapsed >= 1)
         vm.onIntent(EmulationIntent.StopGame)
-        advanceTimeBy(3000)
+        builder.advanceTimeBy(3000)
         // After stop, isRunning should be false
         assertFalse(vm.state.value.isRunning)
-        builder.tearDown()
     }
 
     @Test
-    fun pauseGameCallsControllerAndSetsState() = runTest(testDispatcher) {
+    fun pauseGameCallsControllerAndSetsState() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         vm.onIntent(EmulationIntent.PauseGame)
         assertTrue(vm.state.value.isPaused)
         assertEquals(1, builder.libretroController.pauseCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun resumeGameCallsControllerAndSetsState() = runTest(testDispatcher) {
+    fun resumeGameCallsControllerAndSetsState() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         vm.onIntent(EmulationIntent.PauseGame)
         assertTrue(vm.state.value.isPaused)
         vm.onIntent(EmulationIntent.ResumeGame)
         assertFalse(vm.state.value.isPaused)
         assertEquals(1, builder.libretroController.resumeCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun stopGameResetsRunningState() = runTest(testDispatcher) {
+    fun stopGameResetsRunningState() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isRunning)
         vm.onIntent(EmulationIntent.StopGame)
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertFalse(vm.state.value.isRunning)
         assertFalse(vm.state.value.isPaused)
-        builder.tearDown()
     }
 
     @Test
-    fun startGameFailureShowsError() = runTest(testDispatcher) {
+    fun startGameFailureShowsError() = runTest {
         builder.libretroController.loadCoreShouldThrow = RuntimeException("Core load failed")
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertFalse(vm.state.value.isRunning)
         assertFalse(vm.state.value.isLoading)
         assertNotNull(vm.state.value.error)
         assertTrue(vm.state.value.error!!.contains("Failed to start emulation"))
-        builder.tearDown()
+    }
+
+    @Test
+    fun startGameResetsSupportsSaveStatesToTrue() = runTest {
+        // First game: core does NOT support save states
+        builder.libretroController.supportsSaveStatesResult = false
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(4000) // Wait past the 3-second probe
+        assertFalse(vm.state.value.supportsSaveStates, "First game should not support save states")
+
+        // Stop the first game
+        vm.onIntent(EmulationIntent.StopGame)
+        builder.advanceTimeBy(100)
+
+        // Second game: core DOES support save states
+        builder.libretroController.supportsSaveStatesResult = true
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        // Immediately after startGame, supportsSaveStates should be reset to true
+        assertTrue(vm.state.value.supportsSaveStates, "supportsSaveStates should reset to true on new game start")
     }
 }

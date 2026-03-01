@@ -237,4 +237,35 @@ describe("GameHero", () => {
 
     expect(screen.getByTestId("play-in-browser-btn")).toBeDisabled();
   });
+
+  it("disables play button when biosMissing is true", () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero game={game} {...defaultProps} biosMissing={true} />,
+    );
+
+    expect(screen.getByTestId("play-in-browser-btn")).toBeDisabled();
+    expect(screen.getByTestId("play-in-browser-btn")).toHaveAttribute(
+      "title",
+      "Missing required BIOS files",
+    );
+  });
+
+  it("disables resume button when biosMissing is true", () => {
+    const game = makeGame();
+    renderWithQuery(
+      <GameHero
+        game={game}
+        {...defaultProps}
+        hasSaves={true}
+        biosMissing={true}
+      />,
+    );
+
+    expect(screen.getByTestId("resume-btn")).toBeDisabled();
+    expect(screen.getByTestId("resume-btn")).toHaveAttribute(
+      "title",
+      "Missing required BIOS files",
+    );
+  });
 });

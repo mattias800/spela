@@ -41,16 +41,16 @@ export function useEmulatorSaves({
 
   // Wrap enqueueSave to bind gameId
   const enqueueSave = useCallback(
-    (data: string, isAuto: boolean, name?: string) => {
+    (data: string, isAuto: boolean, name?: string, screenshot?: string) => {
       if (!gameId) return;
-      queueEnqueue(gameId, data, isAuto, name);
+      queueEnqueue(gameId, data, isAuto, name, screenshot);
     },
     [gameId, queueEnqueue],
   );
 
   // Handle incoming save state data from the iframe
   const handleSaveStateData = useCallback(
-    (data: string, _screenshot?: string) => {
+    (data: string, screenshot?: string) => {
       latestStateCacheRef.current = data;
 
       const exitResolve = exitSaveResolveRef.current;
@@ -61,6 +61,11 @@ export function useEmulatorSaves({
           const blob = new Blob([bytes]);
           const formData = new FormData();
           formData.append("save", blob, "auto-save.state");
+          if (screenshot) {
+            const ssBase64 = screenshot.replace(/^data:image\/\w+;base64,/, "");
+            const ssBytes = Uint8Array.from(atob(ssBase64), (c) => c.charCodeAt(0));
+            formData.append("screenshot", new Blob([ssBytes], { type: "image/png" }), "screenshot.png");
+          }
           api
             .upload(`/games/${gameId}/saves/auto`, formData)
             .then(() => exitResolve())
@@ -74,7 +79,7 @@ export function useEmulatorSaves({
       const isAuto = pendingSaveTypeRef.current === "auto";
       const name = isAuto ? undefined : pendingSaveNameRef.current;
       pendingSaveNameRef.current = undefined;
-      enqueueSave(data, isAuto, name);
+      enqueueSave(data, isAuto, name, screenshot);
     },
     [enqueueSave, gameId],
   );

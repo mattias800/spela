@@ -66,6 +66,8 @@ class LibretroJni {
     external fun nativeGpuSetShader(shaderId: Int)
     external fun nativeGpuResize(width: Int, height: Int)
     external fun nativeGpuDeinit()
+    external fun nativeGpuSuspend()
+    external fun nativeGpuResume(surface: Any): Boolean
     external fun nativeGpuIsActive(): Boolean
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
     external fun nativeIsHwRenderEnabled(): Boolean

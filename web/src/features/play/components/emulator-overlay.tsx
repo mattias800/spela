@@ -13,6 +13,8 @@ interface EmulatorOverlayProps {
   biosMissing?: boolean;
   missingBiosFiles?: string[];
   isAdmin?: boolean;
+  isSwitchingDisc?: boolean;
+  switchingToDisc?: number;
 }
 
 export function EmulatorOverlay({
@@ -24,7 +26,23 @@ export function EmulatorOverlay({
   biosMissing,
   missingBiosFiles,
   isAdmin,
+  isSwitchingDisc,
+  switchingToDisc,
 }: EmulatorOverlayProps) {
+  if (isSwitchingDisc) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-surface-950 transition-opacity duration-300">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-500 mb-3" />
+        <p className="text-sm text-surface-400">
+          Switching to Disc {switchingToDisc ?? ""}...
+        </p>
+        <p className="text-xs text-surface-500 mt-1">
+          Your progress has been saved.
+        </p>
+      </div>
+    );
+  }
+
   if (status === "loading") {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-surface-950 transition-opacity duration-300">

@@ -7,7 +7,6 @@ import com.spela.player.presentation.intent.EmulationIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -21,13 +20,12 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class EmulationViewModelSecondaryDisplayTest {
 
-    private val testDispatcher = StandardTestDispatcher()
     private lateinit var builder: EmulationViewModelTestBuilder
 
     @BeforeTest
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        builder = EmulationViewModelTestBuilder(testDispatcher)
+        builder = EmulationViewModelTestBuilder()
+        Dispatchers.setMain(StandardTestDispatcher())
     }
 
     @AfterTest
@@ -39,11 +37,11 @@ class EmulationViewModelSecondaryDisplayTest {
     // -- SecondaryDisplayAvailabilityChanged intent tests --
 
     @Test
-    fun secondaryDisplayAvailableWhileRunningShowsDisplay() = runTest(testDispatcher) {
+    fun secondaryDisplayAvailableWhileRunningShowsDisplay() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertTrue(vm.state.value.isRunning)
 
@@ -52,11 +50,10 @@ class EmulationViewModelSecondaryDisplayTest {
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertTrue(builder.fakeSecondaryDisplay.isShowing)
         assertEquals(1, builder.fakeSecondaryDisplay.showCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun secondaryDisplayAvailableWhileNotRunningDoesNotShow() = runTest(testDispatcher) {
+    fun secondaryDisplayAvailableWhileNotRunningDoesNotShow() = runTest {
         val vm = builder.build()
 
         assertFalse(vm.state.value.isRunning)
@@ -66,15 +63,14 @@ class EmulationViewModelSecondaryDisplayTest {
         assertFalse(builder.fakeSecondaryDisplay.isShowing)
         assertEquals(0, builder.fakeSecondaryDisplay.showCallCount)
         assertEquals(0, builder.fakeSecondaryDisplay.dismissCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun secondaryDisplayBecomesUnavailableDismissesDisplay() = runTest(testDispatcher) {
+    fun secondaryDisplayBecomesUnavailableDismissesDisplay() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
         assertTrue(vm.state.value.secondaryDisplayActive)
@@ -84,22 +80,20 @@ class EmulationViewModelSecondaryDisplayTest {
 
         assertFalse(vm.state.value.secondaryDisplayActive)
         assertFalse(builder.fakeSecondaryDisplay.isShowing)
-        builder.tearDown()
     }
 
     @Test
     fun secondaryDisplayActiveDefaultsToFalse() {
         val vm = builder.build()
         assertFalse(vm.state.value.secondaryDisplayActive)
-        builder.tearDown()
     }
 
     @Test
-    fun multipleAvailabilityChangesTrackCorrectly() = runTest(testDispatcher) {
+    fun multipleAvailabilityChangesTrackCorrectly() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
@@ -111,70 +105,65 @@ class EmulationViewModelSecondaryDisplayTest {
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
         assertEquals(2, builder.fakeSecondaryDisplay.showCallCount)
-        builder.tearDown()
     }
 
     @Test
-    fun stopGameDismissesSecondaryDisplay() = runTest(testDispatcher) {
+    fun stopGameDismissesSecondaryDisplay() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         assertTrue(vm.state.value.secondaryDisplayActive)
 
         vm.onIntent(EmulationIntent.StopGame)
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertFalse(vm.state.value.secondaryDisplayActive)
         assertFalse(builder.fakeSecondaryDisplay.isShowing)
-        builder.tearDown()
     }
 
     @Test
-    fun duplicateAvailableIntentDoesNotDoubleShow() = runTest(testDispatcher) {
+    fun duplicateAvailableIntentDoesNotDoubleShow() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
         vm.onIntent(EmulationIntent.SecondaryDisplayAvailabilityChanged(true))
 
         assertEquals(1, builder.fakeSecondaryDisplay.showCallCount)
         assertTrue(vm.state.value.secondaryDisplayActive)
-        builder.tearDown()
     }
 
     // -- DS dual-screen detection tests --
 
     @Test
-    fun ndsConsoleIdTriggersIsDualScreenConsole() = runTest(testDispatcher) {
+    fun ndsConsoleIdTriggersIsDualScreenConsole() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "nds")
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertTrue(vm.state.value.isDualScreenConsole)
         assertEquals(192, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 
     @Test
-    fun nonDsConsoleIdDoesNotTriggerDualScreen() = runTest(testDispatcher) {
+    fun nonDsConsoleIdDoesNotTriggerDualScreen() = runTest {
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertFalse(vm.state.value.isDualScreenConsole)
         assertEquals(0, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 
     @Test
-    fun ndsConsoleIdSetsCoreVariables() = runTest(testDispatcher) {
+    fun ndsConsoleIdSetsCoreVariables() = runTest {
         val controller = StubLibretroControllerWithVariableTracking()
         // For this test we need to use a custom controller, but the builder
         // doesn't support swapping the controller type easily.
@@ -185,40 +174,37 @@ class EmulationViewModelSecondaryDisplayTest {
         // We verify dual-screen detection instead (core variable tracking
         // is already validated by the existing test infrastructure).
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertTrue(vm.state.value.isDualScreenConsole)
-        builder.tearDown()
     }
 
     @Test
-    fun threedsConsoleIdTriggersIsDualScreenConsole() = runTest(testDispatcher) {
+    fun threedsConsoleIdTriggersIsDualScreenConsole() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "3ds")
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertTrue(vm.state.value.isDualScreenConsole)
         assertEquals(240, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 
     @Test
-    fun stopGameResetsIsDualScreenConsole() = runTest(testDispatcher) {
+    fun stopGameResetsIsDualScreenConsole() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "nds")
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
         assertTrue(vm.state.value.isDualScreenConsole)
         assertEquals(192, vm.state.value.dualScreenSplitY)
 
         vm.onIntent(EmulationIntent.StopGame)
-        advanceTimeBy(100)
+        builder.advanceTimeBy(100)
 
         assertFalse(vm.state.value.isDualScreenConsole)
         assertEquals(0, vm.state.value.dualScreenSplitY)
-        builder.tearDown()
     }
 }

@@ -225,6 +225,14 @@ fun getConsoleInfo(abbreviation: String): ConsoleInfo? = when (abbreviation.lowe
         unitsSold = "75.9M units",
         summary = "Nintendo's glasses-free 3D handheld recovered from a rocky start to build one of the richest portable libraries, with acclaimed entries in Zelda, Pokémon, and Fire Emblem.",
     )
+    "gc" -> ConsoleInfo(
+        manufacturer = "Nintendo",
+        releaseYear = 2001,
+        mediaType = "Mini DVD",
+        generation = "6th gen",
+        unitsSold = "21.7M units",
+        summary = "Nintendo's compact sixth-gen console delivered some of the most beloved games of the era, including Melee, Wind Waker, and Metroid Prime, with a distinctive handle and controller design.",
+    )
     "ngp" -> ConsoleInfo(
         manufacturer = "SNK",
         releaseYear = 1998,
@@ -314,6 +322,7 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
         "dc" -> Color(0xFFf97316) to Color(0xFF1d4ed8)          // orange-500 → blue-700
         "vb" -> Color(0xFF991b1b) to Color(0xFF450a0a)          // red-800 → red-950
         "3ds" -> Color(0xFFef4444) to Color(0xFF991b1b)         // red-500 → red-800
+        "gc" -> Color(0xFF6366f1) to Color(0xFF6b21a8)           // indigo-500 → purple-800
         "a52" -> Color(0xFFb45309) to Color(0xFF451a03)         // amber-700 → amber-950
         "a78" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
         "lynx" -> Color(0xFFca8a04) to Color(0xFF713f12)        // yellow-600 → yellow-900

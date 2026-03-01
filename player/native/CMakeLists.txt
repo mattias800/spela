@@ -20,10 +20,11 @@ if(ANDROID)
         src/hw_render_gl_android.c
     )
 elseif(APPLE)
-    # macOS: Metal renderer (Objective-C) + OpenGL HW render support
+    # macOS: Vulkan via MoltenVK + Obj-C surface creation + OpenGL HW render
     enable_language(OBJC)
     list(APPEND COMMON_SOURCES
-        src/gpu_renderer_metal.m
+        src/gpu_renderer_vulkan.c
+        src/gpu_renderer_vulkan_macos.m
         src/hw_render_gl_macos.m
     )
 else()
@@ -96,22 +97,42 @@ else()
     endif()
 
     if(APPLE)
-        # macOS: Metal + QuartzCore + OpenGL frameworks
+        # macOS: Vulkan via MoltenVK (linked directly, bypasses Vulkan loader ICD).
+        # MoltenVK exports all Vulkan entry points, so no VK_ICD_FILENAMES needed.
+        find_package(Vulkan REQUIRED)
+        find_library(MOLTENVK_LIB MoltenVK HINTS /opt/homebrew/lib /usr/local/lib)
         find_library(METAL_FRAMEWORK Metal)
-        find_library(METALKIT_FRAMEWORK MetalKit)
         find_library(QUARTZCORE_FRAMEWORK QuartzCore)
         find_library(COCOA_FRAMEWORK Cocoa)
         find_library(OPENGL_FRAMEWORK OpenGL)
-        target_link_libraries(spela-libretro
-            ${JNI_LIBRARIES}
-            ${METAL_FRAMEWORK}
-            ${METALKIT_FRAMEWORK}
-            ${QUARTZCORE_FRAMEWORK}
-            ${COCOA_FRAMEWORK}
-            ${OPENGL_FRAMEWORK}
-        )
+        find_library(IOKIT_FRAMEWORK IOKit)
+        find_library(IOSURFACE_FRAMEWORK IOSurface)
+        target_include_directories(spela-libretro PRIVATE ${Vulkan_INCLUDE_DIRS})
+        if(MOLTENVK_LIB)
+            message(STATUS "Using MoltenVK directly: ${MOLTENVK_LIB}")
+            target_link_libraries(spela-libretro
+                ${JNI_LIBRARIES}
+                ${MOLTENVK_LIB}
+                ${METAL_FRAMEWORK}
+                ${QUARTZCORE_FRAMEWORK}
+                ${COCOA_FRAMEWORK}
+                ${OPENGL_FRAMEWORK}
+                ${IOKIT_FRAMEWORK}
+                ${IOSURFACE_FRAMEWORK}
+            )
+        else()
+            message(STATUS "MoltenVK not found, falling back to Vulkan loader")
+            target_link_libraries(spela-libretro
+                ${JNI_LIBRARIES}
+                ${Vulkan_LIBRARIES}
+                ${METAL_FRAMEWORK}
+                ${QUARTZCORE_FRAMEWORK}
+                ${COCOA_FRAMEWORK}
+                ${OPENGL_FRAMEWORK}
+            )
+        endif()
         # Set Objective-C ARC for .m files
-        set_source_files_properties(src/gpu_renderer_metal.m PROPERTIES
+        set_source_files_properties(src/gpu_renderer_vulkan_macos.m PROPERTIES
             COMPILE_FLAGS "-fobjc-arc"
         )
         set_source_files_properties(src/hw_render_gl_macos.m PROPERTIES
@@ -138,9 +159,8 @@ else()
     endif()
 endif()
 
-# Shader compilation custom commands
-if(ANDROID OR (NOT APPLE))
-    # SPIR-V shader compilation for Vulkan platforms
+# Shader compilation custom commands — all platforms now use Vulkan (macOS via MoltenVK)
+if(TRUE)
     set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     set(SPIRV_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/gpu_shaders_spirv.h")
 

@@ -72,6 +72,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestDispatcher
 
 // ── Mock Engine Factory ─────────────────────────────────────────────────────
@@ -206,6 +208,7 @@ class StubCoreRepository : CoreRepository {
 class StubSaveRepository : SaveRepository {
     var uploadAutoSaveCallCount = 0; private set
     var downloadAutoSaveCallCount = 0; private set
+    var saveLocallyCallCount = 0; private set
     var lastUploadedData: ByteArray? = null; private set
 
     var uploadAutoSaveResult: Result<SaveState> = Result.success(SaveState(id = 1, gameId = 1, name = "auto"))
@@ -230,7 +233,10 @@ class StubSaveRepository : SaveRepository {
         downloadAutoSaveCallCount++
         return downloadAutoSaveResult
     }
-    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean) = Result.success(SaveState(id = 1, gameId = 1, name = name))
+    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> {
+        saveLocallyCallCount++
+        return Result.success(SaveState(id = 1, gameId = 1, name = name))
+    }
     override suspend fun loadLocalAutoSave(gameId: String) = Result.failure<ByteArray>(Exception("none"))
     override suspend fun getPendingSyncCount() = 0
     override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
@@ -251,8 +257,13 @@ class StubSaveDataRepository : SaveDataRepository {
     var downloadActiveSaveDataCallCount = 0; private set
     var lastSavedSRAMData: ByteArray? = null; private set
 
+    var zipSaveDirectoryCallCount = 0; private set
+    var unzipToSaveDirectoryCallCount = 0; private set
+    var lastUnzippedData: ByteArray? = null; private set
+
     var loadLocalSRAMResult: ByteArray? = null
     var downloadActiveSaveDataResult: Result<ByteArray> = Result.success(ByteArray(0))
+    var zipSaveDirectoryResult: ByteArray? = null
 
     override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
     override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): Result<SaveData> {
@@ -276,6 +287,14 @@ class StubSaveDataRepository : SaveDataRepository {
         return loadLocalSRAMResult
     }
     override suspend fun getPendingSyncCount() = 0
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? {
+        zipSaveDirectoryCallCount++
+        return zipSaveDirectoryResult
+    }
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {
+        unzipToSaveDirectoryCallCount++
+        lastUnzippedData = data
+    }
 }
 
 class StubPreferencesRepository : PreferencesRepository {
@@ -473,11 +492,26 @@ private class StubFileStorage : com.spela.player.util.FileStorage {
     override suspend fun getFileSize(path: String): Long = 0
     override suspend fun listFiles(path: String): List<String> = emptyList()
     override suspend fun isDirectory(path: String): Boolean = false
+    override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+    override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
 }
 
 // ── ViewModel Builder ───────────────────────────────────────────────────────
 
-class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
+/**
+ * Test builder for [EmulationViewModel].
+ *
+ * Uses its OWN [TestCoroutineScheduler] separate from [runTest]'s scheduler.
+ * This prevents [runTest] cleanup from hanging on infinite-loop VM coroutines
+ * (session timer, heartbeats) when a test assertion fails before tearDown.
+ *
+ * Tests must call [advanceTimeBy] instead of [TestScope.advanceTimeBy].
+ */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+class EmulationViewModelTestBuilder {
+    private val vmScheduler = TestCoroutineScheduler()
+    val testDispatcher: TestDispatcher = StandardTestDispatcher(vmScheduler)
+
     val dispatchers: DispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
@@ -501,6 +535,12 @@ class EmulationViewModelTestBuilder(val testDispatcher: TestDispatcher) {
     lateinit var vmScope: CoroutineScope
     lateinit var connectivityMonitor: ConnectivityMonitor
     lateinit var presenceService: PresenceService
+
+    /** Advance the VM's virtual clock by [ms] milliseconds and process pending tasks. */
+    fun advanceTimeBy(ms: Long) {
+        vmScheduler.advanceTimeBy(ms)
+        vmScheduler.runCurrent()
+    }
 
     fun build(): EmulationViewModel {
         vmScope = CoroutineScope(testDispatcher + Job())

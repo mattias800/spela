@@ -33,7 +33,7 @@ import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
 import { ChallengesPage } from "@/pages/challenges-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
-import { SetupPage } from "@/pages/setup-page";
+import { SetupWizardPage } from "@/pages/setup-wizard-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useTheme } from "@/hooks/use-theme";
@@ -55,7 +55,7 @@ export function App() {
               <ThemeApplier>
                 <Routes>
                   {/* Auth routes */}
-                  <Route path="/setup" element={<SetupPage />} />
+                  <Route path="/setup" element={<SetupWizardPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
 

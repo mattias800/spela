@@ -20,6 +20,8 @@ services:
       - SPELA_CORS_ORIGINS=http://localhost:5173
       - SPELA_SEED=true
       - SPELA_CHALLENGE_RATE_LIMIT_SEC=0
+      - SPELA_IGDB_CLIENT_ID=${SPELA_IGDB_CLIENT_ID:-}
+      - SPELA_IGDB_CLIENT_SECRET=${SPELA_IGDB_CLIENT_SECRET:-}
       - GIN_MODE=debug
 
   web:

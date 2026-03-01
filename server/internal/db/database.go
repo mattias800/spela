@@ -145,7 +145,7 @@ func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
 			}
 			slog.Info("removing duplicate game during path migration",
 				"title", victim.Title, "id", victim.ID, "path", relPath)
-			database.Where("game_id = ?", victim.ID).Delete(&GameDisc{})
+			database.Unscoped().Where("game_id = ?", victim.ID).Delete(&GameDisc{})
 			database.Unscoped().Delete(&victim)
 			if victim.ID == g.ID {
 				continue
@@ -252,7 +252,7 @@ func DeduplicateGames(database *gorm.DB) error {
 			mergeGameData(database, keeper.ID, dup.ID)
 			mergeGameMetadata(database, &keeper, &dup)
 			// Hard-delete the duplicate
-			database.Where("game_id = ?", dup.ID).Delete(&GameDisc{})
+			database.Unscoped().Where("game_id = ?", dup.ID).Delete(&GameDisc{})
 			database.Unscoped().Delete(&dup)
 		}
 	}
@@ -463,7 +463,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "melonds", FolderName: "nds", ColorTheme: "#b0b0b0", CoverAspect: "10:9", SaveStateSupport: true},
 		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", SaveStateSupport: true},
 		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", SaveStateSupport: true},
-		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
+		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true},
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "pcsx_rearmed", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso,.chd", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", SaveStateSupport: true},
@@ -474,9 +474,10 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", SaveStateSupport: true},
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", SaveStateSupport: true},
-		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true},
+		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd,.cue,.bin,.m3u", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", SaveStateSupport: true},
-		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cia", DefaultCore: "citra", EmulatorJSCore: "", FolderName: "3ds", ColorTheme: "#ce181e", SaveStateSupport: true},
+		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "citra", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", SaveStateSupport: true},
+		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", SaveStateSupport: true},
 		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", SaveStateSupport: true},
 		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", SaveStateSupport: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", SaveStateSupport: true},
@@ -486,7 +487,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", SaveStateSupport: true},
 		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "colecovision", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", SaveStateSupport: true},
-		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.chd,.m3u", DefaultCore: "play", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", SaveStateSupport: true},
+		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "play", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", SaveStateSupport: true},
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", SaveStateSupport: true},
 		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", SaveStateSupport: true},
 		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha", DefaultCore: "puae", EmulatorJSCore: "", FolderName: "amiga", ColorTheme: "#6c5eb5", SaveStateSupport: true},
@@ -509,7 +510,7 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
 				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
 			}
-			if existing.FolderName == "" && c.FolderName != "" {
+			if c.FolderName != "" && existing.FolderName != c.FolderName {
 				db.Model(&existing).Update("folder_name", c.FolderName)
 				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
 			}
@@ -517,17 +518,14 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("save_state_support", true)
 				slog.Info("backfilled SaveStateSupport", "name", existing.Name)
 			}
-			// Backfill .m3u extension for disc-based consoles
-			if strings.Contains(c.Extensions, ".m3u") && !strings.Contains(existing.Extensions, ".m3u") {
-				newExts := existing.Extensions + ",.m3u"
-				db.Model(&existing).Update("extensions", newExts)
-				slog.Info("backfilled .m3u extension", "name", existing.Name)
-			}
-			// Backfill .chd extension for disc-based consoles
-			if strings.Contains(c.Extensions, ".chd") && !strings.Contains(existing.Extensions, ".chd") {
-				newExts := existing.Extensions + ",.chd"
-				db.Model(&existing).Update("extensions", newExts)
-				slog.Info("backfilled .chd extension", "name", existing.Name)
+			// Backfill any new extensions from the seed that are missing in the DB
+			for _, ext := range strings.Split(c.Extensions, ",") {
+				ext = strings.TrimSpace(ext)
+				if ext != "" && !strings.Contains(existing.Extensions, ext) {
+					existing.Extensions = existing.Extensions + "," + ext
+					db.Model(&existing).Update("extensions", existing.Extensions)
+					slog.Info("backfilled extension", "name", existing.Name, "ext", ext)
+				}
 			}
 		}
 	}

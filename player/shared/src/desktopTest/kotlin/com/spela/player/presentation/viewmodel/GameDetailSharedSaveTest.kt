@@ -309,6 +309,8 @@ private class SharedSaveTestSaveDataRepository : SaveDataRepository {
     override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
     override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
     override suspend fun getPendingSyncCount(): Int = 0
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {}
 }
 
 private class SharedSaveTestGameStatsRepository : GameStatsRepository {
