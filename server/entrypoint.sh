@@ -12,6 +12,11 @@ run_as_spela() {
     fi
 }
 
+echo "entrypoint: uid=$(id -u) gid=$(id -g)"
+
+# Writable directories that the server needs.
+SPELA_DIRS="/app/data /app/saves /app/cores /app/images /app/bios /app/dats"
+
 # ── Root-only setup (skipped in rootless / non-root containers) ────────
 if [ "$(id -u)" = "0" ]; then
     # Configure runtime user — set PUID/PGID to match your host directories.
@@ -27,7 +32,6 @@ if [ "$(id -u)" = "0" ]; then
 
     # Fix ownership on bind-mounted directories.
     # Docker creates host directories as root when they don't exist yet.
-    SPELA_DIRS="/app/data /app/saves /app/cores /app/images /app/bios /app/dats"
     for dir in $SPELA_DIRS; do
         if [ -d "$dir" ]; then
             owner=$(stat -c '%u' "$dir" 2>/dev/null || stat -f '%u' "$dir" 2>/dev/null)
@@ -37,6 +41,38 @@ if [ "$(id -u)" = "0" ]; then
             fi
         fi
     done
+else
+    # ── Non-root: check that writable directories are accessible ──────
+    failed=""
+    for dir in $SPELA_DIRS; do
+        if [ -d "$dir" ] && ! touch "$dir/.write-test" 2>/dev/null; then
+            failed="$failed $dir"
+        fi
+        rm -f "$dir/.write-test" 2>/dev/null
+    done
+    if [ -n "$failed" ]; then
+        echo ""
+        echo "ERROR: Container is running as non-root (uid=$(id -u)) and these"
+        echo "directories are not writable:$failed"
+        echo ""
+        echo "The container is designed to start as root and drop privileges"
+        echo "automatically. To fix this, choose one of:"
+        echo ""
+        echo "  1. Remove any 'user:' override from your stack/docker-compose"
+        echo "     (the container handles user switching via PUID/PGID env vars)"
+        echo ""
+        echo "  2. In Portainer: check Settings > Security for 'run as non-root'"
+        echo "     or check the container's 'User' field — it should be empty"
+        echo ""
+        echo "  3. Fix host directory permissions manually:"
+        for dir in $failed; do
+            echo "       sudo chown -R $(id -u):$(id -g) <host-path-for$dir>"
+        done
+        echo ""
+        # Exit non-zero so Docker knows the container failed.
+        # The restart policy will retry with exponential backoff.
+        exit 1
+    fi
 fi
 
 # ── Run ────────────────────────────────────────────────────────────────
