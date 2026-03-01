@@ -12,15 +12,79 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// checkDatabaseDirectory verifies that the database directory exists and is
+// writable, producing clear error messages for common deployment problems.
+func checkDatabaseDirectory(dir, dbPath string) error {
+	// Check if the directory exists.
+	info, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		// Try to create it.
+		if mkErr := os.MkdirAll(dir, 0700); mkErr != nil {
+			return fmt.Errorf("database directory %q does not exist and could not be created: %w\n"+
+				"  Hint: Create the directory on the host and ensure it is writable by the container user.\n"+
+				"  Example: sudo mkdir -p %s && sudo chown 1000:1000 %s", dir, mkErr, dir, dir)
+		}
+		slog.Info("created database directory", "path", dir)
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("cannot access database directory %q: %w", dir, err)
+	}
+
+	// Exists but is not a directory.
+	if !info.IsDir() {
+		return fmt.Errorf("database directory path %q exists but is not a directory (mode: %s)", dir, info.Mode())
+	}
+
+	// Check if we can write to the directory by creating a temp file.
+	testFile := filepath.Join(dir, ".spela-write-test")
+	f, err := os.Create(testFile)
+	if err != nil {
+		uid := os.Getuid()
+		gid := os.Getgid()
+		return fmt.Errorf("database directory %q exists but is not writable: %w\n"+
+			"  Directory permissions: %s\n"+
+			"  Container is running as uid=%d gid=%d\n"+
+			"  Hint: Fix permissions on the host with:\n"+
+			"    sudo chown %d:%d %s\n"+
+			"  Or more permissive:\n"+
+			"    sudo chmod 777 %s",
+			dir, err, info.Mode().Perm(), uid, gid, uid, gid, dir, dir)
+	}
+	f.Close()
+	os.Remove(testFile)
+
+	// If the database file already exists, check if it's readable/writable.
+	if dbInfo, err := os.Stat(dbPath); err == nil {
+		file, err := os.OpenFile(dbPath, os.O_RDWR, 0)
+		if err != nil {
+			uid := os.Getuid()
+			gid := os.Getgid()
+			return fmt.Errorf("database file %q exists but cannot be opened for read/write: %w\n"+
+				"  File permissions: %s\n"+
+				"  Container is running as uid=%d gid=%d\n"+
+				"  Hint: Fix permissions with:\n"+
+				"    sudo chown %d:%d %s",
+				dbPath, err, dbInfo.Mode().Perm(), uid, gid, uid, gid, dbPath)
+		}
+		file.Close()
+	}
+
+	return nil
+}
+
 // Initialize opens the SQLite database and runs auto-migrations.
 // The database file is restricted to owner-only access (0600) to prevent
 // other users on the system from reading tokens and password hashes.
 func Initialize(dbPath string) (*gorm.DB, error) {
-	// Ensure the parent directory exists so SQLite can create the file.
-	if dir := filepath.Dir(dbPath); dir != "." && dir != "" {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			return nil, fmt.Errorf("creating database directory %s: %w", dir, err)
-		}
+	dir := filepath.Dir(dbPath)
+	if dir == "" || dir == "." {
+		dir = "."
+	}
+
+	// Preflight checks: verify the database directory exists and is writable.
+	if err := checkDatabaseDirectory(dir, dbPath); err != nil {
+		return nil, err
 	}
 
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
