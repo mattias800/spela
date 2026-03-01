@@ -16,6 +16,13 @@ import (
 // The database file is restricted to owner-only access (0600) to prevent
 // other users on the system from reading tokens and password hashes.
 func Initialize(dbPath string) (*gorm.DB, error) {
+	// Ensure the parent directory exists so SQLite can create the file.
+	if dir := filepath.Dir(dbPath); dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return nil, fmt.Errorf("creating database directory %s: %w", dir, err)
+		}
+	}
+
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
