@@ -132,7 +132,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Spela"
-            val appVersion = project.findProperty("appVersion")?.toString() ?: "0.0.0-dev"
+            val appVersion = project.findProperty("appVersion")?.toString() ?: "1.0.0"
             packageVersion = appVersion
 
             macOS {
