@@ -11,7 +11,7 @@ plugins {
 
 val nativeBuildDir = project.layout.buildDirectory.dir("native")
 
-val buildNativeLibrary by tasks.registering(Exec::class) {
+val buildNativeLibrary by tasks.registering {
     group = "native"
     description = "Build the spela-libretro native library for desktop"
 
@@ -22,31 +22,75 @@ val buildNativeLibrary by tasks.registering(Exec::class) {
     inputs.file(nativeSrc.resolve("CMakeLists.txt"))
     outputs.dir(nativeDir)
 
-    doFirst {
+    doLast {
         nativeDir.mkdirs()
-    }
 
-    workingDir = nativeDir
-    // Find cmake: system PATH, then Android SDK, then common Homebrew locations
-    commandLine("sh", "-c", """
-        CMAKE=${'$'}(command -v cmake 2>/dev/null)
-        if [ -z "${'$'}CMAKE" ]; then
-            for dir in "${'$'}HOME/Library/Android/sdk/cmake"/*/bin; do
-                if [ -x "${'$'}dir/cmake" ]; then CMAKE="${'$'}dir/cmake"; break; fi
-            done
-        fi
-        if [ -z "${'$'}CMAKE" ]; then
-            for dir in /opt/homebrew/bin /usr/local/bin; do
-                if [ -x "${'$'}dir/cmake" ]; then CMAKE="${'$'}dir/cmake"; break; fi
-            done
-        fi
-        if [ -z "${'$'}CMAKE" ]; then echo "ERROR: cmake not found" >&2; exit 1; fi
-        # Find JAVA_HOME for JNI headers
-        JHOME=${'$'}([ -n "${'$'}JAVA_HOME" ] && echo "${'$'}JAVA_HOME" || /usr/libexec/java_home 2>/dev/null || echo "")
-        echo "Using cmake: ${'$'}CMAKE"
-        echo "Using JAVA_HOME: ${'$'}JHOME"
-        "${'$'}CMAKE" -DJAVA_HOME="${'$'}JHOME" "${nativeSrc.absolutePath}" && make -j${'$'}(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
-    """.trimIndent())
+        // Find cmake
+        val cmakePath = findCmake()
+            ?: error("cmake not found. Install CMake and ensure it is on PATH.")
+
+        val javaHome = (System.getenv("JAVA_HOME")
+            ?: org.gradle.internal.jvm.Jvm.current().javaHome.absolutePath)
+            .replace('\\', '/')  // CMake FindJNI chokes on Windows backslashes
+
+        logger.lifecycle("Using cmake: $cmakePath")
+        logger.lifecycle("Using JAVA_HOME: $javaHome")
+
+        // Configure
+        val configureArgs = mutableListOf(
+            cmakePath,
+            "-DJAVA_HOME=$javaHome",
+            nativeSrc.absolutePath.replace('\\', '/'),
+        )
+        // Use Ninja on Windows if available (avoids heavy Visual Studio generator)
+        if (org.gradle.internal.os.OperatingSystem.current().isWindows) {
+            if (findExecutable("ninja") != null) {
+                configureArgs.add(1, "-G")
+                configureArgs.add(2, "Ninja")
+            }
+        }
+
+        exec {
+            workingDir = nativeDir
+            commandLine(configureArgs)
+        }
+
+        // Build
+        exec {
+            workingDir = nativeDir
+            commandLine(cmakePath, "--build", ".", "--parallel")
+        }
+    }
+}
+
+fun findCmake(): String? {
+    findExecutable("cmake")?.let { return it }
+    // Fallback: Android SDK cmake
+    val androidHome = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+    if (androidHome != null) {
+        file("$androidHome/cmake").listFiles()?.flatMap { ver ->
+            listOf(File(ver, "bin/cmake"), File(ver, "bin/cmake.exe"))
+        }?.firstOrNull { it.canExecute() }?.let { return it.absolutePath }
+    }
+    // Fallback: common Homebrew locations
+    listOf("/opt/homebrew/bin/cmake", "/usr/local/bin/cmake")
+        .map { File(it) }
+        .firstOrNull { it.canExecute() }
+        ?.let { return it.absolutePath }
+    return null
+}
+
+fun findExecutable(name: String): String? {
+    val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: return null
+    val extensions = if (org.gradle.internal.os.OperatingSystem.current().isWindows)
+        listOf(".exe", ".cmd", ".bat", "") else listOf("")
+    for (dir in pathDirs) {
+        for (ext in extensions) {
+            val candidate = File(dir, "$name$ext")
+            if (candidate.canExecute()) return candidate.absolutePath
+        }
+    }
+    return null
 }
 
 kotlin {

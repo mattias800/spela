@@ -19,6 +19,8 @@
 #   SPELA_SCRAPER_DEV_PASS
 #   SPELA_SCRAPER_USER
 #   SPELA_SCRAPER_USER_PASS
+#   PUID                    — UID for the container process (default: 1000)
+#   PGID                    — GID for the container process (default: 1000)
 #   TURN_EXTERNAL_IP        — public IP if behind NAT (coturn auto-detects on most VPS)
 
 services:
@@ -37,6 +39,8 @@ services:
       - ${SPELA_GAMES_PATH:-${SPELA_BASE_PATH:-/docker/spela}/games}:/app/games:ro
       - ${SPELA_BIOS_PATH:-${SPELA_BASE_PATH:-/docker/spela}/bios}:/app/bios:ro
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in Portainer stack env}
       - SPELA_ENCRYPTION_KEY=${SPELA_ENCRYPTION_KEY:?Set SPELA_ENCRYPTION_KEY in Portainer stack env}
