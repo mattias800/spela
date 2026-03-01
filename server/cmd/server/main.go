@@ -88,9 +88,8 @@ func main() {
 		slog.Warn("SPELA_ENCRYPTION_KEY not set; deriving from JWT secret (set a separate key for production)")
 	}
 
-	// Warn if CORS origins are not configured
 	if len(corsOrigins) == 0 {
-		slog.Warn("SPELA_CORS_ORIGINS not set; cross-origin requests will be rejected")
+		slog.Info("CORS: same-origin only (set SPELA_CORS_ORIGINS to allow cross-origin requests)")
 	}
 
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)

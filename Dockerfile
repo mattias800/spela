@@ -28,10 +28,9 @@ RUN CGO_ENABLED=1 go build -o spela-seed ./cmd/seed
 # --- Stage 3: Runtime ---
 FROM alpine:3.20
 
-RUN apk add --no-cache sqlite-libs ca-certificates
+RUN apk add --no-cache sqlite-libs ca-certificates su-exec
 
 RUN adduser -D -h /app spela
-USER spela
 WORKDIR /app
 
 COPY --from=backend-builder /build/spela-server .

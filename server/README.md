@@ -48,12 +48,12 @@ docker compose up -d
 | `SPELA_GAME_DIRS` | `./games` | Comma-separated ROM directories to scan |
 | `SPELA_SAVE_DIR` | `./saves` | Directory for save state files |
 | `SPELA_CORE_DIR` | `./cores` | Directory for libretro core binaries |
-| `SPELA_CORS_ORIGINS` | `*` | Comma-separated allowed CORS origins |
+| `SPELA_CORS_ORIGINS` | (none) | Comma-separated allowed CORS origins (same-origin only if unset) |
 | `SPELA_WS_ORIGINS` | (any) | Comma-separated allowed WebSocket origins |
 ### Security notes
 
 - `SPELA_JWT_SECRET` **must** be set in production. The server refuses to start in release mode (`GIN_MODE=release`) with the default secret.
-- When `SPELA_CORS_ORIGINS` is set to `*` (default), `AllowCredentials` is automatically disabled to comply with the CORS specification.
+- When `SPELA_CORS_ORIGINS` is set to `*`, `AllowCredentials` is automatically disabled to comply with the CORS specification.
 - Set `SPELA_WS_ORIGINS` to restrict WebSocket connections to specific origins.
 
 ## API Overview
