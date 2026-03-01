@@ -5,11 +5,14 @@
 #
 # Required environment variables (set in Portainer stack config):
 #   SPELA_JWT_SECRET        — JWT signing key (generate a random 32+ char string)
+#   SPELA_ENCRYPTION_KEY    — encryption key for stored credentials
 #   TURN_SECRET             — shared secret for coturn HMAC-SHA1 credentials
 #   TURN_HOST               — public domain/IP of this server (e.g. spela.example.com)
 #
 # Optional:
-#   SPELA_GAMES_PATH        — host path to ROM directory (default: /data/spela/games)
+#   SPELA_BASE_PATH         — host base path for all data (default: /docker/spela)
+#   SPELA_GAMES_PATH        — host path to ROM directory (default: $SPELA_BASE_PATH/games)
+#   SPELA_BIOS_PATH         — host path to BIOS directory (default: $SPELA_BASE_PATH/bios)
 #   SPELA_SCRAPER_DEV_ID    — ScreenScraper dev credentials
 #   SPELA_SCRAPER_DEV_PASS
 #   SPELA_SCRAPER_USER
@@ -25,12 +28,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - spela-data:/app/data
-      - spela-saves:/app/saves
-      - spela-cores:/app/cores
-      - spela-images:/app/images
-      - ${SPELA_GAMES_PATH:-/data/spela/games}:/app/games:ro
-      - ${SPELA_BIOS_PATH:-./bios}:/app/bios:ro
+      - ${SPELA_BASE_PATH:-/docker/spela}/data:/app/data
+      - ${SPELA_BASE_PATH:-/docker/spela}/saves:/app/saves
+      - ${SPELA_BASE_PATH:-/docker/spela}/cores:/app/cores
+      - ${SPELA_BASE_PATH:-/docker/spela}/images:/app/images
+      - ${SPELA_GAMES_PATH:-${SPELA_BASE_PATH:-/docker/spela}/games}:/app/games:ro
+      - ${SPELA_BIOS_PATH:-${SPELA_BASE_PATH:-/docker/spela}/bios}:/app/bios:ro
     environment:
       - SPELA_PORT=8080
       - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in Portainer stack env}
@@ -71,12 +74,3 @@ services:
       - EXTERNAL_IP=${TURN_EXTERNAL_IP:-}
     restart: unless-stopped
 
-volumes:
-  spela-data:
-    driver: local
-  spela-saves:
-    driver: local
-  spela-cores:
-    driver: local
-  spela-images:
-    driver: local

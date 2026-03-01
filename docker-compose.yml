@@ -1,30 +1,75 @@
+# Production deployment — uses published Docker images from GitHub Container Registry.
+#
+# Usage:
+#   1. Copy this file and generate secrets:  ./generate-secrets.sh > .env
+#   2. Edit .env with your hostname and games path
+#   3. docker compose up -d
+#
+# Required environment variables (set in .env or Portainer stack config):
+#   SPELA_JWT_SECRET        — JWT signing key (generate a random 32+ char string)
+#   SPELA_ENCRYPTION_KEY    — encryption key for stored credentials
+#   TURN_SECRET             — shared secret for coturn HMAC-SHA1 credentials
+#   TURN_HOST               — public domain/IP of this server (e.g. spela.example.com)
+#
+# Optional:
+#   SPELA_BASE_PATH         — host base path for all data (default: /docker/spela)
+#   SPELA_GAMES_PATH        — host path to ROM directory (default: $SPELA_BASE_PATH/games)
+#   SPELA_BIOS_PATH         — host path to BIOS directory (default: $SPELA_BASE_PATH/bios)
+#   SPELA_SCRAPER_DEV_ID    — ScreenScraper dev credentials
+#   SPELA_SCRAPER_DEV_PASS
+#   SPELA_SCRAPER_USER
+#   SPELA_SCRAPER_USER_PASS
+#   TURN_EXTERNAL_IP        — public IP if behind NAT (coturn auto-detects on most VPS)
+
 services:
+  # ── Spela (Go API + frontend in one container) ──────────────────
   spela:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/mattias800/spela:latest
     ports:
       - "8080:8080"
     volumes:
-      - spela-data:/app/data
-      - ${SPELA_GAMES_PATH:-./games}:/app/games:ro
-      - spela-saves:/app/saves
-      - spela-cores:/app/cores
-      - spela-images:/app/images
+      - ${SPELA_BASE_PATH:-/docker/spela}/data:/app/data
+      - ${SPELA_BASE_PATH:-/docker/spela}/saves:/app/saves
+      - ${SPELA_BASE_PATH:-/docker/spela}/cores:/app/cores
+      - ${SPELA_BASE_PATH:-/docker/spela}/images:/app/images
+      - ${SPELA_GAMES_PATH:-${SPELA_BASE_PATH:-/docker/spela}/games}:/app/games:ro
+      - ${SPELA_BIOS_PATH:-${SPELA_BASE_PATH:-/docker/spela}/bios}:/app/bios:ro
     environment:
       - SPELA_PORT=8080
-      - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:-change-me-in-production}
+      - SPELA_JWT_SECRET=${SPELA_JWT_SECRET:?Set SPELA_JWT_SECRET in .env}
+      - SPELA_ENCRYPTION_KEY=${SPELA_ENCRYPTION_KEY:?Set SPELA_ENCRYPTION_KEY in .env}
+      - SPELA_DB_PATH=/app/data/spela.db
       - SPELA_GAME_DIRS=/app/games
-      - SPELA_ENCRYPTION_KEY=${SPELA_ENCRYPTION_KEY:-}
-      - SPELA_WS_ORIGINS=${SPELA_WS_ORIGINS:-}
+      - SPELA_SAVE_DIR=/app/saves
+      - SPELA_CORE_DIR=/app/cores
+      - SPELA_IMAGE_DIR=/app/images
+      - SPELA_BIOS_DIR=/app/bios
       - SPELA_SCRAPER_DEV_ID=${SPELA_SCRAPER_DEV_ID:-}
       - SPELA_SCRAPER_DEV_PASS=${SPELA_SCRAPER_DEV_PASS:-}
       - SPELA_SCRAPER_USER=${SPELA_SCRAPER_USER:-}
       - SPELA_SCRAPER_USER_PASS=${SPELA_SCRAPER_USER_PASS:-}
+      # TURN server credentials endpoint config
+      - TURN_ENABLED=${TURN_ENABLED:-true}
+      - TURN_HOST=${TURN_HOST:-}
+      - TURN_SECRET=${TURN_SECRET:-}
+      - TURN_PORT=3478
+      - GIN_MODE=release
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-volumes:
-  spela-data:
-  spela-saves:
-  spela-cores:
-  spela-images:
+  # ── TURN server for WebRTC NAT traversal (netplay) ──────────────
+  coturn:
+    image: coturn/coturn:4.6-alpine
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      - TURN_SECRET=${TURN_SECRET:-}
+      - TURN_REALM=${TURN_HOST:-localhost}
+      - EXTERNAL_IP=${TURN_EXTERNAL_IP:-}
+    restart: unless-stopped

@@ -26,9 +26,9 @@
 #elif defined(__linux__)
 
 /* X11 — always available */
+#include <X11/Xlib.h>
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <vulkan/vulkan_xlib.h>
-#include <X11/Xlib.h>
 
 /* Wayland — optional, only if headers were found at build time */
 #ifdef HAS_WAYLAND

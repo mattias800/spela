@@ -15,3 +15,6 @@
 -keep,includedescriptorclasses class com.spela.player.**$$serializer { *; }
 -keepclassmembers class com.spela.player.** { *** Companion; }
 -keepclasseswithmembers class com.spela.player.** { kotlinx.serialization.KSerializer serializer(...); }
+
+# Ktor references JVM-only java.lang.management classes in debug detection
+-dontwarn java.lang.management.**
