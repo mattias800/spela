@@ -34,6 +34,7 @@ modules:
       - cp -r distributable/* /app/
       - install -m644 com.spela.player.desktop /app/share/applications/
       - install -m644 com.spela.player.metainfo.xml /app/share/metainfo/
+      - install -m644 spela-icon.svg /app/share/icons/hicolor/256x256/apps/com.spela.player.svg
       - |
         cat > /app/bin/spela << 'EOF'
         #!/bin/sh
@@ -49,3 +50,5 @@ modules:
         path: ../com.spela.player.desktop
       - type: file
         path: ../com.spela.player.metainfo.xml
+      - type: file
+        path: ../../../web/public/spela-icon.svg
