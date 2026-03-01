@@ -172,7 +172,7 @@ jobs:
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install molten-vk sdl2
+          brew install molten-vk vulkan-headers vulkan-loader sdl2
           echo "VULKAN_SDK=$(brew --prefix)" >> "$GITHUB_ENV"
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'

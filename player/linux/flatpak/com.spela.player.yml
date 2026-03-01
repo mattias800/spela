@@ -17,6 +17,7 @@ finish-args:
 modules:
   - name: SDL2
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -DSDL_STATIC=OFF
       - -DSDL_TEST=OFF
