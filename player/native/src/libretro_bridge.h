@@ -7,6 +7,7 @@
 #define LIBRETRO_BRIDGE_H
 
 #include "libretro.h"
+#include "sp_platform.h"
 #include <stdbool.h>
 
 /* Forward declarations for subsystem modules */
@@ -52,7 +53,7 @@ void core_variables_clear(void);
 
 /* Core state */
 typedef struct {
-    void *handle;                           /* dlopen handle */
+    sp_lib_t handle;                        /* dlopen/LoadLibrary handle */
 
     /* Core API functions */
     retro_init_t                    retro_init;

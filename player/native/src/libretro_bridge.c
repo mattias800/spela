@@ -16,12 +16,13 @@
 #include "hw_render_gl.h"
 
 #include <jni.h>
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/stat.h>
+#endif
 #include <errno.h>
 #ifdef __ANDROID__
 #include <android/native_window_jni.h>
@@ -40,7 +41,9 @@
 static FILE *g_bridge_log_file = NULL;
 static FILE *bridge_log_get(void) {
     if (!g_bridge_log_file) {
-        g_bridge_log_file = fopen("/tmp/spela_bridge.log", "w");
+        char log_path[512];
+        snprintf(log_path, sizeof(log_path), "%sspela_bridge.log", sp_get_temp_dir());
+        g_bridge_log_file = fopen(log_path, "w");
         if (g_bridge_log_file) setbuf(g_bridge_log_file, NULL);
     }
     return g_bridge_log_file ? g_bridge_log_file : stderr;
@@ -553,7 +556,7 @@ static bool environment_callback(unsigned cmd, void *data) {
 
 /* Resolve a symbol from the loaded core shared library */
 #define LOAD_SYM(sym) do { \
-    g_core.sym = (sym##_t)dlsym(g_core.handle, #sym); \
+    g_core.sym = (sym##_t)sp_dlsym(g_core.handle, #sym); \
     if (!g_core.sym) { \
         LOGE("Failed to load symbol: %s", #sym); \
         return -1; \
@@ -625,7 +628,7 @@ static void preload_vulkan_library(void) {
         LOGI("Set DYLD_FALLBACK_LIBRARY_PATH=%s", fallback);
 
         /* Pre-load MoltenVK with RTLD_GLOBAL so symbols are available */
-        void *h = dlopen(mvk_found, RTLD_NOW | RTLD_GLOBAL);
+        sp_lib_t h = sp_dlopen(mvk_found, RTLD_NOW | RTLD_GLOBAL);
         if (h) {
             LOGI("Pre-loaded MoltenVK: %s", mvk_found);
         }
@@ -649,14 +652,14 @@ static int core_load(const char *path) {
             g_core.retro_deinit();
             g_core.initialized = false;
         }
-        dlclose(g_core.handle);
+        sp_dlclose(g_core.handle);
         g_core.handle = NULL;
     }
 
     LOGI("Loading core: %s", path);
-    g_core.handle = dlopen(path, RTLD_LAZY);
+    g_core.handle = sp_dlopen(path, RTLD_LAZY);
     if (!g_core.handle) {
-        LOGE("dlopen failed: %s", dlerror());
+        LOGE("dlopen failed: %s", sp_dlerror());
         return -1;
     }
 
@@ -674,7 +677,7 @@ static int core_load(const char *path) {
          * Play! stores a static JavaVM* pointer via this method, which its
          * PS2VM worker thread needs for JNI AttachCurrentThread(). */
         typedef void (*SetJavaVM_fn)(JavaVM *);
-        SetJavaVM_fn set_jvm = (SetJavaVM_fn)dlsym(g_core.handle,
+        SetJavaVM_fn set_jvm = (SetJavaVM_fn)sp_dlsym(g_core.handle,
             "_ZN9Framework7CJavaVM9SetJavaVMEP7_JavaVM");
         if (set_jvm) {
             LOGI("Play! core detected, passing JavaVM to CJavaVM::SetJavaVM");
@@ -1040,7 +1043,7 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     input_deinit();
     audio_deinit();
 
-    /* Clear pointers into core's memory before dlclose */
+    /* Clear pointers into core's memory before sp_dlclose */
     g_core.hw_vk_negotiation = NULL;
     g_core.hw_render_enabled = false;
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
@@ -1057,10 +1060,10 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
         if (g_gpu_renderer) {
             LOGI("Skipping dlclose for HW render core (background threads may still be running)");
         } else {
-            dlclose(g_core.handle);
+            sp_dlclose(g_core.handle);
         }
 #else
-        dlclose(g_core.handle);
+        sp_dlclose(g_core.handle);
 #endif
         g_core.handle = NULL;
     }

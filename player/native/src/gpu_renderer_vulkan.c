@@ -50,7 +50,7 @@
 #endif
 
 #include <vulkan/vulkan.h>
-#include <pthread.h>
+#include "sp_platform.h"
 
 #include "gpu_renderer.h"
 #include "gpu_shaders_spirv.h"
@@ -208,7 +208,7 @@ struct gpu_renderer {
     uint32_t hw_core_cmd_count;
     VkDescriptorPool hw_descriptor_pool;
     VkDescriptorSet hw_descriptor_sets[MAX_FRAMES_IN_FLIGHT];
-    pthread_mutex_t queue_mutex;
+    sp_mutex_t queue_mutex;
     bool queue_mutex_initialized;
 
     /* Actual surface dimensions (what the user sees, from SurfaceView callback).
@@ -368,9 +368,9 @@ void gpu_renderer_suspend_surface(gpu_renderer_t *r) {
      * hw_render_frame / gpu_renderer_render while we tear down. */
     r->active = false;
     /* Serialize with any in-flight queue submission from the render thread */
-    if (r->queue_mutex_initialized) pthread_mutex_lock(&r->queue_mutex);
+    if (r->queue_mutex_initialized) sp_mutex_lock(&r->queue_mutex);
     if (r->device) vkDeviceWaitIdle(r->device);
-    if (r->queue_mutex_initialized) pthread_mutex_unlock(&r->queue_mutex);
+    if (r->queue_mutex_initialized) sp_mutex_unlock(&r->queue_mutex);
     cleanup_swapchain(r);
     if (r->surface) {
         vkDestroySurfaceKHR(r->instance, r->surface, NULL);
@@ -425,7 +425,7 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
         gpu_renderer_hw_vulkan_deinit(r);
     }
     if (r->queue_mutex_initialized) {
-        pthread_mutex_destroy(&r->queue_mutex);
+        sp_mutex_destroy(&r->queue_mutex);
         r->queue_mutex_initialized = false;
     }
 
@@ -845,7 +845,7 @@ static void hw_vulkan_lock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (r && r->queue_mutex_initialized) {
-        pthread_mutex_lock(&r->queue_mutex);
+        sp_mutex_lock(&r->queue_mutex);
     }
 }
 
@@ -853,7 +853,7 @@ static void hw_vulkan_unlock_queue(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (r && r->queue_mutex_initialized) {
-        pthread_mutex_unlock(&r->queue_mutex);
+        sp_mutex_unlock(&r->queue_mutex);
     }
 }
 
@@ -881,7 +881,7 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
 
     /* Initialize queue mutex */
     if (!r->queue_mutex_initialized) {
-        if (pthread_mutex_init(&r->queue_mutex, NULL) != 0) {
+        if (sp_mutex_init(&r->queue_mutex) != 0) {
             VK_LOGE("Failed to init queue mutex");
             return false;
         }
@@ -1199,9 +1199,9 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
         .pSignalSemaphores = signal_sems,
     };
 
-    pthread_mutex_lock(&r->queue_mutex);
+    sp_mutex_lock(&r->queue_mutex);
     VkResult result = vkQueueSubmit(r->graphics_queue, 1, &submit_info, r->offscreen_fence);
-    pthread_mutex_unlock(&r->queue_mutex);
+    sp_mutex_unlock(&r->queue_mutex);
 
     if (result != VK_SUCCESS) {
         VK_LOGE("hw_render_frame_offscreen: vkQueueSubmit failed: %d", result);
@@ -1409,10 +1409,10 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pSignalSemaphores = signal_sems,
     };
 
-    pthread_mutex_lock(&r->queue_mutex);
+    sp_mutex_lock(&r->queue_mutex);
     result = vkQueueSubmit(r->graphics_queue, 1, &submit_info,
                            r->in_flight_fences[r->current_frame]);
-    pthread_mutex_unlock(&r->queue_mutex);
+    sp_mutex_unlock(&r->queue_mutex);
 
     if (result != VK_SUCCESS) {
         VK_LOGE("hw_render_frame: vkQueueSubmit failed: %d", result);
@@ -1430,9 +1430,9 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         .pImageIndices = &image_index,
     };
 
-    pthread_mutex_lock(&r->queue_mutex);
+    sp_mutex_lock(&r->queue_mutex);
     result = vkQueuePresentKHR(r->graphics_queue, &present_info);
-    pthread_mutex_unlock(&r->queue_mutex);
+    sp_mutex_unlock(&r->queue_mutex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
