@@ -27,7 +27,7 @@ if [ "$(id -u)" = "0" ]; then
 
     # Fix ownership on bind-mounted directories.
     # Docker creates host directories as root when they don't exist yet.
-    SPELA_DIRS="/app/data /app/saves /app/cores /app/images /app/bios"
+    SPELA_DIRS="/app/data /app/saves /app/cores /app/images /app/bios /app/dats"
     for dir in $SPELA_DIRS; do
         if [ -d "$dir" ]; then
             owner=$(stat -c '%u' "$dir" 2>/dev/null || stat -f '%u' "$dir" 2>/dev/null)

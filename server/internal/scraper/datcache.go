@@ -12,13 +12,19 @@ import (
 )
 
 // DiscBasedSystems lists console abbreviations where CRC-based identification
-// is impractical (disc images are too large, and No-Intro DATs don't cover them).
+// is impractical — either disc images are too large, or No-Intro DATs don't
+// exist for the platform (arcade ROM sets, DOS, etc.).
 var DiscBasedSystems = map[string]bool{
-	"PSX": true,
-	"SAT": true,
-	"DC":  true,
-	"SCD": true,
-	"PS2": true,
+	"PSX":    true,
+	"SAT":    true,
+	"DC":     true,
+	"SCD":    true,
+	"PS2":    true,
+	"GC":     true, // disc-based
+	"PCFX":   true, // disc-based
+	"NEOGEO": true, // arcade ROM sets, no No-Intro DAT
+	"ARCADE": true, // MAME ROM sets, no No-Intro DAT
+	"DOS":    true, // no No-Intro DAT
 }
 
 const datBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
