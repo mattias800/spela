@@ -28,6 +28,16 @@ Think of it as your own personal Steam for retro games.
   <img src="docs/screenshots/library.png" alt="Console browser" width="720" />
 </p>
 
+### Player App (Android)
+
+<p align="center">
+  <img src="docs/screenshots/android-library.png" alt="Android console browser" width="355" />
+  <img src="docs/screenshots/android-games.png" alt="Android SNES game grid" width="355" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/android-game-detail.png" alt="Android game detail" width="355" />
+</p>
+
 ## Why Spela?
 
 - **One library, every device** -- your games, saves, and progress sync across Android, Windows, macOS, and Linux
