@@ -1,12 +1,41 @@
 #!/bin/sh
 set -e
 
+# ── Configure runtime user ─────────────────────────────────────────────
+# Set PUID/PGID to match the owner of your host directories.
+# Defaults to 1000:1000 (the built-in spela user).
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+
+# Update the spela user/group to match the requested UID/GID.
+if [ "$(id -u spela)" != "$PUID" ] || [ "$(id -g spela)" != "$PGID" ]; then
+    echo "Setting spela user to uid=$PUID gid=$PGID"
+    sed -i "s/^spela:x:[0-9]*:[0-9]*/spela:x:${PUID}:${PGID}/" /etc/passwd
+    sed -i "s/^spela:x:[0-9]*/spela:x:${PGID}/" /etc/group
+fi
+
+# ── Fix ownership on bind-mounted directories ──────────────────────────
+# Docker creates host directories as root when they don't exist yet.
+# Ensure all data directories are owned by the spela user so the server
+# process can read and write to them.
+SPELA_DIRS="/app/data /app/saves /app/cores /app/images /app/bios"
+for dir in $SPELA_DIRS; do
+    if [ -d "$dir" ]; then
+        owner=$(stat -c '%u' "$dir" 2>/dev/null || stat -f '%u' "$dir" 2>/dev/null)
+        if [ "$owner" != "$PUID" ]; then
+            echo "Fixing ownership on $dir (was uid=$owner, setting to $PUID:$PGID)..."
+            chown -R "$PUID:$PGID" "$dir"
+        fi
+    fi
+done
+
+# ── Drop to spela user and run ─────────────────────────────────────────
 if [ "$SPELA_SEED" = "true" ]; then
     echo "Seeding database..."
-    ./spela-seed
+    su-exec spela ./spela-seed
 
     # Start the server in the background so we can trigger a game scan
-    ./spela-server &
+    su-exec spela ./spela-server &
     SERVER_PID=$!
 
     # Wait for the server to be ready
@@ -39,5 +68,5 @@ if [ "$SPELA_SEED" = "true" ]; then
     # Wait for server process (keeps container running)
     wait $SERVER_PID
 else
-    exec ./spela-server
+    exec su-exec spela ./spela-server
 fi
