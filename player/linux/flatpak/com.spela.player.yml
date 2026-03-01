@@ -23,7 +23,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/libsdl-org/SDL/releases/download/release-2.30.10/SDL2-2.30.10.tar.gz
-        sha256: f59d29ac24e96aa5a46295a38e0f14a5289c3f374edc56a5e3d2ef2e7da634cd
+        sha256: f59adf36a0fcf4c94198e7d3d776c1b3824211ab7aeebeb31fe19836661196aa
 
   - name: spela
     buildsystem: simple
