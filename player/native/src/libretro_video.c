@@ -23,9 +23,7 @@
 #include "libretro_bridge.h"
 #include "gpu_renderer.h"
 
-#if defined(__APPLE__) || defined(__ANDROID__)
 #include "hw_render_gl.h"
-#endif
 #ifdef __APPLE__
 #include <OpenGL/gl3.h>
 #endif

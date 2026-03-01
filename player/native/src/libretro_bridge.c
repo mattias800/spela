@@ -987,7 +987,7 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
          * pipelines. context_destroy signals them to stop but doesn't join them.
          * Wait for the device to go idle, then give threads time to exit. */
         gpu_renderer_wait_idle(g_gpu_renderer);
-        usleep(200000); /* 200ms grace period for background thread shutdown */
+        sp_sleep_ms(200); /* 200ms grace period for background thread shutdown */
         gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
         g_core.hw_render_enabled = false;
         LOGI("Vulkan HW render context destroyed");
@@ -1020,7 +1020,7 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
                 g_core.hw_render_callback.context_destroy();
             }
             gpu_renderer_wait_idle(g_gpu_renderer);
-            usleep(200000); /* 200ms grace for Granite background threads */
+            sp_sleep_ms(200); /* 200ms grace for Granite background threads */
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             g_core.hw_render_enabled = false;
         }
@@ -1462,7 +1462,7 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
             /* Granite's DefaultDispatch threads may still be compiling pipelines.
              * Wait for device idle + grace period before destroying resources. */
             gpu_renderer_wait_idle(g_gpu_renderer);
-            usleep(200000); /* 200ms grace for Granite background threads */
+            sp_sleep_ms(200); /* 200ms grace for Granite background threads */
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             LOGI("Vulkan HW render context destroyed (surface deinit)");
         }

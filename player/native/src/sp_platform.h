@@ -33,7 +33,7 @@ static inline int sp_dlclose(sp_lib_t lib) {
 }
 
 static inline const char *sp_dlerror(void) {
-    static __declspec(thread) char buf[256];
+    static char buf[256];
     DWORD err = GetLastError();
     if (err == 0) return "(no error)";
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -72,6 +72,11 @@ static inline void sp_mutex_destroy(sp_mutex_t *m) {
     DeleteCriticalSection(m);
 }
 
+/* Sleep */
+static inline void sp_sleep_ms(unsigned ms) {
+    Sleep(ms);
+}
+
 /* Temp directory (includes trailing path separator) */
 static inline const char *sp_get_temp_dir(void) {
     static char buf[MAX_PATH];
@@ -92,6 +97,7 @@ static inline const char *sp_get_temp_dir(void) {
 
 #include <dlfcn.h>
 #include <pthread.h>
+#include <unistd.h>
 
 /* Dynamic library loading */
 typedef void *sp_lib_t;
@@ -129,6 +135,11 @@ static inline void sp_mutex_unlock(sp_mutex_t *m) {
 
 static inline void sp_mutex_destroy(sp_mutex_t *m) {
     pthread_mutex_destroy(m);
+}
+
+/* Sleep */
+static inline void sp_sleep_ms(unsigned ms) {
+    usleep(ms * 1000u);
 }
 
 /* Temp directory (includes trailing slash) */
