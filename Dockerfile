@@ -40,6 +40,7 @@ COPY --from=backend-builder /build/entrypoint.sh .
 RUN mkdir -p /app/data /app/games /app/saves /app/cores /app/images /app/dats /app/frontend
 COPY --from=backend-builder /build/dats/ /app/dats/
 COPY --from=frontend-builder /app/web/dist/ /app/frontend/
+RUN chown -R spela:spela /app/data /app/saves /app/cores /app/images /app/dats
 
 ENV SPELA_PORT=8080
 ENV SPELA_DB_PATH=/app/data/spela.db
