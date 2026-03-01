@@ -43,14 +43,17 @@
  *   - All Vulkan commands are single-threaded (emulation thread owns the context)
  */
 
+#include "sp_platform.h"
+
 #ifdef __ANDROID__
 #define VK_USE_PLATFORM_ANDROID_KHR
 #elif defined(__APPLE__)
 #define VK_USE_PLATFORM_METAL_EXT
+#elif defined(_WIN32)
+#define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
 #include <vulkan/vulkan.h>
-#include "sp_platform.h"
 
 #include "gpu_renderer.h"
 #include "gpu_shaders_spirv.h"
