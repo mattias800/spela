@@ -29,8 +29,9 @@ val buildNativeLibrary by tasks.registering {
         val cmakePath = findCmake()
             ?: error("cmake not found. Install CMake and ensure it is on PATH.")
 
-        val javaHome = System.getenv("JAVA_HOME")
-            ?: org.gradle.internal.jvm.Jvm.current().javaHome.absolutePath
+        val javaHome = (System.getenv("JAVA_HOME")
+            ?: org.gradle.internal.jvm.Jvm.current().javaHome.absolutePath)
+            .replace('\\', '/')  // CMake FindJNI chokes on Windows backslashes
 
         logger.lifecycle("Using cmake: $cmakePath")
         logger.lifecycle("Using JAVA_HOME: $javaHome")
@@ -39,7 +40,7 @@ val buildNativeLibrary by tasks.registering {
         val configureArgs = mutableListOf(
             cmakePath,
             "-DJAVA_HOME=$javaHome",
-            nativeSrc.absolutePath,
+            nativeSrc.absolutePath.replace('\\', '/'),
         )
         // Use Ninja on Windows if available (avoids heavy Visual Studio generator)
         if (org.gradle.internal.os.OperatingSystem.current().isWindows) {
