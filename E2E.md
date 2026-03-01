@@ -1,5 +1,7 @@
 # E2E Testing Instructions
 
+> For the full testing overview (all suites), see [TESTING.md](TESTING.md).
+
 ## Setup
 
 Create `player/.env` (gitignored) with your device credentials:
