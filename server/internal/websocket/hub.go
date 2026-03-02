@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -73,9 +75,14 @@ func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 			return true
 		}
 
-		// No configured origins: reject all cross-origin requests.
+		// No configured origins: fall back to gorilla/websocket's default
+		// behaviour — allow only if the Origin host matches the request Host.
 		if len(allowedOrigins) == 0 {
-			return false
+			u, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			return strings.EqualFold(u.Host, r.Host)
 		}
 
 		for _, allowed := range allowedOrigins {
