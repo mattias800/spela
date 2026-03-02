@@ -56,9 +56,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		c.Header("X-Frame-Options", "SAMEORIGIN")
 		// Minimal referrer info to external sites
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		// Content Security Policy — frame-ancestors 'self' allows the emulator to load
-		// inside an iframe on the same origin while still blocking third-party embedding
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws:; worker-src 'self' blob:; frame-ancestors 'self'")
+		// Content Security Policy — permissive enough for EmulatorJS (blob workers,
+		// WASM eval, blob URL fetches for cores, CDN version check)
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws: blob: https://cdn.emulatorjs.org; worker-src 'self' blob:; frame-ancestors 'self'")
 		// HSTS — instruct browsers to always use HTTPS. Safe even behind a reverse
 		// proxy; browsers only honour this header on HTTPS responses.
 		c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
