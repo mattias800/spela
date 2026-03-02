@@ -52,12 +52,13 @@ func NewRouter(cfg Config) *gin.Engine {
 		c.Header("Cross-Origin-Embedder-Policy", "credentialless")
 		// Prevent MIME type sniffing
 		c.Header("X-Content-Type-Options", "nosniff")
-		// Prevent clickjacking
-		c.Header("X-Frame-Options", "DENY")
+		// Prevent clickjacking — allow same-origin framing for the emulator iframe
+		c.Header("X-Frame-Options", "SAMEORIGIN")
 		// Minimal referrer info to external sites
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		// Content Security Policy
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws:; frame-ancestors 'none'")
+		// Content Security Policy — frame-ancestors 'self' allows the emulator to load
+		// inside an iframe on the same origin while still blocking third-party embedding
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' wss: ws:; frame-ancestors 'self'")
 		// HSTS — instruct browsers to always use HTTPS. Safe even behind a reverse
 		// proxy; browsers only honour this header on HTTPS responses.
 		c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
