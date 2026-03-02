@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui";
-import { useAdminUsers, useAdminStats } from "@/hooks/use-admin";
+import { useAdminUsers, useAdminStats, useUpdateUser } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
 import { UserStatsGrid } from "@/features/admin/components/user-stats-grid";
 import { UserTable } from "@/features/admin/components/user-table";
@@ -15,11 +15,16 @@ export function AdminUsersPage() {
   const { data: users, isLoading } = useAdminUsers();
   const { data: stats } = useAdminStats();
   const { user: currentUser } = useAuth();
+  const { mutate: updateUser } = useUpdateUser();
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [devicesUser, setDevicesUser] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  function handleApprove(user: User) {
+    updateUser({ id: user.id, data: { pendingApproval: false } });
+  }
 
   return (
     <div className="space-y-6">
@@ -47,6 +52,7 @@ export function AdminUsersPage() {
         onEdit={setEditingUser}
         onDelete={setDeleteTarget}
         onViewDevices={setDevicesUser}
+        onApprove={handleApprove}
       />
 
       <EditUserModal

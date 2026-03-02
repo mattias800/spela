@@ -111,10 +111,11 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		Role     string `json:"role"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Disabled *bool  `json:"disabled"`
+		Role            string `json:"role"`
+		Email           string `json:"email"`
+		Password        string `json:"password"`
+		Disabled        *bool  `json:"disabled"`
+		PendingApproval *bool  `json:"pendingApproval"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -171,9 +172,12 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		}
 		user.Disabled = *req.Disabled
 	}
+	if req.PendingApproval != nil {
+		user.PendingApproval = *req.PendingApproval
+	}
 
 	// Invalidate all existing tokens if security-sensitive fields changed
-	if req.Role != "" || req.Password != "" || req.Disabled != nil {
+	if req.Role != "" || req.Password != "" || req.Disabled != nil || req.PendingApproval != nil {
 		user.TokenVersion++
 	}
 
@@ -183,7 +187,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	slog.Info("audit: admin updated user", "admin_id", currentUserID, "target_user", user.Username,
-		"changed_role", req.Role != "", "changed_password", req.Password != "", "changed_disabled", req.Disabled != nil)
+		"changed_role", req.Role != "", "changed_password", req.Password != "",
+		"changed_disabled", req.Disabled != nil, "changed_pending_approval", req.PendingApproval != nil)
 
 	c.JSON(http.StatusOK, ToUserResponse(user))
 }

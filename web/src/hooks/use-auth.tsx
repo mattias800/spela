@@ -21,7 +21,7 @@ interface AuthContextValue {
     username: string,
     email: string,
     password: string,
-  ) => Promise<void>;
+  ) => Promise<{ pending: boolean }>;
   setup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -83,14 +83,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (username: string, email: string, password: string) => {
-      const data = await api.post<AuthTokens>("/auth/register", {
-        username,
-        email,
-        password,
-      });
-      api.setTokens(data.accessToken, data.refreshToken);
-      setUser(data.user);
+    async (
+      username: string,
+      email: string,
+      password: string,
+    ): Promise<{ pending: boolean }> => {
+      const data = await api.post<
+        AuthTokens | { pending: true; message: string }
+      >("/auth/register", { username, email, password });
+      if ("pending" in data && data.pending) {
+        return { pending: true };
+      }
+      const tokens = data as AuthTokens;
+      api.setTokens(tokens.accessToken, tokens.refreshToken);
+      setUser(tokens.user);
+      return { pending: false };
     },
     [],
   );

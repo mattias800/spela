@@ -23,6 +23,7 @@ export function useUpdateUser() {
         email?: string;
         password?: string;
         disabled?: boolean;
+        pendingApproval?: boolean;
       };
     }) => {
       await api.put(`/admin/users/${id}`, data);

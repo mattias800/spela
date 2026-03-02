@@ -411,23 +411,10 @@ func TestAdminEndpoint_NonAdmin(t *testing.T) {
 	router := NewRouter(*cfg)
 
 	// Register first user as admin
-	registerAndGetToken(t, router)
+	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (will be regular user)
-	body, _ := json.Marshal(map[string]string{
-		"username": "regularuser",
-		"email":    "regular@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	userToken := regResp["accessToken"].(string)
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "password123")
 
 	// Verify user is not admin
 	var user db.User
@@ -435,8 +422,8 @@ func TestAdminEndpoint_NonAdmin(t *testing.T) {
 	assert.Equal(t, "user", user.Role)
 
 	// Try admin endpoint
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/admin/users", nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/users", nil)
 	req.Header.Set("Authorization", "Bearer "+userToken)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)
@@ -1120,26 +1107,16 @@ func TestGetPublicProfile_EmptyStats(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Register a second user with no activity
-	body, _ := json.Marshal(map[string]string{
-		"username": "emptyuser",
-		"email":    "empty@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
+	createNonOwnerUser(t, router, token, "emptyuser", "empty@example.com", "password123")
 
-	var database *gorm.DB
-	database = cfg.DB
+	database := cfg.DB
 	var user db.User
 	database.Where("username = ?", "emptyuser").First(&user)
 	userID := fmt.Sprintf("%d", user.ID)
 
 	// Get public profile of empty user
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/users/"+userID+"/profile", nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/users/"+userID+"/profile", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -1986,20 +1963,7 @@ func TestDeleteSharedSave_NotOwner(t *testing.T) {
 	saveID := createResp["id"].(string)
 
 	// Register a second user
-	body, _ := json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Try to delete as other user - should fail
 	w = httptest.NewRecorder()
@@ -2065,16 +2029,7 @@ func TestSearchUsers(t *testing.T) {
 
 	// Register additional users
 	for _, name := range []string{"alice", "alex", "bob", "charlie"} {
-		body, _ := json.Marshal(map[string]string{
-			"username": name,
-			"email":    name + "@example.com",
-			"password": "password123",
-		})
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusCreated, w.Code)
+		createNonOwnerUser(t, router, token, name, name+"@example.com", "password123")
 	}
 
 	t.Run("returns matching users by prefix", func(t *testing.T) {
@@ -2149,20 +2104,7 @@ func TestGetPendingInviteCount(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Register a second user
-	body, _ := json.Marshal(map[string]string{
-		"username": "invitee",
-		"email":    "invitee@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	inviteeToken := regResp["accessToken"].(string)
+	inviteeToken := createNonOwnerUser(t, router, token, "invitee", "invitee@example.com", "password123")
 
 	t.Run("returns zero when no invites", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -2252,23 +2194,10 @@ func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	// Register first user as owner
-	registerAndGetToken(t, router)
+	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (regular user)
-	body, _ := json.Marshal(map[string]string{
-		"username": "regularuser",
-		"email":    "regular@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	userToken := regResp["accessToken"].(string)
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "password123")
 
 	// Create a test game
 	var console db.Console
@@ -2276,9 +2205,9 @@ func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
 	game := db.Game{ConsoleID: console.ID, Title: "Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
 	database.Create(&game)
 
-	body, _ = json.Marshal(map[string]string{"tag": "Hacked"})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/games/%d/verification-tag", game.ID), bytes.NewReader(body))
+	body, _ := json.Marshal(map[string]string{"tag": "Hacked"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/games/%d/verification-tag", game.ID), bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+userToken)
 	router.ServeHTTP(w, req)
@@ -2353,23 +2282,10 @@ func TestScrapeStatus_NonAdmin(t *testing.T) {
 	router := NewRouter(*cfg)
 
 	// Register first user as admin (owner)
-	registerAndGetToken(t, router)
+	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (will be regular user)
-	body, _ := json.Marshal(map[string]string{
-		"username": "regularuser2",
-		"email":    "regular2@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	userToken := regResp["accessToken"].(string)
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser2", "regular2@example.com", "password123")
 
 	// Verify user is not admin
 	var user db.User
@@ -2377,8 +2293,8 @@ func TestScrapeStatus_NonAdmin(t *testing.T) {
 	assert.Equal(t, "user", user.Role)
 
 	// Non-admin should be rejected
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/admin/scrape/status", nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/scrape/status", nil)
 	req.Header.Set("Authorization", "Bearer "+userToken)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)

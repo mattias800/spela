@@ -173,6 +173,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	if user.PendingApproval {
+		c.JSON(http.StatusForbidden, gin.H{"error": "account pending approval"})
+		return
+	}
+
 	if user.Disabled {
 		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
 		return
@@ -258,11 +263,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			role = db.RoleOwner
 		}
 
+		// Non-owner registrations are pending admin approval
+		pendingApproval := role != db.RoleOwner
+
 		user = db.User{
-			Username:     req.Username,
-			Email:        req.Email,
-			PasswordHash: hash,
-			Role:         role,
+			Username:        req.Username,
+			Email:           req.Email,
+			PasswordHash:    hash,
+			Role:            role,
+			PendingApproval: pendingApproval,
 		}
 
 		return tx.Create(&user).Error
@@ -272,6 +281,16 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+
+	// Non-owner registrations require admin approval before the account is active.
+	// Return 202 Accepted without tokens — the user cannot log in until approved.
+	if user.PendingApproval {
+		c.JSON(http.StatusAccepted, gin.H{
+			"pending": true,
+			"message": "Your account is pending admin approval.",
+		})
 		return
 	}
 

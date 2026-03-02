@@ -501,30 +501,17 @@ func TestAdminGetUserDevices_NonAdmin(t *testing.T) {
 	router := NewRouter(*cfg)
 
 	// Register first user (becomes owner)
-	registerAndGetToken(t, router)
+	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (regular user)
-	body, _ := json.Marshal(map[string]string{
-		"username": "regular",
-		"email":    "regular@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	userToken := regResp["accessToken"].(string)
+	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@example.com", "password123")
 
 	var adminUser db.User
 	database.Where("username = ?", "apitest").First(&adminUser)
 
 	// Regular user tries admin endpoint
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", fmt.Sprintf("/api/admin/users/%d/devices", adminUser.ID), nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/admin/users/%d/devices", adminUser.ID), nil)
 	req.Header.Set("Authorization", "Bearer "+userToken)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)

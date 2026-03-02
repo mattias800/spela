@@ -65,20 +65,7 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	require.NoError(t, err)
 
 	// Create user 2
-	w = httptest.NewRecorder()
-	body, _ = json.Marshal(map[string]string{
-		"username": "challenger2",
-		"email":    "challenger2@test.com",
-		"password": "password123",
-	})
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code, "register user2: %s", w.Body.String())
-
-	var reg2 map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &reg2)
-	token2 := reg2["accessToken"].(string)
+	token2 := createNonOwnerUser(t, router, token1, "challenger2", "challenger2@test.com", "password123")
 
 	claims2, err := auth.ValidateAccessToken(token2, testJWTSecret)
 	require.NoError(t, err)

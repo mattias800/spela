@@ -13,23 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// registerUserAndGetToken registers a user and returns the access token.
-func registerUserAndGetToken(t *testing.T, router http.Handler, username, email string) string {
+// registerUserAndGetToken registers a non-owner user via the admin endpoint and returns the access token.
+// ownerToken must be a valid admin/owner token.
+func registerUserAndGetToken(t *testing.T, router http.Handler, ownerToken, username, email string) string {
 	t.Helper()
-	body, _ := json.Marshal(map[string]string{
-		"username": username,
-		"email":    email,
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	return resp["accessToken"].(string)
+	return createNonOwnerUser(t, router, ownerToken, username, email, "password123")
 }
 
 // netplayTestCtx holds shared state for netplay tests.
@@ -52,8 +40,11 @@ func setupNetplayCtx(t *testing.T) netplayTestCtx {
 	database.Create(&game)
 
 	router := NewRouter(*cfg)
-	hostToken := registerUserAndGetToken(t, router, "host", "host@test.com")
-	clientToken := registerUserAndGetToken(t, router, "client", "client@test.com")
+	// Register owner first (regular register, gets owner role)
+	ownerToken := registerAndGetToken(t, router)
+	// Create host and client as non-owner users via admin endpoint
+	hostToken := registerUserAndGetToken(t, router, ownerToken, "host", "host@test.com")
+	clientToken := registerUserAndGetToken(t, router, ownerToken, "client", "client@test.com")
 
 	return netplayTestCtx{
 		router:      router,
@@ -143,7 +134,7 @@ func TestNetplay_CreateSession_UnsupportedConsole(t *testing.T) {
 	database.Create(&game)
 
 	router := NewRouter(*cfg)
-	token := registerUserAndGetToken(t, router, "psxhost", "psxhost@test.com")
+	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"gameId": "1"})
 	w := httptest.NewRecorder()
@@ -259,9 +250,10 @@ func TestNetplay_JoinFullSession(t *testing.T) {
 	database.Create(&game)
 
 	router := NewRouter(*cfg)
-	hostToken := registerUserAndGetToken(t, router, "fullhost", "fh@t.com")
-	p2Token := registerUserAndGetToken(t, router, "fullp2", "fp2@t.com")
-	p3Token := registerUserAndGetToken(t, router, "fullp3", "fp3@t.com")
+	ownerToken := registerAndGetToken(t, router)
+	hostToken := registerUserAndGetToken(t, router, ownerToken, "fullhost", "fh@t.com")
+	p2Token := registerUserAndGetToken(t, router, ownerToken, "fullp2", "fp2@t.com")
+	p3Token := registerUserAndGetToken(t, router, ownerToken, "fullp3", "fp3@t.com")
 
 	// Create
 	body, _ := json.Marshal(map[string]interface{}{"gameId": "1"})

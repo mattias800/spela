@@ -32,20 +32,7 @@ func setupSaveTestEnv(t *testing.T) *saveTestEnv {
 	token := registerAndGetToken(t, router)
 
 	// Register second user
-	body, _ := json.Marshal(map[string]string{
-		"username": "user2",
-		"email":    "user2@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var reg2 map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &reg2)
-	token2 := reg2["accessToken"].(string)
+	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "password123")
 
 	// Create a test game
 	var console db.Console

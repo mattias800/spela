@@ -503,20 +503,7 @@ func TestPlayLater_PerUserIsolation(t *testing.T) {
 	token1 := registerAndGetToken(t, router)
 
 	// Register second user
-	body, _ := json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	token2 := regResp["accessToken"].(string)
+	token2 := createNonOwnerUser(t, router, token1, "otheruser", "other@example.com", "password123")
 
 	var console db.Console
 	database.First(&console)
@@ -525,8 +512,8 @@ func TestPlayLater_PerUserIsolation(t *testing.T) {
 	gameID := fmt.Sprintf("%d", game.ID)
 
 	// User 1 adds game to play later
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/user/play-later/"+gameID, nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/play-later/"+gameID, nil)
 	req.Header.Set("Authorization", "Bearer "+token1)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)

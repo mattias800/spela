@@ -1,4 +1,4 @@
-import { Shield, ShieldCheck, Crown, Trash2, UserX } from "lucide-react";
+import { Shield, ShieldCheck, Crown, Trash2, UserX, Clock } from "lucide-react";
 import {
   Button,
   Badge,
@@ -18,6 +18,7 @@ interface UserTableProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onViewDevices: (user: User) => void;
+  onApprove: (user: User) => void;
 }
 
 function getRoleBadge(role: string) {
@@ -53,6 +54,7 @@ export function UserTable({
   onEdit,
   onDelete,
   onViewDevices,
+  onApprove,
 }: UserTableProps) {
   const isOwnerOrSelf = (user: User) =>
     user.role === "owner" || user.id === currentUser?.id;
@@ -127,7 +129,12 @@ export function UserTable({
                   </td>
                   <td className="px-5 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-5 py-3">
-                    {user.disabled ? (
+                    {user.pendingApproval ? (
+                      <Badge variant="warning">
+                        <Clock className="h-3 w-3 mr-1" />
+                        pending
+                      </Badge>
+                    ) : user.disabled ? (
                       <Badge variant="danger">
                         <UserX className="h-3 w-3 mr-1" />
                         disabled
@@ -141,6 +148,15 @@ export function UserTable({
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {user.pendingApproval && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onApprove(user)}
+                        >
+                          Approve
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

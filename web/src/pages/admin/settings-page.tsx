@@ -35,7 +35,7 @@ export function AdminSettingsPage() {
     if (settings) {
       const dirs = settings["gameDirectories"] ?? "";
       setGameDirectories(dirs ? dirs.split(",") : []);
-      setAllowRegistration(settings["allowRegistration"] !== "false");
+      setAllowRegistration(settings["registration_enabled"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
       setIgdbClientId(settings["igdb_client_id"] ?? "");
       setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
@@ -57,7 +57,7 @@ export function AdminSettingsPage() {
   function handleSave() {
     const payload: Record<string, string> = {
       gameDirectories: gameDirectories.join(","),
-      allowRegistration: String(allowRegistration),
+      registration_enabled: String(allowRegistration),
       scrapeOnScan: String(scrapeOnScan),
     };
     // Only send IGDB credentials when they're managed via the UI, not env vars
