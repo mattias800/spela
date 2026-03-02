@@ -546,6 +546,11 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 			slog.Warn("auto-scrape failed", "game", g.Title, "error", err)
 			return
 		}
+		// Reload with Screenshots so the WebSocket broadcast includes them.
+		if err := h.DB.Preload("Console").Preload("Screenshots").First(&g, id).Error; err != nil {
+			slog.Warn("auto-scrape: failed to reload game after scrape", "id", id, "error", err)
+			return
+		}
 		h.Hub.Broadcast(ws.Event{
 			Type:    "game_scraped",
 			Payload: ToGameResponse(g, h.DB, 0),
