@@ -34,13 +34,13 @@ func TestBestIGDBMatch_Ranking(t *testing.T) {
 			wantName: "Super Mario Bros.",
 		},
 		{
-			name:  "Zelda prefix matches Zelda II over Legend of Zelda contains",
+			name:  "Zelda suffix match beats prefix match",
 			query: "Zelda",
 			games: []igdb.Game{
 				{ID: 1, Name: "The Legend of Zelda"},
 				{ID: 2, Name: "Zelda II: The Adventure of Link"},
 			},
-			wantName: "Zelda II: The Adventure of Link",
+			wantName: "The Legend of Zelda",
 		},
 		{
 			name:  "single result returns it",
@@ -133,6 +133,145 @@ func TestBestIGDBMatch_EarlierReleasePreferred(t *testing.T) {
 		{ID: 2, Name: "Doom", FirstReleaseDate: 755222400},  // 1993
 	})
 	assert.Equal(t, 2, got.ID)
+}
+
+func TestBestIGDBMatch_Aladdin_PicksRealGame(t *testing.T) {
+	// Regression test: IGDB text search for "Aladdin" on SNES returns both
+	// "Aladdin 2000" (unlicensed bootleg, prefix match) and "Disney's Aladdin"
+	// (real Capcom game, suffix match). The suffix tier + metadata quality
+	// penalties must prefer the real game.
+	got := bestIGDBMatch("Aladdin", []igdb.Game{
+		{
+			ID:               247332,
+			Name:             "Aladdin 2000",
+			FirstReleaseDate: 0, // no release date
+			InvolvedCompanies: []igdb.InvolvedCompany{
+				{Company: igdb.Company{ID: 1, Name: "Unknown"}},
+			},
+			Screenshots: []igdb.Image{{ID: 1, ImageID: "s1"}},
+			Genres:      []igdb.Genre{{ID: 1, Name: "Platform"}},
+			// no cover
+		},
+		{
+			ID:               2473,
+			Name:             "Disney's Aladdin",
+			FirstReleaseDate: 754272000, // 1993-11-21
+			InvolvedCompanies: []igdb.InvolvedCompany{
+				{Company: igdb.Company{ID: 1, Name: "Capcom"}, Developer: true},
+				{Company: igdb.Company{ID: 2, Name: "Capcom"}, Publisher: true},
+				{Company: igdb.Company{ID: 3, Name: "The Walt Disney Company"}},
+			},
+			Cover:       &igdb.Image{ID: 1, ImageID: "c1"},
+			Screenshots: []igdb.Image{{ID: 1, ImageID: "s1"}, {ID: 2, ImageID: "s2"}, {ID: 3, ImageID: "s3"}},
+			Genres:      []igdb.Genre{{ID: 1, Name: "Platform"}, {ID: 2, Name: "Adventure"}, {ID: 3, Name: "Arcade"}},
+		},
+	})
+	assert.Equal(t, "Disney's Aladdin", got.Name)
+	assert.Equal(t, 2473, got.ID)
+}
+
+func TestBestIGDBMatch_SuffixBeatsPrefixForQualifiedNames(t *testing.T) {
+	// Games with possessive qualifiers (e.g. "Tom Clancy's Splinter Cell")
+	// should rank higher via suffix match than prefix matches.
+	tests := []struct {
+		name     string
+		query    string
+		games    []igdb.Game
+		wantName string
+	}{
+		{
+			name:  "Tom Clancys Splinter Cell suffix over Splinter Cell Blacklist prefix",
+			query: "Splinter Cell",
+			games: []igdb.Game{
+				{ID: 1, Name: "Splinter Cell: Blacklist", FirstReleaseDate: 100, Cover: &igdb.Image{ID: 1, ImageID: "c1"}},
+				{ID: 2, Name: "Tom Clancy's Splinter Cell", FirstReleaseDate: 100, Cover: &igdb.Image{ID: 1, ImageID: "c2"}},
+			},
+			wantName: "Tom Clancy's Splinter Cell",
+		},
+		{
+			name:  "Disneys Aladdin suffix over Aladdin 2000 prefix",
+			query: "Aladdin",
+			games: []igdb.Game{
+				{ID: 1, Name: "Aladdin 2000", FirstReleaseDate: 100, Cover: &igdb.Image{ID: 1, ImageID: "c1"}},
+				{ID: 2, Name: "Disney's Aladdin", FirstReleaseDate: 100, Cover: &igdb.Image{ID: 1, ImageID: "c2"}},
+			},
+			wantName: "Disney's Aladdin",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := bestIGDBMatch(tt.query, tt.games)
+			assert.Equal(t, tt.wantName, got.Name)
+		})
+	}
+}
+
+func TestMetadataQuality(t *testing.T) {
+	tests := []struct {
+		name string
+		game igdb.Game
+		want float64
+	}{
+		{
+			name: "full metadata scores 1.0",
+			game: igdb.Game{
+				FirstReleaseDate:  100,
+				InvolvedCompanies: []igdb.InvolvedCompany{{Company: igdb.Company{ID: 1}}},
+				Cover:             &igdb.Image{ID: 1, ImageID: "c1"},
+				Screenshots:       []igdb.Image{{ID: 1, ImageID: "s1"}},
+			},
+			want: 1.0,
+		},
+		{
+			name: "missing release date",
+			game: igdb.Game{
+				FirstReleaseDate:  0,
+				InvolvedCompanies: []igdb.InvolvedCompany{{Company: igdb.Company{ID: 1}}},
+				Cover:             &igdb.Image{ID: 1, ImageID: "c1"},
+				Screenshots:       []igdb.Image{{ID: 1, ImageID: "s1"}},
+			},
+			want: 0.92,
+		},
+		{
+			name: "missing everything",
+			game: igdb.Game{},
+			want: 0.92 * 0.95 * 0.95 * 0.95,
+		},
+		{
+			name: "only missing cover",
+			game: igdb.Game{
+				FirstReleaseDate:  100,
+				InvolvedCompanies: []igdb.InvolvedCompany{{Company: igdb.Company{ID: 1}}},
+				Screenshots:       []igdb.Image{{ID: 1, ImageID: "s1"}},
+			},
+			want: 0.95,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := metadataQuality(tt.game)
+			assert.InDelta(t, tt.want, got, 0.0001)
+		})
+	}
+}
+
+func TestBestIGDBMatch_MetadataPenaltyBreaksTie(t *testing.T) {
+	// Two prefix matches with same length ratio — metadata quality decides.
+	// "Game A" has no metadata, "Game B" is well-documented.
+	got := bestIGDBMatch("Battle", []igdb.Game{
+		{ID: 1, Name: "Battle Zone"}, // prefix match, no metadata → penalised
+		{
+			ID:                2,
+			Name:              "Battle Toads",
+			FirstReleaseDate:  100,
+			InvolvedCompanies: []igdb.InvolvedCompany{{Company: igdb.Company{ID: 1}}},
+			Cover:             &igdb.Image{ID: 1, ImageID: "c1"},
+			Screenshots:       []igdb.Image{{ID: 1, ImageID: "s1"}},
+		}, // prefix match, full metadata → no penalty
+	})
+	assert.Equal(t, "Battle Toads", got.Name)
 }
 
 func TestIsBetterIGDBMatch(t *testing.T) {
