@@ -8,6 +8,8 @@ type ViewMode = "grid" | "list";
 interface GamesFilterBarProps {
   filters: GameFilters;
   onFiltersChange: (updater: (prev: GameFilters) => GameFilters) => void;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   consoles: Console[] | undefined;
@@ -16,6 +18,8 @@ interface GamesFilterBarProps {
 export function GamesFilterBar({
   filters,
   onFiltersChange,
+  searchValue,
+  onSearchChange,
   viewMode,
   onViewModeChange,
   consoles,
@@ -37,10 +41,8 @@ export function GamesFilterBar({
       <div className="flex-1 min-w-[240px] max-w-md">
         <SearchInput
           placeholder="Search games..."
-          value={filters.search ?? ""}
-          onChange={(e) =>
-            onFiltersChange((f) => ({ ...f, search: e.target.value, page: 1 }))
-          }
+          value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 

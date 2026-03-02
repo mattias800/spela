@@ -85,11 +85,15 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		perPage = 50
 	}
 
-	// Count with the same filters applied
+	// Count with the same filters applied (reuse the resolved console ID
+	// from the data query above so we compare numeric IDs, not abbreviations).
 	var total int64
 	countQuery := h.DB.Model(&db.Game{})
-	if consoleID := c.Query("consoleId"); consoleID != "" {
-		countQuery = countQuery.Where("console_id = ?", consoleID)
+	if consoleAbbr := c.Query("consoleId"); consoleAbbr != "" {
+		var countConsole db.Console
+		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&countConsole).Error; err == nil {
+			countQuery = countQuery.Where("console_id = ?", countConsole.ID)
+		}
 	}
 	if search := c.Query("search"); search != "" {
 		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")

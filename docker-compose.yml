@@ -36,7 +36,7 @@ services:
       - ${SPELA_BASE_PATH:-/docker/spela}/saves:/app/saves
       - ${SPELA_BASE_PATH:-/docker/spela}/cores:/app/cores
       - ${SPELA_BASE_PATH:-/docker/spela}/images:/app/images
-      - ${SPELA_GAMES_PATH:-${SPELA_BASE_PATH:-/docker/spela}/games}:/app/games:ro
+      - ${SPELA_GAMES_PATH:-${SPELA_BASE_PATH:-/docker/spela}/games}:/app/games
       - ${SPELA_BIOS_PATH:-${SPELA_BASE_PATH:-/docker/spela}/bios}:/app/bios:ro
     environment:
       - PUID=${PUID:-1000}

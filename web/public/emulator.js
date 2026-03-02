@@ -112,11 +112,6 @@
     window.EJS_backgroundBlur = true;
     window.EJS_backgroundColor = "#16191d";
 
-    // Load non-minified source files directly — the npm package does not
-    // include minified builds, so skip the emulator.min.js attempt to
-    // avoid 404 errors and ensure clean script loading order.
-    window.EJS_DEBUG_XX = true;
-
     // Enable threaded WASM cores for full-speed emulation.
     // Requires COOP/COEP headers (set by server and Vite dev config).
     window.EJS_threads = true;

@@ -33,7 +33,8 @@ class GameRepositoryImpl(
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {
         return runCatching {
-            val games = apiClient.getGamesForConsole(consoleId).map { it.toDomain().resolveImageUrls() }
+            val games = apiClient.getGamesForConsole(consoleId, pageSize = 200).data
+                .map { it.toDomain().resolveImageUrls() }
             cacheGames(games)
             games
         }.recoverCatching {

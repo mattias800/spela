@@ -9,19 +9,25 @@ import { useConsoles } from "@/hooks/use-consoles";
 import { GamesFilterBar } from "@/features/games/components/games-filter-bar";
 import { GameListRow } from "@/features/games/components/game-list-row";
 import { Pagination } from "@/components/pagination";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { GameFilters } from "@/types/api";
 
 type ViewMode = "grid" | "list";
 
 export function GamesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
   const [filters, setFilters] = useState<GameFilters>({
     sortBy: "title",
     sortOrder: "asc",
     pageSize: 48,
   });
 
-  const { data, isLoading } = useGames(filters);
+  const { data, isLoading } = useGames({
+    ...filters,
+    search: debouncedSearch || undefined,
+  });
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -42,6 +48,11 @@ export function GamesPage() {
       <GamesFilterBar
         filters={filters}
         onFiltersChange={setFilters}
+        searchValue={searchInput}
+        onSearchChange={(value) => {
+          setSearchInput(value);
+          setFilters((f) => ({ ...f, page: 1 }));
+        }}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         consoles={consoles}
@@ -67,7 +78,7 @@ export function GamesPage() {
           icon={Library}
           title="No games found"
           description={
-            filters.search
+            searchInput
               ? "No games match your search. Try different keywords."
               : "Your library is empty. Scan for games to get started."
           }

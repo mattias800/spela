@@ -11,6 +11,8 @@ import com.spela.player.presentation.state.GameListState
 import com.spela.player.presentation.state.ViewMode
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,7 @@ class GameListViewModel(
 ) {
     private val _state = MutableStateFlow(GameListState())
     val state: StateFlow<GameListState> = _state.asStateFlow()
+    private var searchJob: Job? = null
 
     init {
         // Observe scrape completions and update games in state
@@ -241,11 +244,14 @@ class GameListViewModel(
     }
 
     private fun searchGames(query: String) {
-        val current = _state.value
-        _state.update { it.copy(searchQuery = query, isLoading = true) }
-        scope.launch(dispatchers.io) {
+        _state.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        searchJob = scope.launch(dispatchers.io) {
+            delay(300) // debounce
+            _state.update { it.copy(isLoading = true) }
+            val current = _state.value
             searchGamesUseCase(
-                query = query,
+                query = current.searchQuery,
                 consoleId = current.selectedConsoleFilter,
                 sortBy = current.sortBy,
                 sortOrder = current.sortOrder,
