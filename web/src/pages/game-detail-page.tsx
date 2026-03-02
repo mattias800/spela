@@ -37,6 +37,7 @@ import { GameChallenges } from "@/features/challenges/components/game-challenges
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
+import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
 import type { Collection } from "@/types/api";
 
 function CollectionPickerModal({
@@ -117,6 +118,7 @@ export function GameDetailPage() {
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [showScrapeMatch, setShowScrapeMatch] = useState(false);
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -191,6 +193,19 @@ export function GameDetailPage() {
           togglePlayLater.mutate({ gameId: game.id, isInPlayLater })
         }
         onAddToCollection={() => setShowCollectionPicker(true)}
+        onFixMatch={
+          isAdmin && game.scrapeAttempts > 0
+            ? () => setShowScrapeMatch(true)
+            : undefined
+        }
+      />
+
+      <ScrapeMatchModal
+        gameId={game.id}
+        currentTitle={game.title}
+        currentScraperId={game.scraperId}
+        open={showScrapeMatch}
+        onClose={() => setShowScrapeMatch(false)}
       />
 
       <CollectionPickerModal

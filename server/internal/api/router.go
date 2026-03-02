@@ -418,6 +418,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)
 			admin.PUT("/games/:id/covers", adminHandler.SetGameCover)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
+			admin.GET("/games/:id/igdb-search", adminHandler.SearchIGDB)
+			admin.POST("/games/:id/igdb-match", adminHandler.ApplyIGDBMatch)
 			admin.POST("/igdb/test", igdbHandler.TestIGDB)
 			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
 			admin.GET("/stats", adminHandler.GetStats)

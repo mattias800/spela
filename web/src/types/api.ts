@@ -119,6 +119,15 @@ export interface MetadataMatchesResponse {
   incomplete: Game[];
 }
 
+export interface IgdbSearchResult {
+  igdbId: number;
+  name: string;
+  coverUrl?: string;
+  releaseYear?: number;
+  developer?: string;
+  summary?: string;
+}
+
 export interface Device {
   id: number;
   userId: number;

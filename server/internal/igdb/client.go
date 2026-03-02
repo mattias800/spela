@@ -346,6 +346,64 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 	return games, nil
 }
 
+// GetGameByID fetches a single game from IGDB by its ID.
+// Returns the full game data with the same fields as SearchGame.
+// Returns nil if the game is not found.
+func (c *Client) GetGameByID(igdbID int) (*Game, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	// Wait for rate limiter
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name; where id = %d; limit 1;`,
+		igdbID,
+	)
+
+	slog.Info("IGDB get game by ID request", "igdbID", igdbID, "query", query)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var games []Game
+	if err := json.Unmarshal(body, &games); err != nil {
+		return nil, fmt.Errorf("decoding IGDB response: %w", err)
+	}
+
+	if len(games) == 0 {
+		slog.Info("IGDB get game by ID: not found", "igdbID", igdbID)
+		return nil, nil
+	}
+
+	slog.Info("IGDB get game by ID response", "igdbID", igdbID, "name", games[0].Name)
+	return &games[0], nil
+}
+
 // TopGame represents an IGDB top-rated game result.
 type TopGame struct {
 	ID               int    `json:"id"`
