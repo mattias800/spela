@@ -88,6 +88,7 @@ fun SaveStateDto.toDomain(): SaveState = SaveState(
     createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
     fileSize = fileSize,
     isAuto = isAuto,
+    coreName = coreName,
     notes = notes,
     screenshotUrl = screenshotUrl,
     slot = slot,

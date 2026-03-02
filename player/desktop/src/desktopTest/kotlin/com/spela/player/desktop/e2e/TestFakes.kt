@@ -442,12 +442,14 @@ class FakeSaveRepository : SaveRepository {
         gameId: String,
         name: String,
         data: ByteArray,
+        coreName: String?,
     ): Result<SaveState> {
         val save = SaveState(
             id = (saves[gameId]?.size?.toLong() ?: 0L) + 1,
             gameId = gameId.toLongOrNull() ?: 0L,
             name = name,
             isAuto = false,
+            coreName = coreName,
         )
         saves.getOrPut(gameId) { mutableListOf() }.add(save)
         return Result.success(save)
@@ -458,7 +460,8 @@ class FakeSaveRepository : SaveRepository {
         name: String,
         data: ByteArray,
         screenshot: ByteArray?,
-    ): Result<SaveState> = uploadSaveState(gameId, name, data)
+        coreName: String?,
+    ): Result<SaveState> = uploadSaveState(gameId, name, data, coreName)
 
     override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> {
         return Result.success(ByteArray(256) { it.toByte() })
@@ -469,13 +472,14 @@ class FakeSaveRepository : SaveRepository {
         return Result.success(Unit)
     }
 
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> {
+    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> {
         autoSaves[gameId] = data
         val save = SaveState(
             id = 0,
             gameId = gameId.toLongOrNull() ?: 0L,
             name = "Auto Save",
             isAuto = true,
+            coreName = coreName,
         )
         return Result.success(save)
     }
@@ -484,7 +488,8 @@ class FakeSaveRepository : SaveRepository {
         gameId: String,
         data: ByteArray,
         screenshot: ByteArray?,
-    ): Result<SaveState> = uploadAutoSave(gameId, data)
+        coreName: String?,
+    ): Result<SaveState> = uploadAutoSave(gameId, data, coreName)
 
     fun preUploadAutoSave(gameId: String, data: ByteArray) {
         autoSaves[gameId] = data
@@ -527,7 +532,7 @@ class FakeSaveRepository : SaveRepository {
     }
 
     // Feature 5: Slots
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> {
         val save = SaveState(
             id = (slot * 100).toLong(),
             gameId = gameId.toLongOrNull() ?: 0L,

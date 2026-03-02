@@ -499,6 +499,131 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "user deleted"})
 }
 
+// ListDeletedUsers returns soft-deleted users (admin only).
+func (h *AdminHandler) ListDeletedUsers(c *gin.Context) {
+	var users []db.User
+	if err := h.DB.Unscoped().Where("deleted_at IS NOT NULL").Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch deleted users"})
+		return
+	}
+
+	resp := make([]DeletedUserResponse, len(users))
+	for i, u := range users {
+		resp[i] = ToDeletedUserResponse(u)
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// HardDeleteUser permanently removes a soft-deleted user and all their data (admin only).
+func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	var user db.User
+	if err := h.DB.Unscoped().First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	if !user.DeletedAt.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user is not soft-deleted; use the regular delete endpoint first"})
+		return
+	}
+
+	if user.Role == db.RoleOwner {
+		c.JSON(http.StatusForbidden, gin.H{"error": "cannot permanently delete the owner"})
+		return
+	}
+
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		uid := user.ID
+
+		// Per-user preferences
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleShaderPreference{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleKeyMappingPreference{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameKeyMappingPreference{})
+
+		// Devices + device shader preferences
+		var devices []db.Device
+		tx.Unscoped().Where("user_id = ?", uid).Find(&devices)
+		for _, d := range devices {
+			tx.Unscoped().Where("device_id = ?", d.ID).Delete(&db.DeviceShaderPreference{})
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.Device{})
+
+		// Social / community data
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.Favorite{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.PlayHistory{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameRating{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.PlayLaterItem{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ActivityEvent{})
+
+		// Collections (+ items for owned collections)
+		var collections []db.GameCollection
+		tx.Unscoped().Where("user_id = ?", uid).Find(&collections)
+		for _, col := range collections {
+			tx.Unscoped().Where("collection_id = ?", col.ID).Delete(&db.CollectionItem{})
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameCollection{})
+
+		// Save states (+ delete files)
+		var saves []db.SaveState
+		tx.Unscoped().Where("user_id = ?", uid).Find(&saves)
+		for _, save := range saves {
+			if h.Storage != nil {
+				h.Storage.DeleteSave(save.FilePath)
+			}
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SaveState{})
+
+		// Shared save states (+ delete files)
+		var sharedSaves []db.SharedSaveState
+		tx.Unscoped().Where("user_id = ?", uid).Find(&sharedSaves)
+		for _, ss := range sharedSaves {
+			if h.Storage != nil {
+				h.Storage.DeleteSave(ss.FilePath)
+			}
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SharedSaveState{})
+
+		// Save data (SRAM)
+		var saveData []db.SaveData
+		tx.Unscoped().Where("user_id = ?", uid).Find(&saveData)
+		for _, sd := range saveData {
+			if h.Storage != nil {
+				h.Storage.DeleteSave(sd.FilePath)
+			}
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SaveData{})
+
+		// RetroAchievements
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.UserAchievementProgress{})
+
+		// Challenges
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ChallengeAttempt{})
+
+		// Relays
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RelayMember{})
+		tx.Unscoped().Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.RelayInvite{})
+
+		// Netplay
+		tx.Unscoped().Where("host_user_id = ? OR client_user_id = ?", uid, uid).Delete(&db.NetplaySession{})
+
+		// Auth / security
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RefreshToken{})
+
+		// Permanently delete the user
+		return tx.Unscoped().Delete(&user).Error
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to permanently delete user"})
+		return
+	}
+
+	currentUserID, _ := c.Get("userId")
+	slog.Info("audit: admin permanently deleted user", "admin_id", currentUserID, "target_user", user.Username)
+	c.JSON(http.StatusOK, gin.H{"message": "user permanently deleted"})
+}
+
 // ScrapeGame scrapes metadata for a single game (admin only).
 func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	id := c.Param("id")
@@ -664,6 +789,67 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 		"consoles": consoles,
 		"saves":    saves,
 	})
+}
+
+// GetUserRateLimit returns the current login rate limit status for a user.
+func (h *AdminHandler) GetUserRateLimit(c *gin.Context) {
+	id := c.Param("id")
+	var user db.User
+	if err := h.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	hashed := hashUsername(user.Username)
+	var attempt db.LoginAttempt
+	if err := h.DB.Where("username = ?", hashed).First(&attempt).Error; err != nil {
+		// No login attempt record means no failed attempts
+		c.JSON(http.StatusOK, RateLimitResponse{
+			FailedCount: 0,
+			LockedUntil: nil,
+			IsLockedOut: false,
+		})
+		return
+	}
+
+	// Check if the counter has expired (24h since last failure)
+	if time.Since(attempt.UpdatedAt) > loginAttemptMaxAge {
+		c.JSON(http.StatusOK, RateLimitResponse{
+			FailedCount: 0,
+			LockedUntil: nil,
+			IsLockedOut: false,
+		})
+		return
+	}
+
+	isLocked := attempt.FailedCount >= maxLoginAttempts && time.Now().Before(attempt.LockedUntil)
+	var lockedUntil *time.Time
+	if !attempt.LockedUntil.IsZero() {
+		lockedUntil = &attempt.LockedUntil
+	}
+
+	c.JSON(http.StatusOK, RateLimitResponse{
+		FailedCount: attempt.FailedCount,
+		LockedUntil: lockedUntil,
+		IsLockedOut: isLocked,
+	})
+}
+
+// ResetUserRateLimit clears the login rate limit for a user.
+func (h *AdminHandler) ResetUserRateLimit(c *gin.Context) {
+	id := c.Param("id")
+	var user db.User
+	if err := h.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	hashed := hashUsername(user.Username)
+	h.DB.Where("username = ?", hashed).Delete(&db.LoginAttempt{})
+
+	adminID, _ := c.Get("userId")
+	slog.Info("audit: admin reset rate limit", "admin_id", adminID, "target_user", user.Username)
+	c.JSON(http.StatusOK, gin.H{"message": "rate limit reset"})
 }
 
 // igdbCredentials returns the IGDB client ID and secret.

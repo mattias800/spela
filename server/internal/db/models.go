@@ -143,6 +143,7 @@ type SaveState struct {
 	FileSize      int64          `json:"fileSize"`
 	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
 	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
+	CoreName      string         `gorm:"size:128" json:"coreName,omitempty"`
 	Notes         string         `gorm:"type:text" json:"notes,omitempty"`
 	Slot          *int           `json:"slot,omitempty"`
 }

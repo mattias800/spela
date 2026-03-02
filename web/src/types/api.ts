@@ -10,6 +10,22 @@ export interface User {
   updatedAt: string;
 }
 
+export interface RateLimitStatus {
+  failedCount: number;
+  lockedUntil: string | null;
+  isLockedOut: boolean;
+}
+
+export interface DeletedUser {
+  id: string;
+  username: string;
+  email: string;
+  role: "owner" | "admin" | "user";
+  disabled: boolean;
+  createdAt: string;
+  deletedAt: string;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -87,6 +103,7 @@ export interface SaveState {
   name: string;
   fileSize: number;
   isAuto: boolean;
+  coreName?: string;
   screenshotUrl?: string;
   createdAt: string;
   updatedAt: string;

@@ -338,6 +338,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	}
 
 	name := c.DefaultPostForm("name", header.Filename)
+	coreName := c.PostForm("coreName")
 	screenshotURL := c.PostForm("screenshotUrl")
 
 	// Handle optional screenshot upload
@@ -365,6 +366,7 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 		FilePath:      savePath,
 		FileSize:      size,
 		ScreenshotURL: screenshotURL,
+		CoreName:      coreName,
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
@@ -449,6 +451,7 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	}
 
 	filename := fmt.Sprintf("autosave_%d.sav", time.Now().UnixNano())
+	coreName := c.PostForm("coreName")
 	screenshotURL := c.PostForm("screenshotUrl")
 
 	// Handle optional screenshot upload
@@ -478,6 +481,7 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 		FilePath:      savePath,
 		FileSize:      size,
 		ScreenshotURL: screenshotURL,
+		CoreName:      coreName,
 		IsAuto:        true,
 	}
 	h.DB.Create(&save)

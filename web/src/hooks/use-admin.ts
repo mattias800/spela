@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type {
   User,
+  DeletedUser,
   ServerSettingsMap,
   MetadataMatchesResponse,
   IgdbSearchResult,
+  RateLimitStatus,
 } from "@/types/api";
 
 export function useAdminUsers() {
@@ -116,6 +118,26 @@ export function useMetadataMatches() {
   return useQuery({
     queryKey: ["admin", "metadata-matches"],
     queryFn: () => api.get<MetadataMatchesResponse>("/admin/metadata-matches"),
+  });
+}
+
+export function useDeletedUsers() {
+  return useQuery({
+    queryKey: ["admin", "users", "deleted"],
+    queryFn: () => api.get<DeletedUser[]>("/admin/users/deleted"),
+  });
+}
+
+export function useHardDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/admin/users/${id}/permanent`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
   });
 }
 
@@ -293,6 +315,30 @@ export function useApplyIgdbMatch() {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "metadata-matches"],
+      });
+    },
+  });
+}
+
+export function useUserRateLimit(userId: string) {
+  return useQuery({
+    queryKey: ["admin", "users", userId, "rate-limit"],
+    queryFn: () =>
+      api.get<RateLimitStatus>(`/admin/users/${userId}/rate-limit`),
+    enabled: !!userId,
+  });
+}
+
+export function useResetRateLimit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      await api.delete(`/admin/users/${userId}/rate-limit`);
+    },
+    onSuccess: (_data, userId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "users", userId, "rate-limit"],
       });
     },
   });

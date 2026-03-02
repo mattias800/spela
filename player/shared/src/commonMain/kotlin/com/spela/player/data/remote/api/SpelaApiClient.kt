@@ -373,11 +373,12 @@ class SpelaApiClient(
     }
 
     /** Backend expects multipart form upload with "save" file and "name" field */
-    suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): SaveStateDto {
+    suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String? = null): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/saves",
             formData = formData {
                 append("name", name)
+                if (!coreName.isNullOrEmpty()) append("coreName", coreName)
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -399,10 +400,11 @@ class SpelaApiClient(
     }
 
     /** Backend expects multipart form upload with "save" file */
-    suspend fun uploadAutoSave(gameId: String, data: ByteArray): SaveStateDto {
+    suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String? = null): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/saves/auto",
             formData = formData {
+                if (!coreName.isNullOrEmpty()) append("coreName", coreName)
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -412,11 +414,12 @@ class SpelaApiClient(
     }
 
     /** Backend expects multipart form upload with "save" file and optional "screenshot" file */
-    suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+    suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String? = null): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/saves",
             formData = formData {
                 append("name", name)
+                if (!coreName.isNullOrEmpty()) append("coreName", coreName)
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -432,10 +435,11 @@ class SpelaApiClient(
     }
 
     /** Backend expects multipart form upload with "save" file and optional "screenshot" file */
-    suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+    suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String? = null): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/saves/auto",
             formData = formData {
+                if (!coreName.isNullOrEmpty()) append("coreName", coreName)
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -474,10 +478,11 @@ class SpelaApiClient(
     }
 
     /** Quick-save to a numbered slot */
-    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray? = null): SaveStateDto {
+    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray? = null, coreName: String? = null): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/saves/slot/$slot",
             formData = formData {
+                if (!coreName.isNullOrEmpty()) append("coreName", coreName)
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"slot-$slot.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())

@@ -1,4 +1,12 @@
-import { Shield, ShieldCheck, Crown, Trash2, UserX, Clock } from "lucide-react";
+import {
+  Shield,
+  ShieldCheck,
+  Crown,
+  Trash2,
+  UserX,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 import {
   Button,
   Badge,
@@ -10,6 +18,7 @@ import { Users } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { User } from "@/types/api";
+import { useUserRateLimit, useResetRateLimit } from "@/hooks/use-admin";
 
 interface UserTableProps {
   users: User[] | undefined;
@@ -45,6 +54,40 @@ function getRoleBadge(role: string) {
         </Badge>
       );
   }
+}
+
+function RateLimitBadge({ userId }: { userId: string }) {
+  const { data } = useUserRateLimit(userId);
+  const resetMutation = useResetRateLimit();
+
+  if (!data || (!data.isLockedOut && data.failedCount === 0)) {
+    return null;
+  }
+
+  if (data.isLockedOut) {
+    return (
+      <div className="flex items-center gap-1">
+        <Badge variant="danger">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          locked out
+        </Badge>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => resetMutation.mutate(userId)}
+          disabled={resetMutation.isPending}
+        >
+          Reset
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Badge variant="warning">
+      {data.failedCount} failed login{data.failedCount !== 1 ? "s" : ""}
+    </Badge>
+  );
 }
 
 export function UserTable({
@@ -129,19 +172,22 @@ export function UserTable({
                   </td>
                   <td className="px-5 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-5 py-3">
-                    {user.pendingApproval ? (
-                      <Badge variant="warning">
-                        <Clock className="h-3 w-3 mr-1" />
-                        pending
-                      </Badge>
-                    ) : user.disabled ? (
-                      <Badge variant="danger">
-                        <UserX className="h-3 w-3 mr-1" />
-                        disabled
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-surface-500">active</span>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {user.pendingApproval ? (
+                        <Badge variant="warning">
+                          <Clock className="h-3 w-3 mr-1" />
+                          pending
+                        </Badge>
+                      ) : user.disabled ? (
+                        <Badge variant="danger">
+                          <UserX className="h-3 w-3 mr-1" />
+                          disabled
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-surface-500">active</span>
+                      )}
+                      <RateLimitBadge userId={user.id} />
+                    </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-surface-400">
                     {formatDate(user.createdAt)}

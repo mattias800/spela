@@ -78,8 +78,8 @@ class PrepareGameUseCase(
 }
 
 class SaveGameStateUseCase(private val saveRepository: SaveRepository) {
-    suspend operator fun invoke(gameId: String, data: ByteArray, screenshot: ByteArray? = null): Result<Unit> {
-        return saveRepository.uploadAutoSaveWithScreenshot(gameId, data, screenshot).map { }
+    suspend operator fun invoke(gameId: String, data: ByteArray, screenshot: ByteArray? = null, coreName: String? = null): Result<Unit> {
+        return saveRepository.uploadAutoSaveWithScreenshot(gameId, data, screenshot, coreName).map { }
     }
 }
 

@@ -346,6 +346,34 @@ func ToUserResponse(u db.User) UserResponse {
 	}
 }
 
+// DeletedUserResponse is the API response for a soft-deleted user.
+type DeletedUserResponse struct {
+	ID              string    `json:"id"`
+	Username        string    `json:"username"`
+	Email           string    `json:"email"`
+	Role            string    `json:"role"`
+	Disabled        bool      `json:"disabled"`
+	CreatedAt       time.Time `json:"createdAt"`
+	DeletedAt       time.Time `json:"deletedAt"`
+}
+
+// ToDeletedUserResponse converts a soft-deleted db.User to its API response.
+func ToDeletedUserResponse(u db.User) DeletedUserResponse {
+	var deletedAt time.Time
+	if u.DeletedAt.Valid {
+		deletedAt = u.DeletedAt.Time
+	}
+	return DeletedUserResponse{
+		ID:        strconv.FormatUint(uint64(u.ID), 10),
+		Username:  u.Username,
+		Email:     u.Email,
+		Role:      u.Role,
+		Disabled:  u.Disabled,
+		CreatedAt: u.CreatedAt,
+		DeletedAt: deletedAt,
+	}
+}
+
 // UserSearchResult is the API response for a user search result.
 type UserSearchResult struct {
 	ID        string `json:"id"`
@@ -599,6 +627,13 @@ type ChallengeLeaderboardEntry struct {
 	DurationMs int64      `json:"durationMs"`
 	AttemptID  string     `json:"attemptId"`
 	CompletedAt time.Time `json:"completedAt"`
+}
+
+// RateLimitResponse is the API response for a user's rate limit status.
+type RateLimitResponse struct {
+	FailedCount int        `json:"failedCount"`
+	LockedUntil *time.Time `json:"lockedUntil"`
+	IsLockedOut bool       `json:"isLockedOut"`
 }
 
 // resolveImageURL prefixes relative image paths with /api/images/.

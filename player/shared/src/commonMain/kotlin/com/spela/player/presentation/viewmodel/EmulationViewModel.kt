@@ -320,8 +320,10 @@ class EmulationViewModel(
                         // Load SRAM (save data) before starting emulation
                         saveManager.loadSramOnStart(gameId)
 
-                        // Store the core name for challenge creation
-                        challengeManager.currentCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
+                        // Store the core name for challenge creation and save states
+                        val resolvedCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
+                        challengeManager.currentCoreName = resolvedCoreName
+                        saveManager.currentCoreName = resolvedCoreName
 
                         // Challenge mode: load challenge save state and start attempt
                         if (challengeId != null) {

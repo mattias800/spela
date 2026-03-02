@@ -1022,3 +1022,174 @@ func TestGetSaveScreenshot_SaveNotFound(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// --- Core Name Tracking ---
+
+func uploadSaveWithCoreName(t *testing.T, router http.Handler, token, gameID, name, coreName string, data []byte) *httptest.ResponseRecorder {
+	t.Helper()
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", name)
+	if coreName != "" {
+		writer.WriteField("coreName", coreName)
+	}
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write(data)
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	return w
+}
+
+func TestUploadSave_WithCoreName(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	w := uploadSaveWithCoreName(t, env.router, env.token, env.gameID, "My Save", "snes9x", []byte("data"))
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var created map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	assert.Equal(t, "snes9x", created["coreName"])
+}
+
+func TestUploadSave_WithoutCoreName(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	w := uploadSave(t, env.router, env.token, env.gameID, "My Save", []byte("data"))
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var created map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	// coreName should be omitted (omitempty) when empty
+	_, hasCoreName := created["coreName"]
+	assert.False(t, hasCoreName, "coreName should be omitted when empty")
+}
+
+func TestAutoSave_WithCoreName(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("coreName", "mgba")
+	part, _ := writer.CreateFormFile("save", "autosave.sav")
+	part.Write([]byte("auto data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+env.gameID+"/saves/auto", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var created map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	assert.Equal(t, "mgba", created["coreName"])
+}
+
+func TestSlotSave_WithCoreName(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("coreName", "nestopia")
+	part, _ := writer.CreateFormFile("save", "slot.sav")
+	part.Write([]byte("slot data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/games/"+env.gameID+"/saves/slot/1", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var created map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	assert.Equal(t, "nestopia", created["coreName"])
+}
+
+func TestSlotSave_CoreNameUpdatedOnOverwrite(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	// First save with core "snes9x"
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("coreName", "snes9x")
+	part, _ := writer.CreateFormFile("save", "slot.sav")
+	part.Write([]byte("data v1"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/games/"+env.gameID+"/saves/slot/2", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Overwrite with core "bsnes"
+	buf.Reset()
+	writer = multipart.NewWriter(&buf)
+	writer.WriteField("coreName", "bsnes")
+	part, _ = writer.CreateFormFile("save", "slot.sav")
+	part.Write([]byte("data v2"))
+	writer.Close()
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/games/"+env.gameID+"/saves/slot/2", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var updated map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &updated)
+	assert.Equal(t, "bsnes", updated["coreName"])
+}
+
+func TestImportSave_WithCoreName(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", "Imported Save")
+	writer.WriteField("coreName", "gambatte")
+	part, _ := writer.CreateFormFile("save", "imported.sav")
+	part.Write([]byte("imported save data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+env.gameID+"/saves/import", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var created map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	assert.Equal(t, "gambatte", created["coreName"])
+}
+
+func TestCoreName_InListResponse(t *testing.T) {
+	env := setupSaveTestEnv(t)
+
+	// Upload a save with core name
+	w := uploadSaveWithCoreName(t, env.router, env.token, env.gameID, "My Save", "genesis_plus_gx", []byte("data"))
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// List saves and verify coreName is included
+	w = httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+env.gameID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var saves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saves)
+	require.Len(t, saves, 1)
+	assert.Equal(t, "genesis_plus_gx", saves[0]["coreName"])
+}

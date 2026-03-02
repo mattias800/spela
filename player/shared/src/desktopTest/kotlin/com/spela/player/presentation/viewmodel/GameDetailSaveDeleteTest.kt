@@ -28,7 +28,7 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GameDetailSharedSaveTest {
+class GameDetailSaveDeleteTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatchers = object : DispatcherProvider {
@@ -37,14 +37,12 @@ class GameDetailSharedSaveTest {
         override val default: CoroutineDispatcher = testDispatcher
     }
 
-    private lateinit var fakeSharedSaveRepo: TestSharedSaveRepository
-    private lateinit var fakeSaveRepo: TestSaveRepository
+    private lateinit var fakeSaveRepo: SaveDeleteTestSaveRepository
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        fakeSharedSaveRepo = TestSharedSaveRepository()
-        fakeSaveRepo = TestSaveRepository()
+        fakeSaveRepo = SaveDeleteTestSaveRepository()
     }
 
     @AfterTest
@@ -55,23 +53,23 @@ class GameDetailSharedSaveTest {
     private fun createViewModel(): GameDetailViewModel {
         val scope = CoroutineScope(testDispatcher)
         val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
-        val testGameRepo = TestGameRepository()
+        val testGameRepo = SaveDeleteTestGameRepository()
         return GameDetailViewModel(
             getGameDetailUseCase = GetGameDetailUseCase(testGameRepo),
             toggleFavoriteUseCase = ToggleFavoriteUseCase(testGameRepo),
             togglePlayLaterUseCase = TogglePlayLaterUseCase(testGameRepo),
-            downloadRepository = TestDownloadRepository(),
+            downloadRepository = SaveDeleteTestDownloadRepository(),
             saveRepository = fakeSaveRepo,
-            saveDataRepository = SharedSaveTestSaveDataRepository(),
-            ratingRepository = TestRatingRepository(),
-            sharedSaveRepository = fakeSharedSaveRepo,
-            getMyCollectionsUseCase = GetMyCollectionsUseCase(TestCollectionRepository()),
-            addGameToCollectionUseCase = AddGameToCollectionUseCase(TestCollectionRepository()),
-            createCollectionUseCase = CreateCollectionUseCase(TestCollectionRepository()),
-            getGameStatsUseCase = GetGameStatsUseCase(SharedSaveTestGameStatsRepository()),
-            gameStatsRepository = SharedSaveTestGameStatsRepository(),
-            challengeRepository = SharedSaveTestChallengeRepository(),
-            relayRepository = SharedSaveTestRelayRepository(),
+            saveDataRepository = SaveDeleteTestSaveDataRepository(),
+            ratingRepository = SaveDeleteTestRatingRepository(),
+            sharedSaveRepository = SaveDeleteTestSharedSaveRepository(),
+            getMyCollectionsUseCase = GetMyCollectionsUseCase(SaveDeleteTestCollectionRepository()),
+            addGameToCollectionUseCase = AddGameToCollectionUseCase(SaveDeleteTestCollectionRepository()),
+            createCollectionUseCase = CreateCollectionUseCase(SaveDeleteTestCollectionRepository()),
+            getGameStatsUseCase = GetGameStatsUseCase(SaveDeleteTestGameStatsRepository()),
+            gameStatsRepository = SaveDeleteTestGameStatsRepository(),
+            challengeRepository = SaveDeleteTestChallengeRepository(),
+            relayRepository = SaveDeleteTestRelayRepository(),
             gameRepository = testGameRepo,
             apiClient = apiClient,
             dispatchers = testDispatchers,
@@ -80,124 +78,125 @@ class GameDetailSharedSaveTest {
     }
 
     @Test
-    fun loadGamePopulatesSharedSaves() = runTest(testDispatcher) {
-        fakeSharedSaveRepo.saves = listOf(
-            SharedSaveState("s1", "u1", "Alice", null, "1", "Boss Fight", "Before final boss", 1024, 5, ""),
+    fun deleteSaveUpdatesUnsyncedSaveCount() = runTest(testDispatcher) {
+        fakeSaveRepo.saves = listOf(
+            SaveState(1, 1, "Save A", isSynced = false),
+            SaveState(2, 1, "Save B", isSynced = false),
+            SaveState(3, 1, "Save C", isSynced = true),
         )
         val vm = createViewModel()
-
         vm.onIntent(GameDetailIntent.LoadGame("1"))
         advanceUntilIdle()
 
-        val state = vm.state.value
-        assertEquals(1, state.sharedSaves.size)
-        assertEquals("Boss Fight", state.sharedSaves[0].name)
+        assertEquals(3, vm.state.value.saveStates.size)
+        assertEquals(2, vm.state.value.unsyncedSaveCount)
+
+        vm.onIntent(GameDetailIntent.DeleteSave(1))
+        advanceUntilIdle()
+
+        assertEquals(2, vm.state.value.saveStates.size)
+        assertEquals(1, vm.state.value.unsyncedSaveCount)
     }
 
     @Test
-    fun loadSharedSavesRefreshesList() = runTest(testDispatcher) {
-        val vm = createViewModel()
-        vm.onIntent(GameDetailIntent.LoadGame("1"))
-        advanceUntilIdle()
-        assertEquals(0, vm.state.value.sharedSaves.size)
-
-        fakeSharedSaveRepo.saves = listOf(
-            SharedSaveState("s1", "u1", "Alice", null, "1", "New Save", "desc", 512, 0, ""),
-        )
-        vm.onIntent(GameDetailIntent.LoadSharedSaves)
-        advanceUntilIdle()
-
-        assertEquals(1, vm.state.value.sharedSaves.size)
-        assertEquals("New Save", vm.state.value.sharedSaves[0].name)
-    }
-
-    @Test
-    fun deleteSharedSaveRemovesFromList() = runTest(testDispatcher) {
-        fakeSharedSaveRepo.saves = listOf(
-            SharedSaveState("s1", "u1", "Alice", null, "1", "Save A", "desc", 512, 0, ""),
-            SharedSaveState("s2", "u2", "Bob", null, "1", "Save B", "desc", 1024, 3, ""),
+    fun deleteSyncedSaveDoesNotChangeUnsyncedCount() = runTest(testDispatcher) {
+        fakeSaveRepo.saves = listOf(
+            SaveState(1, 1, "Save A", isSynced = false),
+            SaveState(2, 1, "Save B", isSynced = true),
         )
         val vm = createViewModel()
         vm.onIntent(GameDetailIntent.LoadGame("1"))
         advanceUntilIdle()
-        assertEquals(2, vm.state.value.sharedSaves.size)
 
-        vm.onIntent(GameDetailIntent.DeleteSharedSave("s1"))
-        advanceUntilIdle()
+        assertEquals(1, vm.state.value.unsyncedSaveCount)
 
-        assertEquals(1, vm.state.value.sharedSaves.size)
-        assertEquals("s2", vm.state.value.sharedSaves[0].id)
-    }
-
-    @Test
-    fun downloadSharedSaveAddsSaveState() = runTest(testDispatcher) {
-        fakeSharedSaveRepo.saves = listOf(
-            SharedSaveState("s1", "u1", "Alice", null, "1", "Boss Save", "desc", 256, 1, ""),
-        )
-        val vm = createViewModel()
-        vm.onIntent(GameDetailIntent.LoadGame("1"))
-        advanceUntilIdle()
-        assertEquals(0, vm.state.value.saveStates.size)
-
-        vm.onIntent(GameDetailIntent.DownloadSharedSave("s1"))
+        vm.onIntent(GameDetailIntent.DeleteSave(2))
         advanceUntilIdle()
 
         assertEquals(1, vm.state.value.saveStates.size)
-        assertEquals("Shared Save", vm.state.value.saveStates[0].name)
+        assertEquals(1, vm.state.value.unsyncedSaveCount)
     }
 
     @Test
-    fun shareSaveAddsToSharedList() = runTest(testDispatcher) {
-        fakeSaveRepo.saveData = ByteArray(128)
-        val vm = createViewModel()
-        vm.onIntent(GameDetailIntent.LoadGame("1"))
-        advanceUntilIdle()
-        assertEquals(0, vm.state.value.sharedSaves.size)
-
-        vm.onIntent(GameDetailIntent.ShareSave("save1", "My Save", "Beat level 3"))
-        advanceUntilIdle()
-
-        assertFalse(vm.state.value.isSharing)
-        assertEquals(1, vm.state.value.sharedSaves.size)
-        assertEquals("My Save", vm.state.value.sharedSaves[0].name)
-    }
-
-    @Test
-    fun shareSaveFailureSetsError() = runTest(testDispatcher) {
-        fakeSaveRepo.saveData = ByteArray(128)
-        fakeSharedSaveRepo.shouldFailShare = true
+    fun deleteSelectedSavesUpdatesUnsyncedSaveCount() = runTest(testDispatcher) {
+        fakeSaveRepo.saves = listOf(
+            SaveState(1, 1, "Save A", isSynced = false),
+            SaveState(2, 1, "Save B", isSynced = false),
+            SaveState(3, 1, "Save C", isSynced = true),
+            SaveState(4, 1, "Save D", isSynced = false),
+        )
         val vm = createViewModel()
         vm.onIntent(GameDetailIntent.LoadGame("1"))
         advanceUntilIdle()
 
-        vm.onIntent(GameDetailIntent.ShareSave("save1", "My Save", "desc"))
+        assertEquals(3, vm.state.value.unsyncedSaveCount)
+
+        // Enter selection mode and select two unsynced saves
+        vm.onIntent(GameDetailIntent.ToggleSelectionMode)
+        vm.onIntent(GameDetailIntent.ToggleSaveSelection(1))
+        vm.onIntent(GameDetailIntent.ToggleSaveSelection(2))
+        vm.onIntent(GameDetailIntent.DeleteSelectedSaves)
         advanceUntilIdle()
 
-        assertNotNull(vm.state.value.error)
-        assertFalse(vm.state.value.isSharing)
+        assertEquals(2, vm.state.value.saveStates.size)
+        assertEquals(1, vm.state.value.unsyncedSaveCount)
+        assertFalse(vm.state.value.isSelectionMode)
+    }
+
+    @Test
+    fun deleteAllUnsyncedSavesSetsCountToZero() = runTest(testDispatcher) {
+        fakeSaveRepo.saves = listOf(
+            SaveState(1, 1, "Save A", isSynced = false),
+            SaveState(2, 1, "Save B", isSynced = true),
+        )
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+
+        assertEquals(1, vm.state.value.unsyncedSaveCount)
+
+        vm.onIntent(GameDetailIntent.DeleteSave(1))
+        advanceUntilIdle()
+
+        assertEquals(1, vm.state.value.saveStates.size)
+        assertEquals(0, vm.state.value.unsyncedSaveCount)
     }
 }
 
-private class TestSharedSaveRepository : SharedSaveRepository {
-    var saves = emptyList<SharedSaveState>()
-    var shouldFailShare = false
+// Test fakes
 
-    override suspend fun getSharedSaves(gameId: String, page: Int, pageSize: Int): Result<List<SharedSaveState>> =
-        Result.success(saves)
+private class SaveDeleteTestSaveRepository : SaveRepository {
+    var saves = emptyList<SaveState>()
 
-    override suspend fun shareSave(gameId: String, name: String, description: String, saveData: ByteArray): Result<SharedSaveState> {
-        if (shouldFailShare) return Result.failure(Exception("Share failed"))
-        return Result.success(SharedSaveState("new-1", "1", "user", null, gameId, name, description, saveData.size.toLong(), 0, ""))
-    }
-
-    override suspend fun downloadSharedSave(gameId: String, saveId: String): Result<ByteArray> =
-        Result.success(ByteArray(256))
-
-    override suspend fun deleteSharedSave(gameId: String, saveId: String): Result<Unit> =
-        Result.success(Unit)
+    override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> = Result.success(saves)
+    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?): Result<SaveState> =
+        Result.success(SaveState(1, 1, name))
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
+        Result.success(SaveState(1, 1, name))
+    override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> =
+        Result.success(ByteArray(0))
+    override suspend fun deleteSaveState(gameId: String, saveId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> =
+        Result.success(SaveState(1, 1, "auto"))
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
+        Result.success(SaveState(1, 1, "auto"))
+    override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
+    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
+        Result.success(SaveState(1, 1, name))
+    override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> = Result.failure(Exception("none"))
+    override suspend fun getPendingSyncCount(): Int = 0
+    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
+    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, "Slot $slot"))
+    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(ByteArray(0))
+    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
+    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
+    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
+    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
 }
 
-private class TestGameRepository : GameRepository {
+private class SaveDeleteTestGameRepository : GameRepository {
     private val game = Game(
         id = "1",
         title = "Test Game",
@@ -225,20 +224,7 @@ private class TestGameRepository : GameRepository {
     override suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>> = Result.success(emptyList())
 }
 
-private class TestRatingRepository : RatingRepository {
-    override suspend fun rateGame(gameId: String, rating: Int, review: String): Result<GameRating> =
-        Result.success(GameRating("1", "1", "user", null, gameId, rating, review, ""))
-    override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> =
-        Result.success(emptyList())
-    override suspend fun getRatingSummary(gameId: String): Result<RatingSummary> =
-        Result.success(RatingSummary(0.0, 0, emptyMap()))
-    override suspend fun getMyRating(gameId: String): Result<GameRating?> =
-        Result.success(null)
-    override suspend fun deleteRating(gameId: String): Result<Unit> =
-        Result.success(Unit)
-}
-
-private class TestDownloadRepository : DownloadRepository {
+private class SaveDeleteTestDownloadRepository : DownloadRepository {
     override fun observeDownloads(): Flow<List<DownloadProgress>> = MutableStateFlow(emptyList())
     override fun observeDownload(gameId: String): Flow<DownloadProgress> =
         MutableStateFlow(DownloadProgress(gameId, state = DownloadState.IDLE))
@@ -251,7 +237,31 @@ private class TestDownloadRepository : DownloadRepository {
     override suspend fun clearCache() {}
 }
 
-private class TestCollectionRepository : CollectionRepository {
+private class SaveDeleteTestRatingRepository : RatingRepository {
+    override suspend fun rateGame(gameId: String, rating: Int, review: String): Result<GameRating> =
+        Result.success(GameRating("1", "1", "user", null, gameId, rating, review, ""))
+    override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> =
+        Result.success(emptyList())
+    override suspend fun getRatingSummary(gameId: String): Result<RatingSummary> =
+        Result.success(RatingSummary(0.0, 0, emptyMap()))
+    override suspend fun getMyRating(gameId: String): Result<GameRating?> =
+        Result.success(null)
+    override suspend fun deleteRating(gameId: String): Result<Unit> =
+        Result.success(Unit)
+}
+
+private class SaveDeleteTestSharedSaveRepository : SharedSaveRepository {
+    override suspend fun getSharedSaves(gameId: String, page: Int, pageSize: Int): Result<List<SharedSaveState>> =
+        Result.success(emptyList())
+    override suspend fun shareSave(gameId: String, name: String, description: String, saveData: ByteArray): Result<SharedSaveState> =
+        Result.failure(Exception("stub"))
+    override suspend fun downloadSharedSave(gameId: String, saveId: String): Result<ByteArray> =
+        Result.success(ByteArray(0))
+    override suspend fun deleteSharedSave(gameId: String, saveId: String): Result<Unit> =
+        Result.success(Unit)
+}
+
+private class SaveDeleteTestCollectionRepository : CollectionRepository {
     override suspend fun getMyCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
         Result.success(emptyList())
     override suspend fun getPublicCollections(page: Int, pageSize: Int): Result<List<GameCollection>> =
@@ -267,53 +277,7 @@ private class TestCollectionRepository : CollectionRepository {
     override suspend fun removeGameFromCollection(collectionId: String, gameId: String): Result<Unit> = Result.success(Unit)
 }
 
-private class TestSaveRepository : SaveRepository {
-    var saveData: ByteArray? = null
-
-    override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> = Result.success(emptyList())
-    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, name))
-    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, name))
-    override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> =
-        if (saveData != null) Result.success(saveData!!) else Result.success(ByteArray(0))
-    override suspend fun deleteSaveState(gameId: String, saveId: String): Result<Unit> = Result.success(Unit)
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, "auto"))
-    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, "auto"))
-    override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
-    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
-        Result.success(SaveState(1, 1, name))
-    override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> = Result.failure(Exception("none"))
-    override suspend fun getPendingSyncCount(): Int = 0
-    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
-    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, "Slot $slot"))
-    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(ByteArray(0))
-    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
-    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
-    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
-    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
-}
-
-private class SharedSaveTestSaveDataRepository : SaveDataRepository {
-    override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
-    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
-    override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
-    override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
-    override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
-    override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-    override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
-    override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
-    override suspend fun getPendingSyncCount(): Int = 0
-    override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
-    override suspend fun unzipToSaveDirectory(data: ByteArray) {}
-}
-
-private class SharedSaveTestGameStatsRepository : GameStatsRepository {
+private class SaveDeleteTestGameStatsRepository : GameStatsRepository {
     override suspend fun getGameStats(gameId: String) = Result.success(GameStats(0, 0L, 0L, emptyList()))
     override suspend fun getGameAchievements(gameId: String) = Result.success(emptyList<GameAchievement>())
     override suspend fun getAchievementProgress(gameId: String) = Result.success(emptyList<AchievementProgress>())
@@ -325,7 +289,7 @@ private class SharedSaveTestGameStatsRepository : GameStatsRepository {
     override suspend fun getRecentAchievements() = Result.success(emptyList<RecentAchievement>())
 }
 
-private class SharedSaveTestRelayRepository : RelayRepository {
+private class SaveDeleteTestRelayRepository : RelayRepository {
     override suspend fun getMyRelays(page: Int, pageSize: Int) = Result.success(emptyList<Relay>())
     override suspend fun getRelay(relayId: String) = Result.failure<RelayDetail>(Exception("stub"))
     override suspend fun getRelayInvitations() = Result.success(emptyList<RelayInvitation>())
@@ -352,7 +316,7 @@ private class SharedSaveTestRelayRepository : RelayRepository {
     override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) = Result.success(Unit)
 }
 
-private class SharedSaveTestChallengeRepository : ChallengeRepository {
+private class SaveDeleteTestChallengeRepository : ChallengeRepository {
     override suspend fun getChallenges(gameId: String?, consoleId: String?, difficulty: String?, sort: String?, page: Int) =
         Result.success(emptyList<Challenge>())
     override suspend fun getGameChallenges(gameId: String, page: Int) = Result.success(emptyList<Challenge>())
@@ -369,4 +333,19 @@ private class SharedSaveTestChallengeRepository : ChallengeRepository {
     override suspend fun abandonAttempt(challengeId: String, attemptId: String) = Result.success(Unit)
     override suspend fun getMyAttempts(challengeId: String) = Result.success(emptyList<ChallengeAttempt>())
     override suspend fun deleteChallenge(challengeId: String) = Result.success(Unit)
+}
+
+private class SaveDeleteTestSaveDataRepository : SaveDataRepository {
+    override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
+    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
+    override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
+    override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
+    override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
+    override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
+    override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
+    override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
+    override suspend fun getPendingSyncCount(): Int = 0
+    override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
+    override suspend fun unzipToSaveDirectory(data: ByteArray) {}
 }
