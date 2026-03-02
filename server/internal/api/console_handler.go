@@ -3,13 +3,14 @@ package api
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"math"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -95,7 +96,7 @@ func (h *ConsoleHandler) ListConsoles(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// ListConsoleGames returns games for a specific console as a flat Game array.
+// ListConsoleGames returns paginated games for a specific console.
 func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	consoleID := c.Param("id")
 
@@ -105,17 +106,57 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 		return
 	}
 
+	query := h.DB.Where("console_id = ?", console.ID).Preload("Console")
+
+	// Search
+	if search := c.Query("search"); search != "" {
+		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
+	}
+
+	// Sorting
+	sortCol := c.DefaultQuery("sortBy", "title")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+	allowedSorts := map[string]bool{"title": true, "created_at": true, "file_size": true, "rating": true}
+	if !allowedSorts[sortCol] {
+		sortCol = "title"
+	}
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+	query = query.Order(sortCol + " " + sortOrder)
+
+	// Pagination
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("pageSize", "50"))
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 200 {
+		perPage = 50
+	}
+
+	// Count with same filters
+	var total int64
+	countQuery := h.DB.Model(&db.Game{}).Where("console_id = ?", console.ID)
+	if search := c.Query("search"); search != "" {
+		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
+	}
+	countQuery.Count(&total)
+
+	offset := (page - 1) * perPage
 	var games []db.Game
-	if err := h.DB.Where("console_id = ?", console.ID).
-		Preload("Console").
-		Order("title asc").
-		Find(&games).Error; err != nil {
+	if err := query.Offset(offset).Limit(perPage).Find(&games).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
 		return
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, ToGameResponses(games, h.DB, userID))
+	c.JSON(http.StatusOK, PaginatedResponse{
+		Data:     ToGameResponses(games, h.DB, userID),
+		Total:    total,
+		Page:     page,
+		PageSize: perPage,
+	})
 }
 
 // GetPreviewScreenshot returns a representative screenshot for a console.

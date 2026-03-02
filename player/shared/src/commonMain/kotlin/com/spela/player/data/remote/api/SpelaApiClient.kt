@@ -152,9 +152,17 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/consoles").body()
     }
 
-    /** Returns flat GameResponse[] for a console */
-    suspend fun getGamesForConsole(consoleId: String): List<GameDto> {
-        return client.get("$baseUrl/api/consoles/$consoleId/games").body()
+    /** Returns paginated games for a console via the /api/games endpoint */
+    suspend fun getGamesForConsole(
+        consoleId: String,
+        page: Int? = null,
+        pageSize: Int? = null,
+    ): GameListResponse {
+        return client.get("$baseUrl/api/games") {
+            parameter("consoleId", consoleId)
+            page?.let { parameter("page", it) }
+            pageSize?.let { parameter("pageSize", it) }
+        }.body()
     }
 
     /** Returns {data, total, page, pageSize} paginated wrapper */

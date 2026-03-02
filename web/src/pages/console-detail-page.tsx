@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Library, Check, Globe } from "lucide-react";
 import { GameCard } from "@/components/game-card";
@@ -9,32 +9,47 @@ import {
   EmptyState,
   SearchInput,
 } from "@/components/ui";
-import { useConsoles, useConsoleGames } from "@/hooks/use-consoles";
-import { useToggleFavorite } from "@/hooks/use-games";
+import { useConsoles } from "@/hooks/use-consoles";
+import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
+import { Pagination } from "@/components/pagination";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
+
+const PAGE_SIZE = 48;
 
 export function ConsoleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: games, isLoading } = useConsoleGames(id ?? "");
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [page, setPage] = useState(1);
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
+
+  const { data, isLoading } = useGames({
+    consoleId: id,
+    search: debouncedSearch || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+    sortBy: "title",
+    sortOrder: "asc",
+  });
 
   // Find console info from the consoles list
   const console = consoles?.find((c) => c.id === id);
 
   const consoleName = console?.name ?? "Console";
   const consoleAbbr = console?.abbreviation ?? id ?? "";
-  const gameList = games ?? [];
+  const games = data?.data ?? [];
+  const totalGames = data?.total ?? 0;
   const style = getConsoleStyle(consoleAbbr);
   const Icon = style.icon;
 
@@ -45,12 +60,6 @@ export function ConsoleDetailPage() {
     biosConsole?.files
       .filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
-
-  const filteredGames = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return gameList;
-    return gameList.filter((g) => g.title.toLowerCase().includes(q));
-  }, [gameList, search]);
 
   return (
     <div className="space-y-6">
@@ -111,7 +120,7 @@ export function ConsoleDetailPage() {
           {/* Metadata row */}
           <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
             <span className="text-sm font-medium text-white/70">
-              {gameList.length} {gameList.length === 1 ? "game" : "games"}
+              {totalGames} {totalGames === 1 ? "game" : "games"}
             </span>
             {console?.saveStateSupport && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
@@ -139,14 +148,15 @@ export function ConsoleDetailPage() {
       )}
 
       {/* Search */}
-      {gameList.length > 5 && (
-        <SearchInput
-          placeholder={`Search ${consoleName} games...`}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-      )}
+      <SearchInput
+        placeholder={`Search ${consoleName} games...`}
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+        className="max-w-sm"
+      />
 
       {/* Games grid */}
       {isLoading ? (
@@ -158,7 +168,7 @@ export function ConsoleDetailPage() {
             />
           ))}
         </GameGrid>
-      ) : filteredGames.length === 0 ? (
+      ) : games.length === 0 ? (
         <EmptyState
           icon={Library}
           title={search.trim() ? "No matching games" : "No games found"}
@@ -170,7 +180,7 @@ export function ConsoleDetailPage() {
         />
       ) : (
         <GameGrid>
-          {filteredGames.map((game) => (
+          {games.map((game) => (
             <GameCard
               key={game.id}
               game={game}
@@ -180,6 +190,15 @@ export function ConsoleDetailPage() {
             />
           ))}
         </GameGrid>
+      )}
+
+      {data && (
+        <Pagination
+          total={data.total}
+          pageSize={PAGE_SIZE}
+          currentPage={page}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );
