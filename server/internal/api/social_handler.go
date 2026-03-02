@@ -264,6 +264,13 @@ func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 			consoleName = e.Game.Console.Name
 		}
 
+		var metadata map[string]interface{}
+		if e.Metadata != "" {
+			if err := json.Unmarshal([]byte(e.Metadata), &metadata); err != nil {
+				slog.Warn("failed to parse activity event metadata", "error", err, "eventId", e.ID)
+			}
+		}
+
 		result = append(result, ActivityEventResponse{
 			ID:           strconv.FormatUint(uint64(e.ID), 10),
 			EventType:    e.EventType,
@@ -275,7 +282,7 @@ func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 			GameTitle:    e.Game.Title,
 			GameCoverURL: coverURL,
 			ConsoleName:  consoleName,
-			Metadata:     e.Metadata,
+			Metadata:     metadata,
 		})
 	}
 
@@ -336,7 +343,7 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 		GameTitle:    game.Title,
 		GameCoverURL: coverURL,
 		ConsoleName:  consoleName,
-		Metadata:     metadataJSON,
+		Metadata:     metadata,
 	}
 
 	if hub != nil {

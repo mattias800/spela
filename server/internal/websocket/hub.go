@@ -26,6 +26,12 @@ type OnlineUser struct {
 	CurrentGame uint // 0 means not playing
 }
 
+// userGameEntry stores the game a user is playing and when the last heartbeat arrived.
+type userGameEntry struct {
+	GameID        uint
+	LastHeartbeat time.Time
+}
+
 // Hub manages WebSocket connections and broadcasts events.
 type Hub struct {
 	clients    map[*Client]bool
@@ -34,7 +40,8 @@ type Hub struct {
 	unregister chan *Client
 	mu         sync.Mutex
 	upgrader   websocket.Upgrader
-	userGames  map[uint]uint // userID -> gameID (0 = not playing)
+	userGames  map[uint]userGameEntry // userID -> game entry
+	nowFunc    func() time.Time       // for testing; defaults to time.Now
 }
 
 // Client represents a single WebSocket connection.
@@ -48,13 +55,21 @@ type Client struct {
 // NewHub creates a new WebSocket hub. allowedOrigins controls which
 // origins are accepted for WebSocket upgrades. An empty slice rejects all
 // cross-origin requests (secure default, consistent with CORS behaviour).
+// heartbeatTimeout is how long a user's game status persists without a heartbeat.
+// This is 3x the 30-second heartbeat interval, giving room for network jitter.
+const heartbeatTimeout = 90 * time.Second
+
+// heartbeatCleanupInterval is how often the hub checks for stale game entries.
+const heartbeatCleanupInterval = 30 * time.Second
+
 func NewHub(allowedOrigins []string) *Hub {
 	h := &Hub{
 		clients:    make(map[*Client]bool),
 		broadcast:  make(chan Event, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		userGames:  make(map[uint]uint),
+		userGames:  make(map[uint]userGameEntry),
+		nowFunc:    time.Now,
 	}
 	h.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -96,6 +111,8 @@ func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 
 // Run starts the hub event loop. Call this in a goroutine.
 func (h *Hub) Run() {
+	go h.cleanupStaleGames()
+
 	for {
 		select {
 		case client := <-h.register:
@@ -185,7 +202,10 @@ func (h *Hub) SetUserGame(userID, gameID uint) {
 	if gameID == 0 {
 		delete(h.userGames, userID)
 	} else {
-		h.userGames[userID] = gameID
+		h.userGames[userID] = userGameEntry{
+			GameID:        gameID,
+			LastHeartbeat: h.nowFunc(),
+		}
 	}
 }
 
@@ -193,7 +213,34 @@ func (h *Hub) SetUserGame(userID, gameID uint) {
 func (h *Hub) GetUserGame(userID uint) uint {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return h.userGames[userID]
+	entry, ok := h.userGames[userID]
+	if !ok {
+		return 0
+	}
+	return entry.GameID
+}
+
+// cleanupStaleGames periodically removes game entries whose heartbeat has expired.
+func (h *Hub) cleanupStaleGames() {
+	ticker := time.NewTicker(heartbeatCleanupInterval)
+	defer ticker.Stop()
+	for range ticker.C {
+		h.expireStaleGames()
+	}
+}
+
+// expireStaleGames removes game entries that haven't received a heartbeat within
+// the timeout window. Separated from cleanupStaleGames for testability.
+func (h *Hub) expireStaleGames() {
+	now := h.nowFunc()
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for userID, entry := range h.userGames {
+		if now.Sub(entry.LastHeartbeat) > heartbeatTimeout {
+			slog.Info("clearing stale game status", "userId", userID, "gameId", entry.GameID)
+			delete(h.userGames, userID)
+		}
+	}
 }
 
 // maxConnectionsPerUser is the maximum number of concurrent WebSocket connections
