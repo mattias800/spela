@@ -65,7 +65,7 @@ test.describe("Registration Approval Flow", () => {
     // Should see "pending approval" error, NOT navigate to "/"
     await expect(page).not.toHaveURL("/", { timeout: 5_000 });
     await expect(
-      page.getByText(/pending.*approval|account.*pending/i),
+      page.getByText(/pending.*approval|account.*pending|awaiting.*approval/i),
     ).toBeVisible({ timeout: 5_000 });
   });
 

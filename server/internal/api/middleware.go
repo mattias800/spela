@@ -37,36 +37,36 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 		}
 
 		if token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization"})
+			abortWithError(c, http.StatusUnauthorized, "missing authorization", "Please sign in to continue.")
 			return
 		}
 
 		claims, err := auth.ValidateAccessToken(token, jwtSecret)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			abortWithError(c, http.StatusUnauthorized, "invalid or expired token", "Your session has expired. Please sign in again.")
 			return
 		}
 
 		// Reject revoked (logged-out) access tokens
 		if IsTokenBlacklisted(database, token) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token has been revoked"})
+			abortWithError(c, http.StatusUnauthorized, "token has been revoked", "Your session has ended. Please sign in again.")
 			return
 		}
 
 		// Reject disabled users even if their access token is still valid
 		var user db.User
 		if err := database.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			abortWithError(c, http.StatusUnauthorized, "user not found", "Your account could not be found. Please sign in again.")
 			return
 		}
 		if user.Disabled {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+			abortWithError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 			return
 		}
 
 		// Reject tokens minted before a role/password/disabled change
 		if claims.TokenVersion != user.TokenVersion {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token has been invalidated"})
+			abortWithError(c, http.StatusUnauthorized, "token has been invalidated", "Your session is no longer valid. Please sign in again.")
 			return
 		}
 
@@ -82,7 +82,7 @@ func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, _ := c.Get("role")
 		if role != "admin" && role != "owner" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+			abortWithError(c, http.StatusForbidden, "admin access required", "You don't have permission to access this resource.")
 			return
 		}
 		c.Next()
@@ -165,7 +165,7 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 		rl.mu.Unlock()
 
 		if !e.limiter.Allow() {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			abortWithError(c, http.StatusTooManyRequests, "rate limit exceeded", "Too many requests. Please slow down and try again.")
 			return
 		}
 		c.Next()
@@ -197,7 +197,7 @@ func (rl *RateLimiter) UserRateLimit() gin.HandlerFunc {
 		rl.mu.Unlock()
 
 		if !e.limiter.Allow() {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			abortWithError(c, http.StatusTooManyRequests, "rate limit exceeded", "Too many requests. Please slow down and try again.")
 			return
 		}
 		c.Next()

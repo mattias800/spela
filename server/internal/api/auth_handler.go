@@ -144,13 +144,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		apiError(c, http.StatusBadRequest, "invalid request body", "Please check your input and try again.")
 		return
 	}
 
 	// Check account lockout before proceeding
 	if h.isLockedOut(req.Username) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "account temporarily locked due to too many failed login attempts"})
+		apiError(c, http.StatusTooManyRequests, "account locked", "Your account has been temporarily locked due to too many failed login attempts. Please try again later.")
 		return
 	}
 
@@ -163,23 +163,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// "wrong password" (slow bcrypt) by measuring response time.
 		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
 
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
 		h.recordFailedLogin(req.Username)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
 
 	if user.PendingApproval {
-		c.JSON(http.StatusForbidden, gin.H{"error": "account pending approval"})
+		apiError(c, http.StatusForbidden, "account pending approval", "Your account is awaiting admin approval. Please try again once an admin has approved it.")
 		return
 	}
 
 	if user.Disabled {
-		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+		apiError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 		return
 	}
 
@@ -188,13 +188,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate token", "Sign in failed. Please try again.")
 		return
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate refresh token", "Sign in failed. Please try again.")
 		return
 	}
 
@@ -220,13 +220,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		apiError(c, http.StatusBadRequest, "invalid request body", "Please check your input and try again.")
 		return
 	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		apiError(c, http.StatusInternalServerError, "failed to hash password", "Registration failed. Please try again.")
 		return
 	}
 
@@ -240,7 +240,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		var count int64
 		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
 		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
+			apiError(c, http.StatusConflict, "username or email already exists", "That username or email is already taken.")
 			return fmt.Errorf("duplicate")
 		}
 
@@ -251,7 +251,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			var setting db.ServerSetting
 			if err := tx.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
 				if setting.Value == "false" {
-					c.JSON(http.StatusForbidden, gin.H{"error": "registration is disabled"})
+					apiError(c, http.StatusForbidden, "registration is disabled", "Registration is currently disabled. Please contact an administrator.")
 					return fmt.Errorf("disabled")
 				}
 			}
@@ -280,7 +280,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		if c.Writer.Written() {
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		apiError(c, http.StatusInternalServerError, "failed to create user", "Registration failed. Please try again.")
 		return
 	}
 
@@ -296,13 +296,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate token", "Account created but sign-in failed. Please sign in manually.")
 		return
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate refresh token", "Account created but sign-in failed. Please sign in manually.")
 		return
 	}
 
@@ -328,7 +328,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		apiError(c, http.StatusBadRequest, "invalid request body", "Please check your input and try again.")
 		return
 	}
 
@@ -347,7 +347,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 			h.DB.Where("token_family = ? AND user_id = ?", consumed.TokenFamily, consumed.UserID).
 				Delete(&db.RefreshToken{})
 		}
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		apiError(c, http.StatusUnauthorized, "invalid refresh token", "Your session has expired. Please sign in again.")
 		return
 	}
 
@@ -357,38 +357,38 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		slog.Warn("consumed refresh token presented", "user_id", rt.UserID, "family", rt.TokenFamily)
 		h.DB.Where("token_family = ? AND user_id = ?", rt.TokenFamily, rt.UserID).
 			Delete(&db.RefreshToken{})
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		apiError(c, http.StatusUnauthorized, "invalid refresh token", "Your session has expired. Please sign in again.")
 		return
 	}
 
 	if time.Now().After(rt.ExpiresAt) {
 		h.DB.Delete(&rt)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token expired"})
+		apiError(c, http.StatusUnauthorized, "refresh token expired", "Your session has expired. Please sign in again.")
 		return
 	}
 
 	var user db.User
 	if err := h.DB.First(&user, rt.UserID).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		apiError(c, http.StatusUnauthorized, "user not found", "Your account could not be found. Please sign in again.")
 		return
 	}
 
 	if user.Disabled {
 		h.DB.Where("token_family = ? AND user_id = ?", rt.TokenFamily, rt.UserID).
 			Delete(&db.RefreshToken{})
-		c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+		apiError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 		return
 	}
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate token", "Session refresh failed. Please sign in again.")
 		return
 	}
 
 	newRefreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate refresh token", "Session refresh failed. Please sign in again.")
 		return
 	}
 
@@ -412,7 +412,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		}
 		return tx.Create(&newRT).Error
 	}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rotate token"})
+		apiError(c, http.StatusInternalServerError, "failed to rotate token", "Session refresh failed. Please sign in again.")
 		return
 	}
 
@@ -522,13 +522,13 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		apiError(c, http.StatusBadRequest, "invalid request body", "Please check your input and try again.")
 		return
 	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		apiError(c, http.StatusInternalServerError, "failed to hash password", "Setup failed. Please try again.")
 		return
 	}
 
@@ -537,7 +537,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 		var userCount int64
 		tx.Model(&db.User{}).Count(&userCount)
 		if userCount > 0 {
-			c.JSON(http.StatusForbidden, gin.H{"error": "setup already completed"})
+			apiError(c, http.StatusForbidden, "setup already completed", "Setup has already been completed.")
 			return fmt.Errorf("setup already completed")
 		}
 
@@ -552,19 +552,19 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 		if c.Writer.Written() {
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		apiError(c, http.StatusInternalServerError, "failed to create user", "Setup failed. Please try again.")
 		return
 	}
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate token", "Setup failed. Please try again.")
 		return
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		apiError(c, http.StatusInternalServerError, "failed to generate refresh token", "Setup failed. Please try again.")
 		return
 	}
 

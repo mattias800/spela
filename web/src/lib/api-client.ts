@@ -83,7 +83,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const body = await res.text();
     let message: string;
     try {
-      message = JSON.parse(body).error ?? body;
+      const parsed = JSON.parse(body);
+      message = parsed.message ?? parsed.error ?? body;
     } catch {
       message = body;
     }
