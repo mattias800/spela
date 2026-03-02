@@ -295,7 +295,7 @@ private class TestSaveRepository : SaveRepository {
     override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
     override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
     override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
-    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray, coreName: String?) = Result.success(SaveState(1, 1, name))
+    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
 }
 
 private class SharedSaveTestSaveDataRepository : SaveDataRepository {
