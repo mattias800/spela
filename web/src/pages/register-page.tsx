@@ -12,10 +12,35 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
   const { register, needsSetup } = useAuth();
   const navigate = useNavigate();
 
   if (needsSetup) return <Navigate to="/setup" replace />;
+
+  if (pendingApproval) {
+    return (
+      <AuthFormLayout
+        title="Account pending approval"
+        subtitle="Your registration was received"
+        footer={
+          <p className="text-center text-sm text-surface-400">
+            <Link
+              to="/login"
+              className="text-brand-400 hover:text-brand-300 font-medium transition-colors"
+            >
+              Back to sign in
+            </Link>
+          </p>
+        }
+      >
+        <p className="text-sm text-surface-300 text-center">
+          An admin needs to approve your account before you can sign in. You
+          will be able to log in once your account has been activated.
+        </p>
+      </AuthFormLayout>
+    );
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -29,8 +54,12 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(username, email, password);
-      navigate("/");
+      const result = await register(username, email, password);
+      if (result.pending) {
+        setPendingApproval(true);
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(
         err instanceof Error && err.message

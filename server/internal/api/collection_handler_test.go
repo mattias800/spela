@@ -264,20 +264,7 @@ func TestGetCollection_PrivateNotAccessibleByOthers(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	body, _ = json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Other user tries to access private collection
 	w = httptest.NewRecorder()
@@ -306,20 +293,7 @@ func TestGetCollection_PublicAccessibleByOthers(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	body, _ = json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Other user can access public collection
 	w = httptest.NewRecorder()
@@ -390,20 +364,7 @@ func TestUpdateCollection_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	body, _ = json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Other user tries to update
 	body, _ = json.Marshal(map[string]interface{}{"name": "Hacked Name"})
@@ -485,20 +446,7 @@ func TestDeleteCollection_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register second user
-	body, _ = json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Other user tries to delete
 	w = httptest.NewRecorder()
@@ -635,20 +583,7 @@ func TestAddGame_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register second user
-	body, _ = json.Marshal(map[string]string{
-		"username": "otheruser",
-		"email":    "other@example.com",
-		"password": "password123",
-	})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	otherToken := regResp["accessToken"].(string)
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
 
 	// Other user tries to add game
 	body, _ = json.Marshal(map[string]interface{}{"gameId": game.ID})

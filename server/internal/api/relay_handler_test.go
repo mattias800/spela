@@ -18,41 +18,15 @@ import (
 // --- Helper functions ---
 
 // registerSecondUser registers a second user and returns their access token.
-func registerSecondUser(t *testing.T, router http.Handler) string {
+func registerSecondUser(t *testing.T, router http.Handler, ownerToken string) string {
 	t.Helper()
-	body, _ := json.Marshal(map[string]string{
-		"username": "player2",
-		"email":    "player2@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	return resp["accessToken"].(string)
+	return createNonOwnerUser(t, router, ownerToken, "player2", "player2@example.com", "password123")
 }
 
 // registerNamedUser registers a user with the given username and returns their access token.
-func registerNamedUser(t *testing.T, router http.Handler, username string) string {
+func registerNamedUser(t *testing.T, router http.Handler, ownerToken, username string) string {
 	t.Helper()
-	body, _ := json.Marshal(map[string]string{
-		"username": username,
-		"email":    username + "@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-
-	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	return resp["accessToken"].(string)
+	return createNonOwnerUser(t, router, ownerToken, username, username+"@example.com", "password123")
 }
 
 // createRelay creates a relay via API and returns the response map.
@@ -202,7 +176,7 @@ func TestRelay_List_OnlyMyRelays(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -271,7 +245,7 @@ func TestRelay_GetDetail_NonMemberForbidden(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -325,7 +299,7 @@ func TestRelay_Update_MemberCannotUpdate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -404,7 +378,7 @@ func TestRelay_Delete_MemberCannotDelete(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -430,7 +404,7 @@ func TestRelay_InviteUser(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	_ = registerSecondUser(t, router)
+	_ = registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -460,7 +434,7 @@ func TestRelay_InviteUser_AlreadyMember(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -487,7 +461,7 @@ func TestRelay_InviteUser_AlreadyInvited(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	_ = registerSecondUser(t, router)
+	_ = registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -543,7 +517,7 @@ func TestRelay_AcceptInvite(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -573,8 +547,8 @@ func TestRelay_AcceptInvite_WrongUser(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	_ = registerSecondUser(t, router)
-	token3 := registerNamedUser(t, router, "player3")
+	_ = registerSecondUser(t, router, token1)
+	token3 := registerNamedUser(t, router, token1, "player3")
 
 	var console db.Console
 	database.First(&console)
@@ -610,7 +584,7 @@ func TestRelay_DeclineInvite(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -663,7 +637,7 @@ func TestRelay_LeaveRelay_MemberCanLeave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -720,7 +694,7 @@ func TestRelay_RemoveMember_OwnerCanRemove(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -761,7 +735,7 @@ func TestRelay_RemoveMember_MemberCannotRemoveOthers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -819,7 +793,7 @@ func TestRelay_TakeTurn_Conflict(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -847,7 +821,7 @@ func TestRelay_TakeTurn_StaleTurnExpired(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -920,7 +894,7 @@ func TestRelay_ReleaseTurn_NonHolderFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -978,7 +952,7 @@ func TestRelay_Heartbeat_NonHolderFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1152,7 +1126,7 @@ func TestRelay_DownloadSave_MemberCanDownload(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1286,7 +1260,7 @@ func TestRelay_DeleteSave_OwnerOnly(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1351,7 +1325,7 @@ func TestRelay_Saves_NonMemberCannotAccess(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1420,7 +1394,7 @@ func TestRelay_LeaveRelay_ReleasesTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1472,7 +1446,7 @@ func TestRelay_ReInviteAfterDecline(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1535,7 +1509,7 @@ func TestRelay_RemoveMember_ReleasesTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)
@@ -1646,7 +1620,7 @@ func TestRelay_CopySaveToGame_NotMember(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)
 	token1 := registerAndGetToken(t, router)
-	token2 := registerSecondUser(t, router)
+	token2 := registerSecondUser(t, router, token1)
 
 	var console db.Console
 	database.First(&console)

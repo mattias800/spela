@@ -276,19 +276,7 @@ func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
 	token1 := registerAndGetToken(t, router)
 
 	// Register second user
-	body, _ := json.Marshal(map[string]string{
-		"username": "user2",
-		"email":    "user2@example.com",
-		"password": "password123",
-	})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code)
-	var regResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &regResp)
-	token2 := regResp["accessToken"].(string)
+	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "password123")
 
 	// Create a game
 	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
@@ -296,9 +284,9 @@ func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
 
 	// User 1 creates a mapping
 	mapping1 := map[string]string{"0": "96", "1": "97"}
-	body, _ = json.Marshal(map[string]interface{}{"customMapping": mapping1})
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping1})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token1)
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)

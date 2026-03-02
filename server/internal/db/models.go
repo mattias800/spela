@@ -31,6 +31,7 @@ type User struct {
 	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
 	TokenVersion        int            `gorm:"default:0" json:"-"`
 	Disabled            bool           `gorm:"default:false" json:"disabled"`
+	PendingApproval     bool           `gorm:"default:false" json:"pendingApproval"`
 	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`

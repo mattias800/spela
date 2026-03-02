@@ -4,6 +4,7 @@ export interface User {
   email: string;
   role: "owner" | "admin" | "user";
   disabled: boolean;
+  pendingApproval: boolean;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;

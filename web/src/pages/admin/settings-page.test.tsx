@@ -7,7 +7,7 @@ import { AdminSettingsPage } from "./settings-page";
 
 const mockSettings = {
   gameDirectories: "/games",
-  allowRegistration: "true",
+  registration_enabled: "true",
   scrapeOnScan: "true",
   igdb_client_id: "test-client-id",
   igdb_client_secret: "test-client-secret",
@@ -15,7 +15,7 @@ const mockSettings = {
 
 const mockSettingsEmpty = {
   gameDirectories: "/games",
-  allowRegistration: "true",
+  registration_enabled: "true",
   scrapeOnScan: "true",
   igdb_client_id: "",
   igdb_client_secret: "",

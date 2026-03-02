@@ -320,27 +320,29 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 
 // UserResponse is the API response for a user, with string ID for consistency.
 type UserResponse struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	AvatarURL string    `json:"avatarUrl,omitempty"`
-	Disabled  bool      `json:"disabled"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID              string    `json:"id"`
+	Username        string    `json:"username"`
+	Email           string    `json:"email"`
+	Role            string    `json:"role"`
+	AvatarURL       string    `json:"avatarUrl,omitempty"`
+	Disabled        bool      `json:"disabled"`
+	PendingApproval bool      `json:"pendingApproval"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 // ToUserResponse converts a db.User to its API response.
 func ToUserResponse(u db.User) UserResponse {
 	return UserResponse{
-		ID:        strconv.FormatUint(uint64(u.ID), 10),
-		Username:  u.Username,
-		Email:     u.Email,
-		Role:      u.Role,
-		AvatarURL: u.AvatarURL,
-		Disabled:  u.Disabled,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:              strconv.FormatUint(uint64(u.ID), 10),
+		Username:        u.Username,
+		Email:           u.Email,
+		Role:            u.Role,
+		AvatarURL:       u.AvatarURL,
+		Disabled:        u.Disabled,
+		PendingApproval: u.PendingApproval,
+		CreatedAt:       u.CreatedAt,
+		UpdatedAt:       u.UpdatedAt,
 	}
 }
 
