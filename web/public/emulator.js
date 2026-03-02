@@ -112,6 +112,12 @@
     window.EJS_backgroundBlur = true;
     window.EJS_backgroundColor = "#16191d";
 
+    // Skip loading emulator.min.js/css — the npm package has no minified
+    // builds, and the SPA fallback serves index.html (200 text/html) for
+    // missing files, which prevents the loader's onerror fallback from firing.
+    // This also triggers a CDN version check that is harmlessly blocked by CSP.
+    window.EJS_DEBUG_XX = true;
+
     // Enable threaded WASM cores for full-speed emulation.
     // Requires COOP/COEP headers (set by server and Vite dev config).
     window.EJS_threads = true;
