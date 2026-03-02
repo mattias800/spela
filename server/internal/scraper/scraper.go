@@ -361,13 +361,25 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	// Pick the result whose name best matches the search name
 	match := bestIGDBMatch(searchName, games)
 
+	// When CRC-verified, only overwrite the title if the IGDB name is an exact match
+	// (e.g. don't replace "Aladdin" with "Aladdin 2000" from a fuzzy IGDB result).
+	forceTitle := !crcVerified || normalizeName(match.Name) == normalizeName(searchName)
+
+	s.applyIGDBMatch(game, console, match, gameIDStr, forceTitle)
+
+	slog.Info("IGDB match found", "game", searchName, "matched", match.Name, "igdbId", match.ID)
+	return nil
+}
+
+// applyIGDBMatch populates a game's metadata and downloads images from a specific
+// IGDB game result. If forceTitle is true, the game title is always overwritten
+// with the IGDB name; otherwise it is left unchanged.
+func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.Game, gameIDStr string, forceTitle bool) {
 	// Set scraper ID
 	game.ScraperID = fmt.Sprintf("igdb:%d", match.ID)
 
 	// Populate metadata — don't overwrite existing non-empty fields with empty values.
-	// When CRC-verified, only overwrite the title if the IGDB name is an exact match
-	// (e.g. don't replace "Aladdin" with "Aladdin 2000" from a fuzzy IGDB result).
-	if match.Name != "" && (!crcVerified || normalizeName(match.Name) == normalizeName(searchName)) {
+	if match.Name != "" && forceTitle {
 		game.Title = match.Name
 	}
 	if match.Summary != "" {
@@ -432,8 +444,118 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 			s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: i})
 		}
 	}
+}
 
-	slog.Info("IGDB match found", "game", searchName, "matched", match.Name, "igdbId", match.ID)
+// ScrapeGameWithIGDBMatch re-scrapes a game using a specific IGDB game ID
+// chosen by an admin, bypassing the automatic search and ranking.
+// It clears stale metadata, fetches the IGDB game by ID, applies its metadata
+// and images, re-fetches LibRetro thumbnails, and persists the result.
+func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
+	// Load console if not preloaded
+	var console db.Console
+	if game.Console.ID != 0 {
+		console = game.Console
+	} else {
+		if err := s.DB.First(&console, game.ConsoleID).Error; err != nil {
+			return fmt.Errorf("loading console for game: %w", err)
+		}
+	}
+
+	if s.IGDBClient == nil || !s.IGDBClient.IsConfigured() {
+		return fmt.Errorf("IGDB client is not configured")
+	}
+
+	// Fetch the specific IGDB game
+	igdbGame, err := s.IGDBClient.GetGameByID(igdbID)
+	if err != nil {
+		return fmt.Errorf("fetching IGDB game %d: %w", igdbID, err)
+	}
+	if igdbGame == nil {
+		return fmt.Errorf("IGDB game %d not found", igdbID)
+	}
+
+	// Clear stale IGDB metadata for re-scrape. Preserve LibRetro cover and
+	// manual cover choice handling (same logic as ScrapeGame).
+	manualOverride := game.CoverManuallySet
+	prevCoverSource := ""
+	if manualOverride {
+		switch game.CoverURL {
+		case game.LibRetroCoverURL:
+			prevCoverSource = "libretro"
+		case game.IGDBCoverURL:
+			prevCoverSource = "igdb"
+		}
+	}
+	game.CoverURL = ""
+	game.ScreenshotURL = ""
+	game.IGDBCoverURL = ""
+	// Clear IGDB-sourced metadata so the new match fully replaces it
+	game.Description = ""
+	game.Developer = ""
+	game.Publisher = ""
+	game.Genre = ""
+	game.Rating = 0
+	game.Players = 0
+	game.ReleaseDate = ""
+	// Delete old IGDB screenshots
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
+
+	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
+
+	// Apply the admin-selected IGDB match (always overwrite title)
+	s.applyIGDBMatch(game, console, *igdbGame, gameIDStr, true)
+
+	// Re-fetch LibRetro thumbnails (filename-based, independent of IGDB match)
+	gameName := gameNameFromFileName(game.FileName)
+	libRetroSystem, hasLibRetro := AbbreviationToLibRetro[console.Abbreviation]
+	if hasLibRetro {
+		boxartSubpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
+		if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath); path != "" {
+			game.LibRetroCoverURL = path
+		}
+
+		var screenshotCount int64
+		s.DB.Model(&db.GameScreenshot{}).Where("game_id = ?", game.ID).Count(&screenshotCount)
+		if screenshotCount == 0 {
+			snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
+			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
+				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
+			}
+		}
+	}
+
+	// Set active cover: restore admin's manual choice if still available,
+	// otherwise prefer LibRetro box art, fall back to IGDB.
+	if manualOverride {
+		switch prevCoverSource {
+		case "libretro":
+			if game.LibRetroCoverURL != "" {
+				game.CoverURL = game.LibRetroCoverURL
+			}
+		case "igdb":
+			if game.IGDBCoverURL != "" {
+				game.CoverURL = game.IGDBCoverURL
+			}
+		}
+	}
+	if game.CoverURL == "" {
+		if game.LibRetroCoverURL != "" {
+			game.CoverURL = game.LibRetroCoverURL
+		} else if game.IGDBCoverURL != "" {
+			game.CoverURL = game.IGDBCoverURL
+		}
+		if manualOverride {
+			game.CoverManuallySet = false
+		}
+	}
+
+	game.ScrapeAttempts++
+
+	if err := s.DB.Save(game).Error; err != nil {
+		return fmt.Errorf("saving scraped metadata: %w", err)
+	}
+
+	slog.Info("re-scraped with manual IGDB match", "game", game.Title, "igdbId", igdbID, "scraperId", game.ScraperID)
 	return nil
 }
 

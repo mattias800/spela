@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { User, ServerSettingsMap, MetadataMatchesResponse } from "@/types/api";
+import type {
+  User,
+  ServerSettingsMap,
+  MetadataMatchesResponse,
+  IgdbSearchResult,
+} from "@/types/api";
 
 export function useAdminUsers() {
   return useQuery({
@@ -252,6 +257,40 @@ export function useUpdateGameMetadata() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "metadata-matches"],
+      });
+    },
+  });
+}
+
+export function useIgdbSearch(gameId: string, query: string) {
+  return useQuery({
+    queryKey: ["admin", "igdb-search", gameId, query],
+    queryFn: () =>
+      api.get<IgdbSearchResult[]>(
+        `/admin/games/${gameId}/igdb-search?q=${encodeURIComponent(query)}`,
+      ),
+    enabled: query.length >= 2,
+  });
+}
+
+export function useApplyIgdbMatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      gameId,
+      igdbId,
+    }: {
+      gameId: string;
+      igdbId: number;
+    }) => {
+      await api.post(`/admin/games/${gameId}/igdb-match`, { igdbId });
+    },
+    onSuccess: (_data, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "metadata-matches"],
       });

@@ -613,6 +613,158 @@ func TestGetSimilarGames_APIError(t *testing.T) {
 	assert.Contains(t, err.Error(), "500")
 }
 
+func TestGetGameByID_Success(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/v4/games", r.URL.Path)
+		assert.Equal(t, "myid", r.Header.Get("Client-ID"))
+		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+
+		json.NewEncoder(w).Encode([]Game{
+			{
+				ID:      1234,
+				Name:    "Disney's Aladdin",
+				Summary: "A platformer based on the Disney film",
+				Cover:   &Image{ID: 1, ImageID: "co5555"},
+				Screenshots: []Image{
+					{ID: 2, ImageID: "sc6666"},
+				},
+				Genres: []Genre{
+					{ID: 8, Name: "Platform"},
+				},
+				InvolvedCompanies: []InvolvedCompany{
+					{Company: Company{ID: 1, Name: "Capcom"}, Developer: true, Publisher: false},
+					{Company: Company{ID: 2, Name: "Nintendo"}, Developer: false, Publisher: true},
+				},
+				FirstReleaseDate: 753926400,
+				AggregatedRating: 78.0,
+				GameModes: []GameMode{
+					{ID: 1, Name: "Single player"},
+				},
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	game, err := c.GetGameByID(1234)
+	require.NoError(t, err)
+	require.NotNil(t, game)
+
+	assert.Equal(t, 1234, game.ID)
+	assert.Equal(t, "Disney's Aladdin", game.Name)
+	assert.Equal(t, "A platformer based on the Disney film", game.Summary)
+	assert.NotNil(t, game.Cover)
+	assert.Equal(t, "co5555", game.Cover.ImageID)
+	assert.Len(t, game.Screenshots, 1)
+	assert.Equal(t, "sc6666", game.Screenshots[0].ImageID)
+	assert.Len(t, game.Genres, 1)
+	assert.Equal(t, "Platform", game.Genres[0].Name)
+	assert.Len(t, game.InvolvedCompanies, 2)
+	assert.True(t, game.InvolvedCompanies[0].Developer)
+	assert.Equal(t, "Capcom", game.InvolvedCompanies[0].Company.Name)
+	assert.Equal(t, int64(753926400), game.FirstReleaseDate)
+	assert.InDelta(t, 78.0, game.AggregatedRating, 0.01)
+	assert.Len(t, game.GameModes, 1)
+}
+
+func TestGetGameByID_NotFound(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]Game{})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	game, err := c.GetGameByID(99999)
+	require.NoError(t, err)
+	assert.Nil(t, game)
+}
+
+func TestGetGameByID_APIError(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal error"))
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	_, err := c.GetGameByID(1234)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
 func TestPlatformMapping(t *testing.T) {
 	// Verify key platform mappings exist
 	assert.Equal(t, 18, AbbreviationToIGDBPlatform["NES"])

@@ -667,6 +667,211 @@ func TestScrapeAll_ForceScrapesAll(t *testing.T) {
 	assert.Equal(t, 2, successes)
 }
 
+func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
+	// Set up IGDB mock that responds to GetGameByID
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{
+				ID:      999,
+				Name:    "Disney's Aladdin",
+				Summary: "The correct Aladdin game",
+				Cover:   &igdb.Image{ID: 1, ImageID: "co7777"},
+				Screenshots: []igdb.Image{
+					{ID: 2, ImageID: "sc8888"},
+				},
+				Genres: []igdb.Genre{
+					{ID: 8, Name: "Platform"},
+				},
+				InvolvedCompanies: []igdb.InvolvedCompany{
+					{Company: igdb.Company{ID: 1, Name: "Capcom"}, Developer: true},
+					{Company: igdb.Company{ID: 2, Name: "Nintendo"}, Publisher: true},
+				},
+				FirstReleaseDate: 753926400,
+				AggregatedRating: 82.0,
+				GameModes: []igdb.GameMode{
+					{ID: 1, Name: "Single player"},
+				},
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	imageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write([]byte("fake-image-data"))
+	}))
+	defer imageServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	origImageBase := igdb.ImageBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	igdb.SetImageBaseForTest(imageServer.URL)
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+		igdb.SetImageBaseForTest(origImageBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "SNES", Name: "Super Nintendo"}
+	require.NoError(t, database.Create(&console).Error)
+
+	// Create a game that was previously scraped with the wrong IGDB match
+	game := db.Game{
+		ConsoleID:      console.ID,
+		Console:        console,
+		Title:          "Aladdin 2000",
+		FileName:       "Aladdin (USA).sfc",
+		Description:    "Wrong description from bootleg",
+		Developer:      "Bootleg Corp",
+		Publisher:      "Bootleg Corp",
+		Genre:          "Action",
+		Rating:         10.0,
+		Players:        1,
+		ReleaseDate:    "2000-01-01",
+		ScraperID:      "igdb:555",
+		ScrapeAttempts: 1,
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Add an old screenshot that should be cleared
+	database.Create(&db.GameScreenshot{GameID: game.ID, URL: "/old/screenshot.jpg", Position: 0})
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGameWithIGDBMatch(&game, 999)
+	require.NoError(t, err)
+
+	// Verify all metadata was replaced with the correct IGDB match
+	assert.Equal(t, "Disney's Aladdin", game.Title)
+	assert.Equal(t, "The correct Aladdin game", game.Description)
+	assert.Equal(t, "Capcom", game.Developer)
+	assert.Equal(t, "Nintendo", game.Publisher)
+	assert.Equal(t, "Platform", game.Genre)
+	assert.Equal(t, "1993-11-22", game.ReleaseDate)
+	assert.InDelta(t, 82.0, game.Rating, 0.01)
+	assert.Equal(t, 1, game.Players)
+	assert.Equal(t, "igdb:999", game.ScraperID)
+	assert.Equal(t, 2, game.ScrapeAttempts)
+
+	// Verify cover was downloaded
+	assert.NotEmpty(t, game.IGDBCoverURL)
+
+	// Verify new screenshots replaced old ones
+	var screenshots []db.GameScreenshot
+	database.Where("game_id = ?", game.ID).Find(&screenshots)
+	assert.Len(t, screenshots, 1)
+	assert.NotEqual(t, "/old/screenshot.jpg", screenshots[0].URL)
+}
+
+func TestScrapeGameWithIGDBMatch_NotFound(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "SNES", Name: "Super Nintendo"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Test Game",
+		FileName:  "Test.sfc",
+		ScraperID: "igdb:555",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGameWithIGDBMatch(&game, 99999)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestScrapeGameWithIGDBMatch_NoIGDBClient(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "SNES", Name: "Super Nintendo"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Test Game",
+		FileName:  "Test.sfc",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: nil,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGameWithIGDBMatch(&game, 999)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not configured")
+}
+
 func TestScrapeGame_RescrapesClearsStaleImages(t *testing.T) {
 	database := setupTestDB(t)
 	store := setupTestStorage(t)

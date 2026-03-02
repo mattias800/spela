@@ -13,6 +13,7 @@ import {
   Clock,
   FolderPlus,
   ImageIcon,
+  Search,
 } from "lucide-react";
 import { Button, Badge, SplitButton, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
@@ -45,6 +46,7 @@ interface GameHeroProps {
   onToggleFavorite: () => void;
   onTogglePlayLater: () => void;
   onAddToCollection?: () => void;
+  onFixMatch?: () => void;
 }
 
 export function GameHero({
@@ -65,6 +67,7 @@ export function GameHero({
   onToggleFavorite,
   onTogglePlayLater,
   onAddToCollection,
+  onFixMatch,
 }: GameHeroProps) {
   const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
@@ -111,6 +114,15 @@ export function GameHero({
             label: "Add to Collection",
             icon: <FolderPlus className="h-4 w-4" />,
             onClick: onAddToCollection,
+          },
+        ]
+      : []),
+    ...(onFixMatch
+      ? [
+          {
+            label: "Fix Match",
+            icon: <Search className="h-4 w-4" />,
+            onClick: onFixMatch,
           },
         ]
       : []),
