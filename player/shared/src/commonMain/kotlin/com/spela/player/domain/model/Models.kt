@@ -92,6 +92,7 @@ data class SaveState(
     val createdAt: Instant? = null,
     val fileSize: Long = 0,
     val isAuto: Boolean = false,
+    val coreName: String? = null,
     val notes: String? = null,
     val screenshotUrl: String? = null,
     val slot: Int? = null,

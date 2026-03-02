@@ -30,6 +30,8 @@ class SaveManager(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
+    /** The libretro core name used for the current emulation session. */
+    var currentCoreName: String = ""
     /**
      * Load SRAM (save data) before starting emulation.
      * Tries local first, falls back to server if online.
@@ -139,7 +141,7 @@ class SaveManager(
             val gameId = _state.value.gameId
             val saveData = libretroController.serialize() ?: return@launch
             val screenshot = screenshotCapture?.captureScreenshot()
-            saveGameStateUseCase(gameId, saveData, screenshot).fold(
+            saveGameStateUseCase(gameId, saveData, screenshot, currentCoreName.ifEmpty { null }).fold(
                 onSuccess = {
                     withContext(dispatchers.main) {
                         _state.update { it.copy(statusMessage = "State saved") }
@@ -186,7 +188,7 @@ class SaveManager(
      */
     suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray): Result<Unit> {
         val screenshot = screenshotCapture?.captureScreenshot()
-        return saveRepository.saveToSlot(gameId, slot, data, screenshot).map { }
+        return saveRepository.saveToSlot(gameId, slot, data, screenshot, currentCoreName.ifEmpty { null }).map { }
     }
 
     /**

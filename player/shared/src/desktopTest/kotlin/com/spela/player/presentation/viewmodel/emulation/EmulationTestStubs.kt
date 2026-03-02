@@ -215,16 +215,16 @@ class StubSaveRepository : SaveRepository {
     var downloadAutoSaveResult: Result<ByteArray> = Result.success(byteArrayOf(10, 20, 30))
 
     override suspend fun getSaveStates(gameId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray) = Result.success(SaveState(id = 1, gameId = 1, name = name))
-    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?) = Result.success(SaveState(id = 1, gameId = 1, name = name))
+    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = name, coreName = coreName))
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = name, coreName = coreName))
     override suspend fun downloadSaveState(gameId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun deleteSaveState(gameId: String, saveId: String) = Result.success(Unit)
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> {
+    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> {
         uploadAutoSaveCallCount++
         lastUploadedData = data
         return uploadAutoSaveResult
     }
-    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> {
         uploadAutoSaveCallCount++
         lastUploadedData = data
         return uploadAutoSaveResult
@@ -241,7 +241,7 @@ class StubSaveRepository : SaveRepository {
     override suspend fun getPendingSyncCount() = 0
     override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
     override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?) = Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot"))
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot", coreName = coreName))
     override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(byteArrayOf(10, 20, 30))
     override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
     override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())

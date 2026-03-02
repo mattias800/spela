@@ -318,6 +318,7 @@ func (h *SaveHandler) ImportSave(c *gin.Context) {
 	}
 
 	name := c.DefaultPostForm("name", header.Filename)
+	coreName := c.PostForm("coreName")
 
 	size, err := h.Storage.WriteSave(uid, uint(gid), header.Filename, file)
 	if err != nil {
@@ -332,6 +333,7 @@ func (h *SaveHandler) ImportSave(c *gin.Context) {
 		Name:     name,
 		FilePath: savePath,
 		FileSize: size,
+		CoreName: coreName,
 		IsAuto:   false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
@@ -377,6 +379,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 	}
 
 	filename := fmt.Sprintf("slot_%d.sav", slotNum)
+	coreName := c.PostForm("coreName")
 
 	// Handle optional screenshot upload
 	var screenshotURL string
@@ -407,6 +410,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 			FilePath:      savePath,
 			FileSize:      size,
 			ScreenshotURL: screenshotURL,
+			CoreName:      coreName,
 			IsAuto:        false,
 			Slot:          &slotNum,
 		}
@@ -415,6 +419,7 @@ func (h *SaveHandler) UpsertSlotSave(c *gin.Context) {
 		save.FilePath = savePath
 		save.FileSize = size
 		save.ScreenshotURL = screenshotURL
+		save.CoreName = coreName
 		h.DB.Save(&save)
 	}
 

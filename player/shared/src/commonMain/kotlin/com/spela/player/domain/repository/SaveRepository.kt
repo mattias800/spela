@@ -6,12 +6,12 @@ import com.spela.player.domain.model.StorageUsage
 
 interface SaveRepository {
     suspend fun getSaveStates(gameId: String): Result<List<SaveState>>
-    suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): Result<SaveState>
-    suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState>
+    suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String? = null): Result<SaveState>
+    suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String? = null): Result<SaveState>
     suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray>
     suspend fun deleteSaveState(gameId: String, saveId: String): Result<Unit>
-    suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState>
-    suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState>
+    suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String? = null): Result<SaveState>
+    suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String? = null): Result<SaveState>
     suspend fun downloadAutoSave(gameId: String): Result<ByteArray>
     suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState>
     suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray>
@@ -24,7 +24,7 @@ interface SaveRepository {
     suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String): Result<Unit>
 
     // Feature 5: Quick-save slots
-    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray? = null): Result<SaveState>
+    suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray? = null, coreName: String? = null): Result<SaveState>
     suspend fun loadFromSlot(gameId: String, slot: Int): Result<ByteArray>
     suspend fun getSlots(gameId: String): Result<List<QuickSaveSlot>>
 

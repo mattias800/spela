@@ -419,7 +419,11 @@ class GameDetailViewModel(
             saveRepository.deleteSaveState(gameId, saveId.toString()).fold(
                 onSuccess = {
                     _state.update {
-                        it.copy(saveStates = it.saveStates.filter { s -> s.id != saveId })
+                        val updatedSaves = it.saveStates.filter { s -> s.id != saveId }
+                        it.copy(
+                            saveStates = updatedSaves,
+                            unsyncedSaveCount = updatedSaves.count { s -> !s.isSynced },
+                        )
                     }
                 },
                 onFailure = { error ->
@@ -810,8 +814,10 @@ class GameDetailViewModel(
             saveRepository.bulkDeleteSaves(gameId, selectedIds).fold(
                 onSuccess = { count ->
                     _state.update { state ->
+                        val updatedSaves = state.saveStates.filter { it.id !in selectedIds.toSet() }
                         state.copy(
-                            saveStates = state.saveStates.filter { it.id !in selectedIds.toSet() },
+                            saveStates = updatedSaves,
+                            unsyncedSaveCount = updatedSaves.count { !it.isSynced },
                             isSelectionMode = false,
                             selectedSaveIds = emptySet(),
                             successMessage = "$count saves deleted",

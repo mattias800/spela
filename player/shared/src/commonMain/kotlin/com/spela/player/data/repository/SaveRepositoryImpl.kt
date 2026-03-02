@@ -47,12 +47,12 @@ class SaveRepositoryImpl(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray): Result<SaveState> {
-        return uploadSaveStateWithScreenshot(gameId, name, data, null)
+    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?): Result<SaveState> {
+        return uploadSaveStateWithScreenshot(gameId, name, data, null, coreName)
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> {
         // Save locally first
         val localResult = saveLocally(gameId, name, data, isAuto = false)
         val localSave = localResult.getOrNull() ?: return localResult
@@ -60,7 +60,7 @@ class SaveRepositoryImpl(
         // Try server upload if online
         if (connectivityMonitor.isOnline.value) {
             runCatching {
-                val serverSave = apiClient.uploadSaveStateWithScreenshot(gameId, name, data, screenshot).toDomain()
+                val serverSave = apiClient.uploadSaveStateWithScreenshot(gameId, name, data, screenshot, coreName).toDomain()
                     .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
@@ -109,12 +109,12 @@ class SaveRepositoryImpl(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray): Result<SaveState> {
-        return uploadAutoSaveWithScreenshot(gameId, data, null)
+    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> {
+        return uploadAutoSaveWithScreenshot(gameId, data, null, coreName)
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> {
         // Save locally first
         val localResult = saveLocally(gameId, "Auto Save", data, isAuto = true)
         val localSave = localResult.getOrNull() ?: return localResult
@@ -122,7 +122,7 @@ class SaveRepositoryImpl(
         // Try server upload if online
         if (connectivityMonitor.isOnline.value) {
             runCatching {
-                val serverSave = apiClient.uploadAutoSaveWithScreenshot(gameId, data, screenshot).toDomain()
+                val serverSave = apiClient.uploadAutoSaveWithScreenshot(gameId, data, screenshot, coreName).toDomain()
                     .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
                 markSynced(localSave.id.toString(), serverSave.id, Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()))
                 return Result.success(serverSave)
@@ -211,8 +211,8 @@ class SaveRepositoryImpl(
     }
 
     // Feature 5: Quick-save slots
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?): Result<SaveState> = runCatching {
-        apiClient.saveToSlot(gameId, slot, data, screenshot).toDomain()
+    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> = runCatching {
+        apiClient.saveToSlot(gameId, slot, data, screenshot, coreName).toDomain()
             .let { it.copy(screenshotUrl = apiClient.resolveAuthenticatedUrl(it.screenshotUrl)) }
     }
 
