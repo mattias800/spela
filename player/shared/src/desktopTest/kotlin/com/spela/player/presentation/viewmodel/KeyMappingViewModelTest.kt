@@ -336,6 +336,8 @@ class KeyMappingViewModelTest {
         override suspend fun pushDeviceShaderOverridesToServer() {}
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() { pushKeyMappingsCalled = true }
+        override fun getOrientationLock(): String = "auto"
+        override fun setOrientationLock(mode: String) {}
     }
 
     private class FakeKeyMappingRepository : KeyMappingRepository {

@@ -21,4 +21,6 @@ interface PreferencesRepository {
     suspend fun pushDeviceShaderOverridesToServer()
     suspend fun syncKeyMappingsFromServer()
     suspend fun pushKeyMappingsToServer()
+    fun getOrientationLock(): String
+    fun setOrientationLock(mode: String)
 }

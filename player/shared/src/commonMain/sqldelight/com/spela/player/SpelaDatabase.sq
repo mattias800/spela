@@ -332,3 +332,18 @@ UPDATE LocalSaveDataEntity SET sync_status = 'synced', server_id = ? WHERE id = 
 
 deleteLocalSaveData:
 DELETE FROM LocalSaveDataEntity WHERE id = ?;
+
+-- Device-local settings (generic key-value, never synced to server)
+CREATE TABLE DeviceSettingEntity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+insertDeviceSetting:
+INSERT OR REPLACE INTO DeviceSettingEntity(key, value) VALUES (?, ?);
+
+getDeviceSetting:
+SELECT value FROM DeviceSettingEntity WHERE key = ?;
+
+deleteDeviceSetting:
+DELETE FROM DeviceSettingEntity WHERE key = ?;

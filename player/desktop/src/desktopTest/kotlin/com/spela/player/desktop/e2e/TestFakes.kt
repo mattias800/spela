@@ -730,6 +730,9 @@ class FakePreferencesRepository : PreferencesRepository {
     override suspend fun pushDeviceShaderOverridesToServer() {}
     override suspend fun syncKeyMappingsFromServer() { syncKeyMappingsCalled = true }
     override suspend fun pushKeyMappingsToServer() { pushKeyMappingsCalled = true }
+    private var orientationLock: String = "auto"
+    override fun getOrientationLock(): String = orientationLock
+    override fun setOrientationLock(mode: String) { orientationLock = mode }
 }
 
 class FakeAchievementsRepository : AchievementsRepository {

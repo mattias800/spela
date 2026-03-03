@@ -48,7 +48,9 @@ fun EmulationSurface(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             bitmap?.let { bmp ->
-                drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY)
+                if (!bmp.isRecycled) {
+                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY)
+                }
             }
         }
     }

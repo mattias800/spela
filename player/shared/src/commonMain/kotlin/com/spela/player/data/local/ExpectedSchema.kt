@@ -36,5 +36,6 @@ object ExpectedSchema {
             "id", "game_id", "name", "local_path", "file_size", "is_active",
             "created_at", "updated_at", "server_id", "sync_status",
         ),
+        "DeviceSettingEntity" to setOf("key", "value"),
     )
 }

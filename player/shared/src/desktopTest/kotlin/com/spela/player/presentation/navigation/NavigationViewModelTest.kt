@@ -384,6 +384,8 @@ class NavigationViewModelTest {
         override suspend fun resolveShader(consoleId: String) = ShaderPreset.NONE
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() {}
+        override fun getOrientationLock(): String = "auto"
+        override fun setOrientationLock(mode: String) {}
     }
 
     private class NoOpGameRepository : GameRepository {

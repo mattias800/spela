@@ -1,5 +1,6 @@
 package com.spela.player.android
 
+import android.content.pm.ActivityInfo
 import android.hardware.input.InputManager
 import android.os.Bundle
 import android.os.SystemClock
@@ -10,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
@@ -22,6 +24,9 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
+import com.spela.player.presentation.viewmodel.SettingsViewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
@@ -35,6 +40,8 @@ class MainActivity : ComponentActivity() {
     private val emulationViewModel: EmulationViewModel by inject()
     private val keyMappingViewModel: KeyMappingViewModel by inject()
     private val gamepadPortManager: GamepadPortManager by inject()
+    private val settingsViewModel: SettingsViewModel by inject()
+    private val preferencesRepository: PreferencesRepository by inject()
 
     /** True when gamepad input should go to libretro (game running, overlay not shown). */
     private val isEmulationConsuming: Boolean
@@ -77,6 +84,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val inputManager = getSystemService(INPUT_SERVICE) as InputManager
         inputManager.registerInputDeviceListener(inputDeviceListener, null)
+
+        // Apply initial orientation lock
+        applyOrientationLock(preferencesRepository.getOrientationLock())
+
+        // Observe orientation lock changes so they apply immediately
+        lifecycleScope.launch {
+            settingsViewModel.state
+                .map { it.orientationLock }
+                .distinctUntilChanged()
+                .collect { mode -> applyOrientationLock(mode) }
+        }
+
         setContent {
             App()
         }
@@ -330,7 +349,7 @@ class MainActivity : ComponentActivity() {
                 toolType = MotionEvent.TOOL_TYPE_MOUSE
             }
             val coords = MotionEvent.PointerCoords().apply {
-                setAxisValue(MotionEvent.AXIS_VSCROLL, -rY * 2f)
+                setAxisValue(MotionEvent.AXIS_VSCROLL, -rY * 0.5f)
             }
             val scrollEvent = MotionEvent.obtain(
                 event.downTime, event.eventTime, MotionEvent.ACTION_SCROLL,
@@ -342,6 +361,14 @@ class MainActivity : ComponentActivity() {
         }
 
         return true
+    }
+
+    private fun applyOrientationLock(mode: String) {
+        requestedOrientation = when (mode) {
+            "landscape" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            "portrait" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
     }
 
     private fun dispatchDpadEvent(keyCode: Int, action: Int) {

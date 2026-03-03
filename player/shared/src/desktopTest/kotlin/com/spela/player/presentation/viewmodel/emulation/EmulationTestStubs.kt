@@ -324,6 +324,8 @@ class StubPreferencesRepository : PreferencesRepository {
     override suspend fun pushDeviceShaderOverridesToServer() {}
     override suspend fun syncKeyMappingsFromServer() {}
     override suspend fun pushKeyMappingsToServer() {}
+    override fun getOrientationLock(): String = "auto"
+    override fun setOrientationLock(mode: String) {}
 }
 
 class StubAchievementsRepository : AchievementsRepository {

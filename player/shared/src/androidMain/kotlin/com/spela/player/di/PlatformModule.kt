@@ -1,6 +1,7 @@
 package com.spela.player.di
 
 import android.view.KeyEvent
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.spela.player.data.local.DatabaseHealthCheck
 import com.spela.player.data.local.DatabaseResetHelper
@@ -31,21 +32,21 @@ import org.koin.dsl.module
 actual fun platformModule(): Module = module {
     single {
         val context: android.content.Context = get()
-        val dbFile = context.getDatabasePath("spela.db")
-        if (dbFile.exists()) {
-            try {
-                val errorMessage = validateSchemaAndroid(dbFile.path)
-                if (errorMessage != null) {
-                    println("Spela: $errorMessage")
-                    DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
-                }
-            } catch (e: Exception) {
-                println("Spela: Failed to validate database: ${e.message}")
-                DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
-            }
-        }
         DatabaseResetHelper.init(context)
-        AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
+        // Create driver first — AndroidSqliteDriver runs migrations automatically
+        val driver = AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
+        // Validate schema after migration using the same driver connection
+        try {
+            val errorMessage = validateSchemaWithDriver(driver)
+            if (errorMessage != null) {
+                println("Spela: $errorMessage")
+                DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
+            }
+        } catch (e: Exception) {
+            println("Spela: Failed to validate database: ${e.message}")
+            DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
+        }
+        driver
     }
     single { SpelaDatabase(get<AndroidSqliteDriver>()) }
     single<HttpClientEngineFactory<*>> { OkHttp }
@@ -109,46 +110,47 @@ actual fun platformModule(): Module = module {
 
 /**
  * Validates the existing database against [ExpectedSchema].
+ * Uses the same [SqlDriver] connection to avoid WAL visibility issues.
  * Returns an error message if incompatible, or null if OK.
  */
-private fun validateSchemaAndroid(dbPath: String): String? {
-    val db = android.database.sqlite.SQLiteDatabase.openDatabase(
-        dbPath, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
-    )
-    try {
-        // Check tables
-        val tablesCursor = db.rawQuery(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%'",
-            null,
-        )
-        val existingTables = mutableSetOf<String>()
-        while (tablesCursor.moveToNext()) {
-            existingTables.add(tablesCursor.getString(0))
-        }
-        tablesCursor.close()
-
-        val missingTables = ExpectedSchema.tables.keys - existingTables
-        if (missingTables.isNotEmpty()) {
-            return "Database schema incompatible: missing tables $missingTables."
-        }
-
-        // Check every table's columns
-        for ((table, expectedColumns) in ExpectedSchema.tables) {
-            val columnsCursor = db.rawQuery("PRAGMA table_info($table)", null)
-            val actualColumns = mutableSetOf<String>()
-            while (columnsCursor.moveToNext()) {
-                actualColumns.add(columnsCursor.getString(1))
+private fun validateSchemaWithDriver(driver: SqlDriver): String? {
+    val existingTables = driver.executeQuery(
+        identifier = null,
+        sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%'",
+        mapper = { cursor ->
+            val tables = mutableSetOf<String>()
+            while (cursor.next().value) {
+                cursor.getString(0)?.let { tables.add(it) }
             }
-            columnsCursor.close()
+            app.cash.sqldelight.db.QueryResult.Value(tables)
+        },
+        parameters = 0,
+    ).value
 
-            val missingColumns = expectedColumns - actualColumns
-            if (missingColumns.isNotEmpty()) {
-                return "Database schema incompatible: table $table missing columns $missingColumns."
-            }
-        }
-
-        return null
-    } finally {
-        db.close()
+    val missingTables = ExpectedSchema.tables.keys - existingTables
+    if (missingTables.isNotEmpty()) {
+        return "Database schema incompatible: missing tables $missingTables."
     }
+
+    // Check every table's columns
+    for ((table, expectedColumns) in ExpectedSchema.tables) {
+        val actualColumns = driver.executeQuery(
+            identifier = null,
+            sql = "PRAGMA table_info($table)",
+            mapper = { cursor ->
+                val cols = mutableSetOf<String>()
+                while (cursor.next().value) {
+                    cursor.getString(1)?.let { cols.add(it) }
+                }
+                app.cash.sqldelight.db.QueryResult.Value(cols)
+            },
+            parameters = 0,
+        ).value
+        val missingColumns = expectedColumns - actualColumns
+        if (missingColumns.isNotEmpty()) {
+            return "Database schema incompatible: table $table missing columns $missingColumns."
+        }
+    }
+
+    return null
 }

@@ -56,6 +56,7 @@ data class SettingsState(
     val showDeleteDeviceConfirm: Long? = null,
     val scrollIndex: Int = 0,
     val scrollOffset: Int = 0,
+    val orientationLock: String = "auto",
 )
 
 sealed interface SettingsIntent {
@@ -89,6 +90,7 @@ sealed interface SettingsIntent {
     data object DismissDeleteDeviceConfirm : SettingsIntent
     data class SaveScrollPosition(val index: Int, val offset: Int) : SettingsIntent
     data object SyncNow : SettingsIntent
+    data class SetOrientationLock(val mode: String) : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -173,12 +175,18 @@ class SettingsViewModel(
             is SettingsIntent.SaveScrollPosition ->
                 _state.update { it.copy(scrollIndex = intent.index, scrollOffset = intent.offset) }
             SettingsIntent.SyncNow -> syncNow()
+            is SettingsIntent.SetOrientationLock -> setOrientationLock(intent.mode)
         }
     }
 
     val syncState: StateFlow<SyncState> = syncEngine.syncState
     val isOnline: StateFlow<Boolean> = connectivityMonitor.isOnline
     val connectionState: StateFlow<ConnectionState> = connectivityMonitor.connectionState
+
+    private fun setOrientationLock(mode: String) {
+        preferencesRepository.setOrientationLock(mode)
+        _state.update { it.copy(orientationLock = mode) }
+    }
 
     private fun syncNow() {
         scope.launch(dispatchers.io) {
@@ -207,6 +215,7 @@ class SettingsViewModel(
             val cacheSize = downloadRepository.getCacheSize()
             val deviceName = deviceManager.getDeviceName()
             val activeServer = serverRepository.getActiveServer()
+            val orientationLock = preferencesRepository.getOrientationLock()
             _state.update {
                 it.copy(
                     userId = user?.id ?: "",
@@ -214,6 +223,7 @@ class SettingsViewModel(
                     serverUrl = activeServer?.url?.trimEnd('/') ?: "",
                     cacheSize = cacheSize,
                     deviceName = deviceName,
+                    orientationLock = orientationLock,
                 )
             }
 

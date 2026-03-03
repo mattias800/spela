@@ -273,6 +273,41 @@ fun SettingsScreen(
                 }
             }
 
+            // Display section
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Display") }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SpSpacing.Small),
+                    ) {
+                        SpRadioOption(
+                            title = "Auto",
+                            description = "Follow system orientation",
+                            isSelected = state.orientationLock == "auto",
+                            onClick = { viewModel.onIntent(SettingsIntent.SetOrientationLock("auto")) },
+                        )
+                        SettingsDivider()
+                        SpRadioOption(
+                            title = "Landscape",
+                            description = "Lock to landscape orientation",
+                            isSelected = state.orientationLock == "landscape",
+                            onClick = { viewModel.onIntent(SettingsIntent.SetOrientationLock("landscape")) },
+                        )
+                        SettingsDivider()
+                        SpRadioOption(
+                            title = "Portrait",
+                            description = "Lock to portrait orientation",
+                            isSelected = state.orientationLock == "portrait",
+                            onClick = { viewModel.onIntent(SettingsIntent.SetOrientationLock("portrait")) },
+                        )
+                    }
+                }
+            }
+
             // Emulation section
             item { Spacer(Modifier.height(SpSpacing.Medium)) }
             item { SettingsSectionHeader(title = "Emulation") }
