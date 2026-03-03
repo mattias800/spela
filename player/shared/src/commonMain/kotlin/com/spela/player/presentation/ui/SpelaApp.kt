@@ -549,6 +549,11 @@ fun SpelaApp(
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
+                                    onGameClick = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
                                 )
                             }
 

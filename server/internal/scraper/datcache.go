@@ -27,6 +27,36 @@ var DiscBasedSystems = map[string]bool{
 	"DOS":    true, // no No-Intro DAT
 }
 
+// MaxROMSize defines conservative upper bounds (in bytes) per console abbreviation.
+// Used during auto-identification to skip consoles where the file is too large to be a ROM.
+// Consoles not in this map (and not in DiscBasedSystems) are skipped during auto-identification.
+var MaxROMSize = map[string]int64{
+	"NES":  4 * 1024 * 1024,   // 4 MB
+	"SNES": 16 * 1024 * 1024,  // 16 MB
+	"GB":   8 * 1024 * 1024,   // 8 MB
+	"GBC":  8 * 1024 * 1024,   // 8 MB
+	"GBA":  64 * 1024 * 1024,  // 64 MB
+	"N64":  64 * 1024 * 1024,  // 64 MB
+	"GEN":  32 * 1024 * 1024,  // 32 MB
+	"SMS":  4 * 1024 * 1024,   // 4 MB
+	"GG":   4 * 1024 * 1024,   // 4 MB
+	"PCE":  8 * 1024 * 1024,   // 8 MB
+	"A26":  1 * 1024 * 1024,   // 1 MB
+	"A52":  2 * 1024 * 1024,   // 2 MB
+	"A78":  2 * 1024 * 1024,   // 2 MB
+	"LYNX": 4 * 1024 * 1024,   // 4 MB
+	"JAG":  16 * 1024 * 1024,  // 16 MB
+	"NGP":  16 * 1024 * 1024,  // 16 MB
+	"WS":   16 * 1024 * 1024,  // 16 MB
+	"CV":   1 * 1024 * 1024,   // 1 MB
+	"PKMN": 4 * 1024 * 1024,   // 4 MB
+	"VB":   16 * 1024 * 1024,  // 16 MB
+	"32X":  32 * 1024 * 1024,  // 32 MB
+	"NDS":  512 * 1024 * 1024, // 512 MB
+	"PSP":  2 * 1024 * 1024 * 1024, // 2 GB
+	"C64":  1 * 1024 * 1024,   // 1 MB
+}
+
 const datBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
 
 // DATCache manages downloading, caching, and parsing No-Intro DAT files.
@@ -44,6 +74,11 @@ func NewDATCache(dir string, client *http.Client) *DATCache {
 		client:  client,
 		indices: make(map[string]*DATIndex),
 	}
+}
+
+// Dir returns the directory where DAT files are stored.
+func (c *DATCache) Dir() string {
+	return c.dir
 }
 
 // GetIndex returns the parsed DAT index for the given console abbreviation.

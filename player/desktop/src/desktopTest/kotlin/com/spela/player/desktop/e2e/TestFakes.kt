@@ -377,6 +377,7 @@ class FakeDownloadRepository : DownloadRepository {
     private val cachedGames = mutableSetOf<String>()
     private val downloadsFlow = MutableStateFlow<List<DownloadProgress>>(emptyList())
     private val perGameFlows = mutableMapOf<String, MutableStateFlow<DownloadProgress>>()
+    private val _downloadedGames = MutableStateFlow<List<DownloadedGame>>(emptyList())
 
     override fun observeDownloads(): Flow<List<DownloadProgress>> = downloadsFlow
 
@@ -385,6 +386,8 @@ class FakeDownloadRepository : DownloadRepository {
             MutableStateFlow(DownloadProgress(gameId, state = DownloadState.IDLE))
         }
     }
+
+    override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = _downloadedGames
 
     override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> {
         cachedGames.add(gameId)
@@ -411,16 +414,22 @@ class FakeDownloadRepository : DownloadRepository {
 
     override suspend fun deleteLocalGame(gameId: String) {
         cachedGames.remove(gameId)
+        _downloadedGames.value = _downloadedGames.value.filter { it.gameId != gameId }
     }
 
     override suspend fun getCacheSize(): Long = cachedGames.size * 100_000L
 
     override suspend fun clearCache() {
         cachedGames.clear()
+        _downloadedGames.value = emptyList()
     }
 
     fun preCacheGame(gameId: String) {
         cachedGames.add(gameId)
+    }
+
+    fun addDownloadedGame(game: DownloadedGame) {
+        _downloadedGames.value = _downloadedGames.value + game
     }
 
     fun setActiveDownloads(downloads: List<DownloadProgress>) {

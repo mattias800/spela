@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 data class DownloadsState(
     val activeDownloads: List<DownloadProgress> = emptyList(),
+    val downloadedGames: List<DownloadedGame> = emptyList(),
     val cacheSize: Long = 0,
     val isLoading: Boolean = false,
     val isClearingCache: Boolean = false,
@@ -37,6 +39,11 @@ class DownloadsViewModel(
         scope.launch(dispatchers.io) {
             downloadRepository.observeDownloads().collect { downloads ->
                 _state.update { it.copy(activeDownloads = downloads) }
+            }
+        }
+        scope.launch(dispatchers.io) {
+            downloadRepository.observeDownloadedGames().collect { games ->
+                _state.update { it.copy(downloadedGames = games) }
             }
         }
     }

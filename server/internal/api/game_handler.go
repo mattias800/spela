@@ -155,20 +155,6 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 		return
 	}
 
-	// Update play history
-	userID, _ := c.Get("userId")
-	if uid, ok := userID.(uint); ok {
-		var ph db.PlayHistory
-		result := h.DB.Where("user_id = ? AND game_id = ?", uid, game.ID).First(&ph)
-		if result.Error == gorm.ErrRecordNotFound {
-			ph = db.PlayHistory{UserID: uid, GameID: game.ID, LastPlayed: time.Now()}
-			h.DB.Create(&ph)
-		} else {
-			ph.LastPlayed = time.Now()
-			h.DB.Save(&ph)
-		}
-	}
-
 	// For .cue/.gdi files, serve a tar/zip bundle with companion track files.
 	// This handles both new games (with disc records) and old DB entries
 	// (without disc records) that were created before the scanner change.
