@@ -76,8 +76,8 @@ class AndroidLibretroController(
     private val _frameBitmap = MutableStateFlow<Bitmap?>(null)
     val frameBitmap: StateFlow<Bitmap?> = _frameBitmap.asStateFlow()
 
-    /* Audio output */
-    private var audioOutput: AudioOutput? = null
+    /* Audio output — blocking writes provide audio-sync frame pacing */
+    private var audioPlayer: AndroidAudioPlayer? = null
 
     /* Emulation-thread dispatch: some cores (Dolphin) require retro_serialize,
      * retro_unserialize, and retro_serialize_size to run on the same thread as
@@ -152,12 +152,12 @@ class AndroidLibretroController(
 
     override fun pause() {
         paused = true
-        audioOutput?.pause()
+        audioPlayer?.pause()
     }
 
     override fun resume() {
         paused = false
-        audioOutput?.resume()
+        audioPlayer?.resume()
     }
 
     override fun stop() {
@@ -176,8 +176,8 @@ class AndroidLibretroController(
         emulationThread?.join()
         Log.i(TAG, "emulation thread joined")
         emulationThread = null
-        audioOutput?.stop()
-        audioOutput = null
+        audioPlayer?.stop()
+        audioPlayer = null
         clearNetplayMode()
         jni.nativeUnloadGame()
         Log.i(TAG, "game unloaded")
@@ -302,13 +302,13 @@ class AndroidLibretroController(
             val sampleRate = jni.nativeGetSampleRate().toInt()
             Log.i(TAG, "Core sample rate: $sampleRate Hz")
             if (sampleRate > 0) {
-                audioOutput = AudioOutput(sampleRate).also { it.start() }
-                Log.i(TAG, "AudioOutput started at $sampleRate Hz")
+                audioPlayer = AndroidAudioPlayer(sampleRate)
+                Log.i(TAG, "AndroidAudioPlayer created at $sampleRate Hz")
             } else {
                 Log.w(TAG, "Core reported invalid sample rate: $sampleRate")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start audio output", e)
+            Log.e(TAG, "Failed to create audio player", e)
         }
     }
 
@@ -349,8 +349,13 @@ class AndroidLibretroController(
                 updateVideoFrame()
             }
 
-            // Push audio
-            pushAudio()
+            // Audio-sync frame pacing: blocking write to AudioTrack paces
+            // emulation to the audio sample rate. Falls back to precisionSleep
+            // if no audio player, no samples, or device not ready.
+            val synced = if (!fastForward) pushAudioSync() else { pushAudioDiscard(); false }
+            if (!synced && !fastForward) {
+                precisionSleep(frameStart + frameTimeNs)
+            }
 
             fpsCounter++
             val now = System.nanoTime()
@@ -370,14 +375,6 @@ class AndroidLibretroController(
                 (frameEnd - lastInput) > PHYSICAL_CONTROLLER_TIMEOUT_NS
             ) {
                 mainHandler.post { _physicalControllerActive.value = false }
-            }
-
-            /* Frame pacing: sleep until next frame (skip for fast-forward) */
-            if (!fastForward) {
-                val sleepNs = frameTimeNs - (frameEnd - frameStart)
-                if (sleepNs > 0) {
-                    Thread.sleep(sleepNs / 1_000_000, (sleepNs % 1_000_000).toInt())
-                }
             }
         }
     }
@@ -479,7 +476,7 @@ class AndroidLibretroController(
             } else {
                 updateVideoFrame()
             }
-            pushAudio()
+            pushAudioSync()
 
             frameCounter++
 
@@ -497,10 +494,7 @@ class AndroidLibretroController(
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
 
             // Frame pacing (no fast forward in netplay)
-            val sleepNs = frameTimeNs - (frameEnd - frameStart)
-            if (sleepNs > 0) {
-                Thread.sleep(sleepNs / 1_000_000, (sleepNs % 1_000_000).toInt())
-            }
+            precisionSleep(frameStart + frameTimeNs)
         }
     }
 
@@ -639,18 +633,52 @@ class AndroidLibretroController(
     }
 
     /**
-     * Reads buffered audio samples from the native layer and writes to AudioTrack.
-     * Uses a pre-allocated buffer to avoid per-frame ShortArray allocation.
+     * Drain audio samples from the native layer and write to AudioTrack (blocking).
+     * The blocking write naturally paces the emulation thread to the audio sample rate.
+     *
+     * @return true if blocking audio write occurred, false if fallback pacing is needed.
      */
-    private fun pushAudio() {
-        // Ensure audio buffer is large enough (stereo, ~2048 frames is typical max per tick)
+    private fun pushAudioSync(): Boolean {
         if (audioSampleBuffer.size < 4096) {
             audioSampleBuffer = ShortArray(4096)
         }
 
         val count = jni.nativeFillAudioBuffer(audioSampleBuffer)
-        if (count > 0) {
-            audioOutput?.writeSamples(audioSampleBuffer, count)
+        if (count <= 0) return false
+
+        return audioPlayer?.writeSync(audioSampleBuffer, count) ?: false
+    }
+
+    /**
+     * Drain audio samples from the native layer without writing to AudioTrack.
+     * Used during fast-forward to prevent the native audio buffer from growing unbounded.
+     */
+    private fun pushAudioDiscard() {
+        if (audioSampleBuffer.size < 4096) {
+            audioSampleBuffer = ShortArray(4096)
+        }
+        jni.nativeFillAudioBuffer(audioSampleBuffer)
+    }
+
+    /**
+     * High-precision frame pacing fallback. Thread.sleep has imprecise wake times
+     * on Android, so we sleep for the bulk of the wait and spin-wait for the last ~2ms.
+     */
+    private fun precisionSleep(targetNanos: Long) {
+        val now = System.nanoTime()
+        val remainingNs = targetNanos - now
+        if (remainingNs <= 0) return
+
+        // Sleep for most of the duration (leave 2ms margin for spin-wait)
+        val sleepMs = remainingNs / 1_000_000 - 2
+        if (sleepMs > 0) {
+            Thread.sleep(sleepMs)
+        }
+
+        // Spin-wait for sub-millisecond precision
+        @Suppress("ControlFlowWithEmptyBody")
+        while (System.nanoTime() < targetNanos) {
+            // Empty body — Thread.onSpinWait() requires API 33
         }
     }
 
