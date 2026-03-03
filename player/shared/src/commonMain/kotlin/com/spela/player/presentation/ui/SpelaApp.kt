@@ -480,6 +480,17 @@ fun SpelaApp(
                                         netplayViewModel.onIntent(NetplayIntent.ClearJoinedSession)
                                     }
                                 }
+                                val syncState by emulationViewModel.syncState.collectAsState()
+                                LaunchedEffect(Unit) {
+                                    emulationViewModel.launchReady.collect { pending ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.ShowOverlay(
+                                                gameId = pending.gameId,
+                                                skipAutoLoad = pending.skipAutoLoad,
+                                            )
+                                        )
+                                    }
+                                }
                                 GameDetailScreen(
                                     gameId = screen.gameId,
                                     viewModel = gameDetailViewModel,
@@ -488,14 +499,21 @@ fun SpelaApp(
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                     onPlay = { gameId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.ShowOverlay(gameId)
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId)
                                         )
                                     },
                                     onPlayFresh = { gameId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.ShowOverlay(gameId, skipAutoLoad = true)
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId, skipAutoLoad = true)
                                         )
+                                    },
+                                    syncState = syncState.takeIf { it?.gameId == screen.gameId },
+                                    onPlayWithLocalSave = {
+                                        emulationViewModel.onIntent(EmulationIntent.PlayWithLocalSave)
+                                    },
+                                    onCancelLaunch = {
+                                        emulationViewModel.onIntent(EmulationIntent.CancelLaunch)
                                     },
                                     onCreateNetplay = { gameId ->
                                         netplayViewModel.onIntent(
@@ -955,18 +973,6 @@ fun SpelaApp(
                                     emulationViewModel.onIntent(EmulationIntent.TryAnywayMissingBios)
                                 },
                             )
-                        }
-
-                        // Loading spinner over black background while preparing game
-                        if (emulationState.isLoading && emulationState.error == null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(Color.Black),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
-                                    CircularProgressIndicator(color = Color.White)
-                                }
-                            }
                         }
 
                         // Invisible semantic marker for E2E tests to detect that a game is running.

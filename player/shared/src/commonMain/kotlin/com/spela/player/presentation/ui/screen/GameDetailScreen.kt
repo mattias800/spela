@@ -43,6 +43,8 @@ import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
+import com.spela.player.presentation.state.GameSyncState
+import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.History
@@ -110,6 +112,9 @@ fun GameDetailScreen(
     onNavigateToRelay: ((relayId: String) -> Unit)? = null,
     onNavigateToSaveData: ((gameId: String) -> Unit)? = null,
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
+    syncState: GameSyncState? = null,
+    onPlayWithLocalSave: () -> Unit = {},
+    onCancelLaunch: () -> Unit = {},
 ) {
     PlatformBackHandler { onBack() }
 
@@ -200,6 +205,9 @@ fun GameDetailScreen(
                         onRate = { rating ->
                             viewModel.onIntent(GameDetailIntent.RateGame(rating))
                         },
+                        syncState = syncState,
+                        onPlayWithLocalSave = onPlayWithLocalSave,
+                        onCancelLaunch = onCancelLaunch,
                     )
                 }
 
@@ -440,6 +448,23 @@ fun GameDetailScreen(
             },
         )
 
+        // Save sync timeout dialog
+        if (syncState?.isTimedOut == true) {
+            com.spela.player.presentation.ui.components.SpDialog(
+                title = "Could not sync save",
+                onDismiss = onCancelLaunch,
+                onConfirm = onPlayWithLocalSave,
+                confirmText = "Play with local save",
+                dismissText = "Cancel",
+            ) {
+                androidx.compose.material3.Text(
+                    text = "The server could not be reached. You can play using your local save, or cancel.",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+        }
+
         // Delete Download confirmation dialog
         if (state.showDeleteDownloadDialog) {
             SpConfirmDialog(
@@ -530,6 +555,9 @@ private fun GameInfoContent(
     onCreateNetplay: ((String) -> Unit)? = null,
     onDeleteLocalGame: () -> Unit = {},
     onRate: (Int) -> Unit = {},
+    syncState: GameSyncState? = null,
+    onPlayWithLocalSave: () -> Unit = {},
+    onCancelLaunch: () -> Unit = {},
 ) {
     // Title row with trophy icon if achievements exist
     Row(
@@ -627,17 +655,20 @@ private fun GameInfoContent(
             }
 
             val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
+            val isSyncing = syncState != null
             val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
             val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
             SpSplitButton(
                 text = if (hasSaves) "Resume" else "Play",
                 onClick = { onPlay(gameId) },
-                enabled = !hasRequiredBiosMissing,
+                enabled = !hasRequiredBiosMissing && !isSyncing,
+                isLoading = isSyncing && syncState?.isTimedOut != true,
                 modifier = Modifier
                     .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
                     .semantics {
                         contentDescription = when {
                             hasRequiredBiosMissing -> "Play disabled, BIOS required"
+                            isSyncing -> "Play disabled, syncing"
                             hasSaves -> "Resume ${game.title}"
                             else -> "Play ${game.title}"
                         }
@@ -713,6 +744,28 @@ private fun GameInfoContent(
                     },
                 )
             }
+        }
+    }
+
+    // Sync status row (shown while pre-launch or post-exit sync is in progress)
+    syncState?.takeIf { !it.isTimedOut }?.let { sync ->
+        Spacer(Modifier.height(SpSpacing.Small))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            if (LocalAnimationsEnabled.current) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White.copy(alpha = 0.75f),
+                )
+            }
+            Text(
+                text = sync.message,
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
         }
     }
 

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Manages all save-related operations: SRAM load/save, auto-save/load,
@@ -32,15 +33,76 @@ class SaveManager(
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
+
+    /** Pre-fetched SRAM data from prepareLaunch(). Consumed once by loadSramOnStart(). */
+    private var preFetchedSramData: ByteArray? = null
+
+    /** Pre-fetched auto-save data from prepareLaunch(). Consumed once by autoLoadSaveState(). */
+    private var preFetchedSaveData: ByteArray? = null
+
+    /**
+     * Pre-fetches SRAM data (local or network) before game launch.
+     * Returns true if ready (no timeout), false if network timed out.
+     * Call clearPrefetch() to discard pre-fetched data on cancel.
+     */
+    suspend fun prefetchSram(gameId: String): Boolean {
+        val local = saveDataRepository.loadLocalSRAM(gameId)
+        if (local != null) {
+            preFetchedSramData = local
+            return true
+        }
+        if (!connectivityMonitor.isOnline.value) return true
+        val networkResult = withTimeoutOrNull(10_000L) {
+            saveDataRepository.downloadActiveSaveData(gameId)
+        } ?: return false // timed out
+        preFetchedSramData = networkResult.getOrNull()
+        return true
+    }
+
+    /**
+     * Pre-fetches auto-save state (local or network) before game launch.
+     * Returns true if ready (no timeout), false if network timed out.
+     */
+    suspend fun prefetchSaveState(gameId: String): Boolean {
+        val localResult = saveRepository.loadLocalAutoSave(gameId)
+        if (localResult.isSuccess) {
+            preFetchedSaveData = localResult.getOrNull()
+            return true
+        }
+        if (!connectivityMonitor.isOnline.value) return true
+        val networkResult = withTimeoutOrNull(10_000L) {
+            loadGameStateUseCase(gameId)
+        } ?: return false // timed out
+        preFetchedSaveData = networkResult.getOrNull()
+        return true
+    }
+
+    /** Clears any pre-fetched data (call on cancel or after successful use). */
+    fun clearPrefetch() {
+        preFetchedSramData = null
+        preFetchedSaveData = null
+    }
+
     /**
      * Load SRAM (save data) before starting emulation.
-     * Tries local first, falls back to server if online.
+     * Uses pre-fetched data if available (set by prefetchSram()), otherwise
+     * tries local first, falls back to server if online.
      * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)
      * and gets extracted to the save directory instead of loaded as SRAM.
      * Called from within an IO coroutine in startGame().
      */
     suspend fun loadSramOnStart(gameId: String) {
         try {
+            val dataToLoad = preFetchedSramData
+            preFetchedSramData = null
+            if (dataToLoad != null) {
+                if (isZipData(dataToLoad)) {
+                    saveDataRepository.unzipToSaveDirectory(dataToLoad)
+                } else {
+                    libretroController.setSRAM(dataToLoad)
+                }
+                return
+            }
             val localSram = saveDataRepository.loadLocalSRAM(gameId)
             if (localSram != null) {
                 if (isZipData(localSram)) {
@@ -93,9 +155,19 @@ class SaveManager(
 
     /**
      * Auto-load save state on game start (if enabled and applicable).
+     * Uses pre-fetched data if available (set by prefetchSaveState()), otherwise
+     * fetches from server.
      * Called from within an IO coroutine.
      */
     suspend fun autoLoadSaveState(gameId: String) {
+        val dataToLoad = preFetchedSaveData
+        preFetchedSaveData = null
+        if (dataToLoad != null) {
+            println("[SaveManager] autoLoadSaveState: using pre-fetched data (${dataToLoad.size} bytes)")
+            val ok = libretroController.unserialize(dataToLoad)
+            println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
+            return
+        }
         println("[SaveManager] autoLoadSaveState: loading game $gameId")
         loadGameStateUseCase(gameId).fold(
             onSuccess = { saveData ->

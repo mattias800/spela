@@ -1218,6 +1218,8 @@ class FakeBiosRepository(
 class FakeSaveDataRepository : SaveDataRepository {
     var saveDataList: MutableList<SaveData> = mutableListOf()
     private val localSram = mutableMapOf<String, ByteArray>()
+    /** If > 0, downloadActiveSaveData() will delay this many milliseconds before returning. */
+    var downloadDelayMs: Long = 0L
 
     override suspend fun getSaveDataList(gameId: String): Result<List<SaveData>> =
         Result.success(saveDataList.filter { it.gameId == gameId.toLongOrNull() ?: 0L })
@@ -1234,9 +1236,11 @@ class FakeSaveDataRepository : SaveDataRepository {
         return Result.success(sd)
     }
 
-    override suspend fun downloadActiveSaveData(gameId: String): Result<ByteArray> =
-        localSram[gameId]?.let { Result.success(it) }
+    override suspend fun downloadActiveSaveData(gameId: String): Result<ByteArray> {
+        if (downloadDelayMs > 0L) kotlinx.coroutines.delay(downloadDelayMs)
+        return localSram[gameId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No active save data"))
+    }
 
     override suspend fun downloadSaveData(gameId: String, saveDataId: String): Result<ByteArray> =
         Result.success(ByteArray(128) { it.toByte() })

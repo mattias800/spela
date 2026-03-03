@@ -264,6 +264,8 @@ class StubSaveDataRepository : SaveDataRepository {
     var loadLocalSRAMResult: ByteArray? = null
     var downloadActiveSaveDataResult: Result<ByteArray> = Result.success(ByteArray(0))
     var zipSaveDirectoryResult: ByteArray? = null
+    /** If > 0, downloadActiveSaveData() delays by this many ms before returning. */
+    var downloadActiveSaveDataDelayMs: Long = 0L
 
     override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
     override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): Result<SaveData> {
@@ -272,6 +274,7 @@ class StubSaveDataRepository : SaveDataRepository {
     }
     override suspend fun downloadActiveSaveData(gameId: String): Result<ByteArray> {
         downloadActiveSaveDataCallCount++
+        if (downloadActiveSaveDataDelayMs > 0L) kotlinx.coroutines.delay(downloadActiveSaveDataDelayMs)
         return downloadActiveSaveDataResult
     }
     override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
