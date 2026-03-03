@@ -544,9 +544,9 @@ private fun ComposeRule.doLogin(username: String, password: String) {
 // ── Navigation helpers ──
 
 fun ComposeRule.navigateToCastlevania() {
-    // Navigate to Consoles tab
+    // Navigate to Consoles tab and wait for console cards to appear
     tapOn("Consoles")
-    waitForText("Consoles", TIMEOUT_MEDIUM)
+    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_MEDIUM)
 
     // Scroll to and tap the NES console card. We match on the card's content description
     // which contains both "Nintendo Entertainment System" and "games" — this distinguishes
@@ -565,7 +565,7 @@ fun ComposeRule.navigateToCastlevania() {
 
 fun ComposeRule.navigateToN64Game() {
     tapOn("Consoles")
-    waitForText("Consoles", TIMEOUT_MEDIUM)
+    waitForContentDescription("Nintendo 64", TIMEOUT_MEDIUM)
 
     scrollToAndTapMatchingBoth("Nintendo 64", "games")
 
