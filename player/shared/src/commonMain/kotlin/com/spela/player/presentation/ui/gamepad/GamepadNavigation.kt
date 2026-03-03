@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
+import kotlinx.coroutines.delay
 
 /**
  * Wraps content with gamepad/keyboard navigation key handling.
@@ -39,6 +41,11 @@ import com.spela.player.presentation.ui.theme.SpColor
  * Platform-specific gamepad buttons (A, B) are handled at the platform layer:
  * - Android: MainActivity remaps BUTTON_A -> DPAD_CENTER, BUTTON_B -> BACK.
  * - Desktop: Arrow keys + Enter/Space + Escape cover all navigation needs.
+ *
+ * @param onGamepadInput Called on any handled D-pad/keyboard navigation input.
+ *   Used to signal that the user is using gamepad-style input (for input mode detection).
+ * @param focusResetKey When this value changes (e.g. on section switch), focus is
+ *   cleared and moved to the first focusable element after recomposition.
  */
 @Composable
 fun GamepadHandler(
@@ -46,9 +53,22 @@ fun GamepadHandler(
     onBack: (() -> Unit)? = null,
     onNextSection: (() -> Unit)? = null,
     onPreviousSection: (() -> Unit)? = null,
+    onGamepadInput: (() -> Unit)? = null,
+    focusResetKey: Any? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
+
+    // When focusResetKey changes (e.g. section switch in gamepad mode),
+    // clear focus and move to the first focusable element on the new page.
+    if (focusResetKey != null) {
+        LaunchedEffect(focusResetKey) {
+            // Wait for new content to compose
+            delay(100)
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Next)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -60,22 +80,26 @@ fun GamepadHandler(
                 when (event.key) {
                     Key.DirectionUp -> {
                         val moved = focusManager.moveFocus(FocusDirection.Up)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Enter)
+                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
                         val moved = focusManager.moveFocus(FocusDirection.Down)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Enter)
+                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
                         val moved = focusManager.moveFocus(FocusDirection.Left)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Enter)
+                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
                         val moved = focusManager.moveFocus(FocusDirection.Right)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Enter)
+                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        onGamepadInput?.invoke()
                         true
                     }
                     Key.Escape -> {
@@ -83,19 +107,27 @@ fun GamepadHandler(
                         onBack != null
                     }
                     Key.RightBracket -> {
+                        focusManager.clearFocus(force = true)
                         onNextSection?.invoke()
+                        onGamepadInput?.invoke()
                         onNextSection != null
                     }
                     Key.LeftBracket -> {
+                        focusManager.clearFocus(force = true)
                         onPreviousSection?.invoke()
+                        onGamepadInput?.invoke()
                         onPreviousSection != null
                     }
                     Key.Tab -> {
                         if (event.isShiftPressed) {
+                            focusManager.clearFocus(force = true)
                             onPreviousSection?.invoke()
+                            onGamepadInput?.invoke()
                             onPreviousSection != null
                         } else {
+                            focusManager.clearFocus(force = true)
                             onNextSection?.invoke()
+                            onGamepadInput?.invoke()
                             onNextSection != null
                         }
                     }

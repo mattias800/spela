@@ -3,13 +3,14 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
 
 /**
  * E2E tests for the floating section indicator that replaces the bottom tab bar
- * when a gamepad controller is connected.
+ * when the user is in gamepad input mode.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class SectionIndicatorTest {
@@ -38,17 +39,17 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionIndicatorAppearsOnConnect() = runComposeUiTest {
+    fun sectionIndicatorAppearsOnGamepadInput() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Connect a gamepad
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Switch to gamepad input mode (simulates D-pad press)
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        // Section indicator should be visible (within 3s auto-hide window)
+        // Section indicator should be visible
         onNodeWithContentDescription("Section indicator").assertExists()
 
         // Bottom nav tabs should be gone
@@ -56,16 +57,38 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionIndicatorDisappearsOnDisconnect() = runComposeUiTest {
+    fun gamepadConnectAloneDoesNotShowIndicator() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Connect then disconnect
+        // Just connecting a gamepad (without D-pad input) should NOT switch nav style
         harness.gamepadPortManager.connectDevice(1, "Test Controller")
         advanceQuick(harness)
-        harness.gamepadPortManager.disconnectDevice(1)
+
+        // Tab bar should still be visible (touch mode)
+        onNodeWithContentDescription("Home").assertExists()
+        onNodeWithContentDescription("Consoles").assertExists()
+
+        // Section indicator should not exist
+        onNodeWithContentDescription("Section indicator").assertDoesNotExist()
+    }
+
+    @Test
+    fun sectionIndicatorDisappearsOnTouchInput() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        advanceQuick(harness)
+        onNodeWithContentDescription("Section indicator").assertExists()
+
+        // Switch back to touch mode
+        harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
         advanceQuick(harness)
 
         // Section indicator should be gone
@@ -83,8 +106,8 @@ class SectionIndicatorTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Connect gamepad (we're on Home screen)
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Switch to gamepad mode (we're on Home screen)
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
         // Home should be the active section
@@ -100,8 +123,8 @@ class SectionIndicatorTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Connect gamepad
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Switch to gamepad mode
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advance(harness)
 
         // Wait for auto-hide (advance past the 3s window)
@@ -123,8 +146,8 @@ class SectionIndicatorTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Connect gamepad — indicator appears
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Switch to gamepad mode — indicator appears
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
         onNodeWithContentDescription("Section indicator").assertExists()
 

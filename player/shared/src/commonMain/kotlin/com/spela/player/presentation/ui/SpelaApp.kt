@@ -97,7 +97,9 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.theme.SpelaTheme
+import androidx.compose.ui.input.pointer.PointerEventPass
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
@@ -156,13 +158,11 @@ fun SpelaApp(
     SpelaTheme(theme = currentTheme) {
         val navState by navigationViewModel.state.collectAsState()
 
-        // Gamepad connection state for section indicator
-        val gamepadAssignments by gamepadPortManager?.assignments?.collectAsState()
-            ?: remember { mutableStateOf(emptyList<GamepadPortManager.PortAssignment>()) }
-        val hasGamepad = gamepadAssignments.isNotEmpty()
-
-        // Section indicator is always visible when a gamepad is connected
-        val sectionIndicatorVisible = hasGamepad
+        // Input mode detection: TOUCH shows tab bar, GAMEPAD shows section indicator
+        val inputMode by gamepadPortManager?.inputMode?.collectAsState()
+            ?: remember { mutableStateOf(InputMode.TOUCH) }
+        val isGamepadMode = inputMode == InputMode.GAMEPAD
+        val sectionIndicatorVisible = isGamepadMode
 
         // Hidden indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
@@ -235,11 +235,23 @@ fun SpelaApp(
             onPreviousSection = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
+            onGamepadInput = { gamepadPortManager?.setInputMode(InputMode.GAMEPAD) },
+            focusResetKey = if (isGamepadMode) navState.currentScreen else null,
         ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SpColor.Background),
+                .background(SpColor.Background)
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.changes.any { it.pressed }) {
+                                gamepadPortManager?.setInputMode(InputMode.TOUCH)
+                            }
+                        }
+                    }
+                },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // Connection state
@@ -1015,9 +1027,9 @@ fun SpelaApp(
                     )
                 }
 
-                // Bottom navigation bar (hidden when gamepad connected)
+                // Bottom navigation bar (hidden when in gamepad mode)
                 val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
-                if (showNavArea && !hasGamepad) {
+                if (showNavArea && !isGamepadMode) {
                     SpBottomNavBar(
                         activeTab = activeTabForScreen(navState.currentScreen),
                         onTabSelected = { tab ->
@@ -1037,9 +1049,9 @@ fun SpelaApp(
                 } // else (not DatabaseError)
             }
 
-            // Section indicator overlay (shown when gamepad connected)
+            // Section indicator overlay (shown when in gamepad mode)
             val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
-            if (showNavArea && hasGamepad) {
+            if (showNavArea && isGamepadMode) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.TopCenter,
