@@ -51,7 +51,7 @@ fun SpSectionIndicator(
         ) {
             Text(
                 text = "L1",
-                color = SpColor.TextSecondary,
+                color = SpColor.OnBackgroundSecondary,
                 fontSize = 12.sp,
             )
             Row(
@@ -70,7 +70,7 @@ fun SpSectionIndicator(
             }
             Text(
                 text = "R1",
-                color = SpColor.TextSecondary,
+                color = SpColor.OnBackgroundSecondary,
                 fontSize = 12.sp,
             )
         }
