@@ -53,6 +53,11 @@ func (h *NetplayHandler) CreateSession(c *gin.Context) {
 		return
 	}
 
+	if !game.Console.Playable {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	// Validate console is supported for netplay
 	if !netplaySupportedConsoles[game.Console.Abbreviation] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "netplay is not supported for " + game.Console.Name + " yet"})

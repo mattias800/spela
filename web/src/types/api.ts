@@ -47,6 +47,7 @@ export interface Console {
   gameCount: number;
   saveStateSupport: boolean;
   browserPlayable: boolean;
+  playable: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,6 +85,7 @@ export interface Game {
   verificationTag?: string;
   region?: string;
   coverAspectRatio: number;
+  playable: boolean;
   biosStatus?: "ready" | "missing" | "invalid" | "not_required";
   isFavorite: boolean;
   isInPlayLater: boolean;

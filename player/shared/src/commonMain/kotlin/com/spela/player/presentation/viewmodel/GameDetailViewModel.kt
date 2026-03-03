@@ -129,10 +129,15 @@ class GameDetailViewModel(
             getGameDetailUseCase(gameId).fold(
                 onSuccess = { detail ->
                     val isCached = downloadRepository.isGameCached(gameId)
-                    val saves = saveRepository.getSaveStates(gameId).getOrDefault(emptyList())
+                    val isPlayable = detail.game.playable
+                    val saves = if (isPlayable) {
+                        saveRepository.getSaveStates(gameId).getOrDefault(emptyList())
+                    } else emptyList()
                     val myRating = detail.game.userRating
                     val summary = ratingRepository.getRatingSummary(gameId).getOrNull()
-                    val sharedSaves = sharedSaveRepository.getSharedSaves(gameId).getOrDefault(emptyList())
+                    val sharedSaves = if (isPlayable) {
+                        sharedSaveRepository.getSharedSaves(gameId).getOrDefault(emptyList())
+                    } else emptyList()
                     val unsyncedCount = saves.count { !it.isSynced }
                     _state.update {
                         it.copy(
@@ -149,6 +154,14 @@ class GameDetailViewModel(
                     if (detail.game.scrapeAttempts == 0) {
                         scrapeAndRefresh(gameId)
                     }
+
+                    // Load playable-only community data after we know the game is playable
+                    if (isPlayable) {
+                        loadGameRelays(gameId)
+                        loadAchievements(gameId)
+                        loadSaveDataCount()
+                        loadBiosStatus()
+                    }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isLoading = false) }
@@ -162,13 +175,9 @@ class GameDetailViewModel(
             }
         }
 
-        // Load community data in parallel
+        // Load community data that applies to all games (playable or not)
         loadGameStats(gameId)
         loadReviews(gameId)
-        loadGameRelays(gameId)
-        loadAchievements(gameId)
-        loadSaveDataCount()
-        loadBiosStatus()
         loadSimilarGames(gameId)
         loadDeveloperGames(gameId)
     }

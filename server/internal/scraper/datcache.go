@@ -20,11 +20,20 @@ var DiscBasedSystems = map[string]bool{
 	"DC":     true,
 	"SCD":    true,
 	"PS2":    true,
-	"GC":     true, // disc-based
-	"PCFX":   true, // disc-based
-	"NEOGEO": true, // arcade ROM sets, no No-Intro DAT
-	"ARCADE": true, // MAME ROM sets, no No-Intro DAT
-	"DOS":    true, // no No-Intro DAT
+	"GC":     true,  // disc-based
+	"PCFX":   true,  // disc-based
+	"NEOGEO": true,  // arcade ROM sets, no No-Intro DAT
+	"ARCADE": true,  // MAME ROM sets, no No-Intro DAT
+	"DOS":    true,  // no No-Intro DAT
+	"PS3":    true,  // disc/pkg-based
+	"PS4":    true,  // disc/pkg-based
+	"PS5":    true,  // disc/pkg-based
+	"X360":   true,  // disc/xex-based
+	"XONE":   true,  // disc-based
+	"XSX":    true,  // disc-based
+	"WII":    true,  // disc-based
+	"WIIU":   true,  // disc-based
+	"NSW":    true,  // cartridge images, too large for CRC
 }
 
 // MaxROMSize defines conservative upper bounds (in bytes) per console abbreviation.
@@ -59,20 +68,42 @@ var MaxROMSize = map[string]int64{
 
 const datBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
 
-// DATCache manages downloading, caching, and parsing No-Intro DAT files.
+const redumpBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/redump"
+
+// AbbreviationToRedump maps console abbreviations to Redump DAT file names.
+// Includes both new non-playable disc-based consoles and existing disc-based systems.
+var AbbreviationToRedump = map[string]string{
+	// New non-playable disc-based consoles
+	"PS3":  "Sony - PlayStation 3",
+	"X360": "Microsoft - Xbox 360",
+	"WII":  "Nintendo - Wii",
+	// Existing disc-based systems
+	"PSX":  "Sony - PlayStation",
+	"PS2":  "Sony - PlayStation 2",
+	"SAT":  "Sega - Saturn",
+	"DC":   "Sega - Dreamcast",
+	"GC":   "Nintendo - GameCube",
+	"SCD":  "Sega - Mega-CD - Sega CD",
+	"PSP":  "Sony - PlayStation Portable",
+	"PCFX": "NEC - PC-FX",
+}
+
+// DATCache manages downloading, caching, and parsing No-Intro and Redump DAT files.
 type DATCache struct {
-	dir     string
-	client  *http.Client
-	mu      sync.Mutex
-	indices map[string]*DATIndex // consoleAbbrev → parsed index
+	dir           string
+	client        *http.Client
+	mu            sync.Mutex
+	indices       map[string]*DATIndex // consoleAbbrev → parsed No-Intro index
+	redumpIndices map[string]*DATIndex // consoleAbbrev → parsed Redump index
 }
 
 // NewDATCache creates a new DAT cache that stores files in dir.
 func NewDATCache(dir string, client *http.Client) *DATCache {
 	return &DATCache{
-		dir:     dir,
-		client:  client,
-		indices: make(map[string]*DATIndex),
+		dir:           dir,
+		client:        client,
+		indices:       make(map[string]*DATIndex),
+		redumpIndices: make(map[string]*DATIndex),
 	}
 }
 
@@ -148,9 +179,14 @@ func (c *DATCache) RefreshAll() {
 	slog.Info("DAT refresh complete", "refreshed", ok, "failures", failures)
 }
 
-// downloadAndCache downloads a DAT file, saves it to disk, then parses it.
+// downloadAndCache downloads a No-Intro DAT file, saves it to disk, then parses it.
 func (c *DATCache) downloadAndCache(consoleAbbrev, systemName, datPath string) (*DATIndex, error) {
-	datURL := fmt.Sprintf("%s/%s.dat", datBaseURL, url.PathEscape(systemName))
+	return c.downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, datBaseURL)
+}
+
+// downloadAndCacheFromURL downloads a DAT file from the given base URL, saves it to disk, then parses it.
+func (c *DATCache) downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, baseURL string) (*DATIndex, error) {
+	datURL := fmt.Sprintf("%s/%s.dat", baseURL, url.PathEscape(systemName))
 
 	resp, err := c.client.Get(datURL)
 	if err != nil {
@@ -180,6 +216,66 @@ func (c *DATCache) downloadAndCache(consoleAbbrev, systemName, datPath string) (
 
 	// Parse from disk
 	return c.parseFile(datPath)
+}
+
+// GetRedumpIndex returns the parsed Redump DAT index for the given console abbreviation.
+// It loads and parses the bundled Redump DAT file from disk if not already in memory.
+// Returns nil, nil for unmapped systems or if the file is missing.
+func (c *DATCache) GetRedumpIndex(consoleAbbrev string) (*DATIndex, error) {
+	systemName, ok := AbbreviationToRedump[consoleAbbrev]
+	if !ok {
+		return nil, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Return from memory cache if available
+	if idx, ok := c.redumpIndices[consoleAbbrev]; ok {
+		return idx, nil
+	}
+
+	// Load from disk (bundled Redump DAT files stored in redump/ subdirectory)
+	datPath := filepath.Join(c.dir, "redump", systemName+".dat")
+	if _, err := os.Stat(datPath); err == nil {
+		idx, err := c.parseFile(datPath)
+		if err == nil {
+			c.redumpIndices[consoleAbbrev] = idx
+			return idx, nil
+		}
+		slog.Warn("failed to parse Redump DAT file", "path", datPath, "error", err)
+	}
+
+	// File not on disk — return nil (no download attempt)
+	return nil, nil
+}
+
+// RefreshRedump downloads/updates Redump DAT files for all mapped systems.
+func (c *DATCache) RefreshRedump() {
+	redumpDir := filepath.Join(c.dir, "redump")
+	if err := os.MkdirAll(redumpDir, 0o755); err != nil {
+		slog.Warn("failed to create Redump DAT dir for refresh", "dir", redumpDir, "error", err)
+		return
+	}
+
+	var ok, failures int
+	for consoleAbbrev, systemName := range AbbreviationToRedump {
+		datPath := filepath.Join(redumpDir, systemName+".dat")
+		idx, err := c.downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, redumpBaseURL)
+		if err != nil {
+			slog.Warn("failed to refresh Redump DAT file", "system", systemName, "error", err)
+			failures++
+			continue
+		}
+
+		c.mu.Lock()
+		c.redumpIndices[consoleAbbrev] = idx
+		c.mu.Unlock()
+
+		ok++
+	}
+
+	slog.Info("Redump DAT refresh complete", "refreshed", ok, "failures", failures)
 }
 
 func (c *DATCache) parseFile(path string) (*DATIndex, error) {

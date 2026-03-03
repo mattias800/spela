@@ -55,6 +55,15 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"WS":     57,
 	"CV":     68,
 	"ARCADE": 52,
+	"PS3":    9,
+	"PS4":    48,
+	"PS5":    167,
+	"X360":   12,
+	"XONE":   49,
+	"XSX":    169,
+	"WII":    5,
+	"WIIU":   41,
+	"NSW":    130,
 }
 
 // oauthToken holds a Twitch OAuth token with its expiration.

@@ -28,6 +28,7 @@ type ConsoleResponse struct {
 	GameCount        int       `json:"gameCount"`
 	SaveStateSupport bool      `json:"saveStateSupport"`
 	BrowserPlayable  bool      `json:"browserPlayable"`
+	Playable         bool      `json:"playable"`
 }
 
 // DiscResponse is the API response for a single disc in a multi-disc game.
@@ -59,6 +60,7 @@ type GameResponse struct {
 	Genre          string         `json:"genre"`
 	Players        int            `json:"players"`
 	Rating         float64        `json:"rating"`
+	Playable            bool           `json:"playable"`
 	CoreOverride        string         `json:"coreOverride,omitempty"`
 	ScraperID           string         `json:"scraperId,omitempty"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
@@ -111,6 +113,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		BrowserPlayable:  c.EmulatorJSCore != "",
+		Playable:         c.Playable,
 	}
 }
 
@@ -266,6 +269,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Genre:          g.Genre,
 		Players:        g.Players,
 		Rating:         g.Rating,
+		Playable:            g.Console.Playable,
 		CoreOverride:        g.CoreOverride,
 		ScraperID:           g.ScraperID,
 		ScrapeAttempts:      g.ScrapeAttempts,

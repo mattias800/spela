@@ -18,6 +18,7 @@ function makeGame(overrides: Partial<Game> = {}): Game {
     screenshotUrls: [],
     scrapeAttempts: 1,
     coverAspectRatio: 0.75,
+    playable: true,
     isFavorite: false,
     isInPlayLater: false,
     averageRating: 0,
@@ -267,5 +268,52 @@ describe("GameHero", () => {
       "title",
       "Missing required BIOS files",
     );
+  });
+
+  describe("non-playable games", () => {
+    it("shows Download ROM button instead of Play button when game is not playable", () => {
+      const game = makeGame({ playable: false });
+      renderWithQuery(<GameHero game={game} {...defaultProps} />);
+
+      expect(screen.getByTestId("download-rom-btn")).toBeInTheDocument();
+      expect(screen.getByText("Download ROM")).toBeInTheDocument();
+      expect(screen.queryByTestId("play-in-browser-btn")).not.toBeInTheDocument();
+    });
+
+    it("calls onDownloadRom when Download ROM button is clicked", async () => {
+      const onDownloadRom = vi.fn();
+      const game = makeGame({ playable: false });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} onDownloadRom={onDownloadRom} />,
+      );
+
+      await userEvent.click(screen.getByTestId("download-rom-btn"));
+      expect(onDownloadRom).toHaveBeenCalledOnce();
+    });
+
+    it("shows External Emulator badge when game is not playable", () => {
+      const game = makeGame({ playable: false });
+      renderWithQuery(<GameHero game={game} {...defaultProps} />);
+
+      expect(screen.getByTestId("external-emulator-badge")).toBeInTheDocument();
+      expect(screen.getByText("External Emulator")).toBeInTheDocument();
+    });
+
+    it("does not show External Emulator badge when game is playable", () => {
+      const game = makeGame({ playable: true });
+      renderWithQuery(<GameHero game={game} {...defaultProps} />);
+
+      expect(screen.queryByTestId("external-emulator-badge")).not.toBeInTheDocument();
+    });
+
+    it("does not show Resume button for non-playable game even with saves", () => {
+      const game = makeGame({ playable: false });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} hasSaves={true} />,
+      );
+
+      expect(screen.queryByTestId("resume-btn")).not.toBeInTheDocument();
+      expect(screen.getByTestId("download-rom-btn")).toBeInTheDocument();
+    });
   });
 });

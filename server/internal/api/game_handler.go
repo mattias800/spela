@@ -285,6 +285,16 @@ func (h *GameHandler) ListSaves(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
 
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	var saves []db.SaveState
 	if err := h.DB.Where("user_id = ? AND game_id = ?", userID, gameID).
 		Order("created_at desc").Find(&saves).Error; err != nil {
@@ -307,6 +317,10 @@ func (h *GameHandler) UploadSave(c *gin.Context) {
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -375,6 +389,11 @@ func (h *GameHandler) DownloadSave(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, save.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
 		return
@@ -392,6 +411,11 @@ func (h *GameHandler) DeleteSave(c *gin.Context) {
 	var save db.SaveState
 	if err := h.DB.Where("id = ? AND user_id = ?", saveID, userID).First(&save).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		return
+	}
+
+	if err := requirePlayableConsole(h.DB, save.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -420,6 +444,10 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -493,6 +521,16 @@ func (h *GameHandler) UploadAutoSave(c *gin.Context) {
 func (h *GameHandler) GetAutoSave(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
+
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
 
 	var save db.SaveState
 	if err := h.DB.Where("user_id = ? AND game_id = ? AND is_auto = ?", userID, gameID, true).

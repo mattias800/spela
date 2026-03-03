@@ -61,6 +61,8 @@ var previewFallbackGames = map[string]string{
 	"C64":   "Boulder Dash (USA, Europe)",
 	"DOS":   "DOOM (USA)",
 	"AMIGA": "Lemmings (USA)",
+	"PS3":   "The Last of Us (USA)",
+	"WII":   "Super Mario Galaxy (USA)",
 }
 
 // ConsoleHandler handles console-related endpoints.

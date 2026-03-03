@@ -19,7 +19,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxROMUploadSize = 2 << 30 // 2 GB
+const maxROMUploadSize = 50 << 30 // 50 GB
 
 // UploadHandler handles ROM upload staging endpoints (admin only).
 type UploadHandler struct {
@@ -121,6 +121,8 @@ func ambiguousExtensions() map[string]bool {
 	return map[string]bool{
 		".bin": true,
 		".iso": true,
+		".pkg": true, // PS3, PS4, PS5
+		".xvd": true, // XONE, XSX
 	}
 }
 
@@ -388,8 +390,9 @@ func (h *UploadHandler) ScrapeAllUploads(c *gin.Context) {
 }
 
 // tryIdentifyByDAT attempts to identify the console for a ROM file by computing its CRC32
-// and searching all applicable No-Intro DAT indices. Returns the console ID if a match is found,
-// along with CRC32, verification status, and canonical name. Returns nil if no match.
+// and searching all applicable No-Intro DAT indices, then Redump indices for disc-based systems.
+// Returns the console ID if a match is found, along with CRC32, verification status, and canonical name.
+// Returns nil if no match.
 func (h *UploadHandler) tryIdentifyByDAT(filePath string, fileSize int64) (consoleID *uint, crc string, verificationStatus string, canonicalName string) {
 	if h.Scraper == nil || h.Scraper.DATCache == nil {
 		return nil, "", "", ""
@@ -401,6 +404,7 @@ func (h *UploadHandler) tryIdentifyByDAT(filePath string, fileSize int64) (conso
 		return nil, "", "", ""
 	}
 
+	// Try No-Intro DATs for cartridge-based systems
 	for abbrev := range scraper.AbbreviationToLibRetro {
 		if scraper.DiscBasedSystems[abbrev] {
 			continue
@@ -434,7 +438,34 @@ func (h *UploadHandler) tryIdentifyByDAT(filePath string, fileSize int64) (conso
 			continue
 		}
 
-		slog.Info("auto-identified ROM via CRC32+DAT", "file", filePath, "crc", crc, "console", abbrev, "canonical", entry.ROMName)
+		slog.Info("auto-identified ROM via CRC32+No-Intro DAT", "file", filePath, "crc", crc, "console", abbrev, "canonical", entry.ROMName)
+		return &console.ID, crc, "verified", entry.ROMName
+	}
+
+	// Try Redump DATs for disc-based systems
+	for abbrev := range scraper.AbbreviationToRedump {
+		idx, err := h.Scraper.DATCache.GetRedumpIndex(abbrev)
+		if err != nil || idx == nil {
+			continue
+		}
+
+		entry, ok := idx.LookupCRC(crc)
+		if !ok {
+			continue
+		}
+
+		// Verify size matches for safety
+		if entry.Size != 0 && entry.Size != fileSize {
+			continue
+		}
+
+		// Found a match — resolve console ID from DB
+		var console db.Console
+		if err := h.DB.Where("abbreviation = ?", abbrev).First(&console).Error; err != nil {
+			continue
+		}
+
+		slog.Info("auto-identified ROM via CRC32+Redump DAT", "file", filePath, "crc", crc, "console", abbrev, "canonical", entry.ROMName)
 		return &console.ID, crc, "verified", entry.ROMName
 	}
 
@@ -457,12 +488,25 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 
 	// CRC32 verification for cartridge-based systems.
 	// Skip recomputation if CRC was already set during auto-identification.
-	if scraper.DiscBasedSystems[console.Abbreviation] {
-		staged.VerificationStatus = "not_applicable"
-	} else if staged.CRC32 != "" && staged.VerificationStatus == "verified" {
+	if staged.CRC32 != "" && staged.VerificationStatus == "verified" {
 		// Already identified via tryIdentifyByDAT — update title from canonical name
 		if staged.CanonicalName != "" {
 			staged.Title = scanner.GameTitle(staged.CanonicalName)
+		}
+	} else if scraper.DiscBasedSystems[console.Abbreviation] {
+		// Disc-based system: try Redump DAT verification if available
+		staged.VerificationStatus = "not_applicable"
+		if h.Scraper != nil && h.Scraper.DATCache != nil {
+			if crc, err := scraper.ComputeFileCRC32(staged.FilePath); err == nil {
+				staged.CRC32 = crc
+				if idx, err := h.Scraper.DATCache.GetRedumpIndex(console.Abbreviation); err == nil && idx != nil {
+					if entry, ok := idx.LookupCRC(crc); ok {
+						staged.VerificationStatus = "verified"
+						staged.CanonicalName = entry.ROMName
+						staged.Title = scanner.GameTitle(entry.ROMName)
+					}
+				}
+			}
 		}
 	} else {
 		if crc, err := scraper.ComputeFileCRC32(staged.FilePath); err == nil {
@@ -470,7 +514,7 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 			staged.VerificationStatus = "unverified"
 
 			// Check No-Intro DAT for canonical name
-			if h.Scraper.DATCache != nil {
+			if h.Scraper != nil && h.Scraper.DATCache != nil {
 				if idx, err := h.Scraper.DATCache.GetIndex(console.Abbreviation); err == nil && idx != nil {
 					if entry, ok := idx.LookupCRC(crc); ok {
 						staged.VerificationStatus = "verified"

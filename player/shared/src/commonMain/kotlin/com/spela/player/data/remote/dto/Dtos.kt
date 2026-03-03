@@ -54,6 +54,7 @@ data class ConsoleDto(
     val gameCount: Int = 0,
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,
+    val playable: Boolean = true,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )
@@ -100,6 +101,7 @@ data class GameDto(
     val verificationStatus: String? = null,
     val verificationTag: String? = null,
     val region: String? = null,
+    val playable: Boolean = true,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

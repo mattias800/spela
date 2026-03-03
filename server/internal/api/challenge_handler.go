@@ -127,6 +127,11 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	challengeType := c.DefaultPostForm("type", "completion")
 	if !validChallengeTypes[challengeType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "type must be completion, speedrun, or survival"})

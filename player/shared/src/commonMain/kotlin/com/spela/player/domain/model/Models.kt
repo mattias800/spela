@@ -39,6 +39,7 @@ data class Console(
     val logoUrl: String = "",
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,
+    val playable: Boolean = true,
 )
 
 @Serializable
@@ -76,6 +77,7 @@ data class Game(
     val verificationStatus: String? = null,
     val verificationTag: String? = null,
     val region: String? = null,
+    val playable: Boolean = true,
 )
 
 @Serializable
