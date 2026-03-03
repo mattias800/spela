@@ -121,7 +121,6 @@ import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.ui.components.SpSectionIndicator
-import kotlinx.coroutines.delay
 
 @Composable
 fun SpelaApp(
@@ -162,26 +161,8 @@ fun SpelaApp(
             ?: remember { mutableStateOf(emptyList<GamepadPortManager.PortAssignment>()) }
         val hasGamepad = gamepadAssignments.isNotEmpty()
 
-        // Auto-hide timer for section indicator
-        var sectionIndicatorVisible by remember { mutableStateOf(false) }
-
-        LaunchedEffect(hasGamepad) {
-            if (hasGamepad) {
-                sectionIndicatorVisible = true
-                delay(3000)
-                sectionIndicatorVisible = false
-            } else {
-                sectionIndicatorVisible = false
-            }
-        }
-
-        LaunchedEffect(navState.currentScreen, hasGamepad) {
-            if (hasGamepad) {
-                sectionIndicatorVisible = true
-                delay(3000)
-                sectionIndicatorVisible = false
-            }
-        }
+        // Section indicator is always visible when a gamepad is connected
+        val sectionIndicatorVisible = hasGamepad
 
         // Hidden indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.

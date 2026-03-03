@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -44,18 +46,33 @@ fun SpSectionIndicator(
                     shape = RoundedCornerShape(24.dp),
                 )
                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BottomNavTab.entries.forEach { tab ->
-                val isActive = tab == activeTab
-                Icon(
-                    imageVector = tab.icon,
-                    contentDescription = if (isActive) "Section: ${tab.label}, active" else "Section: ${tab.label}",
-                    tint = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary,
-                    modifier = Modifier.size(16.dp),
-                )
+            Text(
+                text = "L1",
+                color = SpColor.TextSecondary,
+                fontSize = 12.sp,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BottomNavTab.entries.forEach { tab ->
+                    val isActive = tab == activeTab
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = if (isActive) "Section: ${tab.label}, active" else "Section: ${tab.label}",
+                        tint = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
             }
+            Text(
+                text = "R1",
+                color = SpColor.TextSecondary,
+                fontSize = 12.sp,
+            )
         }
     }
 }
