@@ -4,15 +4,18 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/storage"
+	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +25,10 @@ const maxBiosUploadSize = 16 << 20 // 16 MB
 type BiosHandler struct {
 	Storage *storage.Storage
 	DB      *gorm.DB
+	Hub     *ws.Hub
+
+	downloadMu  sync.Mutex
+	downloading bool
 }
 
 // BiosFileResponse represents an individual BIOS file in the response.
@@ -446,6 +453,65 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "file deleted"})
+}
+
+// TriggerDownload starts a background download of missing BIOS files (admin only).
+// Only one download can run at a time; concurrent requests are rejected.
+func (h *BiosHandler) TriggerDownload(c *gin.Context) {
+	h.downloadMu.Lock()
+	if h.downloading {
+		h.downloadMu.Unlock()
+		c.JSON(http.StatusConflict, gin.H{"error": "a BIOS download is already in progress"})
+		return
+	}
+	h.downloading = true
+	h.downloadMu.Unlock()
+
+	// Count missing files for the response
+	entries := bios.Downloadable()
+	missing := 0
+	for _, e := range entries {
+		path := filepath.Join(h.Storage.BiosDir, e.FileName)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			missing++
+		}
+	}
+
+	if h.Hub != nil {
+		h.Hub.Broadcast(ws.Event{Type: "bios_download_started", Payload: gin.H{"total": missing}})
+	}
+
+	go func() {
+		defer func() {
+			h.downloadMu.Lock()
+			h.downloading = false
+			h.downloadMu.Unlock()
+		}()
+
+		result := bios.DownloadMissing(h.Storage.BiosDir, bios.DefaultRepoBaseURL, func(p bios.DownloadProgress) {
+			if h.Hub != nil {
+				h.Hub.Broadcast(ws.Event{Type: "bios_download_progress", Payload: p})
+			}
+		})
+
+		slog.Info("BIOS manual download complete",
+			"downloaded", result.Downloaded,
+			"skipped", result.Skipped,
+			"failed", result.Failed,
+		)
+
+		if h.Hub != nil {
+			h.Hub.Broadcast(ws.Event{Type: "bios_download_complete", Payload: gin.H{
+				"downloaded": result.Downloaded,
+				"skipped":    result.Skipped,
+				"failed":     result.Failed,
+			}})
+		}
+	}()
+
+	adminID, _ := c.Get("userId")
+	slog.Info("audit: admin triggered BIOS download", "admin_id", adminID, "missing", missing)
+	c.JSON(http.StatusAccepted, gin.H{"message": "BIOS download started in background", "missing": missing})
 }
 
 // GetConsoleStatus returns the BIOS status string for a given console abbreviation.

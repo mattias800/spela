@@ -51,6 +51,37 @@ var registry = []Entry{
 	{ConsoleID: "pce", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
 }
 
+// repoFolders maps console IDs to their folder name in the
+// Abdess/retroarch_system GitHub repository.
+var repoFolders = map[string]string{
+	"psx": "Sony - PlayStation",
+	"sat": "Sega - Saturn",
+	"scd": "Sega - Mega CD - Sega CD",
+	"dc":  "Sega - Dreamcast",
+	"gba": "Nintendo - Game Boy Advance",
+	"nds": "Nintendo - Nintendo DS",
+	"pce": "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
+	// ps2 is not available in the repository
+}
+
+// RepoFolder returns the repository folder name for the given console ID,
+// or an empty string if the console has no downloadable BIOS files.
+func RepoFolder(consoleID string) string {
+	return repoFolders[consoleID]
+}
+
+// Downloadable returns all registry entries whose console has a known
+// repository folder, i.e. entries that can be auto-downloaded.
+func Downloadable() []Entry {
+	var out []Entry
+	for _, e := range registry {
+		if repoFolders[e.ConsoleID] != "" {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 // All returns every entry in the registry.
 func All() []Entry {
 	out := make([]Entry, len(registry))

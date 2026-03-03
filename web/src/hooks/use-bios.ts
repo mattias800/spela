@@ -46,6 +46,18 @@ export function useDeleteBiosFile() {
   });
 }
 
+export function useDownloadBios() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ message: string; missing: number }>("/admin/bios/download"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bios"] });
+    },
+  });
+}
+
 export function getBiosFileUrl(filename: string): string {
   return `/api/bios/${encodeURIComponent(filename)}`;
 }

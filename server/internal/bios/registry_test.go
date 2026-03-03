@@ -81,6 +81,46 @@ func TestConsoleIDs(t *testing.T) {
 	}
 }
 
+func TestRepoFolder(t *testing.T) {
+	tests := []struct {
+		consoleID string
+		want      string
+	}{
+		{"psx", "Sony - PlayStation"},
+		{"sat", "Sega - Saturn"},
+		{"scd", "Sega - Mega CD - Sega CD"},
+		{"dc", "Sega - Dreamcast"},
+		{"gba", "Nintendo - Game Boy Advance"},
+		{"nds", "Nintendo - Nintendo DS"},
+		{"pce", "NEC - PC Engine - TurboGrafx 16 - SuperGrafx"},
+		{"ps2", ""},
+		{"unknown", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.consoleID, func(t *testing.T) {
+			assert.Equal(t, tt.want, RepoFolder(tt.consoleID))
+		})
+	}
+}
+
+func TestDownloadable(t *testing.T) {
+	entries := Downloadable()
+	assert.NotEmpty(t, entries)
+
+	// Every downloadable entry must have a repo folder mapping
+	for _, e := range entries {
+		assert.NotEmpty(t, RepoFolder(e.ConsoleID), "entry %s should have a repo folder", e.FileName)
+	}
+
+	// PS2 entries should NOT be in the downloadable list
+	for _, e := range entries {
+		assert.NotEqual(t, "ps2", e.ConsoleID, "ps2 entries should not be downloadable")
+	}
+
+	// Should be fewer than All() since PS2 is excluded
+	assert.Less(t, len(entries), len(All()))
+}
+
 func TestRegistryEntries_HaveRequiredFields(t *testing.T) {
 	for _, e := range All() {
 		assert.NotEmpty(t, e.ConsoleID, "ConsoleID must not be empty")
