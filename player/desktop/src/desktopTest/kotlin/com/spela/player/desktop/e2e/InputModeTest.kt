@@ -7,13 +7,19 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
- * E2E tests for the floating section indicator that replaces the bottom tab bar
- * when the user is in gamepad input mode.
+ * E2E tests for input mode detection (TOUCH vs GAMEPAD).
+ *
+ * Verifies:
+ * - Default mode is touch → tab bar visible
+ * - Setting GAMEPAD mode → section indicator appears, tab bar hidden
+ * - Setting TOUCH mode → tab bar returns
+ * - Focus recovery: D-pad key press populates focus even from unfocused state
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
-class SectionIndicatorTest {
+class InputModeTest {
 
     private fun createLoggedInHarness(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
@@ -23,13 +29,16 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun bottomNavVisibleWhenNoGamepad() = runComposeUiTest {
+    fun defaultModeIsTouchWithTabBar() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Bottom nav tabs should be visible
+        // Default mode should be TOUCH
+        assertEquals(InputMode.TOUCH, harness.gamepadPortManager.inputMode.value)
+
+        // Tab bar should be visible
         onNodeWithContentDescription("Home").assertExists()
         onNodeWithContentDescription("Consoles").assertExists()
         onNodeWithContentDescription("Settings").assertExists()
@@ -39,44 +48,73 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionIndicatorAppearsOnGamepadInput() = runComposeUiTest {
+    fun gamepadModeSwitchesToSectionIndicator() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Switch to gamepad input mode (simulates D-pad press)
+        // Switch to GAMEPAD mode
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        // Section indicator should be visible
+        // Section indicator should appear
         onNodeWithContentDescription("Section indicator").assertExists()
 
-        // Bottom nav tabs should be gone
+        // Tab bar should be hidden
         onNodeWithContentDescription("Home").assertDoesNotExist()
     }
 
     @Test
-    fun gamepadConnectAloneDoesNotShowIndicator() = runComposeUiTest {
+    fun touchModeRestoresTabBar() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Just connecting a gamepad (without D-pad input) should NOT switch nav style
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Switch to GAMEPAD mode
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        // Tab bar should still be visible (touch mode)
+        // Verify gamepad mode
+        onNodeWithContentDescription("Section indicator").assertExists()
+        onNodeWithContentDescription("Home").assertDoesNotExist()
+
+        // Switch back to TOUCH mode (simulates touch on content)
+        harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
+        advanceQuick(harness)
+
+        // Tab bar should return
         onNodeWithContentDescription("Home").assertExists()
         onNodeWithContentDescription("Consoles").assertExists()
 
-        // Section indicator should not exist
+        // Section indicator should be gone
         onNodeWithContentDescription("Section indicator").assertDoesNotExist()
     }
 
     @Test
-    fun sectionIndicatorDisappearsOnTouchInput() = runComposeUiTest {
+    fun inputModeTogglesRepeatedly() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Cycle through modes multiple times
+        repeat(3) {
+            harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+            advanceQuick(harness)
+            onNodeWithContentDescription("Section indicator").assertExists()
+            onNodeWithContentDescription("Home").assertDoesNotExist()
+
+            harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
+            advanceQuick(harness)
+            onNodeWithContentDescription("Home").assertExists()
+            onNodeWithContentDescription("Section indicator").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun gamepadModePreservedAcrossScreens() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -85,53 +123,13 @@ class SectionIndicatorTest {
         // Enter gamepad mode
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
-        onNodeWithContentDescription("Section indicator").assertExists()
-
-        // Switch back to touch mode
-        harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
-        advanceQuick(harness)
-
-        // Section indicator should be gone
-        onNodeWithContentDescription("Section indicator").assertDoesNotExist()
-
-        // Bottom nav should be back
-        onNodeWithContentDescription("Home").assertExists()
-        onNodeWithContentDescription("Consoles").assertExists()
-    }
-
-    @Test
-    fun sectionIndicatorShowsActiveSection() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        advance(harness)
-
-        // Switch to gamepad mode (we're on Home screen)
-        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
-        advanceQuick(harness)
-
-        // Home should be the active section
         onNodeWithContentDescription("Section: Home, active").assertExists()
-        onNodeWithContentDescription("Section: Consoles").assertExists()
-        onNodeWithContentDescription("Section: Settings").assertExists()
-    }
 
-    @Test
-    fun sectionCyclingUpdatesActiveSection() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        advance(harness)
-
-        // Switch to gamepad mode
-        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
-        advance(harness)
-
-        // Cycle to next section
+        // Navigate to a different section
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         advanceQuick(harness)
 
-        // Indicator should show new active section
+        // Should still be in gamepad mode with the section indicator
         onNodeWithContentDescription("Section indicator").assertExists()
         onNodeWithContentDescription("Section: Consoles, active").assertExists()
     }

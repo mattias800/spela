@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
@@ -172,6 +173,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // State 3: Not in game — UI mode: remap gamepad buttons for Compose navigation
+        gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         when (keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> {
                 val now = SystemClock.uptimeMillis()
@@ -299,6 +301,15 @@ class MainActivity : ComponentActivity() {
         val nowUp = y < -threshold || hatY < -threshold
         val nowDown = y > threshold || hatY > threshold
 
+        // Right stick scrolling: convert right analog stick Y-axis to scroll events
+        val rY = event.getAxisValue(MotionEvent.AXIS_RZ)
+
+        // Only switch to gamepad mode when there's actual meaningful input,
+        // not on zero-value motion events from stick drift
+        if (nowLeft || nowRight || nowUp || nowDown || Math.abs(rY) > 0.15f) {
+            gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        }
+
         if (nowLeft && !analogDpadLeft) dispatchDpadEvent(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.ACTION_DOWN)
         if (!nowLeft && analogDpadLeft) dispatchDpadEvent(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.ACTION_UP)
         if (nowRight && !analogDpadRight) dispatchDpadEvent(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.ACTION_DOWN)
@@ -312,6 +323,23 @@ class MainActivity : ComponentActivity() {
         analogDpadRight = nowRight
         analogDpadUp = nowUp
         analogDpadDown = nowDown
+
+        if (Math.abs(rY) > 0.15f) {
+            val props = MotionEvent.PointerProperties().apply {
+                id = 0
+                toolType = MotionEvent.TOOL_TYPE_MOUSE
+            }
+            val coords = MotionEvent.PointerCoords().apply {
+                setAxisValue(MotionEvent.AXIS_VSCROLL, -rY * 2f)
+            }
+            val scrollEvent = MotionEvent.obtain(
+                event.downTime, event.eventTime, MotionEvent.ACTION_SCROLL,
+                1, arrayOf(props), arrayOf(coords),
+                0, 0, 1f, 1f, event.deviceId, 0, InputDevice.SOURCE_MOUSE, 0
+            )
+            super.dispatchGenericMotionEvent(scrollEvent)
+            scrollEvent.recycle()
+        }
 
         return true
     }

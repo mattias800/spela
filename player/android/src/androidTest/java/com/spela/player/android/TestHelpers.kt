@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -156,6 +157,22 @@ fun ComposeRule.assertNotVisible(label: String) {
     assert(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
+/** Check if we're on the Home screen (works in both populated and empty states). */
+private fun ComposeRule.isOnHomeScreen(): Boolean {
+    return try {
+        onAllNodesWithText("Spela", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Your library is empty", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Top Rated", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Continue Playing", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: IllegalStateException) {
+        false
+    }
+}
+
 /** Wait until label is visible in either text or content description. */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
     waitUntil(timeoutMillis = timeout) {
@@ -304,9 +321,7 @@ fun ComposeRule.restartApp() {
 private fun ComposeRule.navigateBackToHome() {
     for (i in 1..10) {
         try {
-            if (onAllNodesWithText("Spela", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            ) return
+            if (isOnHomeScreen()) return
 
             // Don't press back on auth screens — it would exit the app
             if (onAllNodesWithText("Connect to your game server", substring = true)
@@ -380,8 +395,7 @@ fun ComposeRule.ensureLoggedIn(
     // Wait for any recognizable screen to load (extra long for fresh install / emulator).
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
-            onAllNodesWithText("Spela", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
+            isOnHomeScreen() ||
                 onAllNodesWithText("Connect to your game server", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Welcome Back", substring = true)
@@ -423,18 +437,28 @@ fun ComposeRule.ensureLoggedIn(
         return
     }
 
-    // Check if already on Home screen (look for the "Spela" title in the top bar)
-    val onHome = try {
-        onAllNodesWithText("Spela", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-    if (onHome) return
+    // Check if already on Home screen. Home can show "Spela" (with games) or
+    // "Your library is empty" (fresh user with no play history).
+    if (isOnHomeScreen()) return
+
+    // Wait briefly for Home screen — the bottom nav renders before the page title,
+    // so checking once may miss it. This prevents navigateBackToHome from pressing
+    // back and accidentally exiting the app.
+    val arrivedHome = try {
+        waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
+            try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+        }
+        true
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
+    if (arrivedHome) return
 
     // On some other logged-in screen (Settings, game detail, in-game, etc.)
     // Navigate back to Home first, then verify.
     // navigateBackToHome may need time if exiting a game (async core shutdown).
     navigateBackToHome()
-    waitForText("Spela", 30_000)
+    waitUntil(timeoutMillis = 30_000) {
+        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+    }
 }
 
 /**
@@ -537,25 +561,27 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     onNodeWithText("Sign In").performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
-    waitForText("Spela", TIMEOUT_EXTRA_LONG)
+    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+    }
 }
 
 // ── Navigation helpers ──
 
 fun ComposeRule.navigateToCastlevania() {
-    // Navigate to Consoles tab
+    // Navigate to Consoles tab and wait for console cards to appear
     tapOn("Consoles")
-    waitForText("Consoles", TIMEOUT_MEDIUM)
+    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_MEDIUM)
 
     // Scroll to and tap the NES console card. We match on the card's content description
     // which contains both "Nintendo Entertainment System" and "games" — this distinguishes
     // it from game cards that also mention the console name.
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for the console game list to load
-    waitForText("Castlevania", TIMEOUT_LONG)
+    // Wait for the console game list to load (title bar shows console name)
+    waitForText("Nintendo Entertainment System", TIMEOUT_LONG)
 
-    // Tap Castlevania in the game list
+    // Scroll to and tap Castlevania in the game list
     scrollToAndTapText("Castlevania")
 
     // Wait for game detail
@@ -564,7 +590,7 @@ fun ComposeRule.navigateToCastlevania() {
 
 fun ComposeRule.navigateToN64Game() {
     tapOn("Consoles")
-    waitForText("Consoles", TIMEOUT_MEDIUM)
+    waitForContentDescription("Nintendo 64", TIMEOUT_MEDIUM)
 
     scrollToAndTapMatchingBoth("Nintendo 64", "games")
 
@@ -614,14 +640,15 @@ fun ComposeRule.tapNodeMatchingBoth(text1: String, text2: String) {
 }
 
 /**
- * Scroll through a LazyColumn until a node matching both text1 AND text2 (via hasText
- * substring matching, which covers both text content and content descriptions) is visible,
- * then tap it. This is like tapNodeMatchingBoth but with scroll-to-find support for
- * off-screen LazyColumn items.
+ * Scroll through a LazyColumn until a node matching both text1 AND text2 is visible,
+ * then tap it. Matches on both visible text and contentDescription (some elements
+ * like console cards use logos instead of text, with the name in contentDescription).
  */
 fun ComposeRule.scrollToAndTapMatchingBoth(text1: String, text2: String) {
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val matcher = hasText(text1, substring = true) and hasText(text2, substring = true)
+    val textMatcher = hasText(text1, substring = true) and hasText(text2, substring = true)
+    val descMatcher = hasContentDescription(text1, substring = true) and hasContentDescription(text2, substring = true)
+    val matcher = textMatcher or descMatcher
     val maxSwipes = 10
     var found = false
 

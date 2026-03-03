@@ -1,6 +1,7 @@
 package com.spela.player.libretro
 
 import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,14 @@ class GamepadPortManager(
     /** Observable list of current port assignments. */
     private val _assignments = MutableStateFlow<List<PortAssignment>>(emptyList())
     val assignments: StateFlow<List<PortAssignment>> = _assignments.asStateFlow()
+
+    /** Current input mode: TOUCH when touch input was last used, GAMEPAD when D-pad/buttons were. */
+    private val _inputMode = MutableStateFlow(InputMode.TOUCH)
+    val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
+
+    fun setInputMode(mode: InputMode) {
+        _inputMode.value = mode
+    }
 
     /**
      * Assigns a device to the next available port.

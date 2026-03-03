@@ -21,10 +21,17 @@ class EstablishSessionTest {
         // Use ensureLoggedIn which handles any starting state
         composeTestRule.ensureLoggedIn()
 
-        // Verify we're on the Home screen
+        // Verify we're on the Home screen — check multiple indicators since the
+        // Home screen may show "Your library is empty" for users with no play history
         composeTestRule.waitUntil(timeoutMillis = 8000) {
             composeTestRule.onAllNodesWithText("Spela")
-                .fetchSemanticsNodes().isNotEmpty()
+                .fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithText("Your library is empty", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithText("Top Rated", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithText("Continue Playing", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
         }
     }
 }
