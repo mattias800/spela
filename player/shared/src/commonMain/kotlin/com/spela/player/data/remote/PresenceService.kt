@@ -119,11 +119,24 @@ class PresenceService(
 
     /**
      * Stop sending play-time heartbeats.
+     * Sends a final API call to clear the game status on the server (best-effort).
      */
     fun stopHeartbeat() {
+        val gameId = currentGameId
         heartbeatJob?.cancel()
         heartbeatJob = null
         currentGameId = null
+
+        // Fire-and-forget: tell the server we stopped playing
+        if (gameId != null) {
+            scope.launch(dispatchers.io) {
+                try {
+                    apiClient.clearCurrentGame(gameId)
+                } catch (_: Exception) {
+                    // Best effort — the server will time out stale entries anyway
+                }
+            }
+        }
     }
 
     private fun handleFrame(text: String) {

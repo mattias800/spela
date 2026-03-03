@@ -20,13 +20,13 @@ vi.mock("@/hooks/use-games", () => ({
         {
           id: "g1",
           title: "Super Mario World",
-          consoleName: "SNES",
+          consoleName: "Super Nintendo",
           coverUrl: "https://example.com/cover.png",
         },
         {
           id: "g2",
           title: "Sonic the Hedgehog",
-          consoleName: "Genesis",
+          consoleName: "Sega Genesis",
           coverUrl: null,
         },
         {
@@ -169,7 +169,7 @@ describe("NetplayCreateModal", () => {
 
     expect(
       screen.getByText(
-        "Netplay supports NES, SNES, Game Boy, Game Boy Color, Game Boy Advance, Genesis, and Mega Drive.",
+        "Netplay supports NES, SNES, Game Boy, Game Boy Color, Game Boy Advance, and Genesis.",
       ),
     ).toBeInTheDocument();
   });

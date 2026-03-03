@@ -686,7 +686,7 @@ func (h *AdminHandler) GetGameCovers(c *gin.Context) {
 		return
 	}
 
-	var covers []CoverOption
+	covers := make([]CoverOption, 0)
 
 	if game.LibRetroCoverURL != "" {
 		covers = append(covers, CoverOption{Source: "libretro", URL: resolveImageURL(game.LibRetroCoverURL)})

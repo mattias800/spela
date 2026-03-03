@@ -641,6 +641,23 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 	})
 }
 
+// StopPlaying clears the user's current game status.
+// DELETE /api/games/:id/play-time
+func (h *GameHandler) StopPlaying(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	uid, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	if h.Hub != nil {
+		h.Hub.SetUserGame(uid, 0)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "cleared"})
+}
+
 // DownloadDisc serves files for a specific disc in a multi-disc game.
 // For single-file disc formats (.iso, .chd), serves the file directly.
 // For multi-file disc formats (.cue+.bin), streams an uncompressed tar.

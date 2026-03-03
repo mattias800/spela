@@ -28,7 +28,22 @@ function clearTokens() {
   localStorage.removeItem("refreshToken");
 }
 
+let refreshPromise: Promise<string> | null = null;
+
 async function refreshAccessToken(): Promise<string> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = doRefresh();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function doRefresh(): Promise<string> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     throw new ApiError(401, "No refresh token");

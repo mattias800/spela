@@ -663,6 +663,10 @@ class SpelaApiClient(
         }
     }
 
+    suspend fun clearCurrentGame(gameId: String) {
+        client.delete("$baseUrl/api/games/$gameId/play-time")
+    }
+
     /**
      * Returns the WebSocket URL for real-time events, with the auth token as a query param.
      * Converts http(s):// to ws(s)://.

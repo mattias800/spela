@@ -1,9 +1,8 @@
 export const NETPLAY_SUPPORTED_CONSOLES = [
-  "NES",
-  "SNES",
+  "Nintendo Entertainment System",
+  "Super Nintendo",
   "Game Boy",
   "Game Boy Color",
   "Game Boy Advance",
-  "Genesis",
-  "Mega Drive",
+  "Sega Genesis",
 ];

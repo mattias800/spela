@@ -433,7 +433,7 @@ type ActivityEventResponse struct {
 	GameTitle   string    `json:"gameTitle"`
 	GameCoverURL string  `json:"gameCoverUrl,omitempty"`
 	ConsoleName string    `json:"consoleName,omitempty"`
-	Metadata    string    `json:"metadata,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // GameRatingResponse is the API response for a single game rating.

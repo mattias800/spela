@@ -68,10 +68,10 @@ export function NetplayCreateModal({
             onSelect={setSelectedGame}
             onClear={() => setSelectedGame(null)}
             filterFn={filterNetplayGames}
-            emptyMessage="No supported netplay games found. Supported consoles: NES, SNES, GB, GBC, GBA, Genesis, Mega Drive."
+            emptyMessage="No supported netplay games found. Supported consoles: NES, SNES, GB, GBC, GBA, Genesis."
           />
           <p className="text-xs text-surface-500">
-            Netplay supports NES, SNES, Game Boy, Game Boy Color, Game Boy Advance, Genesis, and Mega Drive.
+            Netplay supports NES, SNES, Game Boy, Game Boy Color, Game Boy Advance, and Genesis.
           </p>
         </div>
 

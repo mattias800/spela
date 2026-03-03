@@ -3,6 +3,7 @@ package auth
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,6 +73,11 @@ func TestValidateAccessToken_InvalidSecret(t *testing.T) {
 func TestValidateAccessToken_InvalidToken(t *testing.T) {
 	_, err := ValidateAccessToken("not.a.valid.token", "secret")
 	assert.Error(t, err)
+}
+
+func TestTokenDurations(t *testing.T) {
+	assert.Equal(t, 1*time.Hour, AccessTokenDuration, "access token should last 1 hour")
+	assert.Equal(t, 90*24*time.Hour, RefreshTokenDuration, "refresh token should last 90 days")
 }
 
 func TestGenerateRefreshToken(t *testing.T) {
