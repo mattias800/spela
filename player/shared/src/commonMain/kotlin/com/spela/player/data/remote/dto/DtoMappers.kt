@@ -30,6 +30,7 @@ fun ConsoleDto.toDomain(): Console = Console(
     logoUrl = logoPngUrl.ifEmpty { logoUrl },
     saveStateSupport = saveStateSupport,
     browserPlayable = browserPlayable,
+    playable = playable,
 )
 
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(
@@ -70,6 +71,7 @@ fun GameDto.toDomain(): Game = Game(
     verificationStatus = verificationStatus,
     verificationTag = verificationTag,
     region = region,
+    playable = playable,
 )
 
 /**

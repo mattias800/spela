@@ -82,6 +82,8 @@ var AbbreviationToLibRetro = map[string]string{
 	"C64":   "Commodore - 64",
 	"DOS":   "DOS",
 	"AMIGA": "Commodore - Amiga",
+	"PS3":   "Sony - PlayStation 3",
+	"WII":   "Nintendo - Wii",
 }
 
 var libRetroThumbnailBase = "https://thumbnails.libretro.com"

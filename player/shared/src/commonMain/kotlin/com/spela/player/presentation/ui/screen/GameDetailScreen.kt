@@ -290,156 +290,163 @@ fun GameDetailScreen(
                     }
                 }
 
-                // 4. Achievements
-                Column(
-                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                ) {
-                    GameAchievementsSection(
-                        achievements = state.achievements,
-                        progress = state.achievementProgress,
-                        timeline = state.achievementTimeline,
-                        leaderboard = state.achievementLeaderboard,
-                        viewMode = state.achievementsView,
-                        isLoading = state.isLoadingAchievements,
-                        onToggleView = { mode ->
-                            viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
-                        },
-                        achievementsWarning = game.achievementsWarning,
-                    )
-                }
-
-                // 5. Save States
-                Column(
-                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                ) {
-                    SaveStatesSection(
-                        saveStates = state.saveStates,
-                        unsyncedCount = state.unsyncedSaveCount,
-                        isSelectionMode = state.isSelectionMode,
-                        selectedSaveIds = state.selectedSaveIds,
-                        onDelete = { saveId ->
-                            viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
-                        },
-                        onRename = { saveId, name ->
-                            viewModel.onIntent(GameDetailIntent.RenameSave(saveId, name))
-                        },
-                        onUpdateNotes = { saveId, notes ->
-                            viewModel.onIntent(GameDetailIntent.UpdateSaveNotes(saveId, notes))
-                        },
-                        onToggleSelection = { saveId ->
-                            viewModel.onIntent(GameDetailIntent.ToggleSaveSelection(saveId))
-                        },
-                        onToggleSelectionMode = {
-                            viewModel.onIntent(GameDetailIntent.ToggleSelectionMode)
-                        },
-                        onSelectAll = {
-                            viewModel.onIntent(GameDetailIntent.SelectAllSaves)
-                        },
-                        onDeleteSelected = {
-                            viewModel.onIntent(GameDetailIntent.DeleteSelectedSaves)
-                        },
-                    )
-                }
-
-                // 6. Save Data (SRAM) - app-specific
-                if (onNavigateToSaveData != null && state.saveDataCount > 0) {
+                // Sections 4-10 are only shown for playable games (games with
+                // native libretro core support). Non-playable games (external
+                // emulator only) show download, metadata, community stats, reviews,
+                // screenshots, and similar games — but not saves, controls,
+                // challenges, relays, or achievements.
+                if (game.playable) {
+                    // 4. Achievements
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
-                        Spacer(Modifier.height(SpSpacing.XXLarge))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                        GameAchievementsSection(
+                            achievements = state.achievements,
+                            progress = state.achievementProgress,
+                            timeline = state.achievementTimeline,
+                            leaderboard = state.achievementLeaderboard,
+                            viewMode = state.achievementsView,
+                            isLoading = state.isLoadingAchievements,
+                            onToggleView = { mode ->
+                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
+                            },
+                            achievementsWarning = game.achievementsWarning,
+                        )
+                    }
+
+                    // 5. Save States
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        SaveStatesSection(
+                            saveStates = state.saveStates,
+                            unsyncedCount = state.unsyncedSaveCount,
+                            isSelectionMode = state.isSelectionMode,
+                            selectedSaveIds = state.selectedSaveIds,
+                            onDelete = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
+                            },
+                            onRename = { saveId, name ->
+                                viewModel.onIntent(GameDetailIntent.RenameSave(saveId, name))
+                            },
+                            onUpdateNotes = { saveId, notes ->
+                                viewModel.onIntent(GameDetailIntent.UpdateSaveNotes(saveId, notes))
+                            },
+                            onToggleSelection = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.ToggleSaveSelection(saveId))
+                            },
+                            onToggleSelectionMode = {
+                                viewModel.onIntent(GameDetailIntent.ToggleSelectionMode)
+                            },
+                            onSelectAll = {
+                                viewModel.onIntent(GameDetailIntent.SelectAllSaves)
+                            },
+                            onDeleteSelected = {
+                                viewModel.onIntent(GameDetailIntent.DeleteSelectedSaves)
+                            },
+                        )
+                    }
+
+                    // 6. Save Data (SRAM) - app-specific
+                    if (onNavigateToSaveData != null && state.saveDataCount > 0) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                         ) {
-                            Text(
-                                text = "Save Data",
-                                style = SpTypography.HeadlineSmall,
-                                color = SpColor.OnBackground,
+                            Spacer(Modifier.height(SpSpacing.XXLarge))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "Save Data",
+                                    style = SpTypography.HeadlineSmall,
+                                    color = SpColor.OnBackground,
+                                )
+                                SpButton(
+                                    text = "Manage (${state.saveDataCount})",
+                                    onClick = { onNavigateToSaveData(gameId) },
+                                    style = SpButtonStyle.Ghost,
+                                )
+                            }
+                        }
+                    }
+
+                    // 7. Community Shares
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        CommunitySharesSection(
+                            sharedSaves = state.sharedSaves,
+                            onDownload = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
+                            },
+                            onDelete = { saveId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
+                            },
+                        )
+                    }
+
+                    // 8. Game Controls - app-specific
+                    if (keyMappingViewModel != null && keyMappingState != null) {
+                        val consoleId = game.consoleId
+                        LaunchedEffect(gameId, consoleId) {
+                            keyMappingViewModel.onIntent(
+                                KeyMappingIntent.LoadGameMapping(gameId, consoleId)
                             )
-                            SpButton(
-                                text = "Manage (${state.saveDataCount})",
-                                onClick = { onNavigateToSaveData(gameId) },
-                                style = SpButtonStyle.Ghost,
+                        }
+
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            GameControlsSection(
+                                gameId = gameId,
+                                hasGameOverride = keyMappingState.value.hasGameOverride,
+                                onEnableOverride = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.SaveAsGameOverride(gameId)
+                                    )
+                                },
+                                onClearOverride = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.ClearGameOverride(gameId)
+                                    )
+                                },
+                                onEditMapping = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.LoadGameMapping(gameId, consoleId)
+                                    )
+                                },
                             )
                         }
                     }
-                }
 
-                // 7. Community Shares
-                Column(
-                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                ) {
-                    CommunitySharesSection(
-                        sharedSaves = state.sharedSaves,
-                        onDownload = { saveId ->
-                            viewModel.onIntent(GameDetailIntent.DownloadSharedSave(saveId))
-                        },
-                        onDelete = { saveId ->
-                            viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
-                        },
-                    )
-                }
-
-                // 8. Game Controls - app-specific
-                if (keyMappingViewModel != null && keyMappingState != null) {
-                    val consoleId = game.consoleId
-                    LaunchedEffect(gameId, consoleId) {
-                        keyMappingViewModel.onIntent(
-                            KeyMappingIntent.LoadGameMapping(gameId, consoleId)
-                        )
+                    // 9. Challenges
+                    if (onNavigateToChallenges != null) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            ChallengesSection(
+                                gameTitle = game.title,
+                                onViewAll = { onNavigateToChallenges(gameId, game.title) },
+                                onCreateChallenge = {
+                                    viewModel.onIntent(GameDetailIntent.ShowCreateChallengeDialog)
+                                },
+                            )
+                        }
                     }
 
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameControlsSection(
-                            gameId = gameId,
-                            hasGameOverride = keyMappingState.value.hasGameOverride,
-                            onEnableOverride = {
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.SaveAsGameOverride(gameId)
-                                )
-                            },
-                            onClearOverride = {
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.ClearGameOverride(gameId)
-                                )
-                            },
-                            onEditMapping = {
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.LoadGameMapping(gameId, consoleId)
-                                )
-                            },
-                        )
-                    }
-                }
-
-                // 9. Challenges
-                if (onNavigateToChallenges != null) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        ChallengesSection(
-                            gameTitle = game.title,
-                            onViewAll = { onNavigateToChallenges(gameId, game.title) },
-                            onCreateChallenge = {
-                                viewModel.onIntent(GameDetailIntent.ShowCreateChallengeDialog)
-                            },
-                        )
-                    }
-                }
-
-                // 10. Active Relays
-                if (onNavigateToRelay != null) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        GameRelaysSection(
-                            relays = state.gameRelays,
-                            isLoading = state.isLoadingRelays,
-                            onRelayClick = { relayId -> onNavigateToRelay(relayId) },
-                        )
+                    // 10. Active Relays
+                    if (onNavigateToRelay != null) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        ) {
+                            GameRelaysSection(
+                                relays = state.gameRelays,
+                                isLoading = state.isLoadingRelays,
+                                onRelayClick = { relayId -> onNavigateToRelay(relayId) },
+                            )
+                        }
                     }
                 }
 
@@ -635,7 +642,7 @@ private fun GameInfoContent(
     Spacer(Modifier.height(SpSpacing.XLarge))
 
     // Action buttons row: Play/Download + Actions menu + playtime chips
-    val supportsNetplay = game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
+    val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
 
     @OptIn(ExperimentalLayoutApi::class)
     FlowRow(
@@ -644,38 +651,49 @@ private fun GameInfoContent(
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         if (state.isGameCached) {
-            val menuItems = buildList {
-                if (hasSaves && onPlayFresh != null) {
-                    add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+            if (game.playable) {
+                // Playable game: show Play/Resume with split menu
+                val menuItems = buildList {
+                    if (hasSaves && onPlayFresh != null) {
+                        add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+                    }
+                    if (onCreateNetplay != null && supportsNetplay) {
+                        add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                    }
+                    add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
                 }
-                if (onCreateNetplay != null && supportsNetplay) {
-                    add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
-                }
-                add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
-            }
 
-            val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
-            val isSyncing = syncState != null
-            val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
-            val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
-            SpSplitButton(
-                text = if (hasSaves) "Resume" else "Play",
-                onClick = { onPlay(gameId) },
-                enabled = !hasRequiredBiosMissing && !isSyncing,
-                isLoading = isSyncing && syncState?.isTimedOut != true,
-                modifier = Modifier
-                    .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
-                    .semantics {
-                        contentDescription = when {
-                            hasRequiredBiosMissing -> "Play disabled, BIOS required"
-                            isSyncing -> "Play disabled, syncing"
-                            hasSaves -> "Resume ${game.title}"
-                            else -> "Play ${game.title}"
-                        }
-                    },
-                menuItems = menuItems,
-                onGradient = true,
-            )
+                val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
+                val isSyncing = syncState != null
+                val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
+                val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
+                SpSplitButton(
+                    text = if (hasSaves) "Resume" else "Play",
+                    onClick = { onPlay(gameId) },
+                    enabled = !hasRequiredBiosMissing && !isSyncing,
+                    isLoading = isSyncing && syncState?.isTimedOut != true,
+                    modifier = Modifier
+                        .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
+                        .semantics {
+                            contentDescription = when {
+                                hasRequiredBiosMissing -> "Play disabled, BIOS required"
+                                isSyncing -> "Play disabled, syncing"
+                                hasSaves -> "Resume ${game.title}"
+                                else -> "Play ${game.title}"
+                            }
+                        },
+                    menuItems = menuItems,
+                    onGradient = true,
+                )
+            } else {
+                // Non-playable game (downloaded): show Delete Download button only
+                SpButton(
+                    text = "Delete Download",
+                    onClick = onDeleteLocalGame,
+                    style = SpButtonStyle.Ghost,
+                    onGradient = true,
+                )
+            }
         } else {
             val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
             val isBusy = state.isDownloading || isActivelyDownloading
@@ -712,6 +730,14 @@ private fun GameInfoContent(
             onAddToCollection = onAddToCollection,
             onGradient = true,
         )
+
+        // "External Emulator" indicator for non-playable games
+        if (!game.playable) {
+            SpChip(
+                text = "External Emulator",
+                onGradient = true,
+            )
+        }
 
         // Playtime + last played as highlighted chips (inline with buttons)
         if (game.totalPlayTime > 0) {

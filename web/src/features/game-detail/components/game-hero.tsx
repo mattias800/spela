@@ -14,6 +14,8 @@ import {
   FolderPlus,
   ImageIcon,
   Search,
+  Download,
+  Monitor,
 } from "lucide-react";
 import { Button, Badge, SplitButton, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
@@ -47,6 +49,7 @@ interface GameHeroProps {
   onTogglePlayLater: () => void;
   onAddToCollection?: () => void;
   onFixMatch?: () => void;
+  onDownloadRom?: () => void;
 }
 
 export function GameHero({
@@ -68,6 +71,7 @@ export function GameHero({
   onTogglePlayLater,
   onAddToCollection,
   onFixMatch,
+  onDownloadRom,
 }: GameHeroProps) {
   const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
@@ -185,6 +189,12 @@ export function GameHero({
             </h1>
             <div className="flex flex-wrap items-center gap-3 mt-2">
               {consoleName && <Badge variant="brand">{consoleName}</Badge>}
+              {!game.playable && (
+                <Badge variant="warning" data-testid="external-emulator-badge">
+                  <Monitor className="h-3 w-3 mr-1" />
+                  External Emulator
+                </Badge>
+              )}
               <VerificationBadge game={game} isAdmin={isAdmin} />
               {game.region && <RegionBadge region={game.region} />}
               {game.rating != null && game.rating > 0 && (
@@ -200,52 +210,67 @@ export function GameHero({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {hasSaves ? (
-              <SplitButton
-                variant="primary"
-                size="sm"
-                onClick={onPlay}
-                disabled={!canPlayInBrowser || biosMissing}
-                title={
-                  biosMissing
-                    ? "Missing required BIOS files"
-                    : canPlayInBrowser
-                      ? "Resume game with latest save"
-                      : `${game.consoleName} is not supported for browser play`
-                }
-                data-testid="resume-btn"
-                menuItems={[
-                  ...(onPlayFresh
-                    ? [
-                        {
-                          label: "New Game",
-                          icon: <Play className="h-4 w-4" />,
-                          onClick: onPlayFresh,
-                        },
-                      ]
-                    : []),
-                ]}
-              >
-                <Play className="h-5 w-5" />
-                Resume
-              </SplitButton>
+            {game.playable ? (
+              <>
+                {hasSaves ? (
+                  <SplitButton
+                    variant="primary"
+                    size="sm"
+                    onClick={onPlay}
+                    disabled={!canPlayInBrowser || biosMissing}
+                    title={
+                      biosMissing
+                        ? "Missing required BIOS files"
+                        : canPlayInBrowser
+                          ? "Resume game with latest save"
+                          : `${game.consoleName} is not supported for browser play`
+                    }
+                    data-testid="resume-btn"
+                    menuItems={[
+                      ...(onPlayFresh
+                        ? [
+                            {
+                              label: "New Game",
+                              icon: <Play className="h-4 w-4" />,
+                              onClick: onPlayFresh,
+                            },
+                          ]
+                        : []),
+                    ]}
+                  >
+                    <Play className="h-5 w-5" />
+                    Resume
+                  </SplitButton>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={onPlay}
+                    disabled={!canPlayInBrowser || biosMissing}
+                    title={
+                      biosMissing
+                        ? "Missing required BIOS files"
+                        : canPlayInBrowser
+                          ? "Play in Browser"
+                          : `${game.consoleName} is not supported for browser play`
+                    }
+                    data-testid="play-in-browser-btn"
+                  >
+                    <Play className="h-5 w-5" />
+                    Play in Browser
+                  </Button>
+                )}
+              </>
             ) : (
               <Button
                 variant="primary"
                 size="sm"
-                onClick={onPlay}
-                disabled={!canPlayInBrowser || biosMissing}
-                title={
-                  biosMissing
-                    ? "Missing required BIOS files"
-                    : canPlayInBrowser
-                      ? "Play in Browser"
-                      : `${game.consoleName} is not supported for browser play`
-                }
-                data-testid="play-in-browser-btn"
+                onClick={onDownloadRom}
+                title="Download ROM for use with an external emulator"
+                data-testid="download-rom-btn"
               >
-                <Play className="h-5 w-5" />
-                Play in Browser
+                <Download className="h-5 w-5" />
+                Download ROM
               </Button>
             )}
             <ActionsMenu items={actionsMenuItems} />

@@ -23,6 +23,16 @@ func (h *SaveDataHandler) ListSaveData(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
 
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	var saves []db.SaveData
 	if err := h.DB.Where("user_id = ? AND game_id = ?", userID, gameID).
 		Order("created_at desc").Find(&saves).Error; err != nil {
@@ -42,6 +52,10 @@ func (h *SaveDataHandler) UploadSaveData(c *gin.Context) {
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -87,6 +101,10 @@ func (h *SaveDataHandler) UploadActiveSaveData(c *gin.Context) {
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -135,6 +153,16 @@ func (h *SaveDataHandler) DownloadActiveSaveData(c *gin.Context) {
 	gameID := c.Param("id")
 	userID, _ := c.Get("userId")
 
+	gid, err := strconv.ParseUint(gameID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		return
+	}
+	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	var sd db.SaveData
 	if err := h.DB.Where("user_id = ? AND game_id = ? AND is_active = ?", userID, gameID, true).
 		First(&sd).Error; err != nil {
@@ -162,6 +190,11 @@ func (h *SaveDataHandler) DownloadSaveData(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, sd.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	if !storage.ValidateROMPath(sd.FilePath, []string{h.Storage.SaveDir}) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
@@ -179,6 +212,11 @@ func (h *SaveDataHandler) ActivateSaveData(c *gin.Context) {
 	var sd db.SaveData
 	if err := h.DB.Where("id = ? AND user_id = ?", sdID, userID).First(&sd).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "save data not found"})
+		return
+	}
+
+	if err := requirePlayableConsole(h.DB, sd.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -215,6 +253,11 @@ func (h *SaveDataHandler) RenameSaveData(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, sd.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	var body struct {
 		Name string `json:"name" binding:"required"`
 	}
@@ -240,6 +283,11 @@ func (h *SaveDataHandler) DeleteSaveData(c *gin.Context) {
 	var sd db.SaveData
 	if err := h.DB.Where("id = ? AND user_id = ?", sdID, userID).First(&sd).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "save data not found"})
+		return
+	}
+
+	if err := requirePlayableConsole(h.DB, sd.GameID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 

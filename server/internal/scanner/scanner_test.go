@@ -1237,3 +1237,105 @@ func TestScan_StandaloneGdiBin(t *testing.T) {
 	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
 	assert.Equal(t, 1, result2.TotalGames)
 }
+
+func TestNewConsoleExtensionMappings(t *testing.T) {
+	s := &Scanner{}
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{"X360 by .xex extension", "/games/some/game.xex", ".xex", "X360"},
+		{"X360 by .god extension", "/games/some/game.god", ".god", "X360"},
+		{"WII by .wbfs extension", "/games/some/game.wbfs", ".wbfs", "WII"},
+		{"WIIU by .rpx extension", "/games/some/game.rpx", ".rpx", "WIIU"},
+		{"WIIU by .wud extension", "/games/some/game.wud", ".wud", "WIIU"},
+		{"WIIU by .wux extension", "/games/some/game.wux", ".wux", "WIIU"},
+		{"NSW by .nsp extension", "/games/some/game.nsp", ".nsp", "NSW"},
+		{"NSW by .xci extension", "/games/some/game.xci", ".xci", "NSW"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.identifyConsole(tt.path, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestNewRomExtensionsRegistered(t *testing.T) {
+	newExts := []string{".pkg", ".xex", ".god", ".wbfs", ".rpx", ".wud", ".wux", ".nsp", ".xci", ".xvd"}
+	for _, ext := range newExts {
+		assert.True(t, RomExtensions[ext], "RomExtensions should include %s", ext)
+	}
+}
+
+func TestNewDirectoryConsoleMappings(t *testing.T) {
+	s := &Scanner{}
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{"PS3 by directory", "/games/ps3/game.bin", ".bin", "PS3"},
+		{"PS4 by directory", "/games/ps4/game.pkg", ".pkg", "PS4"},
+		{"PS5 by directory", "/games/ps5/game.pkg", ".pkg", "PS5"},
+		{"X360 by directory", "/games/xbox360/game.iso", ".iso", "X360"},
+		{"XONE by directory", "/games/xboxone/game.xvd", ".xvd", "XONE"},
+		{"XSX by directory", "/games/xboxseries/game.xvd", ".xvd", "XSX"},
+		{"WII by directory", "/games/wii/game.iso", ".iso", "WII"},
+		{"WIIU by directory", "/games/wiiu/game.rpx", ".rpx", "WIIU"},
+		{"NSW by directory", "/games/switch/game.nsp", ".nsp", "NSW"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.identifyConsole(tt.path, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestScan_NonPlayableConsoles(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// Create files in non-playable console directories
+	ps3Dir := filepath.Join(dir, "ps3")
+	require.NoError(t, os.MkdirAll(ps3Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(ps3Dir, "The Last of Us.iso"), []byte("fake iso"), 0644))
+
+	switchDir := filepath.Join(dir, "switch")
+	require.NoError(t, os.MkdirAll(switchDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(switchDir, "Zelda BOTW.nsp"), []byte("fake nsp"), 0644))
+
+	wiiDir := filepath.Join(dir, "wii")
+	require.NoError(t, os.MkdirAll(wiiDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(wiiDir, "Mario Galaxy.wbfs"), []byte("fake wbfs"), 0644))
+
+	x360Dir := filepath.Join(dir, "xbox360")
+	require.NoError(t, os.MkdirAll(x360Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(x360Dir, "Halo 3.xex"), []byte("fake xex"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan()
+	require.NoError(t, err)
+	assert.Equal(t, 4, result.NewGames)
+	assert.Equal(t, 4, result.TotalGames)
+
+	// Verify each game is assigned to the correct console
+	verifyConsole := func(abbrev string, expectedCount int) {
+		var console db.Console
+		require.NoError(t, database.Where("abbreviation = ?", abbrev).First(&console).Error, "console %s should exist", abbrev)
+		var count int64
+		database.Model(&db.Game{}).Where("console_id = ?", console.ID).Count(&count)
+		assert.Equal(t, int64(expectedCount), count, "expected %d game(s) for %s", expectedCount, abbrev)
+	}
+
+	verifyConsole("PS3", 1)
+	verifyConsole("NSW", 1)
+	verifyConsole("WII", 1)
+	verifyConsole("X360", 1)
+}

@@ -38,6 +38,7 @@ import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
+import { api } from "@/lib/api-client";
 import type { Collection } from "@/types/api";
 
 function CollectionPickerModal({
@@ -128,6 +129,7 @@ export function GameDetailPage() {
 
   const isFavorite = game?.isFavorite ?? false;
   const isInPlayLater = game?.isInPlayLater ?? false;
+  const isPlayable = game?.playable ?? true;
 
   if (isLoading) {
     return (
@@ -152,12 +154,21 @@ export function GameDetailPage() {
     (c) => c.consoleId === game?.consoleId,
   );
   const showBiosWarning =
-    game?.biosStatus === "missing" ||
-    (biosConsole?.status === "missing" && biosConsole.biosRequired);
+    isPlayable &&
+    (game?.biosStatus === "missing" ||
+      (biosConsole?.status === "missing" && biosConsole.biosRequired));
   const missingBiosFiles =
     biosConsole?.files
       .filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
+
+  function handleDownloadRom() {
+    const token = api.getAccessToken();
+    const tokenSuffix = token
+      ? `?token=${encodeURIComponent(token)}`
+      : "";
+    window.open(`/api/games/${game.id}/download${tokenSuffix}`, "_blank");
+  }
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -198,6 +209,7 @@ export function GameDetailPage() {
             ? () => setShowScrapeMatch(true)
             : undefined
         }
+        onDownloadRom={!isPlayable ? handleDownloadRom : undefined}
       />
 
       <ScrapeMatchModal
@@ -228,29 +240,35 @@ export function GameDetailPage() {
         </Card>
       </div>
 
-      <GameAchievementLeaderboard gameId={game.id} />
+      {isPlayable && <GameAchievementLeaderboard gameId={game.id} />}
 
       <GameScreenshots
         screenshotUrls={game.screenshotUrls}
         gameTitle={game.title}
       />
 
-      <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
+      {isPlayable && (
+        <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
+      )}
 
-      <Card className="p-6">
-        <SaveStatesList saves={saves} gameId={game.id} />
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {isPlayable && (
         <Card className="p-6">
-          <SharedSavesList gameId={game.id} />
+          <SaveStatesList saves={saves} gameId={game.id} />
         </Card>
-        <Card className="p-6">
-          <GameChallenges gameId={game.id} saves={saves} />
-        </Card>
-      </div>
+      )}
 
-      <GameActiveRelays gameId={game.id} />
+      {isPlayable && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <SharedSavesList gameId={game.id} />
+          </Card>
+          <Card className="p-6">
+            <GameChallenges gameId={game.id} saves={saves} />
+          </Card>
+        </div>
+      )}
+
+      {isPlayable && <GameActiveRelays gameId={game.id} />}
     </div>
   );
 }

@@ -29,6 +29,7 @@ function makeGame(overrides: Partial<Game> = {}): Game {
     screenshotUrls: [],
     scrapeAttempts: 0,
     coverAspectRatio: 0.75,
+    playable: true,
     isFavorite: false,
     isInPlayLater: false,
     averageRating: 0,

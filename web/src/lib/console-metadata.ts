@@ -188,6 +188,51 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-red-600 to-blue-800",
     color: "#dc2626",
   },
+  ps3: {
+    icon: Gamepad2,
+    gradient: "from-gray-700 to-blue-950",
+    color: "#003087",
+  },
+  ps4: {
+    icon: Gamepad2,
+    gradient: "from-blue-800 to-blue-950",
+    color: "#003087",
+  },
+  ps5: {
+    icon: Gamepad2,
+    gradient: "from-white to-blue-900",
+    color: "#003087",
+  },
+  x360: {
+    icon: Gamepad2,
+    gradient: "from-green-600 to-green-900",
+    color: "#107c10",
+  },
+  xone: {
+    icon: Gamepad2,
+    gradient: "from-green-700 to-green-950",
+    color: "#107c10",
+  },
+  xsx: {
+    icon: Gamepad2,
+    gradient: "from-green-800 to-black",
+    color: "#107c10",
+  },
+  wii: {
+    icon: Gamepad2,
+    gradient: "from-gray-300 to-gray-600",
+    color: "#c0c0c0",
+  },
+  wiiu: {
+    icon: Gamepad2,
+    gradient: "from-sky-500 to-sky-800",
+    color: "#009ac7",
+  },
+  nsw: {
+    icon: Gamepad2,
+    gradient: "from-red-500 to-red-800",
+    color: "#e60012",
+  },
 };
 
 // Map backend abbreviations to our internal keys

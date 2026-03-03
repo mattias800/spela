@@ -194,6 +194,11 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	// Get user's RA credentials — return empty achievements if not linked
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
@@ -309,6 +314,11 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	var game db.Game
 	if err := h.DB.First(&game, "id = ?", gameID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -550,6 +560,11 @@ func (h *RAHandler) GetAchievementTimeline(c *gin.Context) {
 		return
 	}
 
+	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		return
+	}
+
 	// Find the achievement cache for this game
 	var cache db.GameAchievementCache
 	if err := h.DB.Where("game_id = ?", game.ID).First(&cache).Error; err != nil {
@@ -640,6 +655,11 @@ func (h *RAHandler) GetAchievementLeaderboard(c *gin.Context) {
 	var game db.Game
 	if err := h.DB.First(&game, "id = ?", gameID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
 		return
 	}
 

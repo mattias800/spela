@@ -15,6 +15,7 @@ function makeGame(overrides: Partial<Game> & { consoleName: string }): Game {
     screenshotUrls: [],
     scrapeAttempts: 0,
     coverAspectRatio: 1,
+    playable: true,
     isFavorite: false,
     isInPlayLater: false,
     averageRating: 0,
