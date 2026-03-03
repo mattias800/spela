@@ -114,7 +114,7 @@ class NavigationViewModel(
                     current.copy(
                         currentScreen = sections[prevIndex],
                         backStack = emptyList(),
-                        isGoingBack = false,
+                        isGoingBack = true,
                     )
                 }
             }

@@ -272,6 +272,26 @@ class NavigationViewModelTest {
     }
 
     @Test
+    fun nextSectionSetsIsGoingBackFalse() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.NextSection)
+        assertFalse(vm.state.value.isGoingBack)
+    }
+
+    @Test
+    fun previousSectionSetsIsGoingBackTrue() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.PreviousSection)
+        assertTrue(vm.state.value.isGoingBack)
+    }
+
+    @Test
     fun nextSectionFromSubScreenMapsToCorrectTab() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
