@@ -158,7 +158,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0], EncryptionKey: encryptionKey}
-	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB}
+	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB, Hub: cfg.Hub}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
 	saveHandler := &SaveHandler{DB: cfg.DB, Storage: cfg.Storage}
@@ -430,6 +430,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.DELETE("/users/:id/rate-limit", adminHandler.ResetUserRateLimit)
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 			admin.POST("/bios", biosHandler.UploadBiosFile)
+			admin.POST("/bios/download", biosHandler.TriggerDownload)
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
 

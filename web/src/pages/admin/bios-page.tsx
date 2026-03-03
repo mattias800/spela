@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, Cpu } from "lucide-react";
+import { Upload, Cpu, Download } from "lucide-react";
 import {
   Button,
   Skeleton,
@@ -11,6 +11,7 @@ import {
   useBiosStatus,
   useUploadBiosFile,
   useDeleteBiosFile,
+  useDownloadBios,
 } from "@/hooks/use-bios";
 import { BiosConsoleCard } from "@/features/bios/components/bios-console-card";
 import {
@@ -35,6 +36,7 @@ export function AdminBiosPage() {
   const { data: biosData, isLoading } = useBiosStatus();
   const uploadBios = useUploadBiosFile();
   const deleteBios = useDeleteBiosFile();
+  const downloadBios = useDownloadBios();
   const { toast } = useToast();
 
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
@@ -131,6 +133,29 @@ export function AdminBiosPage() {
         <h1 className="text-3xl font-bold text-surface-100">BIOS Files</h1>
         <p className="mt-1 text-surface-400">
           Manage firmware and BIOS files required by emulation cores.
+        </p>
+      </div>
+
+      {/* Download missing BIOS */}
+      <div className="flex items-center gap-4">
+        <Button
+          onClick={() =>
+            downloadBios.mutate(undefined, {
+              onSuccess: () => toast("success", "BIOS download complete"),
+              onError: (err) =>
+                toast(
+                  "error",
+                  err instanceof Error ? err.message : "Download failed",
+                ),
+            })
+          }
+          loading={downloadBios.isPending}
+          icon={<Download className="h-4 w-4" />}
+        >
+          Download Missing BIOS
+        </Button>
+        <p className="text-xs text-surface-500">
+          PS2 BIOS must be uploaded manually
         </p>
       </div>
 

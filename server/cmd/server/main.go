@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/api"
+	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -136,6 +137,9 @@ func main() {
 
 	// Start periodic expired refresh token cleanup (every hour)
 	api.StartTokenCleanup(database, 1*time.Hour)
+
+	// Auto-download missing BIOS files at startup (non-blocking)
+	bios.StartAutoDownload(store.BiosDir, database)
 
 	// Derive WebSocket origins: prefer explicit WS origins, fall back to CORS origins.
 	// This ensures WebSocket origin checking is not more permissive than CORS by default.

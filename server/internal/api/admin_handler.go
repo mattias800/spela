@@ -228,6 +228,7 @@ var allowedSettingKeys = map[string]bool{
 	"registration_enabled": true,
 	"igdb_client_id":       true,
 	"igdb_client_secret":   true,
+	"bios_auto_download":   true,
 }
 
 // UpdateSettings updates server settings (admin only).

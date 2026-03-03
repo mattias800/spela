@@ -28,6 +28,7 @@ export function AdminSettingsPage() {
   const [newDir, setNewDir] = useState("");
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
+  const [biosAutoDownload, setBiosAutoDownload] = useState(true);
   const [igdbClientId, setIgdbClientId] = useState("");
   const [igdbClientSecret, setIgdbClientSecret] = useState("");
 
@@ -37,6 +38,7 @@ export function AdminSettingsPage() {
       setGameDirectories(dirs ? dirs.split(",") : []);
       setAllowRegistration(settings["registration_enabled"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
+      setBiosAutoDownload(settings["bios_auto_download"] !== "false");
       setIgdbClientId(settings["igdb_client_id"] ?? "");
       setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
     }
@@ -59,6 +61,7 @@ export function AdminSettingsPage() {
       gameDirectories: gameDirectories.join(","),
       registration_enabled: String(allowRegistration),
       scrapeOnScan: String(scrapeOnScan),
+      bios_auto_download: String(biosAutoDownload),
     };
     // Only send IGDB credentials when they're managed via the UI, not env vars
     if (!igdbEnvConfigured) {
@@ -167,6 +170,21 @@ export function AdminSettingsPage() {
               </p>
             </div>
             <Switch checked={scrapeOnScan} onChange={setScrapeOnScan} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-surface-200">
+                Auto-download BIOS on startup
+              </p>
+              <p className="text-xs text-surface-500">
+                Automatically download missing BIOS files when the server starts
+              </p>
+            </div>
+            <Switch
+              checked={biosAutoDownload}
+              onChange={setBiosAutoDownload}
+            />
           </div>
         </CardContent>
       </Card>
