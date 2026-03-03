@@ -570,10 +570,10 @@ class AndroidLibretroController(
 
         convertToPackedArgb(videoFrameBuffer, pixelCount, format, pixelBuffer)
 
-        // Reallocate double buffers if dimensions changed
+        // Reallocate double buffers if dimensions changed.
+        // Don't recycle old bitmaps — Compose may still be drawing the previous
+        // front bitmap via _frameBitmap. Let GC collect them instead.
         if (width != lastFrameWidth || height != lastFrameHeight) {
-            frontBitmap?.recycle()
-            backBitmap?.recycle()
             frontBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             lastFrameWidth = width

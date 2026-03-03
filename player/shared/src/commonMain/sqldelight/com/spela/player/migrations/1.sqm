@@ -1,0 +1,5 @@
+-- Migration from schema version 1 to 2: add DeviceSettingEntity table
+CREATE TABLE DeviceSettingEntity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);

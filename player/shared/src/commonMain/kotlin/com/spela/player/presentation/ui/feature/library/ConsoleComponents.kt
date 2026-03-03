@@ -196,63 +196,65 @@ internal fun ConsoleCard(
                 ),
         )
 
-        // Content: logo top-left, stats bottom-left
+        // Centered logo with dual constraints (width + height)
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth(0.65f)
+                .heightIn(max = 64.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            var logoFailed by remember { mutableStateOf(false) }
+            if (console.logoUrl.isNotEmpty() && !logoFailed) {
+                AsyncImage(
+                    model = console.logoUrl,
+                    contentDescription = console.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 64.dp),
+                    contentScale = ContentScale.Fit,
+                    onError = { logoFailed = true },
+                )
+            } else {
+                Text(
+                    text = console.name,
+                    style = SpTypography.HeadlineMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HeroTextPrimary,
+                )
+            }
+        }
+
+        // BIOS warning icon at top-right corner
+        if (hasMissingBios) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = "BIOS missing for ${console.name}",
+                tint = SpColor.Warning,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(SpSpacing.Small)
+                    .size(16.dp),
+            )
+        }
+
+        // Bottom-left: game count + manufacturer · year
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.BottomStart)
                 .padding(SpSpacing.Default),
-            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Top: console logo (or name fallback) + optional BIOS warning
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-            ) {
-                var logoFailed by remember { mutableStateOf(false) }
-                if (console.logoUrl.isNotEmpty() && !logoFailed) {
-                    AsyncImage(
-                        model = console.logoUrl,
-                        contentDescription = console.name,
-                        modifier = Modifier
-                            .weight(1f, fill = false)
-                            .heightIn(max = 44.dp),
-                        contentScale = ContentScale.Fit,
-                        alignment = Alignment.CenterStart,
-                        onError = { logoFailed = true },
-                    )
-                } else {
-                    Text(
-                        text = console.name,
-                        style = SpTypography.HeadlineMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = HeroTextPrimary,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                }
-                if (hasMissingBios) {
-                    Icon(
-                        imageVector = Icons.Filled.Warning,
-                        contentDescription = "BIOS missing for ${console.name}",
-                        tint = SpColor.Warning,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
-
-            // Bottom: game count + manufacturer · year
-            Column {
+            Text(
+                text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                style = SpTypography.BodySmall,
+                color = HeroTextSecondary,
+            )
+            if (consoleInfo != null) {
                 Text(
-                    text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                    style = SpTypography.BodySmall,
-                    color = HeroTextSecondary,
+                    text = "${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}",
+                    style = SpTypography.LabelSmall,
+                    color = Color.White.copy(alpha = 0.50f),
                 )
-                if (consoleInfo != null) {
-                    Text(
-                        text = "${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}",
-                        style = SpTypography.LabelSmall,
-                        color = Color.White.copy(alpha = 0.50f),
-                    )
-                }
             }
         }
     }
@@ -269,18 +271,21 @@ internal fun ConsoleCardSkeleton(
             .clip(shape)
             .background(SpColor.SurfaceVariant),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(SpSpacing.Default),
-            verticalArrangement = Arrangement.SpaceBetween,
+        // Centered logo placeholder
+        Box(
+            modifier = Modifier.align(Alignment.Center),
         ) {
             SpShimmer(width = 120.dp, height = 28.dp)
-            Column {
-                SpShimmer(width = 64.dp, height = 12.dp)
-                Spacer(Modifier.height(SpSpacing.XSmall))
-                SpShimmer(width = 96.dp, height = 10.dp)
-            }
+        }
+        // Bottom-left stats placeholder
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(SpSpacing.Default),
+        ) {
+            SpShimmer(width = 64.dp, height = 12.dp)
+            Spacer(Modifier.height(SpSpacing.XSmall))
+            SpShimmer(width = 96.dp, height = 10.dp)
         }
     }
 }

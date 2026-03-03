@@ -31,24 +31,6 @@ import org.koin.dsl.module
 actual fun platformModule(): Module = module {
     single {
         val dbPath = "spela.db"
-        val dbFile = java.io.File(dbPath)
-
-        // Validate existing database schema before opening
-        if (dbFile.exists()) {
-            try {
-                val checkDriver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
-                val errorMessage = validateSchemaWithDriver(checkDriver)
-                checkDriver.close()
-                if (errorMessage != null) {
-                    println("Spela: $errorMessage")
-                    DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
-                }
-            } catch (e: Exception) {
-                println("Spela: Failed to validate database: ${e.message}")
-                DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
-            }
-        }
-
         val driver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
 
         val currentVersion: Long = driver.executeQuery(
@@ -78,11 +60,26 @@ actual fun platformModule(): Module = module {
 
             if (tableCount == 0L) {
                 SpelaDatabase.Schema.create(driver)
+            } else {
+                // Existing DB from before versioning — run migrations from v1
+                SpelaDatabase.Schema.migrate(driver, 1, schemaVersion)
             }
             driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
         } else if (currentVersion < schemaVersion) {
             SpelaDatabase.Schema.migrate(driver, currentVersion, schemaVersion)
             driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
+        }
+
+        // Validate schema after create/migrate to catch corruption
+        try {
+            val errorMessage = validateSchemaWithDriver(driver)
+            if (errorMessage != null) {
+                println("Spela: $errorMessage")
+                DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
+            }
+        } catch (e: Exception) {
+            println("Spela: Failed to validate database: ${e.message}")
+            DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
         }
 
         driver

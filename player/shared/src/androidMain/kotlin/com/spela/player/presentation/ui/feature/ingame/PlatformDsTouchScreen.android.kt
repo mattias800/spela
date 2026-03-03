@@ -97,7 +97,7 @@ actual fun PlatformDsTouchScreen(
                 },
         ) {
             val bmp = bitmap ?: return@Canvas
-            if (bmp.height <= splitY) return@Canvas
+            if (bmp.isRecycled || bmp.height <= splitY) return@Canvas
 
             val srcWidth = bmp.width
             val srcHeight = bmp.height - splitY

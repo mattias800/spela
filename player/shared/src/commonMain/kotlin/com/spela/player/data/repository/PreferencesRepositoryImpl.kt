@@ -178,6 +178,15 @@ class PreferencesRepositoryImpl(
         }
     }
 
+    override fun getOrientationLock(): String {
+        return database.spelaDatabaseQueries.getDeviceSetting("orientation_lock")
+            .executeAsOneOrNull() ?: "auto"
+    }
+
+    override fun setOrientationLock(mode: String) {
+        database.spelaDatabaseQueries.insertDeviceSetting("orientation_lock", mode)
+    }
+
     override suspend fun pushKeyMappingsToServer() {
         runCatching {
             val allMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()
