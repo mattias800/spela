@@ -290,8 +290,6 @@ class MainActivity : ComponentActivity() {
         }
 
         // UI mode: convert analog stick to D-pad events for focus navigation
-        gamepadPortManager.setInputMode(InputMode.GAMEPAD)
-
         val x = event.getAxisValue(MotionEvent.AXIS_X)
         val y = event.getAxisValue(MotionEvent.AXIS_Y)
         val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
@@ -302,6 +300,15 @@ class MainActivity : ComponentActivity() {
         val nowRight = x > threshold || hatX > threshold
         val nowUp = y < -threshold || hatY < -threshold
         val nowDown = y > threshold || hatY > threshold
+
+        // Right stick scrolling: convert right analog stick Y-axis to scroll events
+        val rY = event.getAxisValue(MotionEvent.AXIS_RZ)
+
+        // Only switch to gamepad mode when there's actual meaningful input,
+        // not on zero-value motion events from stick drift
+        if (nowLeft || nowRight || nowUp || nowDown || Math.abs(rY) > 0.15f) {
+            gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        }
 
         if (nowLeft && !analogDpadLeft) dispatchDpadEvent(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.ACTION_DOWN)
         if (!nowLeft && analogDpadLeft) dispatchDpadEvent(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.ACTION_UP)
@@ -317,8 +324,6 @@ class MainActivity : ComponentActivity() {
         analogDpadUp = nowUp
         analogDpadDown = nowDown
 
-        // Right stick scrolling: convert right analog stick Y-axis to scroll events
-        val rY = event.getAxisValue(MotionEvent.AXIS_RZ)
         if (Math.abs(rY) > 0.15f) {
             val props = MotionEvent.PointerProperties().apply {
                 id = 0
