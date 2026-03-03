@@ -1,9 +1,11 @@
 package com.spela.player.data.repository
 
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
+import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.FileStorage
 import kotlinx.coroutines.flow.Flow
@@ -14,9 +16,32 @@ import kotlinx.coroutines.flow.update
 class DownloadRepositoryImpl(
     private val apiClient: SpelaApiClient,
     private val fileStorage: FileStorage,
+    private val database: SpelaDatabase,
 ) : DownloadRepository {
 
     private val downloads = MutableStateFlow<Map<String, DownloadProgress>>(emptyMap())
+    private val _downloadedGames = MutableStateFlow<List<DownloadedGame>>(emptyList())
+
+    init {
+        refreshDownloadedGames()
+    }
+
+    private fun refreshDownloadedGames() {
+        val allDownloads = database.spelaDatabaseQueries.getAllDownloads().executeAsList()
+        _downloadedGames.value = allDownloads.map { dl ->
+            val cachedGame = try {
+                database.spelaDatabaseQueries.getCachedGame(dl.game_id).executeAsOneOrNull()
+            } catch (_: Exception) { null }
+            DownloadedGame(
+                gameId = dl.game_id,
+                title = cachedGame?.title ?: "Game ${dl.game_id}",
+                consoleName = cachedGame?.console_name ?: "",
+                coverUrl = cachedGame?.cover_url,
+                fileSizeBytes = dl.file_size,
+                downloadedAt = dl.downloaded_at,
+            )
+        }
+    }
 
     override fun observeDownloads(): Flow<List<DownloadProgress>> =
         downloads.map { it.values.toList() }
@@ -25,6 +50,8 @@ class DownloadRepositoryImpl(
         downloads.map { map ->
             map[gameId] ?: DownloadProgress(gameId = gameId, state = DownloadState.IDLE)
         }
+
+    override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = _downloadedGames
 
     override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> = runCatching {
         downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
@@ -47,6 +74,11 @@ class DownloadRepositoryImpl(
         } else {
             downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         }
+    }.onSuccess { path ->
+        val fileSize = try { fileStorage.getDirectorySize(fileStorage.getGamesDir() + "/$gameId") } catch (_: Exception) { 0L }
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, now)
+        refreshDownloadedGames()
     }.onFailure {
         cleanupPartialDownload(gameId)
         downloads.update {
@@ -294,6 +326,8 @@ class DownloadRepositoryImpl(
             fileStorage.deleteFile(gameDir)
         }
         downloads.update { it - gameId }
+        database.spelaDatabaseQueries.deleteDownload(gameId)
+        refreshDownloadedGames()
     }
 
     override suspend fun getCacheSize(): Long {
@@ -303,5 +337,7 @@ class DownloadRepositoryImpl(
     override suspend fun clearCache() {
         fileStorage.deleteDirectory(fileStorage.getGamesDir())
         downloads.value = emptyMap()
+        database.spelaDatabaseQueries.deleteAllDownloads()
+        refreshDownloadedGames()
     }
 }

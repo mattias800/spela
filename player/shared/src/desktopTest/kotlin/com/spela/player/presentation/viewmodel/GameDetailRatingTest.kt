@@ -193,6 +193,7 @@ private class StubDownloadRepository : DownloadRepository {
     override fun observeDownloads(): Flow<List<DownloadProgress>> = MutableStateFlow(emptyList())
     override fun observeDownload(gameId: String): Flow<DownloadProgress> =
         MutableStateFlow(DownloadProgress(gameId, state = DownloadState.IDLE))
+    override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = MutableStateFlow(emptyList())
     override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> = Result.success("/fake")
     override suspend fun cancelDownload(gameId: String) {}
     override suspend fun getLocalGamePath(gameId: String): String? = null

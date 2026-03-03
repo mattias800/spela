@@ -167,6 +167,15 @@ data class UserPreferences(
     val consoleKeyMappings: Map<String, ConsoleKeyMappingPref> = emptyMap(),
 )
 
+data class DownloadedGame(
+    val gameId: String,
+    val title: String,
+    val consoleName: String,
+    val coverUrl: String?,
+    val fileSizeBytes: Long,
+    val downloadedAt: Long,
+)
+
 enum class DownloadState {
     IDLE,
     QUEUED,

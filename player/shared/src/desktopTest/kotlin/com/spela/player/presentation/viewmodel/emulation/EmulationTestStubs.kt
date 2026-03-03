@@ -18,6 +18,7 @@ import com.spela.player.domain.model.Challenge
 import com.spela.player.domain.model.ChallengeAttempt
 import com.spela.player.domain.model.ChallengeLeaderboardEntry
 import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.KeyMappingPreset
@@ -188,6 +189,7 @@ class StubGameRepository(private val consoleId: String = "nes") : GameRepository
 class StubDownloadRepository : DownloadRepository {
     override fun observeDownloads(): Flow<List<DownloadProgress>> = emptyFlow()
     override fun observeDownload(gameId: String): Flow<DownloadProgress> = emptyFlow()
+    override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = emptyFlow()
     override suspend fun downloadGame(gameId: String, gameTitle: String) = Result.success("/path/to/game.rom")
     override suspend fun cancelDownload(gameId: String) {}
     override suspend fun getLocalGamePath(gameId: String): String = "/path/to/game.rom"

@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
+import com.spela.player.domain.model.DownloadedGame
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -34,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpProgressBar
@@ -50,6 +54,7 @@ import com.spela.player.presentation.viewmodel.DownloadsViewModel
 fun DownloadsScreen(
     viewModel: DownloadsViewModel,
     onBack: () -> Unit = {},
+    onGameClick: (String) -> Unit = {},
 ) {
     PlatformBackHandler { onBack() }
 
@@ -130,8 +135,28 @@ fun DownloadsScreen(
                 }
             }
 
+            // Downloaded games
+            if (state.downloadedGames.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Downloaded Games",
+                        style = SpTypography.HeadlineSmall,
+                        color = SpColor.OnBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                }
+
+                items(state.downloadedGames, key = { it.gameId }) { game ->
+                    DownloadedGameItem(
+                        game = game,
+                        onClick = { onGameClick(game.gameId) },
+                        onDelete = { viewModel.onIntent(DownloadsIntent.DeleteLocalGame(game.gameId)) },
+                    )
+                }
+            }
+
             // Empty state
-            if (state.activeDownloads.isEmpty() && !state.isLoading) {
+            if (state.activeDownloads.isEmpty() && state.downloadedGames.isEmpty() && !state.isLoading) {
                 item {
                     SpEmptyStates.NoActiveDownloads(modifier = Modifier.fillMaxWidth())
                 }
@@ -216,6 +241,64 @@ private fun DownloadItem(
                     totalBytes = download.totalBytes,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun DownloadedGameItem(
+    game: DownloadedGame,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    SpCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .semantics {
+                contentDescription = "${game.title}, ${game.consoleName}, ${formatBytes(game.fileSizeBytes)}"
+                role = Role.Button
+            },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpCoverArt(
+                imageUrl = game.coverUrl,
+                contentDescription = game.title,
+                modifier = Modifier.size(48.dp),
+                cornerRadius = SpSpacing.RadiusSmall,
+            )
+
+            Spacer(Modifier.width(SpSpacing.Medium))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = game.title,
+                    style = SpTypography.TitleMedium,
+                    color = SpColor.OnCard,
+                )
+                Text(
+                    text = buildString {
+                        if (game.consoleName.isNotEmpty()) append(game.consoleName)
+                        if (game.fileSizeBytes > 0) {
+                            if (isNotEmpty()) append(" - ")
+                            append(formatBytes(game.fileSizeBytes))
+                        }
+                    },
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+            }
+
+            SpButton(
+                text = "Delete",
+                onClick = onDelete,
+                style = SpButtonStyle.Ghost,
+            )
         }
     }
 }

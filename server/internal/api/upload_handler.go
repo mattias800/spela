@@ -253,23 +253,37 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 
 		status := "pending_scrape"
 		var possibleConsolesJSON string
+		var crc32Str string
+		var verificationStatus string
+		var canonicalName string
 		if isAmbiguous {
-			status = "pending_console"
-			possibles := consolesForExtension(h.DB, ext)
-			if data, err := json.Marshal(possibles); err == nil {
-				possibleConsolesJSON = string(data)
+			// Try auto-identification via CRC32 + DAT lookup before falling back to pending_console
+			if identified, identCRC, identVerification, identCanonical := h.tryIdentifyByDAT(destPath, written); identified != nil {
+				consoleID = identified
+				crc32Str = identCRC
+				verificationStatus = identVerification
+				canonicalName = identCanonical
+			} else {
+				status = "pending_console"
+				possibles := consolesForExtension(h.DB, ext)
+				if data, err := json.Marshal(possibles); err == nil {
+					possibleConsolesJSON = string(data)
+				}
 			}
 		}
 
 		// Create staged upload record
 		staged := db.StagedUpload{
-			FileName:         safeName,
-			OriginalFileName: header.Filename,
-			FilePath:         destPath,
-			FileSize:         written,
-			ConsoleID:        consoleID,
-			PossibleConsoles: possibleConsolesJSON,
-			Status:           status,
+			FileName:           safeName,
+			OriginalFileName:   header.Filename,
+			FilePath:           destPath,
+			FileSize:           written,
+			ConsoleID:          consoleID,
+			PossibleConsoles:   possibleConsolesJSON,
+			Status:             status,
+			CRC32:              crc32Str,
+			VerificationStatus: verificationStatus,
+			CanonicalName:      canonicalName,
 		}
 		if err := h.DB.Create(&staged).Error; err != nil {
 			os.Remove(destPath)
@@ -373,6 +387,60 @@ func (h *UploadHandler) ScrapeAllUploads(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
+// tryIdentifyByDAT attempts to identify the console for a ROM file by computing its CRC32
+// and searching all applicable No-Intro DAT indices. Returns the console ID if a match is found,
+// along with CRC32, verification status, and canonical name. Returns nil if no match.
+func (h *UploadHandler) tryIdentifyByDAT(filePath string, fileSize int64) (consoleID *uint, crc string, verificationStatus string, canonicalName string) {
+	if h.Scraper == nil || h.Scraper.DATCache == nil {
+		return nil, "", "", ""
+	}
+
+	crc, err := scraper.ComputeFileCRC32(filePath)
+	if err != nil {
+		slog.Warn("failed to compute CRC32 for auto-identification", "file", filePath, "error", err)
+		return nil, "", "", ""
+	}
+
+	for abbrev := range scraper.AbbreviationToLibRetro {
+		if scraper.DiscBasedSystems[abbrev] {
+			continue
+		}
+		maxSize, ok := scraper.MaxROMSize[abbrev]
+		if !ok {
+			continue
+		}
+		if fileSize > maxSize {
+			continue
+		}
+
+		idx, err := h.Scraper.DATCache.GetIndex(abbrev)
+		if err != nil || idx == nil {
+			continue
+		}
+
+		entry, ok := idx.LookupCRC(crc)
+		if !ok {
+			continue
+		}
+
+		// Verify size matches for safety
+		if entry.Size != 0 && entry.Size != fileSize {
+			continue
+		}
+
+		// Found a match — resolve console ID from DB
+		var console db.Console
+		if err := h.DB.Where("abbreviation = ?", abbrev).First(&console).Error; err != nil {
+			continue
+		}
+
+		slog.Info("auto-identified ROM via CRC32+DAT", "file", filePath, "crc", crc, "console", abbrev, "canonical", entry.ROMName)
+		return &console.ID, crc, "verified", entry.ROMName
+	}
+
+	return nil, "", "", ""
+}
+
 // scrapeStaged performs metadata lookup and duplicate detection for a staged upload.
 func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 	var console db.Console
@@ -387,9 +455,15 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 	// Set title from original filename (not the deduplicated on-disk name)
 	staged.Title = scanner.GameTitle(staged.OriginalFileName)
 
-	// CRC32 verification for cartridge-based systems
+	// CRC32 verification for cartridge-based systems.
+	// Skip recomputation if CRC was already set during auto-identification.
 	if scraper.DiscBasedSystems[console.Abbreviation] {
 		staged.VerificationStatus = "not_applicable"
+	} else if staged.CRC32 != "" && staged.VerificationStatus == "verified" {
+		// Already identified via tryIdentifyByDAT — update title from canonical name
+		if staged.CanonicalName != "" {
+			staged.Title = scanner.GameTitle(staged.CanonicalName)
+		}
 	} else {
 		if crc, err := scraper.ComputeFileCRC32(staged.FilePath); err == nil {
 			staged.CRC32 = crc
