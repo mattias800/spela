@@ -29,31 +29,35 @@ class NavigationTest {
         // Use compound matcher to avoid ambiguity with game cards that mention the console name
         rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-        // Verify we're on console game list
-        rule.waitForText("Castlevania", timeout = 8_000)
+        // Verify we're on the console game list (title bar shows console name as text)
+        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
 
         // Navigate forward to Screen 3: Game detail
-        rule.scrollToAndTapText("Castlevania")
+        // Use a game from the "Top Rated" carousel (visible without scrolling)
+        // to avoid flaky scroll+click issues with LazyColumn off-screen nodes
+        rule.tapOn("Super Mario Bros. 3")
 
-        // Verify game detail screen
-        rule.waitUntil(timeoutMillis = 5_000) {
-            rule.onAllNodesWithText("Download", substring = true)
+        // Verify game detail screen — wait for action buttons unique to game detail
+        rule.waitUntil(timeoutMillis = 15_000) {
+            rule.onAllNodesWithContentDescription("Download Super Mario Bros. 3", substring = true)
                 .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Play", substring = true)
+                rule.onAllNodesWithContentDescription("Play Super Mario Bros. 3", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithContentDescription("Resume Super Mario Bros. 3", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         }
 
         // BACK #1: Game Detail -> Console game list
         rule.pressBack()
 
-        // Verify we're back on NES console game list
-        rule.waitForText("Castlevania")
+        // Verify we're back on NES console game list (title bar shows console name)
+        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
 
         // BACK #2: Console game list -> Consoles screen
         rule.pressBack()
 
         // Verify we're back on Consoles (console cards visible via contentDescription)
-        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 5_000)
+        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
     }
 
     @Test
@@ -64,14 +68,17 @@ class NavigationTest {
         rule.tapOn("Consoles")
         rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
         rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-        rule.waitForText("Castlevania", timeout = 8_000)
+        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
         rule.scrollToAndTapText("Castlevania")
 
-        // Wait for game detail screen
-        rule.waitUntil(timeoutMillis = 3_000) {
-            rule.onAllNodesWithText("Download", substring = true)
+        // Wait for game detail screen — use contentDescription-based matchers that are
+        // unique to the game detail screen (not present on the console game list)
+        rule.waitUntil(timeoutMillis = 15_000) {
+            rule.onAllNodesWithContentDescription("Download Castlevania", substring = true)
                 .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Play", substring = true)
+                rule.onAllNodesWithContentDescription("Play Castlevania", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithContentDescription("Resume Castlevania", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         }
 

@@ -1,6 +1,5 @@
 package com.spela.player.desktop.e2e
 
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -13,8 +12,13 @@ import kotlin.test.Test
  * Verifies component focusability and directional focus navigation
  * for gaming handheld support.
  *
- * Note: Compose UI Test key injection requires a focused node as dispatch target,
- * so the GamepadHandler's Enter-fallback (for "nothing focused" state) cannot be
+ * Note: D-pad input triggers gamepad mode which hides the bottom tab bar
+ * and shows the section indicator. Tab bar interaction via D-pad is therefore
+ * not possible — section cycling (L1/R1) is tested in SectionIndicatorTest
+ * and SectionNavigationTest.
+ *
+ * Compose UI Test key injection requires a focused node as dispatch target,
+ * so the GamepadHandler's Next-fallback (for "nothing focused" state) cannot be
  * tested here. That path is covered by manual device testing on the Ayn Thor.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
@@ -38,65 +42,6 @@ class GamepadNavigationTest {
         onNodeWithContentDescription("Home").performClick()
         advanceQuick(harness)
         onNodeWithContentDescription("Home").assertIsFocused()
-    }
-
-    @Test
-    fun dpadRightMovesFocusBetweenBottomNavTabs() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        advance(harness)
-
-        // Establish focus on Home tab
-        onNodeWithContentDescription("Home").performClick()
-        advanceQuick(harness)
-        onNodeWithContentDescription("Home").assertIsFocused()
-
-        // D-pad Right → focus should move to Consoles tab
-        onNodeWithContentDescription("Home").performKeyInput {
-            pressKey(Key.DirectionRight)
-        }
-        advanceQuick(harness)
-        onNodeWithContentDescription("Consoles").assertIsFocused()
-    }
-
-    @Test
-    fun dpadLeftMovesFocusBackBetweenBottomNavTabs() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        advance(harness)
-
-        // Focus on Consoles tab
-        onNodeWithContentDescription("Consoles").performClick()
-        advanceQuick(harness)
-        onNodeWithContentDescription("Consoles").assertIsFocused()
-
-        // D-pad Left → focus should move back to Home tab
-        onNodeWithContentDescription("Consoles").performKeyInput {
-            pressKey(Key.DirectionLeft)
-        }
-        advanceQuick(harness)
-        onNodeWithContentDescription("Home").assertIsFocused()
-    }
-
-    @Test
-    fun dpadDownFromBottomNavMovesFocusUp() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        advance(harness)
-
-        // Focus on Home tab, then press Up to move focus into the content area
-        onNodeWithContentDescription("Home").performClick()
-        advanceQuick(harness)
-        onNodeWithContentDescription("Home").assertIsFocused()
-
-        // Press Up — should move focus away from bottom nav into screen content
-        onNodeWithContentDescription("Home").performKeyInput {
-            pressKey(Key.DirectionUp)
-        }
-        advanceQuick(harness)
-
-        // Home tab should no longer be focused (focus moved to content)
-        onNodeWithContentDescription("Home").assertIsNotFocused()
     }
 
     @Test

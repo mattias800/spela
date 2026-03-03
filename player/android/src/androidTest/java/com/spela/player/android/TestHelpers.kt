@@ -157,6 +157,22 @@ fun ComposeRule.assertNotVisible(label: String) {
     assert(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
+/** Check if we're on the Home screen (works in both populated and empty states). */
+private fun ComposeRule.isOnHomeScreen(): Boolean {
+    return try {
+        onAllNodesWithText("Spela", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Your library is empty", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Top Rated", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Continue Playing", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: IllegalStateException) {
+        false
+    }
+}
+
 /** Wait until label is visible in either text or content description. */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
     waitUntil(timeoutMillis = timeout) {
@@ -305,9 +321,7 @@ fun ComposeRule.restartApp() {
 private fun ComposeRule.navigateBackToHome() {
     for (i in 1..10) {
         try {
-            if (onAllNodesWithText("Spela", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            ) return
+            if (isOnHomeScreen()) return
 
             // Don't press back on auth screens — it would exit the app
             if (onAllNodesWithText("Connect to your game server", substring = true)
@@ -381,8 +395,7 @@ fun ComposeRule.ensureLoggedIn(
     // Wait for any recognizable screen to load (extra long for fresh install / emulator).
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
-            onAllNodesWithText("Spela", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
+            isOnHomeScreen() ||
                 onAllNodesWithText("Connect to your game server", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Welcome Back", substring = true)
@@ -424,18 +437,28 @@ fun ComposeRule.ensureLoggedIn(
         return
     }
 
-    // Check if already on Home screen (look for the "Spela" title in the top bar)
-    val onHome = try {
-        onAllNodesWithText("Spela", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-    if (onHome) return
+    // Check if already on Home screen. Home can show "Spela" (with games) or
+    // "Your library is empty" (fresh user with no play history).
+    if (isOnHomeScreen()) return
+
+    // Wait briefly for Home screen — the bottom nav renders before the page title,
+    // so checking once may miss it. This prevents navigateBackToHome from pressing
+    // back and accidentally exiting the app.
+    val arrivedHome = try {
+        waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
+            try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+        }
+        true
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
+    if (arrivedHome) return
 
     // On some other logged-in screen (Settings, game detail, in-game, etc.)
     // Navigate back to Home first, then verify.
     // navigateBackToHome may need time if exiting a game (async core shutdown).
     navigateBackToHome()
-    waitForText("Spela", 30_000)
+    waitUntil(timeoutMillis = 30_000) {
+        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+    }
 }
 
 /**
@@ -538,7 +561,9 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     onNodeWithText("Sign In").performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
-    waitForText("Spela", TIMEOUT_EXTRA_LONG)
+    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+    }
 }
 
 // ── Navigation helpers ──
@@ -553,10 +578,10 @@ fun ComposeRule.navigateToCastlevania() {
     // it from game cards that also mention the console name.
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for the console game list to load
-    waitForText("Castlevania", TIMEOUT_LONG)
+    // Wait for the console game list to load (title bar shows console name)
+    waitForText("Nintendo Entertainment System", TIMEOUT_LONG)
 
-    // Tap Castlevania in the game list
+    // Scroll to and tap Castlevania in the game list
     scrollToAndTapText("Castlevania")
 
     // Wait for game detail

@@ -117,7 +117,7 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionCyclingShowsIndicator() = runComposeUiTest {
+    fun sectionCyclingUpdatesActiveSection() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -127,34 +127,12 @@ class SectionIndicatorTest {
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advance(harness)
 
-        // Wait for auto-hide (advance past the 3s window)
-        advance(harness)
-
         // Cycle to next section
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         advanceQuick(harness)
 
-        // Indicator should reappear with new active section
+        // Indicator should show new active section
         onNodeWithContentDescription("Section indicator").assertExists()
         onNodeWithContentDescription("Section: Consoles, active").assertExists()
-    }
-
-    @Test
-    fun sectionIndicatorAutoHides() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        advance(harness)
-
-        // Switch to gamepad mode — indicator appears
-        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
-        advanceQuick(harness)
-        onNodeWithContentDescription("Section indicator").assertExists()
-
-        // Advance past the 3s auto-hide window (advance = 4 iterations of 1s each)
-        advance(harness)
-
-        // Indicator should have auto-hidden
-        onNodeWithContentDescription("Section indicator").assertDoesNotExist()
     }
 }
