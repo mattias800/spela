@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -614,14 +615,15 @@ fun ComposeRule.tapNodeMatchingBoth(text1: String, text2: String) {
 }
 
 /**
- * Scroll through a LazyColumn until a node matching both text1 AND text2 (via hasText
- * substring matching, which covers both text content and content descriptions) is visible,
- * then tap it. This is like tapNodeMatchingBoth but with scroll-to-find support for
- * off-screen LazyColumn items.
+ * Scroll through a LazyColumn until a node matching both text1 AND text2 is visible,
+ * then tap it. Matches on both visible text and contentDescription (some elements
+ * like console cards use logos instead of text, with the name in contentDescription).
  */
 fun ComposeRule.scrollToAndTapMatchingBoth(text1: String, text2: String) {
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val matcher = hasText(text1, substring = true) and hasText(text2, substring = true)
+    val textMatcher = hasText(text1, substring = true) and hasText(text2, substring = true)
+    val descMatcher = hasContentDescription(text1, substring = true) and hasContentDescription(text2, substring = true)
+    val matcher = textMatcher or descMatcher
     val maxSwipes = 10
     var found = false
 

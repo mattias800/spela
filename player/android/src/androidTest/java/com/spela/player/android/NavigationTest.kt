@@ -21,12 +21,15 @@ class NavigationTest {
     fun backStackNavigation() {
         rule.startLoggedIn()
 
+        // Navigate to Consoles tab
+        rule.tapOn("Consoles")
+        rule.waitForText("Consoles", timeout = 8_000)
+
         // Navigate forward to Screen 2: NES console game list
         // Use compound matcher to avoid ambiguity with game cards that mention the console name
         rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
         // Verify we're on console game list
-        rule.waitForTextNotVisible("Spela", timeout = 8_000)
         rule.waitForText("Castlevania", timeout = 8_000)
 
         // Navigate forward to Screen 3: Game detail
@@ -46,18 +49,20 @@ class NavigationTest {
         // Verify we're back on NES console game list
         rule.waitForText("Castlevania")
 
-        // BACK #2: Console game list -> Home screen
+        // BACK #2: Console game list -> Consoles screen
         rule.pressBack()
 
-        // Verify we're back on Home
-        rule.waitForText("Nintendo Entertainment System", timeout = 5_000)
+        // Verify we're back on Consoles
+        rule.waitForText("Consoles", timeout = 5_000)
     }
 
     @Test
     fun autoScrapeMetadata() {
         rule.startLoggedIn()
 
-        // Navigate to NES > Castlevania
+        // Navigate to Consoles tab, then NES > Castlevania
+        rule.tapOn("Consoles")
+        rule.waitForText("Consoles", timeout = 8_000)
         rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
         rule.waitForText("Castlevania", timeout = 8_000)
         rule.scrollToAndTapText("Castlevania")
