@@ -163,6 +163,7 @@ export function GameDetailPage() {
       .map((f) => f.fileName) ?? [];
 
   function handleDownloadRom() {
+    if (!game) return;
     const token = api.getAccessToken();
     const tokenSuffix = token
       ? `?token=${encodeURIComponent(token)}`
