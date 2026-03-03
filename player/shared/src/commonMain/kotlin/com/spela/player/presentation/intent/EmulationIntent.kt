@@ -70,4 +70,12 @@ sealed interface EmulationIntent {
     // Rewind
     data object RewindStep : EmulationIntent
     data object ToggleRewind : EmulationIntent
+
+    // Pre-launch sync
+    data class PrepareLaunch(
+        val gameId: String,
+        val skipAutoLoad: Boolean = false,
+    ) : EmulationIntent
+    data object PlayWithLocalSave : EmulationIntent
+    data object CancelLaunch : EmulationIntent
 }

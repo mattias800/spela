@@ -18,20 +18,26 @@ server/*.jpeg
 # Scraped images (runtime data)
 server/images/
 
+# Runtime data directories (created by server at runtime)
+server/games/
+server/saves/
+
 # Dependencies (npm)
 web/node_modules/
 
 # Build outputs
 web/dist/
 web/build/
+web/dummy-non-existing-folder/
 
 # Environment
 .env
 .env.local
 .env.*.local
 
-# Gradle
+# Gradle / Kotlin build caches
 player/.gradle/
+player/.kotlin/
 player/build/
 player/*/build/
 player/*/.cxx/

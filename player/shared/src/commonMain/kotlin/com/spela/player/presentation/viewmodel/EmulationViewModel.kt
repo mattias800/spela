@@ -13,12 +13,16 @@ import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.presentation.state.GameSyncState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -28,6 +32,9 @@ import kotlinx.coroutines.withContext
 
 private const val REWIND_BUFFER_SIZE = 300 // ~60 seconds at 5fps capture rate
 private const val REWIND_CAPTURE_INTERVAL_MS = 200L // Capture every 200ms (~5 per second)
+
+/** Stores parameters for a pending game launch while pre-launch sync is in progress. */
+data class PendingLaunch(val gameId: String, val skipAutoLoad: Boolean)
 
 /**
  * Bridges between Compose UI and the platform-specific libretro core.
@@ -53,6 +60,14 @@ class EmulationViewModel(
     private val biosRepository: BiosRepository? = null,
 ) {
     val state: StateFlow<EmulationState> = _state.asStateFlow()
+
+    private val _syncState = MutableStateFlow<GameSyncState?>(null)
+    val syncState: StateFlow<GameSyncState?> = _syncState.asStateFlow()
+
+    private val _launchReady = MutableSharedFlow<PendingLaunch>(replay = 0, extraBufferCapacity = 1)
+    val launchReady: SharedFlow<PendingLaunch> = _launchReady.asSharedFlow()
+
+    private var pendingLaunch: PendingLaunch? = null
 
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
@@ -168,6 +183,11 @@ class EmulationViewModel(
             // Rewind
             EmulationIntent.RewindStep -> rewindStep()
             EmulationIntent.ToggleRewind -> toggleRewindEnabled()
+
+            // Pre-launch sync
+            is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad)
+            EmulationIntent.PlayWithLocalSave -> playWithLocalSave()
+            EmulationIntent.CancelLaunch -> cancelLaunch()
         }
     }
 
@@ -421,6 +441,47 @@ class EmulationViewModel(
         }
     }
 
+    private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean) {
+        saveManager.clearPrefetch()
+        pendingLaunch = PendingLaunch(gameId, skipAutoLoad)
+        scope.launch(dispatchers.io) {
+            _syncState.update { GameSyncState(gameId, "Syncing game save\u2026") }
+            val sramReady = saveManager.prefetchSram(gameId)
+            if (!sramReady) {
+                _syncState.update { GameSyncState(gameId, "Could not sync saves.", isTimedOut = true) }
+                return@launch
+            }
+            if (!skipAutoLoad) {
+                _syncState.update { GameSyncState(gameId, "Syncing game state\u2026") }
+                val saveStateReady = saveManager.prefetchSaveState(gameId)
+                if (!saveStateReady) {
+                    _syncState.update { GameSyncState(gameId, "Could not sync saves.", isTimedOut = true) }
+                    return@launch
+                }
+            }
+            _syncState.update { null }
+            val pending = pendingLaunch ?: return@launch
+            pendingLaunch = null
+            _launchReady.emit(pending)
+        }
+    }
+
+    private fun playWithLocalSave() {
+        val pending = pendingLaunch ?: return
+        pendingLaunch = null
+        saveManager.clearPrefetch()
+        _syncState.update { null }
+        scope.launch(dispatchers.io) {
+            _launchReady.emit(pending)
+        }
+    }
+
+    private fun cancelLaunch() {
+        pendingLaunch = null
+        saveManager.clearPrefetch()
+        _syncState.update { null }
+    }
+
     private fun pauseGame() {
         libretroController.pause()
         _state.update { it.copy(isPaused = true) }
@@ -463,6 +524,11 @@ class EmulationViewModel(
 
     private fun stopGame() {
         println("[Emulation] stopGame() called")
+        val stoppingGameId = _state.value.gameId
+        // Set sync state before navigating so GameDetail sees it immediately
+        if (stoppingGameId.isNotEmpty()) {
+            _syncState.update { GameSyncState(stoppingGameId, "Uploading save\u2026") }
+        }
         // Dismiss secondary display immediately on the main thread, before async save operations
         dismissSecondaryDisplay()
         sessionTimerJob?.cancel()
@@ -485,8 +551,12 @@ class EmulationViewModel(
                 saveManager.autoSaveOnStop(currentState.gameId)
             }
 
-            // Save SRAM before stopping (best effort)
+            // Save SRAM before stopping (best effort) — this is the upload the sync
+            // status refers to. Clear sync state once it completes.
             saveManager.saveSramOnStop(currentState.gameId)
+            _syncState.update { current ->
+                if (current?.gameId == stoppingGameId) null else current
+            }
 
             try {
                 achievementsController.deinit()
