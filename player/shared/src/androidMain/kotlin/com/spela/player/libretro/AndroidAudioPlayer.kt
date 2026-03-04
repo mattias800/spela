@@ -4,29 +4,25 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
-import kotlin.math.floor
 
 /**
- * Android audio output modeled on RetroArch's audio pipeline:
+ * Android audio output with native SINC resampling:
  *
- *   core samples (32029 Hz) → linear interpolation resampler → AudioTrack (48000 Hz)
+ *   core samples (32029 Hz) → native SINC resampler (NEON on ARM64)
+ *   → AudioTrack (48000 Hz) with dynamic rate control
  *
- * The resampler converts from the core's native sample rate to a fixed 48000 Hz
- * output rate (matching most Android HAL native rates), with a dynamic ratio
- * adjustment of ±0.5% based on the AudioTrack buffer fill level.
+ * The native SINC resampler (Kaiser-windowed, 8 taps, 256 subphases) provides
+ * high-quality sample rate conversion matching RetroArch's audio quality.
  *
- * This dynamic rate control (identical to RetroArch's `audio_driver_flush`)
- * keeps the buffer hovering at ~50% full:
- * - Buffer emptier than target → ratio increases → more output samples → fills buffer
- * - Buffer fuller than target → ratio decreases → fewer output samples → drains buffer
- *
- * The ±0.5% pitch change is inaudible (<9 cents). Combined with blocking writes
- * as a safety backpressure mechanism, this eliminates both underruns (crackle)
- * and overruns (blocking stalls).
+ * Dynamic rate control (±0.5% pitch adjustment based on AudioTrack buffer fill)
+ * keeps the buffer at ~50% full, eliminating both underruns and overruns.
  *
  * The AudioTrack is opened lazily on the first [write] call.
  */
-class AndroidAudioPlayer(private val coreSampleRate: Int) {
+class AndroidAudioPlayer(
+    private val coreSampleRate: Int,
+    private val jni: LibretroJni,
+) {
 
     private var audioTrack: AudioTrack? = null
     private var initAttempted = false
@@ -37,20 +33,11 @@ class AndroidAudioPlayer(private val coreSampleRate: Int) {
     /** AudioTrack buffer capacity in stereo frames (at OUTPUT_RATE). */
     private var bufferCapacityFrames = 0
 
-    // --- Resampler state ---
-
     /** Base resampling ratio: OUTPUT_RATE / coreSampleRate (e.g. 48000/32029 ≈ 1.499). */
     private val baseRatio = OUTPUT_RATE.toDouble() / coreSampleRate
 
-    /** Fractional input position carried across write() calls for seamless resampling. */
-    private var resamplePos = 0.0
-
-    /** Last input sample from previous call, for cross-boundary interpolation. */
-    private var prevSampleL: Short = 0
-    private var prevSampleR: Short = 0
-
-    /** Reusable output buffer for resampled audio. */
-    private var outputBuffer = ShortArray(4096)
+    /** Reusable output buffer for resampled audio from native. */
+    private var outputBuffer = ShortArray(16384)
 
     companion object {
         private const val TAG = "AndroidAudioPlayer"
@@ -111,9 +98,6 @@ class AndroidAudioPlayer(private val coreSampleRate: Int) {
 
             audioTrack?.play()
             totalWrittenFrames = 0
-            resamplePos = 0.0
-            prevSampleL = 0
-            prevSampleR = 0
             Log.i(TAG, "AudioTrack opened at $OUTPUT_RATE Hz (buffer=$bufferSize bytes, " +
                 "~${bufferSize * 1000 / (OUTPUT_RATE * frameBytes)}ms, $bufferCapacityFrames frames)")
             return true
@@ -138,134 +122,41 @@ class AndroidAudioPlayer(private val coreSampleRate: Int) {
         }
         audioTrack = null
         initAttempted = false
-        resamplePos = 0.0
-        prevSampleL = 0
-        prevSampleR = 0
     }
 
     /**
-     * Accept audio samples from the core, resample to [OUTPUT_RATE] with
-     * dynamic rate control, and write to the AudioTrack.
+     * Calculate the dynamic resampling ratio based on AudioTrack buffer fill.
      *
-     * The dynamic ratio adjustment (RetroArch's formula) keeps the AudioTrack
-     * buffer at ~50% fill, compensating for clock drift between the system
-     * clock (which drives frame pacing) and the audio hardware clock.
-     *
-     * @param samples Stereo interleaved int16 samples at [coreSampleRate]
-     * @param count Number of valid shorts in the array
+     * The formula (RetroArch's audio_driver_flush) keeps the buffer at ~50% full:
+     * - Buffer emptier than target → ratio increases → more output → fills buffer
+     * - Buffer fuller than target → ratio decreases → fewer output → drains buffer
      */
-    fun write(samples: ShortArray, count: Int) {
-        if (count <= 0) return
-        if (!ensureStarted()) return
-        val track = audioTrack ?: return
-
-        val inputFrames = count / 2
-
-        // --- Dynamic rate control (RetroArch audio_driver_flush formula) ---
-        //
-        // avail     = free space in buffer
-        // half_size = target: half the buffer should be free
-        // direction = (avail - half_size) / half_size  ∈ [-1, +1]
-        // adjust    = 1.0 + 0.005 * direction
-        //
-        // When buffer is emptier than target: direction > 0 → adjust > 1 → more output → fills buffer
-        // When buffer is fuller than target:  direction < 0 → adjust < 1 → less output → drains buffer
+    fun calculateRatio(): Double {
+        val track = audioTrack ?: return baseRatio
         val played = track.playbackHeadPosition.toLong()
         val buffered = (totalWrittenFrames - played).coerceAtLeast(0)
         val halfSize = (bufferCapacityFrames / 2).coerceAtLeast(1)
         val avail = (bufferCapacityFrames - buffered).coerceAtLeast(0)
         val direction = (avail - halfSize).toDouble() / halfSize
         val adjust = 1.0 + RATE_CONTROL_DELTA * direction
-
-        // Resample: core rate → OUTPUT_RATE, incorporating dynamic adjustment
-        val ratio = baseRatio * adjust
-        val outFrames = resample(samples, inputFrames, ratio)
-
-        // Blocking write — acts as safety backpressure. When rate control keeps
-        // the buffer at ~50%, writes return immediately. Only blocks if the
-        // buffer is completely full (rare transient).
-        if (outFrames > 0) {
-            val written = track.write(outputBuffer, 0, outFrames * 2)
-            if (written > 0) {
-                totalWrittenFrames += written / 2
-            }
-        }
-
+        return baseRatio * adjust
     }
 
     /**
-     * Linear interpolation resampler. Converts [inputFrames] stereo frames at
-     * [coreSampleRate] to output at [OUTPUT_RATE] × adjust, using the given
-     * combined [ratio] (= OUTPUT_RATE / coreSampleRate × adjust).
+     * Resample buffered core audio via native SINC resampler and write to AudioTrack.
      *
-     * Maintains [resamplePos] across calls for seamless sample-accurate
-     * boundary handling. Saves the last input sample for cross-boundary
-     * interpolation.
-     *
-     * @return Number of output stereo frames written to [outputBuffer]
+     * @param ratio Dynamic resampling ratio from [calculateRatio]
      */
-    private fun resample(input: ShortArray, inputFrames: Int, ratio: Double): Int {
-        if (inputFrames <= 0 || ratio <= 0) return 0
+    fun write(ratio: Double) {
+        if (!ensureStarted()) return
+        val track = audioTrack ?: return
 
-        // Input samples consumed per output sample (< 1 for upsampling)
-        val inputStep = 1.0 / ratio
+        val sampleCount = jni.nativeResampleAudio(outputBuffer, ratio)
+        if (sampleCount <= 0) return
 
-        // Ensure output buffer is large enough
-        val maxOutput = ((inputFrames / inputStep) + 4).toInt()
-        if (outputBuffer.size < maxOutput * 2) {
-            outputBuffer = ShortArray(maxOutput * 2 + 64)
+        val written = track.write(outputBuffer, 0, sampleCount)
+        if (written > 0) {
+            totalWrittenFrames += written / 2
         }
-
-        var outCount = 0
-
-        while (resamplePos < inputFrames.toDouble()) {
-            val idx = floor(resamplePos).toInt()
-            val frac = resamplePos - idx
-
-            val s0L: Int
-            val s0R: Int
-            val s1L: Int
-            val s1R: Int
-
-            when {
-                idx < 0 -> {
-                    // Cross-boundary: interpolate between previous call's last
-                    // sample and this call's first sample
-                    s0L = prevSampleL.toInt()
-                    s0R = prevSampleR.toInt()
-                    s1L = input[0].toInt()
-                    s1R = input[1].toInt()
-                }
-                idx >= inputFrames - 1 -> {
-                    // At last sample — hold (next call will provide the neighbor)
-                    s0L = input[(inputFrames - 1) * 2].toInt()
-                    s0R = input[(inputFrames - 1) * 2 + 1].toInt()
-                    s1L = s0L
-                    s1R = s0R
-                }
-                else -> {
-                    s0L = input[idx * 2].toInt()
-                    s0R = input[idx * 2 + 1].toInt()
-                    s1L = input[(idx + 1) * 2].toInt()
-                    s1R = input[(idx + 1) * 2 + 1].toInt()
-                }
-            }
-
-            outputBuffer[outCount * 2] = ((1.0 - frac) * s0L + frac * s1L).toInt().toShort()
-            outputBuffer[outCount * 2 + 1] = ((1.0 - frac) * s0R + frac * s1R).toInt().toShort()
-            outCount++
-            resamplePos += inputStep
-        }
-
-        // Save last input sample for next call's cross-boundary interpolation
-        if (inputFrames > 0) {
-            prevSampleL = input[(inputFrames - 1) * 2]
-            prevSampleR = input[(inputFrames - 1) * 2 + 1]
-        }
-
-        // Carry fractional position to next call
-        resamplePos -= inputFrames
-
-        return outCount
     }
 }

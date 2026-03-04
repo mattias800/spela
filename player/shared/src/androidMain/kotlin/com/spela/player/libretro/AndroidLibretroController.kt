@@ -76,7 +76,7 @@ class AndroidLibretroController(
     private val _frameBitmap = MutableStateFlow<Bitmap?>(null)
     val frameBitmap: StateFlow<Bitmap?> = _frameBitmap.asStateFlow()
 
-    /* Audio output — blocking writes provide audio-sync frame pacing */
+    /* Audio output — native SINC resampler with dynamic rate control */
     private var audioPlayer: AndroidAudioPlayer? = null
 
     /* Emulation-thread dispatch: some cores (Dolphin) require retro_serialize,
@@ -103,10 +103,6 @@ class AndroidLibretroController(
 
     /* Reusable byte buffer for video frame data from JNI (avoids NewByteArray per frame) */
     private var videoFrameBuffer = ByteArray(0)
-
-    /* Reusable short buffer for audio samples from JNI (avoids NewShortArray per frame) */
-    private var audioSampleBuffer = ShortArray(0)
-
 
     /* Handler for posting state updates to the main thread (avoids Compose multithreading crash) */
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -303,8 +299,8 @@ class AndroidLibretroController(
             val sampleRate = jni.nativeGetSampleRate().toInt()
             Log.i(TAG, "Core sample rate: $sampleRate Hz")
             if (sampleRate > 0) {
-                audioPlayer = AndroidAudioPlayer(sampleRate)
-                Log.i(TAG, "AndroidAudioPlayer created at $sampleRate Hz")
+                audioPlayer = AndroidAudioPlayer(sampleRate, jni)
+                Log.i(TAG, "AndroidAudioPlayer created at $sampleRate Hz (native SINC resampler)")
             } else {
                 Log.w(TAG, "Core reported invalid sample rate: $sampleRate")
             }
@@ -350,8 +346,8 @@ class AndroidLibretroController(
                 updateVideoFrame()
             }
 
-            // Push audio (resampled to 48kHz with dynamic rate control,
-            // blocking write as safety backpressure).
+            // Push audio (resampled to 48kHz via native SINC resampler with
+            // dynamic rate control). Frame pacing via precisionSleep.
             if (!fastForward) {
                 pushAudio()
                 precisionSleep(frameStart + frameTimeNs)
@@ -635,30 +631,27 @@ class AndroidLibretroController(
     }
 
     /**
-     * Drain audio samples from the native layer and write to AudioTrack (non-blocking).
-     * Frame pacing is handled by precisionSleep on the system clock.
-     * The AudioTrack's large buffer (~80ms) absorbs timing jitter.
+     * Resample audio via native SINC resampler and write to AudioTrack.
+     * Rate control stays in Kotlin (reads AudioTrack.playbackHeadPosition).
      */
     private fun pushAudio() {
-        if (audioSampleBuffer.size < 4096) {
-            audioSampleBuffer = ShortArray(4096)
-        }
-
-        val count = jni.nativeFillAudioBuffer(audioSampleBuffer)
-        if (count > 0) {
-            audioPlayer?.write(audioSampleBuffer, count)
-        }
+        val player = audioPlayer ?: return
+        val ratio = player.calculateRatio()
+        player.write(ratio)
     }
 
+    /** Reusable buffer for discarding audio during fast-forward. */
+    private var discardBuffer = ShortArray(0)
+
     /**
-     * Drain audio samples from the native layer without writing to AudioTrack.
-     * Used during fast-forward to prevent the native audio buffer from growing unbounded.
+     * Discard audio samples during fast-forward.
+     * Clears the native buffer without resampling or writing to AudioTrack.
      */
     private fun pushAudioDiscard() {
-        if (audioSampleBuffer.size < 4096) {
-            audioSampleBuffer = ShortArray(4096)
+        if (discardBuffer.size < 4096) {
+            discardBuffer = ShortArray(4096)
         }
-        jni.nativeFillAudioBuffer(audioSampleBuffer)
+        jni.nativeFillAudioBuffer(discardBuffer)
     }
 
     /**

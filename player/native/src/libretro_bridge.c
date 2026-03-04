@@ -1179,6 +1179,22 @@ JNI_FUNC(jint, nativeFillAudioBuffer)(JNIEnv *env, jobject thiz, jshortArray out
     return (jint)copyLen;
 }
 
+JNI_FUNC(jint, nativeResampleAudio)(JNIEnv *env, jobject thiz,
+                                     jshortArray out, jdouble ratio) {
+    size_t frames = audio_resample(ratio);
+    if (frames == 0) return 0;
+    const int16_t *buf = audio_get_resampled_buffer();
+    jsize samples = (jsize)(frames * 2);
+    jsize arrayLen = (*env)->GetArrayLength(env, out);
+    jsize copyLen = samples < arrayLen ? samples : arrayLen;
+    (*env)->SetShortArrayRegion(env, out, 0, copyLen, buf);
+    return (jint)copyLen;
+}
+
+JNI_FUNC(void, nativeResetAudioResampler)(JNIEnv *env, jobject thiz) {
+    audio_resampler_reset();
+}
+
 JNI_FUNC(void, nativeSetInputButton)(JNIEnv *env, jobject thiz,
                                       jint port, jint id, jboolean pressed) {
     input_set_button((unsigned)port, (unsigned)id, pressed == JNI_TRUE);

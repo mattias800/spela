@@ -35,6 +35,8 @@ class LibretroJni {
 
     /* Audio */
     external fun nativeGetAudioBuffer(): ShortArray?
+    external fun nativeResampleAudio(out: ShortArray, ratio: Double): Int
+    external fun nativeResetAudioResampler()
 
     /* Input */
     external fun nativeSetInputButton(port: Int, id: Int, pressed: Boolean)
