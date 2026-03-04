@@ -36,6 +36,7 @@ type Config struct {
 	CORSOrigins                  []string
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
+	Version                      string
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
@@ -106,7 +107,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		}
 
 		c.JSON(200, gin.H{
-			"status": status,
+			"status":  status,
+			"version": cfg.Version,
 		})
 	})
 

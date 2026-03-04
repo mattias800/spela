@@ -25,6 +25,7 @@ import { usePendingInvitationCount } from "@/hooks/use-relays";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useIgdbStatus } from "@/hooks/use-admin";
+import { useHealth } from "@/hooks/use-health";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -39,6 +40,7 @@ export function AppLayout() {
     biosData?.consoles.some((c) => c.status === "missing") ?? false;
   const { data: igdbStatus } = useIgdbStatus();
   const igdbNotConfigured = !(igdbStatus?.configured ?? true);
+  const { data: health } = useHealth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -152,6 +154,7 @@ export function AppLayout() {
         }}
         mobileOpen={mobileMenuOpen}
         onMobileClose={closeMobileMenu}
+        version={health?.version}
       />
 
       {/* Content area — left padding on desktop, top padding on mobile */}

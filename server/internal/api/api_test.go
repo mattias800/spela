@@ -500,6 +500,7 @@ func TestListCores(t *testing.T) {
 
 func TestHealthEndpoint(t *testing.T) {
 	_, cfg := setupTestEnv(t)
+	cfg.Version = "1.2.3"
 	router := NewRouter(*cfg)
 
 	w := httptest.NewRecorder()
@@ -511,7 +512,7 @@ func TestHealthEndpoint(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp["status"])
-	assert.Nil(t, resp["version"], "version should not be exposed in health endpoint")
+	assert.Equal(t, "1.2.3", resp["version"])
 }
 
 func TestGetPreferences_Defaults(t *testing.T) {
