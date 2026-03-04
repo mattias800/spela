@@ -21,7 +21,11 @@ import (
 	"github.com/spela/server/internal/websocket"
 )
 
+// version is set at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
+	slog.Info("Spela", "version", version)
 	// Configuration from environment variables with sensible defaults
 	port := getEnv("SPELA_PORT", "8080")
 	dbPath := getEnv("SPELA_DB_PATH", "spela.db")
@@ -180,6 +184,7 @@ func main() {
 		FrontendDir:   frontendDir,
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
+		Version:                      version,
 	})
 
 	slog.Info("server listening", "port", port)

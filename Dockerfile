@@ -22,7 +22,8 @@ COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 COPY server/ .
-RUN CGO_ENABLED=1 go build -o spela-server ./cmd/server
+ARG SPELA_VERSION=dev
+RUN CGO_ENABLED=1 go build -ldflags "-X main.version=${SPELA_VERSION}" -o spela-server ./cmd/server
 RUN CGO_ENABLED=1 go build -o spela-seed ./cmd/seed
 
 # --- Stage 3: Runtime ---

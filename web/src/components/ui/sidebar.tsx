@@ -76,9 +76,10 @@ interface SidebarContentProps {
     role: string;
   };
   onLogout?: () => void;
+  version?: string;
 }
 
-function SidebarContent({ links, user, onLogout }: SidebarContentProps) {
+function SidebarContent({ links, user, onLogout, version }: SidebarContentProps) {
   return (
     <>
       <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-800/50">
@@ -125,6 +126,12 @@ function SidebarContent({ links, user, onLogout }: SidebarContentProps) {
           </div>
         </div>
       )}
+
+      {version && (
+        <div className="px-5 pb-3 pt-1">
+          <p className="text-xs text-surface-600">v{version}</p>
+        </div>
+      )}
     </>
   );
 }
@@ -141,9 +148,10 @@ interface SidebarProps {
   onLogout?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  version?: string;
 }
 
-export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, version }: SidebarProps) {
   const drawerRef = useRef<HTMLElement>(null);
 
   // Close on Escape key
@@ -172,7 +180,7 @@ export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose }: Si
     <>
       {/* Desktop sidebar — always visible at lg and above */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex-col z-40">
-        <SidebarContent links={links} user={user} onLogout={onLogout} />
+        <SidebarContent links={links} user={user} onLogout={onLogout} version={version} />
       </aside>
 
       {/* Mobile drawer — visible below lg when open */}
@@ -202,7 +210,7 @@ export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose }: Si
               : "-translate-x-full duration-200 ease-in",
           )}
         >
-          <SidebarContent links={links} user={user} onLogout={onLogout} />
+          <SidebarContent links={links} user={user} onLogout={onLogout} version={version} />
         </aside>
       </div>
     </>
