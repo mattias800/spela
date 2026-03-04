@@ -170,6 +170,7 @@ class RestoreSessionUseCaseTest {
             throw UnsupportedOperationException()
         override suspend fun removeServer(id: String) = throw UnsupportedOperationException()
         override suspend fun setActiveServer(id: String) = throw UnsupportedOperationException()
+        override suspend fun validateServer(url: String): Boolean = throw UnsupportedOperationException()
     }
 
     private class StubAuthRepository(

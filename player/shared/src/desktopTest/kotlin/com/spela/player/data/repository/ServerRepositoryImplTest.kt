@@ -2,6 +2,14 @@ package com.spela.player.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineConfig
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -16,6 +24,12 @@ class ServerRepositoryImplDbTest {
 
     private lateinit var database: SpelaDatabase
 
+    private val stubEngineFactory = object : HttpClientEngineFactory<HttpClientEngineConfig> {
+        override fun create(block: HttpClientEngineConfig.() -> Unit): HttpClientEngine {
+            return MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+        }
+    }
+
     @BeforeTest
     fun setup() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -24,7 +38,7 @@ class ServerRepositoryImplDbTest {
     }
 
     private fun createRepo(): ServerRepositoryImpl {
-        return ServerRepositoryImpl(database)
+        return ServerRepositoryImpl(database, stubEngineFactory)
     }
 
     @Test
