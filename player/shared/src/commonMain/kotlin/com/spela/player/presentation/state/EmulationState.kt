@@ -81,6 +81,12 @@ data class EmulationState(
     val rewindEnabled: Boolean = false,
     /** Rewind: whether rewind is currently active (holding down rewind). */
     val isRewinding: Boolean = false,
+
+    /** Cheats */
+    val hasCheats: Boolean = false,
+    val enabledCheatCount: Int = 0,
+    val showCheatBrowser: Boolean = false,
+    val cheats: List<com.spela.player.domain.model.Cheat> = emptyList(),
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

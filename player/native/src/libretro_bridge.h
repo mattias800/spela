@@ -77,6 +77,8 @@ typedef struct {
     retro_unserialize_t             retro_unserialize;
     retro_get_memory_data_t         retro_get_memory_data;
     retro_get_memory_size_t         retro_get_memory_size;
+    retro_cheat_reset_t             retro_cheat_reset;
+    retro_cheat_set_t               retro_cheat_set;
 
     /* AV info */
     struct retro_system_av_info     av_info;

@@ -67,6 +67,7 @@ val commonModule = module {
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
     single<ChallengeRepository> { ChallengeRepositoryImpl(get()) }
     single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
+    single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 
@@ -162,6 +163,7 @@ val commonModule = module {
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),
+            cheatRepository = get(),
         )
     }
     single { MutableStateFlow(EmulationState()) }
@@ -218,6 +220,7 @@ val commonModule = module {
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),
+            cheatRepository = get(),
         )
     }
 

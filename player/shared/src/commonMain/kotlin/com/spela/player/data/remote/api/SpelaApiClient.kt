@@ -288,6 +288,12 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/stats").body()
     }
 
+    // Game Cheats
+
+    suspend fun getGameCheats(gameId: String): List<CheatDto> {
+        return client.get("$baseUrl/api/games/$gameId/cheats").body()
+    }
+
     // Game Achievements
 
     suspend fun getGameAchievements(gameId: String): GameAchievementsResponse {

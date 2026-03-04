@@ -11,6 +11,7 @@ import com.spela.player.domain.usecase.ToggleFavoriteUseCase
 import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.DownloadRepository
+import com.spela.player.domain.repository.CheatRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.RelayRepository
@@ -51,6 +52,7 @@ class GameDetailViewModel(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
+    private val cheatRepository: CheatRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameDetailState())
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
@@ -118,6 +120,13 @@ class GameDetailViewModel(
             // Feature 9: Export/Import
             is GameDetailIntent.ExportSave -> { /* Export handled by UI layer with file dialog */ }
             is GameDetailIntent.ImportSave -> importSave(intent.name, intent.fileData)
+
+            // Cheats
+            is GameDetailIntent.LoadCheats -> loadCheats(intent.gameId)
+            is GameDetailIntent.ToggleCheat -> toggleCheat(intent.cheatId, intent.enabled)
+            GameDetailIntent.DisableAllCheats -> disableAllCheats()
+            GameDetailIntent.ShowCheatDialog -> _state.update { it.copy(showCheatDialog = true) }
+            GameDetailIntent.DismissCheatDialog -> _state.update { it.copy(showCheatDialog = false) }
         }
     }
 
@@ -159,6 +168,7 @@ class GameDetailViewModel(
                     if (isPlayable) {
                         loadGameRelays(gameId)
                         loadAchievements(gameId)
+                        loadCheats(gameId)
                         loadSaveDataCount()
                         loadBiosStatus()
                     }
@@ -647,6 +657,45 @@ class GameDetailViewModel(
             AchievementsViewMode.TIMELINE -> loadAchievementTimeline(gameId)
             AchievementsViewMode.LEADERBOARD -> loadAchievementLeaderboard(gameId)
             AchievementsViewMode.GRID -> { /* Already loaded */ }
+        }
+    }
+
+    private fun loadCheats(gameId: String) {
+        val repo = cheatRepository ?: return
+        _state.update { it.copy(isLoadingCheats = true) }
+        scope.launch(dispatchers.io) {
+            repo.getCheatsForGame(gameId).fold(
+                onSuccess = { cheats ->
+                    _state.update { it.copy(cheats = cheats, isLoadingCheats = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingCheats = false) }
+                },
+            )
+        }
+    }
+
+    private fun toggleCheat(cheatId: String, enabled: Boolean) {
+        val repo = cheatRepository ?: return
+        // Optimistic update
+        _state.update { state ->
+            state.copy(cheats = state.cheats.map {
+                if (it.id == cheatId) it.copy(enabled = enabled) else it
+            })
+        }
+        scope.launch(dispatchers.io) {
+            repo.setCheatEnabled(cheatId, enabled)
+        }
+    }
+
+    private fun disableAllCheats() {
+        val repo = cheatRepository ?: return
+        val gameId = currentGameId ?: return
+        _state.update { state ->
+            state.copy(cheats = state.cheats.map { it.copy(enabled = false) })
+        }
+        scope.launch(dispatchers.io) {
+            repo.disableAllCheats(gameId)
         }
     }
 

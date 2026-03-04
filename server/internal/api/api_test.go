@@ -64,6 +64,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.StagedUpload{},
 		&db.TopRatedGame{},
 		&db.SimilarGame{},
+		&db.CheatCode{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

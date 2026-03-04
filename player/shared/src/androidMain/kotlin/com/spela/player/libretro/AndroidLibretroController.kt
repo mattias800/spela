@@ -685,4 +685,9 @@ class AndroidLibretroController(
     override fun getSRAM(): ByteArray? = jni.nativeGetSRAM()
 
     override fun setSRAM(data: ByteArray): Boolean = jni.nativeSetSRAM(data)
+
+    override fun cheatReset() = jni.nativeCheatReset()
+
+    override fun cheatSet(index: Int, enabled: Boolean, code: String) =
+        jni.nativeCheatSet(index, enabled, code)
 }

@@ -78,4 +78,9 @@ sealed interface EmulationIntent {
     ) : EmulationIntent
     data object PlayWithLocalSave : EmulationIntent
     data object CancelLaunch : EmulationIntent
+
+    // Cheats
+    data object ShowCheatBrowser : EmulationIntent
+    data object HideCheatBrowser : EmulationIntent
+    data class ToggleCheatInGame(val cheatId: String, val enabled: Boolean) : EmulationIntent
 }

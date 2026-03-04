@@ -230,6 +230,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
 		api.DELETE("/games/:id/play-time", gameHandler.StopPlaying)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
+		api.GET("/games/:id/cheats", gameHandler.GetGameCheats)
 		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
 		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
 
@@ -433,6 +434,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/bios/download", biosHandler.TriggerDownload)
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
+			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
 
 			// ROM uploads
 			admin.POST("/uploads", uploadHandler.UploadROMs)

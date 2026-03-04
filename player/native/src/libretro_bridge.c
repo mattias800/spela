@@ -709,6 +709,10 @@ static int core_load(const char *path) {
     LOAD_SYM(retro_get_memory_data);
     LOAD_SYM(retro_get_memory_size);
 
+    /* Cheat functions are optional — not all cores implement them. */
+    g_core.retro_cheat_reset = (retro_cheat_reset_t)sp_lib_sym(g_core.handle, "retro_cheat_reset");
+    g_core.retro_cheat_set   = (retro_cheat_set_t)sp_lib_sym(g_core.handle, "retro_cheat_set");
+
     /* Get system info BEFORE registering callbacks — the environment callback
      * may query the core name (e.g. GET_PREFERRED_HW_RENDER uses it to choose
      * Vulkan vs GLES). retro_get_system_info is a pure info function that can
@@ -1549,4 +1553,20 @@ JNI_FUNC(void, nativeGpuSetSourceRect)(JNIEnv *env, jobject thiz,
     if (g_gpu_renderer) {
         gpu_renderer_set_source_rect(g_gpu_renderer, (int)x, (int)y, (int)w, (int)h);
     }
+}
+
+/* === Cheats === */
+
+JNI_FUNC(void, nativeCheatReset)(JNIEnv *env, jobject thiz) {
+    if (g_core.retro_cheat_reset) {
+        g_core.retro_cheat_reset();
+    }
+}
+
+JNI_FUNC(void, nativeCheatSet)(JNIEnv *env, jobject thiz,
+                                jint index, jboolean enabled, jstring code) {
+    if (!g_core.retro_cheat_set) return;
+    const char *codeStr = (*env)->GetStringUTFChars(env, code, NULL);
+    g_core.retro_cheat_set((unsigned)index, enabled == JNI_TRUE, codeStr);
+    (*env)->ReleaseStringUTFChars(env, code, codeStr);
 }

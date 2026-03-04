@@ -937,3 +937,13 @@ data class SaveDataDto(
     val createdAt: String = "",
     val updatedAt: String = "",
 )
+
+// Cheats
+
+@Serializable
+data class CheatDto(
+    val id: Int = 0,
+    val index: Int = 0,
+    val description: String = "",
+    val code: String = "",
+)

@@ -76,6 +76,10 @@ class LibretroJni {
     external fun nativeGamepadShutdown()
     external fun nativeGamepadPoll(): Array<GamepadState>?
 
+    /* Cheats */
+    external fun nativeCheatReset()
+    external fun nativeCheatSet(index: Int, enabled: Boolean, code: String)
+
     /* Achievements */
     external fun nativeAchievementsInit()
     external fun nativeAchievementsDeinit()

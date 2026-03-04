@@ -72,6 +72,10 @@ class LibretroJni {
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
     external fun nativeIsHwRenderEnabled(): Boolean
 
+    /* Cheats */
+    external fun nativeCheatReset()
+    external fun nativeCheatSet(index: Int, enabled: Boolean, code: String)
+
     /* Achievements */
     external fun nativeAchievementsInit()
     external fun nativeAchievementsDeinit()

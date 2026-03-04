@@ -67,4 +67,11 @@ sealed interface GameDetailIntent {
 
     data object DismissError : GameDetailIntent
     data object DismissSuccess : GameDetailIntent
+
+    // Cheats
+    data class LoadCheats(val gameId: String) : GameDetailIntent
+    data class ToggleCheat(val cheatId: String, val enabled: Boolean) : GameDetailIntent
+    data object DisableAllCheats : GameDetailIntent
+    data object ShowCheatDialog : GameDetailIntent
+    data object DismissCheatDialog : GameDetailIntent
 }

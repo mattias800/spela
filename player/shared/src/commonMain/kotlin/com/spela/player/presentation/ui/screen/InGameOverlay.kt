@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.FocusRequester
 import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.feature.ingame.ChallengeCompletedDialog
+import com.spela.player.presentation.ui.feature.ingame.CheatsDialog
 import com.spela.player.presentation.ui.feature.ingame.ChallengeTimerHud
 import com.spela.player.presentation.ui.feature.ingame.FpsHud
 import com.spela.player.presentation.ui.feature.ingame.InGameOverlayPanel
@@ -207,6 +208,17 @@ fun InGameOverlay(
                 viewModel.onIntent(EmulationIntent.StopGame)
                 onExit()
             },
+        )
+    }
+
+    // Cheats browser dialog
+    if (state.showCheatBrowser && state.cheats.isNotEmpty()) {
+        CheatsDialog(
+            cheats = state.cheats,
+            onToggle = { cheatId, enabled ->
+                viewModel.onIntent(EmulationIntent.ToggleCheatInGame(cheatId, enabled))
+            },
+            onDismiss = { viewModel.onIntent(EmulationIntent.HideCheatBrowser) },
         )
     }
 

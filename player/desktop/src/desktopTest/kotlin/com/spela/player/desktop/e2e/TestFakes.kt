@@ -1294,6 +1294,24 @@ class FakeSaveDataRepository : SaveDataRepository {
     }
 }
 
+class FakeCheatRepository : CheatRepository {
+    var cheats: MutableList<Cheat> = mutableListOf()
+
+    override suspend fun getCheatsForGame(gameId: String): Result<List<Cheat>> =
+        Result.success(cheats.filter { it.gameId == gameId })
+
+    override suspend fun setCheatEnabled(cheatId: String, enabled: Boolean) {
+        cheats.replaceAll { if (it.id == cheatId) it.copy(enabled = enabled) else it }
+    }
+
+    override suspend fun disableAllCheats(gameId: String) {
+        cheats.replaceAll { if (it.gameId == gameId) it.copy(enabled = false) else it }
+    }
+
+    override fun getEnabledCheats(gameId: String): List<Cheat> =
+        cheats.filter { it.gameId == gameId && it.enabled }
+}
+
 class FakeConnectivityMonitor {
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Online)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()

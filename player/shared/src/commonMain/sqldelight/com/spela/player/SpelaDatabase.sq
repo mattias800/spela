@@ -347,3 +347,34 @@ SELECT value FROM DeviceSettingEntity WHERE key = ?;
 
 deleteDeviceSetting:
 DELETE FROM DeviceSettingEntity WHERE key = ?;
+
+-- Cheat codes (device-local, enabled state persisted locally)
+CREATE TABLE CheatEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    cheat_index INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    code TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    cached_at INTEGER NOT NULL,
+    UNIQUE(game_id, cheat_index)
+);
+
+getGameCheats:
+SELECT * FROM CheatEntity WHERE game_id = ? ORDER BY cheat_index ASC;
+
+getEnabledGameCheats:
+SELECT * FROM CheatEntity WHERE game_id = ? AND enabled = 1 ORDER BY cheat_index ASC;
+
+upsertCheat:
+INSERT OR REPLACE INTO CheatEntity(id, game_id, cheat_index, description, code, enabled, cached_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+setCheatEnabled:
+UPDATE CheatEntity SET enabled = ? WHERE id = ?;
+
+setAllCheatsEnabled:
+UPDATE CheatEntity SET enabled = ? WHERE game_id = ?;
+
+deleteGameCheats:
+DELETE FROM CheatEntity WHERE game_id = ?;

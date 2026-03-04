@@ -563,6 +563,15 @@ type Core struct {
 	FilePath    string         `gorm:"size:1024" json:"-"`
 }
 
+// CheatCode represents a cheat code for a specific game.
+type CheatCode struct {
+	ID          uint   `gorm:"primarykey"`
+	GameID      uint   `gorm:"index;not null"`
+	CheatIndex  int    `gorm:"not null"`
+	Description string `gorm:"size:512;not null"`
+	Code        string `gorm:"size:1024;not null"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`

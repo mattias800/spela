@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
+	"github.com/spela/server/internal/cheats"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scraper"
@@ -977,6 +978,18 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
+}
+
+// TriggerCheatImport starts a background cheat database import.
+func (h *AdminHandler) TriggerCheatImport(c *gin.Context) {
+	go func() {
+		if err := cheats.ImportAllCheats(h.DB, cheats.DefaultBaseURL); err != nil {
+			slog.Error("cheat import failed", "error", err)
+		} else {
+			slog.Info("cheat import completed")
+		}
+	}()
+	c.JSON(http.StatusAccepted, gin.H{"message": "cheat import started"})
 }
 
 // IGDBSource returns "env" if IGDB credentials are set via environment variables,
