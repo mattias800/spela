@@ -671,7 +671,7 @@ private fun GameInfoContent(
                     text = if (hasSaves) "Resume" else "Play",
                     onClick = { onPlay(gameId) },
                     enabled = !hasRequiredBiosMissing && !isSyncing,
-                    isLoading = isSyncing && syncState?.isTimedOut != true,
+                    isLoading = false,
                     modifier = Modifier
                         .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
                         .semantics {
