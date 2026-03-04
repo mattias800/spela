@@ -182,12 +182,12 @@ fun ServerConnectionScreen(
                                     contentDescription = "Remove server",
                                     tint = SpColor.OnBackgroundTertiary,
                                     modifier = Modifier
-                                        .size(24.dp)
+                                        .size(36.dp)
                                         .clip(CircleShape)
                                         .clickable(onClick = {
                                             viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
                                         })
-                                        .padding(SpSpacing.Small),
+                                        .padding(6.dp),
                                 )
                             }
                         }
@@ -240,11 +240,14 @@ fun ServerConnectionScreen(
                                             text = "Cancel",
                                             onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
                                             style = SpButtonStyle.Ghost,
+                                            enabled = !state.isValidating,
                                         )
                                         Spacer(Modifier.width(SpSpacing.Small))
                                         SpButton(
                                             text = "Add",
                                             onClick = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
+                                            enabled = !state.isValidating,
+                                            isLoading = state.isValidating,
                                         )
                                     }
                                 }

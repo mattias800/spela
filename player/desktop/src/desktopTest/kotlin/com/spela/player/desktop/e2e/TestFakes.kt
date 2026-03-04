@@ -111,6 +111,7 @@ class FakeServerRepository : ServerRepository {
     private val servers = mutableListOf<ServerConnection>()
     private var activeServerId: String? = null
     private val serversFlow = MutableStateFlow<List<ServerConnection>>(emptyList())
+    var validateServerResult: Boolean = true
 
     override fun observeServers(): Flow<List<ServerConnection>> = serversFlow
 
@@ -140,6 +141,8 @@ class FakeServerRepository : ServerRepository {
     override suspend fun setActiveServer(id: String) {
         activeServerId = id
     }
+
+    override suspend fun validateServer(url: String): Boolean = validateServerResult
 
     fun preAddServer(name: String, url: String, active: Boolean = false): ServerConnection {
         val server = ServerConnection(

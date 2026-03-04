@@ -3,6 +3,10 @@ package com.spela.player.data.repository
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.ServerConnection
 import com.spela.player.domain.repository.ServerRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.request.get
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.uuid.ExperimentalUuidApi
@@ -10,6 +14,7 @@ import kotlin.uuid.Uuid
 
 class ServerRepositoryImpl(
     private val database: SpelaDatabase,
+    private val engineFactory: HttpClientEngineFactory<*>,
 ) : ServerRepository {
 
     private val queries = database.spelaDatabaseQueries
@@ -68,6 +73,17 @@ class ServerRepositoryImpl(
     override suspend fun setActiveServer(id: String) {
         queries.setActiveServer(id)
         refreshFromDb()
+    }
+
+    override suspend fun validateServer(url: String): Boolean {
+        return try {
+            val normalizedUrl = url.trimEnd('/')
+            val client = HttpClient(engineFactory)
+            val response = client.use { it.get("$normalizedUrl/api/health") }
+            response.status.isSuccess()
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun refreshFromDb() {

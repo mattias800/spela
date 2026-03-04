@@ -54,7 +54,7 @@ val commonModule = module {
     single<SaveDataRepository> { SaveDataRepositoryImpl(get(), get(), get(), get()) }
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get(), get()) }
-    single<ServerRepository> { ServerRepositoryImpl(get()) }
+    single<ServerRepository> { ServerRepositoryImpl(get(), get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get(), get()) }
     single<KeyMappingRepository> { KeyMappingRepositoryImpl(get(), get(named("platformDefaultMapping"))) }
     single<AchievementsRepository> { AchievementsRepositoryImpl(get()) }

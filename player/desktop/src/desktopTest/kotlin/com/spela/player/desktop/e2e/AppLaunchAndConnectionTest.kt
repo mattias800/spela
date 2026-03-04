@@ -127,6 +127,75 @@ class AppLaunchAndConnectionTest {
     }
 
     @Test
+    fun addServerValidatesAndSavesOnSuccess() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Form auto-opens when no servers exist — fill it in
+        onNodeWithText("Server Name").performTextInput("Test Server")
+        onNodeWithText("Server URL").performTextInput("http://localhost:8080")
+
+        // Click Add
+        onNodeWithText("Add").performClick()
+        advance(harness)
+
+        // Server should be added and form should close
+        onNodeWithText("Test Server").assertIsDisplayed()
+        onNodeWithText("Server Name").assertDoesNotExist()
+    }
+
+    @Test
+    fun addServerShowsErrorOnValidationFailure() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.serverRepo.validateServerResult = false
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Form auto-opens — fill it in
+        onNodeWithText("Server Name").performTextInput("Bad Server")
+        onNodeWithText("Server URL").performTextInput("http://bad-url:9999")
+
+        // Click Add
+        onNodeWithText("Add").performClick()
+        advance(harness)
+
+        // Error should appear, form should stay open with entered values
+        onNodeWithText("Could not connect to server. Check the URL and try again.").assertIsDisplayed()
+        onNodeWithText("Server Name").assertIsDisplayed()
+        onNodeWithText("Server URL").assertIsDisplayed()
+    }
+
+    @Test
+    fun addServerRetryAfterFailure() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.serverRepo.validateServerResult = false
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Fill form and try to add
+        onNodeWithText("Server Name").performTextInput("My Server")
+        onNodeWithText("Server URL").performTextInput("http://bad:9999")
+        onNodeWithText("Add").performClick()
+        advance(harness)
+
+        // Should show error
+        onNodeWithText("Could not connect to server. Check the URL and try again.").assertIsDisplayed()
+
+        // Fix the validation result and retry
+        harness.serverRepo.validateServerResult = true
+        onNodeWithText("Add").performClick()
+        advance(harness)
+
+        // Server should now be added and form closed
+        onNodeWithText("My Server").assertIsDisplayed()
+        onNodeWithText("Server Name").assertDoesNotExist()
+    }
+
+    @Test
     fun successfulLoginNavigatesToHomeScreen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
