@@ -148,6 +148,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SimilarGame{},
 		&LoginAttempt{},
 		&TokenBlacklist{},
+		&CheatCode{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

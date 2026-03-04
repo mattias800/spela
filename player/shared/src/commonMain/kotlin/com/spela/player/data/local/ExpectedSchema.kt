@@ -37,5 +37,6 @@ object ExpectedSchema {
             "created_at", "updated_at", "server_id", "sync_status",
         ),
         "DeviceSettingEntity" to setOf("key", "value"),
+        "CheatEntity" to setOf("id", "game_id", "cheat_index", "description", "code", "enabled", "cached_at"),
     )
 }

@@ -349,6 +349,8 @@ typedef bool (*retro_load_game_t)(const struct retro_game_info *game);
 typedef void (*retro_unload_game_t)(void);
 typedef void *(*retro_get_memory_data_t)(unsigned id);
 typedef size_t (*retro_get_memory_size_t)(unsigned id);
+typedef void (*retro_cheat_reset_t)(void);
+typedef void (*retro_cheat_set_t)(unsigned index, bool enabled, const char *code);
 
 #ifdef __cplusplus
 }

@@ -954,6 +954,37 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 	})
 }
 
+// GetGameCheats returns cheat codes for a game.
+func (h *GameHandler) GetGameCheats(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+	var cheats []db.CheatCode
+	if err := h.DB.Where("game_id = ?", game.ID).Order("cheat_index ASC").Find(&cheats).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cheats"})
+		return
+	}
+	type CheatResponse struct {
+		ID          uint   `json:"id"`
+		Index       int    `json:"index"`
+		Description string `json:"description"`
+		Code        string `json:"code"`
+	}
+	resp := make([]CheatResponse, len(cheats))
+	for i, ch := range cheats {
+		resp[i] = CheatResponse{
+			ID:          ch.ID,
+			Index:       ch.CheatIndex,
+			Description: ch.Description,
+			Code:        ch.Code,
+		}
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
 // escapeLikePattern escapes SQL LIKE wildcard characters in user input.
 func escapeLikePattern(s string) string {
 	s = strings.ReplaceAll(s, "\\", "\\\\")

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Text
@@ -265,12 +266,14 @@ internal fun InGameOverlayPanel(
                             isFastForward = state.isFastForward,
                             supportsSaveStates = state.supportsSaveStates,
                             rewindEnabled = state.rewindEnabled,
+                            hasCheats = state.hasCheats,
                             onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                             onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                             onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                             onRewind = { viewModel.onIntent(EmulationIntent.RewindStep) },
                             onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
+                            onCheats = { viewModel.onIntent(EmulationIntent.ShowCheatBrowser) },
                             onControls = {
                             viewModel.onIntent(
                                 if (useGamepadConfig) EmulationIntent.ShowGamepadConfig else EmulationIntent.ShowKeyMapping
@@ -332,12 +335,14 @@ internal fun RowScope.OverlayActionButtons(
     isFastForward: Boolean,
     supportsSaveStates: Boolean,
     rewindEnabled: Boolean = false,
+    hasCheats: Boolean = false,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
     onToggleFastForward: () -> Unit,
     onRewind: () -> Unit = {},
     onChallenge: () -> Unit,
+    onCheats: () -> Unit = {},
     onControls: () -> Unit,
 ) {
     if (supportsSaveStates) {
@@ -356,6 +361,9 @@ internal fun RowScope.OverlayActionButtons(
     )
     if (supportsSaveStates) {
         OverlayAction(label = "Challenge", icon = Icons.Filled.Flag, onClick = onChallenge)
+    }
+    if (hasCheats) {
+        OverlayAction(label = "Cheats", icon = Icons.Filled.Code, onClick = onCheats)
     }
     OverlayAction(label = "Controls", icon = Icons.Filled.SportsEsports, onClick = onControls)
 }

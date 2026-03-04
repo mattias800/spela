@@ -17,6 +17,7 @@ import com.spela.player.domain.model.Relay
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.domain.model.SimilarGame
+import com.spela.player.domain.model.Cheat
 import com.spela.player.domain.model.StorageUsage
 
 enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
@@ -90,4 +91,9 @@ data class GameDetailState(
 
     // Feature 8: Storage usage
     val storageUsage: StorageUsage? = null,
+
+    // Cheats
+    val cheats: List<Cheat> = emptyList(),
+    val isLoadingCheats: Boolean = false,
+    val showCheatDialog: Boolean = false,
 )

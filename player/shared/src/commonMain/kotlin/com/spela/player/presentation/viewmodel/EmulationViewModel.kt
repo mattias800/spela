@@ -7,6 +7,7 @@ import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
+import com.spela.player.domain.repository.CheatRepository
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.intent.EmulationIntent
@@ -58,6 +59,7 @@ class EmulationViewModel(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
+    private val cheatRepository: CheatRepository? = null,
 ) {
     val state: StateFlow<EmulationState> = _state.asStateFlow()
 
@@ -188,6 +190,11 @@ class EmulationViewModel(
             is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad)
             EmulationIntent.PlayWithLocalSave -> playWithLocalSave()
             EmulationIntent.CancelLaunch -> cancelLaunch()
+
+            // Cheats
+            EmulationIntent.ShowCheatBrowser -> _state.update { it.copy(showCheatBrowser = true) }
+            EmulationIntent.HideCheatBrowser -> _state.update { it.copy(showCheatBrowser = false) }
+            is EmulationIntent.ToggleCheatInGame -> toggleCheatInGame(intent.cheatId, intent.enabled)
         }
     }
 
@@ -339,6 +346,9 @@ class EmulationViewModel(
 
                         // Load SRAM (save data) before starting emulation
                         saveManager.loadSramOnStart(gameId)
+
+                        // Apply enabled cheats to core
+                        applyCheatsToCore(gameId)
 
                         // Store the core name for challenge creation and save states
                         val resolvedCoreName = corePath.substringAfterLast('/').substringBeforeLast('.')
@@ -596,6 +606,45 @@ class EmulationViewModel(
                         challengeCreationSuccess = false,
                         showGiveUpConfirm = false,
                         challengeCompletedAttempt = null,
+                        hasCheats = false,
+                        enabledCheatCount = 0,
+                        showCheatBrowser = false,
+                        cheats = emptyList(),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun applyCheatsToCore(gameId: String) {
+        val repo = cheatRepository ?: return
+        val cheats = repo.getEnabledCheats(gameId)
+        libretroController.cheatReset()
+        cheats.forEach { cheat ->
+            libretroController.cheatSet(cheat.index, true, cheat.code)
+        }
+        scope.launch(dispatchers.main) {
+            _state.update { it.copy(hasCheats = cheats.isNotEmpty(), enabledCheatCount = cheats.size) }
+        }
+    }
+
+    private fun toggleCheatInGame(cheatId: String, enabled: Boolean) {
+        val repo = cheatRepository ?: return
+        val gameId = _state.value.gameId
+        scope.launch(dispatchers.io) {
+            repo.setCheatEnabled(cheatId, enabled)
+            val updatedCheats = repo.getEnabledCheats(gameId)
+            libretroController.cheatReset()
+            updatedCheats.forEach { cheat ->
+                libretroController.cheatSet(cheat.index, true, cheat.code)
+            }
+            val allCheats = repo.getCheatsForGame(gameId).getOrDefault(emptyList())
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(
+                        cheats = allCheats,
+                        enabledCheatCount = updatedCheats.size,
+                        hasCheats = updatedCheats.isNotEmpty(),
                     )
                 }
             }
@@ -810,4 +859,10 @@ interface LibretroController {
 
     /** Set SRAM data into the running core's memory. */
     fun setSRAM(data: ByteArray): Boolean = false
+
+    /** Reset all active cheats in the running core. */
+    fun cheatReset() {}
+
+    /** Set a cheat code in the running core. */
+    fun cheatSet(index: Int, enabled: Boolean, code: String) {}
 }
