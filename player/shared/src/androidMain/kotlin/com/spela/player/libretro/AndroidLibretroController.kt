@@ -107,6 +107,7 @@ class AndroidLibretroController(
     /* Reusable short buffer for audio samples from JNI (avoids NewShortArray per frame) */
     private var audioSampleBuffer = ShortArray(0)
 
+
     /* Handler for posting state updates to the main thread (avoids Compose multithreading crash) */
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -349,12 +350,13 @@ class AndroidLibretroController(
                 updateVideoFrame()
             }
 
-            // Audio-sync frame pacing: blocking write to AudioTrack paces
-            // emulation to the audio sample rate. Falls back to precisionSleep
-            // if no audio player, no samples, or device not ready.
-            val synced = if (!fastForward) pushAudioSync() else { pushAudioDiscard(); false }
-            if (!synced && !fastForward) {
+            // Push audio (resampled to 48kHz with dynamic rate control,
+            // blocking write as safety backpressure).
+            if (!fastForward) {
+                pushAudio()
                 precisionSleep(frameStart + frameTimeNs)
+            } else {
+                pushAudioDiscard()
             }
 
             fpsCounter++
@@ -476,7 +478,7 @@ class AndroidLibretroController(
             } else {
                 updateVideoFrame()
             }
-            pushAudioSync()
+            pushAudio()
 
             frameCounter++
 
@@ -633,20 +635,19 @@ class AndroidLibretroController(
     }
 
     /**
-     * Drain audio samples from the native layer and write to AudioTrack (blocking).
-     * The blocking write naturally paces the emulation thread to the audio sample rate.
-     *
-     * @return true if blocking audio write occurred, false if fallback pacing is needed.
+     * Drain audio samples from the native layer and write to AudioTrack (non-blocking).
+     * Frame pacing is handled by precisionSleep on the system clock.
+     * The AudioTrack's large buffer (~80ms) absorbs timing jitter.
      */
-    private fun pushAudioSync(): Boolean {
+    private fun pushAudio() {
         if (audioSampleBuffer.size < 4096) {
             audioSampleBuffer = ShortArray(4096)
         }
 
         val count = jni.nativeFillAudioBuffer(audioSampleBuffer)
-        if (count <= 0) return false
-
-        return audioPlayer?.writeSync(audioSampleBuffer, count) ?: false
+        if (count > 0) {
+            audioPlayer?.write(audioSampleBuffer, count)
+        }
     }
 
     /**
