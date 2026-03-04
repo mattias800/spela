@@ -566,8 +566,8 @@ type Core struct {
 // CheatCode represents a cheat code for a specific game.
 type CheatCode struct {
 	ID          uint   `gorm:"primarykey"`
-	GameID      uint   `gorm:"index;not null"`
-	CheatIndex  int    `gorm:"not null"`
+	GameID      uint   `gorm:"uniqueIndex:idx_game_cheat;not null"`
+	CheatIndex  int    `gorm:"uniqueIndex:idx_game_cheat;not null"`
 	Description string `gorm:"size:512;not null"`
 	Code        string `gorm:"size:1024;not null"`
 }
