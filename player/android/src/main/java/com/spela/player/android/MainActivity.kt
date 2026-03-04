@@ -101,6 +101,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        val state = emulationViewModel.state.value
+        if (state.isRunning && !state.isPaused) {
+            emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
+        }
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (emulationViewModel.state.value.isLifecyclePaused) {
+            emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
+        }
+    }
+
     override fun onDestroy() {
         val inputManager = getSystemService(INPUT_SERVICE) as InputManager
         inputManager.unregisterInputDeviceListener(inputDeviceListener)

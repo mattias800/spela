@@ -10,6 +10,8 @@ data class EmulationState(
     val consoleId: String = "",
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
+    /** True when paused by Android lifecycle (e.g. clamshell close). */
+    val isLifecyclePaused: Boolean = false,
     val isLoading: Boolean = false,
     val showOverlay: Boolean = false,
     val showPerformanceOverlay: Boolean = false,

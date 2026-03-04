@@ -213,6 +213,8 @@ struct gpu_renderer {
     VkDescriptorSet hw_descriptor_sets[MAX_FRAMES_IN_FLIGHT];
     sp_mutex_t queue_mutex;
     bool queue_mutex_initialized;
+    sp_mutex_t surface_mutex;        /* serializes hw_render_frame with suspend_surface */
+    bool surface_mutex_initialized;
 
     /* Actual surface dimensions (what the user sees, from SurfaceView callback).
      * May differ from swapchain_extent when preTransform = IDENTITY and the
@@ -370,6 +372,10 @@ void gpu_renderer_suspend_surface(gpu_renderer_t *r) {
     /* Stop rendering FIRST so the core's render thread won't enter
      * hw_render_frame / gpu_renderer_render while we tear down. */
     r->active = false;
+    /* Acquire surface_mutex to wait for any in-flight hw_render_frame to finish
+     * before destroying swapchain resources. The render thread holds this mutex
+     * for its entire frame, so once we acquire it, no render is in progress. */
+    if (r->surface_mutex_initialized) sp_mutex_lock(&r->surface_mutex);
     /* Serialize with any in-flight queue submission from the render thread */
     if (r->queue_mutex_initialized) sp_mutex_lock(&r->queue_mutex);
     if (r->device) vkDeviceWaitIdle(r->device);
@@ -385,6 +391,7 @@ void gpu_renderer_suspend_surface(gpu_renderer_t *r) {
         r->native_window = NULL;
     }
 #endif
+    if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
     VK_LOGI("Surface suspended (swapchain+surface destroyed, device kept)");
 }
 
@@ -430,6 +437,10 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
     if (r->queue_mutex_initialized) {
         sp_mutex_destroy(&r->queue_mutex);
         r->queue_mutex_initialized = false;
+    }
+    if (r->surface_mutex_initialized) {
+        sp_mutex_destroy(&r->surface_mutex);
+        r->surface_mutex_initialized = false;
     }
 
     if (r->offscreen_mode) {
@@ -890,6 +901,13 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
         }
         r->queue_mutex_initialized = true;
     }
+    if (!r->surface_mutex_initialized) {
+        if (sp_mutex_init(&r->surface_mutex) != 0) {
+            VK_LOGE("Failed to init surface mutex");
+            return false;
+        }
+        r->surface_mutex_initialized = true;
+    }
 
     /* Create per-frame descriptor pool and sets for HW render */
     VkDescriptorPoolSize pool_size = {
@@ -1233,7 +1251,19 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         gpu_renderer_hw_render_frame_offscreen(r, width, height);
         return;
     }
+
+    /* Hold surface_mutex for the entire frame to prevent suspend_surface from
+     * destroying the swapchain while we're using it (TOCTOU race). */
+    if (r->surface_mutex_initialized) sp_mutex_lock(&r->surface_mutex);
+    /* Double-check active after acquiring the lock — suspend_surface may have
+     * set it to false while we were waiting for the mutex. */
+    if (!r->active) {
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
+        return;
+    }
+
     if (!r->hw_current_image.image_view) {
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     }
 
@@ -1245,9 +1275,11 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
                     VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
     if (fence_result == VK_TIMEOUT) {
         VK_LOGE("hw_render_frame: WaitFence timeout on slot %u", r->current_frame);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     } else if (fence_result != VK_SUCCESS) {
         VK_LOGE("hw_render_frame: WaitFence error=%d slot %u", fence_result, r->current_frame);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     }
 
@@ -1258,12 +1290,15 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swapchain(r);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     } else if (result == VK_TIMEOUT) {
         VK_LOGE("hw_render_frame: AcquireImage timeout");
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         VK_LOGE("hw_render_frame: vkAcquireNextImageKHR failed: %d", result);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     }
 
@@ -1323,6 +1358,7 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
         VK_LOGE("hw_render_frame: pipeline[%d] is NULL, skipping frame", shader_idx);
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     }
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[shader_idx]);
@@ -1419,6 +1455,7 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
 
     if (result != VK_SUCCESS) {
         VK_LOGE("hw_render_frame: vkQueueSubmit failed: %d", result);
+        if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
         return;
     }
 
@@ -1449,6 +1486,8 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
     r->hw_signal_semaphores[r->current_frame] = VK_NULL_HANDLE;
 
     r->current_frame = (r->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    if (r->surface_mutex_initialized) sp_mutex_unlock(&r->surface_mutex);
 }
 
 void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r) {
