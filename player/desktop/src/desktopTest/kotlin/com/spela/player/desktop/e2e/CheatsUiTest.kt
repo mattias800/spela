@@ -141,6 +141,7 @@ class CheatsUiTest {
         assertEquals(3, stateAfter.cheats.size, "cheats should be re-loaded after download")
     }
 
+
     // --- Disable All ---
 
     @Test

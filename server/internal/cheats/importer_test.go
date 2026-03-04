@@ -26,6 +26,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return database
 }
 
+
 func TestParseChtContent_basic(t *testing.T) {
 	content := `cheat0_desc = "Infinite Health"
 cheat0_code = "ABCD-1234"

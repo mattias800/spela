@@ -199,6 +199,7 @@ func StartAutoImport(database *gorm.DB) {
 	}()
 }
 
+
 // ImportAllCheats imports cheat codes for all games that have a matching .cht file.
 func ImportAllCheats(database *gorm.DB, baseURL string) error {
 	// Load all games with their consoles
