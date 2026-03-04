@@ -37,6 +37,10 @@ size_t audio_sample_batch_callback(const int16_t *data, size_t frames);
 const int16_t *audio_get_buffer(void);
 size_t audio_get_buffer_frames(void);
 void audio_clear_buffer(void);
+size_t audio_resample(double ratio);
+const int16_t *audio_get_resampled_buffer(void);
+size_t audio_get_resampled_frames(void);
+void audio_resampler_reset(void);
 
 /* Input subsystem (libretro_input.c) */
 void input_init(void);

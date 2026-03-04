@@ -10,6 +10,7 @@ set(COMMON_SOURCES
     src/libretro_video.c
     src/libretro_input.c
     src/libretro_achievements.c
+    src/sinc_resampler.c
     rcheevos/src/rc_client_stub.c
 )
 
@@ -148,6 +149,7 @@ else()
                 ${JNI_LIBRARIES}
                 ${Vulkan_LIBRARIES}
                 dl
+                m
             )
         else()
             # Windows: Vulkan + opengl32 (for wglGetProcAddress)
