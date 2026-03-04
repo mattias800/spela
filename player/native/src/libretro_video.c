@@ -142,6 +142,11 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
             return;
         }
+        /* HW frame but no active renderer — drop the frame. Falling through to
+         * the software path would dereference RETRO_HW_FRAME_BUFFER_VALID as a
+         * pointer, causing a SIGSEGV. This happens when the GPU surface is
+         * suspended (e.g. clamshell close) while the core is still running. */
+        return;
     }
 
     /*

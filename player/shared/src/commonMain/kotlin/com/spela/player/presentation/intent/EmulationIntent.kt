@@ -28,6 +28,10 @@ sealed interface EmulationIntent {
     data object DismissStatus : EmulationIntent
     data object ClearExitRequest : EmulationIntent
 
+    // Lifecycle pause/resume (e.g. clamshell close on Android)
+    data object LifecyclePause : EmulationIntent
+    data object LifecycleResume : EmulationIntent
+
     data object ShowKeyMapping : EmulationIntent
     data object HideKeyMapping : EmulationIntent
     data object ShowGamepadConfig : EmulationIntent

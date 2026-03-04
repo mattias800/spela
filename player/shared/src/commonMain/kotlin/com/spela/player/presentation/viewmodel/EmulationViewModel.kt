@@ -139,6 +139,9 @@ class EmulationViewModel(
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
             EmulationIntent.ClearExitRequest -> _state.update { it.copy(requestExit = false) }
 
+            EmulationIntent.LifecyclePause -> lifecyclePause()
+            EmulationIntent.LifecycleResume -> lifecycleResume()
+
             EmulationIntent.ShowKeyMapping -> _state.update { it.copy(showKeyMapping = true, showOverlay = false, showGamepadConfig = false) }
             EmulationIntent.HideKeyMapping -> _state.update { it.copy(showKeyMapping = false, showOverlay = true) }
             EmulationIntent.ShowGamepadConfig -> _state.update { it.copy(showGamepadConfig = true, showOverlay = false) }
@@ -502,6 +505,24 @@ class EmulationViewModel(
         _state.update { it.copy(isPaused = false) }
     }
 
+    private fun lifecyclePause() {
+        val current = _state.value
+        if (current.isRunning && !current.isPaused) {
+            libretroController.pause()
+            _state.update { it.copy(isLifecyclePaused = true, isPaused = true) }
+        }
+    }
+
+    private fun lifecycleResume() {
+        val current = _state.value
+        if (current.isLifecyclePaused) {
+            _state.update { it.copy(isLifecyclePaused = false) }
+            // Only resume emulation if it wasn't user-paused before lifecycle pause
+            libretroController.resume()
+            _state.update { it.copy(isPaused = false) }
+        }
+    }
+
     private fun startSessionTimer() {
         sessionTimerJob?.cancel()
         sessionTimerJob = scope.launch(dispatchers.default) {
@@ -580,6 +601,7 @@ class EmulationViewModel(
                     it.copy(
                         isRunning = false,
                         isPaused = false,
+                        isLifecyclePaused = false,
                         fps = 0f,
                         frameTime = 0f,
                         isHardcoreMode = false,
