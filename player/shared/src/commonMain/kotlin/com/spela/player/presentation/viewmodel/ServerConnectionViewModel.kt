@@ -16,6 +16,7 @@ data class ServerConnectionState(
     val newServerUrl: String = "",
     val isAddingServer: Boolean = false,
     val isLoading: Boolean = false,
+    val isValidating: Boolean = false,
     val error: String? = null,
     val selectedServerId: String? = null,
 )
@@ -82,9 +83,19 @@ class ServerConnectionViewModel(
             return
         }
 
-        _state.update { it.copy(isLoading = true) }
+        _state.update { it.copy(isValidating = true, error = null) }
         scope.launch(dispatchers.io) {
             try {
+                val reachable = serverRepository.validateServer(current.newServerUrl)
+                if (!reachable) {
+                    _state.update {
+                        it.copy(
+                            isValidating = false,
+                            error = "Could not connect to server. Check the URL and try again.",
+                        )
+                    }
+                    return@launch
+                }
                 serverRepository.addServer(current.newServerName, current.newServerUrl)
                 val servers = serverRepository.getServers()
                 _state.update {
@@ -93,11 +104,11 @@ class ServerConnectionViewModel(
                         newServerName = "",
                         newServerUrl = "",
                         isAddingServer = false,
-                        isLoading = false,
+                        isValidating = false,
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message, isLoading = false) }
+                _state.update { it.copy(error = e.message, isValidating = false) }
             }
         }
     }

@@ -10,4 +10,5 @@ interface ServerRepository {
     suspend fun addServer(name: String, url: String): ServerConnection
     suspend fun removeServer(id: String)
     suspend fun setActiveServer(id: String)
+    suspend fun validateServer(url: String): Boolean
 }
