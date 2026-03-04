@@ -115,6 +115,10 @@ func ParseChtContent(content string) ([]CheatEntry, error) {
 // ImportCheatsForGame fetches and imports cheat codes for a single game.
 // Returns nil if the game's console has no cheat folder or if the game has no .cht file.
 func ImportCheatsForGame(database *gorm.DB, game db.Game, console db.Console, baseURL string, httpClient *http.Client) error {
+	if game.VerificationStatus != "verified" {
+		return nil
+	}
+
 	folder, ok := systemFolders[console.FolderName]
 	if !ok {
 		return nil // No cheats for this console
@@ -171,6 +175,28 @@ func ImportCheatsForGame(database *gorm.DB, game db.Game, console db.Console, ba
 		slog.Info("imported cheats", "game", game.Title, "count", len(entries))
 	}
 	return nil
+}
+
+// StartAutoImport checks if cheats have already been imported and, if not,
+// spawns a goroutine that imports cheats for all verified games at startup.
+func StartAutoImport(database *gorm.DB) {
+	var count int64
+	database.Model(&db.CheatCode{}).Count(&count)
+	if count > 0 {
+		slog.Info("cheats already imported, skipping auto-import", "count", count)
+		return
+	}
+
+	go func() {
+		slog.Info("cheat auto-import starting")
+		if err := ImportAllCheats(database, DefaultBaseURL); err != nil {
+			slog.Warn("cheat auto-import failed", "error", err)
+		} else {
+			var imported int64
+			database.Model(&db.CheatCode{}).Count(&imported)
+			slog.Info("cheat auto-import complete", "imported", imported)
+		}
+	}()
 }
 
 // ImportAllCheats imports cheat codes for all games that have a matching .cht file.

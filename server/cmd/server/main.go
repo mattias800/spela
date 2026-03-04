@@ -13,6 +13,7 @@ import (
 
 	"github.com/spela/server/internal/api"
 	"github.com/spela/server/internal/bios"
+	"github.com/spela/server/internal/cheats"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -140,6 +141,9 @@ func main() {
 
 	// Auto-download missing BIOS files at startup (non-blocking)
 	bios.StartAutoDownload(store.BiosDir, database)
+
+	// Auto-import cheat codes on first boot (non-blocking)
+	cheats.StartAutoImport(database)
 
 	// Derive WebSocket origins: prefer explicit WS origins, fall back to CORS origins.
 	// This ensures WebSocket origin checking is not more permissive than CORS by default.

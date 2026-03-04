@@ -254,6 +254,7 @@ class GameDetailViewModel(
             downloadRepository.downloadGame(gameId, gameTitle).fold(
                 onSuccess = {
                     _state.update { it.copy(isGameCached = true, isDownloading = false) }
+                    currentGameId?.let { loadCheats(it) }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isDownloading = false) }

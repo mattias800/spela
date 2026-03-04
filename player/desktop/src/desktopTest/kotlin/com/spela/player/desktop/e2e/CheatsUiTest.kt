@@ -108,6 +108,39 @@ class CheatsUiTest {
         assertTrue(harness.cheatRepo.cheats.first { it.id == "c1" }.enabled)
     }
 
+    // --- Load After Download ---
+
+    @Test
+    fun cheatsLoadedAfterDownloadingGame() = runComposeUiTest {
+        val harness = createHarness()
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness)
+
+        // Cheats should already be loaded from initial loadGame → loadCheats
+        val stateBefore = harness.gameDetailViewModel.state.value
+        assertEquals(3, stateBefore.cheats.size, "cheats loaded on initial game load")
+
+        // Clear cheats in repo to simulate a scenario where initial load didn't have them,
+        // then re-add them so the post-download loadCheats can fetch them
+        harness.cheatRepo.cheats.clear()
+        // Force clear VM state to simulate no cheats loaded
+        harness.gameDetailViewModel.onIntent(GameDetailIntent.LoadCheats("1"))
+        advance(harness)
+        assertEquals(0, harness.gameDetailViewModel.state.value.cheats.size, "cheats cleared")
+
+        // Re-add cheats to repo so post-download loadCheats finds them
+        harness.cheatRepo.cheats.addAll(testCheats)
+
+        // Trigger download — the onSuccess callback should call loadCheats
+        harness.gameDetailViewModel.onIntent(GameDetailIntent.DownloadGame)
+        advanceFully(harness)
+
+        val stateAfter = harness.gameDetailViewModel.state.value
+        assertTrue(stateAfter.isGameCached, "game should be cached after download")
+        assertEquals(3, stateAfter.cheats.size, "cheats should be re-loaded after download")
+    }
+
     // --- Disable All ---
 
     @Test
