@@ -710,8 +710,8 @@ static int core_load(const char *path) {
     LOAD_SYM(retro_get_memory_size);
 
     /* Cheat functions are optional — not all cores implement them. */
-    g_core.retro_cheat_reset = (retro_cheat_reset_t)sp_lib_sym(g_core.handle, "retro_cheat_reset");
-    g_core.retro_cheat_set   = (retro_cheat_set_t)sp_lib_sym(g_core.handle, "retro_cheat_set");
+    g_core.retro_cheat_reset = (retro_cheat_reset_t)sp_dlsym(g_core.handle, "retro_cheat_reset");
+    g_core.retro_cheat_set   = (retro_cheat_set_t)sp_dlsym(g_core.handle, "retro_cheat_set");
 
     /* Get system info BEFORE registering callbacks — the environment callback
      * may query the core name (e.g. GET_PREFERRED_HW_RENDER uses it to choose
