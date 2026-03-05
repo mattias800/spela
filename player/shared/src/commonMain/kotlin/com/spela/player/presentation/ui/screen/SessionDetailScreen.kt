@@ -28,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -58,6 +57,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -177,56 +177,33 @@ fun SessionDetailScreen(
                         // Cheats section
                         item {
                             Spacer(Modifier.height(SpSpacing.XLarge))
-                            SpSectionHeader(
-                                title = "Cheats",
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            SessionCheatsSection(
+                                cheatsEnabled = state.cheatsEnabled,
+                                enabledCheatIndices = state.enabledCheatIndices,
+                                availableCheats = state.availableCheats,
+                                isLoadingCheats = state.isLoadingCheats,
+                                cheatsLoadAttempted = state.cheatsLoadAttempted,
+                                onToggleCheatsEnabled = { enabled ->
+                                    viewModel.onIntent(
+                                        SessionDetailIntent.ToggleCheatsEnabled(sessionId, enabled)
+                                    )
+                                },
+                                onToggleCheatAtIndex = { index ->
+                                    viewModel.onIntent(
+                                        SessionDetailIntent.ToggleCheatAtIndex(sessionId, index)
+                                    )
+                                },
+                                onSelectAll = {
+                                    viewModel.onIntent(
+                                        SessionDetailIntent.SelectAllCheats(sessionId)
+                                    )
+                                },
+                                onDeselectAll = {
+                                    viewModel.onIntent(
+                                        SessionDetailIntent.DeselectAllCheats(sessionId)
+                                    )
+                                },
                             )
-                            Spacer(Modifier.height(SpSpacing.Small))
-
-                            SpInnerCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                    .testTag("session_cheats_section"),
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(SpSpacing.Default),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(
-                                        text = "Enable Cheats",
-                                        style = SpTypography.BodyMedium,
-                                        color = SpColor.OnCard,
-                                    )
-                                    Switch(
-                                        checked = state.cheatsEnabled,
-                                        onCheckedChange = { enabled ->
-                                            viewModel.onIntent(
-                                                SessionDetailIntent.ToggleCheatsEnabled(sessionId, enabled)
-                                            )
-                                        },
-                                        modifier = Modifier
-                                            .testTag("session_cheats_toggle")
-                                            .semantics { contentDescription = "Toggle cheats" },
-                                    )
-                                }
-                                if (state.cheatsEnabled && state.enabledCheatIndices.isNotEmpty()) {
-                                    Text(
-                                        text = "${state.enabledCheatIndices.size} cheat(s) active",
-                                        style = SpTypography.LabelSmall,
-                                        color = SpColor.OnBackgroundTertiary,
-                                        modifier = Modifier
-                                            .padding(
-                                                start = SpSpacing.Default,
-                                                bottom = SpSpacing.Small,
-                                            )
-                                            .testTag("session_cheats_count"),
-                                    )
-                                }
-                            }
                         }
 
                         // Danger Zone section

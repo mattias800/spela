@@ -30,6 +30,17 @@ vi.mock("@/hooks/use-games", () => ({
   })),
 }));
 
+vi.mock("@/hooks/use-cheats", () => ({
+  useGameCheats: vi.fn(() => ({
+    data: [
+      { index: 0, description: "Infinite Lives", code: "7E0DBE:09" },
+      { index: 1, description: "Infinite Coins", code: "7E0DC0:63" },
+      { index: 2, description: "Moon Jump", code: "7E13E0:20" },
+    ],
+    isLoading: false,
+  })),
+}));
+
 import {
   useSession,
   useSessionSaves,
@@ -163,7 +174,7 @@ describe("SessionDetailPage", () => {
     expect(
       screen.getByRole("heading", { name: /Cheats/i }),
     ).toBeInTheDocument();
-    const toggle = screen.getByRole("switch");
+    const toggle = screen.getByLabelText("Enable cheats");
     expect(toggle).toBeInTheDocument();
     expect(toggle).toHaveAttribute("aria-checked", "false");
   });
@@ -174,7 +185,7 @@ describe("SessionDetailPage", () => {
       isLoading: false,
     });
     renderPage();
-    const toggle = screen.getByRole("switch");
+    const toggle = screen.getByLabelText("Enable cheats");
     expect(toggle).toHaveAttribute("aria-checked", "true");
     expect(screen.getByText("2 enabled")).toBeInTheDocument();
   });
@@ -186,7 +197,7 @@ describe("SessionDetailPage", () => {
       isPending: false,
     });
     renderPage();
-    await userEvent.click(screen.getByRole("switch"));
+    await userEvent.click(screen.getByLabelText("Enable cheats"));
     expect(mutateFn).toHaveBeenCalledWith({
       sessionId: "s1",
       cheatsEnabled: true,
@@ -252,7 +263,7 @@ describe("SessionDetailPage", () => {
   it("shows cheats disabled message when cheats are off", () => {
     renderPage();
     expect(
-      screen.getByText(/Cheats are disabled for this session/i),
+      screen.getByText(/Cheats are disabled for this session\. 3 cheats available\./i),
     ).toBeInTheDocument();
   });
 });

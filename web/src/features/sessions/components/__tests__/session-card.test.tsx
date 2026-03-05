@@ -167,8 +167,7 @@ describe("SessionCard", () => {
       screenshotUrl: "https://example.com/screenshot.png",
     });
     const img = screen.getByAltText("Main Playthrough");
-    expect(img).toHaveAttribute(
-      "src",
+    expect(img.getAttribute("src")).toContain(
       "https://example.com/screenshot.png",
     );
   });

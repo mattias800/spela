@@ -326,6 +326,7 @@ val commonModule = module {
             sessionRepository = get(),
             dispatchers = get(),
             scope = get(),
+            cheatRepository = get(),
         )
     }
 

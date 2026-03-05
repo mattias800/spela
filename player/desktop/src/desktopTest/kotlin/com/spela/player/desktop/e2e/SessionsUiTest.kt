@@ -271,8 +271,8 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNodeWithTag("session_member_avatars_s1").assertIsDisplayed()
-        onNodeWithTag("session_multiplayer_badge_s1").assertIsDisplayed()
+        onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertIsDisplayed()
+        onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("Multiplayer").assertIsDisplayed()
     }
 
@@ -294,7 +294,7 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNodeWithTag("session_last_played_by_s1").assertIsDisplayed()
+        onNode(hasTestTag("session_last_played_by_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("Last played by player2").assertIsDisplayed()
     }
 
@@ -316,7 +316,7 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNodeWithTag("session_multiplayer_badge_s1").assertIsDisplayed()
+        onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("Relay").assertIsDisplayed()
     }
 
@@ -337,8 +337,8 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNodeWithTag("session_multiplayer_badge_s1").assertDoesNotExist()
-        onNodeWithTag("session_member_avatars_s1").assertDoesNotExist()
+        onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertDoesNotExist()
+        onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertDoesNotExist()
     }
 
     // ── Member count overflow shows "+N" ──
@@ -364,8 +364,8 @@ class SessionsUiTest {
         navigateToGameDetail(harness, "1")
 
         scrollToSessions()
-        onNodeWithTag("session_member_avatars_s1").assertIsDisplayed()
-        onNodeWithTag("session_avatar_overflow").assertIsDisplayed()
+        onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertIsDisplayed()
+        onNode(hasTestTag("session_avatar_overflow"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("+3").assertIsDisplayed()
     }
 }
