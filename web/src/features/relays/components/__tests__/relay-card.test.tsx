@@ -15,6 +15,8 @@ function makeRelay(overrides: Partial<Relay> = {}): Relay {
     ownerId: "u1",
     ownerUsername: "alice",
     status: "active",
+    activeUserId: null,
+    turnTakenAt: null,
     memberCount: 3,
     lastActivityAt: "2026-02-13T10:00:00Z",
     createdAt: "2026-02-01T10:00:00Z",
