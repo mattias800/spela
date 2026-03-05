@@ -292,8 +292,25 @@ class EmulationViewModel(
                 "3ds" -> 240   // 400×240 top + 320×240 bottom = 400×480
                 else -> 0
             }
+            val bottomWidth = when (lc) {
+                "nds" -> 256   // Same width as top screen
+                "3ds" -> 320   // Narrower than top (400px)
+                else -> 0
+            }
+            val bottomOffsetX = when (lc) {
+                "nds" -> 0     // No padding
+                "3ds" -> 40    // (400 - 320) / 2 = 40px padding each side
+                else -> 0
+            }
             withContext(dispatchers.main) {
-                _state.update { it.copy(isDualScreenConsole = isDualScreen, dualScreenSplitY = splitY) }
+                _state.update {
+                    it.copy(
+                        isDualScreenConsole = isDualScreen,
+                        dualScreenSplitY = splitY,
+                        dualScreenBottomWidth = bottomWidth,
+                        dualScreenBottomOffsetX = bottomOffsetX,
+                    )
+                }
             }
 
             // Resolve shader using two-layer system
@@ -610,6 +627,8 @@ class EmulationViewModel(
                         secondaryDisplayActive = false,
                         isDualScreenConsole = false,
                         dualScreenSplitY = 0,
+                        dualScreenBottomWidth = 0,
+                        dualScreenBottomOffsetX = 0,
                         relayId = null,
                         turnToken = null,
                         netplaySessionId = null,

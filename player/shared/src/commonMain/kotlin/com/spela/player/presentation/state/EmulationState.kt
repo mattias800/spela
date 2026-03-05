@@ -43,6 +43,11 @@ data class EmulationState(
     /** Y pixel offset where the framebuffer splits (e.g. 192 for DS top/bottom). */
     val dualScreenSplitY: Int = 0,
 
+    /** Width of the bottom screen in pixels (320 for 3DS, 256 for DS). */
+    val dualScreenBottomWidth: Int = 0,
+    /** X offset of the bottom screen within the framebuffer (40 for 3DS, 0 for DS). */
+    val dualScreenBottomOffsetX: Int = 0,
+
     /** Elapsed play session time in seconds, updated every second while running. */
     val sessionElapsedSeconds: Long = 0,
 

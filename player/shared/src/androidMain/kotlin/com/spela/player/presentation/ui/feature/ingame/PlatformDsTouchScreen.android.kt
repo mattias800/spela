@@ -40,6 +40,8 @@ actual fun PlatformDsTouchScreen(
     controller: LibretroController,
     splitY: Int,
     selectedShader: ShaderPreset,
+    bottomScreenWidth: Int,
+    bottomScreenOffsetX: Int,
     modifier: Modifier,
 ) {
     val androidController = controller as? AndroidLibretroController ?: return
@@ -62,11 +64,16 @@ actual fun PlatformDsTouchScreen(
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         val bmpHeight = bitmap?.height ?: 0
+                        val bmpWidth = bitmap?.width ?: 0
+                        val srcW = if (bottomScreenWidth > 0) bottomScreenWidth else bmpWidth
+                        val srcH = bmpHeight - splitY
                         // Map and send initial touch
                         sendPointerFromTouch(
                             controller, down.position.x, down.position.y,
-                            canvasSize, bitmap?.width ?: 0, bmpHeight - splitY,
+                            canvasSize, srcW, srcH,
+                            fullWidth = bmpWidth,
                             fullHeight = bmpHeight,
+                            bottomScreenOffsetX = bottomScreenOffsetX,
                             pressed = true,
                         )
                         down.consume()
@@ -79,8 +86,10 @@ actual fun PlatformDsTouchScreen(
                                 PointerEventType.Move -> {
                                     sendPointerFromTouch(
                                         controller, change.position.x, change.position.y,
-                                        canvasSize, bitmap?.width ?: 0, bmpHeight - splitY,
+                                        canvasSize, srcW, srcH,
+                                        fullWidth = bmpWidth,
                                         fullHeight = bmpHeight,
+                                        bottomScreenOffsetX = bottomScreenOffsetX,
                                         pressed = true,
                                     )
                                     change.consume()
@@ -99,7 +108,9 @@ actual fun PlatformDsTouchScreen(
             val bmp = bitmap ?: return@Canvas
             if (bmp.isRecycled || bmp.height <= splitY) return@Canvas
 
-            val srcWidth = bmp.width
+            // Horizontal crop for 3DS: bottom screen is narrower, padded with noise
+            val srcX = if (bottomScreenOffsetX > 0) bottomScreenOffsetX else 0
+            val srcWidth = if (bottomScreenWidth > 0) bottomScreenWidth else bmp.width
             val srcHeight = bmp.height - splitY
 
             val cWidth = size.width
@@ -117,7 +128,7 @@ actual fun PlatformDsTouchScreen(
 
             drawImage(
                 image = bmp.asImageBitmap(),
-                srcOffset = IntOffset(0, splitY),
+                srcOffset = IntOffset(srcX, splitY),
                 srcSize = srcSize,
                 dstOffset = dstOffset,
                 dstSize = dstSize,
@@ -138,9 +149,13 @@ actual fun PlatformDsTouchScreen(
  * For DS/3DS touch input, the core expects coordinates relative to the full viewport
  * (both screens stacked). The bottom screen occupies the lower portion of the viewport,
  * so Y is mapped to the bottom half only (0 to 0x7FFF), not the full range.
- * X uses the full range (-0x7FFF to 0x7FFF) as normal.
  *
+ * For 3DS, the bottom screen (320px) is narrower than the full framebuffer (400px),
+ * so X must be mapped to the sub-region within the full framebuffer width.
+ *
+ * @param fullWidth The full framebuffer width, used for horizontal offset mapping.
  * @param fullHeight The full framebuffer height (both screens), used to compute the split ratio.
+ * @param bottomScreenOffsetX Horizontal offset of the bottom screen within the framebuffer.
  */
 private fun sendPointerFromTouch(
     controller: LibretroController,
@@ -149,7 +164,9 @@ private fun sendPointerFromTouch(
     canvasSize: Size,
     srcWidth: Int,
     srcHeight: Int,
+    fullWidth: Int,
     fullHeight: Int,
+    bottomScreenOffsetX: Int,
     pressed: Boolean,
 ) {
     if (canvasSize.width <= 0 || canvasSize.height <= 0 || srcWidth <= 0 || srcHeight <= 0) return
@@ -165,8 +182,14 @@ private fun sendPointerFromTouch(
     val normalizedX = ((touchX - offsetX) / scaledWidth).coerceIn(0f, 1f)
     val normalizedY = ((touchY - offsetY) / scaledHeight).coerceIn(0f, 1f)
 
-    // X maps to full libretro pointer range: -0x7FFF to 0x7FFF
-    val pointerX = ((normalizedX * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
+    // X: map to the sub-region of the full framebuffer when bottom screen is narrower
+    val pointerX = if (bottomScreenOffsetX > 0 && fullWidth > 0) {
+        // Touch normalizedX maps to [offsetX .. offsetX + srcWidth] within the full framebuffer
+        val viewportX = (bottomScreenOffsetX.toFloat() + normalizedX * srcWidth) / fullWidth
+        ((viewportX * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
+    } else {
+        ((normalizedX * 2f - 1f) * 0x7FFF).toInt().coerceIn(-0x7FFF, 0x7FFF)
+    }
 
     // Y maps to the bottom portion of the full viewport.
     // The split ratio determines where the bottom screen starts in the full viewport.

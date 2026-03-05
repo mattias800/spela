@@ -85,6 +85,12 @@ class SecondaryDisplayPresentation(
         return super.dispatchTouchEvent(ev)
     }
 
+    override fun onBackPressed() {
+        // Suppress back button (gamepad B mapped to KEYCODE_BACK) so it doesn't
+        // dismiss the secondary display during gameplay. The presentation is
+        // dismissed programmatically when the game stops.
+    }
+
     override fun dismiss() {
         if (lifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)

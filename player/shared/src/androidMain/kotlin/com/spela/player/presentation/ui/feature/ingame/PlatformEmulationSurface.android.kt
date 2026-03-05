@@ -36,43 +36,36 @@ actual fun PlatformEmulationSurface(
 
     val isOverlayVisible = emulationState.showOverlay || emulationState.showKeyMapping || emulationState.showGamepadConfig
 
-    if (isDualScreenSplit) {
-        // Dual-screen DS/3DS: always use software surface (split rendering)
+    // Set flag so emulation loop populates frameBitmap via CPU readback
+    // (for both primary and secondary displays in dual-screen mode) and
+    // skips GPU present (primary uses EmulationSurface instead).
+    androidController.dualScreenSplitActive = isDualScreenSplit
+
+    // IMPORTANT: VulkanEmulationSurface must ALWAYS be at the same position in the
+    // composition tree. Putting it inside different if/else branches causes Compose
+    // to destroy and recreate it when the branch changes, triggering gpuDeinit()
+    // while the emulation thread is still running — a fatal race condition.
+    VulkanEmulationSurface(
+        controller = androidController,
+        selectedShader = selectedShader,
+        isHwRenderEnabled = hwRenderEnabled,
+        isOverlayVisible = isOverlayVisible,
+        modifier = modifier,
+    )
+
+    // Canvas-based rendering for primary display:
+    // - Software cores (DS/desmume): always used (GPU renderer not active)
+    // - Dual-screen split (DS or 3DS): crops to top screen via isDualScreenSplit.
+    //   For 3DS, the emulation loop skips nativeGpuRender() and populates
+    //   frameBitmap from CPU readback instead. The Y-flip is handled in
+    //   updateVideoFrame() so the Bitmap is in correct orientation.
+    if (!useVulkanSurface || isDualScreenSplit) {
         EmulationSurface(
             controller = androidController,
             selectedShader = selectedShader,
-            isDualScreenSplit = true,
-            splitY = emulationState.dualScreenSplitY,
+            isDualScreenSplit = isDualScreenSplit,
+            splitY = if (isDualScreenSplit) emulationState.dualScreenSplitY else 0,
             modifier = modifier,
         )
-    } else {
-        // Always include VulkanEmulationSurface in the tree so the SurfaceView
-        // is present from the first composition. Dynamically swapping it in later
-        // (when isHwRenderEnabled becomes true) causes the SurfaceView to never
-        // receive a surfaceCreated callback from the Android window manager.
-        //
-        // The SurfaceView starts transparent (TRANSLUCENT format). GPU rendering
-        // is deferred until isHwRenderEnabled becomes true. For software-only
-        // cores, the EmulationSurface Canvas renders beneath the transparent surface.
-        VulkanEmulationSurface(
-            controller = androidController,
-            selectedShader = selectedShader,
-            isHwRenderEnabled = hwRenderEnabled,
-            isOverlayVisible = isOverlayVisible,
-            modifier = modifier,
-        )
-
-        // Software fallback: render via Canvas when GPU renderer isn't active.
-        // Covers both non-HW cores (entire session) and the initial frames of
-        // HW cores before gpuInit completes.
-        if (!useVulkanSurface) {
-            EmulationSurface(
-                controller = androidController,
-                selectedShader = selectedShader,
-                isDualScreenSplit = false,
-                splitY = 0,
-                modifier = modifier,
-            )
-        }
     }
 }
