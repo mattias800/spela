@@ -3,6 +3,8 @@ package com.spela.player.android
 import android.content.pm.ActivityInfo
 import android.hardware.input.InputManager
 import android.os.Bundle
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.KeyEvent
@@ -94,6 +96,23 @@ class MainActivity : ComponentActivity() {
                 .map { it.orientationLock }
                 .distinctUntilChanged()
                 .collect { mode -> applyOrientationLock(mode) }
+        }
+
+        // Hide system bars during gameplay, restore when back in UI
+        lifecycleScope.launch {
+            navigationViewModel.state
+                .map { it.showInGameOverlay }
+                .distinctUntilChanged()
+                .collect { isInGame ->
+                    val controller = window.insetsController ?: return@collect
+                    if (isInGame) {
+                        controller.hide(WindowInsets.Type.systemBars())
+                        controller.systemBarsBehavior =
+                            WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    } else {
+                        controller.show(WindowInsets.Type.systemBars())
+                    }
+                }
         }
 
         setContent {
