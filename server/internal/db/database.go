@@ -548,7 +548,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", SaveStateSupport: true, Playable: true},
 		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd,.cue,.bin,.m3u", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true, Playable: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", SaveStateSupport: true, Playable: true},
-		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "citra", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", SaveStateSupport: true, Playable: true},
+		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", SaveStateSupport: true, Playable: true},
 		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
 		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", SaveStateSupport: true, Playable: true},
 		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", SaveStateSupport: true, Playable: true},
@@ -595,6 +595,10 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
 				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
 			}
+			if c.DefaultCore != "" && existing.DefaultCore != c.DefaultCore {
+				db.Model(&existing).Update("default_core", c.DefaultCore)
+				slog.Info("backfilled DefaultCore", "name", existing.Name, "core", c.DefaultCore)
+			}
 			if c.CoverAspect != "" && existing.CoverAspect != c.CoverAspect {
 				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
 				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
@@ -627,6 +631,52 @@ func SeedConsoles(db *gorm.DB) error {
 					db.Model(&existing).Update("extensions", existing.Extensions)
 					slog.Info("backfilled extension", "name", existing.Name, "ext", ext)
 				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// SeedCores inserts the default libretro core definitions if they don't exist,
+// and backfills DownloadURL for existing rows when the seed has a value set.
+func SeedCores(db *gorm.DB) error {
+	const azaharTag = "2125.0-alpha4"
+	cores := []Core{
+		{Name: "nestopia", DisplayName: "Nestopia UE", Description: "Accurate NES/Famicom emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "snes9x", DisplayName: "Snes9x", Description: "Portable SNES emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "gambatte", DisplayName: "Gambatte", Description: "Game Boy / Game Boy Color emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "mgba", DisplayName: "mGBA", Description: "Game Boy Advance emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "mupen64plus_next", DisplayName: "Mupen64Plus-Next", Description: "Nintendo 64 emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "genesis_plus_gx", DisplayName: "Genesis Plus GX", Description: "Sega 8/16-bit emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "beetle_psx_hw", DisplayName: "Beetle PSX HW", Description: "PlayStation emulator with hardware rendering", Platforms: "windows,linux,macos"},
+		{Name: "desmume", DisplayName: "DeSmuME", Description: "Nintendo DS emulator", Platforms: "windows,linux,macos"},
+		{Name: "dolphin", DisplayName: "Dolphin", Description: "GameCube and Wii emulator", Platforms: "windows,linux,macos,android"},
+		{
+			Name:        "azahar",
+			DisplayName: "Azahar",
+			Description: "Nintendo 3DS emulator (Citra successor)",
+			Platforms:   "windows,linux,macos,android",
+			Version:     azaharTag,
+			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/" + azaharTag + "/azahar-libretro-" + azaharTag + "-{platform}.zip",
+		},
+	}
+
+	for _, c := range cores {
+		var existing Core
+		result := db.Where("name = ?", c.Name).First(&existing)
+		if result.Error == gorm.ErrRecordNotFound {
+			if err := db.Create(&c).Error; err != nil {
+				return fmt.Errorf("seeding core %s: %w", c.Name, err)
+			}
+			slog.Info("seeded core", "name", c.Name)
+		} else {
+			if existing.DownloadURL == "" && c.DownloadURL != "" {
+				db.Model(&existing).Update("download_url", c.DownloadURL)
+				slog.Info("backfilled DownloadURL", "name", existing.Name)
+			}
+			if existing.Version == "" && c.Version != "" {
+				db.Model(&existing).Update("version", c.Version)
 			}
 		}
 	}

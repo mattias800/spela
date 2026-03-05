@@ -69,6 +69,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
+	err = db.SeedCores(database)
+	require.NoError(t, err)
 
 	tmpDir := t.TempDir()
 	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images", tmpDir+"/bios")

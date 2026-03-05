@@ -191,6 +191,7 @@ fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     displayName = displayName,
     version = version,
     platforms = platforms,
+    downloadUrl = downloadUrl,
 )
 
 fun PublicProfileGameDto.toDomain(): PublicProfileGame = PublicProfileGame(

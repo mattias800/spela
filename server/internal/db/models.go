@@ -561,6 +561,7 @@ type Core struct {
 	Version     string         `gorm:"size:64" json:"version,omitempty"`
 	Platforms   string         `gorm:"size:255" json:"platforms"` // comma-separated: windows,linux,macos,android
 	FilePath    string         `gorm:"size:1024" json:"-"`
+	DownloadURL string         `gorm:"size:1024" json:"downloadUrl,omitempty"` // URL template for non-buildbot cores; {platform} is replaced by the player
 }
 
 // CheatCode represents a cheat code for a specific game.

@@ -1,0 +1,62 @@
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestListCores_AzaharHasDownloadURL(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var cores []map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cores))
+
+	var azahar map[string]interface{}
+	for _, c := range cores {
+		if c["name"] == "azahar" {
+			azahar = c
+			break
+		}
+	}
+	require.NotNil(t, azahar, "azahar core should be seeded")
+	url, _ := azahar["downloadUrl"].(string)
+	assert.Contains(t, url, "github.com/azahar-emu/azahar")
+	assert.Contains(t, url, "{platform}")
+}
+
+func TestListCores_BuildbotCoresHaveNoDownloadURL(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var cores []db.Core
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cores))
+
+	for _, c := range cores {
+		if c.Name == "nestopia" || c.Name == "snes9x" || c.Name == "dolphin" {
+			assert.Empty(t, c.DownloadURL, "buildbot core %s should have no downloadUrl", c.Name)
+		}
+	}
+}
