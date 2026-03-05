@@ -637,6 +637,28 @@ data class DeveloperGame(
     val consoleName: String = "",
 )
 
+// Game Sessions
+
+@Serializable
+data class GameSession(
+    val id: String,
+    val gameId: String,
+    val name: String,
+    val lastPlayedAt: String? = null,
+    val lastPlayedByUsername: String? = null,
+    val totalPlayTime: Long = 0,
+    val screenshotUrl: String? = null,
+    val cheatsEnabled: Boolean = false,
+    val memberCount: Int = 1,
+    val memberAvatars: List<String> = emptyList(),
+    val isRelay: Boolean = false,
+)
+
+data class SessionCheatConfig(
+    val cheatsEnabled: Boolean,
+    val enabledIndices: List<Int>,
+)
+
 // BIOS
 
 data class BiosConsoleStatus(

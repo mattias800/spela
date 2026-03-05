@@ -35,7 +35,7 @@ private const val REWIND_BUFFER_SIZE = 300 // ~60 seconds at 5fps capture rate
 private const val REWIND_CAPTURE_INTERVAL_MS = 200L // Capture every 200ms (~5 per second)
 
 /** Stores parameters for a pending game launch while pre-launch sync is in progress. */
-data class PendingLaunch(val gameId: String, val skipAutoLoad: Boolean)
+data class PendingLaunch(val gameId: String, val skipAutoLoad: Boolean, val sessionId: String? = null)
 
 /**
  * Bridges between Compose UI and the platform-specific libretro core.
@@ -105,6 +105,7 @@ class EmulationViewModel(
                 intent.gameId, intent.relayId, intent.turnToken,
                 intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
                 intent.challengeId, intent.challengeSaveData, intent.skipAutoLoad,
+                intent.sessionId,
             )
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
@@ -190,7 +191,7 @@ class EmulationViewModel(
             EmulationIntent.ToggleRewind -> toggleRewindEnabled()
 
             // Pre-launch sync
-            is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad)
+            is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad, intent.sessionId)
             EmulationIntent.PlayWithLocalSave -> playWithLocalSave()
             EmulationIntent.CancelLaunch -> cancelLaunch()
 
@@ -212,7 +213,9 @@ class EmulationViewModel(
         challengeId: String? = null,
         challengeSaveDataArg: ByteArray? = null,
         skipAutoLoad: Boolean = false,
+        sessionId: String? = null,
     ) {
+        saveManager.currentSessionId = sessionId
         _state.update {
             it.copy(
                 gameId = gameId,
@@ -223,6 +226,7 @@ class EmulationViewModel(
                 relayId = relayId,
                 turnToken = turnToken,
                 netplaySessionId = netplaySessionId,
+                sessionId = sessionId,
                 challengeId = challengeId,
                 challengeAttemptId = null,
                 challengeElapsedMs = 0,
@@ -471,9 +475,9 @@ class EmulationViewModel(
         }
     }
 
-    private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean) {
+    private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean, sessionId: String? = null) {
         saveManager.clearPrefetch()
-        pendingLaunch = PendingLaunch(gameId, skipAutoLoad)
+        pendingLaunch = PendingLaunch(gameId, skipAutoLoad, sessionId)
         scope.launch(dispatchers.io) {
             _syncState.update { GameSyncState(gameId, "Syncing game save\u2026") }
             val sramReady = saveManager.prefetchSram(gameId)
@@ -647,12 +651,14 @@ class EmulationViewModel(
                         challengeCreationSuccess = false,
                         showGiveUpConfirm = false,
                         challengeCompletedAttempt = null,
+                        sessionId = null,
                         hasCheats = false,
                         enabledCheatCount = 0,
                         showCheatBrowser = false,
                         cheats = emptyList(),
                     )
                 }
+                saveManager.currentSessionId = null
             }
         }
     }

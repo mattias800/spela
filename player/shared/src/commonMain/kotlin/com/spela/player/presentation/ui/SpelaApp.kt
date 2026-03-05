@@ -77,6 +77,7 @@ import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.NetplayStartConfig
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
+import com.spela.player.presentation.ui.screen.SessionDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
@@ -107,6 +108,7 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.RelayDetailViewModel
+import com.spela.player.presentation.viewmodel.SessionDetailViewModel
 import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
@@ -150,6 +152,7 @@ fun SpelaApp(
     presenceService: PresenceService,
     connectivityMonitor: ConnectivityMonitor,
     saveDataViewModel: SaveDataViewModel? = null,
+    sessionDetailViewModel: SessionDetailViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
 ) {
@@ -480,6 +483,7 @@ fun SpelaApp(
                                             NavigationIntent.ShowOverlay(
                                                 gameId = pending.gameId,
                                                 skipAutoLoad = pending.skipAutoLoad,
+                                                sessionId = pending.sessionId,
                                             )
                                         )
                                     }
@@ -508,6 +512,11 @@ fun SpelaApp(
                                     onCancelLaunch = {
                                         emulationViewModel.onIntent(EmulationIntent.CancelLaunch)
                                     },
+                                    onPlaySession = { gameId, sessionId ->
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId, sessionId = sessionId)
+                                        )
+                                    },
                                     onCreateNetplay = { gameId ->
                                         netplayViewModel.onIntent(
                                             NetplayIntent.CreateSession(gameId)
@@ -526,6 +535,11 @@ fun SpelaApp(
                                     onNavigateToSaveData = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.SaveDataManagement(gameId))
+                                        )
+                                    },
+                                    onNavigateToSession = { sid ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.SessionDetail(sid))
                                         )
                                     },
                                     onNavigateToGame = { targetGameId ->
@@ -860,6 +874,29 @@ fun SpelaApp(
                                     )
                                 }
                             }
+
+                            is SpScreen.SessionDetail -> {
+                                if (sessionDetailViewModel != null) {
+                                    SessionDetailScreen(
+                                        sessionId = screen.sessionId,
+                                        viewModel = sessionDetailViewModel,
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                        onPlay = { gameId, sid ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.ShowOverlay(
+                                                    gameId = gameId,
+                                                    sessionId = sid,
+                                                )
+                                            )
+                                        },
+                                        onDeleted = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -880,7 +917,7 @@ fun SpelaApp(
                                 },
                         )
 
-                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
@@ -893,6 +930,7 @@ fun SpelaApp(
                                         netplayIsHost = navState.overlayNetplayIsHost,
                                         challengeId = navState.overlayChallengeId,
                                         skipAutoLoad = navState.overlaySkipAutoLoad,
+                                        sessionId = navState.overlaySessionId,
                                     )
                                 )
                             }

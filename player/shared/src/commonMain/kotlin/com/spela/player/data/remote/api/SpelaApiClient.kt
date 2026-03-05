@@ -1269,6 +1269,119 @@ class SpelaApiClient(
         }
     }
 
+    // ── Game Sessions ──
+
+    suspend fun getSessionsForGame(gameId: String): List<GameSessionDto> {
+        return client.get("$baseUrl/api/games/$gameId/sessions").body()
+    }
+
+    suspend fun createSession(gameId: String, name: String): GameSessionDto {
+        return client.post("$baseUrl/api/games/$gameId/sessions") {
+            setBody(CreateSessionRequest(name = name))
+        }.body()
+    }
+
+    suspend fun getSession(sessionId: String): GameSessionDto {
+        return client.get("$baseUrl/api/sessions/$sessionId").body()
+    }
+
+    suspend fun updateSession(sessionId: String, name: String): GameSessionDto {
+        return client.put("$baseUrl/api/sessions/$sessionId") {
+            setBody(UpdateSessionRequest(name = name))
+        }.body()
+    }
+
+    suspend fun deleteSession(sessionId: String) {
+        client.delete("$baseUrl/api/sessions/$sessionId")
+    }
+
+    suspend fun getSessionSaves(sessionId: String): List<SaveStateDto> {
+        return client.get("$baseUrl/api/sessions/$sessionId/saves").body()
+    }
+
+    suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves",
+            formData = formData {
+                append("name", name)
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
+    suspend fun downloadSessionSave(sessionId: String, saveId: String): ByteArray {
+        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/$saveId")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Session save download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
+    suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?) {
+        client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves/auto",
+            formData = formData {
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        )
+    }
+
+    suspend fun downloadSessionAutoSave(sessionId: String): ByteArray {
+        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/auto")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Session auto-save download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
+    suspend fun uploadSessionSram(sessionId: String, data: ByteArray) {
+        client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/sram",
+            formData = formData {
+                append("file", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"sram.srm\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+            }
+        )
+    }
+
+    suspend fun downloadSessionSram(sessionId: String): ByteArray {
+        val response = client.get("$baseUrl/api/sessions/$sessionId/sram")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Session SRAM download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
+    suspend fun getSessionCheats(sessionId: String): SessionCheatConfigDto {
+        return client.get("$baseUrl/api/sessions/$sessionId/cheats").body()
+    }
+
+    suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): SessionCheatConfigDto {
+        return client.put("$baseUrl/api/sessions/$sessionId/cheats") {
+            setBody(UpdateSessionCheatsRequest(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices))
+        }.body()
+    }
+
     fun close() {
         client.close()
     }

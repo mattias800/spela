@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Repeat } from "lucide-react";
-import { Button, BackButton, Modal, Skeleton, EmptyState } from "@/components/ui";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Repeat, Layers } from "lucide-react";
+import { Button, BackButton, Modal, Skeleton, EmptyState, Card } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import {
   useRelay,
@@ -138,6 +138,28 @@ export function RelayDetailPage() {
         isOwner={isOwner}
         currentUserId={user?.id}
       />
+
+      {/* Linked session */}
+      {relay.sessionId && (
+        <Card className="p-6" data-testid="relay-session-link">
+          <div className="flex items-center gap-2.5 mb-3">
+            <Layers className="h-5 w-5 text-brand-400" />
+            <h2 className="text-lg font-semibold text-surface-100">
+              Session
+            </h2>
+          </div>
+          <p className="text-sm text-surface-400 mb-3">
+            This relay is linked to a game session where saves and cheats are
+            tracked.
+          </p>
+          <Link
+            to={`/sessions/${relay.sessionId}`}
+            className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            View Session Details
+          </Link>
+        </Card>
+      )}
 
       {/* Delete confirm modal */}
       <Modal

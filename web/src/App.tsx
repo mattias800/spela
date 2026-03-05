@@ -17,6 +17,7 @@ import { AdminUsersPage } from "@/pages/admin/users-page";
 import { AdminSettingsPage } from "@/pages/admin/settings-page";
 import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
+import { AdminCheatsPage } from "@/pages/admin/cheats-page";
 import { AdminBiosPage } from "@/pages/admin/bios-page";
 import { UploadRomsPage } from "@/pages/admin/upload-roms-page";
 import { PreferencesPage } from "@/pages/preferences-page";
@@ -33,6 +34,7 @@ import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
 import { ChallengesPage } from "@/pages/challenges-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
+import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -90,6 +92,10 @@ export function App() {
                       element={<ConsoleDetailPage />}
                     />
                     <Route path="games/:id" element={<GameDetailPage />} />
+                    <Route
+                      path="sessions/:sessionId"
+                      element={<SessionDetailPage />}
+                    />
                     <Route
                       path="collections/:id"
                       element={<CollectionDetailPage />}
@@ -155,6 +161,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <MetadataFixPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/cheats"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminCheatsPage />
                         </ProtectedRoute>
                       }
                     />

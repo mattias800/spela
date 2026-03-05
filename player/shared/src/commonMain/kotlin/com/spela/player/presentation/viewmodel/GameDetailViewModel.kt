@@ -17,6 +17,7 @@ import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SaveRepository
+import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.domain.repository.SharedSaveRepository
 import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
@@ -53,6 +54,7 @@ class GameDetailViewModel(
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
     private val cheatRepository: CheatRepository? = null,
+    private val sessionRepository: SessionRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameDetailState())
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
@@ -127,6 +129,12 @@ class GameDetailViewModel(
             GameDetailIntent.DisableAllCheats -> disableAllCheats()
             GameDetailIntent.ShowCheatDialog -> _state.update { it.copy(showCheatDialog = true) }
             GameDetailIntent.DismissCheatDialog -> _state.update { it.copy(showCheatDialog = false) }
+
+            // Sessions
+            is GameDetailIntent.LoadSessions -> loadSessions(intent.gameId)
+            is GameDetailIntent.CreateSession -> createSession(intent.gameId, intent.name)
+            is GameDetailIntent.RenameSession -> renameSession(intent.sessionId, intent.name)
+            is GameDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
         }
     }
 
@@ -171,6 +179,7 @@ class GameDetailViewModel(
                         loadCheats(gameId)
                         loadSaveDataCount()
                         loadBiosStatus()
+                        loadSessions(gameId)
                     }
                 },
                 onFailure = { error ->
@@ -900,6 +909,81 @@ class GameDetailViewModel(
                         state.copy(
                             saveStates = state.saveStates + save,
                             successMessage = "Save imported",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    // Sessions
+
+    private fun loadSessions(gameId: String) {
+        val repo = sessionRepository ?: return
+        _state.update { it.copy(isLoadingSessions = true) }
+        scope.launch(dispatchers.io) {
+            repo.getSessionsForGame(gameId).fold(
+                onSuccess = { sessions ->
+                    _state.update { it.copy(sessions = sessions, isLoadingSessions = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingSessions = false) }
+                },
+            )
+        }
+    }
+
+    private fun createSession(gameId: String, name: String) {
+        val repo = sessionRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.createSession(gameId, name).fold(
+                onSuccess = { session ->
+                    _state.update { state ->
+                        state.copy(
+                            sessions = state.sessions + session,
+                            successMessage = "Session \"${session.name}\" created",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun renameSession(sessionId: String, name: String) {
+        val repo = sessionRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.updateSession(sessionId, name).fold(
+                onSuccess = { updated ->
+                    _state.update { state ->
+                        state.copy(
+                            sessions = state.sessions.map {
+                                if (it.id == sessionId) updated else it
+                            },
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun deleteSession(sessionId: String) {
+        val repo = sessionRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.deleteSession(sessionId).fold(
+                onSuccess = {
+                    _state.update { state ->
+                        state.copy(
+                            sessions = state.sessions.filter { it.id != sessionId },
+                            successMessage = "Session deleted",
                         )
                     }
                 },

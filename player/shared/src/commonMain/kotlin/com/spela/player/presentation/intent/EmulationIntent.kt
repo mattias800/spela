@@ -12,6 +12,7 @@ sealed interface EmulationIntent {
         val challengeId: String? = null,
         val challengeSaveData: ByteArray? = null,
         val skipAutoLoad: Boolean = false,
+        val sessionId: String? = null,
     ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent
@@ -79,6 +80,7 @@ sealed interface EmulationIntent {
     data class PrepareLaunch(
         val gameId: String,
         val skipAutoLoad: Boolean = false,
+        val sessionId: String? = null,
     ) : EmulationIntent
     data object PlayWithLocalSave : EmulationIntent
     data object CancelLaunch : EmulationIntent

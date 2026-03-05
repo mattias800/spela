@@ -511,6 +511,7 @@ type RelayResponse struct {
 	ActiveUsername string     `json:"activeUsername,omitempty"`
 	TurnTakenAt    *time.Time `json:"turnTakenAt"`
 	MemberCount    int        `json:"memberCount"`
+	SessionID      *string    `json:"sessionId,omitempty"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }
@@ -638,6 +639,42 @@ type RateLimitResponse struct {
 	FailedCount int        `json:"failedCount"`
 	LockedUntil *time.Time `json:"lockedUntil"`
 	IsLockedOut bool       `json:"isLockedOut"`
+}
+
+// GameSessionResponse is the API response for a game session.
+type GameSessionResponse struct {
+	ID            string     `json:"id"`
+	OwnerID       string     `json:"ownerId"`
+	OwnerUsername string     `json:"ownerUsername"`
+	GameID        string     `json:"gameId"`
+	Name          string     `json:"name"`
+	LastPlayedAt  *time.Time `json:"lastPlayedAt,omitempty"`
+	LastPlayedBy  *string    `json:"lastPlayedBy,omitempty"`
+	TotalPlayTime int64      `json:"totalPlayTime"`
+	ScreenshotURL string     `json:"screenshotUrl,omitempty"`
+	CoreName      string     `json:"coreName,omitempty"`
+	CheatsEnabled bool       `json:"cheatsEnabled"`
+	SaveCount     int        `json:"saveCount"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+}
+
+// SessionSaveResponse is the API response for a session save state.
+type SessionSaveResponse struct {
+	ID            string    `json:"id"`
+	SessionID     string    `json:"sessionId"`
+	UserID        string    `json:"userId"`
+	Username      string    `json:"username"`
+	Name          string    `json:"name"`
+	FileSize      int64     `json:"fileSize"`
+	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
+	IsAuto        bool      `json:"isAuto"`
+	IsCurrent     bool      `json:"isCurrent"`
+	CoreName      string    `json:"coreName,omitempty"`
+	Notes         string    `json:"notes,omitempty"`
+	Slot          *int      `json:"slot,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 // resolveImageURL prefixes relative image paths with /api/images/.

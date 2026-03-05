@@ -939,6 +939,47 @@ data class SaveDataDto(
     val updatedAt: String = "",
 )
 
+// Game Sessions
+
+@Serializable
+data class GameSessionDto(
+    val id: String,
+    val gameId: String,
+    val name: String,
+    val lastPlayedAt: String? = null,
+    val lastPlayedByUsername: String? = null,
+    val totalPlayTime: Long = 0,
+    val screenshotUrl: String? = null,
+    val cheatsEnabled: Boolean = false,
+    val memberCount: Int = 1,
+    val memberAvatars: List<String> = emptyList(),
+    val isRelay: Boolean = false,
+)
+
+@Serializable
+data class CreateSessionRequest(
+    val name: String,
+)
+
+@Serializable
+data class UpdateSessionRequest(
+    val name: String,
+)
+
+// Session Cheats
+
+@Serializable
+data class SessionCheatConfigDto(
+    val cheatsEnabled: Boolean = false,
+    val enabledIndices: List<Int> = emptyList(),
+)
+
+@Serializable
+data class UpdateSessionCheatsRequest(
+    val cheatsEnabled: Boolean,
+    val enabledIndices: List<Int>,
+)
+
 // Cheats
 
 @Serializable

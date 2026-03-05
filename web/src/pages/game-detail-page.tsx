@@ -33,6 +33,8 @@ import { RatingSummaryCard } from "@/features/game-detail/components/rating-summ
 import { GameReviews } from "@/features/game-detail/components/game-reviews";
 import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
 import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
+import { GameSessions } from "@/features/sessions/components/game-sessions";
+import { GameCheats } from "@/features/game-detail/components/game-cheats";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useBiosStatus } from "@/hooks/use-bios";
@@ -227,12 +229,14 @@ export function GameDetailPage() {
         onClose={() => setShowCollectionPicker(false)}
       />
 
+      <GameSessions gameId={game.id} />
+
       <Card className="p-6">
         <GameCommunityStats gameId={game.id} game={game} />
       </Card>
 
       {/* Rating section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="p-6">
           <RatingSummaryCard gameId={game.id} />
         </Card>
@@ -248,6 +252,8 @@ export function GameDetailPage() {
         gameTitle={game.title}
       />
 
+      <GameCheats gameId={game.id} />
+
       {isPlayable && (
         <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
       )}
@@ -259,7 +265,7 @@ export function GameDetailPage() {
       )}
 
       {isPlayable && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6">
             <SharedSavesList gameId={game.id} />
           </Card>

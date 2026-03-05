@@ -111,6 +111,7 @@ class SpelaTestHarness(
     val challengeRepo = FakeChallengeRepository()
     val biosRepo = FakeBiosRepository(fakeApiClient, FakeFileStorage())
     val cheatRepo = FakeCheatRepository()
+    val sessionRepo = FakeSessionRepository()
 
     private val scrapeService = com.spela.player.data.remote.ScrapeService(fakeApiClient, dispatchers, scope)
 
@@ -156,6 +157,7 @@ class SpelaTestHarness(
         scope = scope,
         biosRepository = biosRepo,
         cheatRepository = cheatRepo,
+        sessionRepository = sessionRepo,
     )
 
     private val stubEngineFactory = object : HttpClientEngineFactory<HttpClientEngineConfig> {
@@ -181,6 +183,7 @@ class SpelaTestHarness(
         _state = emulationState,
         dispatchers = dispatchers,
         scope = scope,
+        sessionRepository = sessionRepo,
     )
     private val challengeManager = ChallengeManager(
         challengeRepository = challengeRepo,
@@ -278,6 +281,12 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val sessionDetailViewModel = SessionDetailViewModel(
+        sessionRepository = sessionRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val statsRepo = FakeStatsRepository()
 
     val statsViewModel = StatsViewModel(
@@ -366,6 +375,7 @@ class SpelaTestHarness(
             presenceService = presenceService,
             connectivityMonitor = connectivityMonitor,
             saveDataViewModel = saveDataViewModel,
+            sessionDetailViewModel = sessionDetailViewModel,
             gamepadPortManager = gamepadPortManager,
         )
         }

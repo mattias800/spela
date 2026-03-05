@@ -1682,3 +1682,233 @@ func TestRelay_CopySaveToGame_SaveNotFound(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// --- Relay-Session integration tests ---
+
+func TestRelay_Create_CreatesSession(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Session Relay Game", FileName: "test.nes", FilePath: "/tmp/session-relay.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createRelay(t, router, token, gameID, "Session Relay")
+
+	// Response should include a sessionId
+	assert.NotNil(t, resp["sessionId"], "relay response should include sessionId")
+	sessionID := resp["sessionId"].(string)
+	assert.NotEmpty(t, sessionID)
+
+	// Verify the GameSession was actually created in the database
+	var session db.GameSession
+	err := database.First(&session, sessionID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "Relay: Session Relay", session.Name)
+	assert.Equal(t, game.ID, session.GameID)
+
+	// Verify the relay's SessionID is set in the database
+	relayID := resp["id"].(string)
+	var relay db.Relay
+	database.First(&relay, relayID)
+	require.NotNil(t, relay.SessionID)
+	assert.Equal(t, session.ID, *relay.SessionID)
+}
+
+func TestRelay_SaveUpload_CreatesSessionSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "SessionSave Game", FileName: "test.nes", FilePath: "/tmp/session-save.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createRelay(t, router, token, gameID, "Save Relay")
+	relayID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Take the turn
+	turnToken := takeTurn(t, router, token, relayID)
+
+	// Upload a manual save
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "manual.sav")
+	part.Write([]byte("save-data"))
+	writer.WriteField("name", "Manual Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves", &body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Verify a SessionSaveState was also created
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ?", sessionID).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1, "should have one session save state")
+	assert.Equal(t, "Manual Save", sessionSaves[0].Name)
+	assert.False(t, sessionSaves[0].IsAuto)
+}
+
+func TestRelay_AutoSaveUpload_CreatesSessionSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "AutoSave Session Game", FileName: "test.nes", FilePath: "/tmp/autosave-session.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createRelay(t, router, token, gameID, "AutoSave Relay")
+	relayID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Take the turn
+	turnToken := takeTurn(t, router, token, relayID)
+
+	// Upload auto save
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "auto.sav")
+	part.Write([]byte("auto-save-data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/saves/auto", &body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Verify a SessionSaveState was also created (auto)
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ? AND is_auto = ?", sessionID, true).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1, "should have one auto session save state")
+	assert.Equal(t, "Auto Save", sessionSaves[0].Name)
+	assert.True(t, sessionSaves[0].IsAuto)
+}
+
+func TestRelay_MigrateRelaySessions(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	_ = NewRouter(*cfg)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Migration Game", FileName: "test.nes", FilePath: "/tmp/migrate.nes", FileSize: 100}
+	database.Create(&game)
+
+	// Manually create a relay without a session (simulating pre-migration data)
+	relay := db.Relay{
+		OwnerID: 1,
+		GameID:  game.ID,
+		Name:    "Old Relay",
+		Status:  "active",
+	}
+	database.Create(&relay)
+	assert.Nil(t, relay.SessionID)
+
+	// Create a relay save
+	relaySave := db.RelaySave{
+		RelayID:  relay.ID,
+		UserID:   1,
+		Name:     "Old Save",
+		FilePath: "/tmp/old-save.sav",
+		FileSize: 100,
+		IsAuto:   false,
+	}
+	database.Create(&relaySave)
+
+	// Run migration
+	err := db.MigrateRelaySessions(database)
+	require.NoError(t, err)
+
+	// Reload relay
+	database.First(&relay, relay.ID)
+	require.NotNil(t, relay.SessionID, "relay should now have a session ID")
+
+	// Verify session was created
+	var session db.GameSession
+	err = database.First(&session, *relay.SessionID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "Relay: Old Relay", session.Name)
+	assert.Equal(t, game.ID, session.GameID)
+	assert.Equal(t, relay.OwnerID, session.OwnerID)
+
+	// Verify relay saves were copied to session saves
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ?", session.ID).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1)
+	assert.Equal(t, "Old Save", sessionSaves[0].Name)
+	assert.Equal(t, relaySave.FilePath, sessionSaves[0].FilePath)
+
+	// Run migration again — should be idempotent
+	err = db.MigrateRelaySessions(database)
+	require.NoError(t, err)
+}
+
+func TestRelay_SessionTurnValidation_CannotUploadWithoutTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "TurnVal Game", FileName: "test.nes", FilePath: "/tmp/turnval.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createRelay(t, router, token1, gameID, "Turn Validation Relay")
+	relayID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Invite and accept player2
+	inviteAndAccept(t, router, token1, token2, relayID, "player2")
+
+	// Player1 takes the turn
+	takeTurn(t, router, token1, relayID)
+
+	// Player2 (who does NOT hold the turn) tries to upload a session save
+	// They're the session owner? No — the session owner is player1 (relay creator).
+	// Player2 doesn't own the session, so they'll get 403 from ownership check.
+	// Instead, let's test that the relay creator (player1) who owns the session
+	// cannot upload via the session endpoint when they DON'T hold the turn.
+
+	// First release the turn so nobody holds it
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/relays/"+relayID+"/release-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Now player2 takes the turn
+	takeTurn(t, router, token2, relayID)
+
+	// Player1 (session owner but NOT turn holder) tries to upload via session endpoint
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "sneaky.sav")
+	part.Write([]byte("sneaky-data"))
+	writer.WriteField("name", "Sneaky Save")
+	writer.Close()
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &body)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code, "session owner should be blocked when relay turn is held by another user")
+}

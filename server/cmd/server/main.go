@@ -125,6 +125,16 @@ func main() {
 		slog.Warn("failed to deduplicate games", "error", err)
 	}
 
+	// Migrate existing saves to sessions (one-time on upgrade)
+	if err := db.MigrateSavesToSessions(database); err != nil {
+		slog.Warn("failed to migrate saves to sessions", "error", err)
+	}
+
+	// Create sessions for existing relays (one-time on upgrade)
+	if err := db.MigrateRelaySessions(database); err != nil {
+		slog.Warn("failed to migrate relay sessions", "error", err)
+	}
+
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)

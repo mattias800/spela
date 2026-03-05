@@ -177,6 +177,15 @@ func ImportCheatsForGame(database *gorm.DB, game db.Game, console db.Console, ba
 	return nil
 }
 
+// ImportResult holds the summary of a cheat import run.
+type ImportResult struct {
+	TotalGames     int `json:"totalGames"`
+	CheatsImported int `json:"cheatsImported"`
+	GamesImported  int `json:"gamesImported"`
+	Skipped        int `json:"skipped"`
+	Failed         int `json:"failed"`
+}
+
 // StartAutoImport checks if cheats have already been imported and, if not,
 // spawns a goroutine that imports cheats for all verified games at startup.
 func StartAutoImport(database *gorm.DB) {
@@ -189,31 +198,59 @@ func StartAutoImport(database *gorm.DB) {
 
 	go func() {
 		slog.Info("cheat auto-import starting")
-		if err := ImportAllCheats(database, DefaultBaseURL); err != nil {
+		result, err := ImportAllCheats(database, DefaultBaseURL)
+		if err != nil {
 			slog.Warn("cheat auto-import failed", "error", err)
 		} else {
-			var imported int64
-			database.Model(&db.CheatCode{}).Count(&imported)
-			slog.Info("cheat auto-import complete", "imported", imported)
+			slog.Info("cheat auto-import complete", "cheatsImported", result.CheatsImported, "gamesImported", result.GamesImported)
 		}
 	}()
 }
 
-
 // ImportAllCheats imports cheat codes for all games that have a matching .cht file.
-func ImportAllCheats(database *gorm.DB, baseURL string) error {
+func ImportAllCheats(database *gorm.DB, baseURL string) (*ImportResult, error) {
 	// Load all games with their consoles
 	var games []db.Game
 	if err := database.Preload("Console").Find(&games).Error; err != nil {
-		return fmt.Errorf("loading games: %w", err)
+		return nil, fmt.Errorf("loading games: %w", err)
 	}
 
+	result := &ImportResult{TotalGames: len(games)}
 	httpClient := &http.Client{Timeout: 15 * time.Second}
+
 	for _, game := range games {
+		// Pre-check skip conditions
+		if game.VerificationStatus != "verified" {
+			result.Skipped++
+			continue
+		}
+		if _, ok := systemFolders[game.Console.FolderName]; !ok {
+			result.Skipped++
+			continue
+		}
+		baseName := strings.TrimSuffix(game.FileName, filepath.Ext(game.FileName))
+		if baseName == "" {
+			result.Skipped++
+			continue
+		}
+
+		// Count cheats before import to detect new imports
+		var before int64
+		database.Model(&db.CheatCode{}).Where("game_id = ?", game.ID).Count(&before)
+
 		if err := ImportCheatsForGame(database, game, game.Console, baseURL, httpClient); err != nil {
 			slog.Warn("cheat import error", "game", game.Title, "error", err)
-			// Continue with other games
+			result.Failed++
+			continue
+		}
+
+		var after int64
+		database.Model(&db.CheatCode{}).Where("game_id = ?", game.ID).Count(&after)
+		newCheats := int(after - before)
+		if newCheats > 0 {
+			result.GamesImported++
+			result.CheatsImported += newCheats
 		}
 	}
-	return nil
+	return result, nil
 }

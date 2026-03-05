@@ -518,6 +518,25 @@ fun DeveloperGameDto.toDomain(): DeveloperGame = DeveloperGame(
     consoleName = consoleName,
 )
 
+fun GameSessionDto.toDomain(): GameSession = GameSession(
+    id = id,
+    gameId = gameId,
+    name = name,
+    lastPlayedAt = lastPlayedAt,
+    lastPlayedByUsername = lastPlayedByUsername,
+    totalPlayTime = totalPlayTime,
+    screenshotUrl = screenshotUrl,
+    cheatsEnabled = cheatsEnabled,
+    memberCount = memberCount,
+    memberAvatars = memberAvatars,
+    isRelay = isRelay,
+)
+
+fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
+    cheatsEnabled = cheatsEnabled,
+    enabledIndices = enabledIndices,
+)
+
 fun SaveDataDto.toDomain() = SaveData(
     id = id,
     gameId = gameId,

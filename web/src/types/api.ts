@@ -483,7 +483,11 @@ export interface Relay {
   ownerId: string;
   ownerUsername: string;
   status: "active" | "paused" | "completed";
+  activeUserId: string | null;
+  activeUsername?: string;
+  turnTakenAt: string | null;
   memberCount: number;
+  sessionId?: string | null;
   lastActivityAt: string;
   createdAt: string;
   updatedAt: string;
@@ -610,6 +614,44 @@ export interface BiosResponse {
 
 export type BiosFileStatus = BiosFile["status"];
 export type BiosConsoleStatus = BiosConsole["status"];
+
+// --- Session Saves & Cheats ---
+
+export interface SessionSave {
+  id: string;
+  sessionId: string;
+  name: string;
+  fileSize: number;
+  screenshotUrl: string | null;
+  isAuto: boolean;
+  isCurrent: boolean;
+  coreName: string | null;
+  notes: string | null;
+  slot: number | null;
+  createdAt: string;
+}
+
+export interface SessionCheatConfig {
+  cheatsEnabled: boolean;
+  enabledIndices: number[];
+}
+
+// --- Game Sessions ---
+
+export interface GameSession {
+  id: string;
+  gameId: string;
+  name: string;
+  lastPlayedAt: string | null;
+  lastPlayedByUsername: string | null;
+  totalPlayTime: number;
+  screenshotUrl: string | null;
+  cheatsEnabled: boolean;
+  memberCount: number;
+  memberAvatars: string[] | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // --- Challenges ---
 
