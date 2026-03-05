@@ -117,6 +117,7 @@ export function AppLayout() {
                 icon: FileSearch,
                 label: "Metadata Fix",
               },
+              { to: "/admin/cheats", icon: Gamepad2, label: "Cheats" },
             ],
           },
         ]

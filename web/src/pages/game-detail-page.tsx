@@ -236,7 +236,7 @@ export function GameDetailPage() {
       </Card>
 
       {/* Rating section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="p-6">
           <RatingSummaryCard gameId={game.id} />
         </Card>
@@ -265,7 +265,7 @@ export function GameDetailPage() {
       )}
 
       {isPlayable && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6">
             <SharedSavesList gameId={game.id} />
           </Card>
