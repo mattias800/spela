@@ -154,6 +154,7 @@ data class LibretroCoreDto(
     val description: String? = null,
     val version: String? = null,
     val platforms: String = "",
+    val downloadUrl: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

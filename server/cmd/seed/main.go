@@ -69,23 +69,9 @@ func main() {
 		slog.Info("demo user already exists", "username", player.Username)
 	}
 
-	// Create some libretro core entries
-	cores := []db.Core{
-		{Name: "nestopia", DisplayName: "Nestopia UE", Description: "Accurate NES/Famicom emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "snes9x", DisplayName: "Snes9x", Description: "Portable SNES emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "gambatte", DisplayName: "Gambatte", Description: "Game Boy / Game Boy Color emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "mgba", DisplayName: "mGBA", Description: "Game Boy Advance emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "mupen64plus_next", DisplayName: "Mupen64Plus-Next", Description: "Nintendo 64 emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "genesis_plus_gx", DisplayName: "Genesis Plus GX", Description: "Sega 8/16-bit emulator", Platforms: "windows,linux,macos,android"},
-		{Name: "beetle_psx_hw", DisplayName: "Beetle PSX HW", Description: "PlayStation emulator with hardware rendering", Platforms: "windows,linux,macos"},
-		{Name: "desmume", DisplayName: "DeSmuME", Description: "Nintendo DS emulator", Platforms: "windows,linux,macos"},
-		{Name: "dolphin", DisplayName: "Dolphin", Description: "GameCube and Wii emulator", Platforms: "windows,linux,macos,android"},
-	}
-	for _, core := range cores {
-		result := database.Where("name = ?", core.Name).FirstOrCreate(&core)
-		if result.RowsAffected > 0 {
-			slog.Info("created core entry", "name", core.Name)
-		}
+	if err := db.SeedCores(database); err != nil {
+		slog.Error("failed to seed cores", "error", err)
+		os.Exit(1)
 	}
 
 	slog.Info("seed complete",

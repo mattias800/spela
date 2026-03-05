@@ -8,6 +8,7 @@ import com.spela.player.util.FileStorage
 import com.spela.player.util.buildbotCoreUrl
 import com.spela.player.util.coreFileName
 import com.spela.player.util.extractFirstZipEntry
+import com.spela.player.util.resolveDownloadUrl
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -29,10 +30,10 @@ class CoreRepositoryImpl(
         apiClient.getRecommendedCore(gameId).toDomain()
     }
 
-    override suspend fun downloadCore(coreName: String, onProgress: (Float) -> Unit): Result<String> = runCatching {
+    override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
         val fileName = coreFileName(coreName)
         val destPath = fileStorage.getCoresDir() + "/$fileName"
-        val url = buildbotCoreUrl(coreName)
+        val url = if (downloadUrl != null) resolveDownloadUrl(downloadUrl) else buildbotCoreUrl(coreName)
 
         val response: HttpResponse = httpClient.get(url) {
             onDownload { bytesSentTotal, contentLength ->

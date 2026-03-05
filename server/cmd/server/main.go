@@ -110,6 +110,10 @@ func main() {
 		slog.Error("failed to seed consoles", "error", err)
 		os.Exit(1)
 	}
+	if err := db.SeedCores(database); err != nil {
+		slog.Error("failed to seed cores", "error", err)
+		os.Exit(1)
+	}
 
 	// Migrate absolute file paths to relative (one-time on upgrade)
 	if err := db.MigrateToRelativePaths(database, gameDirs); err != nil {

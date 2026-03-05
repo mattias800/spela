@@ -607,7 +607,7 @@ class FakeCoreRepository : CoreRepository {
         return Result.success(cores.first())
     }
 
-    override suspend fun downloadCore(coreId: String, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCore(coreId: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
         onProgress(1f)
         return Result.success("/fake/cores/$coreId")
     }

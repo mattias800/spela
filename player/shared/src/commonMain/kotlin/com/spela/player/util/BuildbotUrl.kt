@@ -24,6 +24,18 @@ fun buildbotCoreUrl(coreName: String, platform: String = currentPlatform(), arch
 }
 
 /**
+ * Resolves a URL template for a non-buildbot core download.
+ *
+ * The template uses `{platform}` as a placeholder, which is replaced with a
+ * `{platform}-{arch}` string matching the release asset naming convention used
+ * by projects like Azahar (e.g. `android-arm64`, `linux-x86_64`, `macos-arm64`).
+ */
+fun resolveDownloadUrl(template: String, platform: String = currentPlatform(), arch: String = currentArch()): String {
+    val platformSuffix = "$platform-$arch"
+    return template.replace("{platform}", platformSuffix)
+}
+
+/**
  * Returns the expected filename of the extracted core binary.
  */
 fun coreFileName(coreName: String, platform: String = currentPlatform()): String {

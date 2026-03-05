@@ -83,4 +83,41 @@ class BuildbotUrlTest {
     fun linuxArm64FileName() {
         assertEquals("nestopia_libretro.so", coreFileName("nestopia", "linux"))
     }
+
+    // resolveDownloadUrl — Azahar-style GitHub release templates
+
+    private val azaharTemplate =
+        "https://github.com/azahar-emu/azahar/releases/download/2125.0-alpha4/azahar-libretro-2125.0-alpha4-{platform}.zip"
+
+    @Test
+    fun resolveDownloadUrlAndroid() {
+        assertEquals(
+            "https://github.com/azahar-emu/azahar/releases/download/2125.0-alpha4/azahar-libretro-2125.0-alpha4-android-arm64.zip",
+            resolveDownloadUrl(azaharTemplate, "android", "arm64"),
+        )
+    }
+
+    @Test
+    fun resolveDownloadUrlLinux() {
+        assertEquals(
+            "https://github.com/azahar-emu/azahar/releases/download/2125.0-alpha4/azahar-libretro-2125.0-alpha4-linux-x86_64.zip",
+            resolveDownloadUrl(azaharTemplate, "linux", "x86_64"),
+        )
+    }
+
+    @Test
+    fun resolveDownloadUrlMacosArm64() {
+        assertEquals(
+            "https://github.com/azahar-emu/azahar/releases/download/2125.0-alpha4/azahar-libretro-2125.0-alpha4-macos-arm64.zip",
+            resolveDownloadUrl(azaharTemplate, "macos", "arm64"),
+        )
+    }
+
+    @Test
+    fun resolveDownloadUrlWindows() {
+        assertEquals(
+            "https://github.com/azahar-emu/azahar/releases/download/2125.0-alpha4/azahar-libretro-2125.0-alpha4-windows-x86_64.zip",
+            resolveDownloadUrl(azaharTemplate, "windows", "x86_64"),
+        )
+    }
 }
