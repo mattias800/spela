@@ -1297,6 +1297,94 @@ class FakeSaveDataRepository : SaveDataRepository {
     }
 }
 
+class FakeSessionRepository : SessionRepository {
+    var sessions: MutableList<GameSession> = mutableListOf()
+    private val sessionSaves = mutableMapOf<String, MutableList<SaveState>>()
+    private val autoSaves = mutableMapOf<String, ByteArray>()
+    private val sram = mutableMapOf<String, ByteArray>()
+    private var nextId = 1
+
+    override suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>> =
+        Result.success(sessions.filter { it.gameId == gameId })
+
+    override suspend fun createSession(gameId: String, name: String): Result<GameSession> {
+        val session = GameSession(
+            id = "session-${nextId++}",
+            gameId = gameId,
+            name = name,
+        )
+        sessions.add(session)
+        return Result.success(session)
+    }
+
+    override suspend fun updateSession(sessionId: String, name: String): Result<GameSession> {
+        val idx = sessions.indexOfFirst { it.id == sessionId }
+        if (idx < 0) return Result.failure(Exception("Session not found"))
+        sessions[idx] = sessions[idx].copy(name = name)
+        return Result.success(sessions[idx])
+    }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> {
+        sessions.removeAll { it.id == sessionId }
+        return Result.success(Unit)
+    }
+
+    override suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>> =
+        Result.success(sessionSaves[sessionId] ?: emptyList())
+
+    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+        val save = SaveState(
+            id = (sessionSaves[sessionId]?.size?.toLong() ?: 0L) + 1,
+            gameId = 0,
+            name = name,
+            isAuto = false,
+        )
+        sessionSaves.getOrPut(sessionId) { mutableListOf() }.add(save)
+        return Result.success(save)
+    }
+
+    override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> =
+        Result.success(ByteArray(256) { it.toByte() })
+
+    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?): Result<Unit> {
+        autoSaves[sessionId] = data
+        return Result.success(Unit)
+    }
+
+    override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> =
+        autoSaves[sessionId]?.let { Result.success(it) }
+            ?: Result.failure(Exception("No auto-save"))
+
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit> {
+        sram[sessionId] = data
+        return Result.success(Unit)
+    }
+
+    override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> =
+        sram[sessionId]?.let { Result.success(it) }
+            ?: Result.failure(Exception("No SRAM"))
+
+    fun preAddSession(
+        id: String = "session-1",
+        gameId: String = "1",
+        name: String = "Playthrough 1",
+        lastPlayedAt: String? = null,
+        lastPlayedByUsername: String? = null,
+        totalPlayTime: Long = 0,
+    ): GameSession {
+        val session = GameSession(
+            id = id,
+            gameId = gameId,
+            name = name,
+            lastPlayedAt = lastPlayedAt,
+            lastPlayedByUsername = lastPlayedByUsername,
+            totalPlayTime = totalPlayTime,
+        )
+        sessions.add(session)
+        return session
+    }
+}
+
 class FakeCheatRepository : CheatRepository {
     var cheats: MutableList<Cheat> = mutableListOf()
 

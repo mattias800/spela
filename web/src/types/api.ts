@@ -611,6 +611,23 @@ export interface BiosResponse {
 export type BiosFileStatus = BiosFile["status"];
 export type BiosConsoleStatus = BiosConsole["status"];
 
+// --- Game Sessions ---
+
+export interface GameSession {
+  id: string;
+  gameId: string;
+  name: string;
+  lastPlayedAt: string | null;
+  lastPlayedByUsername: string | null;
+  totalPlayTime: number;
+  screenshotUrl: string | null;
+  cheatsEnabled: boolean;
+  memberCount: number;
+  memberAvatars: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- Challenges ---
 
 export type ChallengeType = "completion" | "speedrun" | "survival";

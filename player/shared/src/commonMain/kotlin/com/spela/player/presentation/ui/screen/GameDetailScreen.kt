@@ -69,6 +69,7 @@ import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
+import com.spela.player.presentation.ui.feature.gamedetail.SessionsSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SimilarGamesSection
 import com.spela.player.presentation.ui.feature.library.darken
@@ -116,6 +117,7 @@ fun GameDetailScreen(
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
+    onPlaySession: ((gameId: String, sessionId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -327,6 +329,28 @@ fun GameDetailScreen(
                             },
                             onDisableAll = {
                                 viewModel.onIntent(GameDetailIntent.DisableAllCheats)
+                            },
+                        )
+                    }
+
+                    // 4c. Sessions
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        SessionsSection(
+                            sessions = state.sessions,
+                            isLoading = state.isLoadingSessions,
+                            onContinueSession = { session ->
+                                onPlaySession?.invoke(game.id, session.id)
+                            },
+                            onCreateSession = { name ->
+                                viewModel.onIntent(GameDetailIntent.CreateSession(game.id, name))
+                            },
+                            onRenameSession = { sessionId, name ->
+                                viewModel.onIntent(GameDetailIntent.RenameSession(sessionId, name))
+                            },
+                            onDeleteSession = { sessionId ->
+                                viewModel.onIntent(GameDetailIntent.DeleteSession(sessionId))
                             },
                         )
                     }

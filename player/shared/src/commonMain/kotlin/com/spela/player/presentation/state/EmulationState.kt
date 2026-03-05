@@ -89,6 +89,9 @@ data class EmulationState(
     /** Rewind: whether rewind is currently active (holding down rewind). */
     val isRewinding: Boolean = false,
 
+    /** Session: set when playing within a game session. */
+    val sessionId: String? = null,
+
     /** Cheats */
     val hasCheats: Boolean = false,
     val enabledCheatCount: Int = 0,

@@ -480,6 +480,7 @@ fun SpelaApp(
                                             NavigationIntent.ShowOverlay(
                                                 gameId = pending.gameId,
                                                 skipAutoLoad = pending.skipAutoLoad,
+                                                sessionId = pending.sessionId,
                                             )
                                         )
                                     }
@@ -507,6 +508,11 @@ fun SpelaApp(
                                     },
                                     onCancelLaunch = {
                                         emulationViewModel.onIntent(EmulationIntent.CancelLaunch)
+                                    },
+                                    onPlaySession = { gameId, sessionId ->
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId, sessionId = sessionId)
+                                        )
                                     },
                                     onCreateNetplay = { gameId ->
                                         netplayViewModel.onIntent(
@@ -880,7 +886,7 @@ fun SpelaApp(
                                 },
                         )
 
-                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
@@ -893,6 +899,7 @@ fun SpelaApp(
                                         netplayIsHost = navState.overlayNetplayIsHost,
                                         challengeId = navState.overlayChallengeId,
                                         skipAutoLoad = navState.overlaySkipAutoLoad,
+                                        sessionId = navState.overlaySessionId,
                                     )
                                 )
                             }

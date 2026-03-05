@@ -18,6 +18,7 @@ import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.Cheat
+import com.spela.player.domain.model.GameSession
 import com.spela.player.domain.model.StorageUsage
 
 enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
@@ -96,4 +97,8 @@ data class GameDetailState(
     val cheats: List<Cheat> = emptyList(),
     val isLoadingCheats: Boolean = false,
     val showCheatDialog: Boolean = false,
+
+    // Sessions
+    val sessions: List<GameSession> = emptyList(),
+    val isLoadingSessions: Boolean = false,
 )

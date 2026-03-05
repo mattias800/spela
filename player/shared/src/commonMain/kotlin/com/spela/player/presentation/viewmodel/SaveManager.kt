@@ -4,6 +4,7 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SaveRepository
+import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.presentation.state.EmulationState
@@ -30,9 +31,13 @@ class SaveManager(
     private val _state: MutableStateFlow<EmulationState>,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val sessionRepository: SessionRepository? = null,
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
+
+    /** The active session ID (if playing within a session). */
+    var currentSessionId: String? = null
 
     /** Pre-fetched SRAM data from prepareLaunch(). Consumed once by loadSramOnStart(). */
     private var preFetchedSramData: ByteArray? = null
@@ -93,6 +98,21 @@ class SaveManager(
      */
     suspend fun loadSramOnStart(gameId: String) {
         try {
+            val sessionId = currentSessionId
+            val repo = sessionRepository
+
+            // Session-aware: download SRAM from session endpoint
+            if (sessionId != null && repo != null) {
+                repo.downloadSessionSram(sessionId).onSuccess { data ->
+                    if (isZipData(data)) {
+                        saveDataRepository.unzipToSaveDirectory(data)
+                    } else {
+                        libretroController.setSRAM(data)
+                    }
+                }
+                return
+            }
+
             val dataToLoad = preFetchedSramData
             preFetchedSramData = null
             if (dataToLoad != null) {
@@ -132,8 +152,16 @@ class SaveManager(
      */
     suspend fun saveSramOnStop(gameId: String) {
         try {
+            val sessionId = currentSessionId
+            val repo = sessionRepository
+
             val sramData = libretroController.getSRAM()
             if (sramData != null && sramData.isNotEmpty()) {
+                // Session-aware: upload to session SRAM endpoint
+                if (sessionId != null && repo != null) {
+                    runCatching { repo.uploadSessionSram(sessionId, sramData) }
+                    return
+                }
                 saveDataRepository.saveLocalSRAM(gameId, sramData)
                 if (connectivityMonitor.isOnline.value) {
                     runCatching { saveDataRepository.uploadActiveSaveData(gameId, sramData) }
@@ -142,6 +170,10 @@ class SaveManager(
                 // Directory-save fallback for cores like Dolphin
                 val zipData = saveDataRepository.zipSaveDirectory(gameId)
                 if (zipData != null) {
+                    if (sessionId != null && repo != null) {
+                        runCatching { repo.uploadSessionSram(sessionId, zipData) }
+                        return
+                    }
                     saveDataRepository.saveLocalSRAM(gameId, zipData)
                     if (connectivityMonitor.isOnline.value) {
                         runCatching { saveDataRepository.uploadActiveSaveData(gameId, zipData) }
@@ -160,6 +192,25 @@ class SaveManager(
      * Called from within an IO coroutine.
      */
     suspend fun autoLoadSaveState(gameId: String) {
+        val sessionId = currentSessionId
+        val repo = sessionRepository
+
+        // Session-aware: download auto-save from session endpoint
+        if (sessionId != null && repo != null) {
+            println("[SaveManager] autoLoadSaveState: loading session $sessionId auto-save")
+            repo.downloadSessionAutoSave(sessionId).fold(
+                onSuccess = { saveData ->
+                    println("[SaveManager] autoLoadSaveState: got ${saveData.size} bytes from session, unserializing")
+                    val ok = libretroController.unserialize(saveData)
+                    println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
+                },
+                onFailure = { e ->
+                    println("[SaveManager] autoLoadSaveState: session auto-save failed: ${e.message}")
+                },
+            )
+            return
+        }
+
         val dataToLoad = preFetchedSaveData
         preFetchedSaveData = null
         if (dataToLoad != null) {
@@ -191,6 +242,17 @@ class SaveManager(
             val saveData = libretroController.serialize()
             println("[SaveManager] autoSaveOnStop: serialize returned ${saveData?.size ?: "null"} bytes")
             if (saveData != null) {
+                val sessionId = currentSessionId
+                val repo = sessionRepository
+
+                // Session-aware: upload auto-save to session endpoint
+                if (sessionId != null && repo != null) {
+                    val screenshot = screenshotCapture?.captureScreenshot()
+                    val result = repo.uploadSessionAutoSave(sessionId, saveData, screenshot)
+                    println("[SaveManager] autoSaveOnStop: session upload result=${result.isSuccess}")
+                    return
+                }
+
                 // Save to local filesystem + SQLite only (fast, no network).
                 val result = saveRepository.saveLocally(gameId, "Auto Save", saveData, isAuto = true)
                 println("[SaveManager] autoSaveOnStop: saveLocally result=${result.isSuccess}")
@@ -213,6 +275,27 @@ class SaveManager(
             val gameId = _state.value.gameId
             val saveData = libretroController.serialize() ?: return@launch
             val screenshot = screenshotCapture?.captureScreenshot()
+
+            val sessionId = currentSessionId
+            val repo = sessionRepository
+
+            // Session-aware: upload save to session endpoint
+            if (sessionId != null && repo != null) {
+                repo.uploadSessionSave(sessionId, "Manual Save", saveData, screenshot).fold(
+                    onSuccess = {
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(statusMessage = "State saved") }
+                        }
+                    },
+                    onFailure = { error ->
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                        }
+                    },
+                )
+                return@launch
+            }
+
             saveGameStateUseCase(gameId, saveData, screenshot, currentCoreName.ifEmpty { null }).fold(
                 onSuccess = {
                     withContext(dispatchers.main) {
@@ -239,6 +322,27 @@ class SaveManager(
         }
         scope.launch(dispatchers.io) {
             val gameId = _state.value.gameId
+            val sessionId = currentSessionId
+            val repo = sessionRepository
+
+            // Session-aware: download auto-save from session endpoint
+            if (sessionId != null && repo != null) {
+                repo.downloadSessionAutoSave(sessionId).fold(
+                    onSuccess = { saveData ->
+                        libretroController.unserialize(saveData)
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(statusMessage = "State loaded") }
+                        }
+                    },
+                    onFailure = { error ->
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(error = "Failed to load save: ${error.message}") }
+                        }
+                    },
+                )
+                return@launch
+            }
+
             loadGameStateUseCase(gameId).fold(
                 onSuccess = { saveData ->
                     libretroController.unserialize(saveData)

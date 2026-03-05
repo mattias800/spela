@@ -573,6 +573,57 @@ type CheatCode struct {
 	Code        string `gorm:"size:1024;not null"`
 }
 
+// GameSession represents a user's play session for a game.
+// Each session groups save states and SRAM data together as a "playthrough".
+type GameSession struct {
+	ID             uint           `gorm:"primarykey" json:"id"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	OwnerID        uint           `gorm:"index;not null" json:"ownerId"`
+	Owner          User           `gorm:"foreignKey:OwnerID" json:"-"`
+	GameID         uint           `gorm:"index;not null" json:"gameId"`
+	Game           Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name           string         `gorm:"size:255;not null" json:"name"`
+	LastPlayedAt   *time.Time     `json:"lastPlayedAt,omitempty"`
+	LastPlayedBy   *uint          `json:"lastPlayedBy,omitempty"`
+	TotalPlayTime  int64          `gorm:"default:0" json:"totalPlayTime"` // seconds
+	ScreenshotURL  string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	CoreName       string         `gorm:"size:128" json:"coreName,omitempty"`
+	CheatsEnabled  bool           `gorm:"default:false" json:"cheatsEnabled"`
+}
+
+// SessionSaveState represents a save state within a game session.
+type SessionSaveState struct {
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	SessionID     uint           `gorm:"index;not null" json:"sessionId"`
+	UserID        uint           `gorm:"index;not null" json:"userId"`
+	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	Name          string         `gorm:"size:255;not null" json:"name"`
+	FilePath      string         `gorm:"size:1024;not null" json:"-"`
+	FileSize      int64          `json:"fileSize"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
+	IsCurrent     bool           `gorm:"default:false" json:"isCurrent"`
+	CoreName      string         `gorm:"size:128" json:"coreName,omitempty"`
+	Notes         string         `gorm:"type:text" json:"notes,omitempty"`
+	Slot          *int           `json:"slot,omitempty"`
+}
+
+// SessionSaveData represents SRAM/battery save data within a game session.
+type SessionSaveData struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	SessionID uint           `gorm:"index;not null" json:"sessionId"`
+	FilePath  string         `gorm:"size:1024;not null" json:"-"`
+	FileSize  int64          `json:"fileSize"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`

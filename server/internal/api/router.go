@@ -166,6 +166,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	saveHandler := &SaveHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
+	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
 		DB:            cfg.DB,
@@ -235,6 +236,27 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/cheats", gameHandler.GetGameCheats)
 		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
 		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
+
+		// Game Sessions
+		api.POST("/games/:id/sessions", sessionHandler.CreateSession)
+		api.GET("/games/:id/sessions", sessionHandler.ListSessions)
+		api.GET("/sessions/:id", sessionHandler.GetSession)
+		api.PUT("/sessions/:id", sessionHandler.UpdateSession)
+		api.DELETE("/sessions/:id", sessionHandler.DeleteSession)
+		api.GET("/sessions/:id/saves", sessionHandler.ListSessionSaves)
+		api.POST("/sessions/:id/saves", uploadLimiter.RateLimit(), sessionHandler.UploadSessionSave)
+		api.POST("/sessions/:id/saves/auto", uploadLimiter.RateLimit(), sessionHandler.UploadAutoSave)
+		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
+		api.GET("/sessions/:id/saves/slots", sessionHandler.ListSlotSaves)
+		api.PUT("/sessions/:id/saves/slot/:slot", uploadLimiter.RateLimit(), sessionHandler.UpsertSlotSave)
+		api.GET("/sessions/:id/saves/slot/:slot", sessionHandler.DownloadSlotSave)
+		api.GET("/sessions/:id/saves/:saveId", sessionHandler.DownloadSessionSave)
+		api.DELETE("/sessions/:id/saves/:saveId", sessionHandler.DeleteSessionSave)
+		api.PUT("/sessions/:id/saves/:saveId", sessionHandler.UpdateSessionSave)
+		api.POST("/sessions/:id/sram", uploadLimiter.RateLimit(), sessionHandler.UploadSRAM)
+		api.GET("/sessions/:id/sram", sessionHandler.DownloadSRAM)
+		api.POST("/sessions/:id/play-time", sessionHandler.UpdatePlayTime)
+		api.DELETE("/sessions/:id/play-time", sessionHandler.StopPlaying)
 
 		// Ratings
 		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)
@@ -437,6 +459,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
 			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
+			admin.GET("/cheats/stats", adminHandler.GetCheatStats)
 
 			// ROM uploads
 			admin.POST("/uploads", uploadHandler.UploadROMs)

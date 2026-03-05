@@ -404,6 +404,110 @@ func (s *Storage) DeleteSaveData(path string) error {
 	return nil
 }
 
+// SessionSaveStatePath returns the filesystem path for a session save state file.
+func (s *Storage) SessionSaveStatePath(sessionID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "states", safe)
+}
+
+// SessionSRAMPath returns the filesystem path for a session's SRAM/save data file.
+func (s *Storage) SessionSRAMPath(sessionID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "sram", safe)
+}
+
+// SessionScreenshotPath returns the filesystem path for a session screenshot.
+func (s *Storage) SessionScreenshotPath(sessionID uint, filename string) string {
+	safe := sanitizeFilename(filename)
+	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "screenshots", safe)
+}
+
+// WriteSessionSave stores a session save state file.
+func (s *Storage) WriteSessionSave(sessionID uint, filename string, data io.Reader) (string, int64, error) {
+	path := s.SessionSaveStatePath(sessionID, filename)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving session save path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid session save path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return "", 0, fmt.Errorf("creating session save directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating session save file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return "", 0, fmt.Errorf("writing session save file: %w", err)
+	}
+
+	return path, n, nil
+}
+
+// WriteSessionSRAM stores a session SRAM/save data file.
+func (s *Storage) WriteSessionSRAM(sessionID uint, filename string, data io.Reader) (string, int64, error) {
+	path := s.SessionSRAMPath(sessionID, filename)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving session SRAM path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid session SRAM path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return "", 0, fmt.Errorf("creating session SRAM directory: %w", err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating session SRAM file: %w", err)
+	}
+	defer f.Close()
+
+	n, err := io.Copy(f, data)
+	if err != nil {
+		return "", 0, fmt.Errorf("writing session SRAM file: %w", err)
+	}
+
+	return path, n, nil
+}
+
+// WriteSessionScreenshot stores a session screenshot image.
+func (s *Storage) WriteSessionScreenshot(sessionID uint, filename string, data io.Reader) (string, error) {
+	subpath := fmt.Sprintf("save-screenshots/sessions/session_%d/%s", sessionID, sanitizeFilename(filename))
+	return s.WriteImage(subpath, data)
+}
+
+// DeleteSessionDir removes an entire session's storage directory.
+func (s *Storage) DeleteSessionDir(sessionID uint) error {
+	dir := filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID))
+	if err := s.validatePathInSaveDir(dir); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("deleting session directory: %w", err)
+	}
+	return nil
+}
+
 // ResolveGamePath resolves a relative game path (e.g. "nes/Mario.nes") to an
 // absolute filesystem path by joining it with each gameDir and returning the
 // first that exists on disk. Returns an error if no match is found.
