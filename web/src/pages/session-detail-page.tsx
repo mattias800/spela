@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ArrowLeft,
   Pencil,
   Trash2,
   Download,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   Button,
+  BackButton,
   Card,
   Badge,
   Skeleton,
@@ -118,14 +118,9 @@ export function SessionDetailPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      {/* Back link */}
-      <button
-        onClick={() => navigate(game ? `/games/${game.id}` : -1)}
-        className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
+      <BackButton onClick={() => game ? navigate(`/games/${game.id}`) : navigate(-1)}>
         {game ? game.title : "Back"}
-      </button>
+      </BackButton>
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
