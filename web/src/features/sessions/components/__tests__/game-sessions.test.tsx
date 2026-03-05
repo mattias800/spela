@@ -1,7 +1,14 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GameSessions } from "../game-sessions";
+
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: "u1", username: "testuser", role: "user" },
+  })),
+}));
 
 vi.mock("@/hooks/use-sessions", () => ({
   useGameSessions: vi.fn(),
@@ -61,7 +68,9 @@ function renderComponent(gameId = "g1") {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <GameSessions gameId={gameId} />
+      <MemoryRouter>
+        <GameSessions gameId={gameId} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }

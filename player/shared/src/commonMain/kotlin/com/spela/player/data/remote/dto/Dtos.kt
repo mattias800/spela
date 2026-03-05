@@ -953,6 +953,7 @@ data class GameSessionDto(
     val cheatsEnabled: Boolean = false,
     val memberCount: Int = 1,
     val memberAvatars: List<String> = emptyList(),
+    val isRelay: Boolean = false,
 )
 
 @Serializable
@@ -963,6 +964,20 @@ data class CreateSessionRequest(
 @Serializable
 data class UpdateSessionRequest(
     val name: String,
+)
+
+// Session Cheats
+
+@Serializable
+data class SessionCheatConfigDto(
+    val cheatsEnabled: Boolean = false,
+    val enabledIndices: List<Int> = emptyList(),
+)
+
+@Serializable
+data class UpdateSessionCheatsRequest(
+    val cheatsEnabled: Boolean,
+    val enabledIndices: List<Int>,
 )
 
 // Cheats

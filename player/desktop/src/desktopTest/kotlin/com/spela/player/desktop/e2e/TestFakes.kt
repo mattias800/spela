@@ -1302,10 +1302,17 @@ class FakeSessionRepository : SessionRepository {
     private val sessionSaves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
     private val sram = mutableMapOf<String, ByteArray>()
+    private val sessionCheats = mutableMapOf<String, SessionCheatConfig>()
     private var nextId = 1
 
     override suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>> =
         Result.success(sessions.filter { it.gameId == gameId })
+
+    override suspend fun getSession(sessionId: String): Result<GameSession> {
+        val session = sessions.find { it.id == sessionId }
+            ?: return Result.failure(Exception("Session not found"))
+        return Result.success(session)
+    }
 
     override suspend fun createSession(gameId: String, name: String): Result<GameSession> {
         val session = GameSession(
@@ -1364,6 +1371,24 @@ class FakeSessionRepository : SessionRepository {
         sram[sessionId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No SRAM"))
 
+    override suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig> =
+        Result.success(sessionCheats[sessionId] ?: SessionCheatConfig(cheatsEnabled = false, enabledIndices = emptyList()))
+
+    override suspend fun updateSessionCheats(
+        sessionId: String,
+        cheatsEnabled: Boolean,
+        enabledIndices: List<Int>,
+    ): Result<SessionCheatConfig> {
+        val config = SessionCheatConfig(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices)
+        sessionCheats[sessionId] = config
+        // Also update the session's cheatsEnabled flag
+        val idx = sessions.indexOfFirst { it.id == sessionId }
+        if (idx >= 0) {
+            sessions[idx] = sessions[idx].copy(cheatsEnabled = cheatsEnabled)
+        }
+        return Result.success(config)
+    }
+
     fun preAddSession(
         id: String = "session-1",
         gameId: String = "1",
@@ -1371,6 +1396,9 @@ class FakeSessionRepository : SessionRepository {
         lastPlayedAt: String? = null,
         lastPlayedByUsername: String? = null,
         totalPlayTime: Long = 0,
+        memberCount: Int = 1,
+        memberAvatars: List<String> = emptyList(),
+        isRelay: Boolean = false,
     ): GameSession {
         val session = GameSession(
             id = id,
@@ -1379,9 +1407,31 @@ class FakeSessionRepository : SessionRepository {
             lastPlayedAt = lastPlayedAt,
             lastPlayedByUsername = lastPlayedByUsername,
             totalPlayTime = totalPlayTime,
+            memberCount = memberCount,
+            memberAvatars = memberAvatars,
+            isRelay = isRelay,
         )
         sessions.add(session)
         return session
+    }
+
+    fun preAddSessionSave(
+        sessionId: String,
+        saveId: Long = 1,
+        name: String = "Save 1",
+        isAuto: Boolean = false,
+    ) {
+        val save = SaveState(
+            id = saveId,
+            gameId = 0,
+            name = name,
+            isAuto = isAuto,
+        )
+        sessionSaves.getOrPut(sessionId) { mutableListOf() }.add(save)
+    }
+
+    fun preSetSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int> = emptyList()) {
+        sessionCheats[sessionId] = SessionCheatConfig(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices)
     }
 }
 

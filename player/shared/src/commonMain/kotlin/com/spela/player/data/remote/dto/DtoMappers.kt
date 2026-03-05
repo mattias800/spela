@@ -529,6 +529,12 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
     cheatsEnabled = cheatsEnabled,
     memberCount = memberCount,
     memberAvatars = memberAvatars,
+    isRelay = isRelay,
+)
+
+fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
+    cheatsEnabled = cheatsEnabled,
+    enabledIndices = enabledIndices,
 )
 
 fun SaveDataDto.toDomain() = SaveData(

@@ -248,4 +248,124 @@ class SessionsUiTest {
         onNodeWithText("Castlevania Run").assertIsDisplayed()
         onNodeWithText("Mario Run").assertDoesNotExist()
     }
+
+    // ── Multiplayer session shows member avatars ──
+
+    @Test
+    fun multiplayerSessionShowsMemberAvatars() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Co-op Run",
+            memberCount = 3,
+            memberAvatars = listOf(
+                "https://example.com/avatar1.png",
+                "https://example.com/avatar2.png",
+                "https://example.com/avatar3.png",
+            ),
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNodeWithTag("session_member_avatars_s1").assertIsDisplayed()
+        onNodeWithTag("session_multiplayer_badge_s1").assertIsDisplayed()
+        onNodeWithText("Multiplayer").assertIsDisplayed()
+    }
+
+    // ── Multiplayer session shows "Last played by X" text ──
+
+    @Test
+    fun multiplayerSessionShowsLastPlayedBy() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Shared Run",
+            memberCount = 2,
+            lastPlayedByUsername = "player2",
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNodeWithTag("session_last_played_by_s1").assertIsDisplayed()
+        onNodeWithText("Last played by player2").assertIsDisplayed()
+    }
+
+    // ── Relay session shows Relay badge ──
+
+    @Test
+    fun relaySessionShowsRelayBadge() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Relay Session",
+            memberCount = 2,
+            isRelay = true,
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNodeWithTag("session_multiplayer_badge_s1").assertIsDisplayed()
+        onNodeWithText("Relay").assertIsDisplayed()
+    }
+
+    // ── Single-player session does NOT show multiplayer badge ──
+
+    @Test
+    fun singlePlayerSessionHidesMultiplayerBadge() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Solo Run",
+            memberCount = 1,
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNodeWithTag("session_multiplayer_badge_s1").assertDoesNotExist()
+        onNodeWithTag("session_member_avatars_s1").assertDoesNotExist()
+    }
+
+    // ── Member count overflow shows "+N" ──
+
+    @Test
+    fun memberAvatarsShowOverflowCount() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Big Group",
+            memberCount = 7,
+            memberAvatars = listOf(
+                "https://example.com/a1.png",
+                "https://example.com/a2.png",
+                "https://example.com/a3.png",
+                "https://example.com/a4.png",
+                "https://example.com/a5.png",
+            ),
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_member_avatars_s1").assertIsDisplayed()
+        onNodeWithTag("session_avatar_overflow").assertIsDisplayed()
+        onNodeWithText("+3").assertIsDisplayed()
+    }
 }

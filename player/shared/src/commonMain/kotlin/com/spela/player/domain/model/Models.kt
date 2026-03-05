@@ -651,6 +651,12 @@ data class GameSession(
     val cheatsEnabled: Boolean = false,
     val memberCount: Int = 1,
     val memberAvatars: List<String> = emptyList(),
+    val isRelay: Boolean = false,
+)
+
+data class SessionCheatConfig(
+    val cheatsEnabled: Boolean,
+    val enabledIndices: List<Int>,
 )
 
 // BIOS

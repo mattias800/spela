@@ -228,6 +228,11 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 		return
 	}
 
+	// If this session backs a relay, enforce turn ownership
+	if ok := h.checkRelayTurn(c, session.ID, uid); !ok {
+		return
+	}
+
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
@@ -394,6 +399,11 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 	uid := getUserID(c)
 	session, ok := h.loadSessionWithOwnerCheck(c, uid)
 	if !ok {
+		return
+	}
+
+	// If this session backs a relay, enforce turn ownership
+	if ok := h.checkRelayTurn(c, session.ID, uid); !ok {
 		return
 	}
 
@@ -764,6 +774,69 @@ func (h *SessionHandler) StopPlaying(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "stopped playing"})
 }
 
+// GetSessionCheats returns the cheat configuration for a session.
+// GET /api/sessions/:id/cheats
+func (h *SessionHandler) GetSessionCheats(c *gin.Context) {
+	uid := getUserID(c)
+	session, ok := h.loadSessionWithOwnerCheck(c, uid)
+	if !ok {
+		return
+	}
+
+	var settings []db.SessionCheatSetting
+	h.DB.Where("session_id = ? AND enabled = ?", session.ID, true).Find(&settings)
+
+	indices := make([]int, len(settings))
+	for i, s := range settings {
+		indices[i] = s.CheatIndex
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cheatsEnabled":  session.CheatsEnabled,
+		"enabledIndices": indices,
+	})
+}
+
+// UpdateSessionCheats updates the cheat configuration for a session.
+// PUT /api/sessions/:id/cheats
+func (h *SessionHandler) UpdateSessionCheats(c *gin.Context) {
+	uid := getUserID(c)
+	session, ok := h.loadSessionWithOwnerCheck(c, uid)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		CheatsEnabled  bool  `json:"cheatsEnabled"`
+		EnabledIndices []int `json:"enabledIndices"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Update session cheats enabled flag
+	h.DB.Model(&session).Update("cheats_enabled", req.CheatsEnabled)
+
+	// Delete all existing cheat settings for this session
+	h.DB.Where("session_id = ?", session.ID).Delete(&db.SessionCheatSetting{})
+
+	// Create new settings for each enabled index
+	for _, idx := range req.EnabledIndices {
+		setting := db.SessionCheatSetting{
+			SessionID:  session.ID,
+			CheatIndex: idx,
+			Enabled:    true,
+		}
+		h.DB.Create(&setting)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cheatsEnabled":  req.CheatsEnabled,
+		"enabledIndices": req.EnabledIndices,
+	})
+}
+
 // --- Helper methods ---
 
 func (h *SessionHandler) loadSessionWithOwnerCheck(c *gin.Context, uid uint) (db.GameSession, bool) {
@@ -858,4 +931,22 @@ func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveRespon
 		CreatedAt:     s.CreatedAt,
 		UpdatedAt:     s.UpdatedAt,
 	}
+}
+
+// checkRelayTurn checks if this session is backed by a relay, and if so, whether
+// the user currently holds the turn. Returns true if the upload should proceed,
+// false if a response has already been written.
+func (h *SessionHandler) checkRelayTurn(c *gin.Context, sessionID, uid uint) bool {
+	var relay db.Relay
+	if err := h.DB.Where("session_id = ?", sessionID).First(&relay).Error; err != nil {
+		// No relay backs this session — allow normal upload
+		return true
+	}
+
+	// A relay backs this session — user must hold the turn
+	if relay.ActiveUserID == nil || *relay.ActiveUserID != uid {
+		c.JSON(http.StatusForbidden, gin.H{"error": "relay turn required: you must hold the turn to upload saves"})
+		return false
+	}
+	return true
 }

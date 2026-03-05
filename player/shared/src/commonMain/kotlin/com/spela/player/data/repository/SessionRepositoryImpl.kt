@@ -4,6 +4,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.GameSession
 import com.spela.player.domain.model.SaveState
+import com.spela.player.domain.model.SessionCheatConfig
 import com.spela.player.domain.repository.SessionRepository
 
 class SessionRepositoryImpl(
@@ -12,6 +13,10 @@ class SessionRepositoryImpl(
 
     override suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>> = runCatching {
         apiClient.getSessionsForGame(gameId).map { it.toDomain() }
+    }
+
+    override suspend fun getSession(sessionId: String): Result<GameSession> = runCatching {
+        apiClient.getSession(sessionId).toDomain()
     }
 
     override suspend fun createSession(gameId: String, name: String): Result<GameSession> = runCatching {
@@ -61,5 +66,17 @@ class SessionRepositoryImpl(
 
     override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> = runCatching {
         apiClient.downloadSessionSram(sessionId)
+    }
+
+    override suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig> = runCatching {
+        apiClient.getSessionCheats(sessionId).toDomain()
+    }
+
+    override suspend fun updateSessionCheats(
+        sessionId: String,
+        cheatsEnabled: Boolean,
+        enabledIndices: List<Int>,
+    ): Result<SessionCheatConfig> = runCatching {
+        apiClient.updateSessionCheats(sessionId, cheatsEnabled, enabledIndices).toDomain()
     }
 }

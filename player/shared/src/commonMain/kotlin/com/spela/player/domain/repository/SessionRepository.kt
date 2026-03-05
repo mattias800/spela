@@ -2,9 +2,11 @@ package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.GameSession
 import com.spela.player.domain.model.SaveState
+import com.spela.player.domain.model.SessionCheatConfig
 
 interface SessionRepository {
     suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>>
+    suspend fun getSession(sessionId: String): Result<GameSession>
     suspend fun createSession(gameId: String, name: String): Result<GameSession>
     suspend fun updateSession(sessionId: String, name: String): Result<GameSession>
     suspend fun deleteSession(sessionId: String): Result<Unit>
@@ -15,4 +17,6 @@ interface SessionRepository {
     suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray>
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit>
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
+    suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>
+    suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): Result<SessionCheatConfig>
 }

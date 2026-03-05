@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SessionCard } from "../session-card";
 import type { GameSession } from "@/types/api";
@@ -22,15 +23,22 @@ const onContinue = vi.fn();
 const onRename = vi.fn();
 const onDelete = vi.fn();
 
-function renderCard(session: GameSession = baseSession, isDeleting = false) {
+function renderCard(
+  session: GameSession = baseSession,
+  isDeleting = false,
+  currentUsername?: string,
+) {
   return render(
-    <SessionCard
-      session={session}
-      onContinue={onContinue}
-      onRename={onRename}
-      onDelete={onDelete}
-      isDeleting={isDeleting}
-    />,
+    <MemoryRouter>
+      <SessionCard
+        session={session}
+        currentUsername={currentUsername}
+        onContinue={onContinue}
+        onRename={onRename}
+        onDelete={onDelete}
+        isDeleting={isDeleting}
+      />
+    </MemoryRouter>,
   );
 }
 
@@ -163,5 +171,51 @@ describe("SessionCard", () => {
       "src",
       "https://example.com/screenshot.png",
     );
+  });
+
+  it("shows 'Last played by' when different user last played", () => {
+    renderCard(
+      { ...baseSession, lastPlayedByUsername: "bob", memberCount: 2 },
+      false,
+      "alice",
+    );
+    const label = screen.getByTestId("last-played-by");
+    expect(label).toHaveTextContent("Last played by bob");
+  });
+
+  it("does not show 'Last played by' when current user last played", () => {
+    renderCard(
+      { ...baseSession, lastPlayedByUsername: "alice", memberCount: 2 },
+      false,
+      "alice",
+    );
+    expect(screen.queryByTestId("last-played-by")).not.toBeInTheDocument();
+  });
+
+  it("does not show 'Last played by' when no currentUsername provided", () => {
+    renderCard(
+      { ...baseSession, lastPlayedByUsername: "bob", memberCount: 2 },
+      false,
+    );
+    expect(screen.queryByTestId("last-played-by")).not.toBeInTheDocument();
+  });
+
+  it("renders member avatars for multiplayer sessions", () => {
+    renderCard(
+      {
+        ...baseSession,
+        memberCount: 3,
+        memberAvatars: [
+          "https://example.com/a1.png",
+          "https://example.com/a2.png",
+          "https://example.com/a3.png",
+        ],
+      },
+      false,
+      "alice",
+    );
+    const avatarContainer = screen.getByTestId("member-avatars");
+    expect(avatarContainer.querySelectorAll("img")).toHaveLength(3);
+    expect(screen.getByText("3")).toBeInTheDocument();
   });
 });

@@ -53,11 +53,23 @@ func (h *RelayHandler) CreateRelay(c *gin.Context) {
 		return
 	}
 
-	relay := db.Relay{
+	// Create a GameSession to back this relay
+	session := db.GameSession{
 		OwnerID: uid,
 		GameID:  uint(gid),
-		Name:    req.Name,
-		Status:  "active",
+		Name:    "Relay: " + req.Name,
+	}
+	if err := h.DB.Create(&session).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session for relay"})
+		return
+	}
+
+	relay := db.Relay{
+		OwnerID:   uid,
+		GameID:    uint(gid),
+		Name:      req.Name,
+		Status:    "active",
+		SessionID: &session.ID,
 	}
 	if err := h.DB.Create(&relay).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create relay"})
@@ -742,6 +754,20 @@ func (h *RelayHandler) UploadSave(c *gin.Context) {
 		return
 	}
 
+	// Also create a SessionSaveState if the relay has an associated session
+	if relay.SessionID != nil {
+		sessionSave := db.SessionSaveState{
+			SessionID:     *relay.SessionID,
+			UserID:        uid,
+			Name:          name,
+			FilePath:      filePath,
+			FileSize:      size,
+			ScreenshotURL: screenshotURL,
+			IsAuto:        false,
+		}
+		h.DB.Create(&sessionSave)
+	}
+
 	h.DB.Preload("User").First(&save, save.ID)
 
 	if h.Hub != nil {
@@ -863,6 +889,20 @@ func (h *RelayHandler) UploadAutoSave(c *gin.Context) {
 		save.FileSize = size
 		save.ScreenshotURL = screenshotURL
 		h.DB.Save(&save)
+	}
+
+	// Also create a SessionSaveState if the relay has an associated session
+	if relay.SessionID != nil {
+		sessionSave := db.SessionSaveState{
+			SessionID:     *relay.SessionID,
+			UserID:        uid,
+			Name:          "Auto Save",
+			FilePath:      filePath,
+			FileSize:      size,
+			ScreenshotURL: screenshotURL,
+			IsAuto:        true,
+		}
+		h.DB.Create(&sessionSave)
 	}
 
 	h.DB.Preload("User").First(&save, save.ID)
@@ -1059,6 +1099,7 @@ func (h *RelayHandler) toRelayResponse(r db.Relay) RelayResponse {
 		ActiveUsername: activeUsername,
 		TurnTakenAt:    r.TurnTakenAt,
 		MemberCount:    len(r.Members),
+		SessionID:      uintPtrToStringPtr(r.SessionID),
 		CreatedAt:      r.CreatedAt,
 		UpdatedAt:      r.UpdatedAt,
 	}

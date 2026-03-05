@@ -511,6 +511,7 @@ type RelayResponse struct {
 	ActiveUsername string     `json:"activeUsername,omitempty"`
 	TurnTakenAt    *time.Time `json:"turnTakenAt"`
 	MemberCount    int        `json:"memberCount"`
+	SessionID      *string    `json:"sessionId,omitempty"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }

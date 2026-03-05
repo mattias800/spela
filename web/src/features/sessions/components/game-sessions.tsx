@@ -7,6 +7,7 @@ import {
   useRenameSession,
   useDeleteSession,
 } from "@/hooks/use-sessions";
+import { useAuth } from "@/hooks/use-auth";
 import { SessionCard } from "./session-card";
 import type { GameSession } from "@/types/api";
 
@@ -35,6 +36,7 @@ interface GameSessionsProps {
 }
 
 export function GameSessions({ gameId }: GameSessionsProps) {
+  const { user } = useAuth();
   const { data: sessions, isLoading } = useGameSessions(gameId);
   const createSession = useCreateSession();
   const renameSession = useRenameSession();
@@ -154,6 +156,7 @@ export function GameSessions({ gameId }: GameSessionsProps) {
             <SessionCard
               key={session.id}
               session={session}
+              currentUsername={user?.username}
               onContinue={handleContinue}
               onRename={handleRename}
               onDelete={handleDelete}

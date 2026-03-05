@@ -1372,6 +1372,16 @@ class SpelaApiClient(
         return response.body()
     }
 
+    suspend fun getSessionCheats(sessionId: String): SessionCheatConfigDto {
+        return client.get("$baseUrl/api/sessions/$sessionId/cheats").body()
+    }
+
+    suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): SessionCheatConfigDto {
+        return client.put("$baseUrl/api/sessions/$sessionId/cheats") {
+            setBody(UpdateSessionCheatsRequest(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices))
+        }.body()
+    }
+
     fun close() {
         client.close()
     }

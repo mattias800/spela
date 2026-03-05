@@ -321,6 +321,14 @@ val commonModule = module {
         )
     }
 
+    factory {
+        SessionDetailViewModel(
+            sessionRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
     /* Navigation & UI ViewModels */
     single {
         NavigationViewModel(

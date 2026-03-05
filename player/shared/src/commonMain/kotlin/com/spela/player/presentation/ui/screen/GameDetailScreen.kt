@@ -118,6 +118,7 @@ fun GameDetailScreen(
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
     onPlaySession: ((gameId: String, sessionId: String) -> Unit)? = null,
+    onNavigateToSession: ((sessionId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
@@ -351,6 +352,9 @@ fun GameDetailScreen(
                             },
                             onDeleteSession = { sessionId ->
                                 viewModel.onIntent(GameDetailIntent.DeleteSession(sessionId))
+                            },
+                            onSessionSelected = onNavigateToSession?.let { nav ->
+                                { session -> nav(session.id) }
                             },
                         )
                     }

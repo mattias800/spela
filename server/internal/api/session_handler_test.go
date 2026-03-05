@@ -846,6 +846,114 @@ func TestSessionSaveCount(t *testing.T) {
 	assert.Equal(t, float64(2), resp["saveCount"])
 }
 
+// --- Session Cheats ---
+
+func TestGetSessionCheats_DefaultDisabled(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/sessions/"+sessionID+"/cheats", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, false, resp["cheatsEnabled"])
+	indices := resp["enabledIndices"].([]interface{})
+	assert.Len(t, indices, 0)
+}
+
+func TestPutSessionCheats(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"cheatsEnabled":  true,
+		"enabledIndices": []int{0, 2, 5},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID+"/cheats", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, true, resp["cheatsEnabled"])
+	indices := resp["enabledIndices"].([]interface{})
+	assert.Len(t, indices, 3)
+	assert.Equal(t, float64(0), indices[0])
+	assert.Equal(t, float64(2), indices[1])
+	assert.Equal(t, float64(5), indices[2])
+}
+
+func TestSessionCheats_PutThenGet(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// PUT cheats
+	body, _ := json.Marshal(map[string]interface{}{
+		"cheatsEnabled":  true,
+		"enabledIndices": []int{1, 3},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID+"/cheats", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// GET cheats - should match
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/sessions/"+sessionID+"/cheats", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, true, resp["cheatsEnabled"])
+	indices := resp["enabledIndices"].([]interface{})
+	assert.Len(t, indices, 2)
+	assert.Equal(t, float64(1), indices[0])
+	assert.Equal(t, float64(3), indices[1])
+}
+
+func TestSessionCheats_NotOwner(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// User 2 tries to GET cheats
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/sessions/"+sessionID+"/cheats", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token2)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// User 2 tries to PUT cheats
+	body, _ := json.Marshal(map[string]interface{}{
+		"cheatsEnabled":  true,
+		"enabledIndices": []int{0},
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/sessions/"+sessionID+"/cheats", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token2)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
 // --- Data Migration ---
 
 func TestMigrateSavesToSessions(t *testing.T) {

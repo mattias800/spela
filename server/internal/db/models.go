@@ -385,6 +385,8 @@ type Relay struct {
 	ActiveUserID *uint          `json:"activeUserId,omitempty"`
 	TurnToken    string         `gorm:"size:64" json:"-"`
 	TurnTakenAt  *time.Time     `json:"turnTakenAt,omitempty"`
+	SessionID    *uint          `gorm:"index" json:"sessionId"`
+	Session      *GameSession   `json:"-"`
 	Members      []RelayMember  `gorm:"foreignKey:RelayID" json:"members,omitempty"`
 }
 
@@ -622,6 +624,15 @@ type SessionSaveData struct {
 	SessionID uint           `gorm:"index;not null" json:"sessionId"`
 	FilePath  string         `gorm:"size:1024;not null" json:"-"`
 	FileSize  int64          `json:"fileSize"`
+}
+
+// SessionCheatSetting stores per-cheat enable/disable state within a game session.
+type SessionCheatSetting struct {
+	ID         uint      `gorm:"primarykey" json:"id"`
+	CreatedAt  time.Time `json:"createdAt"`
+	SessionID  uint      `gorm:"uniqueIndex:idx_session_cheat;not null" json:"sessionId"`
+	CheatIndex int       `gorm:"uniqueIndex:idx_session_cheat;not null" json:"cheatIndex"`
+	Enabled    bool      `gorm:"default:false" json:"enabled"`
 }
 
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.

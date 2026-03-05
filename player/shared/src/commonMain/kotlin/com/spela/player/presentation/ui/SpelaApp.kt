@@ -77,6 +77,7 @@ import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.NetplayStartConfig
 import com.spela.player.presentation.ui.screen.RelayDetailScreen
+import com.spela.player.presentation.ui.screen.SessionDetailScreen
 import com.spela.player.presentation.ui.screen.RelaysScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
@@ -107,6 +108,7 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.RelayDetailViewModel
+import com.spela.player.presentation.viewmodel.SessionDetailViewModel
 import com.spela.player.presentation.viewmodel.RelaysViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
@@ -150,6 +152,7 @@ fun SpelaApp(
     presenceService: PresenceService,
     connectivityMonitor: ConnectivityMonitor,
     saveDataViewModel: SaveDataViewModel? = null,
+    sessionDetailViewModel: SessionDetailViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
 ) {
@@ -534,6 +537,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.SaveDataManagement(gameId))
                                         )
                                     },
+                                    onNavigateToSession = { sid ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.SessionDetail(sid))
+                                        )
+                                    },
                                     onNavigateToGame = { targetGameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(targetGameId))
@@ -861,6 +869,29 @@ fun SpelaApp(
                                         gameId = screen.gameId,
                                         viewModel = saveDataViewModel,
                                         onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.SessionDetail -> {
+                                if (sessionDetailViewModel != null) {
+                                    SessionDetailScreen(
+                                        sessionId = screen.sessionId,
+                                        viewModel = sessionDetailViewModel,
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                        onPlay = { gameId, sid ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.ShowOverlay(
+                                                    gameId = gameId,
+                                                    sessionId = sid,
+                                                )
+                                            )
+                                        },
+                                        onDeleted = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
                                     )

@@ -153,6 +153,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameSession{},
 		&SessionSaveState{},
 		&SessionSaveData{},
+		&SessionCheatSetting{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
@@ -654,6 +655,70 @@ func MigrateSavesToSessions(database *gorm.DB) error {
 	// Mark migration as complete
 	database.Create(&ServerSetting{Key: "sessions_migrated", Value: "true"})
 	slog.Info("save-to-session migration completed", "sessions_created", len(pairs))
+	return nil
+}
+
+// MigrateRelaySessions creates GameSession records for existing Relays that
+// don't have a SessionID, and copies their RelaySave records into
+// SessionSaveState. Guarded by the "relay_sessions_migrated" ServerSetting.
+func MigrateRelaySessions(database *gorm.DB) error {
+	// Check if already migrated
+	var setting ServerSetting
+	if err := database.Where("key = ?", "relay_sessions_migrated").First(&setting).Error; err == nil {
+		if setting.Value == "true" {
+			return nil
+		}
+	}
+
+	// Find relays without a session
+	var relays []Relay
+	if err := database.Where("session_id IS NULL").Find(&relays).Error; err != nil {
+		return fmt.Errorf("loading relays without sessions: %w", err)
+	}
+
+	if len(relays) == 0 {
+		database.Create(&ServerSetting{Key: "relay_sessions_migrated", Value: "true"})
+		return nil
+	}
+
+	slog.Info("migrating relays to sessions", "count", len(relays))
+
+	for _, r := range relays {
+		session := GameSession{
+			OwnerID: r.OwnerID,
+			GameID:  r.GameID,
+			Name:    "Relay: " + r.Name,
+		}
+		if err := database.Create(&session).Error; err != nil {
+			slog.Warn("failed to create session for relay",
+				"relayId", r.ID, "error", err)
+			continue
+		}
+
+		// Copy RelaySave records into SessionSaveState
+		var saves []RelaySave
+		database.Where("relay_id = ?", r.ID).Find(&saves)
+		for _, s := range saves {
+			ss := SessionSaveState{
+				SessionID:     session.ID,
+				UserID:        s.UserID,
+				Name:          s.Name,
+				FilePath:      s.FilePath,
+				FileSize:      s.FileSize,
+				ScreenshotURL: s.ScreenshotURL,
+				IsAuto:        s.IsAuto,
+			}
+			ss.CreatedAt = s.CreatedAt
+			ss.UpdatedAt = s.UpdatedAt
+			database.Create(&ss)
+		}
+
+		// Link the relay to its new session
+		database.Model(&r).Update("session_id", session.ID)
+	}
+
+	database.Create(&ServerSetting{Key: "relay_sessions_migrated", Value: "true"})
+	slog.Info("relay-session migration completed", "relays_migrated", len(relays))
 	return nil
 }
 

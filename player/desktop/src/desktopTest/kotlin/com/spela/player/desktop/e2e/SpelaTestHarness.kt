@@ -281,6 +281,12 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val sessionDetailViewModel = SessionDetailViewModel(
+        sessionRepository = sessionRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val statsRepo = FakeStatsRepository()
 
     val statsViewModel = StatsViewModel(
@@ -369,6 +375,7 @@ class SpelaTestHarness(
             presenceService = presenceService,
             connectivityMonitor = connectivityMonitor,
             saveDataViewModel = saveDataViewModel,
+            sessionDetailViewModel = sessionDetailViewModel,
             gamepadPortManager = gamepadPortManager,
         )
         }

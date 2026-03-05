@@ -2,16 +2,20 @@ package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material3.AlertDialog
@@ -30,9 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
+import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -49,6 +56,7 @@ internal fun SessionsSection(
     onCreateSession: (String) -> Unit,
     onRenameSession: (String, String) -> Unit,
     onDeleteSession: (String) -> Unit,
+    onSessionSelected: ((GameSession) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var showRenameDialog by remember { mutableStateOf<GameSession?>(null) }
@@ -82,6 +90,13 @@ internal fun SessionsSection(
         sessions.forEach { session ->
             SessionItem(
                 session = session,
+                onClick = {
+                    if (onSessionSelected != null) {
+                        onSessionSelected(session)
+                    } else {
+                        onContinueSession(session)
+                    }
+                },
                 onContinue = { onContinueSession(session) },
                 onRename = { showRenameDialog = session },
                 onDelete = { showDeleteDialog = session },
@@ -200,14 +215,17 @@ internal fun SessionsSection(
 @Composable
 private fun SessionItem(
     session: GameSession,
+    onClick: () -> Unit,
     onContinue: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isMultiplayer = session.memberCount > 1
+
     SpInnerCard(
         modifier = modifier
-            .clickable(onClick = onContinue)
+            .clickable(onClick = onClick)
             .testTag("session_item_${session.id}"),
     ) {
         Row(
@@ -217,15 +235,46 @@ private fun SessionItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = session.name,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 1,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Session: ${session.name}"
-                    },
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    Text(
+                        text = session.name,
+                        style = SpTypography.TitleSmall,
+                        color = SpColor.OnCard,
+                        maxLines = 1,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Session: ${session.name}"
+                        },
+                    )
+                    if (isMultiplayer || session.isRelay) {
+                        SpChip(
+                            text = if (session.isRelay) "Relay" else "Multiplayer",
+                            color = SpColor.Primary,
+                            isSelected = true,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.People,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = SpColor.Primary,
+                                )
+                            },
+                            modifier = Modifier.testTag("session_multiplayer_badge_${session.id}"),
+                        )
+                    }
+                }
+
+                if (isMultiplayer && session.memberAvatars.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    MemberAvatarsRow(
+                        avatars = session.memberAvatars,
+                        memberCount = session.memberCount,
+                        modifier = Modifier.testTag("session_member_avatars_${session.id}"),
+                    )
+                }
+
                 Spacer(Modifier.height(SpSpacing.XXSmall))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -246,9 +295,10 @@ private fun SessionItem(
                     }
                     if (session.lastPlayedByUsername != null) {
                         Text(
-                            text = session.lastPlayedByUsername,
+                            text = "Last played by ${session.lastPlayedByUsername}",
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
+                            modifier = Modifier.testTag("session_last_played_by_${session.id}"),
                         )
                     }
                 }
@@ -277,6 +327,43 @@ private fun SessionItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MemberAvatarsRow(
+    avatars: List<String>,
+    memberCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    val maxVisible = 4
+    val visibleAvatars = avatars.take(maxVisible)
+    val overflow = memberCount - visibleAvatars.size
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box {
+            visibleAvatars.forEachIndexed { index, avatarUrl ->
+                SpAvatar(
+                    username = "",
+                    avatarUrl = avatarUrl,
+                    size = 24.dp,
+                    modifier = Modifier.offset(x = (index * 18).dp),
+                )
+            }
+        }
+        Spacer(Modifier.width(((visibleAvatars.size - 1) * 18 + 24).dp))
+        if (overflow > 0) {
+            Spacer(Modifier.width(SpSpacing.XSmall))
+            Text(
+                text = "+$overflow",
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.testTag("session_avatar_overflow"),
+            )
         }
     }
 }
