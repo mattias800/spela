@@ -18,11 +18,24 @@
 #include <math.h>
 
 /* Portable 16-byte aligned allocation.
- * aligned_alloc requires C11 and isn't available on older Android NDK targets. */
+ * aligned_alloc requires C11 and isn't available on older Android NDK targets.
+ * posix_memalign is POSIX-only; Windows uses _aligned_malloc instead. */
 static void *alloc_aligned(size_t alignment, size_t size) {
+#ifdef _WIN32
+    return _aligned_malloc(size, alignment);
+#else
     void *ptr = NULL;
     if (posix_memalign(&ptr, alignment, size) != 0) return NULL;
     return ptr;
+#endif
+}
+
+static void free_aligned(void *ptr) {
+#ifdef _WIN32
+    _aligned_free(ptr);
+#else
+    free(ptr);
+#endif
 }
 
 /* NEON detection — restrict to AArch64 where vaddvq_f32 is available.
@@ -166,11 +179,11 @@ sinc_resampler_t *sinc_resampler_create(int channels, int taps, int subphases) {
 
 void sinc_resampler_destroy(sinc_resampler_t *r) {
     if (!r) return;
-    free(r->coeffs);
-    free(r->deltas);
-    free(r->history_l);
-    free(r->history_r);
-    free(r);
+    free_aligned(r->coeffs);
+    free_aligned(r->deltas);
+    free_aligned(r->history_l);
+    free_aligned(r->history_r);
+    free(r);  /* r itself is calloc'd, not alloc_aligned */
 }
 
 void sinc_resampler_reset(sinc_resampler_t *r) {
