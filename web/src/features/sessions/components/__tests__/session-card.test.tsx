@@ -63,9 +63,9 @@ describe("SessionCard", () => {
     expect(screen.getByTestId("session-card-ses-1")).toBeInTheDocument();
   });
 
-  it("calls onContinue when Continue clicked", () => {
+  it("calls onContinue when Play clicked", () => {
     renderCard();
-    fireEvent.click(screen.getByText("Continue"));
+    fireEvent.click(screen.getByText("Play"));
     expect(onContinue).toHaveBeenCalledWith(baseSession);
   });
 

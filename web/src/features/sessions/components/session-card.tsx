@@ -172,7 +172,8 @@ export function SessionCard({
           size="sm"
           onClick={() => onContinue(session)}
         >
-          Continue
+          <Play className="h-4 w-4 mr-1" />
+          Play
         </Button>
       </div>
 

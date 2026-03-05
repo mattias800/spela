@@ -201,6 +201,6 @@ describe("GameSessions", () => {
     });
     renderComponent();
 
-    expect(screen.getByText("Continue")).toBeInTheDocument();
+    expect(screen.getByText("Play")).toBeInTheDocument();
   });
 });
