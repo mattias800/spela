@@ -125,6 +125,8 @@ fun SecondaryScreenContent(
                     controller = controller,
                     splitY = state.dualScreenSplitY,
                     selectedShader = state.selectedShader,
+                    bottomScreenWidth = state.dualScreenBottomWidth,
+                    bottomScreenOffsetX = state.dualScreenBottomOffsetX,
                 )
             }
         } else {

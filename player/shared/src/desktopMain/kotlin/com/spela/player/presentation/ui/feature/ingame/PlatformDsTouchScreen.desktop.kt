@@ -10,6 +10,8 @@ actual fun PlatformDsTouchScreen(
     controller: LibretroController,
     splitY: Int,
     selectedShader: ShaderPreset,
+    bottomScreenWidth: Int,
+    bottomScreenOffsetX: Int,
     modifier: Modifier,
 ) {
     // No-op on desktop: secondary display is not supported.

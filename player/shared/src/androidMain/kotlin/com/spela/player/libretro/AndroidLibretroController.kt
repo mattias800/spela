@@ -55,6 +55,10 @@ class AndroidLibretroController(
     @Volatile
     private var netplayDisconnected = false
 
+    /** When true, skip GPU present and populate frameBitmap from CPU buffer instead. */
+    @Volatile
+    var dualScreenSplitActive = false
+
     /** Callback invoked on the emulation thread when the remote peer times out. */
     var onNetplayPeerTimeout: (() -> Unit)? = null
 
@@ -339,10 +343,16 @@ class AndroidLibretroController(
             jni.nativeRun()
 
             // GPU path: frame was already uploaded in video_refresh_callback,
-            // just trigger the render pass. Software path: read pixels via JNI.
-            if (jni.nativeGpuIsActive()) {
+            // just trigger the render pass. Skip when dual-screen split is active —
+            // the primary display uses EmulationSurface (Canvas) instead, which crops
+            // to the top screen from frameBitmap.
+            if (jni.nativeGpuIsActive() && !dualScreenSplitActive) {
                 jni.nativeGpuRender()
-            } else {
+            }
+            // Software path or dual-screen split: populate frameBitmap from CPU readback.
+            // For GLES HW render cores, hw_gl_read_pixels() in video_refresh_callback
+            // already populates the CPU buffer alongside the GPU upload.
+            if (dualScreenSplitActive || !jni.nativeGpuIsActive()) {
                 updateVideoFrame()
             }
 
@@ -469,9 +479,10 @@ class AndroidLibretroController(
             // 5. Run one emulation frame
             jni.nativeRun()
 
-            if (jni.nativeGpuIsActive()) {
+            if (jni.nativeGpuIsActive() && !dualScreenSplitActive) {
                 jni.nativeGpuRender()
-            } else {
+            }
+            if (dualScreenSplitActive || !jni.nativeGpuIsActive()) {
                 updateVideoFrame()
             }
             pushAudio()
@@ -562,6 +573,14 @@ class AndroidLibretroController(
 
         convertToPackedArgb(videoFrameBuffer, pixelCount, format, pixelBuffer)
 
+        // GLES HW render: the readback buffer from hw_gl_read_pixels() is bottom-up
+        // (OpenGL origin is bottom-left). The GPU renderer's shader handles this via
+        // flip_y, but when rendering via EmulationSurface (Canvas/Bitmap), we must
+        // flip the pixel data manually.
+        if (jni.nativeGpuIsActive()) {
+            flipVertically(pixelBuffer, width, height)
+        }
+
         // Reallocate double buffers if dimensions changed.
         // Don't recycle old bitmaps — Compose may still be drawing the previous
         // front bitmap via _frameBitmap. Let GC collect them instead.
@@ -627,6 +646,27 @@ class AndroidLibretroController(
                     out[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
                 }
             }
+        }
+    }
+
+    /** Temp row buffer for vertical flip, lazily allocated to match frame width. */
+    private var flipRowBuffer = IntArray(0)
+
+    /**
+     * Flips an IntArray of pixel data vertically (swaps top and bottom rows in-place).
+     * Used to convert from OpenGL bottom-left origin to top-left origin for Bitmap.
+     */
+    private fun flipVertically(pixels: IntArray, width: Int, height: Int) {
+        if (flipRowBuffer.size < width) {
+            flipRowBuffer = IntArray(width)
+        }
+        val halfHeight = height / 2
+        for (y in 0 until halfHeight) {
+            val topStart = y * width
+            val bottomStart = (height - 1 - y) * width
+            System.arraycopy(pixels, topStart, flipRowBuffer, 0, width)
+            System.arraycopy(pixels, bottomStart, pixels, topStart, width)
+            System.arraycopy(flipRowBuffer, 0, pixels, bottomStart, width)
         }
     }
 

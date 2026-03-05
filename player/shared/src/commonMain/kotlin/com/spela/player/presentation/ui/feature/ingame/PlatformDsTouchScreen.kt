@@ -20,5 +20,7 @@ expect fun PlatformDsTouchScreen(
     controller: LibretroController,
     splitY: Int,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
+    bottomScreenWidth: Int = 0,
+    bottomScreenOffsetX: Int = 0,
     modifier: Modifier = Modifier,
 )
