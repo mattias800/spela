@@ -93,10 +93,9 @@ data class GameDetailState(
     // Feature 8: Storage usage
     val storageUsage: StorageUsage? = null,
 
-    // Cheats
+    // Cheats (used by InGameOverlay, not displayed on game detail)
     val cheats: List<Cheat> = emptyList(),
     val isLoadingCheats: Boolean = false,
-    val showCheatDialog: Boolean = false,
 
     // Sessions
     val sessions: List<GameSession> = emptyList(),

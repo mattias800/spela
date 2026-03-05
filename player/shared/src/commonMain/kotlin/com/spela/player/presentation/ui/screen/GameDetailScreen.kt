@@ -61,7 +61,6 @@ import com.spela.player.presentation.ui.feature.gamedetail.VerificationChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
-import com.spela.player.presentation.ui.feature.gamedetail.CheatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
@@ -318,23 +317,7 @@ fun GameDetailScreen(
                         )
                     }
 
-                    // 4b. Cheats
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        CheatsSection(
-                            cheats = state.cheats,
-                            isLoading = state.isLoadingCheats,
-                            onToggle = { cheatId, enabled ->
-                                viewModel.onIntent(GameDetailIntent.ToggleCheat(cheatId, enabled))
-                            },
-                            onDisableAll = {
-                                viewModel.onIntent(GameDetailIntent.DisableAllCheats)
-                            },
-                        )
-                    }
-
-                    // 4c. Sessions
+                    // 4b. Sessions
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
