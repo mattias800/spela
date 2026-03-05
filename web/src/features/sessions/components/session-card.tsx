@@ -123,23 +123,26 @@ export function SessionCard({
         </div>
 
         {/* Member avatars */}
-        {session.memberAvatars.length > 0 && (
-          <div className="flex -space-x-2" data-testid="member-avatars">
-            {session.memberAvatars.slice(0, 3).map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt=""
-                className="w-6 h-6 rounded-full border-2 border-surface-900"
-              />
-            ))}
-            {session.memberAvatars.length > 3 && (
-              <span className="w-6 h-6 rounded-full border-2 border-surface-900 bg-surface-700 flex items-center justify-center text-[10px] text-surface-400">
-                +{session.memberAvatars.length - 3}
-              </span>
-            )}
-          </div>
-        )}
+        {(session.memberAvatars ?? []).length > 0 && (() => {
+          const avatars = session.memberAvatars!;
+          return (
+            <div className="flex -space-x-2" data-testid="member-avatars">
+              {avatars.slice(0, 3).map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt=""
+                  className="w-6 h-6 rounded-full border-2 border-surface-900"
+                />
+              ))}
+              {avatars.length > 3 && (
+                <span className="w-6 h-6 rounded-full border-2 border-surface-900 bg-surface-700 flex items-center justify-center text-[10px] text-surface-400">
+                  +{avatars.length - 3}
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

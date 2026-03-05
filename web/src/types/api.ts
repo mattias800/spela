@@ -648,7 +648,7 @@ export interface GameSession {
   screenshotUrl: string | null;
   cheatsEnabled: boolean;
   memberCount: number;
-  memberAvatars: string[];
+  memberAvatars: string[] | null;
   createdAt: string;
   updatedAt: string;
 }
