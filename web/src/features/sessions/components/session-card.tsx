@@ -44,7 +44,7 @@ export function SessionCard({
         <div className="w-12 h-12 rounded-lg bg-surface-700/50 flex-shrink-0 overflow-hidden flex items-center justify-center">
           {session.screenshotUrl ? (
             <img
-              src={session.screenshotUrl}
+              src={`${session.screenshotUrl}${session.screenshotUrl.includes("?") ? "&" : "?"}token=${localStorage?.getItem("accessToken") ?? ""}`}
               alt={session.name}
               className="w-full h-full object-cover"
             />

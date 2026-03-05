@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.repository.CheatRepository
 import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.state.SessionDetailState
@@ -15,6 +16,7 @@ class SessionDetailViewModel(
     private val sessionRepository: SessionRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val cheatRepository: CheatRepository? = null,
 ) {
     private val _state = MutableStateFlow(SessionDetailState())
     val state: StateFlow<SessionDetailState> = _state.asStateFlow()
@@ -26,6 +28,9 @@ class SessionDetailViewModel(
             is SessionDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
             is SessionDetailIntent.ToggleCheatsEnabled -> toggleCheatsEnabled(intent.sessionId, intent.enabled)
             is SessionDetailIntent.UpdateCheatSettings -> updateCheatSettings(intent.sessionId, intent.enabledIndices)
+            is SessionDetailIntent.ToggleCheatAtIndex -> toggleCheatAtIndex(intent.sessionId, intent.cheatIndex)
+            is SessionDetailIntent.SelectAllCheats -> selectAllCheats(intent.sessionId)
+            is SessionDetailIntent.DeselectAllCheats -> deselectAllCheats(intent.sessionId)
             is SessionDetailIntent.StartFromSave -> { /* Handled by UI navigation */ }
             SessionDetailIntent.ShowDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = true) }
             SessionDetailIntent.DismissDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = false) }
@@ -42,6 +47,7 @@ class SessionDetailViewModel(
                     _state.update { it.copy(session = session, isLoading = false) }
                     loadSaves(sessionId)
                     loadCheats(sessionId)
+                    loadAvailableCheats(session.gameId)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isLoading = false) }
@@ -76,6 +82,32 @@ class SessionDetailViewModel(
                     }
                 },
                 onFailure = { /* Cheats may not be configured yet, ignore */ },
+            )
+        }
+    }
+
+    private fun loadAvailableCheats(gameId: String) {
+        val repo = cheatRepository ?: return
+        _state.update { it.copy(isLoadingCheats = true) }
+        scope.launch(dispatchers.io) {
+            repo.getCheatsForGame(gameId).fold(
+                onSuccess = { cheats ->
+                    _state.update {
+                        it.copy(
+                            availableCheats = cheats,
+                            isLoadingCheats = false,
+                            cheatsLoadAttempted = true,
+                        )
+                    }
+                },
+                onFailure = {
+                    _state.update {
+                        it.copy(
+                            isLoadingCheats = false,
+                            cheatsLoadAttempted = true,
+                        )
+                    }
+                },
             )
         }
     }
@@ -151,5 +183,24 @@ class SessionDetailViewModel(
                 },
             )
         }
+    }
+
+    private fun toggleCheatAtIndex(sessionId: String, cheatIndex: Int) {
+        val current = _state.value.enabledCheatIndices
+        val newIndices = if (cheatIndex in current) {
+            current - cheatIndex
+        } else {
+            current + cheatIndex
+        }
+        updateCheatSettings(sessionId, newIndices)
+    }
+
+    private fun selectAllCheats(sessionId: String) {
+        val allIndices = _state.value.availableCheats.map { it.index }
+        updateCheatSettings(sessionId, allIndices)
+    }
+
+    private fun deselectAllCheats(sessionId: String) {
+        updateCheatSettings(sessionId, emptyList())
     }
 }

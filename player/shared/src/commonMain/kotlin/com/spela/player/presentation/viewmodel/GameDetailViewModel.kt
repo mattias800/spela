@@ -123,13 +123,6 @@ class GameDetailViewModel(
             is GameDetailIntent.ExportSave -> { /* Export handled by UI layer with file dialog */ }
             is GameDetailIntent.ImportSave -> importSave(intent.name, intent.fileData)
 
-            // Cheats
-            is GameDetailIntent.LoadCheats -> loadCheats(intent.gameId)
-            is GameDetailIntent.ToggleCheat -> toggleCheat(intent.cheatId, intent.enabled)
-            GameDetailIntent.DisableAllCheats -> disableAllCheats()
-            GameDetailIntent.ShowCheatDialog -> _state.update { it.copy(showCheatDialog = true) }
-            GameDetailIntent.DismissCheatDialog -> _state.update { it.copy(showCheatDialog = false) }
-
             // Sessions
             is GameDetailIntent.LoadSessions -> loadSessions(intent.gameId)
             is GameDetailIntent.CreateSession -> createSession(intent.gameId, intent.name)
@@ -682,30 +675,6 @@ class GameDetailViewModel(
                     _state.update { it.copy(isLoadingCheats = false) }
                 },
             )
-        }
-    }
-
-    private fun toggleCheat(cheatId: String, enabled: Boolean) {
-        val repo = cheatRepository ?: return
-        // Optimistic update
-        _state.update { state ->
-            state.copy(cheats = state.cheats.map {
-                if (it.id == cheatId) it.copy(enabled = enabled) else it
-            })
-        }
-        scope.launch(dispatchers.io) {
-            repo.setCheatEnabled(cheatId, enabled)
-        }
-    }
-
-    private fun disableAllCheats() {
-        val repo = cheatRepository ?: return
-        val gameId = currentGameId ?: return
-        _state.update { state ->
-            state.copy(cheats = state.cheats.map { it.copy(enabled = false) })
-        }
-        scope.launch(dispatchers.io) {
-            repo.disableAllCheats(gameId)
         }
     }
 

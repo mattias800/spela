@@ -1433,6 +1433,8 @@ class FakeSessionRepository : SessionRepository {
     fun preSetSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int> = emptyList()) {
         sessionCheats[sessionId] = SessionCheatConfig(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices)
     }
+
+    fun getLastCheatConfig(sessionId: String): SessionCheatConfig? = sessionCheats[sessionId]
 }
 
 class FakeCheatRepository : CheatRepository {

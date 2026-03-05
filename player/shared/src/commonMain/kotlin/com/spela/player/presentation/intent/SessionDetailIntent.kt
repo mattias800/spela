@@ -6,6 +6,9 @@ sealed interface SessionDetailIntent {
     data class DeleteSession(val sessionId: String) : SessionDetailIntent
     data class ToggleCheatsEnabled(val sessionId: String, val enabled: Boolean) : SessionDetailIntent
     data class UpdateCheatSettings(val sessionId: String, val enabledIndices: List<Int>) : SessionDetailIntent
+    data class ToggleCheatAtIndex(val sessionId: String, val cheatIndex: Int) : SessionDetailIntent
+    data class SelectAllCheats(val sessionId: String) : SessionDetailIntent
+    data class DeselectAllCheats(val sessionId: String) : SessionDetailIntent
     data class StartFromSave(val sessionId: String, val saveId: String) : SessionDetailIntent
     data object ShowDeleteConfirm : SessionDetailIntent
     data object DismissDeleteConfirm : SessionDetailIntent

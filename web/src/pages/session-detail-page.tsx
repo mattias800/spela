@@ -29,8 +29,10 @@ import {
   useRenameSession,
 } from "@/hooks/use-sessions";
 import { useGame } from "@/hooks/use-games";
+import { useGameCheats } from "@/hooks/use-cheats";
 import { formatFileSize, formatRelativeTime, formatPlayTime } from "@/lib/format";
 import type { SessionSave } from "@/types/api";
+import { SessionCheatSelector } from "@/features/sessions/components/session-cheat-selector";
 
 function SessionDetailSkeleton() {
   return (
@@ -57,6 +59,7 @@ export function SessionDetailPage() {
   const renameSession = useRenameSession();
 
   const { data: game } = useGame(session?.gameId ?? "");
+  const { data: gameCheats, isLoading: gameCheatsLoading } = useGameCheats(session?.gameId ?? "");
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -82,6 +85,36 @@ export function SessionDetailPage() {
       sessionId,
       cheatsEnabled: enabled,
       enabledIndices: cheats.enabledIndices,
+    });
+  }
+
+  function handleToggleCheat(index: number, enabled: boolean) {
+    if (!sessionId || !cheats) return;
+    const current = new Set(cheats.enabledIndices);
+    if (enabled) current.add(index);
+    else current.delete(index);
+    updateCheats.mutate({
+      sessionId,
+      cheatsEnabled: cheats.cheatsEnabled,
+      enabledIndices: Array.from(current),
+    });
+  }
+
+  function handleSelectAllCheats() {
+    if (!sessionId || !cheats || !gameCheats) return;
+    updateCheats.mutate({
+      sessionId,
+      cheatsEnabled: cheats.cheatsEnabled,
+      enabledIndices: gameCheats.map((c) => c.index),
+    });
+  }
+
+  function handleDeselectAllCheats() {
+    if (!sessionId || !cheats) return;
+    updateCheats.mutate({
+      sessionId,
+      cheatsEnabled: cheats.cheatsEnabled,
+      enabledIndices: [],
     });
   }
 
@@ -143,16 +176,17 @@ export function SessionDetailPage() {
             <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
               <Layers className="h-6 w-6 text-brand-400 flex-shrink-0" />
               {session.name}
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setEditName(session.name);
                   setIsEditing(true);
                 }}
-                className="text-surface-500 hover:text-surface-300 transition-colors"
                 aria-label="Rename session"
               >
                 <Pencil className="h-4 w-4" />
-              </button>
+              </Button>
             </h1>
           )}
           <div className="flex items-center gap-3 mt-2 text-sm text-surface-400">
@@ -236,7 +270,7 @@ export function SessionDetailPage() {
               >
                 {save.screenshotUrl ? (
                   <img
-                    src={save.screenshotUrl}
+                    src={`${save.screenshotUrl}${save.screenshotUrl.includes("?") ? "&" : "?"}token=${localStorage?.getItem("accessToken") ?? ""}`}
                     alt=""
                     className="w-16 h-12 rounded object-cover bg-surface-800 flex-shrink-0"
                   />
@@ -317,20 +351,29 @@ export function SessionDetailPage() {
             <Switch
               checked={cheats?.cheatsEnabled ?? false}
               onChange={handleToggleCheats}
+              disabled={!gameCheatsLoading && (!gameCheats || gameCheats.length === 0)}
               aria-label="Enable cheats"
             />
           </div>
         </div>
-        {!cheats?.cheatsEnabled && (
+        {!gameCheatsLoading && (!gameCheats || gameCheats.length === 0) && (
           <p className="text-sm text-surface-500 mt-2">
-            Cheats are disabled for this session.
+            Cheats are not available for this game. Cheats require a verified ROM (checksum match).
           </p>
         )}
-        {cheats?.cheatsEnabled && cheats.enabledIndices.length === 0 && (
+        {gameCheats && gameCheats.length > 0 && !cheats?.cheatsEnabled && (
           <p className="text-sm text-surface-500 mt-2">
-            Cheats are enabled but none are selected. Configure cheats in the
-            player app.
+            Cheats are disabled for this session. {gameCheats.length} cheats available.
           </p>
+        )}
+        {cheats?.cheatsEnabled && session && (
+          <SessionCheatSelector
+            gameId={session.gameId}
+            enabledIndices={cheats.enabledIndices}
+            onToggleCheat={handleToggleCheat}
+            onSelectAll={handleSelectAllCheats}
+            onDeselectAll={handleDeselectAllCheats}
+          />
         )}
       </Card>
 
