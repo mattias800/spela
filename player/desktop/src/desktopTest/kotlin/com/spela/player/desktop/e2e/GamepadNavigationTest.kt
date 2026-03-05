@@ -1,8 +1,10 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
@@ -16,10 +18,6 @@ import kotlin.test.Test
  * and shows the section indicator. Tab bar interaction via D-pad is therefore
  * not possible — section cycling (L1/R1) is tested in SectionIndicatorTest
  * and SectionNavigationTest.
- *
- * Compose UI Test key injection requires a focused node as dispatch target,
- * so the GamepadHandler's Next-fallback (for "nothing focused" state) cannot be
- * tested here. That path is covered by manual device testing on the Ayn Thor.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class GamepadNavigationTest {
@@ -58,5 +56,92 @@ class GamepadNavigationTest {
         onNodeWithText("Castlevania").assertIsDisplayed()
         onNodeWithText("Super Mario Bros.").assertIsDisplayed()
         onNodeWithText("Mega Man 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun consoleCardsAreFocusableInGamepadMode() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode and navigate to Consoles screen
+        // focusResetKey auto-focuses first focusable element
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
+        )
+        advance(harness)
+
+        // The first console card (NES) should have received focus automatically
+        val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+        nesCard.assertIsDisplayed()
+        nesCard.assertIsFocused()
+    }
+
+    @Test
+    fun focusDoesNotWrapOnDirectionLeftAtBoundary() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode and navigate to Consoles
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
+        )
+        advance(harness)
+
+        val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+        nesCard.assertIsFocused()
+
+        // Press Left — nothing to the left, focus should stay on the same card
+        nesCard.performKeyInput { pressKey(Key.DirectionLeft) }
+        advanceQuick(harness)
+        nesCard.assertIsFocused()
+    }
+
+    @Test
+    fun focusDoesNotWrapOnDirectionUpAtBoundary() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode and navigate to Consoles
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
+        )
+        advance(harness)
+
+        val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+        nesCard.assertIsFocused()
+
+        // Press Up — nothing above, focus should stay
+        nesCard.performKeyInput { pressKey(Key.DirectionUp) }
+        advanceQuick(harness)
+        nesCard.assertIsFocused()
+    }
+
+    @Test
+    fun focusMovesRightBetweenConsoleCards() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode and navigate to Consoles
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
+        )
+        advance(harness)
+
+        val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+        val snesCard = onNodeWithContentDescription("Super Nintendo, 2 games")
+        nesCard.assertIsFocused()
+
+        // Press Right — focus should move to the SNES card
+        nesCard.performKeyInput { pressKey(Key.DirectionRight) }
+        advanceQuick(harness)
+        snesCard.assertIsFocused()
     }
 }

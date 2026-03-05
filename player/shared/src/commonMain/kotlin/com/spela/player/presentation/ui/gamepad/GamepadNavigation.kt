@@ -79,26 +79,22 @@ fun GamepadHandler(
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        val moved = focusManager.moveFocus(FocusDirection.Up)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        focusManager.moveFocus(FocusDirection.Up)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        val moved = focusManager.moveFocus(FocusDirection.Down)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        focusManager.moveFocus(FocusDirection.Down)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        val moved = focusManager.moveFocus(FocusDirection.Left)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        focusManager.moveFocus(FocusDirection.Left)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        val moved = focusManager.moveFocus(FocusDirection.Right)
-                        if (!moved) focusManager.moveFocus(FocusDirection.Next)
+                        focusManager.moveFocus(FocusDirection.Right)
                         onGamepadInput?.invoke()
                         true
                     }
