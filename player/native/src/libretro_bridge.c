@@ -1108,12 +1108,31 @@ JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
 JNI_FUNC(jboolean, nativeUnserialize)(JNIEnv *env, jobject thiz, jbyteArray data) {
     if (!g_core.game_loaded || !data) return JNI_FALSE;
 
+    /* Ensure GLES context is current before unserialize. Some cores (e.g. Citra/Azahar)
+     * reinitialize the OpenGL renderer during save state load (Core::System::Init →
+     * RendererOpenGL → glGetString). Without a current context, glGetString returns NULL
+     * and the core crashes. This is safe because unserialize runs on the emulation thread
+     * via the queue, which is the only thread that binds this context. */
+    bool made_current = false;
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        made_current = true;
+    }
+
     jsize size = (*env)->GetArrayLength(env, data);
     jbyte *buf = (*env)->GetByteArrayElements(env, data, NULL);
-    if (!buf) return JNI_FALSE;
+    if (!buf) {
+        if (made_current) hw_gl_release_current(g_core.hw_gl_ctx);
+        return JNI_FALSE;
+    }
 
     bool result = g_core.retro_unserialize(buf, (size_t)size);
     (*env)->ReleaseByteArrayElements(env, data, buf, JNI_ABORT);
+
+    if (made_current) {
+        hw_gl_release_current(g_core.hw_gl_ctx);
+    }
+
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
