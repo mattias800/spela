@@ -980,16 +980,32 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
 }
 
-// TriggerCheatImport starts a background cheat database import.
+// TriggerCheatImport runs a cheat database import synchronously and returns the result.
 func (h *AdminHandler) TriggerCheatImport(c *gin.Context) {
-	go func() {
-		if err := cheats.ImportAllCheats(h.DB, cheats.DefaultBaseURL); err != nil {
-			slog.Error("cheat import failed", "error", err)
-		} else {
-			slog.Info("cheat import completed")
-		}
-	}()
-	c.JSON(http.StatusAccepted, gin.H{"message": "cheat import started"})
+	result, err := cheats.ImportAllCheats(h.DB, cheats.DefaultBaseURL)
+	if err != nil {
+		slog.Error("cheat import failed", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cheat import failed"})
+		return
+	}
+	slog.Info("cheat import completed", "cheatsImported", result.CheatsImported, "gamesImported", result.GamesImported)
+	c.JSON(http.StatusOK, result)
+}
+
+// GetCheatStats returns statistics about imported cheat codes.
+func (h *AdminHandler) GetCheatStats(c *gin.Context) {
+	var totalCheats, totalGames, verifiedGames, gamesWithCheats int64
+	h.DB.Model(&db.CheatCode{}).Count(&totalCheats)
+	h.DB.Model(&db.Game{}).Count(&totalGames)
+	h.DB.Model(&db.Game{}).Where("verification_status = ?", "verified").Count(&verifiedGames)
+	h.DB.Model(&db.CheatCode{}).Distinct("game_id").Count(&gamesWithCheats)
+
+	c.JSON(http.StatusOK, gin.H{
+		"totalCheats":    totalCheats,
+		"gamesWithCheats": gamesWithCheats,
+		"totalGames":     totalGames,
+		"verifiedGames":  verifiedGames,
+	})
 }
 
 // IGDBSource returns "env" if IGDB credentials are set via environment variables,

@@ -220,8 +220,15 @@ cheat0_code = "AAAA:01"`
 	assert.Equal(t, int64(0), count, "no cheats should exist before import")
 
 	// Directly call ImportAllCheats with the test server URL to verify it works
-	err := ImportAllCheats(database, srv.URL)
+	result, err := ImportAllCheats(database, srv.URL)
 	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Equal(t, 1, result.TotalGames)
+	assert.Equal(t, 1, result.GamesImported)
+	assert.Equal(t, 1, result.CheatsImported)
+	assert.Equal(t, 0, result.Skipped)
+	assert.Equal(t, 0, result.Failed)
 
 	database.Model(&db.CheatCode{}).Count(&count)
 	assert.Greater(t, count, int64(0), "cheats should be imported")
