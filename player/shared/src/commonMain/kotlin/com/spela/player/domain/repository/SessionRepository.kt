@@ -8,6 +8,7 @@ interface SessionRepository {
     suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>>
     suspend fun getSession(sessionId: String): Result<GameSession>
     suspend fun createSession(gameId: String, name: String): Result<GameSession>
+    suspend fun createSessionFromSharedSave(gameId: String, saveId: String): Result<GameSession>
     suspend fun updateSession(sessionId: String, name: String): Result<GameSession>
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>>

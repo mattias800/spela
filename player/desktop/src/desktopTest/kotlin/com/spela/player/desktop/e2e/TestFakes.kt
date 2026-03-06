@@ -1118,6 +1118,16 @@ class FakeSessionRepository : SessionRepository {
         return Result.success(session)
     }
 
+    override suspend fun createSessionFromSharedSave(gameId: String, saveId: String): Result<GameSession> {
+        val session = GameSession(
+            id = "session-${nextId++}",
+            gameId = gameId,
+            name = "From shared save $saveId",
+        )
+        sessions.add(session)
+        return Result.success(session)
+    }
+
     override suspend fun updateSession(sessionId: String, name: String): Result<GameSession> {
         val idx = sessions.indexOfFirst { it.id == sessionId }
         if (idx < 0) return Result.failure(Exception("Session not found"))

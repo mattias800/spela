@@ -15,6 +15,7 @@ sealed interface GameDetailIntent {
     data class ShareSave(val saveId: String, val name: String, val description: String) : GameDetailIntent
     data class DownloadSharedSave(val saveId: String) : GameDetailIntent
     data class DeleteSharedSave(val saveId: String) : GameDetailIntent
+    data class PlayFromSharedSave(val saveId: String) : GameDetailIntent
     // Add to Collection
     data object ShowAddToCollectionDialog : GameDetailIntent
     data object DismissAddToCollectionDialog : GameDetailIntent

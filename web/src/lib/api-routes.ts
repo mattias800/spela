@@ -152,6 +152,7 @@ export type ApiPostPath = WithQuery<
   | `/games/${string}/scrape-if-needed`
   | `/games/${string}/play-time`
   | `/games/${string}/sessions`
+  | `/games/${string}/sessions/from-shared-save/${string}`
   | `/games/${string}/shared-saves`
   | `/games/${string}/ratings`
 

@@ -126,6 +126,12 @@ fun GameDetailScreen(
         viewModel.onIntent(GameDetailIntent.LoadGame(gameId))
     }
 
+    // Navigate to play when a session is created from a shared save
+    LaunchedEffect(state.playFromSharedSaveSessionId) {
+        val sessionId = state.playFromSharedSaveSessionId ?: return@LaunchedEffect
+        onPlaySession?.invoke(gameId, sessionId)
+    }
+
     if (state.isLoading && state.gameDetail == null) {
         GameDetailSkeleton(onBack = onBack)
         return
@@ -352,6 +358,9 @@ fun GameDetailScreen(
                             onDelete = { saveId ->
                                 viewModel.onIntent(GameDetailIntent.DeleteSharedSave(saveId))
                             },
+                            onPlayFromSave = if (onPlaySession != null) { saveId ->
+                                viewModel.onIntent(GameDetailIntent.PlayFromSharedSave(saveId))
+                            } else null,
                         )
                     }
 

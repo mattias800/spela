@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { SharedSavesResponse } from "@/types/api";
+import type { SharedSavesResponse, GameSession } from "@/types/api";
 
 export function useSharedSaves(
   gameId: string,
@@ -14,6 +14,21 @@ export function useSharedSaves(
         `/games/${gameId}/shared-saves?page=${page}&pageSize=${pageSize}`,
       ),
     enabled: !!gameId,
+  });
+}
+
+export function useCreateSessionFromSharedSave() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ gameId, saveId }: { gameId: string; saveId: string }) =>
+      api.post<GameSession>(
+        `/games/${gameId}/sessions/from-shared-save/${saveId}`,
+      ),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["shared-saves", gameId] });
+    },
   });
 }
 

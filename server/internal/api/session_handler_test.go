@@ -7,6 +7,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spela/server/internal/db"
@@ -981,6 +983,135 @@ func TestUploadSessionSave_WithScreenshot(t *testing.T) {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NotEmpty(t, resp["screenshotUrl"])
+}
+
+// --- Create From Shared Save ---
+
+func createSharedSaveOnDisk(t *testing.T, database *gorm.DB, storage string, gameID uint, userID uint, name string, data []byte) db.SharedSaveState {
+	t.Helper()
+	shared := db.SharedSaveState{
+		UserID: userID,
+		GameID: gameID,
+		Name:   name,
+	}
+	require.NoError(t, database.Create(&shared).Error)
+
+	// Write the file to the save dir so the handler can read it
+	dir := filepath.Join(storage, "shared_saves", fmt.Sprintf("game_%d", gameID))
+	require.NoError(t, os.MkdirAll(dir, 0700))
+	filePath := filepath.Join(dir, fmt.Sprintf("save_%d.sav", shared.ID))
+	require.NoError(t, os.WriteFile(filePath, data, 0600))
+
+	shared.FilePath = filePath
+	shared.FileSize = int64(len(data))
+	require.NoError(t, database.Save(&shared).Error)
+
+	return shared
+}
+
+func TestCreateFromSharedSave_Success(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	database.First(&user)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	shared := createSharedSaveOnDisk(t, database, cfg.Storage.SaveDir, game.ID, user.ID, "Boss Fight Save", []byte("shared save data"))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", fmt.Sprintf("/api/games/%s/sessions/from-shared-save/%d", gameID, shared.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "From: Boss Fight Save", resp["name"])
+	assert.Equal(t, gameID, resp["gameId"])
+	assert.Equal(t, float64(1), resp["saveCount"])
+	assert.NotEmpty(t, resp["id"])
+
+	// Verify download count was incremented
+	var updatedShared db.SharedSaveState
+	database.First(&updatedShared, shared.ID)
+	assert.Equal(t, 1, updatedShared.DownloadCount)
+}
+
+func TestCreateFromSharedSave_InvalidGameID(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/abc/sessions/from-shared-save/1", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestCreateFromSharedSave_InvalidSaveID(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+env.gameID+"/sessions/from-shared-save/abc", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestCreateFromSharedSave_GameNotFound(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/9999/sessions/from-shared-save/1", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestCreateFromSharedSave_SaveNotFound(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+env.gameID+"/sessions/from-shared-save/9999", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestCreateFromSharedSave_SaveBelongsToDifferentGame(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	database.First(&user)
+
+	var console db.Console
+	database.First(&console)
+	game1 := db.Game{ConsoleID: console.ID, Title: "Game 1", FileName: "game1.nes", FilePath: "/tmp/game1.nes", FileSize: 100}
+	database.Create(&game1)
+	game2 := db.Game{ConsoleID: console.ID, Title: "Game 2", FileName: "game2.nes", FilePath: "/tmp/game2.nes", FileSize: 100}
+	database.Create(&game2)
+
+	// Create shared save for game2
+	shared := createSharedSaveOnDisk(t, database, cfg.Storage.SaveDir, game2.ID, user.ID, "Wrong Game Save", []byte("data"))
+
+	// Try to create session from shared save using game1's ID
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", fmt.Sprintf("/api/games/%d/sessions/from-shared-save/%d", game1.ID, shared.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "shared save does not belong to this game", resp["error"])
 }
 
 // --- Session Updates from Save Uploads ---

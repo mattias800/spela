@@ -366,6 +366,8 @@ class StubSessionRepository : SessionRepository {
         downloadSessionSramCallCount++
         return downloadSessionSramResult
     }
+    override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
+        Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) = Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))
 }
