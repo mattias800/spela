@@ -77,6 +77,7 @@ class GameDetailViewModel(
             is GameDetailIntent.ShareSave -> shareSave(intent.saveId, intent.name, intent.description)
             is GameDetailIntent.DownloadSharedSave -> downloadSharedSave(intent.saveId)
             is GameDetailIntent.DeleteSharedSave -> deleteSharedSave(intent.saveId)
+            is GameDetailIntent.PlayFromSharedSave -> playFromSharedSave(intent.saveId)
             GameDetailIntent.ShowAddToCollectionDialog -> showAddToCollectionDialog()
             GameDetailIntent.DismissAddToCollectionDialog -> _state.update {
                 it.copy(showAddToCollectionDialog = false)
@@ -388,6 +389,33 @@ class GameDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun playFromSharedSave(saveId: String) {
+        val gameId = currentGameId ?: return
+        val repo = sessionRepository ?: return
+        _state.update { it.copy(isPlayingFromSharedSave = true) }
+        scope.launch(dispatchers.io) {
+            repo.createSessionFromSharedSave(gameId, saveId).fold(
+                onSuccess = { session ->
+                    _state.update { state ->
+                        state.copy(
+                            sessions = state.sessions + session,
+                            isPlayingFromSharedSave = false,
+                            playFromSharedSaveSessionId = session.id,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            error = error.message,
+                            isPlayingFromSharedSave = false,
+                        )
+                    }
                 },
             )
         }

@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { Share2, Download, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Share2, Download, Trash2, Play, Loader2 } from "lucide-react";
 import { Button, Skeleton, EmptyState, ConfirmDeleteModal } from "@/components/ui";
+import { useToast } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
-import { useSharedSaves, useDeleteSharedSave } from "@/hooks/use-shared-saves";
+import {
+  useSharedSaves,
+  useDeleteSharedSave,
+  useCreateSessionFromSharedSave,
+} from "@/hooks/use-shared-saves";
 
 function SharedSavesSkeleton() {
   return (
@@ -35,6 +41,9 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
   const pageSize = 10;
   const { data, isLoading } = useSharedSaves(gameId, page, pageSize);
   const deleteSharedSave = useDeleteSharedSave();
+  const createSession = useCreateSessionFromSharedSave();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "owner";
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -100,6 +109,36 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                 </span>
 
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      createSession.mutate(
+                        { gameId, saveId: save.id },
+                        {
+                          onSuccess: (session) => {
+                            navigate(
+                              `/games/${gameId}/play?sessionId=${session.id}`,
+                            );
+                          },
+                          onError: () => {
+                            toast(
+                              "error",
+                              "Failed to create session from save",
+                            );
+                          },
+                        },
+                      );
+                    }}
+                    disabled={createSession.isPending}
+                    className="p-2 rounded-lg text-brand-400 hover:text-brand-300 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
+                    title="Play from this save"
+                    aria-label="Play from this save"
+                  >
+                    {createSession.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </button>
                   <a
                     href={`/api/games/${gameId}/shared-saves/${save.id}/download`}
                     download

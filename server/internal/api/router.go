@@ -237,6 +237,7 @@ func NewRouter(cfg Config) *gin.Engine {
 
 		// Game Sessions
 		api.POST("/games/:id/sessions", sessionHandler.CreateSession)
+		api.POST("/games/:id/sessions/from-shared-save/:saveId", sessionHandler.CreateFromSharedSave)
 		api.GET("/games/:id/sessions", sessionHandler.ListSessions)
 		api.GET("/sessions/:id", sessionHandler.GetSession)
 		api.PUT("/sessions/:id", sessionHandler.UpdateSession)

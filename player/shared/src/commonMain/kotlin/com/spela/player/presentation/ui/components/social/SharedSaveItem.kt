@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -33,6 +34,7 @@ fun SharedSaveItem(
     sharedSave: SharedSaveState,
     onDownload: () -> Unit,
     onDelete: (() -> Unit)?,
+    onPlay: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val description = "${sharedSave.name} by ${sharedSave.username}"
@@ -95,6 +97,18 @@ fun SharedSaveItem(
                         text = formatBytes(sharedSave.fileSize),
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
+                    )
+                }
+            }
+
+            // Play button
+            if (onPlay != null) {
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play from ${sharedSave.name}",
+                        tint = SpColor.Primary,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }

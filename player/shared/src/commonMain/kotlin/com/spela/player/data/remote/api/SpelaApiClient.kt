@@ -1041,6 +1041,10 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/sessions").body()
     }
 
+    suspend fun createSessionFromSharedSave(gameId: String, saveId: String): GameSessionDto {
+        return client.post("$baseUrl/api/games/$gameId/sessions/from-shared-save/$saveId").body()
+    }
+
     suspend fun createSession(gameId: String, name: String): GameSessionDto {
         return client.post("$baseUrl/api/games/$gameId/sessions") {
             setBody(CreateSessionRequest(name = name))

@@ -112,6 +112,7 @@ fun CommunitySharesSection(
     sharedSaves: List<SharedSaveState>,
     onDownload: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onPlayFromSave: ((String) -> Unit)? = null,
 ) {
     SpTitledSection(title = "Community Saves", icon = Icons.Outlined.Share) {
         if (sharedSaves.isEmpty()) {
@@ -126,6 +127,7 @@ fun CommunitySharesSection(
                     sharedSave = save,
                     onDownload = { onDownload(save.id) },
                     onDelete = { onDelete(save.id) },
+                    onPlay = onPlayFromSave?.let { { it(save.id) } },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = SpSpacing.XSmall),

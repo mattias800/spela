@@ -2,11 +2,16 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
-import { useSharedSaves, useDeleteSharedSave } from "../use-shared-saves";
+import {
+  useSharedSaves,
+  useDeleteSharedSave,
+  useCreateSessionFromSharedSave,
+} from "../use-shared-saves";
 
 vi.mock("@/lib/api-client", () => ({
   api: {
     get: vi.fn(),
+    post: vi.fn(),
     upload: vi.fn(),
     delete: vi.fn(),
     getAccessToken: vi.fn(() => "test-token"),
@@ -17,6 +22,7 @@ import { api } from "@/lib/api-client";
 
 const mockApi = api as unknown as {
   get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
   upload: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
   getAccessToken: ReturnType<typeof vi.fn>;
@@ -134,5 +140,51 @@ describe("useDeleteSharedSave", () => {
     result.current.mutate({ gameId: "g1", saveId: "ss1" });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe("useCreateSessionFromSharedSave", () => {
+  const mockSession = {
+    id: "ses-new",
+    gameId: "g1",
+    name: "From shared save",
+    lastPlayedAt: "2026-03-06T10:00:00Z",
+    lastPlayedByUsername: "alice",
+    totalPlayTime: 0,
+    screenshotUrl: null,
+    cheatsEnabled: false,
+    memberCount: 1,
+    memberAvatars: [],
+    createdAt: "2026-03-06T10:00:00Z",
+    updatedAt: "2026-03-06T10:00:00Z",
+  };
+
+  it("creates a session from a shared save", async () => {
+    mockApi.post.mockResolvedValue(mockSession);
+
+    const { result } = renderHook(() => useCreateSessionFromSharedSave(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ gameId: "g1", saveId: "ss1" });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/games/g1/sessions/from-shared-save/ss1",
+    );
+    expect(result.current.data).toEqual(mockSession);
+  });
+
+  it("handles error when creating session from shared save", async () => {
+    mockApi.post.mockRejectedValue(new Error("Save not found"));
+
+    const { result } = renderHook(() => useCreateSessionFromSharedSave(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ gameId: "g1", saveId: "bad-id" });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(Error);
   });
 });

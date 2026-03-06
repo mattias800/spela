@@ -23,6 +23,10 @@ class SessionRepositoryImpl(
         apiClient.createSession(gameId, name).toDomain()
     }
 
+    override suspend fun createSessionFromSharedSave(gameId: String, saveId: String): Result<GameSession> = runCatching {
+        apiClient.createSessionFromSharedSave(gameId, saveId).toDomain()
+    }
+
     override suspend fun updateSession(sessionId: String, name: String): Result<GameSession> = runCatching {
         apiClient.updateSession(sessionId, name).toDomain()
     }

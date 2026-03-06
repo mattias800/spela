@@ -78,4 +78,6 @@ data class GameDetailState(
     // Sessions
     val sessions: List<GameSession> = emptyList(),
     val isLoadingSessions: Boolean = false,
+    val isPlayingFromSharedSave: Boolean = false,
+    val playFromSharedSaveSessionId: String? = null,
 )
