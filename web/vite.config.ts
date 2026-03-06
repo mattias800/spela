@@ -114,20 +114,52 @@ function serveEmulatorjs(): Plugin {
       if (fs.existsSync(dataDir)) {
         fs.cpSync(dataDir, targetDir, { recursive: true });
       }
-      // Copy installed core packages into the build output
+
+      // Only bundle cores that Spela actually uses (non-legacy variants).
+      // Any missing core will be fetched at runtime from cdn.emulatorjs.org.
+      const bundledCores = new Set([
+        "nestopia",
+        "snes9x",
+        "gambatte",
+        "mgba",
+        "mupen64plus_next",
+        "melonds",
+        "genesis_plus_gx",
+        "yabause",
+        "pcsx_rearmed",
+        "ppsspp",
+        "fbneo",
+        "mednafen_pce_fast",
+        "stella2014",
+        "picodrive",
+        "beetle_vb",
+        "atari800",
+        "prosystem",
+        "handy",
+        "mednafen_ngp",
+        "mednafen_wswan",
+        "mednafen_pcfx",
+        "vice_x64",
+        "dosbox_pure",
+      ]);
+
       try {
         const coresTargetDir = path.join(targetDir, "cores");
         fs.mkdirSync(coresTargetDir, { recursive: true });
         for (const entry of fs.readdirSync(coresBaseDir)) {
           if (!entry.startsWith("core-")) continue;
+          const coreName = entry.slice("core-".length);
+          if (!bundledCores.has(coreName)) continue;
           const pkgDir = path.join(coresBaseDir, entry);
           for (const file of fs.readdirSync(pkgDir)) {
-            if (file.endsWith(".data")) {
-              fs.cpSync(
-                path.join(pkgDir, file),
-                path.join(coresTargetDir, file),
-              );
-            }
+            if (!file.endsWith(".data")) continue;
+            // Skip legacy variants — modern browsers don't need them,
+            // and they'll fall back to CDN if somehow requested.
+            if (file.includes("-legacy-")) continue;
+            fs.cpSync(
+              path.join(pkgDir, file),
+              path.join(coresTargetDir, file),
+            );
           }
           const reportsDir = path.join(pkgDir, "reports");
           if (fs.existsSync(reportsDir)) {
