@@ -1,4 +1,4 @@
-import { Save, FolderOpen, Maximize, Loader2, Gamepad2 } from "lucide-react";
+import { Save, Maximize, Loader2, Gamepad2 } from "lucide-react";
 import { Button, BackButton } from "@/components/ui";
 import { DiscSwitchButton } from "./disc-switch-button";
 import type { EmulatorStatus } from "@/hooks/use-emulator-iframe";
@@ -13,7 +13,6 @@ interface PlayToolbarProps {
   gamepadConnected: boolean;
   onBack: () => void;
   onSave: () => void;
-  onLoad: () => void;
   onFullscreen: () => void;
   discStates?: DiscState[];
   currentDisc?: number;
@@ -30,7 +29,6 @@ export function PlayToolbar({
   gamepadConnected,
   onBack,
   onSave,
-  onLoad,
   onFullscreen,
   discStates,
   currentDisc,
@@ -88,16 +86,6 @@ export function PlayToolbar({
           aria-label="Save State"
         >
           <Save className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onLoad}
-          disabled={emulatorStatus !== "playing"}
-          title="Load State"
-          aria-label="Load State"
-        >
-          <FolderOpen className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"

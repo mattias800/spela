@@ -19,7 +19,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	err = database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{}, &db.SaveState{})
+	err = database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{})
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)

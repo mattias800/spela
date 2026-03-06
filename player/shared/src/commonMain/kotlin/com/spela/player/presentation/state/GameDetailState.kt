@@ -11,21 +11,17 @@ import com.spela.player.domain.model.GameCollection
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.GameRating
 import com.spela.player.domain.model.GameStats
-import com.spela.player.domain.model.QuickSaveSlot
 import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.Relay
-import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.Cheat
 import com.spela.player.domain.model.GameSession
-import com.spela.player.domain.model.StorageUsage
 
 enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
 
 data class GameDetailState(
     val gameDetail: GameDetail? = null,
-    val saveStates: List<SaveState> = emptyList(),
     val sharedSaves: List<SharedSaveState> = emptyList(),
     val downloadProgress: DownloadProgress? = null,
     val isGameCached: Boolean = false,
@@ -59,8 +55,6 @@ data class GameDetailState(
     // Active Relays
     val gameRelays: List<Relay> = emptyList(),
     val isLoadingRelays: Boolean = false,
-    // Save Data (SRAM)
-    val saveDataCount: Int = 0,
     // Delete Download
     val showDeleteDownloadDialog: Boolean = false,
     // Create Challenge
@@ -76,22 +70,6 @@ data class GameDetailState(
     val isLoadingDeveloperGames: Boolean = false,
     // BIOS
     val missingBiosFiles: List<BiosMissingFile> = emptyList(),
-
-    // Feature 3: Sync status
-    val unsyncedSaveCount: Int = 0,
-
-    // Feature 5: Quick-save slots
-    val quickSaveSlots: List<QuickSaveSlot> = emptyList(),
-
-    // Feature 6: Auto-save history
-    val autoSaveHistory: List<SaveState> = emptyList(),
-
-    // Feature 7: Bulk delete
-    val isSelectionMode: Boolean = false,
-    val selectedSaveIds: Set<Long> = emptySet(),
-
-    // Feature 8: Storage usage
-    val storageUsage: StorageUsage? = null,
 
     // Cheats (used by InGameOverlay, not displayed on game detail)
     val cheats: List<Cheat> = emptyList(),

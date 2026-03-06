@@ -2,7 +2,6 @@ package com.spela.player.domain.usecase
 
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
-import com.spela.player.domain.repository.SaveRepository
 import com.spela.player.util.currentPlatform
 
 /**
@@ -77,14 +76,3 @@ class PrepareGameUseCase(
     }
 }
 
-class SaveGameStateUseCase(private val saveRepository: SaveRepository) {
-    suspend operator fun invoke(gameId: String, data: ByteArray, screenshot: ByteArray? = null, coreName: String? = null): Result<Unit> {
-        return saveRepository.uploadAutoSaveWithScreenshot(gameId, data, screenshot, coreName).map { }
-    }
-}
-
-class LoadGameStateUseCase(private val saveRepository: SaveRepository) {
-    suspend operator fun invoke(gameId: String): Result<ByteArray> {
-        return saveRepository.downloadAutoSave(gameId)
-    }
-}

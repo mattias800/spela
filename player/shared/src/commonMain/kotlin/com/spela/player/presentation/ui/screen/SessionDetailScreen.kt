@@ -63,6 +63,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
+import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -419,6 +420,7 @@ private fun SessionDetailHeader(
                 contentDescription = game?.let { "${it.title} cover" } ?: "Game cover",
                 modifier = Modifier.size(width = 80.dp, height = 107.dp),
                 cornerRadius = SpSpacing.RadiusLarge,
+                aspectRatio = null,
             )
             Spacer(Modifier.width(SpSpacing.Default))
             Column(modifier = Modifier.weight(1f)) {
@@ -453,20 +455,12 @@ private fun SessionDetailHeader(
         }
 
         // Last played info
-        if (lastPlayedAt != null || lastPlayedByUsername != null) {
-            Spacer(Modifier.height(SpSpacing.Default))
-            Text(
-                text = buildString {
-                    if (lastPlayedAt != null) append(formatRelativeTime(lastPlayedAt))
-                    if (lastPlayedByUsername != null) {
-                        if (isNotEmpty()) append(" · ")
-                        append("by $lastPlayedByUsername")
-                    }
-                },
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
+        Spacer(Modifier.height(SpSpacing.Default))
+        SpPlayInfo(
+            totalPlayTime = totalPlayTime,
+            lastPlayedAt = lastPlayedAt,
+            lastPlayedByUsername = lastPlayedByUsername,
+        )
 
         Spacer(Modifier.height(SpSpacing.Default))
 

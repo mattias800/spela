@@ -132,21 +132,6 @@ data class SaveStateDto(
 )
 
 @Serializable
-data class StorageUsageDto(
-    val totalBytes: Long,
-    val games: List<GameStorageUsageDto>,
-)
-
-@Serializable
-data class GameStorageUsageDto(
-    val gameId: Long,
-    val gameTitle: String,
-    val totalBytes: Long,
-    val saveStateBytes: Long = 0,
-    val sramBytes: Long = 0,
-)
-
-@Serializable
 data class LibretroCoreDto(
     val id: Long,
     val name: String,
@@ -926,18 +911,6 @@ data class DeveloperGameDto(
 )
 
 // Save Data (SRAM)
-
-@Serializable
-data class SaveDataDto(
-    val id: Long = 0,
-    val userId: Long = 0,
-    val gameId: Long = 0,
-    val name: String = "",
-    val fileSize: Long = 0,
-    val isActive: Boolean = false,
-    val createdAt: String = "",
-    val updatedAt: String = "",
-)
 
 // Game Sessions
 

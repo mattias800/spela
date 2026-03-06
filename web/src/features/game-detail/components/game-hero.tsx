@@ -17,7 +17,7 @@ import {
   Download,
   Monitor,
 } from "lucide-react";
-import { Button, Badge, SplitButton, ActionsMenu } from "@/components/ui";
+import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
 import { CoverArtSelector } from "./cover-art-selector";
 import { MetaItem } from "@/components/meta-item";
@@ -40,10 +40,8 @@ interface GameHeroProps {
   isPlayLaterPending?: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
-  hasSaves?: boolean;
   biosMissing?: boolean;
   onPlay: () => void;
-  onPlayFresh?: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
   onTogglePlayLater: () => void;
@@ -62,10 +60,8 @@ export function GameHero({
   isPlayLaterPending,
   isScraping,
   hasAchievements,
-  hasSaves,
   biosMissing,
   onPlay,
-  onPlayFresh,
   onScrape,
   onToggleFavorite,
   onTogglePlayLater,
@@ -211,56 +207,23 @@ export function GameHero({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {game.playable ? (
-              <>
-                {hasSaves ? (
-                  <SplitButton
-                    variant="primary"
-                    size="sm"
-                    onClick={onPlay}
-                    disabled={!canPlayInBrowser || biosMissing}
-                    title={
-                      biosMissing
-                        ? "Missing required BIOS files"
-                        : canPlayInBrowser
-                          ? "Resume game with latest save"
-                          : `${game.consoleName} is not supported for browser play`
-                    }
-                    data-testid="resume-btn"
-                    menuItems={[
-                      ...(onPlayFresh
-                        ? [
-                            {
-                              label: "New Game",
-                              icon: <Play className="h-4 w-4" />,
-                              onClick: onPlayFresh,
-                            },
-                          ]
-                        : []),
-                    ]}
-                  >
-                    <Play className="h-5 w-5" />
-                    Resume
-                  </SplitButton>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={onPlay}
-                    disabled={!canPlayInBrowser || biosMissing}
-                    title={
-                      biosMissing
-                        ? "Missing required BIOS files"
-                        : canPlayInBrowser
-                          ? "Play in Browser"
-                          : `${game.consoleName} is not supported for browser play`
-                    }
-                    data-testid="play-in-browser-btn"
-                  >
-                    <Play className="h-5 w-5" />
-                    Play in Browser
-                  </Button>
-                )}
-              </>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onPlay}
+                disabled={!canPlayInBrowser || biosMissing}
+                title={
+                  biosMissing
+                    ? "Missing required BIOS files"
+                    : canPlayInBrowser
+                      ? "Play in Browser"
+                      : `${game.consoleName} is not supported for browser play`
+                }
+                data-testid="play-in-browser-btn"
+              >
+                <Play className="h-5 w-5" />
+                Play in Browser
+              </Button>
             ) : (
               <Button
                 variant="primary"

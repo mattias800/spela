@@ -10,7 +10,6 @@ import {
 import { useToast } from "@/components/ui";
 import {
   useGame,
-  useGameSaves,
   useToggleFavorite,
   useScrapeIfNeeded,
 } from "@/hooks/use-games";
@@ -26,7 +25,6 @@ import {
 import { GameHero } from "@/features/game-detail/components/game-hero";
 import { GameScreenshots } from "@/features/game-detail/components/game-screenshots";
 import { GameCommunityStats } from "@/features/game-detail/components/game-community-stats";
-import { SaveStatesList } from "@/features/game-detail/components/save-states-list";
 import { GameAchievements } from "@/features/game-detail/components/game-achievements";
 import { GameAchievementLeaderboard } from "@/features/game-detail/components/game-achievement-leaderboard";
 import { RatingSummaryCard } from "@/features/game-detail/components/rating-summary";
@@ -105,7 +103,6 @@ export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: game, isLoading } = useGame(id ?? "");
-  const { data: saves } = useGameSaves(id ?? "");
   const toggleFavorite = useToggleFavorite();
   const togglePlayLater = useTogglePlayLater();
   const { user: currentUser } = useAuth();
@@ -195,10 +192,8 @@ export function GameDetailPage() {
         isPlayLaterPending={togglePlayLater.isPending}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
-        hasSaves={(saves?.length ?? 0) > 0}
         biosMissing={showBiosWarning}
         onPlay={() => navigate(`/games/${game.id}/play`)}
-        onPlayFresh={() => navigate(`/games/${game.id}/play?fresh=true`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
           toggleFavorite.mutate({ gameId: game.id, isFavorite })
@@ -259,18 +254,12 @@ export function GameDetailPage() {
       )}
 
       {isPlayable && (
-        <Card className="p-6">
-          <SaveStatesList saves={saves} gameId={game.id} />
-        </Card>
-      )}
-
-      {isPlayable && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6">
             <SharedSavesList gameId={game.id} />
           </Card>
           <Card className="p-6">
-            <GameChallenges gameId={game.id} saves={saves} />
+            <GameChallenges gameId={game.id} />
           </Card>
         </div>
       )}

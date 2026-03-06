@@ -44,7 +44,6 @@ class SpelaTestHarness(
     val authRepo = FakeAuthRepository()
     val gameRepo = FakeGameRepository()
     val downloadRepo = FakeDownloadRepository()
-    val saveRepo = FakeSaveRepository()
     val coreRepo = FakeCoreRepository()
     val libretroController = FakeLibretroController()
     val secondaryDisplay: PlatformSecondaryDisplay = DesktopSecondaryDisplay()
@@ -59,13 +58,8 @@ class SpelaTestHarness(
     val connectivityMonitor = ConnectivityMonitor(fakeApiClient, dispatchers, scope)
     val syncEngine = SyncEngine(
         connectivityMonitor = connectivityMonitor,
-        saveRepository = FakeSaveRepository(),
-        saveDataRepository = saveDataRepo,
         preferencesRepository = FakePreferencesRepository(),
         gameRepository = FakeGameRepository(),
-        apiClient = fakeApiClient,
-        database = testDatabase,
-        fileStorage = FakeFileStorage(),
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -140,8 +134,6 @@ class SpelaTestHarness(
         toggleFavoriteUseCase = ToggleFavoriteUseCase(gameRepo),
         togglePlayLaterUseCase = TogglePlayLaterUseCase(gameRepo),
         downloadRepository = downloadRepo,
-        saveRepository = saveRepo,
-        saveDataRepository = saveDataRepo,
         ratingRepository = ratingRepo,
         sharedSaveRepository = sharedSaveRepo,
         getMyCollectionsUseCase = GetMyCollectionsUseCase(collectionRepo),
@@ -173,10 +165,7 @@ class SpelaTestHarness(
     private val emulationState = MutableStateFlow(EmulationState())
 
     private val saveManager = SaveManager(
-        saveGameStateUseCase = SaveGameStateUseCase(saveRepo),
-        loadGameStateUseCase = LoadGameStateUseCase(saveRepo),
         saveDataRepository = saveDataRepo,
-        saveRepository = saveRepo,
         connectivityMonitor = connectivityMonitor,
         libretroController = libretroController,
         screenshotCapture = null,
@@ -341,12 +330,6 @@ class SpelaTestHarness(
         scope = scope,
     )
 
-    val saveDataViewModel = SaveDataViewModel(
-        saveDataRepository = saveDataRepo,
-        dispatchers = dispatchers,
-        scope = scope,
-    )
-
     @Composable
     fun App() {
         androidx.compose.runtime.CompositionLocalProvider(
@@ -376,7 +359,6 @@ class SpelaTestHarness(
             secondaryDisplay = secondaryDisplay,
             presenceService = presenceService,
             connectivityMonitor = connectivityMonitor,
-            saveDataViewModel = saveDataViewModel,
             sessionDetailViewModel = sessionDetailViewModel,
             gamepadPortManager = gamepadPortManager,
         )

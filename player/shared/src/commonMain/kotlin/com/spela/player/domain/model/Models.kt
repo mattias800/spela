@@ -101,35 +101,6 @@ data class SaveState(
     val isSynced: Boolean = true,
 )
 
-data class QuickSaveSlot(
-    val slot: Int,
-    val saveState: SaveState? = null,
-)
-
-data class StorageUsage(
-    val totalBytes: Long,
-    val games: List<GameStorageUsage>,
-)
-
-data class GameStorageUsage(
-    val gameId: Long,
-    val gameTitle: String,
-    val totalBytes: Long,
-    val saveStateBytes: Long = 0,
-    val sramBytes: Long = 0,
-)
-
-@Serializable
-data class SaveData(
-    val id: Long,
-    val gameId: Long,
-    val name: String,
-    val fileSize: Long = 0,
-    val isActive: Boolean = false,
-    val createdAt: Instant? = null,
-    val updatedAt: Instant? = null,
-)
-
 @Serializable
 data class LibretroCore(
     val id: Long,

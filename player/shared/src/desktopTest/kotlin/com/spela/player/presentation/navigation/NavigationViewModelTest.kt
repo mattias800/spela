@@ -1,7 +1,5 @@
 package com.spela.player.presentation.navigation
 
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.api.SpelaApiClient
@@ -11,7 +9,6 @@ import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
-import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,19 +51,10 @@ class NavigationViewModelTest {
             apiClient = apiClient,
         )
         val connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, scope)
-        val testDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).also {
-            SpelaDatabase.Schema.create(it)
-        }
-        val testDatabase = SpelaDatabase(testDriver)
         val syncEngine = SyncEngine(
             connectivityMonitor = connectivityMonitor,
-            saveRepository = NoOpSaveRepository(),
-            saveDataRepository = NoOpSaveDataRepository(),
             preferencesRepository = NoOpPreferencesRepository(),
             gameRepository = NoOpGameRepository(),
-            apiClient = apiClient,
-            database = testDatabase,
-            fileStorage = NoOpFileStorage(),
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -336,44 +324,6 @@ class NavigationViewModelTest {
 
     // Minimal stubs for SyncEngine dependencies (never actually called in these tests)
 
-    private class NoOpSaveRepository : SaveRepository {
-        override suspend fun getSaveStates(gameId: String) = Result.success(emptyList<SaveState>())
-        override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?) = Result.success(SaveState(1, 1, name))
-        override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, name))
-        override suspend fun downloadSaveState(gameId: String, saveId: String) = Result.success(ByteArray(0))
-        override suspend fun deleteSaveState(gameId: String, saveId: String) = Result.success(Unit)
-        override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?) = Result.success(SaveState(1, 1, "auto"))
-        override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, "auto"))
-        override suspend fun downloadAutoSave(gameId: String) = Result.success(ByteArray(0))
-        override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean) = Result.success(SaveState(1, 1, name))
-        override suspend fun loadLocalAutoSave(gameId: String) = Result.failure<ByteArray>(Exception("none"))
-        override suspend fun getPendingSyncCount() = 0
-        override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
-        override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
-        override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, "Slot $slot"))
-        override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(ByteArray(0))
-        override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
-        override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
-        override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
-        override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
-        override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
-    }
-
-    private class NoOpSaveDataRepository : SaveDataRepository {
-        override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
-        override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
-        override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
-        override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
-        override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-        override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
-        override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-        override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
-        override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
-        override suspend fun getPendingSyncCount() = 0
-        override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
-        override suspend fun unzipToSaveDirectory(data: ByteArray) {}
-    }
-
     private class NoOpPreferencesRepository : PreferencesRepository {
         override suspend fun getPreferences() = Result.success(UserPreferences())
         override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?) = Result.success(UserPreferences())
@@ -408,25 +358,4 @@ class NavigationViewModelTest {
         override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
 
-    private class NoOpFileStorage : FileStorage {
-        override fun getGamesDir() = "/tmp/games"
-        override fun getCoresDir() = "/tmp/cores"
-        override fun getSavesDir() = "/tmp/saves"
-        override fun getBiosDir() = "/tmp/bios"
-        override suspend fun createDirectory(path: String) {}
-        override suspend fun writeFile(path: String, data: ByteArray) {}
-        override suspend fun readFile(path: String) = ByteArray(0)
-        override suspend fun fileExists(path: String) = false
-        override suspend fun deleteFile(path: String) {}
-        override suspend fun deleteDirectory(path: String) {}
-        override suspend fun getDirectorySize(path: String) = 0L
-        override suspend fun writeFileStreaming(path: String, writer: suspend (suspend (ByteArray, Int, Int) -> Unit) -> Unit) {
-            writer { _, _, _ -> }
-        }
-        override suspend fun getFileSize(path: String) = 0L
-        override suspend fun listFiles(path: String) = emptyList<String>()
-        override suspend fun isDirectory(path: String) = false
-        override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
-        override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
-    }
 }

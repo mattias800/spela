@@ -3,6 +3,8 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +18,30 @@ import (
 
 // maxSaveUploadSize is the maximum allowed save state upload size (64 MB).
 const maxSaveUploadSize = 64 << 20
+
+const defaultMaxSaveStorageMB = 1024
+
+// maxSaveStorageBytes returns the configured per-user storage quota in bytes.
+func maxSaveStorageBytes() int64 {
+	mb := int64(defaultMaxSaveStorageMB)
+	if envVal := os.Getenv("SPELA_MAX_SAVE_STORAGE_MB"); envVal != "" {
+		if parsed, err := strconv.ParseInt(envVal, 10, 64); err == nil && parsed > 0 {
+			mb = parsed
+		}
+	}
+	return mb << 20
+}
+
+// checkStorageQuota verifies that adding additionalBytes would not exceed the user's quota.
+func checkStorageQuota(database *gorm.DB, userID uint, additionalBytes int64) error {
+	var totalBytes int64
+	database.Model(&db.SessionSaveState{}).Where("user_id = ?", userID).
+		Select("COALESCE(SUM(file_size), 0)").Scan(&totalBytes)
+	if totalBytes+additionalBytes > maxSaveStorageBytes() {
+		return fmt.Errorf("storage quota exceeded")
+	}
+	return nil
+}
 
 // AuthMiddleware validates JWT tokens on protected routes and rejects disabled users.
 func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {

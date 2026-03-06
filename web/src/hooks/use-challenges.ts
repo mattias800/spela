@@ -98,53 +98,6 @@ export function useMyAttempts(challengeId: string) {
   });
 }
 
-export function useCreateChallenge() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      gameId,
-      saveId,
-      name,
-      description,
-      type,
-      difficulty,
-    }: {
-      gameId: string;
-      saveId: number;
-      name: string;
-      description?: string;
-      type: string;
-      difficulty: string;
-    }) => {
-      // Download the save file, then upload as challenge
-      const res = await fetch(`/api/games/${gameId}/saves/${saveId}`, {
-        headers: {
-          Authorization: `Bearer ${api.getAccessToken()}`,
-        },
-      });
-      if (!res.ok) throw new Error("Failed to download save file");
-      const blob = await res.blob();
-
-      const formData = new FormData();
-      formData.append("save", blob, "save");
-      formData.append("gameId", gameId);
-      formData.append("name", name);
-      if (description) formData.append("description", description);
-      formData.append("type", type);
-      formData.append("difficulty", difficulty);
-
-      return api.upload<Challenge>("/challenges", formData);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["challenges"] });
-      queryClient.invalidateQueries({
-        queryKey: ["challenges", "game", data.gameId],
-      });
-    },
-  });
-}
-
 export function useDeleteChallenge() {
   const queryClient = useQueryClient();
 

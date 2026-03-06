@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 
 export interface SaveQueueItem {
-  gameId: string;
+  sessionId: string;
   data: string; // base64
   isAuto: boolean;
   name?: string;
@@ -54,8 +54,8 @@ export function useSaveQueue({
       }
 
       const endpoint = item.isAuto
-        ? `/games/${item.gameId}/saves/auto`
-        : `/games/${item.gameId}/saves`;
+        ? `/sessions/${item.sessionId}/saves/auto`
+        : `/sessions/${item.sessionId}/saves`;
 
       await api.upload(endpoint, formData);
 
@@ -78,15 +78,15 @@ export function useSaveQueue({
   }, [onSaveSuccess, onSaveError]);
 
   const enqueueSave = useCallback(
-    (gameId: string, data: string, isAuto: boolean, name?: string, screenshot?: string) => {
-      if (!gameId || !data) return;
+    (sessionId: string, data: string, isAuto: boolean, name?: string, screenshot?: string) => {
+      if (!sessionId || !data) return;
 
       if (isAuto) {
         saveQueueRef.current = saveQueueRef.current.filter((s) => !s.isAuto);
       }
 
       saveQueueRef.current.push({
-        gameId,
+        sessionId,
         data,
         isAuto,
         name,

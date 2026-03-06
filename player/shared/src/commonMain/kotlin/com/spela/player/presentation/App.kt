@@ -19,7 +19,6 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
-import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.SessionDetailViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
@@ -58,7 +57,6 @@ fun App() {
     val secondaryDisplay: PlatformSecondaryDisplay = koinInject()
     val presenceService: PresenceService = koinInject()
     val connectivityMonitor: ConnectivityMonitor = koinInject()
-    val saveDataViewModel: SaveDataViewModel = koinInject()
     val sessionDetailViewModel: SessionDetailViewModel = koinInject()
     val navigationEventBus: NavigationEventBus = koinInject()
     val gamepadPortManager: GamepadPortManager = koinInject()
@@ -86,7 +84,6 @@ fun App() {
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
         connectivityMonitor = connectivityMonitor,
-        saveDataViewModel = saveDataViewModel,
         sessionDetailViewModel = sessionDetailViewModel,
         navigationEventBus = navigationEventBus,
         gamepadPortManager = gamepadPortManager,

@@ -67,7 +67,6 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSec
 import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
-import com.spela.player.presentation.ui.feature.gamedetail.SaveStatesSection
 import com.spela.player.presentation.ui.feature.gamedetail.SessionsSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SimilarGamesSection
@@ -111,7 +110,6 @@ fun GameDetailScreen(
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
     onNavigateToRelay: ((relayId: String) -> Unit)? = null,
-    onNavigateToSaveData: ((gameId: String) -> Unit)? = null,
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
@@ -195,7 +193,7 @@ fun GameDetailScreen(
                         detail = detail,
                         state = state,
                         isPortrait = isPortraitScreen,
-                        hasSaves = state.saveStates.isNotEmpty(),
+                        hasSaves = state.sessions.isNotEmpty(),
                         missingBiosFiles = state.missingBiosFiles,
                         onPlay = onPlay,
                         onPlayFresh = onPlayFresh,
@@ -342,65 +340,7 @@ fun GameDetailScreen(
                         )
                     }
 
-                    // 5. Save States
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        SaveStatesSection(
-                            saveStates = state.saveStates,
-                            unsyncedCount = state.unsyncedSaveCount,
-                            isSelectionMode = state.isSelectionMode,
-                            selectedSaveIds = state.selectedSaveIds,
-                            onDelete = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.DeleteSave(saveId))
-                            },
-                            onRename = { saveId, name ->
-                                viewModel.onIntent(GameDetailIntent.RenameSave(saveId, name))
-                            },
-                            onUpdateNotes = { saveId, notes ->
-                                viewModel.onIntent(GameDetailIntent.UpdateSaveNotes(saveId, notes))
-                            },
-                            onToggleSelection = { saveId ->
-                                viewModel.onIntent(GameDetailIntent.ToggleSaveSelection(saveId))
-                            },
-                            onToggleSelectionMode = {
-                                viewModel.onIntent(GameDetailIntent.ToggleSelectionMode)
-                            },
-                            onSelectAll = {
-                                viewModel.onIntent(GameDetailIntent.SelectAllSaves)
-                            },
-                            onDeleteSelected = {
-                                viewModel.onIntent(GameDetailIntent.DeleteSelectedSaves)
-                            },
-                        )
-                    }
-
-                    // 6. Save Data (SRAM) - app-specific
-                    if (onNavigateToSaveData != null && state.saveDataCount > 0) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                        ) {
-                            Spacer(Modifier.height(SpSpacing.XXLarge))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "Save Data",
-                                    style = SpTypography.HeadlineSmall,
-                                    color = SpColor.OnBackground,
-                                )
-                                SpButton(
-                                    text = "Manage (${state.saveDataCount})",
-                                    onClick = { onNavigateToSaveData(gameId) },
-                                    style = SpButtonStyle.Ghost,
-                                )
-                            }
-                        }
-                    }
-
-                    // 7. Community Shares
+                    // 5. Community Shares
                     Column(
                         modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                     ) {
@@ -516,7 +456,7 @@ fun GameDetailScreen(
         if (state.showCreateChallengeDialog) {
             CreateChallengeDialog(
                 gameTitle = game.title,
-                saveStates = state.saveStates,
+                saveStates = emptyList(),
                 isSubmitting = state.isCreatingChallenge,
                 onSubmit = { saveStateId, name, description, type, difficulty ->
                     viewModel.onIntent(

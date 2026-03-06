@@ -91,7 +91,6 @@ import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
-import com.spela.player.presentation.ui.screen.SaveDataScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -120,7 +119,6 @@ import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
-import com.spela.player.presentation.viewmodel.SaveDataViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
 import com.spela.player.libretro.GamepadPortManager
@@ -151,7 +149,6 @@ fun SpelaApp(
     secondaryDisplay: PlatformSecondaryDisplay,
     presenceService: PresenceService,
     connectivityMonitor: ConnectivityMonitor,
-    saveDataViewModel: SaveDataViewModel? = null,
     sessionDetailViewModel: SessionDetailViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
@@ -461,10 +458,12 @@ fun SpelaApp(
                             }
 
                             is SpScreen.GameDetail -> {
-                                // Refresh save states when returning from emulation overlay
+                                // Refresh sessions when returning from emulation overlay
                                 LaunchedEffect(navState.showInGameOverlay) {
                                     if (!navState.showInGameOverlay && gameDetailViewModel.state.value.gameDetail != null) {
-                                        gameDetailViewModel.onIntent(GameDetailIntent.RefreshSaves)
+                                        gameDetailViewModel.state.value.gameDetail?.game?.id?.let { gameId ->
+                                            gameDetailViewModel.onIntent(GameDetailIntent.LoadSessions(gameId))
+                                        }
                                     }
                                 }
                                 val netplayState by netplayViewModel.state.collectAsState()
@@ -530,11 +529,6 @@ fun SpelaApp(
                                     onNavigateToRelay = { relayId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
-                                        )
-                                    },
-                                    onNavigateToSaveData = { gameId ->
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.SaveDataManagement(gameId))
                                         )
                                     },
                                     onNavigateToSession = { sid ->
@@ -861,18 +855,6 @@ fun SpelaApp(
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
-                            }
-
-                            is SpScreen.SaveDataManagement -> {
-                                if (saveDataViewModel != null) {
-                                    SaveDataScreen(
-                                        gameId = screen.gameId,
-                                        viewModel = saveDataViewModel,
-                                        onBack = {
-                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
-                                        },
-                                    )
-                                }
                             }
 
                             is SpScreen.SessionDetail -> {

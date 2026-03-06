@@ -162,8 +162,6 @@ func NewRouter(cfg Config) *gin.Engine {
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0], EncryptionKey: encryptionKey}
 	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB, Hub: cfg.Hub}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
-	saveDataHandler := &SaveDataHandler{DB: cfg.DB, Storage: cfg.Storage}
-	saveHandler := &SaveHandler{DB: cfg.DB, Storage: cfg.Storage}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
@@ -273,33 +271,6 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
 		api.DELETE("/games/:id/shared-saves/:saveId", sharedSaveHandler.DeleteSharedSave)
 
-		// Save states
-		api.GET("/games/:id/saves", gameHandler.ListSaves)
-		api.POST("/games/:id/saves", uploadLimiter.RateLimit(), gameHandler.UploadSave)
-		api.POST("/games/:id/saves/import", uploadLimiter.RateLimit(), saveHandler.ImportSave)
-		api.GET("/games/:id/saves/auto", gameHandler.GetAutoSave)
-		api.POST("/games/:id/saves/auto", uploadLimiter.RateLimit(), gameHandler.UploadAutoSave)
-		api.GET("/games/:id/saves/auto/history", saveHandler.GetAutoSaveHistory)
-		api.DELETE("/games/:id/saves/bulk", saveHandler.BulkDeleteSaves)
-		api.GET("/games/:id/saves/slots", saveHandler.ListSlotSaves)
-		api.PUT("/games/:id/saves/slot/:slot", uploadLimiter.RateLimit(), saveHandler.UpsertSlotSave)
-		api.GET("/games/:id/saves/slot/:slot", saveHandler.DownloadSlotSave)
-		api.GET("/games/:id/saves/:saveId", gameHandler.DownloadSave)
-		api.PUT("/games/:id/saves/:saveId", saveHandler.RenameSave)
-		api.DELETE("/games/:id/saves/:saveId", gameHandler.DeleteSave)
-		api.PUT("/games/:id/saves/:saveId/notes", saveHandler.UpdateNotes)
-		api.GET("/games/:id/saves/:saveId/screenshot", saveHandler.GetSaveScreenshot)
-
-		// Save data (SRAM/battery saves)
-		api.GET("/games/:id/save-data", saveDataHandler.ListSaveData)
-		api.POST("/games/:id/save-data", uploadLimiter.RateLimit(), saveDataHandler.UploadSaveData)
-		api.POST("/games/:id/save-data/active", uploadLimiter.RateLimit(), saveDataHandler.UploadActiveSaveData)
-		api.GET("/games/:id/save-data/active", saveDataHandler.DownloadActiveSaveData)
-		api.GET("/games/:id/save-data/:sdId/download", saveDataHandler.DownloadSaveData)
-		api.PUT("/games/:id/save-data/:sdId/activate", saveDataHandler.ActivateSaveData)
-		api.PUT("/games/:id/save-data/:sdId", saveDataHandler.RenameSaveData)
-		api.DELETE("/games/:id/save-data/:sdId", saveDataHandler.DeleteSaveData)
-
 		// Cores
 		api.GET("/games/:id/core", gameHandler.GetRecommendedCore)
 		api.GET("/cores", coreHandler.ListCores)
@@ -320,7 +291,6 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)
-		api.GET("/user/storage-usage", saveHandler.GetStorageUsage)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
@@ -373,9 +343,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/relays/:id/saves/auto", relayHandler.GetAutoSave)
 		api.POST("/relays/:id/saves/auto", uploadLimiter.RateLimit(), relayHandler.UploadAutoSave)
 		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
-		api.PUT("/relays/:id/saves/:saveId/rename", saveHandler.RenameRelaySave)
+		api.PUT("/relays/:id/saves/:saveId/rename", relayHandler.RenameRelaySave)
 		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
-		api.POST("/relays/:id/saves/:saveId/copy-to-game", relayHandler.CopyRelaySaveToGame)
 		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
 		api.GET("/user/relay-invites/count", relayHandler.GetPendingInviteCount)
 		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)

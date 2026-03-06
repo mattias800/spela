@@ -442,16 +442,6 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		}
 		tx.Where("user_id = ?", uid).Delete(&db.GameCollection{})
 
-		// Save states (+ delete files)
-		var saves []db.SaveState
-		tx.Where("user_id = ?", uid).Find(&saves)
-		for _, save := range saves {
-			if h.Storage != nil {
-				h.Storage.DeleteSave(save.FilePath)
-			}
-		}
-		tx.Where("user_id = ?", uid).Delete(&db.SaveState{})
-
 		// Shared save states (+ delete files)
 		var sharedSaves []db.SharedSaveState
 		tx.Where("user_id = ?", uid).Find(&sharedSaves)
@@ -461,16 +451,6 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 			}
 		}
 		tx.Where("user_id = ?", uid).Delete(&db.SharedSaveState{})
-
-		// Save data (SRAM)
-		var saveData []db.SaveData
-		tx.Where("user_id = ?", uid).Find(&saveData)
-		for _, sd := range saveData {
-			if h.Storage != nil {
-				h.Storage.DeleteSave(sd.FilePath)
-			}
-		}
-		tx.Where("user_id = ?", uid).Delete(&db.SaveData{})
 
 		// RetroAchievements
 		tx.Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
@@ -566,16 +546,6 @@ func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
 		}
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameCollection{})
 
-		// Save states (+ delete files)
-		var saves []db.SaveState
-		tx.Unscoped().Where("user_id = ?", uid).Find(&saves)
-		for _, save := range saves {
-			if h.Storage != nil {
-				h.Storage.DeleteSave(save.FilePath)
-			}
-		}
-		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SaveState{})
-
 		// Shared save states (+ delete files)
 		var sharedSaves []db.SharedSaveState
 		tx.Unscoped().Where("user_id = ?", uid).Find(&sharedSaves)
@@ -585,16 +555,6 @@ func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
 			}
 		}
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SharedSaveState{})
-
-		// Save data (SRAM)
-		var saveData []db.SaveData
-		tx.Unscoped().Where("user_id = ?", uid).Find(&saveData)
-		for _, sd := range saveData {
-			if h.Storage != nil {
-				h.Storage.DeleteSave(sd.FilePath)
-			}
-		}
-		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SaveData{})
 
 		// RetroAchievements
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
@@ -783,7 +743,7 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 	h.DB.Model(&db.User{}).Count(&users)
 	h.DB.Model(&db.Game{}).Count(&games)
 	h.DB.Model(&db.Console{}).Where("id IN (SELECT DISTINCT console_id FROM games)").Count(&consoles)
-	h.DB.Model(&db.SaveState{}).Count(&saves)
+	h.DB.Model(&db.SessionSaveState{}).Count(&saves)
 
 	c.JSON(http.StatusOK, gin.H{
 		"users":    users,
