@@ -286,6 +286,7 @@ class SpelaTestHarness(
         dispatchers = dispatchers,
         scope = scope,
         cheatRepository = cheatRepo,
+        gameRepository = gameRepo,
     )
 
     val statsRepo = FakeStatsRepository()

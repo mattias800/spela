@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.repository.CheatRepository
+import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.state.SessionDetailState
@@ -17,6 +18,7 @@ class SessionDetailViewModel(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val cheatRepository: CheatRepository? = null,
+    private val gameRepository: GameRepository? = null,
 ) {
     private val _state = MutableStateFlow(SessionDetailState())
     val state: StateFlow<SessionDetailState> = _state.asStateFlow()
@@ -45,6 +47,7 @@ class SessionDetailViewModel(
             sessionRepository.getSession(sessionId).fold(
                 onSuccess = { session ->
                     _state.update { it.copy(session = session, isLoading = false) }
+                    loadGame(session.gameId)
                     loadSaves(sessionId)
                     loadCheats(sessionId)
                     loadAvailableCheats(session.gameId)
@@ -52,6 +55,18 @@ class SessionDetailViewModel(
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isLoading = false) }
                 },
+            )
+        }
+    }
+
+    private fun loadGame(gameId: String) {
+        val repo = gameRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.getGameDetail(gameId).fold(
+                onSuccess = { detail ->
+                    _state.update { it.copy(game = detail.game) }
+                },
+                onFailure = { /* Non-critical — UI still works without game info */ },
             )
         }
     }

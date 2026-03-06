@@ -119,7 +119,7 @@ data class GameListResponse(
 data class SaveStateDto(
     val id: Long,
     val userId: Long = 0,
-    val gameId: Long,
+    val gameId: Long = 0,
     val name: String,
     val fileSize: Long = 0,
     val isAuto: Boolean = false,

@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,14 +40,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -123,9 +126,19 @@ fun SessionDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("session_detail_content"),
-                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
                     ) {
-                        // Header
+                        // Hero screenshot
+                        if (session.screenshotUrl != null) {
+                            item {
+                                SpHeroCover(
+                                    imageUrl = session.screenshotUrl,
+                                    contentDescription = "Session screenshot",
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+
+                        // Header: game info + session info + actions
                         item {
                             SessionDetailHeader(
                                 sessionName = session.name,
@@ -134,6 +147,7 @@ fun SessionDetailScreen(
                                 lastPlayedByUsername = session.lastPlayedByUsername,
                                 cheatsEnabled = state.cheatsEnabled,
                                 memberCount = session.memberCount,
+                                game = state.game,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
                             )
@@ -360,6 +374,7 @@ private fun SessionDetailHeader(
     lastPlayedByUsername: String?,
     cheatsEnabled: Boolean,
     memberCount: Int,
+    game: Game?,
     onRename: () -> Unit,
     onPlay: () -> Unit,
 ) {
@@ -369,68 +384,56 @@ private fun SessionDetailHeader(
             .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("session_detail_header"),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Outlined.Gamepad,
-                        contentDescription = null,
-                        tint = SpColor.Primary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Spacer(Modifier.width(SpSpacing.Small))
+        // Game info row (cover art + game title + console)
+        if (game != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SpCoverArt(
+                    imageUrl = game.coverUrl,
+                    contentDescription = "${game.title} cover",
+                    modifier = Modifier.size(width = 56.dp, height = 75.dp),
+                    cornerRadius = SpSpacing.RadiusDefault,
+                )
+                Spacer(Modifier.width(SpSpacing.Medium))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = sessionName,
-                        style = SpTypography.HeadlineMedium,
+                        text = game.title,
+                        style = SpTypography.TitleLarge,
                         color = SpColor.OnBackground,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Session: $sessionName"
-                        },
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                }
-
-                Spacer(Modifier.height(SpSpacing.Small))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (totalPlayTime > 0) {
-                        SpChip(text = formatPlayTime(totalPlayTime))
-                    }
-                    if (cheatsEnabled) {
-                        SpChip(text = "Cheats", color = SpColor.Warning)
-                    }
-                    if (memberCount > 1) {
-                        SpChip(text = "$memberCount players")
-                    }
-                }
-
-                if (lastPlayedAt != null || lastPlayedByUsername != null) {
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                    ) {
-                        if (lastPlayedAt != null) {
-                            Text(
-                                text = formatRelativeTime(lastPlayedAt),
-                                style = SpTypography.LabelSmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                        if (lastPlayedByUsername != null) {
-                            Text(
-                                text = "by $lastPlayedByUsername",
-                                style = SpTypography.LabelSmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
+                    if (game.consoleName.isNotEmpty()) {
+                        Spacer(Modifier.height(SpSpacing.XXSmall))
+                        Text(
+                            text = game.consoleName,
+                            style = SpTypography.BodySmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
                     }
                 }
             }
+            Spacer(Modifier.height(SpSpacing.Default))
+        }
+
+        // Session name + rename
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = sessionName,
+                style = SpTypography.HeadlineMedium,
+                color = SpColor.OnBackground,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = "Session: $sessionName"
+                    },
+            )
 
             IconButton(
                 onClick = onRename,
@@ -444,8 +447,47 @@ private fun SessionDetailHeader(
             }
         }
 
+        // Status chips
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            if (totalPlayTime > 0) {
+                SpChip(text = formatPlayTime(totalPlayTime))
+            }
+            if (cheatsEnabled) {
+                SpChip(text = "Cheats", color = SpColor.Warning)
+            }
+            if (memberCount > 1) {
+                SpChip(text = "$memberCount players")
+            }
+        }
+
+        // Last played info
+        if (lastPlayedAt != null || lastPlayedByUsername != null) {
+            Spacer(Modifier.height(SpSpacing.Small))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                if (lastPlayedAt != null) {
+                    Text(
+                        text = formatRelativeTime(lastPlayedAt),
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
+                if (lastPlayedByUsername != null) {
+                    Text(
+                        text = "by $lastPlayedByUsername",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
+                }
+            }
+        }
+
         Spacer(Modifier.height(SpSpacing.Default))
 
+        // Play button
         SpButton(
             text = "Play",
             onClick = onPlay,
@@ -499,7 +541,7 @@ private fun SessionSaveItem(
                             append(formatRelativeTime(save.createdAt.toString()))
                         }
                         if (save.fileSize > 0) {
-                            if (isNotEmpty()) append(" · ")
+                            if (isNotEmpty()) append(" \u00b7 ")
                             append(formatFileSize(save.fileSize))
                         }
                     },
