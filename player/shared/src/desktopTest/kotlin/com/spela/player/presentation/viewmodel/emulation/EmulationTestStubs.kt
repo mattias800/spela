@@ -370,6 +370,7 @@ class StubSessionRepository : SessionRepository {
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) = Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))
+    override suspend fun duplicateSession(sessionId: String, name: String?) = Result.failure<GameSession>(Exception("stub"))
 }
 
 class StubChallengeRepository : ChallengeRepository {
