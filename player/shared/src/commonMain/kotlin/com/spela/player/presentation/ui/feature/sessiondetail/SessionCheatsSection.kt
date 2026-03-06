@@ -61,54 +61,57 @@ internal fun SessionCheatsSection(
                 .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .testTag("session_cheats_section"),
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(SpSpacing.Default),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = "Enable Cheats",
-                    style = SpTypography.BodyMedium,
-                    color = if (cheatsUnavailable) SpColor.OnBackgroundTertiary else SpColor.OnCard,
-                )
-                Switch(
-                    checked = cheatsEnabled,
-                    onCheckedChange = onToggleCheatsEnabled,
-                    enabled = !cheatsUnavailable,
-                    modifier = Modifier
-                        .testTag("session_cheats_toggle")
-                        .semantics { contentDescription = "Toggle cheats" },
-                )
-            }
-            if (cheatsUnavailable) {
-                Text(
-                    text = "Cheats are not available for this game. Cheats require a verified ROM (checksum match).",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, end = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_unavailable"),
-                )
-            } else if (cheatsEnabled && enabledCheatIndices.isNotEmpty()) {
-                Text(
-                    text = "${enabledCheatIndices.size} cheat(s) active",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_count"),
-                )
-            } else if (!cheatsEnabled && availableCheats.isNotEmpty()) {
-                Text(
-                    text = "${availableCheats.size} cheats available",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_available_count"),
-                )
+                if (cheatsUnavailable) {
+                    Text(
+                        text = "Cheats are not available for this game. Cheats require a verified ROM (checksum match).",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier
+                            .padding(bottom = SpSpacing.Small)
+                            .testTag("session_cheats_unavailable"),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Enable Cheats",
+                            style = SpTypography.BodyMedium,
+                            color = if (cheatsUnavailable) SpColor.OnBackgroundTertiary else SpColor.OnCard,
+                        )
+                        if (cheatsEnabled && enabledCheatIndices.isNotEmpty()) {
+                            Text(
+                                text = "${enabledCheatIndices.size} cheat(s) active",
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                                modifier = Modifier.testTag("session_cheats_count"),
+                            )
+                        } else if (!cheatsEnabled && availableCheats.isNotEmpty()) {
+                            Text(
+                                text = "${availableCheats.size} cheats available",
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                                modifier = Modifier.testTag("session_cheats_available_count"),
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = cheatsEnabled,
+                        onCheckedChange = onToggleCheatsEnabled,
+                        enabled = !cheatsUnavailable,
+                        modifier = Modifier
+                            .testTag("session_cheats_toggle")
+                            .semantics { contentDescription = "Toggle cheats" },
+                    )
+                }
             }
         }
 
