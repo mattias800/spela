@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +23,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpSwitch
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -93,15 +92,9 @@ internal fun SettingsToggle(
             )
         }
         Spacer(Modifier.width(SpSpacing.Medium))
-        Switch(
+        SpSwitch(
             checked = isChecked,
             onCheckedChange = null,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = SpColor.OnPrimary,
-                checkedTrackColor = SpColor.Primary,
-                uncheckedThumbColor = SpColor.OnBackgroundTertiary,
-                uncheckedTrackColor = SpColor.SurfaceBright,
-            ),
         )
     }
 }

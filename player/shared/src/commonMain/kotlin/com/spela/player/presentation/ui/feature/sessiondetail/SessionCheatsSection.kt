@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import com.spela.player.domain.model.Cheat
+import com.spela.player.presentation.ui.components.SpSwitch
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpTextField
@@ -103,7 +103,7 @@ internal fun SessionCheatsSection(
                             )
                         }
                     }
-                    Switch(
+                    SpSwitch(
                         checked = cheatsEnabled,
                         onCheckedChange = onToggleCheatsEnabled,
                         enabled = !cheatsUnavailable,
@@ -240,7 +240,7 @@ private fun SessionCheatItem(
                     fontFamily = FontFamily.Monospace,
                 )
             }
-            Switch(
+            SpSwitch(
                 checked = isEnabled,
                 onCheckedChange = { onToggle() },
                 modifier = Modifier
