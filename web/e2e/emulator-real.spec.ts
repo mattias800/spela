@@ -30,6 +30,8 @@ function monitorPageErrors(page: import("@playwright/test").Page) {
       if (response.status() === 404 && url.includes("/shared-saves")) return;
       // BIOS files may not be present in the E2E environment
       if (response.status() === 404 && url.includes("/api/bios/")) return;
+      // Session screenshots may not exist in E2E (no real saves)
+      if (url.includes("/save-screenshots/")) return;
       failedRequests.push(`${response.status()} ${url}`);
     }
   });
@@ -127,7 +129,7 @@ test.describe("EmulatorJS Real Integration", () => {
 
     // Click Play in Browser
     await page.getByTestId("play-in-browser-btn").click();
-    await expect(page).toHaveURL(`/games/${gameId}/play`);
+    await expect(page).toHaveURL(new RegExp(`/games/${gameId}/play/`));
 
     // Wait for the iframe to appear
     const iframe = page.locator('iframe[src="/emulator.html"]');
@@ -215,7 +217,7 @@ test.describe("EmulatorJS Real Integration", () => {
 
     // Click Play in Browser
     await page.getByTestId("play-in-browser-btn").click();
-    await expect(page).toHaveURL(`/games/${gameId}/play`);
+    await expect(page).toHaveURL(new RegExp(`/games/${gameId}/play/`));
 
     // Wait for the iframe to appear
     await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
@@ -225,16 +227,17 @@ test.describe("EmulatorJS Real Integration", () => {
     // Simulate game-started (WASM may not fully start in headless Chrome)
     await simulatePlaying(page);
 
-    // Intercept the auto-save POST so we can verify it was called
+    // Intercept the auto-save POST so we can verify it was called.
+    // Saves are now session-scoped: POST /api/sessions/:sessionId/saves/auto
     let autoSaveCalled = false;
-    await page.route(`**/api/games/${gameId}/saves/auto`, (route) => {
+    await page.route("**/api/sessions/*/saves/auto", (route) => {
       if (route.request().method() === "POST") {
         autoSaveCalled = true;
         route.fulfill({
           status: 201,
           json: {
             id: 99,
-            gameId: parseInt(gameId!),
+            sessionId: "1",
             userId: 1,
             name: "auto",
             fileSize: 1024,
@@ -279,7 +282,7 @@ test.describe("EmulatorJS Real Integration", () => {
     monitor.assertClean();
   });
 
-  test("save and load buttons become enabled after game starts", async ({
+  test("save button becomes enabled after game starts", async ({
     page,
   }) => {
     const monitor = monitorPageErrors(page);
@@ -292,23 +295,21 @@ test.describe("EmulatorJS Real Integration", () => {
     const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
     expect(gameId).toBeTruthy();
 
-    await page.goto(`/games/${gameId}/play`);
+    await page.goto(`/games/${gameId}/play/new`);
 
     // Wait for iframe
     await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
       timeout: 15_000,
     });
 
-    // Save/Load should be disabled initially
+    // Save should be disabled initially
     const saveButton = page.getByTitle("Save State");
-    const loadButton = page.getByTitle("Load State");
     await expect(saveButton).toBeVisible({ timeout: 15_000 });
     await expect(saveButton).toBeDisabled();
-    await expect(loadButton).toBeDisabled();
 
     // Simulate game-started (WASM may not fully start in headless Chrome)
     await simulatePlaying(page);
-    await expect(loadButton).toBeEnabled({ timeout: 5_000 });
+    await expect(saveButton).toBeEnabled({ timeout: 5_000 });
 
     // Verify no unexpected errors occurred
     monitor.assertClean();
