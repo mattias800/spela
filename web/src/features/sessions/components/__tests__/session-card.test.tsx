@@ -27,12 +27,14 @@ function renderCard(
   session: GameSession = baseSession,
   isDeleting = false,
   currentUsername?: string,
+  isCurrent?: boolean,
 ) {
   return render(
     <MemoryRouter>
       <SessionCard
         session={session}
         currentUsername={currentUsername}
+        isCurrent={isCurrent}
         onContinue={onContinue}
         onRename={onRename}
         onDelete={onDelete}
@@ -216,5 +218,20 @@ describe("SessionCard", () => {
     const avatarContainer = screen.getByTestId("member-avatars");
     expect(avatarContainer.querySelectorAll("img")).toHaveLength(3);
     expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("shows Current badge when isCurrent is true", () => {
+    renderCard(baseSession, false, undefined, true);
+    expect(screen.getByText("Current")).toBeInTheDocument();
+  });
+
+  it("does not show Current badge when isCurrent is false", () => {
+    renderCard(baseSession, false, undefined, false);
+    expect(screen.queryByText("Current")).not.toBeInTheDocument();
+  });
+
+  it("does not show Current badge when isCurrent is undefined", () => {
+    renderCard();
+    expect(screen.queryByText("Current")).not.toBeInTheDocument();
   });
 });

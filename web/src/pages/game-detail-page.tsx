@@ -32,6 +32,7 @@ import { GameReviews } from "@/features/game-detail/components/game-reviews";
 import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
 import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
 import { GameSessions } from "@/features/sessions/components/game-sessions";
+import { useGameSessions } from "@/hooks/use-sessions";
 import { GameCheats } from "@/features/game-detail/components/game-cheats";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
@@ -113,6 +114,7 @@ export function GameDetailPage() {
     currentUser?.role === "admin" || currentUser?.role === "owner";
 
   const { data: biosData } = useBiosStatus();
+  const { data: sessions } = useGameSessions(id ?? "");
   const { data: gameAchievements } = useGameAchievements(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
@@ -193,7 +195,7 @@ export function GameDetailPage() {
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         biosMissing={showBiosWarning}
-        onPlay={() => navigate(`/games/${game.id}/play`)}
+        onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
           toggleFavorite.mutate({ gameId: game.id, isFavorite })

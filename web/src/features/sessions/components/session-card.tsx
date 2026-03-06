@@ -8,6 +8,7 @@ import type { GameSession } from "@/types/api";
 interface SessionCardProps {
   session: GameSession;
   currentUsername?: string;
+  isCurrent?: boolean;
   onContinue: (session: GameSession) => void;
   onRename: (session: GameSession, name: string) => void;
   onDelete: (session: GameSession) => void;
@@ -17,6 +18,7 @@ interface SessionCardProps {
 export function SessionCard({
   session,
   currentUsername,
+  isCurrent,
   onContinue,
   onRename,
   onDelete,
@@ -73,12 +75,19 @@ export function SessionCard({
               autoFocus
             />
           ) : (
-            <Link
-              to={`/sessions/${session.id}`}
-              className="text-sm font-medium text-surface-200 truncate hover:text-surface-100 transition-colors"
-            >
-              {session.name}
-            </Link>
+            <span className="flex items-center gap-1.5">
+              <Link
+                to={`/sessions/${session.id}`}
+                className="text-sm font-medium text-surface-200 truncate hover:text-surface-100 transition-colors"
+              >
+                {session.name}
+              </Link>
+              {isCurrent && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400">
+                  Current
+                </span>
+              )}
+            </span>
           )}
           <div className="flex items-center gap-2 text-xs text-surface-500 mt-0.5">
             {session.lastPlayedAt && (

@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button, Skeleton } from "@/components/ui";
@@ -11,23 +11,38 @@ import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
 import { useDiscManager } from "@/hooks/use-disc-manager";
 import { usePlaySession } from "@/hooks/use-play-session";
-import { useDefaultSession } from "@/hooks/use-sessions";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
 import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
 import type { EmulatorPreferences } from "@/lib/emulator-protocol";
+import type { GameSession } from "@/types/api";
 
 export function PlayPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id, sessionId: sessionIdParam } = useParams<{ id: string; sessionId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isFreshStart = searchParams.get("fresh") === "true";
-  const explicitSessionId = searchParams.get("sessionId") ?? undefined;
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const isFreshStart = sessionIdParam === "new";
+  const [createdSessionId, setCreatedSessionId] = useState<string | undefined>();
+  const sessionId = sessionIdParam === "new" ? createdSessionId : sessionIdParam;
+
+  // Auto-create session when sessionId is "new"
+  const creatingRef = useRef(false);
+  useEffect(() => {
+    if (sessionIdParam !== "new" || creatingRef.current || createdSessionId) return;
+    creatingRef.current = true;
+    api
+      .post<GameSession>(`/games/${id}/sessions`, { name: "Default" })
+      .then((session) => setCreatedSessionId(session.id))
+      .catch(() => {})
+      .finally(() => { creatingRef.current = false; });
+  }, [sessionIdParam, id, createdSessionId]);
 
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
   const { data: preferences } = useUserPreferences();
@@ -35,7 +50,6 @@ export function PlayPage() {
   const { data: biosFiles } = useBiosFiles();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
-  const sessionId = useDefaultSession(id, explicitSessionId);
 
   const biosConsole = biosData?.consoles.find(
     (c) => c.consoleId === game?.consoleId,
@@ -268,6 +282,7 @@ export function PlayPage() {
         ),
       ]);
     }
+    queryClient.invalidateQueries({ queryKey: ["game-sessions"] });
     navigate(-1);
   }
 

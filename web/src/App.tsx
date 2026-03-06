@@ -63,7 +63,7 @@ export function App() {
 
                   {/* Emulator route (protected, no sidebar) */}
                   <Route
-                    path="games/:id/play"
+                    path="games/:id/play/:sessionId"
                     element={
                       <ProtectedRoute>
                         <PlayPage />

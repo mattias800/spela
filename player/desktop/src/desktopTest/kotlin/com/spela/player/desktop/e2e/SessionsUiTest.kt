@@ -319,6 +319,56 @@ class SessionsUiTest {
         onNodeWithText("Relay").assertIsDisplayed()
     }
 
+    // ── First session shows "Current" badge ──
+
+    @Test
+    fun firstSessionShowsCurrentBadge() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Main Run")
+        harness.sessionRepo.preAddSession(id = "s2", gameId = "1", name = "Side Run")
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        // First session should have the "Current" badge
+        onNode(hasTestTag("session_current_badge"), useUnmergedTree = true).assertIsDisplayed()
+        onNodeWithText("Current").assertIsDisplayed()
+    }
+
+    // ── Only the first session shows "Current" badge ──
+
+    @Test
+    fun onlyFirstSessionShowsCurrentBadge() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "First Run")
+        harness.sessionRepo.preAddSession(id = "s2", gameId = "1", name = "Second Run")
+        harness.sessionRepo.preAddSession(id = "s3", gameId = "1", name = "Third Run")
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        // There should be exactly one "Current" badge in the tree
+        onAllNodes(hasTestTag("session_current_badge"), useUnmergedTree = true)
+            .assertCountEquals(1)
+    }
+
+    // ── Single session shows "Current" badge ──
+
+    @Test
+    fun singleSessionShowsCurrentBadge() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Solo Run")
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNode(hasTestTag("session_current_badge"), useUnmergedTree = true).assertIsDisplayed()
+        onNodeWithText("Current").assertIsDisplayed()
+    }
+
     // ── Single-player session does NOT show multiplayer badge ──
 
     @Test
