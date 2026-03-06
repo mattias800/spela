@@ -83,4 +83,8 @@ class SessionRepositoryImpl(
     ): Result<SessionCheatConfig> = runCatching {
         apiClient.updateSessionCheats(sessionId, cheatsEnabled, enabledIndices).toDomain()
     }
+
+    override suspend fun duplicateSession(sessionId: String, name: String?): Result<GameSession> = runCatching {
+        apiClient.duplicateSession(sessionId, name).toDomain()
+    }
 }

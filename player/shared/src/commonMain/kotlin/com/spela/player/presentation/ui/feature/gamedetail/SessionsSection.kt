@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.People
@@ -55,6 +56,7 @@ internal fun SessionsSection(
     onCreateSession: (String) -> Unit,
     onRenameSession: (String, String) -> Unit,
     onDeleteSession: (String) -> Unit,
+    onDuplicateSession: (String) -> Unit,
     onSessionSelected: ((GameSession) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -100,6 +102,7 @@ internal fun SessionsSection(
                 onContinue = { onContinueSession(session) },
                 onRename = { showRenameDialog = session },
                 onDelete = { showDeleteDialog = session },
+                onDuplicate = { onDuplicateSession(session.id) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = SpSpacing.XXSmall),
@@ -220,6 +223,7 @@ private fun SessionItem(
     onContinue: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    onDuplicate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isMultiplayer = session.memberCount > 1
@@ -302,6 +306,13 @@ private fun SessionItem(
             }
 
             Row {
+                IconButton(onClick = onDuplicate) {
+                    Icon(
+                        Icons.Filled.ContentCopy,
+                        contentDescription = "Duplicate session",
+                        tint = SpColor.OnBackgroundSecondary,
+                    )
+                }
                 IconButton(onClick = onRename) {
                     Icon(
                         Icons.Filled.Edit,

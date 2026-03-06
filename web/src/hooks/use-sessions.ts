@@ -98,6 +98,25 @@ export function useUpdateSessionCheats() {
   });
 }
 
+export function useDuplicateSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      name,
+    }: {
+      id: string;
+      gameId: string;
+      name?: string;
+    }) =>
+      api.post<GameSession>(`/sessions/${id}/duplicate`, name ? { name } : {}),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
+    },
+  });
+}
+
 export function useDeleteSessionSave() {
   const queryClient = useQueryClient();
   return useMutation({

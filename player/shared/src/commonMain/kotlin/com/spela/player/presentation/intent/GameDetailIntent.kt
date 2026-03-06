@@ -53,4 +53,5 @@ sealed interface GameDetailIntent {
     data class CreateSession(val gameId: String, val name: String) : GameDetailIntent
     data class RenameSession(val sessionId: String, val name: String) : GameDetailIntent
     data class DeleteSession(val sessionId: String) : GameDetailIntent
+    data class DuplicateSession(val sessionId: String) : GameDetailIntent
 }

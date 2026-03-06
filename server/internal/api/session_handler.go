@@ -344,6 +344,134 @@ func (h *SessionHandler) DeleteSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "session deleted"})
 }
 
+// DuplicateSession creates a copy of a session including saves, SRAM, and cheats.
+// POST /api/sessions/:id/duplicate
+func (h *SessionHandler) DuplicateSession(c *gin.Context) {
+	uid := getUserID(c)
+	sessionID := c.Param("id")
+	sid, err := strconv.ParseUint(sessionID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session ID"})
+		return
+	}
+
+	var session db.GameSession
+	if err := h.DB.Preload("Owner").First(&session, sid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		return
+	}
+
+	// Access check: owner OR member of shared session that backs this session
+	if session.OwnerID != uid {
+		var count int64
+		h.DB.Model(&db.SharedSessionMember{}).
+			Joins("JOIN shared_sessions ON shared_sessions.id = shared_session_members.shared_session_id").
+			Where("shared_sessions.session_id = ? AND shared_session_members.user_id = ?", session.ID, uid).
+			Count(&count)
+		if count == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not the session owner or a shared session member"})
+			return
+		}
+	}
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	if strings.TrimSpace(req.Name) == "" {
+		req.Name = session.Name + " (Copy)"
+	}
+	if len(req.Name) > 255 {
+		req.Name = req.Name[:255]
+	}
+
+	// Create new session owned by requesting user
+	newSession := db.GameSession{
+		OwnerID:       uid,
+		GameID:        session.GameID,
+		Name:          req.Name,
+		CoreName:      session.CoreName,
+		CheatsEnabled: session.CheatsEnabled,
+	}
+	if err := h.DB.Create(&newSession).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		return
+	}
+
+	// Copy save states
+	var saves []db.SessionSaveState
+	h.DB.Where("session_id = ?", session.ID).Find(&saves)
+	for _, save := range saves {
+		newPath := h.Storage.SessionSaveStatePath(newSession.ID, filepath.Base(save.FilePath))
+		if _, copyErr := h.Storage.CopyFile(save.FilePath, newPath); copyErr != nil {
+			continue // skip files that fail to copy
+		}
+		var screenshotURL string
+		if save.ScreenshotURL != "" {
+			dstSubpath := h.Storage.SessionScreenshotSubpath(newSession.ID, filepath.Base(save.ScreenshotURL))
+			if _, cpErr := h.Storage.CopyImageFile(save.ScreenshotURL, dstSubpath); cpErr == nil {
+				screenshotURL = dstSubpath
+			}
+		}
+		slot := save.Slot
+		newSave := db.SessionSaveState{
+			SessionID:     newSession.ID,
+			UserID:        uid,
+			Name:          save.Name,
+			FilePath:      newPath,
+			FileSize:      save.FileSize,
+			ScreenshotURL: screenshotURL,
+			IsAuto:        save.IsAuto,
+			CoreName:      save.CoreName,
+			Notes:         save.Notes,
+			Slot:          slot,
+		}
+		h.DB.Create(&newSave)
+	}
+
+	// Copy SRAM
+	var sram db.SessionSaveData
+	if err := h.DB.Where("session_id = ?", session.ID).First(&sram).Error; err == nil {
+		newSramPath := h.Storage.SessionSRAMPath(newSession.ID, filepath.Base(sram.FilePath))
+		if size, copyErr := h.Storage.CopyFile(sram.FilePath, newSramPath); copyErr == nil {
+			newSram := db.SessionSaveData{
+				SessionID: newSession.ID,
+				FilePath:  newSramPath,
+				FileSize:  size,
+			}
+			h.DB.Create(&newSram)
+		}
+	}
+
+	// Copy cheat settings
+	var cheats []db.SessionCheatSetting
+	h.DB.Where("session_id = ?", session.ID).Find(&cheats)
+	for _, cheat := range cheats {
+		newCheat := db.SessionCheatSetting{
+			SessionID:  newSession.ID,
+			CheatIndex: cheat.CheatIndex,
+			Enabled:    cheat.Enabled,
+		}
+		h.DB.Create(&newCheat)
+	}
+
+	// Copy session screenshot
+	if session.ScreenshotURL != "" {
+		dstSubpath := h.Storage.SessionScreenshotSubpath(newSession.ID, filepath.Base(session.ScreenshotURL))
+		if _, cpErr := h.Storage.CopyImageFile(session.ScreenshotURL, dstSubpath); cpErr == nil {
+			h.DB.Model(&newSession).Update("screenshot_url", dstSubpath)
+		}
+	}
+
+	h.DB.Preload("Owner").First(&newSession, newSession.ID)
+	var saveCount int64
+	h.DB.Model(&db.SessionSaveState{}).Where("session_id = ?", newSession.ID).Count(&saveCount)
+
+	resp := h.toSessionResponse(newSession, int(saveCount))
+	h.enrichWithSharedSessionData(&resp, newSession.ID)
+	c.JSON(http.StatusCreated, resp)
+}
+
 // ListSessionSaves lists all save states in a session.
 // GET /api/sessions/:id/saves
 func (h *SessionHandler) ListSessionSaves(c *gin.Context) {

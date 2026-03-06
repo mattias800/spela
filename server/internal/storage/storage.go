@@ -497,6 +497,64 @@ func (s *Storage) WriteSessionScreenshot(sessionID uint, filename string, data i
 	return s.WriteImage(subpath, data)
 }
 
+// CopyFile copies a file from src to dst, creating parent directories as needed.
+// Returns the number of bytes copied.
+func (s *Storage) CopyFile(src, dst string) (int64, error) {
+	if err := s.validatePathInSaveDir(src); err != nil {
+		return 0, fmt.Errorf("source path invalid: %w", err)
+	}
+	return s.copyFileRaw(src, dst)
+}
+
+// CopyImageFile copies an image file from srcSubpath to dstSubpath (both relative to ImageDir).
+// Returns the number of bytes copied.
+func (s *Storage) CopyImageFile(srcSubpath, dstSubpath string) (int64, error) {
+	src := filepath.Join(s.ImageDir, srcSubpath)
+	dst := filepath.Join(s.ImageDir, dstSubpath)
+
+	absImageDir, err := filepath.Abs(s.ImageDir)
+	if err != nil {
+		return 0, fmt.Errorf("resolving image dir: %w", err)
+	}
+	for _, p := range []string{src, dst} {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return 0, fmt.Errorf("resolving path: %w", err)
+		}
+		if !strings.HasPrefix(abs, absImageDir+string(filepath.Separator)) {
+			return 0, fmt.Errorf("path outside image directory")
+		}
+	}
+
+	return s.copyFileRaw(src, dst)
+}
+
+// SessionScreenshotSubpath returns the subpath for a session screenshot without writing anything.
+func (s *Storage) SessionScreenshotSubpath(sessionID uint, filename string) string {
+	return fmt.Sprintf("save-screenshots/sessions/session_%d/%s", sessionID, sanitizeFilename(filename))
+}
+
+func (s *Storage) copyFileRaw(src, dst string) (int64, error) {
+	if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
+		return 0, fmt.Errorf("creating destination directory: %w", err)
+	}
+	in, err := os.Open(src)
+	if err != nil {
+		return 0, fmt.Errorf("opening source file: %w", err)
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return 0, fmt.Errorf("creating destination file: %w", err)
+	}
+	defer out.Close()
+	n, err := io.Copy(out, in)
+	if err != nil {
+		return 0, fmt.Errorf("copying file: %w", err)
+	}
+	return n, nil
+}
+
 // DeleteSessionDir removes an entire session's storage directory.
 func (s *Storage) DeleteSessionDir(sessionID uint) error {
 	dir := filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID))

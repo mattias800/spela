@@ -1150,3 +1150,214 @@ func TestSessionUpdatedOnSaveUpload(t *testing.T) {
 	assert.NotNil(t, resp["lastPlayedAt"])
 	assert.Equal(t, "snes9x", resp["coreName"])
 }
+
+// --- Duplicate Session ---
+
+func duplicateSession(t *testing.T, router http.Handler, token, sessionID string, body []byte) *httptest.ResponseRecorder {
+	t.Helper()
+	w := httptest.NewRecorder()
+	var req *http.Request
+	if body != nil {
+		req = httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/duplicate", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		req = httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/duplicate", nil)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	return w
+}
+
+func TestDuplicateSession_Basic(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Playthrough")
+	sessionID := created["id"].(string)
+
+	w := duplicateSession(t, env.router, env.token, sessionID, nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "My Playthrough (Copy)", resp["name"])
+	assert.Equal(t, env.gameID, resp["gameId"])
+	assert.NotEqual(t, sessionID, resp["id"])
+}
+
+func TestDuplicateSession_CustomName(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "Original")
+	sessionID := created["id"].(string)
+
+	body, _ := json.Marshal(map[string]string{"name": "My Custom Copy"})
+	w := duplicateSession(t, env.router, env.token, sessionID, body)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "My Custom Copy", resp["name"])
+}
+
+func TestDuplicateSession_CopiesSaves(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload saves to original session
+	w := uploadSessionSave(t, env.router, env.token, sessionID, "Save 1", []byte("save1"))
+	require.Equal(t, http.StatusCreated, w.Code)
+	w = uploadSessionSave(t, env.router, env.token, sessionID, "Save 2", []byte("save2"))
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Duplicate
+	w = duplicateSession(t, env.router, env.token, sessionID, nil)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(2), resp["saveCount"])
+
+	// List saves in the new session
+	newSessionID := resp["id"].(string)
+	w = httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/sessions/"+newSessionID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var saves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saves)
+	assert.Len(t, saves, 2)
+}
+
+func TestDuplicateSession_CopiesSRAM(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload SRAM
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("file", "save.srm")
+	part.Write([]byte("sram data content"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/sram", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Duplicate
+	w = duplicateSession(t, env.router, env.token, sessionID, nil)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	newSessionID := resp["id"].(string)
+
+	// Download SRAM from new session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/sessions/"+newSessionID+"/sram", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, []byte("sram data content"), w.Body.Bytes())
+}
+
+func TestDuplicateSession_CopiesCheats(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Set cheats on original
+	body, _ := json.Marshal(map[string]interface{}{
+		"cheatsEnabled":  true,
+		"enabledIndices": []int{0, 2},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID+"/cheats", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Duplicate
+	w = duplicateSession(t, env.router, env.token, sessionID, nil)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, true, resp["cheatsEnabled"])
+	newSessionID := resp["id"].(string)
+
+	// Get cheats from new session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/sessions/"+newSessionID+"/cheats", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var cheats map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &cheats)
+	assert.Equal(t, true, cheats["cheatsEnabled"])
+	indices := cheats["enabledIndices"].([]interface{})
+	assert.Len(t, indices, 2)
+	assert.Equal(t, float64(0), indices[0])
+	assert.Equal(t, float64(2), indices[1])
+}
+
+func TestDuplicateSession_NotOwner(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// User 2 tries to duplicate user 1's session
+	w := duplicateSession(t, env.router, env.token2, sessionID, nil)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestDuplicateSession_NotFound(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	w := duplicateSession(t, env.router, env.token, "9999", nil)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestDuplicateSession_SharedSessionMember(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+
+	token1 := registerAndGetToken(t, router)
+	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "password123")
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Test Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// User 1 creates a shared session (this auto-creates a backing game session)
+	shared := createSharedSession(t, router, token1, gameID, "Coop Run")
+	sharedSessionID := shared["id"].(string)
+
+	// Invite and accept user 2
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "user2")
+
+	// Find the backing session ID
+	backingSessionID := shared["sessionId"].(string)
+
+	// User 2 (member) duplicates the backing session
+	w := duplicateSession(t, router, token2, backingSessionID, nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Contains(t, resp["name"], "(Copy)")
+}

@@ -21,6 +21,7 @@ vi.mock("@/hooks/use-sessions", () => ({
   useCreateSession: vi.fn(),
   useRenameSession: vi.fn(),
   useDeleteSession: vi.fn(),
+  useDuplicateSession: vi.fn(),
 }));
 
 import {
@@ -28,12 +29,14 @@ import {
   useCreateSession,
   useRenameSession,
   useDeleteSession,
+  useDuplicateSession,
 } from "@/hooks/use-sessions";
 
 const mockUseGameSessions = useGameSessions as ReturnType<typeof vi.fn>;
 const mockUseCreateSession = useCreateSession as ReturnType<typeof vi.fn>;
 const mockUseRenameSession = useRenameSession as ReturnType<typeof vi.fn>;
 const mockUseDeleteSession = useDeleteSession as ReturnType<typeof vi.fn>;
+const mockUseDuplicateSession = useDuplicateSession as ReturnType<typeof vi.fn>;
 
 const mockSessions = [
   {
@@ -96,6 +99,11 @@ beforeEach(() => {
     isPending: false,
   });
   mockUseDeleteSession.mockReturnValue({
+    mutate: mockMutate,
+    isPending: false,
+    variables: undefined,
+  });
+  mockUseDuplicateSession.mockReturnValue({
     mutate: mockMutate,
     isPending: false,
     variables: undefined,

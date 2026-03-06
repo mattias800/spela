@@ -413,6 +413,35 @@ class SessionsUiTest {
         onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertDoesNotExist()
     }
 
+    // ── Duplicate session creates a copy ──
+
+    @Test
+    fun duplicateSessionCreatesACopy() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "My Playthrough",
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNodeWithText("(1)").assertIsDisplayed()
+
+        // Click the duplicate button
+        onNodeWithContentDescription("Duplicate session").performClick()
+        advance(harness)
+
+        // A new session should appear in the list
+        assertEquals(2, harness.sessionRepo.sessions.size)
+        assertEquals("My Playthrough (Copy)", harness.sessionRepo.sessions[1].name)
+        onNodeWithText("(2)").assertIsDisplayed()
+        onNodeWithText("My Playthrough (Copy)").assertIsDisplayed()
+    }
+
     // ── Member count overflow shows "+N" ──
 
     @Test

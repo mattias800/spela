@@ -1065,6 +1065,14 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/sessions/$sessionId")
     }
 
+    suspend fun duplicateSession(sessionId: String, name: String? = null): GameSessionDto {
+        return client.post("$baseUrl/api/sessions/$sessionId/duplicate") {
+            if (name != null) {
+                setBody(mapOf("name" to name))
+            }
+        }.body()
+    }
+
     suspend fun getSessionSaves(sessionId: String): List<SaveStateDto> {
         return client.get("$baseUrl/api/sessions/$sessionId/saves").body()
     }

@@ -181,6 +181,7 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) =
         Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))
+    override suspend fun duplicateSession(sessionId: String, name: String?) = Result.failure<GameSession>(Exception("stub"))
 }
 
 private class FakePlayFromSharedSaveSharedSaveRepository : SharedSaveRepository {

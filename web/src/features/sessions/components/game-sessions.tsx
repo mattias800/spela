@@ -7,6 +7,7 @@ import {
   useCreateSession,
   useRenameSession,
   useDeleteSession,
+  useDuplicateSession,
 } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import { SessionCard } from "./session-card";
@@ -43,6 +44,7 @@ export function GameSessions({ gameId }: GameSessionsProps) {
   const createSession = useCreateSession();
   const renameSession = useRenameSession();
   const deleteSession = useDeleteSession();
+  const duplicateSession = useDuplicateSession();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -65,6 +67,10 @@ export function GameSessions({ gameId }: GameSessionsProps) {
 
   function handleDelete(session: GameSession) {
     deleteSession.mutate({ id: session.id, gameId });
+  }
+
+  function handleDuplicate(session: GameSession) {
+    duplicateSession.mutate({ id: session.id, gameId });
   }
 
   function handleContinue(session: GameSession) {
@@ -163,9 +169,14 @@ export function GameSessions({ gameId }: GameSessionsProps) {
               onContinue={handleContinue}
               onRename={handleRename}
               onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
               isDeleting={
                 deleteSession.isPending &&
                 deleteSession.variables?.id === session.id
+              }
+              isDuplicating={
+                duplicateSession.isPending &&
+                duplicateSession.variables?.id === session.id
               }
             />
           ))}
