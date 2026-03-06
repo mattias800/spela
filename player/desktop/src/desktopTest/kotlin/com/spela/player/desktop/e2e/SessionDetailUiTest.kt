@@ -410,6 +410,10 @@ class SessionDetailUiTest {
             .performTextInput("Cheat 11")
         advanceQuick(harness)
 
+        // Scroll to the filtered cheat item (header may push it below viewport)
+        onNodeWithTag("session_detail_content")
+            .performScrollToNode(hasTestTag("session_cheat_item_11"))
+
         // Only cheat 11 should be visible, cheat 0 should be filtered out
         onNodeWithTag("session_cheat_item_11").assertIsDisplayed()
         onNodeWithTag("session_cheat_item_0").assertDoesNotExist()
