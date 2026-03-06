@@ -109,6 +109,7 @@ class GameDetailViewModel(
             is GameDetailIntent.CreateSession -> createSession(intent.gameId, intent.name)
             is GameDetailIntent.RenameSession -> renameSession(intent.sessionId, intent.name)
             is GameDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
+            is GameDetailIntent.DuplicateSession -> duplicateSession(intent.sessionId)
         }
     }
 
@@ -783,6 +784,25 @@ class GameDetailViewModel(
                         state.copy(
                             sessions = state.sessions.filter { it.id != sessionId },
                             successMessage = "Session deleted",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun duplicateSession(sessionId: String) {
+        val repo = sessionRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.duplicateSession(sessionId).fold(
+                onSuccess = { newSession ->
+                    _state.update { state ->
+                        state.copy(
+                            sessions = state.sessions + newSession,
+                            successMessage = "Session duplicated as \"${newSession.name}\"",
                         )
                     }
                 },

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Play, Pencil, Trash2, Clock, Users, Zap, Share2 } from "lucide-react";
+import { Play, Pencil, Trash2, Clock, Users, Zap, Share2, Copy } from "lucide-react";
 import { Button, ConfirmDeleteModal } from "@/components/ui";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import type { GameSession } from "@/types/api";
@@ -12,7 +12,9 @@ interface SessionCardProps {
   onContinue: (session: GameSession) => void;
   onRename: (session: GameSession, name: string) => void;
   onDelete: (session: GameSession) => void;
+  onDuplicate: (session: GameSession) => void;
   isDeleting: boolean;
+  isDuplicating: boolean;
 }
 
 export function SessionCard({
@@ -22,7 +24,9 @@ export function SessionCard({
   onContinue,
   onRename,
   onDelete,
+  onDuplicate,
   isDeleting,
+  isDuplicating,
 }: SessionCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(session.name);
@@ -170,6 +174,15 @@ export function SessionCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDuplicate(session)}
+            loading={isDuplicating}
+            aria-label="Duplicate session"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"

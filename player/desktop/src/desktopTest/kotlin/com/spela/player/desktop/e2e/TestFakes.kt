@@ -1193,6 +1193,17 @@ class FakeSessionRepository : SessionRepository {
         return Result.success(config)
     }
 
+    override suspend fun duplicateSession(sessionId: String, name: String?): Result<GameSession> {
+        val original = sessions.find { it.id == sessionId }
+            ?: return Result.failure(Exception("Session not found"))
+        val newSession = original.copy(
+            id = "session-${nextId++}",
+            name = name ?: (original.name + " (Copy)"),
+        )
+        sessions.add(newSession)
+        return Result.success(newSession)
+    }
+
     fun preAddSession(
         id: String = "session-1",
         gameId: String = "1",

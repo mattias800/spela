@@ -7,6 +7,7 @@ import {
   useCreateSession,
   useRenameSession,
   useDeleteSession,
+  useDuplicateSession,
 } from "../use-sessions";
 
 vi.mock("@/lib/api-client", () => ({
@@ -157,5 +158,33 @@ describe("useDeleteSession", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockApi.delete).toHaveBeenCalledWith("/sessions/ses-1");
+  });
+});
+
+describe("useDuplicateSession", () => {
+  it("duplicates a session", async () => {
+    mockApi.post.mockResolvedValue({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" });
+
+    const { result } = renderHook(() => useDuplicateSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ id: "ses-1", gameId: "g1" });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockApi.post).toHaveBeenCalledWith("/sessions/ses-1/duplicate", {});
+  });
+
+  it("duplicates a session with custom name", async () => {
+    mockApi.post.mockResolvedValue({ ...mockSessions[0], id: "ses-2", name: "Custom" });
+
+    const { result } = renderHook(() => useDuplicateSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ id: "ses-1", gameId: "g1", name: "Custom" });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockApi.post).toHaveBeenCalledWith("/sessions/ses-1/duplicate", { name: "Custom" });
   });
 });

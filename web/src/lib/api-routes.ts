@@ -161,6 +161,7 @@ export type ApiPostPath = WithQuery<
   | `/sessions/${string}/saves/auto`
   | `/sessions/${string}/sram`
   | `/sessions/${string}/play-time`
+  | `/sessions/${string}/duplicate`
 
   // User
   | `/user/favorites/${string}`

@@ -24,6 +24,7 @@ const baseSession: GameSession = {
 const onContinue = vi.fn();
 const onRename = vi.fn();
 const onDelete = vi.fn();
+const onDuplicate = vi.fn();
 
 function renderCard(
   session: GameSession = baseSession,
@@ -40,7 +41,9 @@ function renderCard(
         onContinue={onContinue}
         onRename={onRename}
         onDelete={onDelete}
+        onDuplicate={onDuplicate}
         isDeleting={isDeleting}
+        isDuplicating={false}
       />
     </MemoryRouter>,
   );
@@ -250,5 +253,11 @@ describe("SessionCard", () => {
   it("does not show Current badge when isCurrent is undefined", () => {
     renderCard();
     expect(screen.queryByText("Current")).not.toBeInTheDocument();
+  });
+
+  it("calls onDuplicate when duplicate button clicked", () => {
+    renderCard();
+    fireEvent.click(screen.getByLabelText("Duplicate session"));
+    expect(onDuplicate).toHaveBeenCalledWith(baseSession);
   });
 });

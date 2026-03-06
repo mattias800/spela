@@ -258,6 +258,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/sessions/:id/play-time", sessionHandler.StopPlaying)
 		api.GET("/sessions/:id/cheats", sessionHandler.GetSessionCheats)
 		api.PUT("/sessions/:id/cheats", sessionHandler.UpdateSessionCheats)
+		api.POST("/sessions/:id/duplicate", sessionHandler.DuplicateSession)
 
 		// Ratings
 		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)

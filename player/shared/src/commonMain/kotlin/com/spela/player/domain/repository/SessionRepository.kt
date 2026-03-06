@@ -20,4 +20,5 @@ interface SessionRepository {
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
     suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>
     suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): Result<SessionCheatConfig>
+    suspend fun duplicateSession(sessionId: String, name: String? = null): Result<GameSession>
 }
