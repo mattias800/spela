@@ -27,6 +27,7 @@ sealed class SpScreen(val route: String) {
     data class ChallengeList(val gameId: String, val gameTitle: String) : SpScreen("challenges/$gameId")
     data class ChallengeDetail(val challengeId: String) : SpScreen("challenge/$challengeId")
     data class SessionDetail(val sessionId: String) : SpScreen("sessions/$sessionId")
+    data object TopLists : SpScreen("top_lists")
 }
 
 data class NavigationState(

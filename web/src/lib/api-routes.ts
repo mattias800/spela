@@ -72,6 +72,7 @@ export type ApiGetPath = WithQuery<
   | "/user/stats"
   | "/user/recent"
   | "/user/favorites"
+  | "/user/play-stats"
   | "/user/play-later"
   | "/user/devices"
   | `/user/devices/${string}/preferences`
@@ -104,6 +105,9 @@ export type ApiGetPath = WithQuery<
   | "/collections"
   | "/collections/public"
   | `/collections/${string}`
+
+  // Top Lists
+  | "/top-lists/top-rated"
 
   // Challenges
   | "/challenges"

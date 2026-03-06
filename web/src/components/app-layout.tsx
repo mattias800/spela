@@ -16,6 +16,7 @@ import {
   Cpu,
   Upload,
   Menu,
+  Trophy,
   Gamepad2,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
@@ -69,6 +70,7 @@ export function AppLayout() {
           ],
         },
         { to: "/stats", icon: BarChart3, label: "Stats" },
+        { to: "/top-lists", icon: Trophy, label: "Top Lists" },
         { to: "/activity", icon: Activity, label: "Activity" },
         {
           to: "/challenges",

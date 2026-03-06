@@ -215,6 +215,10 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/top-rated").body()
     }
 
+    suspend fun getTopRatedAvailable(): List<TopListGameDto> {
+        return client.get("$baseUrl/api/top-lists/top-rated").body()
+    }
+
     suspend fun getSimilarGames(gameId: String): List<SimilarGameDto> {
         return client.get("$baseUrl/api/games/$gameId/similar").body()
     }

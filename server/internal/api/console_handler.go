@@ -468,6 +468,69 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// TopListGameResponse is the API response for a top-rated IGDB game that is
+// available locally on the server.
+type TopListGameResponse struct {
+	Rank        int     `json:"rank"`
+	GameId      string  `json:"gameId"`
+	Name        string  `json:"name"`
+	CoverUrl    string  `json:"coverUrl"`
+	ConsoleName string  `json:"consoleName"`
+	ConsoleId   string  `json:"consoleId"`
+	Rating      float64 `json:"rating"`
+}
+
+// GetTopListAvailable returns IGDB top-rated games that have a matching local
+// game on the server. Only games with a local title+console match are included,
+// sorted by IGDB rating descending, limited to 50 results.
+func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
+	type row struct {
+		GameID      uint
+		Name        string
+		CoverURL    string
+		ConsoleName string
+		ConsoleAbbr string
+		TotalRating float64
+	}
+
+	var rows []row
+	err := h.DB.
+		Table("top_rated_games").
+		Select(`MIN(games.id) AS game_id,
+				top_rated_games.name AS name,
+				MIN(games.cover_url) AS cover_url,
+				consoles.name AS console_name,
+				consoles.abbreviation AS console_abbr,
+				top_rated_games.total_rating`).
+		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL").
+		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
+		Where("top_rated_games.deleted_at IS NULL").
+		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, top_rated_games.total_rating").
+		Order("top_rated_games.total_rating DESC").
+		Limit(50).
+		Find(&rows).Error
+	if err != nil {
+		slog.Error("failed to fetch top list", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch top list"})
+		return
+	}
+
+	result := make([]TopListGameResponse, len(rows))
+	for i, r := range rows {
+		result[i] = TopListGameResponse{
+			Rank:        i + 1,
+			GameId:      fmt.Sprintf("%d", r.GameID),
+			Name:        r.Name,
+			CoverUrl:    resolveImageURL(r.CoverURL),
+			ConsoleName: r.ConsoleName,
+			ConsoleId:   strings.ToLower(r.ConsoleAbbr),
+			Rating:      r.TotalRating,
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // upsertTopRatedGames inserts or updates top-rated games for a console.
 func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGame) {
 	for i, g := range games {

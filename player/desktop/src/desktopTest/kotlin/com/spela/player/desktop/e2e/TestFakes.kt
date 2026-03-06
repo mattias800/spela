@@ -362,6 +362,13 @@ class FakeGameRepository : GameRepository {
         else Result.success(globalTopRatedGames)
     }
 
+    var topListGames: List<TopListGame> = emptyList()
+
+    override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(topListGames)
+    }
+
     var similarGames: List<SimilarGame> = emptyList()
     var developerGamesMap: Map<String, List<DeveloperGame>> = emptyMap()
 

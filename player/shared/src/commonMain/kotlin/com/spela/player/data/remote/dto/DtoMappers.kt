@@ -481,6 +481,16 @@ fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
     endedAt = endedAt,
 )
 
+fun TopListGameDto.toDomain(): TopListGame = TopListGame(
+    rank = rank,
+    gameId = gameId,
+    name = name,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+    consoleId = consoleId,
+    rating = rating,
+)
+
 fun TopRatedGameDto.toDomain(): TopRatedGame = TopRatedGame(
     rank = rank,
     name = name,

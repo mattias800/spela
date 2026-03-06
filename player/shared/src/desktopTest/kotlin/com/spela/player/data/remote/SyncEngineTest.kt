@@ -195,6 +195,7 @@ class SyncEngineTest {
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
         override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> = Result.success(emptyList())
+        override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> = Result.success(emptyList())
         override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
         override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
@@ -229,6 +230,7 @@ class SyncEngineTest {
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
         override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> = Result.success(emptyList())
+        override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> = Result.success(emptyList())
         override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
         override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }
@@ -271,6 +273,7 @@ class SyncEngineTest {
         override suspend fun removeFromPlayLater(gameId: String) = Result.success(Unit)
         override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
         override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> = Result.success(emptyList())
+        override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> = Result.success(emptyList())
         override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
         override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     }

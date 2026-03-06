@@ -602,6 +602,24 @@ export interface BiosResponse {
 export type BiosFileStatus = BiosFile["status"];
 export type BiosConsoleStatus = BiosConsole["status"];
 
+// --- Top Lists ---
+
+export interface TopListGame {
+  rank: number;
+  gameId: string;
+  name: string;
+  coverUrl: string;
+  consoleName: string;
+  consoleId: string;
+  rating: number;
+}
+
+export interface PlayStatsEntry {
+  gameId: number;
+  playTime: number;
+  lastPlayedAt: string;
+}
+
 // --- Session Saves & Cheats ---
 
 export interface SessionSave {
