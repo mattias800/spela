@@ -74,7 +74,7 @@ class GameDetailRatingTest {
             getGameStatsUseCase = GetGameStatsUseCase(StubGameStatsRepository()),
             gameStatsRepository = StubGameStatsRepository(),
             challengeRepository = StubChallengeRepository(),
-            relayRepository = StubRelayRepository(),
+            sharedSessionRepository = StubSharedSessionRepository(),
             gameRepository = fakeGameRepo,
             apiClient = apiClient,
             dispatchers = testDispatchers,
@@ -238,31 +238,31 @@ private class StubGameStatsRepository : GameStatsRepository {
     override suspend fun getRecentAchievements() = Result.success(emptyList<RecentAchievement>())
 }
 
-private class StubRelayRepository : RelayRepository {
-    override suspend fun getMyRelays(page: Int, pageSize: Int) = Result.success(emptyList<Relay>())
-    override suspend fun getRelay(relayId: String) = Result.failure<RelayDetail>(Exception("stub"))
-    override suspend fun getRelayInvitations() = Result.success(emptyList<RelayInvitation>())
+private class StubSharedSessionRepository : SharedSessionRepository {
+    override suspend fun getMySharedSessions(page: Int, pageSize: Int) = Result.success(emptyList<SharedSession>())
+    override suspend fun getSharedSession(sharedSessionId: String) = Result.failure<SharedSessionDetail>(Exception("stub"))
+    override suspend fun getSharedSessionInvitations() = Result.success(emptyList<SharedSessionInvitation>())
     override suspend fun getPendingInvitationCount() = Result.success(0)
-    override suspend fun createRelay(name: String, gameId: String, description: String) = Result.failure<RelayDetail>(Exception("stub"))
-    override suspend fun deleteRelay(relayId: String) = Result.success(Unit)
-    override suspend fun inviteUser(relayId: String, username: String) = Result.success(Unit)
+    override suspend fun createSharedSession(name: String, gameId: String, description: String) = Result.failure<SharedSessionDetail>(Exception("stub"))
+    override suspend fun deleteSharedSession(sharedSessionId: String) = Result.success(Unit)
+    override suspend fun inviteUser(sharedSessionId: String, username: String) = Result.success(Unit)
     override suspend fun acceptInvitation(invitationId: String) = Result.success(Unit)
     override suspend fun rejectInvitation(invitationId: String) = Result.success(Unit)
-    override suspend fun leaveRelay(relayId: String) = Result.success(Unit)
-    override suspend fun removeMember(relayId: String, userId: String) = Result.success(Unit)
-    override suspend fun getGameRelays(gameId: String) = Result.success(emptyList<Relay>())
-    override suspend fun getRelaySaves(relayId: String) = Result.success(emptyList<RelaySave>())
-    override suspend fun deleteRelaySave(relayId: String, saveId: Long) = Result.success(Unit)
-    override suspend fun takeTurn(relayId: String) = Result.success("stub-token")
-    override suspend fun releaseTurn(relayId: String) = Result.success(Unit)
-    override suspend fun heartbeat(relayId: String) = Result.success(Unit)
-    override suspend fun uploadRelaySave(relayId: String, name: String, turnToken: String, data: ByteArray) =
-        Result.success(RelaySave(id = 1, relayId = relayId, name = name))
-    override suspend fun downloadRelaySave(relayId: String, saveId: Long) = Result.success(byteArrayOf())
-    override suspend fun downloadRelayAutoSave(relayId: String) = Result.success(byteArrayOf())
-    override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray) =
-        Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
-    override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) = Result.success(Unit)
+    override suspend fun leaveSharedSession(sharedSessionId: String) = Result.success(Unit)
+    override suspend fun removeMember(sharedSessionId: String, userId: String) = Result.success(Unit)
+    override suspend fun getGameSharedSessions(gameId: String) = Result.success(emptyList<SharedSession>())
+    override suspend fun getSharedSessionSaves(sharedSessionId: String) = Result.success(emptyList<SharedSessionSave>())
+    override suspend fun deleteSharedSessionSave(sharedSessionId: String, saveId: Long) = Result.success(Unit)
+    override suspend fun takeTurn(sharedSessionId: String) = Result.success("stub-token")
+    override suspend fun releaseTurn(sharedSessionId: String) = Result.success(Unit)
+    override suspend fun heartbeat(sharedSessionId: String) = Result.success(Unit)
+    override suspend fun uploadSharedSessionSave(sharedSessionId: String, name: String, turnToken: String, data: ByteArray) =
+        Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = name))
+    override suspend fun downloadSharedSessionSave(sharedSessionId: String, saveId: Long) = Result.success(byteArrayOf())
+    override suspend fun downloadSharedSessionAutoSave(sharedSessionId: String) = Result.success(byteArrayOf())
+    override suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray) =
+        Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true))
+    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) = Result.success(Unit)
 }
 
 private class StubChallengeRepository : ChallengeRepository {

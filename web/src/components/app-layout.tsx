@@ -21,7 +21,7 @@ import {
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
-import { usePendingInvitationCount } from "@/hooks/use-relays";
+import { usePendingInvitationCount } from "@/hooks/use-shared-sessions";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useIgdbStatus } from "@/hooks/use-admin";
@@ -34,7 +34,7 @@ export function AppLayout() {
   useGameScrapedListener();
   useNotifications();
   const { data: invitationCountData } = usePendingInvitationCount();
-  const relayBadge = invitationCountData?.count;
+  const sharedSessionBadge = invitationCountData?.count;
   const { data: biosData } = useBiosStatus();
   const hasMissingBios =
     biosData?.consoles.some((c) => c.status === "missing") ?? false;
@@ -77,11 +77,11 @@ export function AppLayout() {
           matchPaths: ["/challenges"],
         },
         {
-          to: "/relays",
+          to: "/shared-sessions",
           icon: Repeat,
-          label: "Relays",
-          matchPaths: ["/relays"],
-          badge: relayBadge,
+          label: "Shared Sessions",
+          matchPaths: ["/shared-sessions"],
+          badge: sharedSessionBadge,
         },
         {
           to: "/netplay",

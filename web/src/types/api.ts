@@ -459,7 +459,7 @@ export interface PublicProfile {
   topGames: PublicProfileGame[];
 }
 
-export interface Relay {
+export interface SharedSession {
   id: string;
   name: string;
   description?: string;
@@ -480,7 +480,7 @@ export interface Relay {
   updatedAt: string;
 }
 
-export interface RelayMember {
+export interface SharedSessionMember {
   userId: string;
   username: string;
   avatarUrl?: string;
@@ -490,14 +490,14 @@ export interface RelayMember {
   isOnline: boolean;
 }
 
-export interface RelayDetail extends Relay {
-  members: RelayMember[];
+export interface SharedSessionDetail extends SharedSession {
+  members: SharedSessionMember[];
 }
 
-export interface RelayInvitation {
+export interface SharedSessionInvitation {
   id: string;
-  relayId: string;
-  relayName: string;
+  sharedSessionId: string;
+  sharedSessionName: string;
   gameId: string;
   gameTitle: string;
   gameCoverUrl?: string;
@@ -507,9 +507,9 @@ export interface RelayInvitation {
   createdAt: string;
 }
 
-export interface RelaySave {
+export interface SharedSessionSave {
   id: string;
-  relayId: string;
+  sharedSessionId: string;
   gameId: string;
   userId: string;
   username: string;
@@ -521,15 +521,15 @@ export interface RelaySave {
   updatedAt: string;
 }
 
-export interface RelaysResponse {
-  data: Relay[];
+export interface SharedSessionsResponse {
+  data: SharedSession[];
   total: number;
   page: number;
   pageSize: number;
 }
 
-export interface RelayInvitationsResponse {
-  data: RelayInvitation[];
+export interface SharedSessionInvitationsResponse {
+  data: SharedSessionInvitation[];
   total: number;
 }
 

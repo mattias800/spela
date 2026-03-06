@@ -102,7 +102,7 @@ class EmulationViewModel(
     fun onIntent(intent: EmulationIntent) {
         when (intent) {
             is EmulationIntent.StartGame -> startGame(
-                intent.gameId, intent.relayId, intent.turnToken,
+                intent.gameId, intent.sharedSessionId, intent.turnToken,
                 intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
                 intent.challengeId, intent.challengeSaveData, intent.skipAutoLoad,
                 intent.sessionId,
@@ -204,7 +204,7 @@ class EmulationViewModel(
 
     private fun startGame(
         gameId: String,
-        relayId: String? = null,
+        sharedSessionId: String? = null,
         turnToken: String? = null,
         netplaySessionId: String? = null,
         netplayLocalPort: Int = 0,
@@ -223,7 +223,7 @@ class EmulationViewModel(
                 isPaused = false,
                 showOverlay = false,
                 showExitConfirm = false,
-                relayId = relayId,
+                sharedSessionId = sharedSessionId,
                 turnToken = turnToken,
                 netplaySessionId = netplaySessionId,
                 sessionId = sessionId,
@@ -383,9 +383,9 @@ class EmulationViewModel(
                         if (challengeId != null) {
                             challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
                         }
-                        // Try to load auto-save: in relay mode, download relay auto-save
-                        else if (relayId != null) {
-                            netplayManager.loadRelaySave(relayId)
+                        // Try to load auto-save: in shared session mode, download shared session auto-save
+                        else if (sharedSessionId != null) {
+                            netplayManager.loadSharedSessionSave(sharedSessionId)
                         } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad && !hwRender) {
                             // For non-HW cores, load save state immediately.
                             // HW render cores (e.g. Dolphin) boot asynchronously — their
@@ -423,9 +423,9 @@ class EmulationViewModel(
                         // Deferred auto-load for HW render cores (e.g. Dolphin).
                         // These cores boot asynchronously and crash if retro_unserialize
                         // is called before their GPU thread is fully initialized.
-                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId relayId=$relayId")
+                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId")
                         if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
-                            && challengeId == null && relayId == null
+                            && challengeId == null && sharedSessionId == null
                         ) {
                             saveManager.autoLoadSaveState(gameId)
                         }
@@ -438,9 +438,9 @@ class EmulationViewModel(
                         // Start play-time heartbeat for online presence
                         presenceService.startHeartbeat(gameId)
 
-                        // Start relay heartbeat if in relay mode
-                        if (relayId != null) {
-                            netplayManager.startRelayHeartbeat(relayId)
+                        // Start shared session heartbeat if in shared session mode
+                        if (sharedSessionId != null) {
+                            netplayManager.startSharedSessionHeartbeat(sharedSessionId)
                         }
 
                         // Start FPS tracking and session timer
@@ -573,15 +573,15 @@ class EmulationViewModel(
         presenceService.stopHeartbeat()
         stopJob = scope.launch(dispatchers.io) {
             val currentState = _state.value
-            val relayId = currentState.relayId
+            val sharedSessionId = currentState.sharedSessionId
             val turnToken = currentState.turnToken
 
             // Save before stopping. autoSaveOnStop serializes synchronously (fast,
             // game is paused) then fires off the upload in the background. This means
             // stopJob completes quickly even if the upload is slow, so startGame()
             // won't hang if it cancels this job during a restart.
-            if (relayId != null && turnToken != null) {
-                netplayManager.saveRelayOnStop(relayId, turnToken)
+            if (sharedSessionId != null && turnToken != null) {
+                netplayManager.saveSharedSessionOnStop(sharedSessionId, turnToken)
             } else if (currentPreferences.autoSaveEnabled && !currentState.isChallengeMode) {
                 saveManager.autoSaveOnStop(currentState.gameId)
             }
@@ -616,7 +616,7 @@ class EmulationViewModel(
                         dualScreenSplitY = 0,
                         dualScreenBottomWidth = 0,
                         dualScreenBottomOffsetX = 0,
-                        relayId = null,
+                        sharedSessionId = null,
                         turnToken = null,
                         netplaySessionId = null,
                         netplayPeerUsername = null,

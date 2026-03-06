@@ -635,57 +635,57 @@ class FakeSharedSaveRepository : SharedSaveRepository {
         Result.success(Unit)
 }
 
-class FakeRelayRepository : RelayRepository {
-    var relays: List<Relay> = emptyList()
-    var relayDetail: RelayDetail? = null
-    var invitations: List<RelayInvitation> = emptyList()
-    var relaySaves: List<RelaySave> = emptyList()
-    var gameRelays: List<Relay> = emptyList()
+class FakeSharedSessionRepository : SharedSessionRepository {
+    var sharedSessions: List<SharedSession> = emptyList()
+    var sharedSessionDetail: SharedSessionDetail? = null
+    var invitations: List<SharedSessionInvitation> = emptyList()
+    var sharedSessionSaves: List<SharedSessionSave> = emptyList()
+    var gameSharedSessions: List<SharedSession> = emptyList()
 
-    override suspend fun getMyRelays(page: Int, pageSize: Int): Result<List<Relay>> =
-        Result.success(relays)
-    override suspend fun getRelay(relayId: String): Result<RelayDetail> =
-        relayDetail?.let { Result.success(it) }
-            ?: Result.failure(Exception("Relay not found"))
-    override suspend fun getRelayInvitations(): Result<List<RelayInvitation>> =
+    override suspend fun getMySharedSessions(page: Int, pageSize: Int): Result<List<SharedSession>> =
+        Result.success(sharedSessions)
+    override suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail> =
+        sharedSessionDetail?.let { Result.success(it) }
+            ?: Result.failure(Exception("Shared session not found"))
+    override suspend fun getSharedSessionInvitations(): Result<List<SharedSessionInvitation>> =
         Result.success(invitations)
     override suspend fun getPendingInvitationCount(): Result<Int> =
         Result.success(invitations.size)
-    override suspend fun createRelay(name: String, gameId: String, description: String): Result<RelayDetail> =
-        Result.success(RelayDetail(id = "new-relay", name = name, gameId = gameId, ownerId = "1", ownerUsername = "player"))
-    override suspend fun deleteRelay(relayId: String): Result<Unit> =
+    override suspend fun createSharedSession(name: String, gameId: String, description: String): Result<SharedSessionDetail> =
+        Result.success(SharedSessionDetail(id = "new-ss", name = name, gameId = gameId, ownerId = "1", ownerUsername = "player"))
+    override suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun inviteUser(relayId: String, username: String): Result<Unit> =
+    override suspend fun inviteUser(sharedSessionId: String, username: String): Result<Unit> =
         Result.success(Unit)
     override suspend fun acceptInvitation(invitationId: String): Result<Unit> =
         Result.success(Unit)
     override suspend fun rejectInvitation(invitationId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun leaveRelay(relayId: String): Result<Unit> =
+    override suspend fun leaveSharedSession(sharedSessionId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun removeMember(relayId: String, userId: String): Result<Unit> =
+    override suspend fun removeMember(sharedSessionId: String, userId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun getGameRelays(gameId: String): Result<List<Relay>> =
-        Result.success(gameRelays)
-    override suspend fun getRelaySaves(relayId: String): Result<List<RelaySave>> =
-        Result.success(relaySaves)
-    override suspend fun deleteRelaySave(relayId: String, saveId: Long): Result<Unit> =
+    override suspend fun getGameSharedSessions(gameId: String): Result<List<SharedSession>> =
+        Result.success(gameSharedSessions)
+    override suspend fun getSharedSessionSaves(sharedSessionId: String): Result<List<SharedSessionSave>> =
+        Result.success(sharedSessionSaves)
+    override suspend fun deleteSharedSessionSave(sharedSessionId: String, saveId: Long): Result<Unit> =
         Result.success(Unit)
-    override suspend fun takeTurn(relayId: String): Result<String> =
+    override suspend fun takeTurn(sharedSessionId: String): Result<String> =
         Result.success("fake-turn-token")
-    override suspend fun releaseTurn(relayId: String): Result<Unit> =
+    override suspend fun releaseTurn(sharedSessionId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun heartbeat(relayId: String): Result<Unit> =
+    override suspend fun heartbeat(sharedSessionId: String): Result<Unit> =
         Result.success(Unit)
-    override suspend fun uploadRelaySave(relayId: String, name: String, turnToken: String, data: ByteArray): Result<RelaySave> =
-        Result.success(RelaySave(id = 1, relayId = relayId, name = name, fileSize = data.size.toLong()))
-    override suspend fun downloadRelaySave(relayId: String, saveId: Long): Result<ByteArray> =
+    override suspend fun uploadSharedSessionSave(sharedSessionId: String, name: String, turnToken: String, data: ByteArray): Result<SharedSessionSave> =
+        Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = name, fileSize = data.size.toLong()))
+    override suspend fun downloadSharedSessionSave(sharedSessionId: String, saveId: Long): Result<ByteArray> =
         Result.success(ByteArray(256) { it.toByte() })
-    override suspend fun downloadRelayAutoSave(relayId: String): Result<ByteArray> =
+    override suspend fun downloadSharedSessionAutoSave(sharedSessionId: String): Result<ByteArray> =
         Result.success(ByteArray(256) { it.toByte() })
-    override suspend fun uploadRelayAutoSave(relayId: String, turnToken: String, data: ByteArray): Result<RelaySave> =
-        Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
-    override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long): Result<Unit> =
+    override suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray): Result<SharedSessionSave> =
+        Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
+    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long): Result<Unit> =
         Result.success(Unit)
 }
 
@@ -1202,7 +1202,7 @@ class FakeSessionRepository : SessionRepository {
         totalPlayTime: Long = 0,
         memberCount: Int = 1,
         memberAvatars: List<String> = emptyList(),
-        isRelay: Boolean = false,
+        isSharedSession: Boolean = false,
     ): GameSession {
         val session = GameSession(
             id = id,
@@ -1213,7 +1213,7 @@ class FakeSessionRepository : SessionRepository {
             totalPlayTime = totalPlayTime,
             memberCount = memberCount,
             memberAvatars = memberAvatars,
-            isRelay = isRelay,
+            isSharedSession = isSharedSession,
         )
         sessions.add(session)
         return session

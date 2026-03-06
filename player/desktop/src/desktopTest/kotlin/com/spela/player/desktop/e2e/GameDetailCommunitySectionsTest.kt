@@ -4,7 +4,7 @@ import androidx.compose.ui.test.*
 import com.spela.player.domain.model.GameRating
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.RatingSummary
-import com.spela.player.domain.model.Relay
+import com.spela.player.domain.model.SharedSession
 import com.spela.player.domain.model.TopPlayer
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -16,7 +16,7 @@ import kotlin.test.Test
  * E2E tests for Game Detail community sections:
  * - Community Stats (Play Activity)
  * - Reviews Feed
- * - Active Relays
+ * - Active Shared Sessions
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class GameDetailCommunitySectionsTest {
@@ -151,34 +151,34 @@ class GameDetailCommunitySectionsTest {
         onNodeWithTag("load_more_reviews").assertDoesNotExist()
     }
 
-    // --- Active Relays Section ---
+    // --- Active Shared Sessions Section ---
 
     @Test
-    fun relaysSectionHiddenWhenNoRelays() = runComposeUiTest {
+    fun sharedSessionsSectionHiddenWhenNoSharedSessions() = runComposeUiTest {
         val harness = createHarnessOnGameDetail()
-        // gameRelays defaults to empty — section should not render
+        // gameSharedSessions defaults to empty — section should not render
 
         setContent { harness.App() }
         navigateToGameDetail(harness)
 
-        onNodeWithTag("game_relays_section").assertDoesNotExist()
+        onNodeWithTag("game_shared_sessions_section").assertDoesNotExist()
     }
 
     @Test
-    fun relaysSectionShowsRelays() = runComposeUiTest {
+    fun sharedSessionsSectionShowsSharedSessions() = runComposeUiTest {
         val harness = createHarnessOnGameDetail()
-        harness.relayRepo.gameRelays = listOf(
-            Relay(
-                id = "relay1",
-                name = "Speed Run Relay",
+        harness.sharedSessionRepo.gameSharedSessions = listOf(
+            SharedSession(
+                id = "ss1",
+                name = "Speed Run Session",
                 gameId = "1",
                 ownerId = "u1",
                 ownerUsername = "Alice",
                 status = "active",
                 memberCount = 3,
             ),
-            Relay(
-                id = "relay2",
+            SharedSession(
+                id = "ss2",
                 name = "Casual Play",
                 gameId = "1",
                 ownerId = "u2",
@@ -191,9 +191,9 @@ class GameDetailCommunitySectionsTest {
         setContent { harness.App() }
         navigateToGameDetail(harness)
 
-        scrollToSection(hasTestTag("game_relays_section"))
-        onNodeWithText("Active Relays").assertIsDisplayed()
-        onNodeWithText("Speed Run Relay").assertIsDisplayed()
+        scrollToSection(hasTestTag("game_shared_sessions_section"))
+        onNodeWithText("Active Shared Sessions").assertIsDisplayed()
+        onNodeWithText("Speed Run Session").assertIsDisplayed()
         onNodeWithText("Alice").assertIsDisplayed()
         onNodeWithText("3 members").assertIsDisplayed()
         onNodeWithText("Active").assertIsDisplayed()
@@ -202,12 +202,12 @@ class GameDetailCommunitySectionsTest {
     }
 
     @Test
-    fun relayItemIsClickable() = runComposeUiTest {
+    fun sharedSessionItemIsClickable() = runComposeUiTest {
         val harness = createHarnessOnGameDetail()
-        harness.relayRepo.gameRelays = listOf(
-            Relay(
-                id = "relay1",
-                name = "Test Relay",
+        harness.sharedSessionRepo.gameSharedSessions = listOf(
+            SharedSession(
+                id = "ss1",
+                name = "Test Session",
                 gameId = "1",
                 ownerId = "u1",
                 ownerUsername = "Alice",
@@ -219,9 +219,9 @@ class GameDetailCommunitySectionsTest {
         setContent { harness.App() }
         navigateToGameDetail(harness)
 
-        scrollToSection(hasTestTag("game_relays_section"))
-        onNodeWithTag("relay_item_relay1").assertIsDisplayed()
-        onNodeWithTag("relay_item_relay1").assertHasClickAction()
+        scrollToSection(hasTestTag("game_shared_sessions_section"))
+        onNodeWithTag("shared_session_item_ss1").assertIsDisplayed()
+        onNodeWithTag("shared_session_item_ss1").assertHasClickAction()
     }
 
 }

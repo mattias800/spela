@@ -12,7 +12,7 @@ import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.GameRating
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.RatingSummary
-import com.spela.player.domain.model.Relay
+import com.spela.player.domain.model.SharedSession
 import com.spela.player.domain.model.SharedSaveState
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.Cheat
@@ -52,9 +52,9 @@ data class GameDetailState(
     val reviewsTotal: Long = 0,
     val reviewsPage: Int = 1,
     val isLoadingReviews: Boolean = false,
-    // Active Relays
-    val gameRelays: List<Relay> = emptyList(),
-    val isLoadingRelays: Boolean = false,
+    // Active Shared Sessions
+    val gameSharedSessions: List<SharedSession> = emptyList(),
+    val isLoadingSharedSessions: Boolean = false,
     // Delete Download
     val showDeleteDownloadDialog: Boolean = false,
     // Create Challenge

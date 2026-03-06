@@ -201,9 +201,9 @@ fun PublicProfileDto.toDomain(): PublicProfile = PublicProfile(
     topGames = topGames.map { it.toDomain() },
 )
 
-// Relay mappers
+// Shared Session mappers
 
-fun RelayDto.toDomain(): Relay = Relay(
+fun SharedSessionDto.toDomain(): SharedSession = SharedSession(
     id = id,
     name = name,
     ownerId = ownerId,
@@ -220,7 +220,7 @@ fun RelayDto.toDomain(): Relay = Relay(
     updatedAt = updatedAt,
 )
 
-fun RelayDetailDto.toDomain(): RelayDetail = RelayDetail(
+fun SharedSessionDetailDto.toDomain(): SharedSessionDetail = SharedSessionDetail(
     id = id,
     name = name,
     ownerId = ownerId,
@@ -238,7 +238,7 @@ fun RelayDetailDto.toDomain(): RelayDetail = RelayDetail(
     updatedAt = updatedAt,
 )
 
-fun RelayMemberDto.toDomain(): RelayMember = RelayMember(
+fun SharedSessionMemberDto.toDomain(): SharedSessionMember = SharedSessionMember(
     userId = userId,
     username = username,
     avatarUrl = avatarUrl,
@@ -248,10 +248,10 @@ fun RelayMemberDto.toDomain(): RelayMember = RelayMember(
     isOnline = isOnline,
 )
 
-fun RelayInvitationDto.toDomain(): RelayInvitation = RelayInvitation(
+fun SharedSessionInvitationDto.toDomain(): SharedSessionInvitation = SharedSessionInvitation(
     id = id,
-    relayId = relayId,
-    relayName = relayName,
+    sharedSessionId = sharedSessionId,
+    sharedSessionName = sharedSessionName,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
@@ -261,9 +261,9 @@ fun RelayInvitationDto.toDomain(): RelayInvitation = RelayInvitation(
     createdAt = createdAt,
 )
 
-fun RelaySaveDto.toDomain(): RelaySave = RelaySave(
+fun SharedSessionSaveDto.toDomain(): SharedSessionSave = SharedSessionSave(
     id = id,
-    relayId = relayId,
+    sharedSessionId = sharedSessionId,
     username = username,
     avatarUrl = avatarUrl,
     name = name,
@@ -514,7 +514,7 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
     cheatsEnabled = cheatsEnabled,
     memberCount = memberCount,
     memberAvatars = memberAvatars,
-    isRelay = isRelay,
+    isSharedSession = isSharedSession,
 )
 
 fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(

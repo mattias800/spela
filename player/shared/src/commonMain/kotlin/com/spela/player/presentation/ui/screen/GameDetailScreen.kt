@@ -65,7 +65,7 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSecti
 import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
-import com.spela.player.presentation.ui.feature.gamedetail.GameRelaysSection
+import com.spela.player.presentation.ui.feature.gamedetail.GameSharedSessionsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SessionsSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
@@ -109,7 +109,7 @@ fun GameDetailScreen(
     onPlayFresh: ((String) -> Unit)? = null,
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
-    onNavigateToRelay: ((relayId: String) -> Unit)? = null,
+    onNavigateToSharedSession: ((sharedSessionId: String) -> Unit)? = null,
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
@@ -326,7 +326,7 @@ fun GameDetailScreen(
                 // native libretro core support). Non-playable games (external
                 // emulator only) show download, metadata, community stats, reviews,
                 // screenshots, and similar games — but not saves, controls,
-                // challenges, relays, or achievements.
+                // challenges, shared sessions, or achievements.
                 if (game.playable) {
                     // 4. Achievements
                     Column(
@@ -413,15 +413,15 @@ fun GameDetailScreen(
                         }
                     }
 
-                    // 10. Active Relays
-                    if (onNavigateToRelay != null) {
+                    // 10. Active Shared Sessions
+                    if (onNavigateToSharedSession != null) {
                         Column(
                             modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                         ) {
-                            GameRelaysSection(
-                                relays = state.gameRelays,
-                                isLoading = state.isLoadingRelays,
-                                onRelayClick = { relayId -> onNavigateToRelay(relayId) },
+                            GameSharedSessionsSection(
+                                sharedSessions = state.gameSharedSessions,
+                                isLoading = state.isLoadingSharedSessions,
+                                onSharedSessionClick = { sharedSessionId -> onNavigateToSharedSession(sharedSessionId) },
                             )
                         }
                     }

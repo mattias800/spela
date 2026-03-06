@@ -51,10 +51,10 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.GameCollection{},
 		&db.CollectionItem{},
 		&db.PlayLaterItem{},
-		&db.Relay{},
-		&db.RelayMember{},
-		&db.RelayInvite{},
-		&db.RelaySave{},
+		&db.SharedSession{},
+		&db.SharedSessionMember{},
+		&db.SharedSessionInvite{},
+		&db.SharedSessionSave{},
 		&db.NetplaySession{},
 		&db.Challenge{},
 		&db.ChallengeAttempt{},
@@ -2116,7 +2116,7 @@ func TestGetPendingInviteCount(t *testing.T) {
 
 	t.Run("returns zero when no invites", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/api/user/relay-invites/count", nil)
+		req := httptest.NewRequest("GET", "/api/user/shared-session-invites/count", nil)
 		req.Header.Set("Authorization", "Bearer "+inviteeToken)
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -2127,29 +2127,29 @@ func TestGetPendingInviteCount(t *testing.T) {
 	})
 
 	t.Run("returns correct count after invite", func(t *testing.T) {
-		// Create a game and relay, then invite the second user
+		// Create a game and shared session, then invite the second user
 		var console db.Console
 		database.First(&console)
 		game := db.Game{ConsoleID: console.ID, Title: "Invite Count Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
 		database.Create(&game)
 
-		// Create relay
-		body, _ := json.Marshal(map[string]interface{}{"name": "Count Test Relay", "gameId": fmt.Sprintf("%d", game.ID)})
+		// Create shared session
+		body, _ := json.Marshal(map[string]interface{}{"name": "Count Test Session", "gameId": fmt.Sprintf("%d", game.ID)})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/api/relays", bytes.NewReader(body))
+		req := httptest.NewRequest("POST", "/api/shared-sessions", bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 		router.ServeHTTP(w, req)
 		require.Equal(t, http.StatusCreated, w.Code)
 
-		var relayResp map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &relayResp)
-		relayID := relayResp["id"].(string)
+		var ssResp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &ssResp)
+		ssID := ssResp["id"].(string)
 
 		// Invite invitee
 		body, _ = json.Marshal(map[string]string{"username": "invitee"})
 		w = httptest.NewRecorder()
-		req = httptest.NewRequest("POST", "/api/relays/"+relayID+"/invites", bytes.NewReader(body))
+		req = httptest.NewRequest("POST", "/api/shared-sessions/"+ssID+"/invites", bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 		router.ServeHTTP(w, req)
@@ -2157,7 +2157,7 @@ func TestGetPendingInviteCount(t *testing.T) {
 
 		// Check count
 		w = httptest.NewRecorder()
-		req = httptest.NewRequest("GET", "/api/user/relay-invites/count", nil)
+		req = httptest.NewRequest("GET", "/api/user/shared-session-invites/count", nil)
 		req.Header.Set("Authorization", "Bearer "+inviteeToken)
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)

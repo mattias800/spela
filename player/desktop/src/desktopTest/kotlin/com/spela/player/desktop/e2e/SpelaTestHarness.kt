@@ -127,7 +127,7 @@ class SpelaTestHarness(
         scope = scope,
         biosRepository = biosRepo,
     )
-    val relayRepo = FakeRelayRepository()
+    val sharedSessionRepo = FakeSharedSessionRepository()
 
     val gameDetailViewModel = GameDetailViewModel(
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
@@ -142,7 +142,7 @@ class SpelaTestHarness(
         getGameStatsUseCase = GetGameStatsUseCase(gameStatsRepo),
         gameStatsRepository = gameStatsRepo,
         challengeRepository = challengeRepo,
-        relayRepository = relayRepo,
+        sharedSessionRepository = sharedSessionRepo,
         gameRepository = gameRepo,
         apiClient = fakeApiClient,
         dispatchers = dispatchers,
@@ -183,7 +183,7 @@ class SpelaTestHarness(
         scope = scope,
     )
     private val netplayManager = NetplayManager(
-        relayRepository = relayRepo,
+        sharedSessionRepository = sharedSessionRepo,
         libretroController = libretroController,
         apiClient = fakeApiClient,
         engineFactory = stubEngineFactory,
@@ -258,14 +258,14 @@ class SpelaTestHarness(
         scope = scope,
     )
 
-    val relaysViewModel = RelaysViewModel(
-        relayRepository = relayRepo,
+    val sharedSessionsViewModel = SharedSessionsViewModel(
+        sharedSessionRepository = sharedSessionRepo,
         dispatchers = dispatchers,
         scope = scope,
     )
 
-    val relayDetailViewModel = RelayDetailViewModel(
-        relayRepository = relayRepo,
+    val sharedSessionDetailViewModel = SharedSessionDetailViewModel(
+        sharedSessionRepository = sharedSessionRepo,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -348,8 +348,8 @@ class SpelaTestHarness(
             keyMappingViewModel = keyMappingViewModel,
             gamepadConfigViewModel = gamepadConfigViewModel,
             socialViewModel = socialViewModel,
-            relaysViewModel = relaysViewModel,
-            relayDetailViewModel = relayDetailViewModel,
+            sharedSessionsViewModel = sharedSessionsViewModel,
+            sharedSessionDetailViewModel = sharedSessionDetailViewModel,
             netplayViewModel = netplayViewModel,
             netplayLobbyViewModel = netplayLobbyViewModel,
             statsViewModel = statsViewModel,

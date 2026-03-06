@@ -51,8 +51,8 @@ data class EmulationState(
     /** Elapsed play session time in seconds, updated every second while running. */
     val sessionElapsedSeconds: Long = 0,
 
-    /** Relay mode: set when playing a game through a relay. */
-    val relayId: String? = null,
+    /** Shared session mode: set when playing a game through a shared session. */
+    val sharedSessionId: String? = null,
     val turnToken: String? = null,
 
     /** Netplay mode: set when playing a game through a netplay session. */

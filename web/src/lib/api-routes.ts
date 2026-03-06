@@ -33,7 +33,7 @@ export type ApiGetPath = WithQuery<
   | `/games/${string}/similar`
   | `/games/${string}/developer-games`
   | `/games/${string}/core`
-  | `/games/${string}/relays`
+  | `/games/${string}/shared-sessions`
   | `/games/${string}/challenges`
 
   // Game sessions
@@ -77,18 +77,18 @@ export type ApiGetPath = WithQuery<
   | `/user/devices/${string}/preferences`
   | `/user/games/${string}/keymapping`
   | "/user/challenges"
-  | "/user/relay-invites"
-  | "/user/relay-invites/count"
+  | "/user/shared-session-invites"
+  | "/user/shared-session-invites/count"
   | "/user/ra/status"
   | "/user/ra/token"
   | "/user/achievements/recent"
 
-  // Relays
-  | "/relays"
-  | `/relays/${string}`
-  | `/relays/${string}/saves`
-  | `/relays/${string}/saves/auto`
-  | `/relays/${string}/saves/${string}`
+  // Shared Sessions
+  | "/shared-sessions"
+  | `/shared-sessions/${string}`
+  | `/shared-sessions/${string}/saves`
+  | `/shared-sessions/${string}/saves/auto`
+  | `/shared-sessions/${string}/saves/${string}`
 
   // Netplay
   | "/netplay/sessions"
@@ -167,22 +167,22 @@ export type ApiPostPath = WithQuery<
   | `/user/play-later/${string}`
   | "/user/devices"
   | "/user/ra/link"
-  | `/user/relay-invites/${string}/accept`
-  | `/user/relay-invites/${string}/decline`
+  | `/user/shared-session-invites/${string}/accept`
+  | `/user/shared-session-invites/${string}/decline`
 
   // Collections
   | "/collections"
   | `/collections/${string}/games`
 
-  // Relays
-  | "/relays"
-  | `/relays/${string}/invites`
-  | `/relays/${string}/leave`
-  | `/relays/${string}/take-turn`
-  | `/relays/${string}/release-turn`
-  | `/relays/${string}/heartbeat`
-  | `/relays/${string}/saves`
-  | `/relays/${string}/saves/auto`
+  // Shared Sessions
+  | "/shared-sessions"
+  | `/shared-sessions/${string}/invites`
+  | `/shared-sessions/${string}/leave`
+  | `/shared-sessions/${string}/take-turn`
+  | `/shared-sessions/${string}/release-turn`
+  | `/shared-sessions/${string}/heartbeat`
+  | `/shared-sessions/${string}/saves`
+  | `/shared-sessions/${string}/saves/auto`
 
   // Netplay
   | "/netplay/sessions"
@@ -238,9 +238,9 @@ export type ApiPutPath = WithQuery<
   // Collections
   | `/collections/${string}`
 
-  // Relays
-  | `/relays/${string}`
-  | `/relays/${string}/saves/${string}/rename`
+  // Shared Sessions
+  | `/shared-sessions/${string}`
+  | `/shared-sessions/${string}/saves/${string}/rename`
 
   // Netplay
   | `/netplay/sessions/${string}/settings`
@@ -279,10 +279,10 @@ export type ApiDeletePath = WithQuery<
   | `/collections/${string}`
   | `/collections/${string}/games/${string}`
 
-  // Relays
-  | `/relays/${string}`
-  | `/relays/${string}/members/${string}`
-  | `/relays/${string}/saves/${string}`
+  // Shared Sessions
+  | `/shared-sessions/${string}`
+  | `/shared-sessions/${string}/members/${string}`
+  | `/shared-sessions/${string}/saves/${string}`
 
   // Netplay
   | `/netplay/sessions/${string}`

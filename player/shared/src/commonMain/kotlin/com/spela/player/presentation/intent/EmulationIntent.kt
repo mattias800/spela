@@ -3,7 +3,7 @@ package com.spela.player.presentation.intent
 sealed interface EmulationIntent {
     data class StartGame(
         val gameId: String,
-        val relayId: String? = null,
+        val sharedSessionId: String? = null,
         val turnToken: String? = null,
         val netplaySessionId: String? = null,
         val netplayLocalPort: Int = 0,

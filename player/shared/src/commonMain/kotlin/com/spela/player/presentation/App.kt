@@ -12,8 +12,8 @@ import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
-import com.spela.player.presentation.viewmodel.RelayDetailViewModel
-import com.spela.player.presentation.viewmodel.RelaysViewModel
+import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
+import com.spela.player.presentation.viewmodel.SharedSessionsViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
@@ -46,8 +46,8 @@ fun App() {
     val settingsViewModel: SettingsViewModel = koinInject()
     val keyMappingViewModel: KeyMappingViewModel = koinInject()
     val socialViewModel: SocialViewModel = koinInject()
-    val relaysViewModel: RelaysViewModel = koinInject()
-    val relayDetailViewModel: RelayDetailViewModel = koinInject()
+    val sharedSessionsViewModel: SharedSessionsViewModel = koinInject()
+    val sharedSessionDetailViewModel: SharedSessionDetailViewModel = koinInject()
     val netplayViewModel: NetplayViewModel = koinInject()
     val netplayLobbyViewModel: NetplayLobbyViewModel = koinInject()
     val statsViewModel: StatsViewModel = koinInject()
@@ -73,8 +73,8 @@ fun App() {
         settingsViewModel = settingsViewModel,
         keyMappingViewModel = keyMappingViewModel,
         socialViewModel = socialViewModel,
-        relaysViewModel = relaysViewModel,
-        relayDetailViewModel = relayDetailViewModel,
+        sharedSessionsViewModel = sharedSessionsViewModel,
+        sharedSessionDetailViewModel = sharedSessionDetailViewModel,
         netplayViewModel = netplayViewModel,
         netplayLobbyViewModel = netplayLobbyViewModel,
         statsViewModel = statsViewModel,

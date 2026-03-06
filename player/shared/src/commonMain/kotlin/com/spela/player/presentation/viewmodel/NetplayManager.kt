@@ -1,7 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.domain.repository.RelayRepository
+import com.spela.player.domain.repository.SharedSessionRepository
 import com.spela.player.netplay.ControlMessage
 import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplaySignaling
@@ -21,11 +21,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Manages netplay transport setup, state chunk transfer, relay heartbeat,
- * and relay save/load operations.
+ * Manages netplay transport setup, state chunk transfer, shared session heartbeat,
+ * and shared session save/load operations.
  */
 class NetplayManager(
-    private val relayRepository: RelayRepository,
+    private val sharedSessionRepository: SharedSessionRepository,
     private val libretroController: LibretroController,
     private val apiClient: SpelaApiClient,
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
@@ -36,45 +36,45 @@ class NetplayManager(
     private var netplayTransport: NetplayTransport? = null
     private var netplayInputCollectorJob: Job? = null
     private var netplayControlCollectorJob: Job? = null
-    private var relayHeartbeatJob: Job? = null
+    private var sharedSessionHeartbeatJob: Job? = null
 
     /**
-     * Load relay auto-save and unserialize it.
+     * Load shared session auto-save and unserialize it.
      * Called from within an IO coroutine in startGame().
      */
-    suspend fun loadRelaySave(relayId: String) {
-        relayRepository.downloadRelayAutoSave(relayId).onSuccess { saveData ->
+    suspend fun loadSharedSessionSave(sharedSessionId: String) {
+        sharedSessionRepository.downloadSharedSessionAutoSave(sharedSessionId).onSuccess { saveData ->
             libretroController.unserialize(saveData)
         }
     }
 
     /**
-     * Upload relay auto-save and release turn on stop.
+     * Upload shared session auto-save and release turn on stop.
      * Called from within an IO coroutine in stopGame().
      */
-    suspend fun saveRelayOnStop(relayId: String, turnToken: String) {
+    suspend fun saveSharedSessionOnStop(sharedSessionId: String, turnToken: String) {
         try {
             val saveData = libretroController.serialize()
             if (saveData != null) {
-                relayRepository.uploadRelayAutoSave(relayId, turnToken, saveData)
+                sharedSessionRepository.uploadSharedSessionAutoSave(sharedSessionId, turnToken, saveData)
             }
         } catch (_: Exception) {
-            // Best effort relay auto-save
+            // Best effort shared session auto-save
         }
         try {
-            relayRepository.releaseTurn(relayId)
+            sharedSessionRepository.releaseTurn(sharedSessionId)
         } catch (_: Exception) {
             // Best effort release turn
         }
     }
 
-    fun startRelayHeartbeat(relayId: String) {
-        relayHeartbeatJob?.cancel()
-        relayHeartbeatJob = scope.launch(dispatchers.io) {
+    fun startSharedSessionHeartbeat(sharedSessionId: String) {
+        sharedSessionHeartbeatJob?.cancel()
+        sharedSessionHeartbeatJob = scope.launch(dispatchers.io) {
             while (isActive) {
                 delay(60_000) // 60 seconds
                 try {
-                    relayRepository.heartbeat(relayId)
+                    sharedSessionRepository.heartbeat(sharedSessionId)
                 } catch (_: Exception) {
                     // Best effort heartbeat
                 }
@@ -208,12 +208,12 @@ class NetplayManager(
     }
 
     /**
-     * Cancel all netplay/relay-related jobs and disconnect transport.
+     * Cancel all netplay/shared-session-related jobs and disconnect transport.
      * Called from stopGame().
      */
     fun cleanup() {
-        relayHeartbeatJob?.cancel()
-        relayHeartbeatJob = null
+        sharedSessionHeartbeatJob?.cancel()
+        sharedSessionHeartbeatJob = null
         netplayInputCollectorJob?.cancel()
         netplayInputCollectorJob = null
         netplayControlCollectorJob?.cancel()

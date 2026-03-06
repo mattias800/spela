@@ -125,9 +125,9 @@ func main() {
 		slog.Warn("failed to deduplicate games", "error", err)
 	}
 
-	// Create sessions for existing relays (one-time on upgrade)
-	if err := db.MigrateRelaySessions(database); err != nil {
-		slog.Warn("failed to migrate relay sessions", "error", err)
+	// Create sessions for existing shared sessions (one-time on upgrade)
+	if err := db.MigrateSharedSessions(database); err != nil {
+		slog.Warn("failed to migrate shared sessions", "error", err)
 	}
 
 	// Create ES-DE console subdirectories in game dirs

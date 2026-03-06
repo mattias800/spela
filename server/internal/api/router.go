@@ -157,7 +157,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	collectionHandler := &CollectionHandler{DB: cfg.DB, Hub: cfg.Hub}
 	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
-	relayHandler := &RelayHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
+	sharedSessionHandler := &SharedSessionHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
 	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0], EncryptionKey: encryptionKey}
 	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB, Hub: cfg.Hub}
@@ -326,30 +326,30 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.POST("/collections/:id/games", collectionHandler.AddGame)
 		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
 
-		// Relays
-		api.GET("/games/:id/relays", relayHandler.ListGameRelays)
-		api.POST("/relays", relayHandler.CreateRelay)
-		api.GET("/relays", relayHandler.ListRelays)
-		api.GET("/relays/:id", relayHandler.GetRelay)
-		api.PUT("/relays/:id", relayHandler.UpdateRelay)
-		api.DELETE("/relays/:id", relayHandler.DeleteRelay)
-		api.POST("/relays/:id/invites", relayHandler.InviteUser)
-		api.POST("/relays/:id/leave", relayHandler.LeaveRelay)
-		api.DELETE("/relays/:id/members/:userId", relayHandler.RemoveMember)
-		api.POST("/relays/:id/take-turn", relayHandler.TakeTurn)
-		api.POST("/relays/:id/release-turn", relayHandler.ReleaseTurn)
-		api.POST("/relays/:id/heartbeat", relayHandler.Heartbeat)
-		api.GET("/relays/:id/saves", relayHandler.ListSaves)
-		api.POST("/relays/:id/saves", uploadLimiter.RateLimit(), relayHandler.UploadSave)
-		api.GET("/relays/:id/saves/auto", relayHandler.GetAutoSave)
-		api.POST("/relays/:id/saves/auto", uploadLimiter.RateLimit(), relayHandler.UploadAutoSave)
-		api.GET("/relays/:id/saves/:saveId", relayHandler.DownloadSave)
-		api.PUT("/relays/:id/saves/:saveId/rename", relayHandler.RenameRelaySave)
-		api.DELETE("/relays/:id/saves/:saveId", relayHandler.DeleteSave)
-		api.GET("/user/relay-invites", relayHandler.ListMyInvites)
-		api.GET("/user/relay-invites/count", relayHandler.GetPendingInviteCount)
-		api.POST("/user/relay-invites/:id/accept", relayHandler.AcceptInvite)
-		api.POST("/user/relay-invites/:id/decline", relayHandler.DeclineInvite)
+		// Shared Sessions
+		api.GET("/games/:id/shared-sessions", sharedSessionHandler.ListGameSharedSessions)
+		api.POST("/shared-sessions", sharedSessionHandler.CreateSharedSession)
+		api.GET("/shared-sessions", sharedSessionHandler.ListSharedSessions)
+		api.GET("/shared-sessions/:id", sharedSessionHandler.GetSharedSession)
+		api.PUT("/shared-sessions/:id", sharedSessionHandler.UpdateSharedSession)
+		api.DELETE("/shared-sessions/:id", sharedSessionHandler.DeleteSharedSession)
+		api.POST("/shared-sessions/:id/invites", sharedSessionHandler.InviteUser)
+		api.POST("/shared-sessions/:id/leave", sharedSessionHandler.LeaveSharedSession)
+		api.DELETE("/shared-sessions/:id/members/:userId", sharedSessionHandler.RemoveMember)
+		api.POST("/shared-sessions/:id/take-turn", sharedSessionHandler.TakeTurn)
+		api.POST("/shared-sessions/:id/release-turn", sharedSessionHandler.ReleaseTurn)
+		api.POST("/shared-sessions/:id/heartbeat", sharedSessionHandler.Heartbeat)
+		api.GET("/shared-sessions/:id/saves", sharedSessionHandler.ListSaves)
+		api.POST("/shared-sessions/:id/saves", uploadLimiter.RateLimit(), sharedSessionHandler.UploadSave)
+		api.GET("/shared-sessions/:id/saves/auto", sharedSessionHandler.GetAutoSave)
+		api.POST("/shared-sessions/:id/saves/auto", uploadLimiter.RateLimit(), sharedSessionHandler.UploadAutoSave)
+		api.GET("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DownloadSave)
+		api.PUT("/shared-sessions/:id/saves/:saveId/rename", sharedSessionHandler.RenameSharedSessionSave)
+		api.DELETE("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DeleteSave)
+		api.GET("/user/shared-session-invites", sharedSessionHandler.ListMyInvites)
+		api.GET("/user/shared-session-invites/count", sharedSessionHandler.GetPendingInviteCount)
+		api.POST("/user/shared-session-invites/:id/accept", sharedSessionHandler.AcceptInvite)
+		api.POST("/user/shared-session-invites/:id/decline", sharedSessionHandler.DeclineInvite)
 
 		// Netplay
 		netplay := api.Group("/netplay")
