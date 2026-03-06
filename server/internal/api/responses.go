@@ -643,20 +643,26 @@ type RateLimitResponse struct {
 
 // GameSessionResponse is the API response for a game session.
 type GameSessionResponse struct {
-	ID            string     `json:"id"`
-	OwnerID       string     `json:"ownerId"`
-	OwnerUsername string     `json:"ownerUsername"`
-	GameID        string     `json:"gameId"`
-	Name          string     `json:"name"`
-	LastPlayedAt  *time.Time `json:"lastPlayedAt,omitempty"`
-	LastPlayedBy  *string    `json:"lastPlayedBy,omitempty"`
-	TotalPlayTime int64      `json:"totalPlayTime"`
-	ScreenshotURL string     `json:"screenshotUrl,omitempty"`
-	CoreName      string     `json:"coreName,omitempty"`
-	CheatsEnabled bool       `json:"cheatsEnabled"`
-	SaveCount     int        `json:"saveCount"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	ID                   string     `json:"id"`
+	OwnerID              string     `json:"ownerId"`
+	OwnerUsername        string     `json:"ownerUsername"`
+	GameID               string     `json:"gameId"`
+	Name                 string     `json:"name"`
+	LastPlayedAt         *time.Time `json:"lastPlayedAt,omitempty"`
+	LastPlayedBy         *string    `json:"lastPlayedBy,omitempty"`
+	LastPlayedByUsername *string    `json:"lastPlayedByUsername,omitempty"`
+	TotalPlayTime        int64      `json:"totalPlayTime"`
+	ScreenshotURL        string     `json:"screenshotUrl,omitempty"`
+	CoreName             string     `json:"coreName,omitempty"`
+	CheatsEnabled        bool       `json:"cheatsEnabled"`
+	SaveCount            int        `json:"saveCount"`
+	IsSharedSession      bool       `json:"isSharedSession"`
+	SharedSessionID      *string    `json:"sharedSessionId,omitempty"`
+	MemberCount          int        `json:"memberCount"`
+	MemberUsernames      []string   `json:"memberUsernames"`
+	MemberAvatars        []string   `json:"memberAvatars"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            time.Time  `json:"updatedAt"`
 }
 
 // SessionSaveResponse is the API response for a session save state.

@@ -1201,6 +1201,7 @@ class FakeSessionRepository : SessionRepository {
         lastPlayedByUsername: String? = null,
         totalPlayTime: Long = 0,
         memberCount: Int = 1,
+        memberUsernames: List<String> = emptyList(),
         memberAvatars: List<String> = emptyList(),
         isSharedSession: Boolean = false,
     ): GameSession {
@@ -1212,6 +1213,7 @@ class FakeSessionRepository : SessionRepository {
             lastPlayedByUsername = lastPlayedByUsername,
             totalPlayTime = totalPlayTime,
             memberCount = memberCount,
+            memberUsernames = memberUsernames,
             memberAvatars = memberAvatars,
             isSharedSession = isSharedSession,
         )

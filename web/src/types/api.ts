@@ -634,7 +634,10 @@ export interface GameSession {
   totalPlayTime: number;
   screenshotUrl: string | null;
   cheatsEnabled: boolean;
+  isSharedSession: boolean;
+  sharedSessionId?: string;
   memberCount: number;
+  memberUsernames: string[];
   memberAvatars: string[] | null;
   createdAt: string;
   updatedAt: string;

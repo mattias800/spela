@@ -512,9 +512,11 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
     totalPlayTime = totalPlayTime,
     screenshotUrl = screenshotUrl,
     cheatsEnabled = cheatsEnabled,
-    memberCount = memberCount,
-    memberAvatars = memberAvatars,
     isSharedSession = isSharedSession,
+    sharedSessionId = sharedSessionId,
+    memberCount = memberCount,
+    memberUsernames = memberUsernames,
+    memberAvatars = memberAvatars,
 )
 
 fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
