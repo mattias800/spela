@@ -124,7 +124,7 @@ class NavigationViewModel(
                     it.copy(
                         showInGameOverlay = true,
                         overlayGameId = intent.gameId,
-                        overlayRelayId = intent.relayId,
+                        overlaySharedSessionId = intent.sharedSessionId,
                         overlayTurnToken = intent.turnToken,
                         overlayNetplaySessionId = intent.netplaySessionId,
                         overlayNetplayLocalPort = intent.netplayLocalPort,
@@ -145,7 +145,7 @@ class NavigationViewModel(
                         it.copy(
                             showInGameOverlay = false,
                             overlayGameId = null,
-                            overlayRelayId = null,
+                            overlaySharedSessionId = null,
                             overlayTurnToken = null,
                             overlayNetplaySessionId = null,
                             overlayNetplayLocalPort = 0,
@@ -163,7 +163,7 @@ class NavigationViewModel(
                         it.copy(
                             showInGameOverlay = false,
                             overlayGameId = null,
-                            overlayRelayId = null,
+                            overlaySharedSessionId = null,
                             overlayTurnToken = null,
                             overlayNetplaySessionId = null,
                             overlayNetplayLocalPort = 0,

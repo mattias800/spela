@@ -132,10 +132,10 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameCollection{},
 		&CollectionItem{},
 		&PlayLaterItem{},
-		&Relay{},
-		&RelayMember{},
-		&RelayInvite{},
-		&RelaySave{},
+		&SharedSession{},
+		&SharedSessionMember{},
+		&SharedSessionInvite{},
+		&SharedSessionSave{},
 		&NetplaySession{},
 		&Challenge{},
 		&ChallengeAttempt{},
@@ -384,8 +384,8 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 	// NetplaySession — move all
 	database.Model(&NetplaySession{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
-	// Relay — move all
-	database.Model(&Relay{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+	// SharedSession — move all
+	database.Model(&SharedSession{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
 	// GameSession — move all
 	database.Model(&GameSession{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
@@ -521,10 +521,10 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 	}
 }
 
-// MigrateRelaySessions creates GameSession records for existing Relays that
-// don't have a SessionID, and copies their RelaySave records into
+// MigrateSharedSessions creates GameSession records for existing SharedSessions that
+// don't have a SessionID, and copies their SharedSessionSave records into
 // SessionSaveState. Guarded by the "relay_sessions_migrated" ServerSetting.
-func MigrateRelaySessions(database *gorm.DB) error {
+func MigrateSharedSessions(database *gorm.DB) error {
 	// Check if already migrated
 	var setting ServerSetting
 	if err := database.Where("key = ?", "relay_sessions_migrated").First(&setting).Error; err == nil {
@@ -533,34 +533,34 @@ func MigrateRelaySessions(database *gorm.DB) error {
 		}
 	}
 
-	// Find relays without a session
-	var relays []Relay
-	if err := database.Where("session_id IS NULL").Find(&relays).Error; err != nil {
-		return fmt.Errorf("loading relays without sessions: %w", err)
+	// Find shared sessions without a session
+	var sharedSessions []SharedSession
+	if err := database.Where("session_id IS NULL").Find(&sharedSessions).Error; err != nil {
+		return fmt.Errorf("loading shared sessions without sessions: %w", err)
 	}
 
-	if len(relays) == 0 {
+	if len(sharedSessions) == 0 {
 		database.Create(&ServerSetting{Key: "relay_sessions_migrated", Value: "true"})
 		return nil
 	}
 
-	slog.Info("migrating relays to sessions", "count", len(relays))
+	slog.Info("migrating shared sessions to sessions", "count", len(sharedSessions))
 
-	for _, r := range relays {
+	for _, r := range sharedSessions {
 		session := GameSession{
 			OwnerID: r.OwnerID,
 			GameID:  r.GameID,
-			Name:    "Relay: " + r.Name,
+			Name:    "Shared Session: " + r.Name,
 		}
 		if err := database.Create(&session).Error; err != nil {
-			slog.Warn("failed to create session for relay",
-				"relayId", r.ID, "error", err)
+			slog.Warn("failed to create session for shared session",
+				"sharedSessionId", r.ID, "error", err)
 			continue
 		}
 
-		// Copy RelaySave records into SessionSaveState
-		var saves []RelaySave
-		database.Where("relay_id = ?", r.ID).Find(&saves)
+		// Copy SharedSessionSave records into SessionSaveState
+		var saves []SharedSessionSave
+		database.Where("shared_session_id = ?", r.ID).Find(&saves)
 		for _, s := range saves {
 			ss := SessionSaveState{
 				SessionID:     session.ID,
@@ -576,12 +576,12 @@ func MigrateRelaySessions(database *gorm.DB) error {
 			database.Create(&ss)
 		}
 
-		// Link the relay to its new session
+		// Link the shared session to its new session
 		database.Model(&r).Update("session_id", session.ID)
 	}
 
 	database.Create(&ServerSetting{Key: "relay_sessions_migrated", Value: "true"})
-	slog.Info("relay-session migration completed", "relays_migrated", len(relays))
+	slog.Info("shared-session migration completed", "shared_sessions_migrated", len(sharedSessions))
 	return nil
 }
 

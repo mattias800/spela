@@ -496,8 +496,8 @@ type CollectionDetailResponse struct {
 	Games []GameResponse `json:"games"`
 }
 
-// RelayResponse is the API response for a relay (list view).
-type RelayResponse struct {
+// SharedSessionResponse is the API response for a shared session (list view).
+type SharedSessionResponse struct {
 	ID             string     `json:"id"`
 	OwnerID        string     `json:"ownerId"`
 	OwnerUsername  string     `json:"ownerUsername"`
@@ -516,14 +516,14 @@ type RelayResponse struct {
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }
 
-// RelayDetailResponse is the API response for a relay with full member list.
-type RelayDetailResponse struct {
-	RelayResponse
-	Members []RelayMemberResponse `json:"members"`
+// SharedSessionDetailResponse is the API response for a shared session with full member list.
+type SharedSessionDetailResponse struct {
+	SharedSessionResponse
+	Members []SharedSessionMemberResponse `json:"members"`
 }
 
-// RelayMemberResponse is the API response for a relay member.
-type RelayMemberResponse struct {
+// SharedSessionMemberResponse is the API response for a shared session member.
+type SharedSessionMemberResponse struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"userId"`
 	Username  string    `json:"username"`
@@ -532,32 +532,32 @@ type RelayMemberResponse struct {
 	JoinedAt  time.Time `json:"joinedAt"`
 }
 
-// RelayInviteResponse is the API response for a relay invite.
-type RelayInviteResponse struct {
-	ID              string    `json:"id"`
-	RelayID         string    `json:"relayId"`
-	RelayName       string    `json:"relayName"`
-	GameTitle       string    `json:"gameTitle"`
-	InviterID       string    `json:"inviterId"`
-	InviterUsername string    `json:"inviterUsername"`
-	InviteeID       string    `json:"inviteeId"`
-	InviteeUsername string    `json:"inviteeUsername"`
-	Status          string    `json:"status"`
-	CreatedAt       time.Time `json:"createdAt"`
+// SharedSessionInviteResponse is the API response for a shared session invite.
+type SharedSessionInviteResponse struct {
+	ID                  string    `json:"id"`
+	SharedSessionID     string    `json:"sharedSessionId"`
+	SharedSessionName   string    `json:"sharedSessionName"`
+	GameTitle           string    `json:"gameTitle"`
+	InviterID           string    `json:"inviterId"`
+	InviterUsername     string    `json:"inviterUsername"`
+	InviteeID           string    `json:"inviteeId"`
+	InviteeUsername     string    `json:"inviteeUsername"`
+	Status              string    `json:"status"`
+	CreatedAt           time.Time `json:"createdAt"`
 }
 
-// RelaySaveResponse is the API response for a relay save state.
-type RelaySaveResponse struct {
-	ID            string    `json:"id"`
-	RelayID       string    `json:"relayId"`
-	UserID        string    `json:"userId"`
-	Username      string    `json:"username"`
-	Name          string    `json:"name"`
-	FileSize      int64     `json:"fileSize"`
-	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
-	IsAuto        bool      `json:"isAuto"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+// SharedSessionSaveResponse is the API response for a shared session save state.
+type SharedSessionSaveResponse struct {
+	ID              string    `json:"id"`
+	SharedSessionID string    `json:"sharedSessionId"`
+	UserID          string    `json:"userId"`
+	Username        string    `json:"username"`
+	Name            string    `json:"name"`
+	FileSize        int64     `json:"fileSize"`
+	ScreenshotURL   string    `json:"screenshotUrl,omitempty"`
+	IsAuto          bool      `json:"isAuto"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 // NetplaySessionResponse is the API response for a netplay session.

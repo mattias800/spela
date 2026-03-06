@@ -458,9 +458,9 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		// Challenges
 		tx.Where("user_id = ?", uid).Delete(&db.ChallengeAttempt{})
 
-		// Relays
-		tx.Where("user_id = ?", uid).Delete(&db.RelayMember{})
-		tx.Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.RelayInvite{})
+		// Shared Sessions
+		tx.Where("user_id = ?", uid).Delete(&db.SharedSessionMember{})
+		tx.Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.SharedSessionInvite{})
 
 		// Netplay
 		tx.Where("host_user_id = ? OR client_user_id = ?", uid, uid).Delete(&db.NetplaySession{})
@@ -563,9 +563,9 @@ func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
 		// Challenges
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ChallengeAttempt{})
 
-		// Relays
-		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RelayMember{})
-		tx.Unscoped().Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.RelayInvite{})
+		// Shared Sessions
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SharedSessionMember{})
+		tx.Unscoped().Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.SharedSessionInvite{})
 
 		// Netplay
 		tx.Unscoped().Where("host_user_id = ? OR client_user_id = ?", uid, uid).Delete(&db.NetplaySession{})

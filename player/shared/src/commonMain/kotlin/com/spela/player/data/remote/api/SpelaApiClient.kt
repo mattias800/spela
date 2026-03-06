@@ -539,125 +539,125 @@ class SpelaApiClient(
         }.body()
     }
 
-    // Relays
+    // Shared Sessions
 
-    suspend fun getMyRelays(page: Int = 1, pageSize: Int = 20): RelaysResponse {
-        return client.get("$baseUrl/api/relays") {
+    suspend fun getMySharedSessions(page: Int = 1, pageSize: Int = 20): SharedSessionsResponse {
+        return client.get("$baseUrl/api/shared-sessions") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getRelay(relayId: String): RelayDetailDto {
-        return client.get("$baseUrl/api/relays/$relayId").body()
+    suspend fun getSharedSession(sharedSessionId: String): SharedSessionDetailDto {
+        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId").body()
     }
 
-    suspend fun getRelayInvitations(): RelayInvitationsResponse {
-        return client.get("$baseUrl/api/relays/invitations").body()
+    suspend fun getSharedSessionInvitations(): SharedSessionInvitationsResponse {
+        return client.get("$baseUrl/api/shared-sessions/invitations").body()
     }
 
-    suspend fun getPendingInvitationCount(): RelayInvitationCountResponse {
-        return client.get("$baseUrl/api/relays/invitations/count").body()
+    suspend fun getPendingInvitationCount(): SharedSessionInvitationCountResponse {
+        return client.get("$baseUrl/api/shared-sessions/invitations/count").body()
     }
 
-    suspend fun createRelay(request: CreateRelayRequest): RelayDetailDto {
-        return client.post("$baseUrl/api/relays") {
+    suspend fun createSharedSession(request: CreateSharedSessionRequest): SharedSessionDetailDto {
+        return client.post("$baseUrl/api/shared-sessions") {
             setBody(request)
         }.body()
     }
 
-    suspend fun deleteRelay(relayId: String) {
-        client.delete("$baseUrl/api/relays/$relayId")
+    suspend fun deleteSharedSession(sharedSessionId: String) {
+        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId")
     }
 
-    suspend fun inviteToRelay(relayId: String, request: InviteToRelayRequest) {
-        client.post("$baseUrl/api/relays/$relayId/invitations") {
+    suspend fun inviteToSharedSession(sharedSessionId: String, request: InviteToSharedSessionRequest) {
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/invitations") {
             setBody(request)
         }
     }
 
-    suspend fun acceptRelayInvitation(invitationId: String) {
-        client.post("$baseUrl/api/relays/invitations/$invitationId/accept")
+    suspend fun acceptSharedSessionInvitation(invitationId: String) {
+        client.post("$baseUrl/api/shared-sessions/invitations/$invitationId/accept")
     }
 
-    suspend fun rejectRelayInvitation(invitationId: String) {
-        client.post("$baseUrl/api/relays/invitations/$invitationId/reject")
+    suspend fun rejectSharedSessionInvitation(invitationId: String) {
+        client.post("$baseUrl/api/shared-sessions/invitations/$invitationId/reject")
     }
 
-    suspend fun leaveRelay(relayId: String) {
-        client.delete("$baseUrl/api/relays/$relayId/members/me")
+    suspend fun leaveSharedSession(sharedSessionId: String) {
+        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/members/me")
     }
 
-    suspend fun removeRelayMember(relayId: String, userId: String) {
-        client.delete("$baseUrl/api/relays/$relayId/members/$userId")
+    suspend fun removeSharedSessionMember(sharedSessionId: String, userId: String) {
+        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/members/$userId")
     }
 
-    suspend fun getGameRelays(gameId: String): List<RelayDto> {
-        return client.get("$baseUrl/api/games/$gameId/relays").body()
+    suspend fun getGameSharedSessions(gameId: String): List<SharedSessionDto> {
+        return client.get("$baseUrl/api/games/$gameId/shared-sessions").body()
     }
 
-    suspend fun getRelaySaves(relayId: String): List<RelaySaveDto> {
-        return client.get("$baseUrl/api/relays/$relayId/saves").body()
+    suspend fun getSharedSessionSaves(sharedSessionId: String): List<SharedSessionSaveDto> {
+        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves").body()
     }
 
-    suspend fun deleteRelaySave(relayId: String, saveId: Long) {
-        client.delete("$baseUrl/api/relays/$relayId/saves/$saveId")
+    suspend fun deleteSharedSessionSave(sharedSessionId: String, saveId: Long) {
+        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId")
     }
 
-    suspend fun takeTurn(relayId: String): TakeTurnResponse {
-        return client.post("$baseUrl/api/relays/$relayId/turn/take").body()
+    suspend fun takeTurn(sharedSessionId: String): TakeTurnResponse {
+        return client.post("$baseUrl/api/shared-sessions/$sharedSessionId/turn/take").body()
     }
 
-    suspend fun releaseTurn(relayId: String) {
-        client.post("$baseUrl/api/relays/$relayId/turn/release")
+    suspend fun releaseTurn(sharedSessionId: String) {
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/turn/release")
     }
 
-    suspend fun relayHeartbeat(relayId: String) {
-        client.post("$baseUrl/api/relays/$relayId/heartbeat")
+    suspend fun sharedSessionHeartbeat(sharedSessionId: String) {
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/heartbeat")
     }
 
-    suspend fun uploadRelaySave(
-        relayId: String,
+    suspend fun uploadSharedSessionSave(
+        sharedSessionId: String,
         name: String,
         turnToken: String,
         data: ByteArray,
-    ): RelaySaveDto {
+    ): SharedSessionSaveDto {
         return client.submitFormWithBinaryData(
-            url = "$baseUrl/api/relays/$relayId/saves",
+            url = "$baseUrl/api/shared-sessions/$sharedSessionId/saves",
             formData = formData {
                 append("name", name)
                 append("turnToken", turnToken)
                 append("save", data, Headers.build {
-                    append(HttpHeaders.ContentDisposition, "filename=\"relay-save.sav\"")
+                    append(HttpHeaders.ContentDisposition, "filename=\"shared-session-save.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
                 })
             }
         ).body()
     }
 
-    suspend fun downloadRelaySave(relayId: String, saveId: Long): ByteArray {
-        return client.get("$baseUrl/api/relays/$relayId/saves/$saveId/download").body()
+    suspend fun downloadSharedSessionSave(sharedSessionId: String, saveId: Long): ByteArray {
+        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId/download").body()
     }
 
-    suspend fun downloadRelayAutoSave(relayId: String): ByteArray {
-        return client.get("$baseUrl/api/relays/$relayId/saves/auto").body()
+    suspend fun downloadSharedSessionAutoSave(sharedSessionId: String): ByteArray {
+        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves/auto").body()
     }
 
-    suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) {
-        client.post("$baseUrl/api/relays/$relayId/saves/$saveId/copy-to-game")
+    suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) {
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId/copy-to-game")
     }
 
-    suspend fun uploadRelayAutoSave(
-        relayId: String,
+    suspend fun uploadSharedSessionAutoSave(
+        sharedSessionId: String,
         turnToken: String,
         data: ByteArray,
-    ): RelaySaveDto {
+    ): SharedSessionSaveDto {
         return client.submitFormWithBinaryData(
-            url = "$baseUrl/api/relays/$relayId/saves/auto",
+            url = "$baseUrl/api/shared-sessions/$sharedSessionId/saves/auto",
             formData = formData {
                 append("turnToken", turnToken)
                 append("save", data, Headers.build {
-                    append(HttpHeaders.ContentDisposition, "filename=\"relay-autosave.sav\"")
+                    append(HttpHeaders.ContentDisposition, "filename=\"shared-session-autosave.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
                 })
             }

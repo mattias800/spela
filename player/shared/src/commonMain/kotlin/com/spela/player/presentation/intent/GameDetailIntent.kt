@@ -22,11 +22,11 @@ sealed interface GameDetailIntent {
     data class AddToCollection(val collectionId: String) : GameDetailIntent
     data class CreateCollectionAndAddGame(val name: String) : GameDetailIntent
 
-    // Community Stats, Reviews, Relays
+    // Community Stats, Reviews, Shared Sessions
     data class LoadGameStats(val gameId: String) : GameDetailIntent
     data class LoadReviews(val gameId: String) : GameDetailIntent
     data class LoadMoreReviews(val gameId: String) : GameDetailIntent
-    data class LoadGameRelays(val gameId: String) : GameDetailIntent
+    data class LoadGameSharedSessions(val gameId: String) : GameDetailIntent
 
     // Create Challenge
     data object ShowCreateChallengeDialog : GameDetailIntent

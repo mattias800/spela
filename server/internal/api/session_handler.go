@@ -313,8 +313,8 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 		return
 	}
 
-	// If this session backs a relay, enforce turn ownership
-	if ok := h.checkRelayTurn(c, session.ID, uid); !ok {
+	// If this session backs a shared session, enforce turn ownership
+	if ok := h.checkSharedSessionTurn(c, session.ID, uid); !ok {
 		return
 	}
 
@@ -487,8 +487,8 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 		return
 	}
 
-	// If this session backs a relay, enforce turn ownership
-	if ok := h.checkRelayTurn(c, session.ID, uid); !ok {
+	// If this session backs a shared session, enforce turn ownership
+	if ok := h.checkSharedSessionTurn(c, session.ID, uid); !ok {
 		return
 	}
 
@@ -1018,19 +1018,19 @@ func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveRespon
 	}
 }
 
-// checkRelayTurn checks if this session is backed by a relay, and if so, whether
+// checkSharedSessionTurn checks if this session is backed by a shared session, and if so, whether
 // the user currently holds the turn. Returns true if the upload should proceed,
 // false if a response has already been written.
-func (h *SessionHandler) checkRelayTurn(c *gin.Context, sessionID, uid uint) bool {
-	var relay db.Relay
-	if err := h.DB.Where("session_id = ?", sessionID).First(&relay).Error; err != nil {
-		// No relay backs this session — allow normal upload
+func (h *SessionHandler) checkSharedSessionTurn(c *gin.Context, sessionID, uid uint) bool {
+	var sharedSession db.SharedSession
+	if err := h.DB.Where("session_id = ?", sessionID).First(&sharedSession).Error; err != nil {
+		// No shared session backs this session — allow normal upload
 		return true
 	}
 
-	// A relay backs this session — user must hold the turn
-	if relay.ActiveUserID == nil || *relay.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "relay turn required: you must hold the turn to upload saves"})
+	// A shared session backs this session — user must hold the turn
+	if sharedSession.ActiveUserID == nil || *sharedSession.ActiveUserID != uid {
+		c.JSON(http.StatusForbidden, gin.H{"error": "shared session turn required: you must hold the turn to upload saves"})
 		return false
 	}
 	return true

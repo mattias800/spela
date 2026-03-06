@@ -277,9 +277,9 @@ data class AchievementEvent(
     val points: Int = 0,
 )
 
-// Relay
+// Shared Session
 
-data class Relay(
+data class SharedSession(
     val id: String,
     val name: String,
     val description: String = "",
@@ -297,7 +297,7 @@ data class Relay(
     val updatedAt: String = "",
 )
 
-data class RelayDetail(
+data class SharedSessionDetail(
     val id: String,
     val name: String,
     val description: String = "",
@@ -310,13 +310,13 @@ data class RelayDetail(
     val status: String = "active",
     val memberCount: Int = 0,
     val activeUserId: String? = null,
-    val members: List<RelayMember> = emptyList(),
+    val members: List<SharedSessionMember> = emptyList(),
     val lastActivityAt: String = "",
     val createdAt: String = "",
     val updatedAt: String = "",
 )
 
-data class RelayMember(
+data class SharedSessionMember(
     val userId: String,
     val username: String,
     val avatarUrl: String? = null,
@@ -326,10 +326,10 @@ data class RelayMember(
     val isOnline: Boolean = false,
 )
 
-data class RelayInvitation(
+data class SharedSessionInvitation(
     val id: String,
-    val relayId: String,
-    val relayName: String = "",
+    val sharedSessionId: String,
+    val sharedSessionName: String = "",
     val gameId: String = "",
     val gameTitle: String = "",
     val gameCoverUrl: String? = null,
@@ -339,9 +339,9 @@ data class RelayInvitation(
     val createdAt: String = "",
 )
 
-data class RelaySave(
+data class SharedSessionSave(
     val id: Long,
-    val relayId: String = "",
+    val sharedSessionId: String = "",
     val username: String = "",
     val avatarUrl: String? = null,
     val name: String,
@@ -622,7 +622,7 @@ data class GameSession(
     val cheatsEnabled: Boolean = false,
     val memberCount: Int = 1,
     val memberAvatars: List<String> = emptyList(),
-    val isRelay: Boolean = false,
+    val isSharedSession: Boolean = false,
 )
 
 data class SessionCheatConfig(

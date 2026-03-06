@@ -27,8 +27,8 @@ import { ActivityPage } from "@/pages/activity-page";
 import { CollectionsPage } from "@/pages/collections-page";
 import { CollectionDetailPage } from "@/pages/collection-detail-page";
 import { UserProfilePage } from "@/pages/user-profile-page";
-import { RelaysPage } from "@/pages/relays-page";
-import { RelayDetailPage } from "@/pages/relay-detail-page";
+import { SharedSessionsPage } from "@/pages/shared-sessions-page";
+import { SharedSessionDetailPage } from "@/pages/shared-session-detail-page";
 import { NetplayPage } from "@/pages/netplay-page";
 import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
@@ -107,8 +107,8 @@ export function App() {
                       path="challenges/:id"
                       element={<ChallengeDetailPage />}
                     />
-                    <Route path="relays" element={<RelaysPage />} />
-                    <Route path="relays/:id" element={<RelayDetailPage />} />
+                    <Route path="shared-sessions" element={<SharedSessionsPage />} />
+                    <Route path="shared-sessions/:id" element={<SharedSessionDetailPage />} />
                     <Route path="netplay" element={<NetplayPage />} />
                     <Route path="netplay/:id" element={<NetplaySessionPage />} />
                     <Route path="users/:id" element={<UserProfilePage />} />

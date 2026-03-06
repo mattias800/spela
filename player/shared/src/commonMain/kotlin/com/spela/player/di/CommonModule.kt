@@ -60,7 +60,7 @@ val commonModule = module {
     single<SocialRepository> { SocialRepositoryImpl(get()) }
     single<RatingRepository> { RatingRepositoryImpl(get()) }
     single<SharedSaveRepository> { SharedSaveRepositoryImpl(get()) }
-    single<RelayRepository> { RelayRepositoryImpl(get()) }
+    single<SharedSessionRepository> { SharedSessionRepositoryImpl(get()) }
     single<CollectionRepository> { CollectionRepositoryImpl(get()) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
@@ -153,7 +153,7 @@ val commonModule = module {
             getGameStatsUseCase = get(),
             gameStatsRepository = get(),
             challengeRepository = get(),
-            relayRepository = get(),
+            sharedSessionRepository = get(),
             gameRepository = get(),
             apiClient = get(),
             dispatchers = get(),
@@ -188,7 +188,7 @@ val commonModule = module {
     }
     single {
         NetplayManager(
-            relayRepository = get(),
+            sharedSessionRepository = get(),
             libretroController = get(),
             apiClient = get(),
             engineFactory = get(),
@@ -230,16 +230,16 @@ val commonModule = module {
     }
 
     factory {
-        RelaysViewModel(
-            relayRepository = get(),
+        SharedSessionsViewModel(
+            sharedSessionRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
     }
 
     factory {
-        RelayDetailViewModel(
-            relayRepository = get(),
+        SharedSessionDetailViewModel(
+            sharedSessionRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

@@ -201,53 +201,54 @@ func (s *Storage) WriteSharedSave(gameID, saveID uint, filename string, data io.
 	return path, n, nil
 }
 
-// RelaySavePath returns the filesystem path for a relay save state.
-func (s *Storage) RelaySavePath(relayID uint, filename string) string {
+// SharedSessionSavePath returns the filesystem path for a shared session save state.
+// Note: filesystem paths still use "relays" directory to avoid data loss on upgrade.
+func (s *Storage) SharedSessionSavePath(sharedSessionID uint, filename string) string {
 	safe := sanitizeFilename(filename)
-	return filepath.Join(s.SaveDir, "relays", fmt.Sprintf("relay_%d", relayID), safe)
+	return filepath.Join(s.SaveDir, "relays", fmt.Sprintf("relay_%d", sharedSessionID), safe)
 }
 
-// WriteRelaySave stores a relay save state file.
-func (s *Storage) WriteRelaySave(relayID uint, filename string, data io.Reader) (string, int64, error) {
-	path := s.RelaySavePath(relayID, filename)
+// WriteSharedSessionSave stores a shared session save state file.
+func (s *Storage) WriteSharedSessionSave(sharedSessionID uint, filename string, data io.Reader) (string, int64, error) {
+	path := s.SharedSessionSavePath(sharedSessionID, filename)
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return "", 0, fmt.Errorf("resolving relay save path: %w", err)
+		return "", 0, fmt.Errorf("resolving shared session save path: %w", err)
 	}
 	absSaveDir, err := filepath.Abs(s.SaveDir)
 	if err != nil {
 		return "", 0, fmt.Errorf("resolving save dir: %w", err)
 	}
 	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
-		return "", 0, fmt.Errorf("invalid relay save path: outside save directory")
+		return "", 0, fmt.Errorf("invalid shared session save path: outside save directory")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return "", 0, fmt.Errorf("creating relay save directory: %w", err)
+		return "", 0, fmt.Errorf("creating shared session save directory: %w", err)
 	}
 
 	f, err := os.Create(path)
 	if err != nil {
-		return "", 0, fmt.Errorf("creating relay save file: %w", err)
+		return "", 0, fmt.Errorf("creating shared session save file: %w", err)
 	}
 	defer f.Close()
 
 	n, err := io.Copy(f, data)
 	if err != nil {
-		return "", 0, fmt.Errorf("writing relay save file: %w", err)
+		return "", 0, fmt.Errorf("writing shared session save file: %w", err)
 	}
 
 	return path, n, nil
 }
 
-// DeleteRelaySave removes a relay save state file.
-func (s *Storage) DeleteRelaySave(filePath string) error {
+// DeleteSharedSessionSave removes a shared session save state file.
+func (s *Storage) DeleteSharedSessionSave(filePath string) error {
 	if err := s.validatePathInSaveDir(filePath); err != nil {
 		return err
 	}
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("deleting relay save file: %w", err)
+		return fmt.Errorf("deleting shared session save file: %w", err)
 	}
 	return nil
 }

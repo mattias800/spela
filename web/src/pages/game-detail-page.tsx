@@ -30,7 +30,7 @@ import { GameAchievementLeaderboard } from "@/features/game-detail/components/ga
 import { RatingSummaryCard } from "@/features/game-detail/components/rating-summary";
 import { GameReviews } from "@/features/game-detail/components/game-reviews";
 import { SharedSavesList } from "@/features/game-detail/components/shared-saves-list";
-import { GameActiveRelays } from "@/features/relays/components/game-active-relays";
+import { GameActiveSharedSessions } from "@/features/shared-sessions/components/game-active-shared-sessions";
 import { GameSessions } from "@/features/sessions/components/game-sessions";
 import { useGameSessions } from "@/hooks/use-sessions";
 import { GameCheats } from "@/features/game-detail/components/game-cheats";
@@ -266,7 +266,7 @@ export function GameDetailPage() {
         </div>
       )}
 
-      {isPlayable && <GameActiveRelays gameId={game.id} />}
+      {isPlayable && <GameActiveSharedSessions gameId={game.id} />}
     </div>
   );
 }

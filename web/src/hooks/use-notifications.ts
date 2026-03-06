@@ -1,8 +1,8 @@
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useToast } from "@/components/ui";
 
-interface RelayInvitePayload {
-  relayName: string;
+interface SharedSessionInvitePayload {
+  sharedSessionName: string;
   inviterUsername: string;
   gameTitle: string;
 }
@@ -14,16 +14,16 @@ interface NetplaySessionPayload {
 
 /**
  * Global WebSocket notification hook — shows toast notifications
- * for relay invites and netplay session events.
+ * for shared session invites and netplay session events.
  * Should be mounted once in AppLayout.
  */
 export function useNotifications() {
   const { toast } = useToast();
 
-  useWebSocketEvent("relay_invite_sent", (payload: RelayInvitePayload) => {
+  useWebSocketEvent("shared_session_invite_sent", (payload: SharedSessionInvitePayload) => {
     toast(
       "info",
-      `${payload.inviterUsername} invited you to relay "${payload.relayName}"`,
+      `${payload.inviterUsername} invited you to shared session "${payload.sharedSessionName}"`,
     );
   });
 

@@ -76,9 +76,9 @@ import com.spela.player.presentation.ui.feature.ingame.PlatformTouchControls
 import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
 import com.spela.player.presentation.ui.screen.NetplayStartConfig
-import com.spela.player.presentation.ui.screen.RelayDetailScreen
+import com.spela.player.presentation.ui.screen.SharedSessionDetailScreen
 import com.spela.player.presentation.ui.screen.SessionDetailScreen
-import com.spela.player.presentation.ui.screen.RelaysScreen
+import com.spela.player.presentation.ui.screen.SharedSessionsScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
 import com.spela.player.presentation.ui.screen.CollectionsScreen
@@ -106,9 +106,9 @@ import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
-import com.spela.player.presentation.viewmodel.RelayDetailViewModel
+import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
 import com.spela.player.presentation.viewmodel.SessionDetailViewModel
-import com.spela.player.presentation.viewmodel.RelaysViewModel
+import com.spela.player.presentation.viewmodel.SharedSessionsViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
@@ -138,8 +138,8 @@ fun SpelaApp(
     keyMappingViewModel: KeyMappingViewModel,
     gamepadConfigViewModel: GamepadConfigViewModel? = null,
     socialViewModel: SocialViewModel,
-    relaysViewModel: RelaysViewModel,
-    relayDetailViewModel: RelayDetailViewModel,
+    sharedSessionsViewModel: SharedSessionsViewModel,
+    sharedSessionDetailViewModel: SharedSessionDetailViewModel,
     netplayViewModel: NetplayViewModel,
     netplayLobbyViewModel: NetplayLobbyViewModel,
     statsViewModel: StatsViewModel,
@@ -526,9 +526,9 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.ChallengeList(gameId, gameTitle))
                                         )
                                     },
-                                    onNavigateToRelay = { relayId ->
+                                    onNavigateToSharedSession = { sharedSessionId ->
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
+                                            NavigationIntent.NavigateTo(SpScreen.SharedSessionDetail(sharedSessionId))
                                         )
                                     },
                                     onNavigateToSession = { sid ->
@@ -610,12 +610,12 @@ fun SpelaApp(
                                 )
                             }
 
-                            is SpScreen.Relays -> {
-                                RelaysScreen(
-                                    viewModel = relaysViewModel,
-                                    onRelaySelected = { relayId ->
+                            is SpScreen.SharedSessions -> {
+                                SharedSessionsScreen(
+                                    viewModel = sharedSessionsViewModel,
+                                    onSharedSessionSelected = { sharedSessionId ->
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.RelayDetail(relayId))
+                                            NavigationIntent.NavigateTo(SpScreen.SharedSessionDetail(sharedSessionId))
                                         )
                                     },
                                     onBack = {
@@ -624,19 +624,19 @@ fun SpelaApp(
                                 )
                             }
 
-                            is SpScreen.RelayDetail -> {
-                                RelayDetailScreen(
-                                    relayId = screen.relayId,
-                                    viewModel = relayDetailViewModel,
+                            is SpScreen.SharedSessionDetail -> {
+                                SharedSessionDetailScreen(
+                                    sharedSessionId = screen.sharedSessionId,
+                                    viewModel = sharedSessionDetailViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
-                                    onPlay = { gameId, relayId ->
-                                        val turnToken = relayDetailViewModel.state.value.turnToken
+                                    onPlay = { gameId, sharedSessionId ->
+                                        val turnToken = sharedSessionDetailViewModel.state.value.turnToken
                                         navigationViewModel.onIntent(
                                             NavigationIntent.ShowOverlay(
                                                 gameId = gameId,
-                                                relayId = relayId,
+                                                sharedSessionId = sharedSessionId,
                                                 turnToken = turnToken,
                                             )
                                         )
@@ -899,12 +899,12 @@ fun SpelaApp(
                                 },
                         )
 
-                        LaunchedEffect(navState.overlayGameId, navState.overlayRelayId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlaySharedSessionId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
                                         gameId = gameId,
-                                        relayId = navState.overlayRelayId,
+                                        sharedSessionId = navState.overlaySharedSessionId,
                                         turnToken = navState.overlayTurnToken,
                                         netplaySessionId = navState.overlayNetplaySessionId,
                                         netplayLocalPort = navState.overlayNetplayLocalPort,

@@ -378,10 +378,10 @@ data class PublicProfileDto(
     val topGames: List<PublicProfileGameDto> = emptyList(),
 )
 
-// Relay
+// Shared Session
 
 @Serializable
-data class RelayDto(
+data class SharedSessionDto(
     val id: String,
     val name: String,
     val description: String = "",
@@ -400,7 +400,7 @@ data class RelayDto(
 )
 
 @Serializable
-data class RelayDetailDto(
+data class SharedSessionDetailDto(
     val id: String,
     val name: String,
     val description: String = "",
@@ -416,11 +416,11 @@ data class RelayDetailDto(
     val lastActivityAt: String = "",
     val createdAt: String = "",
     val updatedAt: String = "",
-    val members: List<RelayMemberDto> = emptyList(),
+    val members: List<SharedSessionMemberDto> = emptyList(),
 )
 
 @Serializable
-data class RelayMemberDto(
+data class SharedSessionMemberDto(
     val userId: String,
     val username: String,
     val avatarUrl: String? = null,
@@ -431,10 +431,10 @@ data class RelayMemberDto(
 )
 
 @Serializable
-data class RelayInvitationDto(
+data class SharedSessionInvitationDto(
     val id: String,
-    val relayId: String,
-    val relayName: String = "",
+    val sharedSessionId: String,
+    val sharedSessionName: String = "",
     val gameId: String = "",
     val gameTitle: String = "",
     val gameCoverUrl: String? = null,
@@ -445,9 +445,9 @@ data class RelayInvitationDto(
 )
 
 @Serializable
-data class RelaySaveDto(
+data class SharedSessionSaveDto(
     val id: Long,
-    val relayId: String = "",
+    val sharedSessionId: String = "",
     val gameId: Long = 0,
     val userId: Long = 0,
     val username: String = "",
@@ -460,28 +460,28 @@ data class RelaySaveDto(
 )
 
 @Serializable
-data class RelaysResponse(
-    val data: List<RelayDto> = emptyList(),
+data class SharedSessionsResponse(
+    val data: List<SharedSessionDto> = emptyList(),
     val total: Long = 0,
     val page: Int = 1,
     val pageSize: Int = 20,
 )
 
 @Serializable
-data class RelayInvitationsResponse(
-    val data: List<RelayInvitationDto> = emptyList(),
+data class SharedSessionInvitationsResponse(
+    val data: List<SharedSessionInvitationDto> = emptyList(),
     val total: Long = 0,
 )
 
 @Serializable
-data class CreateRelayRequest(
+data class CreateSharedSessionRequest(
     val name: String,
     val gameId: String,
     val description: String = "",
 )
 
 @Serializable
-data class InviteToRelayRequest(
+data class InviteToSharedSessionRequest(
     val username: String,
 )
 
@@ -491,7 +491,7 @@ data class TakeTurnResponse(
 )
 
 @Serializable
-data class RelayInvitationCountResponse(
+data class SharedSessionInvitationCountResponse(
     val count: Int = 0,
 )
 
@@ -926,7 +926,7 @@ data class GameSessionDto(
     val cheatsEnabled: Boolean = false,
     val memberCount: Int = 1,
     val memberAvatars: List<String> = emptyList(),
-    val isRelay: Boolean = false,
+    val isSharedSession: Boolean = false,
 )
 
 @Serializable

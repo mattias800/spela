@@ -464,7 +464,7 @@ private fun SessionDetailHeader(
 
         Spacer(Modifier.height(SpSpacing.Default))
 
-        // Action row — rename + play (matches relay's button pattern)
+        // Action row — rename + play (matches shared session's button pattern)
         Row(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             verticalAlignment = Alignment.CenterVertically,

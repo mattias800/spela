@@ -297,17 +297,17 @@ class SessionsUiTest {
         onNodeWithText("by player2", substring = true).assertIsDisplayed()
     }
 
-    // ── Relay session shows Relay badge ──
+    // ── Shared session shows Shared Session badge ──
 
     @Test
-    fun relaySessionShowsRelayBadge() = runComposeUiTest {
+    fun sharedSessionShowsSharedSessionBadge() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
             gameId = "1",
-            name = "Relay Session",
+            name = "Shared Session",
             memberCount = 2,
-            isRelay = true,
+            isSharedSession = true,
         )
 
         setContent { harness.App() }
@@ -316,7 +316,7 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
         onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
-        onNodeWithText("Relay").assertIsDisplayed()
+        onNodeWithText("Shared Session").assertIsDisplayed()
     }
 
     // ── First session shows "Current" badge ──

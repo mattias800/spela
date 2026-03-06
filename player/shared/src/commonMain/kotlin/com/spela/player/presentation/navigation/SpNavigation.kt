@@ -18,8 +18,8 @@ sealed class SpScreen(val route: String) {
     data object Settings : SpScreen("settings")
     data class ConsoleSettings(val consoleId: String) : SpScreen("console_settings/$consoleId")
     data class UserProfile(val userId: String) : SpScreen("user/$userId")
-    data object Relays : SpScreen("relays")
-    data class RelayDetail(val relayId: String) : SpScreen("relay/$relayId")
+    data object SharedSessions : SpScreen("sharedSessions")
+    data class SharedSessionDetail(val sharedSessionId: String) : SpScreen("sharedSession/$sharedSessionId")
     data object NetplaySessions : SpScreen("netplay")
     data class NetplayLobby(val sessionId: String) : SpScreen("netplay/$sessionId")
     data object Licenses : SpScreen("licenses")
@@ -35,7 +35,7 @@ data class NavigationState(
     val isGoingBack: Boolean = false,
     val showInGameOverlay: Boolean = false,
     val overlayGameId: String? = null,
-    val overlayRelayId: String? = null,
+    val overlaySharedSessionId: String? = null,
     val overlayTurnToken: String? = null,
     val overlayNetplaySessionId: String? = null,
     val overlayNetplayLocalPort: Int = 0,
@@ -58,7 +58,7 @@ sealed interface NavigationIntent {
     data object PreviousSection : NavigationIntent
     data class ShowOverlay(
         val gameId: String,
-        val relayId: String? = null,
+        val sharedSessionId: String? = null,
         val turnToken: String? = null,
         val netplaySessionId: String? = null,
         val netplayLocalPort: Int = 0,

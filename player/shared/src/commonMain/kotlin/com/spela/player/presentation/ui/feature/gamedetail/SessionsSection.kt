@@ -257,9 +257,9 @@ private fun SessionItem(
                             modifier = Modifier.testTag("session_current_badge"),
                         )
                     }
-                    if (isMultiplayer || session.isRelay) {
+                    if (isMultiplayer || session.isSharedSession) {
                         SpChip(
-                            text = if (session.isRelay) "Relay" else "Multiplayer",
+                            text = if (session.isSharedSession) "Shared Session" else "Multiplayer",
                             color = SpColor.Primary,
                             isSelected = true,
                             leadingIcon = {
