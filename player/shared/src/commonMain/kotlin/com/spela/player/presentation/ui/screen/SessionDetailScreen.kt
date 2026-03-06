@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -58,6 +60,8 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
@@ -91,16 +95,39 @@ fun SessionDetailScreen(
         }
     }
 
+    // Per-console gradient background (matching GameDetailScreen)
+    val backgroundColors = remember(state.game?.consoleId) {
+        val consoleId = state.game?.consoleId
+        if (consoleId != null) {
+            val (from, to) = getConsoleGradient(consoleId, null)
+            listOf(from.darken(0.65f), to.darken(0.65f))
+        } else {
+            listOf(SpColor.Background, SpColor.Background)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SpColor.Background),
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val d = (size.width + size.height) * 0.25f
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = backgroundColors,
+                            start = Offset(cx - d, cy - d),
+                            end = Offset(cx + d, cy + d),
+                        ),
+                    )
+                },
         ) {
             SpTopBar(
                 title = state.session?.name ?: "Session",
                 showBack = true,
                 onBack = onBack,
+                onGradient = true,
             )
 
             if (state.isLoading && state.session == null) {
