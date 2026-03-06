@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button, Skeleton } from "@/components/ui";
-import { useGame, useGameSaves } from "@/hooks/use-games";
+import { useGame } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useBiosFiles, useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
@@ -11,6 +11,7 @@ import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
 import { useDiscManager } from "@/hooks/use-disc-manager";
 import { usePlaySession } from "@/hooks/use-play-session";
+import { useDefaultSession } from "@/hooks/use-sessions";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
@@ -18,8 +19,6 @@ import { api } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
 import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
-import { LoadSaveModal } from "@/features/play/components/load-save-modal";
-import type { SaveState } from "@/types/api";
 import type { EmulatorPreferences } from "@/lib/emulator-protocol";
 
 export function PlayPage() {
@@ -27,15 +26,16 @@ export function PlayPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isFreshStart = searchParams.get("fresh") === "true";
+  const explicitSessionId = searchParams.get("sessionId") ?? undefined;
   const { toast } = useToast();
 
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
-  const { data: saves } = useGameSaves(id ?? "");
   const { data: preferences } = useUserPreferences();
   const { data: consoles } = useConsoles();
   const { data: biosFiles } = useBiosFiles();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
+  const sessionId = useDefaultSession(id, explicitSessionId);
 
   const biosConsole = biosData?.consoles.find(
     (c) => c.consoleId === game?.consoleId,
@@ -47,7 +47,6 @@ export function PlayPage() {
       .filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
-  const [showLoadModal, setShowLoadModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isExitSaving, setIsExitSaving] = useState(false);
   const [isSwitchingDisc, setIsSwitchingDisc] = useState(false);
@@ -132,7 +131,7 @@ export function PlayPage() {
   });
 
   const saveManager = useEmulatorSaves({
-    gameId: id,
+    sessionId,
     emulatorStatus: emulator.status,
     preferences,
     onSaveSuccess: (isAuto) => {
@@ -257,26 +256,6 @@ export function PlayPage() {
     init();
   }, [iframeLoaded, game?.id, isSupported, emulatorJsCore]);
 
-  function handleLoadSave(save: SaveState) {
-    setShowLoadModal(false);
-    saveManager
-      .loadSave(save)
-      .then((data) => {
-        if (data) {
-          emulator.loadSaveState(data, save.name);
-          toast("success", `Loaded: ${save.name}`);
-        } else {
-          toast("error", "Failed to load save state");
-        }
-      })
-      .catch(() => {
-        toast("error", "Failed to load save state");
-      })
-      .finally(() => {
-        emulator.focusEmulator();
-      });
-  }
-
   async function handleBack() {
     if (isExitSaving) return;
     if (emulator.status === "playing" && preferences?.autoSaveEnabled) {
@@ -357,7 +336,6 @@ export function PlayPage() {
           saveManager.requestManualSave();
           emulator.focusEmulator();
         }}
-        onLoad={() => setShowLoadModal(true)}
         onFullscreen={() => {
           handleFullscreen();
           emulator.focusEmulator();
@@ -399,15 +377,6 @@ export function PlayPage() {
         />
       </div>
 
-      <LoadSaveModal
-        saves={saves}
-        open={showLoadModal}
-        onClose={() => {
-          setShowLoadModal(false);
-          emulator.focusEmulator();
-        }}
-        onLoad={handleLoadSave}
-      />
     </div>
   );
 }

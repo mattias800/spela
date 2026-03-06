@@ -294,8 +294,7 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNode(hasTestTag("session_last_played_by_s1"), useUnmergedTree = true).assertIsDisplayed()
-        onNodeWithText("Last played by player2").assertIsDisplayed()
+        onNodeWithText("by player2", substring = true).assertIsDisplayed()
     }
 
     // ── Relay session shows Relay badge ──

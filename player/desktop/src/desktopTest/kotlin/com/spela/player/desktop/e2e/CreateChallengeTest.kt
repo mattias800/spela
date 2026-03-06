@@ -1,7 +1,6 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
-import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -128,29 +127,6 @@ class CreateChallengeTest {
         advance(harness)
 
         onNodeWithText("No save states available", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun dialogShowsSaveStatePicker() = runComposeUiTest {
-        val harness = createHarness()
-        harness.saveRepo.saves["1"] = mutableListOf(
-            SaveState(1, 1, "Boss Fight"),
-            SaveState(2, 1, "Level Start"),
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
-
-        // Check save state picker exists within the dialog
-        val dialog = onNodeWithTag("create_challenge_dialog")
-        dialog.assertIsDisplayed()
-        onNodeWithTag("save_state_picker", useUnmergedTree = true).assertExists()
-        // Verify the text "Save State" label is visible (distinguishes from save states section)
-        onNodeWithText("Save State", useUnmergedTree = true).assertExists()
     }
 
     @Test

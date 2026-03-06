@@ -97,21 +97,6 @@ fun SaveStateDto.toDomain(): SaveState = SaveState(
     isSynced = true,
 )
 
-fun StorageUsageDto.toDomain(): com.spela.player.domain.model.StorageUsage =
-    com.spela.player.domain.model.StorageUsage(
-        totalBytes = totalBytes,
-        games = games.map { it.toDomain() },
-    )
-
-fun GameStorageUsageDto.toDomain(): com.spela.player.domain.model.GameStorageUsage =
-    com.spela.player.domain.model.GameStorageUsage(
-        gameId = gameId,
-        gameTitle = gameTitle,
-        totalBytes = totalBytes,
-        saveStateBytes = saveStateBytes,
-        sramBytes = sramBytes,
-    )
-
 fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     showPerformanceOverlay = showPerformanceOverlay,
     autoSaveEnabled = autoSaveEnabled,
@@ -535,14 +520,4 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
 fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
     cheatsEnabled = cheatsEnabled,
     enabledIndices = enabledIndices,
-)
-
-fun SaveDataDto.toDomain() = SaveData(
-    id = id,
-    gameId = gameId,
-    name = name,
-    fileSize = fileSize,
-    isActive = isActive,
-    createdAt = runCatching { Instant.parse(createdAt) }.getOrNull(),
-    updatedAt = runCatching { Instant.parse(updatedAt) }.getOrNull(),
 )

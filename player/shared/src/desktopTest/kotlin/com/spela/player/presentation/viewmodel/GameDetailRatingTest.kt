@@ -44,7 +44,6 @@ class GameDetailRatingTest {
     private lateinit var fakeGameRepo: StubGameRepository
     private lateinit var fakeRatingRepo: StubRatingRepository
     private lateinit var fakeDownloadRepo: StubDownloadRepository
-    private lateinit var fakeSaveRepo: StubSaveRepository
 
     @BeforeTest
     fun setup() {
@@ -52,7 +51,6 @@ class GameDetailRatingTest {
         fakeGameRepo = StubGameRepository()
         fakeRatingRepo = StubRatingRepository()
         fakeDownloadRepo = StubDownloadRepository()
-        fakeSaveRepo = StubSaveRepository()
     }
 
     @AfterTest
@@ -68,8 +66,6 @@ class GameDetailRatingTest {
             toggleFavoriteUseCase = ToggleFavoriteUseCase(fakeGameRepo),
             togglePlayLaterUseCase = TogglePlayLaterUseCase(fakeGameRepo),
             downloadRepository = fakeDownloadRepo,
-            saveRepository = fakeSaveRepo,
-            saveDataRepository = StubSaveDataRepository(),
             ratingRepository = fakeRatingRepo,
             sharedSaveRepository = StubSharedSaveRepository(),
             getMyCollectionsUseCase = GetMyCollectionsUseCase(StubCollectionRepository()),
@@ -201,50 +197,6 @@ private class StubDownloadRepository : DownloadRepository {
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize(): Long = 0
     override suspend fun clearCache() {}
-}
-
-private class StubSaveRepository : SaveRepository {
-    override suspend fun getSaveStates(gameId: String): Result<List<SaveState>> = Result.success(emptyList())
-    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, "save"))
-    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, name))
-    override suspend fun downloadSaveState(gameId: String, saveId: String): Result<ByteArray> =
-        Result.success(ByteArray(0))
-    override suspend fun deleteSaveState(gameId: String, saveId: String): Result<Unit> = Result.success(Unit)
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, "auto"))
-    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> =
-        Result.success(SaveState(1, 1, "auto"))
-    override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> = Result.success(ByteArray(0))
-    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> =
-        Result.success(SaveState(1, 1, name))
-    override suspend fun loadLocalAutoSave(gameId: String): Result<ByteArray> = Result.failure(Exception("none"))
-    override suspend fun getPendingSyncCount(): Int = 0
-    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
-    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(1, 1, "Slot $slot"))
-    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(ByteArray(0))
-    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
-    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
-    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
-    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(1, 1, name))
-}
-
-private class StubSaveDataRepository : SaveDataRepository {
-    override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
-    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray) = Result.success(SaveData(0, 0, "Active"))
-    override suspend fun downloadActiveSaveData(gameId: String) = Result.success(ByteArray(0))
-    override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
-    override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
-    override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-    override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {}
-    override suspend fun loadLocalSRAM(gameId: String): ByteArray? = null
-    override suspend fun getPendingSyncCount(): Int = 0
-    override suspend fun zipSaveDirectory(gameId: String): ByteArray? = null
-    override suspend fun unzipToSaveDirectory(data: ByteArray) {}
 }
 
 private class StubSharedSaveRepository : SharedSaveRepository {

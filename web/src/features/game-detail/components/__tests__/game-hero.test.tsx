@@ -109,27 +109,6 @@ describe("GameHero", () => {
     expect(screen.getByText("SNES")).toBeInTheDocument();
   });
 
-  it("renders resume-btn instead of play-in-browser-btn when hasSaves is true", () => {
-    const game = makeGame();
-    renderWithQuery(
-      <GameHero game={game} {...defaultProps} hasSaves={true} />,
-    );
-
-    expect(screen.getByTestId("resume-btn")).toBeInTheDocument();
-    expect(screen.queryByTestId("play-in-browser-btn")).not.toBeInTheDocument();
-  });
-
-  it("calls onPlay when resume-btn is clicked", async () => {
-    const onPlay = vi.fn();
-    const game = makeGame();
-    renderWithQuery(
-      <GameHero game={game} {...defaultProps} hasSaves={true} onPlay={onPlay} />,
-    );
-
-    await userEvent.click(screen.getByTestId("resume-btn"));
-    expect(onPlay).toHaveBeenCalledOnce();
-  });
-
   it("shows admin-only 'Scrape Metadata' in actions menu for admin users", async () => {
     const game = makeGame();
     renderWithQuery(
@@ -207,29 +186,6 @@ describe("GameHero", () => {
     expect(screen.queryByText("Add to Collection")).not.toBeInTheDocument();
   });
 
-  it("shows 'New Game' in split button menu when hasSaves with onPlayFresh", async () => {
-    const onPlayFresh = vi.fn();
-    const game = makeGame();
-    renderWithQuery(
-      <GameHero game={game} {...defaultProps} hasSaves={true} onPlayFresh={onPlayFresh} />,
-    );
-
-    await userEvent.click(screen.getByTestId("split-menu-btn"));
-    expect(screen.getByText("New Game")).toBeInTheDocument();
-  });
-
-  it("calls onPlayFresh when 'New Game' is clicked in split button menu", async () => {
-    const onPlayFresh = vi.fn();
-    const game = makeGame();
-    renderWithQuery(
-      <GameHero game={game} {...defaultProps} hasSaves={true} onPlayFresh={onPlayFresh} />,
-    );
-
-    await userEvent.click(screen.getByTestId("split-menu-btn"));
-    await userEvent.click(screen.getByText("New Game"));
-    expect(onPlayFresh).toHaveBeenCalledOnce();
-  });
-
   it("disables play button when canPlayInBrowser is false", () => {
     const game = makeGame();
     renderWithQuery(
@@ -247,24 +203,6 @@ describe("GameHero", () => {
 
     expect(screen.getByTestId("play-in-browser-btn")).toBeDisabled();
     expect(screen.getByTestId("play-in-browser-btn")).toHaveAttribute(
-      "title",
-      "Missing required BIOS files",
-    );
-  });
-
-  it("disables resume button when biosMissing is true", () => {
-    const game = makeGame();
-    renderWithQuery(
-      <GameHero
-        game={game}
-        {...defaultProps}
-        hasSaves={true}
-        biosMissing={true}
-      />,
-    );
-
-    expect(screen.getByTestId("resume-btn")).toBeDisabled();
-    expect(screen.getByTestId("resume-btn")).toHaveAttribute(
       "title",
       "Missing required BIOS files",
     );
@@ -304,16 +242,6 @@ describe("GameHero", () => {
       renderWithQuery(<GameHero game={game} {...defaultProps} />);
 
       expect(screen.queryByTestId("external-emulator-badge")).not.toBeInTheDocument();
-    });
-
-    it("does not show Resume button for non-playable game even with saves", () => {
-      const game = makeGame({ playable: false });
-      renderWithQuery(
-        <GameHero game={game} {...defaultProps} hasSaves={true} />,
-      );
-
-      expect(screen.queryByTestId("resume-btn")).not.toBeInTheDocument();
-      expect(screen.getByTestId("download-rom-btn")).toBeInTheDocument();
     });
   });
 });

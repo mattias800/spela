@@ -42,7 +42,7 @@ val commonModule = module {
     single { ConnectivityMonitor(get(), get(), get()) }
 
     /* Sync Engine */
-    single { SyncEngine(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    single { SyncEngine(get(), get(), get(), get(), get()) }
 
     /* Presence */
     single { PresenceService(get(), get(), get(), get(), get()) }
@@ -50,8 +50,7 @@ val commonModule = module {
     /* Repositories */
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single<GameRepository> { GameRepositoryImpl(get(), get(), get()) }
-    single<SaveRepository> { SaveRepositoryImpl(get(), get(), get(), get()) }
-    single<SaveDataRepository> { SaveDataRepositoryImpl(get(), get(), get(), get()) }
+    single<SaveDataRepository> { SaveDataRepositoryImpl(get()) }
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get(), get()) }
@@ -89,8 +88,6 @@ val commonModule = module {
     factory { GetPlayLaterGamesUseCase(get()) }
     factory { TogglePlayLaterUseCase(get()) }
     factory { PrepareGameUseCase(get(), get()) }
-    factory { SaveGameStateUseCase(get()) }
-    factory { LoadGameStateUseCase(get()) }
     factory { RestoreSessionUseCase(get(), get(), get()) }
     factory { GetOnlineUsersUseCase(get()) }
     factory { GetActivityFeedUseCase(get()) }
@@ -148,8 +145,6 @@ val commonModule = module {
             toggleFavoriteUseCase = get(),
             togglePlayLaterUseCase = get(),
             downloadRepository = get(),
-            saveRepository = get(),
-            saveDataRepository = get(),
             ratingRepository = get(),
             sharedSaveRepository = get(),
             getMyCollectionsUseCase = get(),
@@ -171,10 +166,7 @@ val commonModule = module {
     single { MutableStateFlow(EmulationState()) }
     single {
         SaveManager(
-            saveGameStateUseCase = get(),
-            loadGameStateUseCase = get(),
             saveDataRepository = get(),
-            saveRepository = get(),
             connectivityMonitor = get(),
             libretroController = get(),
             screenshotCapture = getOrNull<ScreenshotCapture>(),
@@ -314,19 +306,12 @@ val commonModule = module {
     }
 
     factory {
-        SaveDataViewModel(
-            saveDataRepository = get(),
-            dispatchers = get(),
-            scope = get(),
-        )
-    }
-
-    factory {
         SessionDetailViewModel(
             sessionRepository = get(),
             dispatchers = get(),
             scope = get(),
             cheatRepository = get(),
+            gameRepository = get(),
         )
     }
 

@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +19,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,17 +35,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -56,7 +60,10 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
+import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -89,16 +96,39 @@ fun SessionDetailScreen(
         }
     }
 
+    // Per-console gradient background (matching GameDetailScreen)
+    val backgroundColors = remember(state.game?.consoleId) {
+        val consoleId = state.game?.consoleId
+        if (consoleId != null) {
+            val (from, to) = getConsoleGradient(consoleId, null)
+            listOf(from.darken(0.65f), to.darken(0.65f))
+        } else {
+            listOf(SpColor.Background, SpColor.Background)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SpColor.Background),
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val d = (size.width + size.height) * 0.25f
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = backgroundColors,
+                            start = Offset(cx - d, cy - d),
+                            end = Offset(cx + d, cy + d),
+                        ),
+                    )
+                },
         ) {
             SpTopBar(
                 title = state.session?.name ?: "Session",
                 showBack = true,
                 onBack = onBack,
+                onGradient = true,
             )
 
             if (state.isLoading && state.session == null) {
@@ -125,7 +155,18 @@ fun SessionDetailScreen(
                             .testTag("session_detail_content"),
                         contentPadding = PaddingValues(vertical = SpSpacing.Default),
                     ) {
-                        // Header
+                        // Hero screenshot
+                        if (session.screenshotUrl != null) {
+                            item {
+                                SpHeroCover(
+                                    imageUrl = session.screenshotUrl,
+                                    contentDescription = "Session screenshot",
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+
+                        // Header: game info + session info + actions
                         item {
                             SessionDetailHeader(
                                 sessionName = session.name,
@@ -134,6 +175,7 @@ fun SessionDetailScreen(
                                 lastPlayedByUsername = session.lastPlayedByUsername,
                                 cheatsEnabled = state.cheatsEnabled,
                                 memberCount = session.memberCount,
+                                game = state.game,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
                             )
@@ -360,6 +402,7 @@ private fun SessionDetailHeader(
     lastPlayedByUsername: String?,
     cheatsEnabled: Boolean,
     memberCount: Int,
+    game: Game?,
     onRename: () -> Unit,
     onPlay: () -> Unit,
 ) {
@@ -367,37 +410,37 @@ private fun SessionDetailHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .testTag("session_detail_header"),
+            .testTag("session_detail_header")
+            .semantics { contentDescription = "Session: $sessionName" },
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        // Game info row — matches RelayHeader pattern (80x107 cover + game title)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SpCoverArt(
+                imageUrl = game?.coverUrl,
+                contentDescription = game?.let { "${it.title} cover" } ?: "Game cover",
+                modifier = Modifier.size(width = 80.dp, height = 107.dp),
+                cornerRadius = SpSpacing.RadiusLarge,
+                aspectRatio = null,
+            )
+            Spacer(Modifier.width(SpSpacing.Default))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Outlined.Gamepad,
-                        contentDescription = null,
-                        tint = SpColor.Primary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Spacer(Modifier.width(SpSpacing.Small))
+                Text(
+                    text = game?.title ?: "",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (game != null && game.consoleName.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
                     Text(
-                        text = sessionName,
-                        style = SpTypography.HeadlineMedium,
-                        color = SpColor.OnBackground,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Session: $sessionName"
-                        },
+                        text = game.consoleName,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
                     )
                 }
-
                 Spacer(Modifier.height(SpSpacing.Small))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                     if (totalPlayTime > 0) {
                         SpChip(text = formatPlayTime(totalPlayTime))
                     }
@@ -408,58 +451,50 @@ private fun SessionDetailHeader(
                         SpChip(text = "$memberCount players")
                     }
                 }
-
-                if (lastPlayedAt != null || lastPlayedByUsername != null) {
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                    ) {
-                        if (lastPlayedAt != null) {
-                            Text(
-                                text = formatRelativeTime(lastPlayedAt),
-                                style = SpTypography.LabelSmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                        if (lastPlayedByUsername != null) {
-                            Text(
-                                text = "by $lastPlayedByUsername",
-                                style = SpTypography.LabelSmall,
-                                color = SpColor.OnBackgroundTertiary,
-                            )
-                        }
-                    }
-                }
-            }
-
-            IconButton(
-                onClick = onRename,
-                modifier = Modifier.testTag("session_detail_rename_button"),
-            ) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = "Rename session",
-                    tint = SpColor.OnBackgroundSecondary,
-                )
             }
         }
 
+        // Last played info
+        Spacer(Modifier.height(SpSpacing.Default))
+        SpPlayInfo(
+            totalPlayTime = totalPlayTime,
+            lastPlayedAt = lastPlayedAt,
+            lastPlayedByUsername = lastPlayedByUsername,
+        )
+
         Spacer(Modifier.height(SpSpacing.Default))
 
-        SpButton(
-            text = "Play",
-            onClick = onPlay,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("session_detail_play_button"),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-            },
-        )
+        // Action row — rename + play (matches relay's button pattern)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpButton(
+                text = "Play",
+                onClick = onPlay,
+                modifier = Modifier.testTag("session_detail_play_button"),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+            SpButton(
+                text = "Edit",
+                onClick = onRename,
+                style = SpButtonStyle.Outlined,
+                modifier = Modifier.testTag("session_detail_rename_button"),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Rename session",
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+        }
     }
 }
 
@@ -499,7 +534,7 @@ private fun SessionSaveItem(
                             append(formatRelativeTime(save.createdAt.toString()))
                         }
                         if (save.fileSize > 0) {
-                            if (isNotEmpty()) append(" · ")
+                            if (isNotEmpty()) append(" \u00b7 ")
                             append(formatFileSize(save.fileSize))
                         }
                     },

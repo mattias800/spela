@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.spela.player.domain.model.Cheat
+import com.spela.player.presentation.ui.components.SpSwitch
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
@@ -49,13 +48,9 @@ fun CheatToggleRow(
             color = SpColor.OnBackground,
             modifier = Modifier.weight(1f).padding(end = SpSpacing.Small),
         )
-        Switch(
+        SpSwitch(
             checked = cheat.enabled,
             onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = SpColor.Primary,
-                checkedThumbColor = SpColor.OnPrimary,
-            ),
         )
     }
 }

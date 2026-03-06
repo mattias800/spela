@@ -28,14 +28,6 @@ object ExpectedSchema {
             "cover_aspect_ratio", "disc_count", "is_favorite", "is_in_play_later",
             "last_played_at", "total_play_time", "cached_at",
         ),
-        "LocalSaveStateEntity" to setOf(
-            "id", "game_id", "name", "local_path", "file_size", "is_auto",
-            "created_at", "updated_at", "server_id", "sync_status", "last_synced_at",
-        ),
-        "LocalSaveDataEntity" to setOf(
-            "id", "game_id", "name", "local_path", "file_size", "is_active",
-            "created_at", "updated_at", "server_id", "sync_status",
-        ),
         "DeviceSettingEntity" to setOf("key", "value"),
         "CheatEntity" to setOf("id", "game_id", "cheat_index", "description", "code", "enabled", "cached_at"),
     )

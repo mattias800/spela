@@ -5,7 +5,7 @@ import type { SaveQueueItem } from "./use-save-queue";
 interface UseBeforeUnloadSaveOptions {
   emulatorStatus: EmulatorStatus;
   autoSaveEnabled: boolean;
-  gameId: string | undefined;
+  sessionId: string | undefined;
   queueRef: MutableRefObject<SaveQueueItem[]>;
   latestStateCacheRef: MutableRefObject<string | null>;
 }
@@ -13,12 +13,12 @@ interface UseBeforeUnloadSaveOptions {
 export function useBeforeUnloadSave({
   emulatorStatus,
   autoSaveEnabled,
-  gameId,
+  sessionId,
   queueRef,
   latestStateCacheRef,
 }: UseBeforeUnloadSaveOptions) {
   useEffect(() => {
-    if (emulatorStatus !== "playing" || !autoSaveEnabled || !gameId) return;
+    if (emulatorStatus !== "playing" || !autoSaveEnabled || !sessionId) return;
 
     function handleBeforeUnload() {
       // Flush any pending saves via sendBeacon
@@ -30,7 +30,7 @@ export function useBeforeUnloadSave({
           const formData = new FormData();
           formData.append("save", new Blob([bytes]), "auto-save.state");
           navigator.sendBeacon(
-            `/api/games/${item.gameId}/saves/auto`,
+            `/api/sessions/${item.sessionId}/saves/auto`,
             formData,
           );
         } catch {
@@ -45,7 +45,7 @@ export function useBeforeUnloadSave({
           const bytes = Uint8Array.from(atob(cached), (c) => c.charCodeAt(0));
           const formData = new FormData();
           formData.append("save", new Blob([bytes]), "auto-save.state");
-          navigator.sendBeacon(`/api/games/${gameId}/saves/auto`, formData);
+          navigator.sendBeacon(`/api/sessions/${sessionId}/saves/auto`, formData);
         } catch {
           // Best effort
         }
@@ -54,5 +54,5 @@ export function useBeforeUnloadSave({
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [emulatorStatus, autoSaveEnabled, gameId, queueRef, latestStateCacheRef]);
+  }, [emulatorStatus, autoSaveEnabled, sessionId, queueRef, latestStateCacheRef]);
 }

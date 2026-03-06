@@ -34,7 +34,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	})
 	require.NoError(t, err)
 	err = database.AutoMigrate(
-		&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{}, &db.SaveState{},
+		&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{},
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},
 		&db.TokenBlacklist{}, &db.LoginAttempt{},
 		&db.ServerSetting{}, &db.Core{},
@@ -59,7 +59,6 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.Challenge{},
 		&db.ChallengeAttempt{},
 		&db.GameKeyMappingPreference{},
-		&db.SaveData{},
 		&db.GameScreenshot{},
 		&db.StagedUpload{},
 		&db.TopRatedGame{},

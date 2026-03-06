@@ -10,7 +10,6 @@ import {
   useGameChallenges,
   useMyChallenges,
   useMyAttempts,
-  useCreateChallenge,
   useDeleteChallenge,
   useStartAttempt,
   useCompleteAttempt,
@@ -309,26 +308,6 @@ describe("useMyAttempts", () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([]);
-  });
-});
-
-describe("useCreateChallenge", () => {
-  it("invalidates challenges query cache on success", async () => {
-    // Creating a challenge involves fetching a save file then uploading
-    // We test the mutation structure exists and returns properly
-    const { result } = renderHook(() => useCreateChallenge(), {
-      wrapper: createWrapper(),
-    });
-    expect(result.current.mutate).toBeDefined();
-    expect(result.current.isPending).toBe(false);
-  });
-
-  it("returns error on validation failure", async () => {
-    // The mutation function should be callable
-    const { result } = renderHook(() => useCreateChallenge(), {
-      wrapper: createWrapper(),
-    });
-    expect(typeof result.current.mutateAsync).toBe("function");
   });
 });
 

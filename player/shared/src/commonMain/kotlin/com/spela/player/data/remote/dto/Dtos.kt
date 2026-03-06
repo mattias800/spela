@@ -119,7 +119,7 @@ data class GameListResponse(
 data class SaveStateDto(
     val id: Long,
     val userId: Long = 0,
-    val gameId: Long,
+    val gameId: Long = 0,
     val name: String,
     val fileSize: Long = 0,
     val isAuto: Boolean = false,
@@ -129,21 +129,6 @@ data class SaveStateDto(
     val slot: Int? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
-)
-
-@Serializable
-data class StorageUsageDto(
-    val totalBytes: Long,
-    val games: List<GameStorageUsageDto>,
-)
-
-@Serializable
-data class GameStorageUsageDto(
-    val gameId: Long,
-    val gameTitle: String,
-    val totalBytes: Long,
-    val saveStateBytes: Long = 0,
-    val sramBytes: Long = 0,
 )
 
 @Serializable
@@ -926,18 +911,6 @@ data class DeveloperGameDto(
 )
 
 // Save Data (SRAM)
-
-@Serializable
-data class SaveDataDto(
-    val id: Long = 0,
-    val userId: Long = 0,
-    val gameId: Long = 0,
-    val name: String = "",
-    val fileSize: Long = 0,
-    val isActive: Boolean = false,
-    val createdAt: String = "",
-    val updatedAt: String = "",
-)
 
 // Game Sessions
 

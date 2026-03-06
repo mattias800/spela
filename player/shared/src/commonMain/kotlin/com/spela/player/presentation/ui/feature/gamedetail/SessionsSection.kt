@@ -41,12 +41,11 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpInnerCard
+import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.SpTitledSection
-import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.util.formatPlayTime
 
 @Composable
 internal fun SessionsSection(
@@ -276,32 +275,11 @@ private fun SessionItem(
                 }
 
                 Spacer(Modifier.height(SpSpacing.XXSmall))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (session.totalPlayTime > 0) {
-                        Text(
-                            text = formatPlayTime(session.totalPlayTime),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (session.lastPlayedAt != null) {
-                        Text(
-                            text = formatRelativeTime(session.lastPlayedAt),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (session.lastPlayedByUsername != null) {
-                        Text(
-                            text = "Last played by ${session.lastPlayedByUsername}",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                            modifier = Modifier.testTag("session_last_played_by_${session.id}"),
-                        )
-                    }
-                }
+                SpPlayInfo(
+                    totalPlayTime = session.totalPlayTime,
+                    lastPlayedAt = session.lastPlayedAt,
+                    lastPlayedByUsername = session.lastPlayedByUsername,
+                )
             }
 
             Row {

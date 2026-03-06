@@ -19,7 +19,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 	err = database.AutoMigrate(
 		&User{}, &Console{}, &Game{}, &GameDisc{},
-		&SaveState{}, &SaveData{}, &Favorite{}, &PlayHistory{},
+		&Favorite{}, &PlayHistory{},
 		&GameRating{}, &GameScreenshot{}, &ActivityEvent{},
 		&SharedSaveState{}, &GameAchievementCache{},
 		&GameCollection{}, &CollectionItem{}, &PlayLaterItem{},
@@ -225,29 +225,6 @@ func TestDeduplicateGames_MergesPlayHistory(t *testing.T) {
 	assert.Equal(t, game1.ID, histories[0].GameID)
 	assert.Equal(t, int64(500), histories[0].PlayTime)
 	assert.WithinDuration(t, now, histories[0].LastPlayed, time.Second)
-}
-
-func TestDeduplicateGames_MergesSaveStates(t *testing.T) {
-	database := setupTestDB(t)
-	console := seedNESConsole(t, database)
-	user := User{Username: "testuser", Email: "test@example.com", PasswordHash: "hash"}
-	require.NoError(t, database.Create(&user).Error)
-
-	game1 := Game{ConsoleID: console.ID, Title: "G1", FileName: "g.nes", FilePath: "nes/g.nes", ScraperID: "igdb:1"}
-	game2 := Game{ConsoleID: console.ID, Title: "G2", FileName: "g.nes", FilePath: "nes/g.nes"}
-	require.NoError(t, database.Create(&game1).Error)
-	require.NoError(t, database.Create(&game2).Error)
-
-	save := SaveState{UserID: user.ID, GameID: game2.ID, Name: "slot1", FilePath: "/saves/slot1"}
-	require.NoError(t, database.Create(&save).Error)
-
-	err := DeduplicateGames(database)
-	require.NoError(t, err)
-
-	var saves []SaveState
-	database.Find(&saves)
-	require.Len(t, saves, 1)
-	assert.Equal(t, game1.ID, saves[0].GameID)
 }
 
 func TestDeduplicateGames_NoDuplicates(t *testing.T) {

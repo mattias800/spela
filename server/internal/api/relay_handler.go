@@ -943,58 +943,51 @@ func (h *RelayHandler) GetAutoSave(c *gin.Context) {
 	c.File(save.FilePath)
 }
 
-// CopyRelaySaveToGame copies a relay save into the user's personal save library.
-func (h *RelayHandler) CopyRelaySaveToGame(c *gin.Context) {
+// RenameRelaySave renames a relay save state.
+func (h *RelayHandler) RenameRelaySave(c *gin.Context) {
 	uid := getUserID(c)
-	relay, ok := h.loadRelayWithMemberCheck(c, uid)
-	if !ok {
+	relayID := c.Param("id")
+	saveID := c.Param("saveId")
+
+	rid, err := strconv.ParseUint(relayID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid relay ID"})
 		return
 	}
 
-	saveID := c.Param("saveId")
-	var relaySave db.RelaySave
-	if err := h.DB.Where("id = ? AND relay_id = ?", saveID, relay.ID).First(&relaySave).Error; err != nil {
+	// Check membership
+	var member db.RelayMember
+	if err := h.DB.Where("relay_id = ? AND user_id = ?", rid, uid).First(&member).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this relay"})
+		return
+	}
+
+	var save db.RelaySave
+	if err := h.DB.Where("id = ? AND relay_id = ?", saveID, rid).First(&save).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
 		return
 	}
 
-	// Validate relay save path is within the save directory
-	if !storage.ValidateROMPath(relaySave.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+	var body struct {
+		Name string `json:"name" binding:"required,max=255"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required and must be 255 characters or fewer"})
 		return
 	}
 
-	// Open the relay save file
-	file, err := h.Storage.ReadSave(relaySave.FilePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read relay save file"})
-		return
-	}
-	defer file.Close()
-
-	// Copy to personal saves
-	filename := fmt.Sprintf("relay_%d_%s.sav", relay.ID, relaySave.Name)
-	size, err := h.Storage.WriteSave(uid, relay.GameID, filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to copy save to personal library"})
+	if strings.TrimSpace(body.Name) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name cannot be empty"})
 		return
 	}
 
-	savePath := h.Storage.SaveStatePath(uid, relay.GameID, filename)
-	save := db.SaveState{
-		UserID:   uid,
-		GameID:   relay.GameID,
-		Name:     relaySave.Name + " (from relay)",
-		FilePath: savePath,
-		FileSize: size,
-		IsAuto:   false,
-	}
-	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+	save.Name = body.Name
+	if err := h.DB.Save(&save).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rename save"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, save)
+	c.JSON(http.StatusOK, save)
 }
 
 // --- Helpers ---

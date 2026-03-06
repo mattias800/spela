@@ -98,19 +98,6 @@ export interface Game {
   updatedAt: string;
 }
 
-export interface SaveState {
-  id: number;
-  gameId: number;
-  userId: number;
-  name: string;
-  fileSize: number;
-  isAuto: boolean;
-  coreName?: string;
-  screenshotUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // Backend stores settings as flat key-value pairs
 export type ServerSettingsMap = Record<string, string>;
 

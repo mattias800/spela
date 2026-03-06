@@ -129,26 +129,6 @@ type GameDisc struct {
 	FileSize   int64          `json:"fileSize"`
 }
 
-// SaveState represents a user's save state for a game.
-type SaveState struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	UpdatedAt     time.Time      `json:"updatedAt"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID        uint           `gorm:"index;not null" json:"userId"`
-	User          User           `gorm:"foreignKey:UserID" json:"-"`
-	GameID        uint           `gorm:"index;not null" json:"gameId"`
-	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
-	Name          string         `gorm:"size:255;not null" json:"name"`
-	FilePath      string         `gorm:"size:1024;not null" json:"-"`
-	FileSize      int64          `json:"fileSize"`
-	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
-	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
-	CoreName      string         `gorm:"size:128" json:"coreName,omitempty"`
-	Notes         string         `gorm:"type:text" json:"notes,omitempty"`
-	Slot          *int           `json:"slot,omitempty"`
-}
-
 // Favorite represents a user's favorited game.
 type Favorite struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
@@ -502,22 +482,6 @@ type GameKeyMappingPreference struct {
 	UserID        uint   `json:"userId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
 	GameID        uint   `json:"gameId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
 	CustomMapping string `json:"customMapping" gorm:"type:text"` // JSON string of map[string]string
-}
-
-// SaveData represents a user's SRAM/battery save data for a game.
-type SaveData struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID    uint           `gorm:"index;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
-	GameID    uint           `gorm:"index;not null" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
-	Name      string         `gorm:"size:255;not null" json:"name"`
-	FilePath  string         `gorm:"size:1024;not null" json:"-"`
-	FileSize  int64          `json:"fileSize"`
-	IsActive  bool           `gorm:"default:false" json:"isActive"`
 }
 
 // TopRatedGame caches IGDB top-rated games per console.

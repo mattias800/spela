@@ -4,11 +4,11 @@ import { uint8ArrayToBase64 } from "@/lib/encoding";
 import { useSaveQueue } from "./use-save-queue";
 import { useAutoSave } from "./use-auto-save";
 import { useBeforeUnloadSave } from "./use-before-unload-save";
-import type { SaveState, UserPreferences } from "@/types/api";
+import type { UserPreferences } from "@/types/api";
 import type { EmulatorStatus } from "./use-emulator-iframe";
 
 interface UseEmulatorSavesOptions {
-  gameId: string | undefined;
+  sessionId: string | undefined;
   emulatorStatus: EmulatorStatus;
   preferences: UserPreferences | undefined;
   onSaveSuccess?: (isAuto: boolean) => void;
@@ -17,7 +17,7 @@ interface UseEmulatorSavesOptions {
 }
 
 export function useEmulatorSaves({
-  gameId,
+  sessionId,
   emulatorStatus,
   preferences,
   onSaveSuccess,
@@ -39,13 +39,13 @@ export function useEmulatorSaves({
     onSaveError,
   });
 
-  // Wrap enqueueSave to bind gameId
+  // Wrap enqueueSave to bind sessionId
   const enqueueSave = useCallback(
     (data: string, isAuto: boolean, name?: string, screenshot?: string) => {
-      if (!gameId) return;
-      queueEnqueue(gameId, data, isAuto, name, screenshot);
+      if (!sessionId) return;
+      queueEnqueue(sessionId, data, isAuto, name, screenshot);
     },
-    [gameId, queueEnqueue],
+    [sessionId, queueEnqueue],
   );
 
   // Handle incoming save state data from the iframe
@@ -56,7 +56,7 @@ export function useEmulatorSaves({
       const exitResolve = exitSaveResolveRef.current;
       if (exitResolve) {
         exitSaveResolveRef.current = null;
-        if (gameId) {
+        if (sessionId) {
           const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
           const blob = new Blob([bytes]);
           const formData = new FormData();
@@ -67,7 +67,7 @@ export function useEmulatorSaves({
             formData.append("screenshot", new Blob([ssBytes], { type: "image/png" }), "screenshot.png");
           }
           api
-            .upload(`/games/${gameId}/saves/auto`, formData)
+            .upload(`/sessions/${sessionId}/saves/auto`, formData)
             .then(() => exitResolve())
             .catch(() => exitResolve());
         } else {
@@ -81,7 +81,7 @@ export function useEmulatorSaves({
       pendingSaveNameRef.current = undefined;
       enqueueSave(data, isAuto, name, screenshot);
     },
-    [enqueueSave, gameId],
+    [enqueueSave, sessionId],
   );
 
   const requestManualSave = useCallback(
@@ -100,7 +100,7 @@ export function useEmulatorSaves({
 
   const requestExitSave = useCallback((): Promise<void> => {
     return new Promise<void>((resolve) => {
-      if (!gameId || !preferences?.autoSaveEnabled) {
+      if (!sessionId || !preferences?.autoSaveEnabled) {
         resolve();
         return;
       }
@@ -108,15 +108,15 @@ export function useEmulatorSaves({
       pendingSaveTypeRef.current = "auto";
       requestSaveState();
     });
-  }, [gameId, preferences?.autoSaveEnabled, requestSaveState]);
+  }, [sessionId, preferences?.autoSaveEnabled, requestSaveState]);
 
   const loadInitialSave = useCallback(async (skipAutoLoad?: boolean): Promise<string | undefined> => {
-    if (!gameId || !preferences?.autoLoadSaveEnabled || skipAutoLoad) return undefined;
+    if (!sessionId || !preferences?.autoLoadSaveEnabled || skipAutoLoad) return undefined;
 
     setIsLoadingInitialSave(true);
     try {
       const token = api.getAccessToken();
-      const res = await fetch(`/api/games/${gameId}/saves/auto`, {
+      const res = await fetch(`/api/sessions/${sessionId}/saves/auto`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) return undefined;
@@ -128,27 +128,7 @@ export function useEmulatorSaves({
     } finally {
       setIsLoadingInitialSave(false);
     }
-  }, [gameId, preferences?.autoLoadSaveEnabled]);
-
-  const loadSave = useCallback(
-    async (save: SaveState): Promise<string | undefined> => {
-      if (!gameId) return undefined;
-
-      try {
-        const token = api.getAccessToken();
-        const res = await fetch(`/api/games/${gameId}/saves/${save.id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error("Failed to download save");
-
-        const buf = await res.arrayBuffer();
-        return uint8ArrayToBase64(new Uint8Array(buf));
-      } catch {
-        return undefined;
-      }
-    },
-    [gameId],
-  );
+  }, [sessionId, preferences?.autoLoadSaveEnabled]);
 
   useAutoSave({
     emulatorStatus,
@@ -159,7 +139,7 @@ export function useEmulatorSaves({
   useBeforeUnloadSave({
     emulatorStatus,
     autoSaveEnabled: preferences?.autoSaveEnabled ?? false,
-    gameId,
+    sessionId,
     queueRef,
     latestStateCacheRef,
   });
@@ -172,7 +152,6 @@ export function useEmulatorSaves({
     requestAutoSave,
     requestExitSave,
     loadInitialSave,
-    loadSave,
     enqueueSave,
     pendingCount: queueRef.current.length,
   };

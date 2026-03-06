@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,6 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.Cheat
+import com.spela.player.presentation.ui.components.SpSwitch
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpInnerCard
@@ -75,13 +74,9 @@ internal fun CheatsSection(
                                 color = SpColor.OnBackground,
                                 modifier = Modifier.weight(1f).padding(end = SpSpacing.Small),
                             )
-                            Switch(
+                            SpSwitch(
                                 checked = cheat.enabled,
                                 onCheckedChange = { enabled -> onToggle(cheat.id, enabled) },
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = SpColor.Primary,
-                                    checkedThumbColor = SpColor.OnPrimary,
-                                ),
                             )
                         }
                     }

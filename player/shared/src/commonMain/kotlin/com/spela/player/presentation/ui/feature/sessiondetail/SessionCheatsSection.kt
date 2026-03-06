@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import com.spela.player.domain.model.Cheat
+import com.spela.player.presentation.ui.components.SpSwitch
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpTextField
@@ -61,54 +61,57 @@ internal fun SessionCheatsSection(
                 .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .testTag("session_cheats_section"),
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(SpSpacing.Default),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = "Enable Cheats",
-                    style = SpTypography.BodyMedium,
-                    color = if (cheatsUnavailable) SpColor.OnBackgroundTertiary else SpColor.OnCard,
-                )
-                Switch(
-                    checked = cheatsEnabled,
-                    onCheckedChange = onToggleCheatsEnabled,
-                    enabled = !cheatsUnavailable,
-                    modifier = Modifier
-                        .testTag("session_cheats_toggle")
-                        .semantics { contentDescription = "Toggle cheats" },
-                )
-            }
-            if (cheatsUnavailable) {
-                Text(
-                    text = "Cheats are not available for this game. Cheats require a verified ROM (checksum match).",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, end = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_unavailable"),
-                )
-            } else if (cheatsEnabled && enabledCheatIndices.isNotEmpty()) {
-                Text(
-                    text = "${enabledCheatIndices.size} cheat(s) active",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_count"),
-                )
-            } else if (!cheatsEnabled && availableCheats.isNotEmpty()) {
-                Text(
-                    text = "${availableCheats.size} cheats available",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    modifier = Modifier
-                        .padding(start = SpSpacing.Default, bottom = SpSpacing.Small)
-                        .testTag("session_cheats_available_count"),
-                )
+                if (cheatsUnavailable) {
+                    Text(
+                        text = "Cheats are not available for this game. Cheats require a verified ROM (checksum match).",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier
+                            .padding(bottom = SpSpacing.Small)
+                            .testTag("session_cheats_unavailable"),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Enable Cheats",
+                            style = SpTypography.BodyMedium,
+                            color = if (cheatsUnavailable) SpColor.OnBackgroundTertiary else SpColor.OnCard,
+                        )
+                        if (cheatsEnabled && enabledCheatIndices.isNotEmpty()) {
+                            Text(
+                                text = "${enabledCheatIndices.size} cheat(s) active",
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                                modifier = Modifier.testTag("session_cheats_count"),
+                            )
+                        } else if (!cheatsEnabled && availableCheats.isNotEmpty()) {
+                            Text(
+                                text = "${availableCheats.size} cheats available",
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                                modifier = Modifier.testTag("session_cheats_available_count"),
+                            )
+                        }
+                    }
+                    SpSwitch(
+                        checked = cheatsEnabled,
+                        onCheckedChange = onToggleCheatsEnabled,
+                        enabled = !cheatsUnavailable,
+                        modifier = Modifier
+                            .testTag("session_cheats_toggle")
+                            .semantics { contentDescription = "Toggle cheats" },
+                    )
+                }
             }
         }
 
@@ -237,7 +240,7 @@ private fun SessionCheatItem(
                     fontFamily = FontFamily.Monospace,
                 )
             }
-            Switch(
+            SpSwitch(
                 checked = isEnabled,
                 onCheckedChange = { onToggle() },
                 modifier = Modifier

@@ -476,23 +476,8 @@ class EmulationViewModel(
     }
 
     private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean, sessionId: String? = null) {
-        saveManager.clearPrefetch()
         pendingLaunch = PendingLaunch(gameId, skipAutoLoad, sessionId)
         scope.launch(dispatchers.io) {
-            _syncState.update { GameSyncState(gameId, "Syncing game save\u2026") }
-            val sramReady = saveManager.prefetchSram(gameId)
-            if (!sramReady) {
-                _syncState.update { GameSyncState(gameId, "Could not sync saves.", isTimedOut = true) }
-                return@launch
-            }
-            if (!skipAutoLoad) {
-                _syncState.update { GameSyncState(gameId, "Syncing game state\u2026") }
-                val saveStateReady = saveManager.prefetchSaveState(gameId)
-                if (!saveStateReady) {
-                    _syncState.update { GameSyncState(gameId, "Could not sync saves.", isTimedOut = true) }
-                    return@launch
-                }
-            }
             _syncState.update { null }
             val pending = pendingLaunch ?: return@launch
             pendingLaunch = null
@@ -503,7 +488,6 @@ class EmulationViewModel(
     private fun playWithLocalSave() {
         val pending = pendingLaunch ?: return
         pendingLaunch = null
-        saveManager.clearPrefetch()
         _syncState.update { null }
         scope.launch(dispatchers.io) {
             _launchReady.emit(pending)
@@ -512,7 +496,6 @@ class EmulationViewModel(
 
     private fun cancelLaunch() {
         pendingLaunch = null
-        saveManager.clearPrefetch()
         _syncState.update { null }
     }
 
@@ -705,47 +688,13 @@ class EmulationViewModel(
         _state.update { it.copy(isFastForward = newState) }
     }
 
-    // Quick-save slots
+    // Quick-save/load — uses session-scoped save/load
     private fun quickSaveToSlot() {
-        if (_state.value.isChallengeMode || _state.value.isNetplayMode) return
-        val gameId = _state.value.gameId
-        val slot = _state.value.activeSlot
-        scope.launch(dispatchers.io) {
-            val data = libretroController.serialize() ?: return@launch
-            saveManager.saveToSlot(gameId, slot, data).fold(
-                onSuccess = {
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "Saved to slot $slot") }
-                    }
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Quick-save failed: ${error.message}") }
-                    }
-                },
-            )
-        }
+        saveManager.saveState()
     }
 
     private fun quickLoadFromSlot() {
-        if (_state.value.isChallengeMode || _state.value.isNetplayMode) return
-        val gameId = _state.value.gameId
-        val slot = _state.value.activeSlot
-        scope.launch(dispatchers.io) {
-            saveManager.loadFromSlot(gameId, slot).fold(
-                onSuccess = { data ->
-                    libretroController.unserialize(data)
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "Loaded slot $slot") }
-                    }
-                },
-                onFailure = { error ->
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = "Quick-load failed: ${error.message}") }
-                    }
-                },
-            )
-        }
+        saveManager.loadState()
     }
 
     // Rewind

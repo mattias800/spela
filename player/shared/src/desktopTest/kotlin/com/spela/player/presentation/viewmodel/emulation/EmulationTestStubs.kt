@@ -30,11 +30,8 @@ import com.spela.player.domain.model.Relay
 import com.spela.player.domain.model.RelayDetail
 import com.spela.player.domain.model.RelayInvitation
 import com.spela.player.domain.model.RelaySave
-import com.spela.player.domain.model.SaveData
-import com.spela.player.domain.model.QuickSaveSlot
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.domain.model.StorageUsage
 import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
@@ -48,11 +45,11 @@ import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.RelayRepository
 import com.spela.player.domain.repository.SaveDataRepository
-import com.spela.player.domain.repository.SaveRepository
+import com.spela.player.domain.model.GameSession
+import com.spela.player.domain.model.SessionCheatConfig
+import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
-import com.spela.player.domain.usecase.LoadGameStateUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
-import com.spela.player.domain.usecase.SaveGameStateUseCase
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.secondarydisplay.FakePlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
@@ -207,56 +204,9 @@ class StubCoreRepository : CoreRepository {
     override suspend fun isCoreCached(coreName: String) = true
 }
 
-class StubSaveRepository : SaveRepository {
-    var uploadAutoSaveCallCount = 0; private set
-    var downloadAutoSaveCallCount = 0; private set
-    var saveLocallyCallCount = 0; private set
-    var lastUploadedData: ByteArray? = null; private set
-
-    var uploadAutoSaveResult: Result<SaveState> = Result.success(SaveState(id = 1, gameId = 1, name = "auto"))
-    var downloadAutoSaveResult: Result<ByteArray> = Result.success(byteArrayOf(10, 20, 30))
-
-    override suspend fun getSaveStates(gameId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun uploadSaveState(gameId: String, name: String, data: ByteArray, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = name, coreName = coreName))
-    override suspend fun uploadSaveStateWithScreenshot(gameId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = name, coreName = coreName))
-    override suspend fun downloadSaveState(gameId: String, saveId: String) = Result.success(byteArrayOf())
-    override suspend fun deleteSaveState(gameId: String, saveId: String) = Result.success(Unit)
-    override suspend fun uploadAutoSave(gameId: String, data: ByteArray, coreName: String?): Result<SaveState> {
-        uploadAutoSaveCallCount++
-        lastUploadedData = data
-        return uploadAutoSaveResult
-    }
-    override suspend fun uploadAutoSaveWithScreenshot(gameId: String, data: ByteArray, screenshot: ByteArray?, coreName: String?): Result<SaveState> {
-        uploadAutoSaveCallCount++
-        lastUploadedData = data
-        return uploadAutoSaveResult
-    }
-    override suspend fun downloadAutoSave(gameId: String): Result<ByteArray> {
-        downloadAutoSaveCallCount++
-        return downloadAutoSaveResult
-    }
-    override suspend fun saveLocally(gameId: String, name: String, data: ByteArray, isAuto: Boolean): Result<SaveState> {
-        saveLocallyCallCount++
-        return Result.success(SaveState(id = 1, gameId = 1, name = name))
-    }
-    override suspend fun loadLocalAutoSave(gameId: String) = Result.failure<ByteArray>(Exception("none"))
-    override suspend fun getPendingSyncCount() = 0
-    override suspend fun renameSaveState(gameId: String, saveId: String, name: String) = Result.success(Unit)
-    override suspend fun updateSaveNotes(gameId: String, saveId: String, notes: String) = Result.success(Unit)
-    override suspend fun saveToSlot(gameId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String?) = Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot", coreName = coreName))
-    override suspend fun loadFromSlot(gameId: String, slot: Int) = Result.success(byteArrayOf(10, 20, 30))
-    override suspend fun getSlots(gameId: String) = Result.success(emptyList<QuickSaveSlot>())
-    override suspend fun getAutoSaveHistory(gameId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun bulkDeleteSaves(gameId: String, saveIds: List<Long>) = Result.success(saveIds.size)
-    override suspend fun getStorageUsage() = Result.success(StorageUsage(0L, emptyList()))
-    override suspend fun importSaveState(gameId: String, name: String, fileData: ByteArray) = Result.success(SaveState(id = 1, gameId = 1, name = name))
-}
-
 class StubSaveDataRepository : SaveDataRepository {
     var saveLocalSRAMCallCount = 0; private set
     var loadLocalSRAMCallCount = 0; private set
-    var uploadActiveSaveDataCallCount = 0; private set
-    var downloadActiveSaveDataCallCount = 0; private set
     var lastSavedSRAMData: ByteArray? = null; private set
 
     var zipSaveDirectoryCallCount = 0; private set
@@ -264,25 +214,8 @@ class StubSaveDataRepository : SaveDataRepository {
     var lastUnzippedData: ByteArray? = null; private set
 
     var loadLocalSRAMResult: ByteArray? = null
-    var downloadActiveSaveDataResult: Result<ByteArray> = Result.success(ByteArray(0))
     var zipSaveDirectoryResult: ByteArray? = null
-    /** If > 0, downloadActiveSaveData() delays by this many ms before returning. */
-    var downloadActiveSaveDataDelayMs: Long = 0L
 
-    override suspend fun getSaveDataList(gameId: String) = Result.success(emptyList<SaveData>())
-    override suspend fun uploadActiveSaveData(gameId: String, data: ByteArray): Result<SaveData> {
-        uploadActiveSaveDataCallCount++
-        return Result.success(SaveData(0, 0, "Active"))
-    }
-    override suspend fun downloadActiveSaveData(gameId: String): Result<ByteArray> {
-        downloadActiveSaveDataCallCount++
-        if (downloadActiveSaveDataDelayMs > 0L) kotlinx.coroutines.delay(downloadActiveSaveDataDelayMs)
-        return downloadActiveSaveDataResult
-    }
-    override suspend fun downloadSaveData(gameId: String, saveDataId: String) = Result.success(ByteArray(0))
-    override suspend fun activateSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
-    override suspend fun renameSaveData(gameId: String, saveDataId: String, name: String) = Result.success(Unit)
-    override suspend fun deleteSaveData(gameId: String, saveDataId: String) = Result.success(Unit)
     override suspend fun saveLocalSRAM(gameId: String, data: ByteArray) {
         saveLocalSRAMCallCount++
         lastSavedSRAMData = data
@@ -394,6 +327,47 @@ class StubRelayRepository : RelayRepository {
         return Result.success(RelaySave(id = 1, relayId = relayId, name = "Auto Save", isAuto = true))
     }
     override suspend fun copyRelaySaveToGame(relayId: String, saveId: Long) = Result.success(Unit)
+}
+
+class StubSessionRepository : SessionRepository {
+    var uploadSessionAutoSaveCallCount = 0; private set
+    var downloadSessionAutoSaveCallCount = 0; private set
+    var uploadSessionSramCallCount = 0; private set
+    var downloadSessionSramCallCount = 0; private set
+    var uploadSessionSaveCallCount = 0; private set
+
+    var downloadSessionAutoSaveResult: Result<ByteArray> = Result.failure(Exception("no auto-save"))
+    var downloadSessionSramResult: Result<ByteArray> = Result.failure(Exception("no sram"))
+
+    override suspend fun getSessionsForGame(gameId: String) = Result.success(emptyList<GameSession>())
+    override suspend fun getSession(sessionId: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun createSession(gameId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun updateSession(sessionId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
+    override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
+    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+        uploadSessionSaveCallCount++
+        return Result.success(SaveState(id = 1, gameId = 1, name = name))
+    }
+    override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
+    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?): Result<Unit> {
+        uploadSessionAutoSaveCallCount++
+        return Result.success(Unit)
+    }
+    override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> {
+        downloadSessionAutoSaveCallCount++
+        return downloadSessionAutoSaveResult
+    }
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit> {
+        uploadSessionSramCallCount++
+        return Result.success(Unit)
+    }
+    override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> {
+        downloadSessionSramCallCount++
+        return downloadSessionSramResult
+    }
+    override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
+    override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) = Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))
 }
 
 class StubChallengeRepository : ChallengeRepository {
@@ -528,7 +502,7 @@ class EmulationViewModelTestBuilder {
     val libretroController = StubLibretroController()
     val preferencesRepository = StubPreferencesRepository()
     val saveDataRepository = StubSaveDataRepository()
-    val saveRepository = StubSaveRepository()
+    val sessionRepository = StubSessionRepository()
     val challengeRepository = StubChallengeRepository()
     val relayRepository = StubRelayRepository()
     val achievementsRepository = StubAchievementsRepository()
@@ -558,16 +532,14 @@ class EmulationViewModelTestBuilder {
         val mutableState = MutableStateFlow(EmulationState())
 
         val saveManager = SaveManager(
-            saveGameStateUseCase = SaveGameStateUseCase(saveRepository = saveRepository),
-            loadGameStateUseCase = LoadGameStateUseCase(saveRepository = saveRepository),
             saveDataRepository = saveDataRepository,
-            saveRepository = saveRepository,
             connectivityMonitor = connectivityMonitor,
             libretroController = libretroController,
             screenshotCapture = screenshotCapture,
             _state = mutableState,
             dispatchers = dispatchers,
             scope = vmScope,
+            sessionRepository = sessionRepository,
         )
         val challengeManager = ChallengeManager(
             challengeRepository = challengeRepository,

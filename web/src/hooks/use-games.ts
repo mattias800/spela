@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Game, GamesResponse, GameFilters, SaveState } from "@/types/api";
+import type { Game, GamesResponse, GameFilters } from "@/types/api";
 
 export function useGames(filters?: GameFilters) {
   const params = new URLSearchParams();
@@ -16,7 +16,8 @@ export function useGames(filters?: GameFilters) {
 
   return useQuery({
     queryKey: ["games", filters],
-    queryFn: () => api.get<GamesResponse>(`/games${query ? `?${query}` : ""}`),
+    queryFn: () =>
+      api.get<GamesResponse>(query ? `/games?${query}` : "/games"),
   });
 }
 
@@ -71,14 +72,6 @@ export function useToggleFavorite() {
   return { ...mutation, toggle };
 }
 
-export function useGameSaves(gameId: string) {
-  return useQuery({
-    queryKey: ["saves", gameId],
-    queryFn: () => api.get<SaveState[]>(`/games/${gameId}/saves`),
-    enabled: !!gameId,
-  });
-}
-
 export function useScrapeIfNeeded() {
   return useMutation({
     mutationFn: (gameId: string) =>
@@ -86,21 +79,3 @@ export function useScrapeIfNeeded() {
   });
 }
 
-export function useDeleteSave() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      gameId,
-      saveId,
-    }: {
-      gameId: string;
-      saveId: number;
-    }) => {
-      await api.delete(`/games/${gameId}/saves/${saveId}`);
-    },
-    onSuccess: (_, { gameId }) => {
-      queryClient.invalidateQueries({ queryKey: ["saves", gameId] });
-    },
-  });
-}

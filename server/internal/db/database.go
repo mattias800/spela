@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -115,7 +114,6 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&Console{},
 		&Game{},
 		&GameDisc{},
-		&SaveState{},
 		&Favorite{},
 		&PlayHistory{},
 		&RefreshToken{},
@@ -142,7 +140,6 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&Challenge{},
 		&ChallengeAttempt{},
 		&GameKeyMappingPreference{},
-		&SaveData{},
 		&GameScreenshot{},
 		&StagedUpload{},
 		&TopRatedGame{},
@@ -369,12 +366,6 @@ func metadataScore(g Game) int {
 
 // mergeGameData reassigns user data from dupID to keeperID.
 func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
-	// SaveState — move all
-	database.Model(&SaveState{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
-
-	// SaveData — move all
-	database.Model(&SaveData{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
-
 	// GameScreenshot — move all
 	database.Model(&GameScreenshot{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
@@ -528,134 +519,6 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 	if len(updates) > 0 {
 		database.Model(keeper).Updates(updates)
 	}
-}
-
-// MigrateSavesToSessions creates GameSession records for each (user, game)
-// combination that has existing SaveState or SaveData records, then copies those
-// records into SessionSaveState/SessionSaveData. This is a one-time migration
-// guarded by the "sessions_migrated" ServerSetting key.
-func MigrateSavesToSessions(database *gorm.DB) error {
-	// Check if already migrated
-	var setting ServerSetting
-	if err := database.Where("key = ?", "sessions_migrated").First(&setting).Error; err == nil {
-		if setting.Value == "true" {
-			return nil
-		}
-	}
-
-	slog.Info("migrating existing saves to game sessions")
-
-	// Find all distinct (user_id, game_id) pairs from SaveState and SaveData
-	type userGame struct {
-		UserID uint
-		GameID uint
-	}
-	var pairs []userGame
-
-	// From SaveState
-	database.Model(&SaveState{}).
-		Select("DISTINCT user_id, game_id").
-		Scan(&pairs)
-
-	// From SaveData (merge with existing pairs)
-	var sdPairs []userGame
-	database.Model(&SaveData{}).
-		Select("DISTINCT user_id, game_id").
-		Scan(&sdPairs)
-
-	// Deduplicate
-	seen := make(map[userGame]bool, len(pairs))
-	for _, p := range pairs {
-		seen[p] = true
-	}
-	for _, p := range sdPairs {
-		if !seen[p] {
-			pairs = append(pairs, p)
-			seen[p] = true
-		}
-	}
-
-	if len(pairs) == 0 {
-		slog.Info("no existing saves to migrate")
-		database.Create(&ServerSetting{Key: "sessions_migrated", Value: "true"})
-		return nil
-	}
-
-	slog.Info("migrating save data to sessions", "pairs", len(pairs))
-
-	for _, p := range pairs {
-		// Look up last played time from PlayHistory
-		var ph PlayHistory
-		var lastPlayedAt *time.Time
-		var totalPlayTime int64
-		if err := database.Where("user_id = ? AND game_id = ?", p.UserID, p.GameID).First(&ph).Error; err == nil {
-			lastPlayedAt = &ph.LastPlayed
-			totalPlayTime = ph.PlayTime
-		}
-
-		session := GameSession{
-			OwnerID:       p.UserID,
-			GameID:        p.GameID,
-			Name:          "Playthrough 1",
-			LastPlayedAt:  lastPlayedAt,
-			LastPlayedBy:  &p.UserID,
-			TotalPlayTime: totalPlayTime,
-		}
-		if err := database.Create(&session).Error; err != nil {
-			slog.Warn("failed to create session during migration",
-				"userId", p.UserID, "gameId", p.GameID, "error", err)
-			continue
-		}
-
-		// Copy SaveState records into SessionSaveState
-		var saves []SaveState
-		database.Where("user_id = ? AND game_id = ?", p.UserID, p.GameID).Find(&saves)
-		for _, s := range saves {
-			ss := SessionSaveState{
-				SessionID:     session.ID,
-				UserID:        s.UserID,
-				Name:          s.Name,
-				FilePath:      s.FilePath,
-				FileSize:      s.FileSize,
-				ScreenshotURL: s.ScreenshotURL,
-				IsAuto:        s.IsAuto,
-				CoreName:      s.CoreName,
-				Notes:         s.Notes,
-				Slot:          s.Slot,
-			}
-			ss.CreatedAt = s.CreatedAt
-			ss.UpdatedAt = s.UpdatedAt
-			database.Create(&ss)
-
-			// Update session screenshot from most recent save screenshot
-			if s.ScreenshotURL != "" && session.ScreenshotURL == "" {
-				database.Model(&session).Update("screenshot_url", s.ScreenshotURL)
-			}
-			// Update session core name
-			if s.CoreName != "" && session.CoreName == "" {
-				database.Model(&session).Update("core_name", s.CoreName)
-			}
-		}
-
-		// Copy SaveData records into SessionSaveData
-		var saveDataRecords []SaveData
-		database.Where("user_id = ? AND game_id = ?", p.UserID, p.GameID).Find(&saveDataRecords)
-		for _, sd := range saveDataRecords {
-			ssd := SessionSaveData{
-				SessionID: session.ID,
-				FilePath:  sd.FilePath,
-				FileSize:  sd.FileSize,
-			}
-			ssd.CreatedAt = sd.CreatedAt
-			ssd.UpdatedAt = sd.UpdatedAt
-			database.Create(&ssd)
-		}
-	}
-
-	// Mark migration as complete
-	database.Create(&ServerSetting{Key: "sessions_migrated", Value: "true"})
-	slog.Info("save-to-session migration completed", "sessions_created", len(pairs))
-	return nil
 }
 
 // MigrateRelaySessions creates GameSession records for existing Relays that

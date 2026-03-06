@@ -1,18 +1,14 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Flag, ChevronRight, Plus, Users } from "lucide-react";
-import { Button, Skeleton, EmptyState } from "@/components/ui";
+import { Flag, ChevronRight, Users } from "lucide-react";
+import { Skeleton, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ChallengeDifficultyBadge } from "@/features/challenges/components/challenge-difficulty-badge";
 import { ChallengeTypeIcon } from "@/features/challenges/components/challenge-type-icon";
-import { CreateChallengeModal } from "@/features/challenges/components/create-challenge-modal";
 import { useGameChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
-import type { SaveState } from "@/types/api";
 
 interface GameChallengesProps {
   gameId: string;
-  saves?: SaveState[];
 }
 
 function ChallengesSkeleton() {
@@ -35,11 +31,8 @@ function ChallengesSkeleton() {
   );
 }
 
-export function GameChallenges({ gameId, saves }: GameChallengesProps) {
+export function GameChallenges({ gameId }: GameChallengesProps) {
   const { data, isLoading } = useGameChallenges(gameId);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const hasSaves = saves && saves.length > 0;
 
   return (
     <section data-testid="game-challenges">
@@ -52,16 +45,6 @@ export function GameChallenges({ gameId, saves }: GameChallengesProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {hasSaves && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Create Challenge
-            </Button>
-          )}
           {data && data.total > 5 && (
             <Link
               to={`/challenges?gameId=${gameId}`}
@@ -80,19 +63,8 @@ export function GameChallenges({ gameId, saves }: GameChallengesProps) {
         <EmptyState
           icon={Flag}
           title="No challenges yet"
-          description="Create a challenge from a save state, or try one in the Spela player app!"
+          description="Try a challenge in the Spela player app!"
           className="py-8"
-          action={
-            hasSaves ? (
-              <Button
-                variant="secondary"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Create Challenge
-              </Button>
-            ) : undefined
-          }
         />
       )}
 
@@ -159,13 +131,6 @@ export function GameChallenges({ gameId, saves }: GameChallengesProps) {
           ))}
         </div>
       )}
-
-      <CreateChallengeModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        gameId={gameId}
-        saves={saves}
-      />
     </section>
   );
 }

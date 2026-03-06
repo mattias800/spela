@@ -29,8 +29,6 @@ fun SpSyncStatusIndicator(
     connectionState: ConnectionState,
     modifier: Modifier = Modifier,
 ) {
-    val pendingTotal = syncState.pendingSaveStates + syncState.pendingSaveData
-
     val (status, label) = when (connectionState) {
         is ConnectionState.Online -> ConnectionStatus.CONNECTED to "Online"
         is ConnectionState.Offline -> ConnectionStatus.DISCONNECTED to "Offline"
@@ -57,14 +55,6 @@ fun SpSyncStatusIndicator(
             if (syncState.isSyncing) {
                 SyncingText()
             }
-        }
-
-        if (pendingTotal > 0) {
-            Text(
-                text = "$pendingTotal pending sync${if (pendingTotal != 1) "s" else ""}",
-                style = SpTypography.LabelSmall,
-                color = SpColor.Warning,
-            )
         }
 
         syncState.lastSyncedAt?.let { lastSynced ->

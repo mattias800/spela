@@ -113,24 +113,31 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
-export const api = {
-  get: <T>(path: string) => request<T>(path),
+import type {
+  ApiGetPath,
+  ApiPostPath,
+  ApiPutPath,
+  ApiDeletePath,
+} from "./api-routes";
 
-  post: <T>(path: string, body?: unknown) =>
+export const api = {
+  get: <T>(path: ApiGetPath) => request<T>(path),
+
+  post: <T>(path: ApiPostPath, body?: unknown) =>
     request<T>(path, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  put: <T>(path: string, body?: unknown) =>
+  put: <T>(path: ApiPutPath, body?: unknown) =>
     request<T>(path, {
       method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  delete: <T>(path: ApiDeletePath) => request<T>(path, { method: "DELETE" }),
 
-  upload: <T>(path: string, formData: FormData) =>
+  upload: <T>(path: ApiPostPath, formData: FormData) =>
     request<T>(path, { method: "POST", body: formData }),
 
   setTokens,
