@@ -86,7 +86,8 @@ export function RelayDetailPage() {
   }
 
   function handlePlay() {
-    navigate(`/games/${relay!.gameId}/play?relayId=${relay!.id}`);
+    const sid = relay!.sessionId ?? "new";
+    navigate(`/games/${relay!.gameId}/play/${sid}?relayId=${relay!.id}`);
   }
 
   function handleDelete() {

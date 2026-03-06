@@ -4,6 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GameSessions } from "../game-sessions";
 
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(() => ({
     user: { id: "u1", username: "testuser", role: "user" },
@@ -202,5 +208,28 @@ describe("GameSessions", () => {
     renderComponent();
 
     expect(screen.getByText("Play")).toBeInTheDocument();
+  });
+
+  it("navigates to play route with session ID when Play clicked", () => {
+    mockUseGameSessions.mockReturnValue({
+      data: [mockSessions[0]],
+      isLoading: false,
+    });
+    renderComponent();
+
+    fireEvent.click(screen.getByText("Play"));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/games/g1/play/ses-1");
+  });
+
+  it("shows Current badge on first session only", () => {
+    mockUseGameSessions.mockReturnValue({
+      data: mockSessions,
+      isLoading: false,
+    });
+    renderComponent();
+
+    const currentBadges = screen.getAllByText("Current");
+    expect(currentBadges).toHaveLength(1);
   });
 });

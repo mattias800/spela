@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 import type { GameSession, SessionSave, SessionCheatConfig } from "@/types/api";
 
@@ -117,49 +116,3 @@ export function useDeleteSessionSave() {
   });
 }
 
-/**
- * Returns a session ID for the given game, auto-creating a default session if none exists.
- * If `explicitSessionId` is provided, uses that directly.
- */
-export function useDefaultSession(
-  gameId: string | undefined,
-  explicitSessionId?: string,
-) {
-  const { data: sessions } = useGameSessions(gameId ?? "");
-  const [sessionId, setSessionId] = useState<string | undefined>(
-    explicitSessionId,
-  );
-  const creatingRef = useRef(false);
-
-  useEffect(() => {
-    if (explicitSessionId) {
-      setSessionId(explicitSessionId);
-      return;
-    }
-
-    if (!gameId || !sessions || creatingRef.current) return;
-
-    if (sessions.length > 0) {
-      // Use the most recently updated session
-      setSessionId(sessions[0].id);
-    } else {
-      // Auto-create a default session
-      creatingRef.current = true;
-      api
-        .post<GameSession>(`/games/${gameId}/sessions`, {
-          name: "Default",
-        })
-        .then((session) => {
-          setSessionId(session.id);
-        })
-        .catch(() => {
-          // If creation fails, saves won't work but the game can still be played
-        })
-        .finally(() => {
-          creatingRef.current = false;
-        });
-    }
-  }, [gameId, sessions, explicitSessionId]);
-
-  return sessionId;
-}

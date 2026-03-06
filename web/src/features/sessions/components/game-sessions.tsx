@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layers, Plus } from "lucide-react";
 import { Button, Card, Skeleton, EmptyState, Input } from "@/components/ui";
 import {
@@ -36,6 +37,7 @@ interface GameSessionsProps {
 }
 
 export function GameSessions({ gameId }: GameSessionsProps) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: sessions, isLoading } = useGameSessions(gameId);
   const createSession = useCreateSession();
@@ -65,8 +67,8 @@ export function GameSessions({ gameId }: GameSessionsProps) {
     deleteSession.mutate({ id: session.id, gameId });
   }
 
-  function handleContinue(_session: GameSession) {
-    // Will be wired to navigation/play in future
+  function handleContinue(session: GameSession) {
+    navigate(`/games/${gameId}/play/${session.id}`);
   }
 
   if (isLoading) {
@@ -152,11 +154,12 @@ export function GameSessions({ gameId }: GameSessionsProps) {
         />
       ) : (
         <div className="space-y-2">
-          {sessions.map((session) => (
+          {sessions.map((session, index) => (
             <SessionCard
               key={session.id}
               session={session}
               currentUsername={user?.username}
+              isCurrent={index === 0}
               onContinue={handleContinue}
               onRename={handleRename}
               onDelete={handleDelete}

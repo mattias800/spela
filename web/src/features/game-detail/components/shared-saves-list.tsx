@@ -116,7 +116,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                         {
                           onSuccess: (session) => {
                             navigate(
-                              `/games/${gameId}/play?sessionId=${session.id}`,
+                              `/games/${gameId}/play/${session.id}`,
                             );
                           },
                           onError: () => {

@@ -86,9 +86,10 @@ internal fun SessionsSection(
             Spacer(Modifier.height(SpSpacing.Default))
         }
 
-        sessions.forEach { session ->
+        sessions.forEachIndexed { index, session ->
             SessionItem(
                 session = session,
+                isCurrent = index == 0,
                 onClick = {
                     if (onSessionSelected != null) {
                         onSessionSelected(session)
@@ -214,6 +215,7 @@ internal fun SessionsSection(
 @Composable
 private fun SessionItem(
     session: GameSession,
+    isCurrent: Boolean,
     onClick: () -> Unit,
     onContinue: () -> Unit,
     onRename: () -> Unit,
@@ -247,6 +249,14 @@ private fun SessionItem(
                             contentDescription = "Session: ${session.name}"
                         },
                     )
+                    if (isCurrent) {
+                        SpChip(
+                            text = "Current",
+                            color = SpColor.Primary,
+                            isSelected = true,
+                            modifier = Modifier.testTag("session_current_badge"),
+                        )
+                    }
                     if (isMultiplayer || session.isRelay) {
                         SpChip(
                             text = if (session.isRelay) "Relay" else "Multiplayer",
