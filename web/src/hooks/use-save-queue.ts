@@ -53,11 +53,11 @@ export function useSaveQueue({
         formData.append("screenshot", new Blob([ssBytes], { type: "image/png" }), "screenshot.png");
       }
 
-      const endpoint = item.isAuto
-        ? `/sessions/${item.sessionId}/saves/auto`
-        : `/sessions/${item.sessionId}/saves`;
-
-      await api.upload(endpoint, formData);
+      if (item.isAuto) {
+        await api.upload(`/sessions/${item.sessionId}/saves/auto`, formData);
+      } else {
+        await api.upload(`/sessions/${item.sessionId}/saves`, formData);
+      }
 
       saveQueueRef.current.shift();
       onSaveSuccess?.(item.isAuto);

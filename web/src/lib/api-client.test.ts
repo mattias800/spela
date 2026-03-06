@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { api } from "./api-client";
+import type { ApiGetPath } from "./api-routes";
+
+// Test-only helper to bypass typed path checking
+const testPath = (p: string) => p as ApiGetPath;
 
 function mockLocalStorage() {
   const store: Record<string, string> = {};
@@ -98,9 +102,9 @@ describe("api token refresh deduplication", () => {
 
     // Fire 3 concurrent requests — all will get 401 and attempt refresh
     const results = await Promise.all([
-      api.get("/test/1"),
-      api.get("/test/2"),
-      api.get("/test/3"),
+      api.get(testPath("/test/1")),
+      api.get(testPath("/test/2")),
+      api.get(testPath("/test/3")),
     ]);
 
     expect(results).toHaveLength(3);
@@ -143,7 +147,7 @@ describe("api token refresh deduplication", () => {
     });
 
     // First request fails refresh
-    await expect(api.get("/test")).rejects.toThrow("Session expired");
+    await expect(api.get(testPath("/test"))).rejects.toThrow("Session expired");
     expect(refreshCallCount).toBe(1);
 
     // Set up a new token and try again — should attempt a NEW refresh (not reuse old failed promise)
@@ -185,7 +189,7 @@ describe("api token refresh deduplication", () => {
       });
     });
 
-    const result = await api.get("/test");
+    const result = await api.get(testPath("/test"));
     expect(result).toEqual({ ok: true });
     // Second refresh happened (total = 2)
     expect(refreshCallCount).toBe(2);

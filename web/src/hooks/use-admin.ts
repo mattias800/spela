@@ -105,7 +105,7 @@ export function useScrapeMetadata() {
   return useMutation({
     mutationFn: (mode: ScrapeMode = "new") =>
       api.post<ScrapeStartResponse>(
-        `/admin/scrape${mode !== "new" ? `?mode=${mode}` : ""}`,
+        mode !== "new" ? `/admin/scrape?mode=${mode}` : "/admin/scrape",
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });

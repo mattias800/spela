@@ -16,7 +16,8 @@ export function useGames(filters?: GameFilters) {
 
   return useQuery({
     queryKey: ["games", filters],
-    queryFn: () => api.get<GamesResponse>(`/games${query ? `?${query}` : ""}`),
+    queryFn: () =>
+      api.get<GamesResponse>(query ? `/games?${query}` : "/games"),
   });
 }
 
