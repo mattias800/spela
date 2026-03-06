@@ -46,7 +46,7 @@ test.describe("Emulator Page", () => {
       expect(gameId).toBeTruthy();
 
       await page.getByTestId("play-in-browser-btn").click();
-      await expect(page).toHaveURL(`/games/${gameId}/play`);
+      await expect(page).toHaveURL(new RegExp(`/games/${gameId}/play/`));
     });
   });
 
@@ -63,8 +63,8 @@ test.describe("Emulator Page", () => {
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
       expect(gameId).toBeTruthy();
 
-      // Navigate to the play page
-      await page.goto(`/games/${gameId}/play`);
+      // Navigate to the play page (use "new" to auto-create a session)
+      await page.goto(`/games/${gameId}/play/new`);
 
       // Game title should be displayed in the top bar
       await expect(page.getByText("Castlevania", { exact: false })).toBeVisible(
@@ -78,10 +78,9 @@ test.describe("Emulator Page", () => {
         page.getByRole("button", { name: "Back", exact: true }),
       ).toBeVisible();
 
-      // Toolbar buttons should be present (Save, Load, Fullscreen)
+      // Toolbar buttons should be present (Save, Fullscreen)
       await expect(page.getByTitle("Save State")).toBeVisible();
-      await expect(page.getByTitle("Load State")).toBeVisible();
-      await expect(page.getByTitle("Fullscreen")).toBeVisible();
+      await expect(page.getByTitle("Fullscreen (F11)")).toBeVisible();
     });
 
     test("shows emulator iframe", async ({ page }) => {
@@ -92,7 +91,7 @@ test.describe("Emulator Page", () => {
       await page.getByText("Castlevania", { exact: false }).first().click();
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
 
       // The iframe hosting EmulatorJS should be present
       const iframe = page.locator('iframe[src="/emulator.html"]');
@@ -111,7 +110,7 @@ test.describe("Emulator Page", () => {
       await page.getByText("Castlevania", { exact: false }).first().click();
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
 
       // Wait for the page to finish loading game data first
       await expect(
@@ -154,7 +153,7 @@ test.describe("Emulator Page", () => {
       await page.getByText("Castlevania", { exact: false }).first().click();
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
 
       // Wait for the page to be ready (use exact match to avoid matching "Back to Game")
       await expect(
@@ -197,7 +196,7 @@ test.describe("Emulator Page", () => {
       await expect(page).toHaveURL(/\/games\/\d+$/);
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
 
       await expect(page.getByText("Browser Play Not Available")).toBeVisible({
         timeout: 15_000,
@@ -248,7 +247,7 @@ test.describe("Emulator Page", () => {
   });
 
   test.describe("Toolbar Controls", () => {
-    test("save and load buttons are disabled before emulator is playing", async ({
+    test("save button is disabled before emulator is playing", async ({
       page,
     }) => {
       await page.goto("/games");
@@ -258,73 +257,19 @@ test.describe("Emulator Page", () => {
       await page.getByText("Castlevania", { exact: false }).first().click();
       const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
 
-      // Before the emulator is fully loaded and playing, save/load should be disabled
+      // Before the emulator is fully loaded and playing, save should be disabled
       const saveButton = page.getByTitle("Save State");
-      const loadButton = page.getByTitle("Load State");
 
       await expect(saveButton).toBeVisible({ timeout: 15_000 });
       await expect(saveButton).toBeDisabled();
-      await expect(loadButton).toBeDisabled();
-    });
-
-    test("load state modal shows empty state when no saves exist", async ({
-      page,
-    }) => {
-      await page.goto("/games");
-      await page.getByPlaceholder(/search/i).fill("Castlevania");
-      await page.keyboard.press("Enter");
-
-      await page.getByText("Castlevania", { exact: false }).first().click();
-      const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
-
-      // Simulate the emulator being in "playing" state by intercepting postMessage
-      // Instead, we can enable the Load button by sending a game-started message
-      // from the iframe. Since we can't easily do that in E2E, we test the modal
-      // via a more direct route: route the game saves API to return empty.
-      await page.route(`**/api/games/${gameId}/saves`, (route) => {
-        route.fulfill({ json: [] });
-      });
-
-      // Simulate the playing state by posting a message from within the page
-      await page.goto(`/games/${gameId}/play`);
-      await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
-        timeout: 15_000,
-      });
-
-      // Send game-started messages continuously until the button enables.
-      // initEmulator() resets status to "loading", so a single message can
-      // lose the race — we keep sending until the effect has settled.
-      const loadButton = page.getByTitle("Load State");
-      const interval = setInterval(async () => {
-        await page
-          .evaluate(() => {
-            window.postMessage(
-              { type: "game-started" },
-              window.location.origin,
-            );
-          })
-          .catch(() => {});
-      }, 200);
-
-      try {
-        await expect(loadButton).toBeEnabled({ timeout: 15_000 });
-      } finally {
-        clearInterval(interval);
-      }
-
-      await loadButton.click();
-
-      // The modal should show "No save states available"
-      await expect(page.getByText("Load Save State")).toBeVisible();
-      await expect(page.getByText(/no save states available/i)).toBeVisible();
     });
   });
 
   test.describe("Game Not Found", () => {
     test("shows not found message for invalid game ID", async ({ page }) => {
-      await page.goto("/games/999999/play");
+      await page.goto("/games/999999/play/new");
 
       await expect(page.getByText("Game not found")).toBeVisible({
         timeout: 15_000,

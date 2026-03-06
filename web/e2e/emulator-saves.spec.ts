@@ -91,15 +91,15 @@ test.describe("Emulator Save State Sync", () => {
 
       const gameId = await navigateToPlayPage(page);
 
-      // Intercept auto-save uploads to track them
+      // Intercept session-scoped auto-save uploads to track them
       const autoSaveRequests: string[] = [];
-      await page.route(`**/api/games/${gameId}/saves/auto`, (route) => {
+      await page.route("**/api/sessions/*/saves/auto", (route) => {
         autoSaveRequests.push(route.request().method());
         route.fulfill({
           status: 200,
           json: {
             id: 1,
-            gameId: parseInt(gameId),
+            sessionId: "1",
             userId: 1,
             name: "Auto Save",
             fileSize: 1024,
@@ -110,7 +110,7 @@ test.describe("Emulator Save State Sync", () => {
         });
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -170,9 +170,20 @@ test.describe("Emulator Save State Sync", () => {
 
       const gameId = await navigateToPlayPage(page);
 
-      // Intercept auto-save download to track if it's fetched
+      // Create a session first so we have a real session ID (auto-load is
+      // skipped for fresh sessions created via /play/new)
+      let sessionId: string | undefined;
+      const sessionCreatePromise = page.waitForResponse(
+        (resp) => resp.url().includes(`/api/games/${gameId}/sessions`) && resp.request().method() === "POST",
+      );
+      await page.goto(`/games/${gameId}/play/new`);
+      const createResp = await sessionCreatePromise;
+      const sessionData = await createResp.json();
+      sessionId = sessionData.id;
+
+      // Now navigate to the play page with the real session ID so auto-load triggers
       let autoLoadRequested = false;
-      await page.route(`**/api/games/${gameId}/saves/auto`, (route) => {
+      await page.route("**/api/sessions/*/saves/auto", (route) => {
         if (route.request().method() === "GET") {
           autoLoadRequested = true;
           // Return a fake save state
@@ -188,7 +199,7 @@ test.describe("Emulator Save State Sync", () => {
         }
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/${sessionId}`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -225,15 +236,24 @@ test.describe("Emulator Save State Sync", () => {
 
       const gameId = await navigateToPlayPage(page);
 
+      // Create a session first so we have a real session ID
+      const sessionCreatePromise = page.waitForResponse(
+        (resp) => resp.url().includes(`/api/games/${gameId}/sessions`) && resp.request().method() === "POST",
+      );
+      await page.goto(`/games/${gameId}/play/new`);
+      const createResp = await sessionCreatePromise;
+      const sessionData = await createResp.json();
+      const sessionId = sessionData.id;
+
       let autoLoadRequested = false;
-      await page.route(`**/api/games/${gameId}/saves/auto`, (route) => {
+      await page.route("**/api/sessions/*/saves/auto", (route) => {
         if (route.request().method() === "GET") {
           autoLoadRequested = true;
         }
         route.continue();
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/${sessionId}`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -251,9 +271,10 @@ test.describe("Emulator Save State Sync", () => {
     }) => {
       const gameId = await navigateToPlayPage(page);
 
-      // Intercept manual save uploads with a delay so "Saving..." indicator is visible
+      // Intercept session-scoped save uploads with a delay so "Saving..." indicator is visible
       let manualSaveUploaded = false;
-      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+      await page.route("**/api/sessions/*/saves", async (route) => {
+        if (route.request().url().includes("/saves/auto")) return route.continue();
         if (route.request().method() === "POST") {
           manualSaveUploaded = true;
           await new Promise((r) => setTimeout(r, 1_500));
@@ -261,7 +282,7 @@ test.describe("Emulator Save State Sync", () => {
             status: 201,
             json: {
               id: 42,
-              gameId: parseInt(gameId),
+              sessionId: "1",
               userId: 1,
               name: "save",
               fileSize: 2048,
@@ -275,7 +296,7 @@ test.describe("Emulator Save State Sync", () => {
         }
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -307,95 +328,6 @@ test.describe("Emulator Save State Sync", () => {
       expect(manualSaveUploaded).toBe(true);
     });
 
-    test("load state modal shows save list and allows loading", async ({
-      page,
-    }) => {
-      const gameId = await navigateToPlayPage(page);
-
-      const mockSaves = [
-        {
-          id: 1,
-          gameId: parseInt(gameId),
-          userId: 1,
-          name: "Before Boss Fight",
-          fileSize: 4096,
-          isAuto: false,
-          createdAt: "2025-01-15T12:00:00Z",
-          updatedAt: "2025-01-15T12:00:00Z",
-        },
-        {
-          id: 2,
-          gameId: parseInt(gameId),
-          userId: 1,
-          name: "Auto Save",
-          fileSize: 4096,
-          isAuto: true,
-          createdAt: "2025-01-16T08:30:00Z",
-          updatedAt: "2025-01-16T08:30:00Z",
-        },
-      ];
-
-      await page.route(`**/api/games/${gameId}/saves`, (route) => {
-        if (route.request().method() === "GET") {
-          route.fulfill({ json: mockSaves });
-        } else {
-          route.continue();
-        }
-      });
-
-      // Intercept save state download
-      let loadedSaveId: string | null = null;
-      await page.route(`**/api/games/${gameId}/saves/*`, (route) => {
-        if (route.request().method() === "GET") {
-          const url = route.request().url();
-          const match = url.match(/\/saves\/(\d+)$/);
-          if (match) {
-            loadedSaveId = match[1];
-            route.fulfill({
-              status: 200,
-              body: Buffer.from("loaded-save-state-data"),
-              headers: { "Content-Type": "application/octet-stream" },
-            });
-          } else {
-            route.continue();
-          }
-        } else {
-          route.continue();
-        }
-      });
-
-      await page.goto(`/games/${gameId}/play`);
-      await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
-        timeout: 15_000,
-      });
-
-      // Simulate playing state
-      await simulatePlaying(page);
-
-      // Open load modal
-      await page.getByTitle("Load State").click();
-
-      // Modal should show the save list
-      await expect(page.getByText("Load Save State")).toBeVisible({
-        timeout: 3_000,
-      });
-      await expect(page.getByText("Before Boss Fight")).toBeVisible();
-      await expect(page.getByText("Auto Save")).toBeVisible();
-      // Auto badge should be visible on the auto-save entry
-      await expect(page.getByText("Auto").first()).toBeVisible();
-
-      // Click on "Before Boss Fight" to load it
-      await page.getByText("Before Boss Fight").click();
-
-      // Modal should close
-      await expect(page.getByText("Load Save State")).not.toBeVisible({
-        timeout: 3_000,
-      });
-
-      // Wait for the save download
-      await page.waitForTimeout(1_000);
-      expect(loadedSaveId).toBe("1");
-    });
   });
 
   test.describe("Screenshot Upload", () => {
@@ -404,19 +336,20 @@ test.describe("Emulator Save State Sync", () => {
     }) => {
       const gameId = await navigateToPlayPage(page);
 
-      // Intercept save uploads
-      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+      // Intercept session-scoped save uploads
+      await page.route("**/api/sessions/*/saves", async (route) => {
+        if (route.request().url().includes("/saves/auto")) return route.continue();
         if (route.request().method() === "POST") {
           route.fulfill({
             status: 201,
             json: {
               id: 50,
-              gameId: parseInt(gameId),
+              sessionId: "1",
               userId: 1,
               name: "save",
               fileSize: 2048,
               isAuto: false,
-              screenshotUrl: "/images/save-screenshots/user_1/game_1/screenshot.png",
+              screenshotUrl: "/images/save-screenshots/sessions/session_1/screenshot.png",
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
@@ -426,7 +359,7 @@ test.describe("Emulator Save State Sync", () => {
         }
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -481,13 +414,14 @@ test.describe("Emulator Save State Sync", () => {
     }) => {
       const gameId = await navigateToPlayPage(page);
 
-      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+      await page.route("**/api/sessions/*/saves", async (route) => {
+        if (route.request().url().includes("/saves/auto")) return route.continue();
         if (route.request().method() === "POST") {
           route.fulfill({
             status: 201,
             json: {
               id: 51,
-              gameId: parseInt(gameId),
+              sessionId: "1",
               userId: 1,
               name: "save",
               fileSize: 2048,
@@ -501,7 +435,7 @@ test.describe("Emulator Save State Sync", () => {
         }
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
@@ -551,7 +485,7 @@ test.describe("Emulator Save State Sync", () => {
     }) => {
       const gameId = await navigateToPlayPage(page);
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(
         page.locator('iframe[src="/emulator.html"]'),
       ).toBeVisible({ timeout: 15_000 });
@@ -582,8 +516,9 @@ test.describe("Emulator Save State Sync", () => {
     }) => {
       const gameId = await navigateToPlayPage(page);
 
-      // Slow down the save endpoint to keep the saving indicator visible
-      await page.route(`**/api/games/${gameId}/saves`, async (route) => {
+      // Slow down the session-scoped save endpoint to keep the saving indicator visible
+      await page.route("**/api/sessions/*/saves", async (route) => {
+        if (route.request().url().includes("/saves/auto")) return route.continue();
         if (route.request().method() === "POST") {
           // Delay response to keep saving indicator visible
           await new Promise((r) => setTimeout(r, 2_000));
@@ -591,7 +526,7 @@ test.describe("Emulator Save State Sync", () => {
             status: 201,
             json: {
               id: 99,
-              gameId: parseInt(gameId),
+              sessionId: "1",
               userId: 1,
               name: "save",
               fileSize: 1024,
@@ -605,7 +540,7 @@ test.describe("Emulator Save State Sync", () => {
         }
       });
 
-      await page.goto(`/games/${gameId}/play`);
+      await page.goto(`/games/${gameId}/play/new`);
       await expect(page.locator('iframe[src="/emulator.html"]')).toBeVisible({
         timeout: 15_000,
       });
