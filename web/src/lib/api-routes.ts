@@ -105,6 +105,9 @@ export type ApiGetPath = WithQuery<
   | "/collections/public"
   | `/collections/${string}`
 
+  // Top Lists
+  | "/top-lists/top-rated"
+
   // Challenges
   | "/challenges"
   | `/challenges/${string}`

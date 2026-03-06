@@ -92,6 +92,7 @@ import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
+import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -121,6 +122,7 @@ import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
+import com.spela.player.presentation.viewmodel.TopListsViewModel
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.ui.components.SpSectionIndicator
 
@@ -150,6 +152,7 @@ fun SpelaApp(
     presenceService: PresenceService,
     connectivityMonitor: ConnectivityMonitor,
     sessionDetailViewModel: SessionDetailViewModel? = null,
+    topListsViewModel: TopListsViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
 ) {
@@ -874,6 +877,22 @@ fun SpelaApp(
                                             )
                                         },
                                         onDeleted = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.TopLists -> {
+                                if (topListsViewModel != null) {
+                                    TopListsScreen(
+                                        viewModel = topListsViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
                                     )

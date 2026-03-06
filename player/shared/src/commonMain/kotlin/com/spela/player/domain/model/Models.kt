@@ -590,6 +590,18 @@ data class TopRatedGame(
     val localGameId: String? = null,
 )
 
+// Top Lists
+
+data class TopListGame(
+    val rank: Int,
+    val gameId: String,
+    val name: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val rating: Double = 0.0,
+)
+
 // Similar Games
 
 data class SimilarGame(

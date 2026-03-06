@@ -5,6 +5,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.SimilarGame
+import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
 
 interface GameRepository {
@@ -27,6 +28,7 @@ interface GameRepository {
     suspend fun removeFromPlayLater(gameId: String): Result<Unit>
     suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>>
     suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>>
+    suspend fun getTopRatedAvailable(): Result<List<TopListGame>>
     suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>>
     suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>>
 }

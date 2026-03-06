@@ -33,6 +33,7 @@ import { NetplayPage } from "@/pages/netplay-page";
 import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
 import { ChallengesPage } from "@/pages/challenges-page";
+import { TopListsPage } from "@/pages/top-lists-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
@@ -102,6 +103,7 @@ export function App() {
                     />
                     <Route path="stats" element={<StatsPage />} />
                     <Route path="activity" element={<ActivityPage />} />
+                    <Route path="top-lists" element={<TopListsPage />} />
                     <Route path="challenges" element={<ChallengesPage />} />
                     <Route
                       path="challenges/:id"

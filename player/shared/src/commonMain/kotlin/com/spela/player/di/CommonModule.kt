@@ -315,6 +315,14 @@ val commonModule = module {
         )
     }
 
+    factory {
+        TopListsViewModel(
+            gameRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
     /* Navigation & UI ViewModels */
     single {
         NavigationViewModel(

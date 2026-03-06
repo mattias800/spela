@@ -10,6 +10,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.SimilarGame
+import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.repository.GameRepository
 import kotlin.time.Clock
@@ -139,6 +140,12 @@ class GameRepositoryImpl(
     override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> {
         return runCatching {
             apiClient.getTopRatedGamesGlobal().map { it.toDomain() }
+        }
+    }
+
+    override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> {
+        return runCatching {
+            apiClient.getTopRatedAvailable().map { it.toDomain() }
         }
     }
 

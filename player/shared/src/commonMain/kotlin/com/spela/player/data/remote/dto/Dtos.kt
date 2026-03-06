@@ -890,6 +890,19 @@ data class TopRatedGameDto(
     val localGameId: String? = null,
 )
 
+// Top Lists
+
+@Serializable
+data class TopListGameDto(
+    val rank: Int,
+    val gameId: String,
+    val name: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val rating: Double = 0.0,
+)
+
 // Similar Games
 
 @Serializable

@@ -222,6 +222,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/consoles/:id/top-rated", consoleHandler.GetTopRated)
 		api.GET("/top-rated", consoleHandler.GetTopRatedGlobal)
 
+		// Top Lists
+		api.GET("/top-lists/top-rated", consoleHandler.GetTopListAvailable)
+
 		// Games
 		api.GET("/games", gameHandler.ListGames)
 		api.GET("/games/:id", gameHandler.GetGame)
