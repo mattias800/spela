@@ -1032,6 +1032,9 @@ func (h *SessionHandler) UpdatePlayTime(c *gin.Context) {
 		"last_played_by":  uid,
 	})
 
+	// Record daily play activity for heatmap
+	RecordDailyPlayActivity(h.DB, uid, req.Seconds)
+
 	h.DB.First(&session, session.ID)
 	var saveCount int64
 	h.DB.Model(&db.SessionSaveState{}).Where("session_id = ?", session.ID).Count(&saveCount)

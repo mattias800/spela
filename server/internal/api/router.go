@@ -297,6 +297,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)
 		api.GET("/user/play-stats", userHandler.GetPlayStats)
+		api.GET("/user/play-heatmap", statsHandler.GetPlayHeatmap)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
@@ -374,6 +375,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
 		api.GET("/users/search", socialHandler.SearchUsers)
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
+		api.GET("/users/:id/play-heatmap", statsHandler.GetPublicPlayHeatmap)
 
 		// Challenges
 		api.POST("/challenges", challengeHandler.CreateChallenge)

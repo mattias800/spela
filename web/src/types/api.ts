@@ -620,6 +620,11 @@ export interface PlayStatsEntry {
   lastPlayedAt: string;
 }
 
+export interface DailyPlayActivity {
+  date: string;
+  playTime: number;
+}
+
 // --- Session Saves & Cheats ---
 
 export interface SessionSave {

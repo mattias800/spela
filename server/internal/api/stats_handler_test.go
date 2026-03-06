@@ -297,6 +297,145 @@ func TestGetUserStats_WithHistory(t *testing.T) {
 	assert.Equal(t, "Fav Game", mostPlayed["title"])
 }
 
+func TestRecordDailyPlayActivity_Upsert(t *testing.T) {
+	database, _ := setupTestEnv(t)
+
+	// Create a test user
+	user := db.User{Username: "heatmap_user", Email: "heatmap@example.com", PasswordHash: "hash", Role: "user"}
+	database.Create(&user)
+
+	// First call creates a new record
+	RecordDailyPlayActivity(database, user.ID, 60)
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	var record db.DailyPlayActivity
+	err := database.Where("user_id = ? AND date = ?", user.ID, today).First(&record).Error
+	require.NoError(t, err)
+	assert.Equal(t, int64(60), record.PlayTime)
+
+	// Second call increments the existing record
+	RecordDailyPlayActivity(database, user.ID, 120)
+
+	database.Where("user_id = ? AND date = ?", user.ID, today).First(&record)
+	assert.Equal(t, int64(180), record.PlayTime)
+}
+
+func TestHeatmap_Empty(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/play-heatmap", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var entries []heatmapEntry
+	err := json.Unmarshal(w.Body.Bytes(), &entries)
+	require.NoError(t, err)
+	assert.Len(t, entries, 0)
+}
+
+func TestHeatmap_WithData(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	database.Where("username = ?", "apitest").First(&user)
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	yesterday := today.AddDate(0, 0, -1)
+
+	database.Create(&db.DailyPlayActivity{UserID: user.ID, Date: today, PlayTime: 3600})
+	database.Create(&db.DailyPlayActivity{UserID: user.ID, Date: yesterday, PlayTime: 1800})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/play-heatmap", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var entries []heatmapEntry
+	err := json.Unmarshal(w.Body.Bytes(), &entries)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+
+	// Should be sorted ascending by date
+	assert.Equal(t, yesterday.Format("2006-01-02"), entries[0].Date)
+	assert.Equal(t, int64(1800), entries[0].PlayTime)
+	assert.Equal(t, today.Format("2006-01-02"), entries[1].Date)
+	assert.Equal(t, int64(3600), entries[1].PlayTime)
+}
+
+func TestHeatmap_PublicEndpoint(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create another user with activity
+	otherUser := db.User{Username: "other_heatmap", Email: "other@example.com", PasswordHash: "hash", Role: "user"}
+	database.Create(&otherUser)
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 7200})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/users/%d/play-heatmap", otherUser.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var entries []heatmapEntry
+	err := json.Unmarshal(w.Body.Bytes(), &entries)
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, int64(7200), entries[0].PlayTime)
+}
+
+func TestHeatmap_UserIsolation(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	database.Where("username = ?", "apitest").First(&user)
+
+	// Create another user with activity
+	otherUser := db.User{Username: "isolated_user", Email: "isolated@example.com", PasswordHash: "hash", Role: "user"}
+	database.Create(&otherUser)
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	database.Create(&db.DailyPlayActivity{UserID: user.ID, Date: today, PlayTime: 100})
+	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 9999})
+
+	// Current user's heatmap should only show their own data
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/play-heatmap", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var entries []heatmapEntry
+	err := json.Unmarshal(w.Body.Bytes(), &entries)
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, int64(100), entries[0].PlayTime)
+}
+
+func TestHeatmap_PublicNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/users/99999/play-heatmap", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
 func TestCalculateStreaks(t *testing.T) {
 	tests := []struct {
 		name            string

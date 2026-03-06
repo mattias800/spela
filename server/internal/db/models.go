@@ -154,6 +154,14 @@ type PlayHistory struct {
 	PlayTime   int64         `json:"playTime"` // seconds
 }
 
+// DailyPlayActivity aggregates play time per user per day for heatmap display.
+type DailyPlayActivity struct {
+	ID       uint      `gorm:"primarykey" json:"id"`
+	UserID   uint      `gorm:"uniqueIndex:idx_daily_play_user_date;not null" json:"userId"`
+	Date     time.Time `gorm:"uniqueIndex:idx_daily_play_user_date;not null;type:date" json:"date"`
+	PlayTime int64     `json:"playTime"` // seconds added on this day
+}
+
 // RefreshToken stores issued refresh tokens.
 type RefreshToken struct {
 	ID          uint           `gorm:"primarykey"`

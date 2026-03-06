@@ -380,6 +380,9 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		}
 	}
 
+	// Record daily play activity for heatmap
+	RecordDailyPlayActivity(h.DB, uid, req.Seconds)
+
 	// Mark user as currently playing this game
 	if h.Hub != nil {
 		h.Hub.SetUserGame(uid, uint(gid))

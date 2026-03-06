@@ -154,3 +154,71 @@ func parseTimeString(s string) time.Time {
 	}
 	return time.Time{}
 }
+
+// RecordDailyPlayActivity upserts a DailyPlayActivity row for today, incrementing
+// the play time by the given number of seconds.
+func RecordDailyPlayActivity(database *gorm.DB, userID uint, seconds int64) {
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	var record db.DailyPlayActivity
+	result := database.Where("user_id = ? AND date = ?", userID, today).First(&record)
+	if result.Error == gorm.ErrRecordNotFound {
+		database.Create(&db.DailyPlayActivity{
+			UserID:   userID,
+			Date:     today,
+			PlayTime: seconds,
+		})
+	} else if result.Error == nil {
+		database.Model(&record).Update("play_time", gorm.Expr("play_time + ?", seconds))
+	}
+}
+
+// heatmapEntry is a single day's play activity for the heatmap response.
+type heatmapEntry struct {
+	Date     string `json:"date"`
+	PlayTime int64  `json:"playTime"`
+}
+
+// GetPlayHeatmap returns the current user's daily play activity for the past 365 days.
+// GET /api/user/play-heatmap
+func (h *StatsHandler) GetPlayHeatmap(c *gin.Context) {
+	uid := getUserID(c)
+	h.getHeatmapForUser(c, uid)
+}
+
+// GetPublicPlayHeatmap returns a user's daily play activity for the past 365 days.
+// GET /api/users/:id/play-heatmap
+func (h *StatsHandler) GetPublicPlayHeatmap(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	var user db.User
+	if err := h.DB.First(&user, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	h.getHeatmapForUser(c, uint(id))
+}
+
+func (h *StatsHandler) getHeatmapForUser(c *gin.Context, userID uint) {
+	since := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -365)
+
+	var activities []db.DailyPlayActivity
+	h.DB.Where("user_id = ? AND date >= ?", userID, since).
+		Order("date ASC").
+		Find(&activities)
+
+	entries := make([]heatmapEntry, 0, len(activities))
+	for _, a := range activities {
+		entries = append(entries, heatmapEntry{
+			Date:     a.Date.Format("2006-01-02"),
+			PlayTime: a.PlayTime,
+		})
+	}
+
+	c.JSON(http.StatusOK, entries)
+}

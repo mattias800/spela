@@ -151,6 +151,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SessionSaveState{},
 		&SessionSaveData{},
 		&SessionCheatSetting{},
+		&DailyPlayActivity{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

@@ -73,6 +73,7 @@ export type ApiGetPath = WithQuery<
   | "/user/recent"
   | "/user/favorites"
   | "/user/play-stats"
+  | "/user/play-heatmap"
   | "/user/play-later"
   | "/user/devices"
   | `/user/devices/${string}/preferences`
@@ -100,6 +101,7 @@ export type ApiGetPath = WithQuery<
   | "/social/activity"
   | `/users/search`
   | `/users/${string}/profile`
+  | `/users/${string}/play-heatmap`
 
   // Collections
   | "/collections"
