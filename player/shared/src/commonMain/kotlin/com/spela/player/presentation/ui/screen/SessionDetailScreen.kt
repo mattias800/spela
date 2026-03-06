@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
@@ -48,8 +46,9 @@ import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -133,6 +132,8 @@ fun SessionDetailScreen(
                                 totalPlayTime = session.totalPlayTime,
                                 lastPlayedAt = session.lastPlayedAt,
                                 lastPlayedByUsername = session.lastPlayedByUsername,
+                                cheatsEnabled = state.cheatsEnabled,
+                                memberCount = session.memberCount,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
                             )
@@ -168,7 +169,7 @@ fun SessionDetailScreen(
                                         .fillMaxWidth()
                                         .padding(
                                             horizontal = SpSpacing.ScreenHorizontal,
-                                            vertical = SpSpacing.XXSmall,
+                                            vertical = SpSpacing.XSmall,
                                         ),
                                 )
                             }
@@ -206,24 +207,45 @@ fun SessionDetailScreen(
                             )
                         }
 
-                        // Danger Zone section
+                        // Delete section
                         item {
                             Spacer(Modifier.height(SpSpacing.XXLarge))
-                            SpSectionHeader(
-                                title = "Danger Zone",
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                            )
-                            Spacer(Modifier.height(SpSpacing.Small))
 
-                            SpButton(
-                                text = "Delete Session",
-                                onClick = { viewModel.onIntent(SessionDetailIntent.ShowDeleteConfirm) },
-                                style = SpButtonStyle.Outlined,
+                            SpCard(
+                                onGradient = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                    .testTag("session_delete_button"),
-                            )
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(SpSpacing.Default),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Warning,
+                                        contentDescription = null,
+                                        tint = SpColor.Error,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(Modifier.width(SpSpacing.Medium))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Delete this session and all its save data permanently.",
+                                            style = SpTypography.BodySmall,
+                                            color = SpColor.OnBackgroundTertiary,
+                                        )
+                                    }
+                                    Spacer(Modifier.width(SpSpacing.Medium))
+                                    SpButton(
+                                        text = "Delete Session",
+                                        onClick = { viewModel.onIntent(SessionDetailIntent.ShowDeleteConfirm) },
+                                        style = SpButtonStyle.Outlined,
+                                        modifier = Modifier.testTag("session_delete_button"),
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(SpSpacing.XXLarge))
                         }
                     }
@@ -336,6 +358,8 @@ private fun SessionDetailHeader(
     totalPlayTime: Long,
     lastPlayedAt: String?,
     lastPlayedByUsername: String?,
+    cheatsEnabled: Boolean,
+    memberCount: Int,
     onRename: () -> Unit,
     onPlay: () -> Unit,
 ) {
@@ -347,71 +371,95 @@ private fun SessionDetailHeader(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = sessionName,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnBackground,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Session: $sessionName"
-                    },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.Gamepad,
+                        contentDescription = null,
+                        tint = SpColor.Primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(Modifier.width(SpSpacing.Small))
+                    Text(
+                        text = sessionName,
+                        style = SpTypography.HeadlineMedium,
+                        color = SpColor.OnBackground,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Session: $sessionName"
+                        },
+                    )
+                }
 
-                Spacer(Modifier.height(SpSpacing.XSmall))
+                Spacer(Modifier.height(SpSpacing.Small))
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
                     if (totalPlayTime > 0) {
-                        Text(
-                            text = formatPlayTime(totalPlayTime),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
+                        SpChip(text = formatPlayTime(totalPlayTime))
                     }
-                    if (lastPlayedAt != null) {
-                        Text(
-                            text = formatRelativeTime(lastPlayedAt),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
+                    if (cheatsEnabled) {
+                        SpChip(text = "Cheats", color = SpColor.Warning)
                     }
-                    if (lastPlayedByUsername != null) {
-                        Text(
-                            text = "Last played by $lastPlayedByUsername",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
+                    if (memberCount > 1) {
+                        SpChip(text = "$memberCount players")
+                    }
+                }
+
+                if (lastPlayedAt != null || lastPlayedByUsername != null) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                    ) {
+                        if (lastPlayedAt != null) {
+                            Text(
+                                text = formatRelativeTime(lastPlayedAt),
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                            )
+                        }
+                        if (lastPlayedByUsername != null) {
+                            Text(
+                                text = "by $lastPlayedByUsername",
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                            )
+                        }
                     }
                 }
             }
 
-            Row {
-                IconButton(
-                    onClick = onRename,
-                    modifier = Modifier.testTag("session_detail_rename_button"),
-                ) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = "Rename session",
-                        tint = SpColor.OnBackgroundSecondary,
-                    )
-                }
-                IconButton(
-                    onClick = onPlay,
-                    modifier = Modifier.testTag("session_detail_play_button"),
-                ) {
-                    Icon(
-                        Icons.Filled.PlayArrow,
-                        contentDescription = "Play session",
-                        tint = SpColor.Accent,
-                        modifier = Modifier.size(32.dp),
-                    )
-                }
+            IconButton(
+                onClick = onRename,
+                modifier = Modifier.testTag("session_detail_rename_button"),
+            ) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = "Rename session",
+                    tint = SpColor.OnBackgroundSecondary,
+                )
             }
         }
+
+        Spacer(Modifier.height(SpSpacing.Default))
+
+        SpButton(
+            text = "Play",
+            onClick = onPlay,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("session_detail_play_button"),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+        )
     }
 }
 
@@ -420,7 +468,8 @@ private fun SessionSaveItem(
     save: SaveState,
     modifier: Modifier = Modifier,
 ) {
-    SpInnerCard(
+    SpCard(
+        onGradient = true,
         modifier = modifier.testTag("session_save_item_${save.id}"),
     ) {
         Row(
@@ -429,39 +478,37 @@ private fun SessionSaveItem(
                 .padding(SpSpacing.Default),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Icon(
+                imageVector = Icons.Filled.Save,
+                contentDescription = null,
+                tint = SpColor.Primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = save.name,
-                    style = SpTypography.TitleSmall,
+                    style = SpTypography.TitleLarge,
                     color = SpColor.OnCard,
                     maxLines = 1,
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (save.createdAt != null) {
-                        Text(
-                            text = formatRelativeTime(save.createdAt.toString()),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (save.fileSize > 0) {
-                        Text(
-                            text = formatFileSize(save.fileSize),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (save.isAuto) {
-                        Text(
-                            text = "Auto",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.Primary,
-                        )
-                    }
-                }
+                Text(
+                    text = buildString {
+                        if (save.createdAt != null) {
+                            append(formatRelativeTime(save.createdAt.toString()))
+                        }
+                        if (save.fileSize > 0) {
+                            if (isNotEmpty()) append(" · ")
+                            append(formatFileSize(save.fileSize))
+                        }
+                    },
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+            }
+            if (save.isAuto) {
+                SpChip(text = "Auto", color = SpColor.Primary)
             }
         }
     }

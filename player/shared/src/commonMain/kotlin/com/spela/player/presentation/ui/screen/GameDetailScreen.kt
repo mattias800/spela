@@ -218,7 +218,32 @@ fun GameDetailScreen(
             fullWidthSections = {
                 // Section ordering matches web UI:
 
-                // 1. Community Stats (Play Activity)
+                // 1. Sessions (top of cards, matching web UI)
+                Column(
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                ) {
+                    SessionsSection(
+                        sessions = state.sessions,
+                        isLoading = state.isLoadingSessions,
+                        onContinueSession = { session ->
+                            onPlaySession?.invoke(game.id, session.id)
+                        },
+                        onCreateSession = { name ->
+                            viewModel.onIntent(GameDetailIntent.CreateSession(game.id, name))
+                        },
+                        onRenameSession = { sessionId, name ->
+                            viewModel.onIntent(GameDetailIntent.RenameSession(sessionId, name))
+                        },
+                        onDeleteSession = { sessionId ->
+                            viewModel.onIntent(GameDetailIntent.DeleteSession(sessionId))
+                        },
+                        onSessionSelected = onNavigateToSession?.let { nav ->
+                            { session -> nav(session.id) }
+                        },
+                    )
+                }
+
+                // 2. Community Stats (Play Activity)
                 Column(
                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                 ) {
@@ -314,31 +339,6 @@ fun GameDetailScreen(
                                 viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
                             },
                             achievementsWarning = game.achievementsWarning,
-                        )
-                    }
-
-                    // 4b. Sessions
-                    Column(
-                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                    ) {
-                        SessionsSection(
-                            sessions = state.sessions,
-                            isLoading = state.isLoadingSessions,
-                            onContinueSession = { session ->
-                                onPlaySession?.invoke(game.id, session.id)
-                            },
-                            onCreateSession = { name ->
-                                viewModel.onIntent(GameDetailIntent.CreateSession(game.id, name))
-                            },
-                            onRenameSession = { sessionId, name ->
-                                viewModel.onIntent(GameDetailIntent.RenameSession(sessionId, name))
-                            },
-                            onDeleteSession = { sessionId ->
-                                viewModel.onIntent(GameDetailIntent.DeleteSession(sessionId))
-                            },
-                            onSessionSelected = onNavigateToSession?.let { nav ->
-                                { session -> nav(session.id) }
-                            },
                         )
                     }
 
