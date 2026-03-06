@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -126,6 +125,7 @@ fun SessionDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("session_detail_content"),
+                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
                     ) {
                         // Hero screenshot
                         if (session.screenshotUrl != null) {
@@ -382,126 +382,98 @@ private fun SessionDetailHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .testTag("session_detail_header"),
+            .testTag("session_detail_header")
+            .semantics { contentDescription = "Session: $sessionName" },
     ) {
-        // Game info row (cover art + game title + console)
-        if (game != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                SpCoverArt(
-                    imageUrl = game.coverUrl,
-                    contentDescription = "${game.title} cover",
-                    modifier = Modifier.size(width = 56.dp, height = 75.dp),
-                    cornerRadius = SpSpacing.RadiusDefault,
+        // Game info row — matches RelayHeader pattern (80x107 cover + game title)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SpCoverArt(
+                imageUrl = game?.coverUrl,
+                contentDescription = game?.let { "${it.title} cover" } ?: "Game cover",
+                modifier = Modifier.size(width = 80.dp, height = 107.dp),
+                cornerRadius = SpSpacing.RadiusLarge,
+            )
+            Spacer(Modifier.width(SpSpacing.Default))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = game?.title ?: "",
+                    style = SpTypography.HeadlineMedium,
+                    color = SpColor.OnBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.width(SpSpacing.Medium))
-                Column(modifier = Modifier.weight(1f)) {
+                if (game != null && game.consoleName.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
                     Text(
-                        text = game.title,
-                        style = SpTypography.TitleLarge,
-                        color = SpColor.OnBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        text = game.consoleName,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
                     )
-                    if (game.consoleName.isNotEmpty()) {
-                        Spacer(Modifier.height(SpSpacing.XXSmall))
-                        Text(
-                            text = game.consoleName,
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
+                }
+                Spacer(Modifier.height(SpSpacing.Small))
+                Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                    if (totalPlayTime > 0) {
+                        SpChip(text = formatPlayTime(totalPlayTime))
+                    }
+                    if (cheatsEnabled) {
+                        SpChip(text = "Cheats", color = SpColor.Warning)
+                    }
+                    if (memberCount > 1) {
+                        SpChip(text = "$memberCount players")
                     }
                 }
-            }
-            Spacer(Modifier.height(SpSpacing.Default))
-        }
-
-        // Session name + rename
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = sessionName,
-                style = SpTypography.HeadlineMedium,
-                color = SpColor.OnBackground,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics {
-                        contentDescription = "Session: $sessionName"
-                    },
-            )
-
-            IconButton(
-                onClick = onRename,
-                modifier = Modifier.testTag("session_detail_rename_button"),
-            ) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = "Rename session",
-                    tint = SpColor.OnBackgroundSecondary,
-                )
-            }
-        }
-
-        // Status chips
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            if (totalPlayTime > 0) {
-                SpChip(text = formatPlayTime(totalPlayTime))
-            }
-            if (cheatsEnabled) {
-                SpChip(text = "Cheats", color = SpColor.Warning)
-            }
-            if (memberCount > 1) {
-                SpChip(text = "$memberCount players")
             }
         }
 
         // Last played info
         if (lastPlayedAt != null || lastPlayedByUsername != null) {
-            Spacer(Modifier.height(SpSpacing.Small))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            ) {
-                if (lastPlayedAt != null) {
-                    Text(
-                        text = formatRelativeTime(lastPlayedAt),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
-                if (lastPlayedByUsername != null) {
-                    Text(
-                        text = "by $lastPlayedByUsername",
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
-            }
+            Spacer(Modifier.height(SpSpacing.Default))
+            Text(
+                text = buildString {
+                    if (lastPlayedAt != null) append(formatRelativeTime(lastPlayedAt))
+                    if (lastPlayedByUsername != null) {
+                        if (isNotEmpty()) append(" · ")
+                        append("by $lastPlayedByUsername")
+                    }
+                },
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
         }
 
         Spacer(Modifier.height(SpSpacing.Default))
 
-        // Play button
-        SpButton(
-            text = "Play",
-            onClick = onPlay,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("session_detail_play_button"),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-            },
-        )
+        // Action row — rename + play (matches relay's button pattern)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpButton(
+                text = "Play",
+                onClick = onPlay,
+                modifier = Modifier.testTag("session_detail_play_button"),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+            SpButton(
+                text = "Edit",
+                onClick = onRename,
+                style = SpButtonStyle.Outlined,
+                modifier = Modifier.testTag("session_detail_rename_button"),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Rename session",
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+        }
     }
 }
 
