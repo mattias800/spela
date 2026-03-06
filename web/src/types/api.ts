@@ -614,6 +614,12 @@ export interface TopListGame {
   rating: number;
 }
 
+export interface PlayStatsEntry {
+  gameId: number;
+  playTime: number;
+  lastPlayedAt: string;
+}
+
 // --- Session Saves & Cheats ---
 
 export interface SessionSave {

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Trophy, Star } from "lucide-react";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
 import { useTopRated } from "@/hooks/use-top-lists";
+import { PlayInfo } from "@/components/play-info";
 import { cn } from "@/lib/cn";
 
 function rankStyle(rank: number): { text: string; bg: string } {
@@ -57,10 +58,10 @@ function TopRatedSkeleton() {
           className="flex items-center gap-4 rounded-xl px-4 py-3 bg-surface-900/50"
         >
           <Skeleton className="h-7 w-7 rounded-full" />
-          <Skeleton className="h-10 w-8 rounded-lg" />
-          <div className="flex-1 space-y-1">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-16 w-14 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-20" />
           </div>
           <Skeleton className="h-4 w-16" />
         </div>
@@ -111,28 +112,29 @@ export function TopListsPage() {
                 className="flex items-center gap-4 rounded-xl px-4 py-3 bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
               >
                 <RankBadge rank={game.rank} />
-                <div className="h-10 w-8 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
+                <div className="w-14 h-16 flex items-center justify-center flex-shrink-0">
                   {game.coverUrl ? (
                     <img
                       src={game.coverUrl}
                       alt={game.name}
-                      className="h-full w-full object-cover"
+                      className="max-h-16 max-w-14 rounded-lg object-contain"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-xs font-bold text-surface-600">
+                    <div className="h-16 w-12 rounded-lg bg-surface-800 flex items-center justify-center text-sm font-bold text-surface-600">
                       {game.name.charAt(0)}
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-surface-200 truncate">
+                  <p className="text-base font-semibold text-surface-200 truncate">
                     {game.name}
                   </p>
-                  {game.consoleName && (
-                    <Badge variant="brand" className="mt-0.5">
-                      {game.consoleName}
-                    </Badge>
-                  )}
+                  <div className="mt-1.5 flex items-center gap-2">
+                    {game.consoleName && (
+                      <Badge variant="brand">{game.consoleName}</Badge>
+                    )}
+                  </div>
+                  <PlayInfo gameId={game.gameId} className="mt-1.5" />
                 </div>
                 <span className="flex items-center gap-1 text-sm font-mono text-amber-400 whitespace-nowrap">
                   <Star className="h-3.5 w-3.5 fill-amber-400" />

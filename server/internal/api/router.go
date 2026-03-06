@@ -296,6 +296,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/preferences", userHandler.GetPreferences)
 		api.PUT("/user/preferences", userHandler.UpdatePreferences)
 		api.GET("/user/stats", userHandler.GetUserStats)
+		api.GET("/user/play-stats", userHandler.GetPlayStats)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)

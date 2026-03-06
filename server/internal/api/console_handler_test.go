@@ -295,7 +295,7 @@ func TestGetTopListAvailable_ReturnsOnlyLocalMatches(t *testing.T) {
 
 	assert.Len(t, result, 1, "should return only the game with a local match")
 	assert.Equal(t, "Super Mario Bros.", result[0].Name)
-	assert.Equal(t, "covers/nes/smb.png", result[0].CoverUrl)
+	assert.Equal(t, "/api/images/covers/nes/smb.png", result[0].CoverUrl)
 	assert.Equal(t, "nes", result[0].ConsoleId)
 	assert.Equal(t, 92.5, result[0].Rating)
 }
@@ -466,6 +466,6 @@ func TestGetTopListAvailable_IncludesConsoleInfo(t *testing.T) {
 	require.Len(t, result, 1)
 	assert.Equal(t, "Super Nintendo", result[0].ConsoleName)
 	assert.Equal(t, "snes", result[0].ConsoleId)
-	assert.Equal(t, "covers/snes/smw.png", result[0].CoverUrl)
+	assert.Equal(t, "/api/images/covers/snes/smw.png", result[0].CoverUrl)
 	assert.NotEmpty(t, result[0].GameId)
 }

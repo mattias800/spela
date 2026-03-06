@@ -767,3 +767,37 @@ func calculateStreaks(playDates []time.Time, today time.Time) (currentStreak, lo
 
 	return currentStreak, longestStreak
 }
+
+// PlayStatsEntry represents play stats for a single game.
+type PlayStatsEntry struct {
+	GameID       uint   `json:"gameId"`
+	PlayTime     int64  `json:"playTime"`
+	LastPlayedAt string `json:"lastPlayedAt"`
+}
+
+// GetPlayStats returns the current user's play history for all games they've played.
+// Returns a flat array of {gameId, playTime, lastPlayedAt} entries.
+func (h *UserHandler) GetPlayStats(c *gin.Context) {
+	userID, _ := c.Get("userId")
+
+	var histories []db.PlayHistory
+	if err := h.DB.Where("user_id = ?", userID).Find(&histories).Error; err != nil {
+		slog.Error("failed to fetch play stats", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch play stats"})
+		return
+	}
+
+	result := make([]PlayStatsEntry, 0, len(histories))
+	for _, ph := range histories {
+		if ph.PlayTime <= 0 && ph.LastPlayed.IsZero() {
+			continue
+		}
+		result = append(result, PlayStatsEntry{
+			GameID:       ph.GameID,
+			PlayTime:     ph.PlayTime,
+			LastPlayedAt: ph.LastPlayed.Format(time.RFC3339),
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}

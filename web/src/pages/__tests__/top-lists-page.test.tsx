@@ -9,6 +9,10 @@ vi.mock("@/hooks/use-top-lists", () => ({
   useTopRated: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-play-stats", () => ({
+  usePlayStats: vi.fn(),
+}));
+
 vi.mock("@/components/ui", async () => {
   const actual =
     await vi.importActual<Record<string, unknown>>("@/components/ui");
@@ -19,8 +23,10 @@ vi.mock("@/components/ui", async () => {
 });
 
 import { useTopRated } from "@/hooks/use-top-lists";
+import { usePlayStats } from "@/hooks/use-play-stats";
 
 const mockUseTopRated = useTopRated as ReturnType<typeof vi.fn>;
+const mockUsePlayStats = usePlayStats as ReturnType<typeof vi.fn>;
 
 // ---------------------------------------------------------------------------
 // Mock Data
@@ -56,6 +62,11 @@ const mockTopRatedGames = [
   },
 ];
 
+const mockPlayStats = [
+  { gameId: 42, playTime: 3600, lastPlayedAt: "2026-03-01T12:00:00Z" },
+  { gameId: 55, playTime: 7200, lastPlayedAt: "2026-02-28T08:00:00Z" },
+];
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -73,6 +84,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockUseTopRated.mockReturnValue({
     data: mockTopRatedGames,
+    isLoading: false,
+  });
+  mockUsePlayStats.mockReturnValue({
+    data: mockPlayStats,
     isLoading: false,
   });
 });
@@ -154,5 +169,13 @@ describe("TopListsPage", () => {
     // Rank numbers 1, 2, 3 should be visible
     const rankBadges = screen.getAllByText(/^[123]$/);
     expect(rankBadges).toHaveLength(3);
+  });
+
+  it("renders play info for games with play history", () => {
+    renderPage();
+    // Game 42 has 3600s = 1h 0m
+    expect(screen.getByText("1h 0m")).toBeInTheDocument();
+    // Game 55 has 7200s = 2h 0m
+    expect(screen.getByText("2h 0m")).toBeInTheDocument();
   });
 });

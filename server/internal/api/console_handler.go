@@ -484,15 +484,13 @@ type TopListGameResponse struct {
 // game on the server. Only games with a local title+console match are included,
 // sorted by IGDB rating descending, limited to 50 results.
 func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
-	// Join top_rated_games with games on case-insensitive title AND console_id,
-	// then join consoles for the console name/abbreviation.
 	type row struct {
-		GameID       uint
-		Name         string
-		CoverURL     string
-		ConsoleName  string
-		ConsoleAbbr  string
-		TotalRating  float64
+		GameID      uint
+		Name        string
+		CoverURL    string
+		ConsoleName string
+		ConsoleAbbr string
+		TotalRating float64
 	}
 
 	var rows []row
@@ -523,7 +521,7 @@ func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
 			Rank:        i + 1,
 			GameId:      fmt.Sprintf("%d", r.GameID),
 			Name:        r.Name,
-			CoverUrl:    r.CoverURL,
+			CoverUrl:    resolveImageURL(r.CoverURL),
 			ConsoleName: r.ConsoleName,
 			ConsoleId:   strings.ToLower(r.ConsoleAbbr),
 			Rating:      r.TotalRating,
