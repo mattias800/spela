@@ -275,7 +275,16 @@ private fun SessionItem(
                     }
                 }
 
-                if (isMultiplayer && session.memberAvatars.isNotEmpty()) {
+                if (session.isSharedSession && session.memberUsernames.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
+                    Text(
+                        text = session.memberUsernames.joinToString(", "),
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        maxLines = 1,
+                        modifier = Modifier.testTag("session_member_names_${session.id}"),
+                    )
+                } else if (isMultiplayer && session.memberAvatars.isNotEmpty()) {
                     Spacer(Modifier.height(SpSpacing.XSmall))
                     MemberAvatarsRow(
                         avatars = session.memberAvatars,

@@ -150,7 +150,8 @@ func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
 	c.JSON(http.StatusCreated, h.toSessionResponse(session, 1))
 }
 
-// ListSessions lists all sessions for a game belonging to the current user.
+// ListSessions lists all sessions for a game belonging to the current user,
+// including backing sessions from shared sessions where the user is a member.
 // GET /api/games/:id/sessions
 func (h *SessionHandler) ListSessions(c *gin.Context) {
 	uid := getUserID(c)
@@ -162,21 +163,84 @@ func (h *SessionHandler) ListSessions(c *gin.Context) {
 		return
 	}
 
-	var sessions []db.GameSession
+	// 1. Get user's own sessions
+	var ownSessions []db.GameSession
 	if err := h.DB.Where("owner_id = ? AND game_id = ?", uid, gid).
 		Preload("Owner").
 		Order("updated_at DESC").
-		Find(&sessions).Error; err != nil {
+		Find(&ownSessions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
 		return
 	}
 
-	// Batch-load save counts
-	saveCounts := h.getSaveCounts(sessions)
+	ownSessionIDs := make(map[uint]bool, len(ownSessions))
+	for _, s := range ownSessions {
+		ownSessionIDs[s.ID] = true
+	}
 
-	result := make([]GameSessionResponse, len(sessions))
-	for i, s := range sessions {
-		result[i] = h.toSessionResponse(s, saveCounts[s.ID])
+	// 2. Find shared sessions where user is a member and game matches
+	var sharedSessions []db.SharedSession
+	h.DB.Joins("JOIN shared_session_members ON shared_session_members.shared_session_id = shared_sessions.id").
+		Where("shared_session_members.user_id = ? AND shared_sessions.game_id = ? AND shared_sessions.session_id IS NOT NULL AND shared_session_members.deleted_at IS NULL", uid, gid).
+		Preload("Members.User").
+		Find(&sharedSessions)
+
+	// 3. Build session ID -> shared session map
+	sharedSessionMap := make(map[uint]*db.SharedSession, len(sharedSessions))
+	for i := range sharedSessions {
+		if sharedSessions[i].SessionID != nil {
+			sharedSessionMap[*sharedSessions[i].SessionID] = &sharedSessions[i]
+		}
+	}
+
+	// 4. Load backing sessions that the user doesn't own (to avoid duplicates)
+	var extraSessionIDs []uint
+	for sid := range sharedSessionMap {
+		if !ownSessionIDs[sid] {
+			extraSessionIDs = append(extraSessionIDs, sid)
+		}
+	}
+
+	var extraSessions []db.GameSession
+	if len(extraSessionIDs) > 0 {
+		h.DB.Where("id IN ?", extraSessionIDs).
+			Preload("Owner").
+			Find(&extraSessions)
+	}
+
+	// 5. Merge and sort
+	allSessions := append(ownSessions, extraSessions...)
+
+	// Batch-load save counts
+	saveCounts := h.getSaveCounts(allSessions)
+
+	// 6. Resolve lastPlayedBy usernames
+	lastPlayedByUsernames := h.resolveLastPlayedByUsernames(allSessions)
+
+	// 7. Build responses with shared session metadata
+	result := make([]GameSessionResponse, len(allSessions))
+	for i, s := range allSessions {
+		resp := h.toSessionResponse(s, saveCounts[s.ID])
+		if username, ok := lastPlayedByUsernames[s.ID]; ok {
+			resp.LastPlayedByUsername = &username
+		}
+		if ss, ok := sharedSessionMap[s.ID]; ok {
+			ssID := strconv.FormatUint(uint64(ss.ID), 10)
+			resp.IsSharedSession = true
+			resp.SharedSessionID = &ssID
+			resp.MemberCount = len(ss.Members)
+			usernames := make([]string, 0, len(ss.Members))
+			avatars := make([]string, 0, len(ss.Members))
+			for _, m := range ss.Members {
+				usernames = append(usernames, m.User.Username)
+				if m.User.AvatarURL != "" {
+					avatars = append(avatars, m.User.AvatarURL)
+				}
+			}
+			resp.MemberUsernames = usernames
+			resp.MemberAvatars = avatars
+		}
+		result[i] = resp
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -194,7 +258,9 @@ func (h *SessionHandler) GetSession(c *gin.Context) {
 	var saveCount int64
 	h.DB.Model(&db.SessionSaveState{}).Where("session_id = ?", session.ID).Count(&saveCount)
 
-	c.JSON(http.StatusOK, h.toSessionResponse(session, int(saveCount)))
+	resp := h.toSessionResponse(session, int(saveCount))
+	h.enrichWithSharedSessionData(&resp, session.ID)
+	c.JSON(http.StatusOK, resp)
 }
 
 // UpdateSession updates a session's name or settings.
@@ -982,21 +1048,58 @@ func (h *SessionHandler) toSessionResponse(s db.GameSession, saveCount int) Game
 	}
 
 	return GameSessionResponse{
-		ID:            strconv.FormatUint(uint64(s.ID), 10),
-		OwnerID:       strconv.FormatUint(uint64(s.OwnerID), 10),
-		OwnerUsername: s.Owner.Username,
-		GameID:        strconv.FormatUint(uint64(s.GameID), 10),
-		Name:          s.Name,
-		LastPlayedAt:  s.LastPlayedAt,
-		LastPlayedBy:  lastPlayedBy,
-		TotalPlayTime: s.TotalPlayTime,
-		ScreenshotURL: resolveImageURL(s.ScreenshotURL),
-		CoreName:      s.CoreName,
-		CheatsEnabled: s.CheatsEnabled,
-		SaveCount:     saveCount,
-		CreatedAt:     s.CreatedAt,
-		UpdatedAt:     s.UpdatedAt,
+		ID:              strconv.FormatUint(uint64(s.ID), 10),
+		OwnerID:         strconv.FormatUint(uint64(s.OwnerID), 10),
+		OwnerUsername:   s.Owner.Username,
+		GameID:          strconv.FormatUint(uint64(s.GameID), 10),
+		Name:            s.Name,
+		LastPlayedAt:    s.LastPlayedAt,
+		LastPlayedBy:    lastPlayedBy,
+		TotalPlayTime:   s.TotalPlayTime,
+		ScreenshotURL:   resolveImageURL(s.ScreenshotURL),
+		CoreName:        s.CoreName,
+		CheatsEnabled:   s.CheatsEnabled,
+		SaveCount:       saveCount,
+		MemberUsernames: []string{},
+		MemberAvatars:   []string{},
+		CreatedAt:       s.CreatedAt,
+		UpdatedAt:       s.UpdatedAt,
 	}
+}
+
+// resolveLastPlayedByUsernames batch-loads usernames for sessions that have a LastPlayedBy user ID.
+func (h *SessionHandler) resolveLastPlayedByUsernames(sessions []db.GameSession) map[uint]string {
+	result := make(map[uint]string)
+	userIDs := make(map[uint][]uint) // userID -> list of sessionIDs
+	for _, s := range sessions {
+		if s.LastPlayedBy != nil {
+			userIDs[*s.LastPlayedBy] = append(userIDs[*s.LastPlayedBy], s.ID)
+		}
+	}
+	if len(userIDs) == 0 {
+		return result
+	}
+
+	ids := make([]uint, 0, len(userIDs))
+	for uid := range userIDs {
+		ids = append(ids, uid)
+	}
+
+	var users []db.User
+	h.DB.Where("id IN ?", ids).Find(&users)
+	usernameMap := make(map[uint]string, len(users))
+	for _, u := range users {
+		usernameMap[u.ID] = u.Username
+	}
+
+	for _, s := range sessions {
+		if s.LastPlayedBy != nil {
+			if username, ok := usernameMap[*s.LastPlayedBy]; ok {
+				result[s.ID] = username
+			}
+		}
+	}
+	return result
 }
 
 func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveResponse {
@@ -1016,6 +1119,31 @@ func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveRespon
 		CreatedAt:     s.CreatedAt,
 		UpdatedAt:     s.UpdatedAt,
 	}
+}
+
+// enrichWithSharedSessionData looks up whether a session backs a shared session
+// and adds member info to the response if so.
+func (h *SessionHandler) enrichWithSharedSessionData(resp *GameSessionResponse, sessionID uint) {
+	var ss db.SharedSession
+	if err := h.DB.Where("session_id = ?", sessionID).
+		Preload("Members.User").
+		First(&ss).Error; err != nil {
+		return
+	}
+	ssID := strconv.FormatUint(uint64(ss.ID), 10)
+	resp.IsSharedSession = true
+	resp.SharedSessionID = &ssID
+	resp.MemberCount = len(ss.Members)
+	usernames := make([]string, 0, len(ss.Members))
+	avatars := make([]string, 0, len(ss.Members))
+	for _, m := range ss.Members {
+		usernames = append(usernames, m.User.Username)
+		if m.User.AvatarURL != "" {
+			avatars = append(avatars, m.User.AvatarURL)
+		}
+	}
+	resp.MemberUsernames = usernames
+	resp.MemberAvatars = avatars
 }
 
 // checkSharedSessionTurn checks if this session is backed by a shared session, and if so, whether

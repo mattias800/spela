@@ -924,9 +924,11 @@ data class GameSessionDto(
     val totalPlayTime: Long = 0,
     val screenshotUrl: String? = null,
     val cheatsEnabled: Boolean = false,
-    val memberCount: Int = 1,
-    val memberAvatars: List<String> = emptyList(),
     val isSharedSession: Boolean = false,
+    val sharedSessionId: String? = null,
+    val memberCount: Int = 1,
+    val memberUsernames: List<String> = emptyList(),
+    val memberAvatars: List<String> = emptyList(),
 )
 
 @Serializable

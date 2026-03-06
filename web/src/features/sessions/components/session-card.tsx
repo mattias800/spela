@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Play, Pencil, Trash2, Clock, Users, Zap } from "lucide-react";
+import { Play, Pencil, Trash2, Clock, Users, Zap, Share2 } from "lucide-react";
 import { Button, ConfirmDeleteModal } from "@/components/ui";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import type { GameSession } from "@/types/api";
@@ -87,6 +87,12 @@ export function SessionCard({
                   Current
                 </span>
               )}
+              {session.isSharedSession && (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                  <Share2 className="h-3 w-3" />
+                  Shared
+                </span>
+              )}
             </span>
           )}
           <div className="flex items-center gap-2 text-xs text-surface-500 mt-0.5">
@@ -109,7 +115,16 @@ export function SessionCard({
                 </span>
               </>
             )}
-            {session.memberCount > 1 && (
+            {session.isSharedSession && session.memberUsernames.length > 0 && (
+              <>
+                <span>&middot;</span>
+                <span className="flex items-center gap-0.5" data-testid="session-members">
+                  <Users className="h-3 w-3" />
+                  {session.memberUsernames.join(", ")}
+                </span>
+              </>
+            )}
+            {!session.isSharedSession && session.memberCount > 1 && (
               <>
                 <span>&middot;</span>
                 <span className="flex items-center gap-0.5">

@@ -319,6 +319,29 @@ class SessionsUiTest {
         onNodeWithText("Shared Session").assertIsDisplayed()
     }
 
+    // ── Shared session shows member names ──
+
+    @Test
+    fun sharedSessionShowsMemberNames() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Friday Night SNES",
+            memberCount = 3,
+            memberUsernames = listOf("alice", "bob", "charlie"),
+            isSharedSession = true,
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        scrollToSessions()
+        onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNode(hasTestTag("session_member_names_s1"), useUnmergedTree = true).assertIsDisplayed()
+        onNodeWithText("alice, bob, charlie").assertIsDisplayed()
+    }
+
     // ── First session shows "Current" badge ──
 
     @Test

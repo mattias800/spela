@@ -13,7 +13,9 @@ const baseSession: GameSession = {
   totalPlayTime: 3600,
   screenshotUrl: null,
   cheatsEnabled: false,
+  isSharedSession: false,
   memberCount: 1,
+  memberUsernames: [],
   memberAvatars: [],
   createdAt: "2026-02-28T10:00:00Z",
   updatedAt: "2026-03-01T10:00:00Z",
@@ -218,6 +220,21 @@ describe("SessionCard", () => {
     const avatarContainer = screen.getByTestId("member-avatars");
     expect(avatarContainer.querySelectorAll("img")).toHaveLength(3);
     expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("shows Shared badge for shared sessions", () => {
+    renderCard({ ...baseSession, isSharedSession: true, memberUsernames: ["alice", "bob"] });
+    expect(screen.getByText("Shared")).toBeInTheDocument();
+  });
+
+  it("does not show Shared badge for non-shared sessions", () => {
+    renderCard();
+    expect(screen.queryByText("Shared")).not.toBeInTheDocument();
+  });
+
+  it("shows member usernames for shared sessions", () => {
+    renderCard({ ...baseSession, isSharedSession: true, memberUsernames: ["alice", "bob"] });
+    expect(screen.getByTestId("session-members")).toHaveTextContent("alice, bob");
   });
 
   it("shows Current badge when isCurrent is true", () => {
