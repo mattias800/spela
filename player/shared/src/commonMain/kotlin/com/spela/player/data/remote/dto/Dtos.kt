@@ -733,7 +733,7 @@ data class CreateNetplaySessionRequest(
 
 @Serializable
 data class JoinByInviteCodeRequest(
-    val code: String,
+    val inviteCode: String,
 )
 
 @Serializable

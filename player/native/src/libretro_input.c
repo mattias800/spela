@@ -99,6 +99,22 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
     return 0;
 }
 
+/* Called from Kotlin/JNI to read button state */
+bool input_get_button(unsigned port, unsigned id) {
+    if (port < MAX_PORTS && id < MAX_BUTTONS) {
+        return input_state.buttons[port][id];
+    }
+    return false;
+}
+
+/* Called from Kotlin/JNI to read analog axis state */
+int16_t input_get_analog(unsigned port, unsigned index, unsigned id) {
+    if (port < MAX_PORTS && index < 2 && id < 2) {
+        return input_state.analog[port][index][id];
+    }
+    return 0;
+}
+
 /* Called from Kotlin/JNI to set button state */
 void input_set_button(unsigned port, unsigned id, bool pressed) {
     if (port < MAX_PORTS && id < MAX_BUTTONS) {

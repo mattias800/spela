@@ -47,6 +47,8 @@ void input_init(void);
 void input_deinit(void);
 void input_poll_callback(void);
 int16_t input_state_callback(unsigned port, unsigned device, unsigned index, unsigned id);
+bool input_get_button(unsigned port, unsigned id);
+int16_t input_get_analog(unsigned port, unsigned index, unsigned id);
 void input_set_button(unsigned port, unsigned id, bool pressed);
 void input_set_analog(unsigned port, unsigned index, unsigned id, int16_t value);
 void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
