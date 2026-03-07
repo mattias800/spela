@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
-import { BarChart3, Trophy, Users } from "lucide-react";
+import { BarChart3, Calendar, Trophy, Users } from "lucide-react";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { PlayHeatmap } from "@/components/play-heatmap";
 import { useMostPlayedGames, useMostActivePlayers } from "@/hooks/use-stats";
+import { useMyPlayHeatmap } from "@/hooks/use-play-heatmap";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -95,6 +97,8 @@ function MostActiveSkeleton() {
 }
 
 export function StatsPage() {
+  const { data: heatmapData, isLoading: isLoadingHeatmap } =
+    useMyPlayHeatmap();
   const { data: mostPlayed, isLoading: isLoadingMostPlayed } =
     useMostPlayedGames();
   const { data: mostActive, isLoading: isLoadingMostActive } =
@@ -124,6 +128,24 @@ export function StatsPage() {
           title="No play data yet"
           description="Play some games to see the leaderboard come alive."
         />
+      )}
+
+      {/* Your Activity Heatmap */}
+      {(isLoadingHeatmap || (heatmapData && heatmapData.length > 0)) && (
+        <section>
+          <div className="flex items-center gap-2.5 mb-5">
+            <Calendar className="h-5 w-5 text-brand-400" />
+            <h2 className="text-xl font-bold text-surface-100">
+              Your Activity
+            </h2>
+          </div>
+
+          {isLoadingHeatmap ? (
+            <Skeleton className="h-[140px] w-full rounded-xl" />
+          ) : (
+            <PlayHeatmap data={heatmapData ?? []} />
+          )}
+        </section>
       )}
 
       {/* Most Played Games / Hall of Fame */}

@@ -1,7 +1,9 @@
 import { useParams, Link } from "react-router-dom";
-import { User, Clock, Gamepad2, Heart, Trophy } from "lucide-react";
+import { User, Clock, Calendar, Gamepad2, Heart, Trophy } from "lucide-react";
 import { usePublicProfile } from "@/hooks/use-public-profile";
+import { useUserPlayHeatmap } from "@/hooks/use-play-heatmap";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { PlayHeatmap } from "@/components/play-heatmap";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
 import type { PublicProfileGame } from "@/types/api";
 
@@ -94,6 +96,8 @@ function ProfileSkeleton() {
 export function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { data: profile, isLoading, error } = usePublicProfile(id || "");
+  const { data: heatmapData, isLoading: isLoadingHeatmap } =
+    useUserPlayHeatmap(id || "");
 
   if (isLoading) {
     return (
@@ -167,6 +171,22 @@ export function UserProfilePage() {
           <p className="text-sm text-surface-400 mt-1">Games Played</p>
         </div>
       </div>
+
+      {/* Activity Heatmap */}
+      {(isLoadingHeatmap || (heatmapData && heatmapData.length > 0)) && (
+        <section>
+          <div className="flex items-center gap-2.5 mb-4">
+            <Calendar className="h-5 w-5 text-brand-400" />
+            <h2 className="text-lg font-bold text-surface-100">Activity</h2>
+          </div>
+
+          {isLoadingHeatmap ? (
+            <Skeleton className="h-[140px] w-full rounded-xl" />
+          ) : (
+            <PlayHeatmap data={heatmapData ?? []} />
+          )}
+        </section>
+      )}
 
       {/* Game sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
