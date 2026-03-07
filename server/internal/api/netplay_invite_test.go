@@ -535,3 +535,79 @@ func TestNetplayInvite_MultipleInvitesDifferentSessions(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &countResp)
 	assert.Equal(t, float64(2), countResp["count"])
 }
+
+// TestNetplayInvite_FullFlow exercises the complete invite lifecycle:
+// create session → send invite → list invites → accept → verify session state.
+func TestNetplayInvite_FullFlow(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+
+	// 1. Host creates a session
+	session := createSession(t, ctx)
+	assert.Equal(t, "waiting", session.Status)
+	assert.Nil(t, session.ClientUserID)
+
+	// 2. Host sends invite to client
+	body, _ := json.Marshal(map[string]interface{}{"username": "client"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/netplay/sessions/"+session.ID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var invite NetplayInviteResponse
+	json.Unmarshal(w.Body.Bytes(), &invite)
+	assert.Equal(t, "pending", invite.Status)
+	assert.Equal(t, session.ID, invite.NetplaySessionID)
+
+	// 3. Client sees 1 pending invite in their invite count
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/invites/count", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	var countResp2 map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &countResp2)
+	assert.Equal(t, float64(1), countResp2["count"])
+
+	// 4. Client lists their invites and sees the invite with game info
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/invites", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	var listResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &listResp)
+	invites := listResp["data"].([]interface{})
+	assert.Len(t, invites, 1)
+	firstInvite := invites[0].(map[string]interface{})
+	assert.Equal(t, "Mega Man", firstInvite["gameTitle"])
+	assert.Equal(t, "pending", firstInvite["status"])
+
+	// 5. Client accepts the invite
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/netplay/invites/"+invite.ID+"/accept", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// 6. Client's pending count should now be 0
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/invites/count", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	var countAfter map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &countAfter)
+	assert.Equal(t, float64(0), countAfter["count"])
+
+	// 7. Host views session invites — invite should be "accepted"
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/sessions/"+session.ID+"/invites", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	var sessionInvites []NetplayInviteResponse
+	json.Unmarshal(w.Body.Bytes(), &sessionInvites)
+	require.Len(t, sessionInvites, 1)
+	assert.Equal(t, "accepted", sessionInvites[0].Status)
+}
