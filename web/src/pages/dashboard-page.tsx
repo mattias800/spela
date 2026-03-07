@@ -7,6 +7,7 @@ import {
   Gamepad2,
   Trophy,
   Flag,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
@@ -257,6 +258,11 @@ export function DashboardPage() {
   const recentGames = useRecentGames();
   const favoriteGames = useFavoriteGames();
   const playLaterGames = usePlayLaterGames();
+  const recentlyAddedGames = useGames({
+    pageSize: 12,
+    sortBy: "created_at",
+    sortOrder: "desc",
+  });
   const allGames = useGames({
     pageSize: 12,
     sortBy: "title",
@@ -268,6 +274,10 @@ export function DashboardPage() {
   const hasRecent = recentGames.data && recentGames.data.length > 0;
   const hasPlayLater = playLaterGames.data && playLaterGames.data.length > 0;
   const hasFavorites = favoriteGames.data && favoriteGames.data.length > 0;
+  const hasRecentlyAdded =
+    recentlyAddedGames.data &&
+    recentlyAddedGames.data.data &&
+    recentlyAddedGames.data.data.length > 0;
   const hasGames =
     allGames.data && allGames.data.data && allGames.data.data.length > 0;
   const isLoading =
@@ -344,6 +354,18 @@ export function DashboardPage() {
           <GameRow
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
+            onToggleFavorite={handleToggleFavorite}
+            onTogglePlayLater={handleTogglePlayLater}
+          />
+        </section>
+      )}
+
+      {(recentlyAddedGames.isLoading || hasRecentlyAdded) && (
+        <section>
+          <SectionHeader title="Recently Added" icon={Sparkles} linkTo="/games" />
+          <GameRow
+            games={recentlyAddedGames.data?.data}
+            isLoading={recentlyAddedGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />

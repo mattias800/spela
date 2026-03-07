@@ -24,7 +24,8 @@ import (
 
 func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	database, err := gorm.Open(sqlite.Open(dbPath+"?_journal_mode=WAL&_busy_timeout=5000"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)

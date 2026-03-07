@@ -264,6 +264,23 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }
 
+// scanGameSummary is a lightweight game entry returned in scan results.
+type scanGameSummary struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	ConsoleName string `json:"consoleName"`
+}
+
+// scanResultResponse extends the scan result with new game details and auto-scrape status.
+type scanResultResponse struct {
+	NewGames     int               `json:"newGames"`
+	UpdatedGames int               `json:"updatedGames"`
+	RemovedGames int               `json:"removedGames"`
+	TotalGames   int               `json:"totalGames"`
+	NewGamesList []scanGameSummary `json:"newGamesList,omitempty"`
+	AutoScraping bool              `json:"autoScraping"`
+}
+
 // ScanGames triggers a library scan.
 func (h *GameHandler) ScanGames(c *gin.Context) {
 	h.Hub.Broadcast(ws.Event{Type: "scan_started", Payload: nil})
@@ -276,8 +293,50 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		return
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scan_complete", Payload: result})
-	c.JSON(http.StatusOK, result)
+	// Build response with new game summaries
+	resp := scanResultResponse{
+		NewGames:     result.NewGames,
+		UpdatedGames: result.UpdatedGames,
+		RemovedGames: result.RemovedGames,
+		TotalGames:   result.TotalGames,
+	}
+
+	if len(result.NewGameIDs) > 0 {
+		var newGames []db.Game
+		h.DB.Preload("Console").Where("id IN ?", result.NewGameIDs).Find(&newGames)
+		for _, g := range newGames {
+			resp.NewGamesList = append(resp.NewGamesList, scanGameSummary{
+				ID:          strconv.FormatUint(uint64(g.ID), 10),
+				Title:       g.Title,
+				ConsoleName: g.Console.Name,
+			})
+		}
+	}
+
+	// Auto-scrape new games if IGDB is configured
+	if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
+		if h.Scraper.TryStartScrape() {
+			resp.AutoScraping = true
+			h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
+			go func() {
+				defer h.Scraper.FinishScrape()
+				count, total, scrapeErr := h.Scraper.ScrapeAll("new", func(p scraper.ScrapeProgress) {
+					h.Scraper.SetScrapeProgress(&p)
+					h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
+				})
+				if scrapeErr != nil {
+					slog.Error("auto-scrape after scan failed", "error", scrapeErr)
+					h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "auto-scrape failed"}})
+					return
+				}
+				slog.Info("auto-scrape after scan complete", "scraped", count, "total", total)
+				h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
+			}()
+		}
+	}
+
+	h.Hub.Broadcast(ws.Event{Type: "scan_complete", Payload: resp})
+	c.JSON(http.StatusOK, resp)
 }
 
 // ScrapeIfNeeded triggers an async scrape for a game that has never been scraped.

@@ -173,10 +173,11 @@ func CreateConsoleFolders(database *gorm.DB, gameDirs []string) error {
 
 // ScanResult holds the results of a scan operation.
 type ScanResult struct {
-	NewGames     int `json:"newGames"`
-	UpdatedGames int `json:"updatedGames"`
-	RemovedGames int `json:"removedGames"`
-	TotalGames   int `json:"totalGames"`
+	NewGames     int    `json:"newGames"`
+	UpdatedGames int    `json:"updatedGames"`
+	RemovedGames int    `json:"removedGames"`
+	TotalGames   int    `json:"totalGames"`
+	NewGameIDs   []uint `json:"newGameIds,omitempty"`
 }
 
 // parseM3U reads an .m3u file and returns resolved file paths.
@@ -652,6 +653,7 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			}
 
 			result.NewGames++
+			result.NewGameIDs = append(result.NewGameIDs, game.ID)
 			slog.Info("found standalone .cue game", "title", title, "console", console.Abbreviation)
 		}
 
@@ -805,6 +807,7 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 	}
 
 	result.NewGames++
+	result.NewGameIDs = append(result.NewGameIDs, game.ID)
 	slog.Info("found multi-disc game", "title", title, "console", console.Abbreviation, "discs", len(discFiles))
 
 	// Clean up old standalone entries for discs now claimed by this multi-disc game
@@ -898,6 +901,7 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 		}
 
 		result.NewGames++
+		result.NewGameIDs = append(result.NewGameIDs, game.ID)
 		slog.Info("found game", "title", title, "console", console.Abbreviation)
 
 		return nil

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +24,6 @@ type AdminHandler struct {
 	Scraper *scraper.Scraper
 	Hub     *ws.Hub
 	Storage *storage.Storage
-
-	scrapeMu       sync.Mutex
-	scraping       bool
-	scrapeProgress *scraper.ScrapeProgress
 }
 
 // ListUsers returns all users (admin only).
@@ -314,14 +309,10 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		mode = "all"
 	}
 
-	h.scrapeMu.Lock()
-	if h.scraping {
-		h.scrapeMu.Unlock()
+	if !h.Scraper.TryStartScrape() {
 		c.JSON(http.StatusConflict, gin.H{"error": "a scrape operation is already in progress"})
 		return
 	}
-	h.scraping = true
-	h.scrapeMu.Unlock()
 
 	// Count matching games before launching the goroutine so we can
 	// return the total in the HTTP response for immediate user feedback.
@@ -338,18 +329,10 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
 
 	go func() {
-		defer func() {
-			h.scrapeMu.Lock()
-			h.scraping = false
-			h.scrapeProgress = nil
-			h.scrapeMu.Unlock()
-		}()
+		defer h.Scraper.FinishScrape()
 
 		count, total, err := h.Scraper.ScrapeAll(mode, func(p scraper.ScrapeProgress) {
-			h.scrapeMu.Lock()
-			h.scrapeProgress = &p
-			h.scrapeMu.Unlock()
-
+			h.Scraper.SetScrapeProgress(&p)
 			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 		})
 		if err != nil {
@@ -367,14 +350,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 
 // ScrapeStatus returns the current scrape operation status.
 func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
-	h.scrapeMu.Lock()
-	active := h.scraping
-	var progress *scraper.ScrapeProgress
-	if h.scrapeProgress != nil {
-		p := *h.scrapeProgress
-		progress = &p
-	}
-	h.scrapeMu.Unlock()
+	active, progress := h.Scraper.GetScrapeStatus()
 
 	if !active || progress == nil {
 		c.JSON(http.StatusOK, gin.H{"active": false})

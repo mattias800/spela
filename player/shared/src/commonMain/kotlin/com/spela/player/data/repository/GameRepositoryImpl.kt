@@ -131,6 +131,10 @@ class GameRepositoryImpl(
         apiClient.removeFromPlayLater(gameId)
     }
 
+    override suspend fun getRecentlyAddedGames(): Result<List<Game>> = runCatching {
+        apiClient.getRecentlyAddedGames().data.map { it.toDomain().resolveImageUrls() }
+    }
+
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
         return runCatching {
             apiClient.getTopRatedGames(consoleId).map { it.toDomain() }

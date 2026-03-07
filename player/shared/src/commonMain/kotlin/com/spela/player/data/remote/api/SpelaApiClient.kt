@@ -207,6 +207,14 @@ class SpelaApiClient(
         client.post("$baseUrl/api/games/$gameId/scrape-if-needed")
     }
 
+    suspend fun getRecentlyAddedGames(pageSize: Int = 12): GameListResponse {
+        return client.get("$baseUrl/api/games") {
+            parameter("sortBy", "created_at")
+            parameter("sortOrder", "desc")
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
     suspend fun getTopRatedGames(consoleId: String): List<TopRatedGameDto> {
         return client.get("$baseUrl/api/consoles/$consoleId/top-rated").body()
     }

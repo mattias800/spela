@@ -12,11 +12,19 @@ import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 
+interface ScanGameSummary {
+  id: string;
+  title: string;
+  consoleName: string;
+}
+
 interface ScanResult {
   newGames?: number;
   updatedGames?: number;
   removedGames?: number;
   totalGames?: number;
+  newGamesList?: ScanGameSummary[];
+  autoScraping?: boolean;
 }
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
@@ -302,6 +310,32 @@ export function AdminScanPage() {
                     </div>
                   )}
                 </div>
+                {scanResult.autoScraping && (
+                  <p className="text-xs text-brand-400">
+                    Auto-scraping new games...
+                  </p>
+                )}
+                {scanResult.newGamesList &&
+                  scanResult.newGamesList.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-surface-400 mb-1.5">
+                        New games found:
+                      </p>
+                      <ul className="space-y-1 max-h-48 overflow-y-auto text-sm">
+                        {scanResult.newGamesList.map((g) => (
+                          <li
+                            key={g.id}
+                            className="flex items-center justify-between text-surface-200"
+                          >
+                            <span className="truncate">{g.title}</span>
+                            <span className="text-xs text-surface-500 ml-2 shrink-0">
+                              {g.consoleName}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
 
