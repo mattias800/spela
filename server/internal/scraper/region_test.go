@@ -36,3 +36,29 @@ func TestExtractRegion(t *testing.T) {
 		})
 	}
 }
+
+func TestHasNonPreferredRegion(t *testing.T) {
+	tests := []struct {
+		name string
+		input string
+		want bool
+	}{
+		{"USA only", "Castlevania (USA)", false},
+		{"World only", "Tetris (World)", false},
+		{"no region", "Homebrew", false},
+		{"Japan only", "Ice Climber (Japan)", true},
+		{"Europe only", "Sonic (Europe)", true},
+		{"Japan and USA", "Ice Climber (Japan, USA)", true},
+		{"USA and Europe", "Mega Man 2 (USA, Europe)", true},
+		{"Japan only with extension", "Ice Climber (Japan).nes", true},
+		{"USA only with extension", "Castlevania (USA).nes", false},
+		{"Korea", "Game (Korea)", true},
+		{"Brazil", "Game (Brazil)", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hasNonPreferredRegion(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
