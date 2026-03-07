@@ -1,5 +1,30 @@
 import { test, expect } from "./fixtures";
 
+const arrowsLeftPrefs = {
+  showPerformanceOverlay: false,
+  autoSaveEnabled: true,
+  autoLoadSaveEnabled: true,
+  selectedShader: "none",
+  selectedTheme: "default-dark",
+  consoleShaders: {},
+  selectedKeyMapping: "arrows-left",
+  customKeyMapping: {},
+  consoleKeyMappings: {},
+  raLinked: false,
+  raUsername: "",
+  raHardcoreEnabled: false,
+};
+
+async function mockPrefsAsArrowsLeft(page: import("@playwright/test").Page) {
+  await page.route("**/api/user/preferences", (route) => {
+    if (route.request().method() === "GET") {
+      route.fulfill({ status: 200, json: arrowsLeftPrefs });
+    } else {
+      route.fulfill({ status: 200, json: arrowsLeftPrefs });
+    }
+  });
+}
+
 test.describe("Key Mapping Card", () => {
   test("displays Key Mapping heading on preferences page", async ({ page }) => {
     await page.goto("/preferences");
@@ -22,6 +47,7 @@ test.describe("Key Mapping Card", () => {
   });
 
   test("Arrows + Left is selected by default", async ({ page }) => {
+    await mockPrefsAsArrowsLeft(page);
     await page.goto("/preferences");
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
@@ -40,7 +66,8 @@ test.describe("Key Mapping Card", () => {
     const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
     const customBtn = page.getByRole("button", { name: "Custom" });
 
-    // Initially arrows-left is active
+    // Ensure arrows-left is active to start
+    await arrowsBtn.click();
     await expect(arrowsBtn).toHaveClass(/ring-2/);
     await expect(wasdBtn).not.toHaveClass(/ring-2/);
 
@@ -63,6 +90,7 @@ test.describe("Key Mapping Card", () => {
 
 test.describe("Controller Visual", () => {
   test("shows correct key badges for arrows-left preset", async ({ page }) => {
+    await mockPrefsAsArrowsLeft(page);
     await page.goto("/preferences");
 
     // Ensure arrows-left is active (default)
@@ -280,18 +308,9 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     const firstSelect = table.locator("select").first();
     await expect(firstSelect).toBeVisible();
 
-    // Change to "WASD + Arrows" and wait for the mutation + refetch cycle
-    const refetchPromise = page.waitForResponse(
-      (resp) =>
-        resp.url().includes("/api/user/preferences") &&
-        resp.request().method() === "GET" &&
-        resp.status() === 200,
-    );
+    // Change to "WASD + Arrows" and wait for the save to complete
     await firstSelect.selectOption("wasd-arrows");
-    await refetchPromise;
     await expect(firstSelect).toHaveValue("wasd-arrows");
-
-    // Wait for the API call to complete
     await page.waitForTimeout(500);
 
     // Reload the page
@@ -306,14 +325,7 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     await expect(reloadedSelect).toHaveValue("wasd-arrows");
 
     // Reset back to global default to avoid test pollution
-    const resetRefetch = page.waitForResponse(
-      (resp) =>
-        resp.url().includes("/api/user/preferences") &&
-        resp.request().method() === "GET" &&
-        resp.status() === 200,
-    );
     await reloadedSelect.selectOption("");
-    await resetRefetch;
     await page.waitForTimeout(500);
   });
 });
@@ -327,7 +339,7 @@ test.describe("Key Mapping Persistence", () => {
     await wasdBtn.click();
     await expect(wasdBtn).toHaveClass(/ring-2/);
 
-    // Wait for the API call
+    // Wait for the API call to complete
     await page.waitForTimeout(500);
 
     // Reload
@@ -369,8 +381,8 @@ test.describe("Key Mapping Persistence", () => {
     await page.keyboard.press("m");
     await expect(captureBtn).toHaveText("M");
 
-    // Wait for the API call
-    await page.waitForTimeout(500);
+    // Wait for the debounced API save
+    await page.waitForTimeout(1000);
 
     // Reload
     await page.reload();

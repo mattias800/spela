@@ -61,11 +61,11 @@ const mockSessions = [
   }),
 ];
 
-function setupNetplayRoutes(
+async function setupNetplayRoutes(
   page: import("@playwright/test").Page,
   sessions: Record<string, unknown>[] = mockSessions,
 ) {
-  return page.route("**/api/netplay/sessions?*", (route) => {
+  await page.route("**/api/netplay/sessions?*", (route) => {
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -75,6 +75,14 @@ function setupNetplayRoutes(
         page: 1,
         pageSize: 20,
       }),
+    });
+  });
+
+  await page.route("**/api/netplay/invites", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 20 }),
     });
   });
 }
@@ -405,7 +413,7 @@ test.describe("Netplay Create Session Flow", () => {
 
     const createdSession = mockSession({ id: "s-new", inviteCode: "NEW123" });
 
-    // Mock games search
+    // Mock games search — use full console name to pass NETPLAY_SUPPORTED_CONSOLES filter
     await page.route("**/api/games?*", (route) => {
       route.fulfill({
         status: 200,
@@ -415,7 +423,7 @@ test.describe("Netplay Create Session Flow", () => {
             {
               id: "g1",
               title: "Super Mario World",
-              consoleName: "SNES",
+              consoleName: "Super Nintendo",
               coverUrl: "https://example.com/cover.png",
             },
           ],
@@ -485,6 +493,7 @@ test.describe("Netplay Create Session Flow", () => {
     await setupNetplayRoutes(page);
 
     // Mock games with mix of supported and unsupported consoles
+    // Use full console names to match NETPLAY_SUPPORTED_CONSOLES filter
     await page.route("**/api/games?*", (route) => {
       route.fulfill({
         status: 200,
@@ -494,7 +503,7 @@ test.describe("Netplay Create Session Flow", () => {
             {
               id: "g1",
               title: "Super Mario World",
-              consoleName: "SNES",
+              consoleName: "Super Nintendo",
               coverUrl: null,
             },
             {
@@ -518,13 +527,16 @@ test.describe("Netplay Create Session Flow", () => {
     ).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole("button", { name: /Create Session/ }).first().click();
-    await page.getByPlaceholder("Search for a game...").fill("Mario");
+    await page.getByPlaceholder("Search for a game...").fill("game");
 
-    // SNES game should be visible (supported)
-    await expect(page.getByText("Super Mario World")).toBeVisible();
+    // Scope assertions to the modal dropdown to avoid matching session list
+    const dropdown = page.locator(".absolute.z-10");
+
+    // Super Nintendo game should be visible (supported)
+    await expect(dropdown.getByText("Super Mario World")).toBeVisible();
 
     // PlayStation game should NOT be visible (unsupported)
-    await expect(page.getByText("Crash Bandicoot")).not.toBeVisible();
+    await expect(dropdown.getByText("Crash Bandicoot")).not.toBeVisible();
   });
 });
 

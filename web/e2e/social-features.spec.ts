@@ -244,6 +244,42 @@ async function setupGameDetailRoutes(
       }),
     });
   });
+
+  // Mock game sessions endpoint
+  await page.route(`**/api/games/${gameId}/sessions`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    });
+  });
+
+  // Mock game cheats endpoint
+  await page.route(`**/api/games/${gameId}/cheats`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    });
+  });
+
+  // Mock game challenges endpoint
+  await page.route(`**/api/games/${gameId}/challenges`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 10 }),
+    });
+  });
+
+  // Mock collections endpoint
+  await page.route("**/api/collections/mine*", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 100 }),
+    });
+  });
 }
 
 test.describe("Activity Feed Page", () => {
@@ -433,7 +469,7 @@ test.describe("Dashboard Social Widgets", () => {
     page,
   }) => {
     // Mock all dashboard APIs
-    await page.route("**/api/games/recent*", (route) => {
+    await page.route("**/api/user/recent*", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -441,7 +477,7 @@ test.describe("Dashboard Social Widgets", () => {
       });
     });
 
-    await page.route("**/api/games/favorites*", (route) => {
+    await page.route("**/api/user/favorites*", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -461,7 +497,7 @@ test.describe("Dashboard Social Widgets", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: "[]",
+        body: JSON.stringify({ achievements: [] }),
       });
     });
 
@@ -475,6 +511,23 @@ test.describe("Dashboard Social Widgets", () => {
           totalFavorites: 0,
           totalSaveStates: 0,
         }),
+      });
+    });
+
+    await page.route("**/api/challenges?*", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 4 }),
+      });
+    });
+
+    await page.route("**/api/user/play-later", (route) => {
+      if (route.request().url().includes("/reorder")) return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
       });
     });
 
