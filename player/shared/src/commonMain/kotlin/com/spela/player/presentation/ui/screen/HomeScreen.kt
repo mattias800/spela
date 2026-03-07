@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.filled.Whatshot
@@ -290,6 +291,23 @@ fun HomeScreen(
                                     ) {
                                         GameCarouselRow(
                                             games = state.favoriteGames.take(6),
+                                            onGameSelected = onGameSelected,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Recently Added section
+                            if (state.recentlyAddedGames.isNotEmpty()) {
+                                item {
+                                    SpTitledSection(
+                                        title = "Recently Added",
+                                        icon = Icons.Filled.NewReleases,
+                                        edgeToEdgeContent = true,
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    ) {
+                                        GameCarouselRow(
+                                            games = state.recentlyAddedGames.take(6),
                                             onGameSelected = onGameSelected,
                                         )
                                     }

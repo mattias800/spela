@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -27,6 +28,11 @@ type Scraper struct {
 	DATCache   *DATCache
 	GameDirs   []string
 	cache      *nameCache
+
+	// Scrape state tracking (shared across handlers)
+	scrapeMu       sync.Mutex
+	scraping       bool
+	scrapeProgress *ScrapeProgress
 }
 
 // NewScraper creates a new metadata scraper instance.
@@ -42,6 +48,49 @@ func NewScraper(database *gorm.DB, store *storage.Storage, datDir string, gameDi
 		GameDirs:   gameDirs,
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
+}
+
+// IsIGDBConfigured returns whether the scraper has a configured IGDB client.
+func (s *Scraper) IsIGDBConfigured() bool {
+	return s.IGDBClient != nil && s.IGDBClient.IsConfigured()
+}
+
+// TryStartScrape attempts to acquire the scrape lock.
+// Returns true if the lock was acquired (caller must call FinishScrape when done).
+func (s *Scraper) TryStartScrape() bool {
+	s.scrapeMu.Lock()
+	defer s.scrapeMu.Unlock()
+	if s.scraping {
+		return false
+	}
+	s.scraping = true
+	return true
+}
+
+// FinishScrape releases the scrape lock and clears progress.
+func (s *Scraper) FinishScrape() {
+	s.scrapeMu.Lock()
+	s.scraping = false
+	s.scrapeProgress = nil
+	s.scrapeMu.Unlock()
+}
+
+// SetScrapeProgress updates the current scrape progress.
+func (s *Scraper) SetScrapeProgress(p *ScrapeProgress) {
+	s.scrapeMu.Lock()
+	s.scrapeProgress = p
+	s.scrapeMu.Unlock()
+}
+
+// GetScrapeStatus returns whether a scrape is active and the current progress.
+func (s *Scraper) GetScrapeStatus() (bool, *ScrapeProgress) {
+	s.scrapeMu.Lock()
+	defer s.scrapeMu.Unlock()
+	if s.scrapeProgress == nil {
+		return s.scraping, nil
+	}
+	p := *s.scrapeProgress
+	return s.scraping, &p
 }
 
 // AbbreviationToLibRetro maps console abbreviations to LibRetro system names.
@@ -206,20 +255,34 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	// --- LibRetro Thumbnails (preferred for box art, fallback for screenshots) ---
 	libRetroSystem, hasLibRetro := AbbreviationToLibRetro[console.Abbreviation]
 	if hasLibRetro {
+		var libRetroWg sync.WaitGroup
+		var libRetroCoverPath string
+
 		// Box art: always try LibRetro (preferred source for box art)
-		boxartSubpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
-		if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath); path != "" {
-			game.LibRetroCoverURL = path
-		}
+		libRetroWg.Add(1)
+		go func() {
+			defer libRetroWg.Done()
+			boxartSubpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
+			libRetroCoverPath = s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath)
+		}()
 
 		// Screenshot fallback: only if no IGDB screenshots were saved
 		var screenshotCount int64
 		s.DB.Model(&db.GameScreenshot{}).Where("game_id = ?", game.ID).Count(&screenshotCount)
 		if screenshotCount == 0 {
-			snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
-			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
-				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
-			}
+			libRetroWg.Add(1)
+			go func() {
+				defer libRetroWg.Done()
+				snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
+				if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
+					s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
+				}
+			}()
+		}
+
+		libRetroWg.Wait()
+		if libRetroCoverPath != "" {
+			game.LibRetroCoverURL = libRetroCoverPath
 		}
 	}
 
@@ -421,16 +484,21 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		}
 	}
 
-	// Download cover art from IGDB (stored separately; LibRetro is preferred for active cover)
+	// Download cover art and screenshots concurrently
+	var imgWg sync.WaitGroup
+
 	if match.Cover != nil && match.Cover.ImageID != "" {
-		coverURL := igdb.ImageURL(match.Cover.ImageID, "cover_big")
-		coverSubpath := fmt.Sprintf("%s/%s/boxart-igdb.jpg", console.Abbreviation, gameIDStr)
-		if path := s.downloadExternalImage(coverURL, coverSubpath); path != "" {
-			game.IGDBCoverURL = path
-		}
+		imgWg.Add(1)
+		go func(imageID string) {
+			defer imgWg.Done()
+			coverURL := igdb.ImageURL(imageID, "cover_big")
+			coverSubpath := fmt.Sprintf("%s/%s/boxart-igdb.jpg", console.Abbreviation, gameIDStr)
+			if path := s.downloadExternalImage(coverURL, coverSubpath); path != "" {
+				game.IGDBCoverURL = path
+			}
+		}(match.Cover.ImageID)
 	}
 
-	// Download all screenshots from IGDB at original resolution (max 10)
 	maxScreenshots := 10
 	if len(match.Screenshots) < maxScreenshots {
 		maxScreenshots = len(match.Screenshots)
@@ -440,12 +508,18 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		if ss.ImageID == "" {
 			continue
 		}
-		screenshotURL := igdb.ImageURL(ss.ImageID, "original")
-		screenshotSubpath := fmt.Sprintf("%s/%s/screenshot_%d.jpg", console.Abbreviation, gameIDStr, i)
-		if path := s.downloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
-			s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: i})
-		}
+		imgWg.Add(1)
+		go func(idx int, imageID string) {
+			defer imgWg.Done()
+			screenshotURL := igdb.ImageURL(imageID, "original")
+			screenshotSubpath := fmt.Sprintf("%s/%s/screenshot_%d.jpg", console.Abbreviation, gameIDStr, idx)
+			if path := s.downloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
+				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: idx})
+			}
+		}(i, ss.ImageID)
 	}
+
+	imgWg.Wait()
 }
 
 // ScrapeGameWithIGDBMatch re-scrapes a game using a specific IGDB game ID
@@ -640,9 +714,6 @@ func (s *Scraper) ScrapeAll(mode string, onProgress func(ScrapeProgress)) (int, 
 				Failures:  failures,
 			})
 		}
-
-		// Small delay to avoid hammering the thumbnail server
-		time.Sleep(200 * time.Millisecond)
 	}
 
 	return successes, total, nil

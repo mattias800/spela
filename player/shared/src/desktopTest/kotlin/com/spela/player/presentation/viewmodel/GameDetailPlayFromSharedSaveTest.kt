@@ -220,6 +220,7 @@ private class PlayFromSharedSaveTestGameRepository : GameRepository {
     override suspend fun getTopRatedAvailable() = Result.success(emptyList<TopListGame>())
     override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
     override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
+    override suspend fun getRecentlyAddedGames(): Result<List<Game>> = Result.success(emptyList())
 }
 
 private class PlayFromSharedSaveTestRatingRepository : RatingRepository {

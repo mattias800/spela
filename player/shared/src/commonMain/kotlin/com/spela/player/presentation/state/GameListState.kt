@@ -35,4 +35,5 @@ data class GameListState(
     val consolesWithMissingBios: Set<String> = emptySet(),
     val topRatedGames: List<TopRatedGame> = emptyList(),
     val isLoadingTopRated: Boolean = false,
+    val recentlyAddedGames: List<Game> = emptyList(),
 )

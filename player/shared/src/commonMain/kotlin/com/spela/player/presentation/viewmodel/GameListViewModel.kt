@@ -188,6 +188,17 @@ class GameListViewModel(
                 )
             }
         }
+        // Recently added games
+        gameRepository?.let { repo ->
+            scope.launch(dispatchers.io) {
+                repo.getRecentlyAddedGames().fold(
+                    onSuccess = { games ->
+                        _state.update { it.copy(recentlyAddedGames = games) }
+                    },
+                    onFailure = { /* best effort */ },
+                )
+            }
+        }
     }
 
     private fun loadConsoles() {
