@@ -53,9 +53,10 @@ export function useGameScrapedListener() {
     const scraped = payload;
     if (!scraped?.id) return;
 
-    // Update single game query: ["game", id]
+    // Update single game query: ["game", id] (exact to avoid clobbering
+    // sub-queries like ["game", id, "cheats"])
     queryClient.setQueriesData<Game>(
-      { queryKey: ["game", scraped.id] },
+      { queryKey: ["game", scraped.id], exact: true },
       (old) => (old ? mergeScrapedData(old, scraped) : old),
     );
 
