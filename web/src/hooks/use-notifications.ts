@@ -1,5 +1,6 @@
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useToast } from "@/components/ui";
+import { useAuth } from "@/hooks/use-auth";
 
 interface SharedSessionInvitePayload {
   sharedSessionName: string;
@@ -12,6 +13,12 @@ interface NetplaySessionPayload {
   gameTitle: string;
 }
 
+interface NetplayInvitePayload {
+  inviteeId: string;
+  inviterUsername: string;
+  gameTitle: string;
+}
+
 /**
  * Global WebSocket notification hook — shows toast notifications
  * for shared session invites and netplay session events.
@@ -19,6 +26,7 @@ interface NetplaySessionPayload {
  */
 export function useNotifications() {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useWebSocketEvent("shared_session_invite_sent", (payload: SharedSessionInvitePayload) => {
     toast(
@@ -41,6 +49,17 @@ export function useNotifications() {
     "netplay_player_joined",
     (payload: NetplaySessionPayload) => {
       toast("info", `A player joined the netplay session for ${payload.gameTitle}`);
+    },
+  );
+
+  useWebSocketEvent(
+    "netplay_invite_sent",
+    (payload: NetplayInvitePayload) => {
+      if (payload.inviteeId !== user?.id) return;
+      toast(
+        "info",
+        `${payload.inviterUsername} invited you to play ${payload.gameTitle}`,
+      );
     },
   );
 }

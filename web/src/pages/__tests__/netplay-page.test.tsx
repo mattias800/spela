@@ -15,6 +15,19 @@ vi.mock("@/hooks/use-netplay", () => ({
     mutate: vi.fn(),
     isPending: false,
   })),
+  useNetplayInvitesRealtime: vi.fn(),
+  useNetplayInvites: vi.fn(() => ({
+    data: { data: [], total: 0 },
+    isLoading: false,
+  })),
+  useAcceptNetplayInvite: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
+  useDeclineNetplayInvite: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 vi.mock("@/hooks/use-games", () => ({

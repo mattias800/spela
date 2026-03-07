@@ -584,6 +584,26 @@ type NetplaySessionResponse struct {
 	EndedAt          *time.Time `json:"endedAt,omitempty"`
 }
 
+// NetplayInviteResponse is the API response for a netplay session invite.
+type NetplayInviteResponse struct {
+	ID               string    `json:"id"`
+	NetplaySessionID string    `json:"netplaySessionId"`
+	InviterID        string    `json:"inviterId"`
+	InviterUsername  string    `json:"inviterUsername"`
+	InviterAvatarURL string    `json:"inviterAvatarUrl,omitempty"`
+	InviteeID        string    `json:"inviteeId"`
+	InviteeUsername  string    `json:"inviteeUsername"`
+	InviteeAvatarURL string    `json:"inviteeAvatarUrl,omitempty"`
+	GameID           string    `json:"gameId"`
+	GameTitle        string    `json:"gameTitle"`
+	GameCoverURL     string    `json:"gameCoverUrl,omitempty"`
+	ConsoleName      string    `json:"consoleName,omitempty"`
+	HostUsername     string    `json:"hostUsername"`
+	InputDelay       int       `json:"inputDelay"`
+	Status           string    `json:"status"`
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
 // ChallengeResponse is the API response for a game challenge.
 type ChallengeResponse struct {
 	ID              string     `json:"id"`

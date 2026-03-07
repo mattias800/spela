@@ -562,6 +562,30 @@ export interface NetplaySessionsResponse {
   pageSize: number;
 }
 
+export interface NetplayInvite {
+  id: string;
+  netplaySessionId: string;
+  inviterId: string;
+  inviterUsername: string;
+  inviterAvatarUrl: string | null;
+  inviteeId: string;
+  inviteeUsername: string;
+  inviteeAvatarUrl: string | null;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl: string | null;
+  consoleName: string;
+  hostUsername: string;
+  inputDelay: number;
+  status: "pending" | "accepted" | "declined" | "expired";
+  createdAt: string;
+}
+
+export interface NetplayInvitesResponse {
+  data: NetplayInvite[];
+  total: number;
+}
+
 export interface BiosFile {
   name: string;
   size: number;

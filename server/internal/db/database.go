@@ -137,6 +137,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SharedSessionInvite{},
 		&SharedSessionSave{},
 		&NetplaySession{},
+		&NetplayInvite{},
 		&Challenge{},
 		&ChallengeAttempt{},
 		&GameKeyMappingPreference{},

@@ -23,6 +23,7 @@ import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useGameScrapedListener } from "@/hooks/use-game-scraped-listener";
 import { usePendingInvitationCount } from "@/hooks/use-shared-sessions";
+import { usePendingNetplayInviteCount } from "@/hooks/use-netplay";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useIgdbStatus } from "@/hooks/use-admin";
@@ -36,6 +37,8 @@ export function AppLayout() {
   useNotifications();
   const { data: invitationCountData } = usePendingInvitationCount();
   const sharedSessionBadge = invitationCountData?.count;
+  const { data: netplayInviteCountData } = usePendingNetplayInviteCount();
+  const netplayBadge = netplayInviteCountData?.count;
   const { data: biosData } = useBiosStatus();
   const hasMissingBios =
     biosData?.consoles.some((c) => c.status === "missing") ?? false;
@@ -90,6 +93,7 @@ export function AppLayout() {
           icon: Wifi,
           label: "Netplay",
           matchPaths: ["/netplay"],
+          badge: netplayBadge,
         },
         { to: "/preferences", icon: SlidersHorizontal, label: "Preferences" },
       ],

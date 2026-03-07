@@ -11,10 +11,12 @@ import { useToast } from "@/components/ui";
 import {
   useNetplaySessions,
   useJoinNetplaySession,
+  useNetplayInvitesRealtime,
 } from "@/hooks/use-netplay";
 import { NetplaySessionRow } from "@/features/netplay/components/netplay-session-row";
 import { NetplayCreateModal } from "@/features/netplay/components/netplay-create-modal";
 import { Pagination } from "@/components/pagination";
+import { NetplayInvitationsSection } from "@/features/netplay/components/netplay-invitations-section";
 
 function SessionListSkeleton() {
   return (
@@ -46,6 +48,7 @@ export function NetplayPage() {
   const { toast } = useToast();
   const { data: sessionsData, isLoading } = useNetplaySessions(page, pageSize);
   const joinLookup = useJoinNetplaySession();
+  useNetplayInvitesRealtime();
 
   const sessions = sessionsData?.data ?? [];
 
@@ -80,6 +83,9 @@ export function NetplayPage() {
           Create Session
         </Button>
       </div>
+
+      {/* Pending invitations */}
+      <NetplayInvitationsSection />
 
       {/* Find session by invite code */}
       <div className="flex items-end gap-3">

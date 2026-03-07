@@ -10,6 +10,26 @@ vi.mock("@/hooks/use-netplay", () => ({
     mutate: vi.fn(),
     isPending: false,
   })),
+  useNetplayInvitesRealtime: vi.fn(),
+  useSessionNetplayInvites: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+  useSendNetplayInvite: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
+}));
+
+vi.mock("@/hooks/use-social", () => ({
+  useSearchUsers: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+}));
+
+vi.mock("@/hooks/use-debounced-value", () => ({
+  useDebouncedValue: vi.fn((val: string) => val),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
