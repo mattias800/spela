@@ -1224,6 +1224,16 @@ JNI_FUNC(void, nativeSetInputAnalog)(JNIEnv *env, jobject thiz,
     input_set_analog((unsigned)port, (unsigned)index, (unsigned)id, (int16_t)value);
 }
 
+JNI_FUNC(jboolean, nativeGetInputButton)(JNIEnv *env, jobject thiz,
+                                          jint port, jint id) {
+    return input_get_button((unsigned)port, (unsigned)id) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNI_FUNC(jshort, nativeGetInputAnalog)(JNIEnv *env, jobject thiz,
+                                        jint port, jint index, jint id) {
+    return (jshort)input_get_analog((unsigned)port, (unsigned)index, (unsigned)id);
+}
+
 JNI_FUNC(jdouble, nativeGetTargetFps)(JNIEnv *env, jobject thiz) {
     return g_core.av_info.timing.fps;
 }

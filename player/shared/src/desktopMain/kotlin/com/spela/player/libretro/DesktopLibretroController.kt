@@ -46,6 +46,15 @@ class DesktopLibretroController(
     @Volatile
     private var netplayDisconnected = false
 
+    /**
+     * External button state for netplay. When in netplay mode, captureLocalInput
+     * reads from this instead of the JNI table to avoid a feedback loop where
+     * applyInputToJni's output is re-captured as new input.
+     * Written by setButton (from pressButton / UI thread), read by emulation thread.
+     */
+    @Volatile
+    private var netplayLocalButtons: Int = 0
+
     /** Callback invoked on the emulation thread when the remote peer times out. */
     var onNetplayPeerTimeout: (() -> Unit)? = null
 
@@ -167,6 +176,15 @@ class DesktopLibretroController(
 
     fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
         jni.nativeSetInputButton(port, buttonId, pressed)
+        // Also update netplay-side button state (avoids JNI feedback loop)
+        if (port == netplayLocalPort && netplayTransport != null) {
+            val mask = 1 shl buttonId
+            if (pressed) {
+                netplayLocalButtons = netplayLocalButtons or mask
+            } else {
+                netplayLocalButtons = netplayLocalButtons and mask.inv()
+            }
+        }
     }
 
     fun setAnalog(port: Int, stickIndex: Int, axisId: Int, value: Short) {
@@ -315,6 +333,19 @@ class DesktopLibretroController(
         var fpsCounter = 0
         var fpsTimer = System.nanoTime()
 
+        // Seed frames 0 through inputDelay-1 with empty inputs for both ports.
+        // The loop sends input for frame F + inputDelay, so without seeding
+        // the early frames would never have inputs and the loop would deadlock.
+        val emptyInput = InputState()
+        for (f in 0L until inputDelay.toLong()) {
+            for (p in 0 until playerCount) {
+                runBlocking {
+                    inputBuffer.setLocalInput(f, p, emptyInput)
+                }
+                transport.sendInput(f, p, emptyInput)
+            }
+        }
+
         while (running) {
             if (paused) {
                 Thread.sleep(16)
@@ -324,17 +355,18 @@ class DesktopLibretroController(
             val frameStart = System.nanoTime()
             val currentFrame = frameCounter
 
-            // 1. Capture local input state from the JNI input table
-            val localInput = captureLocalInput(localPort)
+            // 1. Capture local input from netplayLocalButtons (set by setButton),
+            //    NOT from the JNI table (which has stale applyInputToJni state).
+            val localInput = captureNetplayLocalInput()
 
-            // 2. Buffer local input for frame F + inputDelay and send to remote
+            // 3. Buffer local input for frame F + inputDelay and send to remote
             val targetFrame = currentFrame + inputDelay
             runBlocking {
                 inputBuffer.setLocalInput(targetFrame, localPort, localInput)
             }
             transport.sendInput(targetFrame, localPort, localInput)
 
-            // 3. Block until we have both players' inputs for the current frame
+            // 4. Block until we have both players' inputs for the current frame
             val frameInputs = runBlocking {
                 inputBuffer.awaitInputsForFrame(currentFrame, playerCount, timeoutMs = 5000)
             }
@@ -355,12 +387,12 @@ class DesktopLibretroController(
                 netplayDisconnected = false
             }
 
-            // 4. Apply all player inputs via JNI
+            // 5. Apply all player inputs via JNI
             for ((port, input) in frameInputs) {
                 applyInputToJni(port, input)
             }
 
-            // 5. Run one emulation frame
+            // 6. Run one emulation frame
             jni.nativeRun()
 
             if (jni.nativeGpuIsActive()) {
@@ -412,6 +444,15 @@ class DesktopLibretroController(
      * Capture the current local input state from the JNI input table.
      * Returns an InputState with the current button and analog values.
      */
+    /**
+     * Capture local input from netplayLocalButtons (Kotlin-side state).
+     * Reads the buttons set by setButton() on the external thread,
+     * avoiding the JNI feedback loop with applyInputToJni.
+     */
+    private fun captureNetplayLocalInput(): InputState {
+        return InputState(netplayLocalButtons.toUShort(), 0, 0)
+    }
+
     private fun captureLocalInput(port: Int): InputState {
         // Read button state: libretro uses 16 button IDs (0..15)
         var buttons: UShort = 0u

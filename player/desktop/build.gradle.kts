@@ -103,6 +103,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.koin.core)
+                implementation(libs.ktor.client.cio)
             }
         }
 
@@ -242,4 +243,30 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
 // Pass native library path to Compose Hot Reload tasks.
 tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") }.configureEach {
     jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")
+}
+
+// Headless netplay test runner — used by run-netplay-e2e.sh to launch two processes.
+val runNetplayTestRunner by tasks.registering(JavaExec::class) {
+    group = "application"
+    description = "Run the headless netplay test runner (pass args via --args)"
+    dependsOn(buildNativeLibrary, "desktopJar")
+
+    mainClass.set("com.spela.player.desktop.NetplayTestRunnerKt")
+    classpath = files(
+        tasks.named("desktopJar").map { it.outputs.files },
+        configurations.named("desktopRuntimeClasspath"),
+    )
+    jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")
+}
+
+// Print the runtime classpath for the shell script to use when launching JVM directly.
+tasks.register("printRuntimeClasspath") {
+    group = "help"
+    description = "Print the desktop runtime classpath (used by run-netplay-e2e.sh)"
+    doLast {
+        val desktopJar = tasks.named("desktopJar").get().outputs.files.singleFile
+        val runtimeCp = configurations.named("desktopRuntimeClasspath").get().resolve()
+        val allJars = listOf(desktopJar) + runtimeCp
+        println(allJars.joinToString(File.pathSeparator) { it.absolutePath })
+    }
 }
