@@ -95,6 +95,9 @@ export type ApiGetPath = WithQuery<
   // Netplay
   | "/netplay/sessions"
   | `/netplay/sessions/${string}`
+  | `/netplay/sessions/${string}/invites`
+  | "/netplay/invites"
+  | "/netplay/invites/count"
 
   // Social
   | "/social/online"
@@ -194,7 +197,10 @@ export type ApiPostPath = WithQuery<
   // Netplay
   | "/netplay/sessions"
   | "/netplay/sessions/join"
+  | `/netplay/sessions/${string}/invites`
   | `/netplay/sessions/${string}/leave`
+  | `/netplay/invites/${string}/accept`
+  | `/netplay/invites/${string}/decline`
 
   // Challenges
   | "/challenges"

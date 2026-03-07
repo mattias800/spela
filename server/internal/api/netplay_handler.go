@@ -230,6 +230,9 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 	// Reload with associations
 	h.DB.Preload("HostUser").Preload("ClientUser").Preload("Game").Preload("Game.Console").First(&session, session.ID)
 
+	// Expire remaining pending invites now that the session is full (AC-5.1)
+	h.expireNetplayInvites(session.ID)
+
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{Type: "netplay_player_joined", Payload: h.toSessionResponse(session)})
 	}
@@ -271,6 +274,9 @@ func (h *NetplayHandler) LeaveSession(c *gin.Context) {
 		"ended_at":   now,
 	})
 
+	// Expire pending invites when session ends (AC-5.2)
+	h.expireNetplayInvites(session.ID)
+
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{Type: "netplay_session_ended", Payload: gin.H{
 			"sessionId": strconv.FormatUint(uint64(session.ID), 10),
@@ -306,6 +312,9 @@ func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 		"end_reason": "host_left",
 		"ended_at":   now,
 	})
+
+	// Expire pending invites when session is cancelled (AC-5.2)
+	h.expireNetplayInvites(session.ID)
 
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{Type: "netplay_session_deleted", Payload: gin.H{

@@ -443,6 +443,20 @@ type NetplaySession struct {
 	EndedAt      *time.Time     `json:"endedAt,omitempty"`
 }
 
+// NetplayInvite represents a user-to-user invitation to join a netplay session.
+type NetplayInvite struct {
+	ID               uint           `gorm:"primarykey" json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+	NetplaySessionID uint           `gorm:"uniqueIndex:idx_netplay_invite_session_invitee;not null" json:"netplaySessionId"`
+	NetplaySession   NetplaySession `gorm:"foreignKey:NetplaySessionID" json:"-"`
+	InviterID        uint           `gorm:"not null" json:"inviterId"`
+	Inviter          User           `gorm:"foreignKey:InviterID" json:"-"`
+	InviteeID        uint           `gorm:"uniqueIndex:idx_netplay_invite_session_invitee;not null" json:"inviteeId"`
+	Invitee          User           `gorm:"foreignKey:InviteeID" json:"-"`
+	Status           string         `gorm:"size:32;default:pending;not null" json:"status"` // "pending", "accepted", "declined", "expired"
+}
+
 // Challenge represents a user-created game challenge.
 type Challenge struct {
 	ID              uint           `gorm:"primarykey" json:"id"`

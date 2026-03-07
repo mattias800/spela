@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Gamepad2, Trash2, Monitor, Plus } from "lucide-react";
+import { Gamepad2, Trash2, Monitor, Plus, UserPlus } from "lucide-react";
 import {
   Button,
   BackButton,
@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui";
 import {
   useNetplaySession,
   useDeleteNetplaySession,
+  useNetplayInvitesRealtime,
 } from "@/hooks/use-netplay";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -22,6 +23,8 @@ import {
 } from "@/features/netplay/components/netplay-status";
 import { SessionCode } from "@/features/netplay/components/session-code";
 import { NetplayPlayerList } from "@/features/netplay/components/netplay-player-list";
+import { NetplayInviteModal } from "@/features/netplay/components/netplay-invite-modal";
+import { NetplaySessionInvites } from "@/features/netplay/components/netplay-session-invites";
 import { formatDate } from "@/lib/format";
 
 function NetplaySessionSkeleton() {
@@ -58,6 +61,8 @@ export function NetplaySessionPage() {
   const deleteSession = useDeleteNetplaySession();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  useNetplayInvitesRealtime(id);
 
   const isHost = session?.hostId === user?.id;
 
@@ -136,11 +141,19 @@ export function NetplaySessionPage() {
               </div>
             </div>
 
-            {/* Invite code -- prominent display for waiting sessions */}
+            {/* Invite player button — primary action for host (AC-1.1) */}
+            {isHost && session.status === "waiting" && (
+              <Button onClick={() => setShowInviteModal(true)}>
+                <UserPlus className="h-4 w-4" />
+                Invite Player
+              </Button>
+            )}
+
+            {/* Invite code — secondary mechanism (AC-4.2) */}
             {session.status === "waiting" && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-surface-500 uppercase tracking-wider">
-                  Invite Code
+                  Or share an invite code
                 </p>
                 <SessionCode code={session.inviteCode} />
               </div>
@@ -247,6 +260,18 @@ export function NetplaySessionPage() {
 
       {/* Player list */}
       <NetplayPlayerList session={session} />
+
+      {/* Invited players — host sees all invites with status (AC-3.1) */}
+      {isHost && <NetplaySessionInvites sessionId={session.id} />}
+
+      {/* Invite player modal */}
+      {isHost && (
+        <NetplayInviteModal
+          sessionId={session.id}
+          open={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
 
       {/* Cancel confirm modal */}
       <Modal

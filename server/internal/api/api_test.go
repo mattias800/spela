@@ -56,6 +56,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.SharedSessionInvite{},
 		&db.SharedSessionSave{},
 		&db.NetplaySession{},
+		&db.NetplayInvite{},
 		&db.Challenge{},
 		&db.ChallengeAttempt{},
 		&db.GameKeyMappingPreference{},

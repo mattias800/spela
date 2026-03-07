@@ -368,6 +368,12 @@ func NewRouter(cfg Config) *gin.Engine {
 			netplay.DELETE("/sessions/:id", netplayHandler.DeleteSession)
 			netplay.PUT("/sessions/:id/settings", netplayHandler.UpdateSettings)
 			netplay.GET("/sessions/:id/ws", netplayHandler.HandleWebSocket)
+			netplay.POST("/sessions/:id/invites", netplayHandler.SendInvite)
+			netplay.GET("/sessions/:id/invites", netplayHandler.ListSessionInvites)
+			netplay.GET("/invites", netplayHandler.ListMyNetplayInvites)
+			netplay.GET("/invites/count", netplayHandler.GetPendingNetplayInviteCount)
+			netplay.POST("/invites/:inviteId/accept", netplayHandler.AcceptNetplayInvite)
+			netplay.POST("/invites/:inviteId/decline", netplayHandler.DeclineNetplayInvite)
 		}
 
 		// Social
