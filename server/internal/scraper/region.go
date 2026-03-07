@@ -1,6 +1,9 @@
 package scraper
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 // regionPattern matches parenthesized region tags in No-Intro filenames,
 // e.g. "(USA)", "(Japan)", "(USA, Europe)", "(World)".
@@ -18,4 +21,21 @@ func ExtractRegion(filename string) string {
 		return ""
 	}
 	return match[1]
+}
+
+// hasNonPreferredRegion returns true if the name contains a region tag with
+// at least one non-preferred region (anything other than USA, US, or World).
+// Returns false for names with no region tags or only preferred regions.
+func hasNonPreferredRegion(name string) bool {
+	region := ExtractRegion(name)
+	if region == "" {
+		return false
+	}
+	for _, part := range strings.Split(region, ",") {
+		part = strings.TrimSpace(strings.ToLower(part))
+		if part != "usa" && part != "world" && part != "us" {
+			return true
+		}
+	}
+	return false
 }

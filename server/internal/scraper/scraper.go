@@ -177,16 +177,22 @@ func (s *Scraper) tryDownloadImage(system, name, imageType, subpath string) stri
 }
 
 // downloadLibRetroImage downloads an image from LibRetro Thumbnails and saves it locally.
-// Tries the exact game name first, then falls back to fuzzy matching against the
-// full LibRetro directory listing for the system.
+// When the game name contains a non-preferred region (e.g. Japan, Europe), it skips
+// the exact name match and goes straight to fuzzy matching, which prefers USA/World
+// entries via hasPreferredRegion tie-breaking. For games with preferred regions only
+// (USA, World) or no region tags, it tries the exact name first as a fast path.
 // Returns the relative storage path on success, or empty string if the image was not found.
 func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath string) string {
-	// Try exact name first (single HTTP request)
-	if path := s.tryDownloadImage(system, gameName, imageType, subpath); path != "" {
-		return path
+	// Fast path: try exact name match when the name already has a preferred
+	// region or no region at all. Skip this for non-preferred regions so the
+	// fuzzy matcher can find a USA/World alternative.
+	if !hasNonPreferredRegion(gameName) {
+		if path := s.tryDownloadImage(system, gameName, imageType, subpath); path != "" {
+			return path
+		}
 	}
 
-	// Fuzzy fallback: fetch the full name listing and find the best match
+	// Fuzzy matching: prefers USA/World entries via hasPreferredRegion tie-breaking.
 	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
 	if err != nil {
 		slog.Warn("failed to load LibRetro name listing", "system", system, "error", err)

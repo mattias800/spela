@@ -358,6 +358,57 @@ func TestFindBestMatch(t *testing.T) {
 	}
 }
 
+func TestFindBestMatch_PrefersUSAOverJapan(t *testing.T) {
+	entry := func(raw string) nameEntry {
+		return nameEntry{
+			Raw:        raw,
+			Normalized: normalizeName(raw),
+			Priority:   computePriority(raw),
+		}
+	}
+
+	// Simulate LibRetro entries for Ice Climber with Japan listed first
+	entries := []nameEntry{
+		entry("Ice Climber (Japan)"),
+		entry("Ice Climber (USA, Europe)"),
+	}
+
+	tests := []struct {
+		name    string
+		query   string
+		wantRaw string
+	}{
+		{
+			name:    "Japan ROM prefers USA entry",
+			query:   "Ice Climber (Japan)",
+			wantRaw: "Ice Climber (USA, Europe)",
+		},
+		{
+			name:    "multi-region ROM prefers USA entry",
+			query:   "Ice Climber (Japan, USA)",
+			wantRaw: "Ice Climber (USA, Europe)",
+		},
+		{
+			name:    "bare name prefers USA entry",
+			query:   "Ice Climber",
+			wantRaw: "Ice Climber (USA, Europe)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			normalized := normalizeName(tt.query)
+			match, _, found := findBestMatch(normalized, entries, 0.88)
+			if !found {
+				t.Fatalf("findBestMatch(%q): expected match, got none", tt.query)
+			}
+			if match.Raw != tt.wantRaw {
+				t.Errorf("findBestMatch(%q): got %q, want %q", tt.query, match.Raw, tt.wantRaw)
+			}
+		})
+	}
+}
+
 func TestFindBestMatch_EmptyInputs(t *testing.T) {
 	_, _, found := findBestMatch("", []nameEntry{{Raw: "test", Normalized: "test"}}, 0.88)
 	if found {
