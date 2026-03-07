@@ -118,9 +118,19 @@ export function PlayHeatmap({ data, className }: PlayHeatmapProps) {
       const playTime = activityMap.get(key) ?? 0;
       if (playTime > max) max = playTime;
 
-      const diffDays = Math.floor(
-        (current.getTime() - startDay.getTime()) / 86400000,
-      );
+      // Use UTC to avoid DST shifts when computing day offsets
+      const diffMs =
+        Date.UTC(
+          current.getFullYear(),
+          current.getMonth(),
+          current.getDate(),
+        ) -
+        Date.UTC(
+          startDay.getFullYear(),
+          startDay.getMonth(),
+          startDay.getDate(),
+        );
+      const diffDays = Math.round(diffMs / 86400000);
       const week = Math.floor(diffDays / 7);
       const day = diffDays % 7;
 
