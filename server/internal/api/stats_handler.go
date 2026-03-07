@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -156,19 +157,18 @@ func parseTimeString(s string) time.Time {
 }
 
 // RecordDailyPlayActivity upserts a DailyPlayActivity row for today, incrementing
-// the play time by the given number of seconds.
+// the play time by the given number of seconds. Uses an atomic upsert to avoid
+// race conditions under concurrent requests.
 func RecordDailyPlayActivity(database *gorm.DB, userID uint, seconds int64) {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
-	var record db.DailyPlayActivity
-	result := database.Where("user_id = ? AND date = ?", userID, today).First(&record)
-	if result.Error == gorm.ErrRecordNotFound {
-		database.Create(&db.DailyPlayActivity{
-			UserID:   userID,
-			Date:     today,
-			PlayTime: seconds,
-		})
-	} else if result.Error == nil {
-		database.Model(&record).Update("play_time", gorm.Expr("play_time + ?", seconds))
+	result := database.Exec(
+		`INSERT INTO daily_play_activities (user_id, date, play_time)
+		 VALUES (?, ?, ?)
+		 ON CONFLICT (user_id, date) DO UPDATE SET play_time = play_time + ?`,
+		userID, today, seconds, seconds,
+	)
+	if result.Error != nil {
+		slog.Error("failed to record daily play activity", "error", result.Error, "userId", userID)
 	}
 }
 
