@@ -1,6 +1,7 @@
 package api
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -1118,4 +1119,466 @@ func TestTryIdentifyByDAT_RedumpFallback(t *testing.T) {
 	assert.Equal(t, crc, results[0].CRC32)
 	assert.Equal(t, "verified", results[0].VerificationStatus)
 	assert.Equal(t, "Final Fantasy VII (USA) (Disc 1).bin", results[0].CanonicalName)
+}
+
+// createZipBytes builds an in-memory zip archive from a map of filename -> content.
+// Filenames may include directory paths (e.g., "subdir/game.nes").
+func createZipBytes(t *testing.T, entries map[string][]byte) []byte {
+	t.Helper()
+	buf := &bytes.Buffer{}
+	w := zip.NewWriter(buf)
+	for name, content := range entries {
+		f, err := w.Create(name)
+		require.NoError(t, err)
+		_, err = f.Write(content)
+		require.NoError(t, err)
+	}
+	require.NoError(t, w.Close())
+	return buf.Bytes()
+}
+
+func TestUploadROMs_ZipWithSingleROM(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"Mario.nes": []byte("nes rom data"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"roms.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 1)
+	assert.Equal(t, "Mario.nes", results[0].FileName)
+	assert.Equal(t, "Mario.nes", results[0].OriginalFileName)
+	assert.Equal(t, "pending_scrape", results[0].Status)
+	require.NotNil(t, results[0].ConsoleID)
+	assert.Equal(t, "nes", *results[0].ConsoleID)
+
+	// Verify file exists in staging
+	stagingDir := filepath.Join(env.tmpDir, "staging")
+	_, err := os.Stat(filepath.Join(stagingDir, "Mario.nes"))
+	assert.NoError(t, err, "extracted ROM should exist in staging")
+
+	// Verify no temp zip files remain
+	entries, err := os.ReadDir(stagingDir)
+	require.NoError(t, err)
+	for _, e := range entries {
+		assert.False(t, matchesTempZipPattern(e.Name()), "temp zip file should be cleaned up: %s", e.Name())
+	}
+}
+
+func TestUploadROMs_ZipWithMultipleROMs(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"Mario.nes":   []byte("nes rom"),
+		"Zelda.sfc":   []byte("snes rom"),
+		"Pokemon.gba": []byte("gba rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"games.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 3)
+
+	// All should be staged successfully
+	for _, r := range results {
+		assert.NotEqual(t, "rejected", r.Status, "ROM %s should not be rejected", r.FileName)
+	}
+
+	// Verify DB records
+	var count int64
+	env.db.Model(&db.StagedUpload{}).Count(&count)
+	assert.Equal(t, int64(3), count)
+}
+
+func TestUploadROMs_ZipWithMixedFiles(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"Mario.nes":  []byte("nes rom"),
+		"readme.txt": []byte("this is a readme"),
+		"cover.jpg":  []byte("fake image data"),
+		"Zelda.sfc":  []byte("snes rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"mixed.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	// Only ROMs should appear in results (txt and jpg silently skipped)
+	require.Len(t, results, 2)
+
+	fileNames := make(map[string]bool)
+	for _, r := range results {
+		fileNames[r.FileName] = true
+		assert.Equal(t, "pending_scrape", r.Status)
+	}
+	assert.True(t, fileNames["Mario.nes"])
+	assert.True(t, fileNames["Zelda.sfc"])
+}
+
+func TestUploadROMs_ZipWithNestedDirectories(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"nes/Mario.nes":         []byte("nes rom"),
+		"snes/subdir/Zelda.sfc": []byte("snes rom"),
+		"readme.txt":            []byte("not a rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"nested.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 2)
+
+	// Should use base filenames (not the full path within the zip)
+	fileNames := make(map[string]bool)
+	for _, r := range results {
+		fileNames[r.FileName] = true
+	}
+	assert.True(t, fileNames["Mario.nes"], "should use base filename from nested path")
+	assert.True(t, fileNames["Zelda.sfc"], "should use base filename from nested path")
+}
+
+func TestUploadROMs_ZipPathTraversal(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	// Zip entries with path traversal attempts (Zip Slip / CVE-2018-1002200)
+	zipData := createZipBytes(t, map[string][]byte{
+		"../../etc/passwd.nes":      []byte("malicious nes rom"),
+		"../../../tmp/exploit.sfc":  []byte("malicious snes rom"),
+		"normal/Game.gba":           []byte("normal gba rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"traversal.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 3)
+
+	// All files should be staged with base filenames only (path components stripped)
+	stagingDir := filepath.Join(env.tmpDir, "staging")
+	for _, r := range results {
+		assert.NotEqual(t, "rejected", r.Status, "ROM %s should not be rejected", r.FileName)
+		// Verify the file is in the staging dir, not escaped
+		assert.Equal(t, filepath.Base(r.FileName), r.FileName, "filename should be base only: %s", r.FileName)
+		stagedPath := filepath.Join(stagingDir, r.FileName)
+		_, err := os.Stat(stagedPath)
+		assert.NoError(t, err, "file should exist in staging dir: %s", r.FileName)
+	}
+
+	// Verify no files were written outside staging
+	_, err := os.Stat(filepath.Join(env.tmpDir, "..", "etc", "passwd.nes"))
+	assert.True(t, os.IsNotExist(err), "path traversal should not escape staging directory")
+}
+
+func TestUploadROMs_EmptyZip(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	// Create an empty zip
+	buf := &bytes.Buffer{}
+	w := zip.NewWriter(buf)
+	require.NoError(t, w.Close())
+	zipData := buf.Bytes()
+
+	resp := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"empty.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(resp.Body.Bytes(), &results))
+	require.Len(t, results, 1)
+	assert.Equal(t, "rejected", results[0].Status)
+	assert.Equal(t, "empty.zip", results[0].OriginalFileName)
+}
+
+func TestUploadROMs_ZipWithNoROMs(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"readme.txt":  []byte("just a readme"),
+		"notes.nfo":   []byte("release notes"),
+		"cover.png":   []byte("fake image"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"no-roms.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 1)
+	assert.Equal(t, "rejected", results[0].Status)
+	assert.Equal(t, "no-roms.zip", results[0].OriginalFileName)
+
+	// No DB records should be created
+	var count int64
+	env.db.Model(&db.StagedUpload{}).Count(&count)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestUploadROMs_ZipPlusIndividualFiles(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"ZippedGame.nes": []byte("zipped nes rom"),
+		"Bonus.gba":      []byte("zipped gba rom"),
+	})
+
+	// Upload zip + individual ROM in same batch
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add the zip file
+	part, err := writer.CreateFormFile("files", "bundle.zip")
+	require.NoError(t, err)
+	_, err = part.Write(zipData)
+	require.NoError(t, err)
+
+	// Add an individual ROM
+	part, err = writer.CreateFormFile("files", "Individual.sfc")
+	require.NoError(t, err)
+	_, err = part.Write([]byte("individual snes rom"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/admin/uploads", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+env.adminToken)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	// 2 from zip + 1 individual = 3
+	require.Len(t, results, 3)
+
+	fileNames := make(map[string]bool)
+	for _, r := range results {
+		fileNames[r.FileName] = true
+		assert.NotEqual(t, "rejected", r.Status, "all ROMs should be accepted: %s", r.FileName)
+	}
+	assert.True(t, fileNames["ZippedGame.nes"])
+	assert.True(t, fileNames["Bonus.gba"])
+	assert.True(t, fileNames["Individual.sfc"])
+
+	var count int64
+	env.db.Model(&db.StagedUpload{}).Count(&count)
+	assert.Equal(t, int64(3), count)
+}
+
+func TestUploadROMs_CorruptZip(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	// Upload corrupted zip data
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"corrupt.zip": []byte("this is not a valid zip file"),
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 1)
+	assert.Equal(t, "rejected", results[0].Status)
+	assert.Equal(t, "corrupt.zip", results[0].OriginalFileName)
+
+	// No staging records should be created
+	var count int64
+	env.db.Model(&db.StagedUpload{}).Count(&count)
+	assert.Equal(t, int64(0), count)
+
+	// Verify temp files are cleaned up
+	stagingDir := filepath.Join(env.tmpDir, "staging")
+	entries, err := os.ReadDir(stagingDir)
+	require.NoError(t, err)
+	for _, e := range entries {
+		assert.False(t, matchesTempZipPattern(e.Name()), "temp zip file should be cleaned up: %s", e.Name())
+	}
+}
+
+func TestUploadROMs_CorruptZipPlusValidFile(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	// Upload corrupt zip + valid ROM in same batch
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Corrupt zip
+	part, err := writer.CreateFormFile("files", "bad.zip")
+	require.NoError(t, err)
+	_, err = part.Write([]byte("not a zip"))
+	require.NoError(t, err)
+
+	// Valid ROM
+	part, err = writer.CreateFormFile("files", "Good.nes")
+	require.NoError(t, err)
+	_, err = part.Write([]byte("valid nes rom"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/admin/uploads", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+env.adminToken)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 2)
+
+	// One rejected (corrupt zip), one accepted (valid ROM)
+	rejected := 0
+	accepted := 0
+	for _, r := range results {
+		if r.Status == "rejected" {
+			rejected++
+			assert.Equal(t, "bad.zip", r.OriginalFileName)
+		} else {
+			accepted++
+			assert.Equal(t, "Good.nes", r.FileName)
+		}
+	}
+	assert.Equal(t, 1, rejected)
+	assert.Equal(t, 1, accepted)
+}
+
+func TestUploadROMs_ZipWithInnerZip(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	// Inner .zip files should be treated as ROM files (libretro can load them)
+	zipData := createZipBytes(t, map[string][]byte{
+		"arcade_game.zip": []byte("zipped arcade rom"),
+		"Mario.nes":       []byte("nes rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"bundle.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 2)
+
+	fileNames := make(map[string]bool)
+	for _, r := range results {
+		fileNames[r.FileName] = true
+	}
+	assert.True(t, fileNames["arcade_game.zip"], "inner .zip should be staged as a ROM")
+	assert.True(t, fileNames["Mario.nes"])
+}
+
+func TestUploadROMs_ZipConsoleDetection(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"Game.nes": []byte("nes rom"),
+		"Game.sfc": []byte("snes rom"),
+		"Game.gba": []byte("gba rom"),
+		"Game.bin": []byte("ambiguous rom"),
+	})
+
+	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"multi-console.zip": zipData,
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var results []StagedUploadResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results))
+	require.Len(t, results, 4)
+
+	resultsByExt := make(map[string]StagedUploadResponse)
+	for _, r := range results {
+		ext := filepath.Ext(r.FileName)
+		resultsByExt[ext] = r
+	}
+
+	// Unambiguous extensions
+	assert.Equal(t, "pending_scrape", resultsByExt[".nes"].Status)
+	require.NotNil(t, resultsByExt[".nes"].ConsoleID)
+	assert.Equal(t, "nes", *resultsByExt[".nes"].ConsoleID)
+
+	assert.Equal(t, "pending_scrape", resultsByExt[".sfc"].Status)
+	require.NotNil(t, resultsByExt[".sfc"].ConsoleID)
+	assert.Equal(t, "snes", *resultsByExt[".sfc"].ConsoleID)
+
+	assert.Equal(t, "pending_scrape", resultsByExt[".gba"].Status)
+	require.NotNil(t, resultsByExt[".gba"].ConsoleID)
+	assert.Equal(t, "gba", *resultsByExt[".gba"].ConsoleID)
+
+	// Ambiguous extension
+	assert.Equal(t, "pending_console", resultsByExt[".bin"].Status)
+	assert.Nil(t, resultsByExt[".bin"].ConsoleID)
+}
+
+func TestUploadROMs_ZipTempFilesCleanedUp(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	zipData := createZipBytes(t, map[string][]byte{
+		"Game.nes": []byte("nes rom"),
+	})
+
+	uploadFiles(t, router, env.adminToken, map[string][]byte{
+		"test.zip": zipData,
+	})
+
+	// Check staging dir — only the extracted ROM should remain, not any temp files
+	stagingDir := filepath.Join(env.tmpDir, "staging")
+	entries, err := os.ReadDir(stagingDir)
+	require.NoError(t, err)
+
+	for _, e := range entries {
+		assert.False(t, matchesTempZipPattern(e.Name()),
+			"temp zip file should be cleaned up: %s", e.Name())
+	}
+
+	// Should have exactly 1 file (the extracted ROM)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "Game.nes", entries[0].Name())
+}
+
+// matchesTempZipPattern checks if a filename matches the temp zip pattern "upload-*.zip"
+func matchesTempZipPattern(name string) bool {
+	matched, _ := filepath.Match("upload-*.zip", name)
+	return matched
 }

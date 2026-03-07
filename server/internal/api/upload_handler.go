@@ -1,10 +1,12 @@
 package api
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +19,13 @@ import (
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
+)
+
+const (
+	// maxZipExtractedSize is the maximum total extracted size from a single zip file (50 GB).
+	maxZipExtractedSize = 50 << 30
+	// maxZipFileCount is the maximum number of files allowed in a single zip archive.
+	maxZipFileCount = 10000
 )
 
 const maxROMUploadSize = 50 << 30 // 50 GB
@@ -163,6 +172,7 @@ func detectConsole(database *gorm.DB, ext string) (*uint, bool) {
 }
 
 // UploadROMs handles multipart file uploads of ROM files to the staging area.
+// Zip files are automatically extracted and individual ROMs inside are staged.
 // POST /api/admin/uploads
 func (h *UploadHandler) UploadROMs(c *gin.Context) {
 	if err := os.MkdirAll(h.StagingDir, 0700); err != nil {
@@ -188,6 +198,13 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 	for _, header := range files {
 		ext := strings.ToLower(filepath.Ext(header.Filename))
 
+		// Handle zip files: extract and process contained ROMs individually
+		if ext == ".zip" {
+			zipResults := h.processZipUpload(header)
+			results = append(results, zipResults...)
+			continue
+		}
+
 		// Validate extension is a recognized ROM type
 		if !scanner.RomExtensions[ext] {
 			results = append(results, StagedUploadResponse{
@@ -197,106 +214,254 @@ func (h *UploadHandler) UploadROMs(c *gin.Context) {
 			continue
 		}
 
-		// Sanitize filename
-		safeName := filepath.Base(header.Filename)
-		if safeName == "." || safeName == ".." {
-			safeName = "unnamed" + ext
-		}
-
-		// Ensure unique filename in staging
-		destPath := filepath.Join(h.StagingDir, safeName)
-		if _, err := os.Stat(destPath); err == nil {
-			// File already exists, add numeric suffix
-			nameNoExt := strings.TrimSuffix(safeName, ext)
-			for i := 1; ; i++ {
-				destPath = filepath.Join(h.StagingDir, fmt.Sprintf("%s_%d%s", nameNoExt, i, ext))
-				if _, err := os.Stat(destPath); os.IsNotExist(err) {
-					safeName = fmt.Sprintf("%s_%d%s", nameNoExt, i, ext)
-					break
-				}
+		result := h.stageROMFile(header.Filename, ext, func(destPath string) (int64, error) {
+			file, err := header.Open()
+			if err != nil {
+				return 0, err
 			}
-		}
+			defer file.Close()
 
-		// Open and write file. Use O_EXCL to atomically fail if the file was
-		// created between the Stat check and now (prevents TOCTOU race).
-		file, err := header.Open()
-		if err != nil {
-			results = append(results, StagedUploadResponse{
-				OriginalFileName: header.Filename,
-				Status:           "rejected",
-			})
-			continue
-		}
-
-		dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-		if err != nil {
-			file.Close()
-			results = append(results, StagedUploadResponse{
-				OriginalFileName: header.Filename,
-				Status:           "rejected",
-			})
-			continue
-		}
-
-		written, err := io.Copy(dst, file)
-		dst.Close()
-		file.Close()
-		if err != nil {
-			os.Remove(destPath)
-			results = append(results, StagedUploadResponse{
-				OriginalFileName: header.Filename,
-				Status:           "rejected",
-			})
-			continue
-		}
-
-		// Detect console from extension
-		consoleID, isAmbiguous := detectConsole(h.DB, ext)
-
-		status := "pending_scrape"
-		var possibleConsolesJSON string
-		var crc32Str string
-		var verificationStatus string
-		var canonicalName string
-		if isAmbiguous {
-			// Try auto-identification via CRC32 + DAT lookup before falling back to pending_console
-			if identified, identCRC, identVerification, identCanonical := h.tryIdentifyByDAT(destPath, written); identified != nil {
-				consoleID = identified
-				crc32Str = identCRC
-				verificationStatus = identVerification
-				canonicalName = identCanonical
-			} else {
-				status = "pending_console"
-				possibles := consolesForExtension(h.DB, ext)
-				if data, err := json.Marshal(possibles); err == nil {
-					possibleConsolesJSON = string(data)
-				}
+			dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+			if err != nil {
+				return 0, err
 			}
-		}
 
-		// Create staged upload record
-		staged := db.StagedUpload{
-			FileName:           safeName,
-			OriginalFileName:   header.Filename,
-			FilePath:           destPath,
-			FileSize:           written,
-			ConsoleID:          consoleID,
-			PossibleConsoles:   possibleConsolesJSON,
-			Status:             status,
-			CRC32:              crc32Str,
-			VerificationStatus: verificationStatus,
-			CanonicalName:      canonicalName,
-		}
-		if err := h.DB.Create(&staged).Error; err != nil {
-			os.Remove(destPath)
-			slog.Warn("failed to create staged upload record", "file", safeName, "error", err)
-			continue
-		}
-
-		results = append(results, toStagedUploadResponse(staged, h.DB))
+			written, err := io.Copy(dst, file)
+			dst.Close()
+			if err != nil {
+				os.Remove(destPath)
+				return 0, err
+			}
+			return written, nil
+		})
+		results = append(results, result)
 	}
 
 	c.JSON(http.StatusOK, results)
+}
+
+// stageROMFile handles the common logic for staging a single ROM file.
+// The writeFn callback writes the file content to the given destPath and returns
+// the number of bytes written. The caller must not close the destination file;
+// writeFn handles that. If writeFn returns an error, the file at destPath is
+// expected to be cleaned up by writeFn.
+func (h *UploadHandler) stageROMFile(originalFilename string, ext string, writeFn func(destPath string) (int64, error)) StagedUploadResponse {
+	// Sanitize filename
+	safeName := filepath.Base(originalFilename)
+	if safeName == "." || safeName == ".." {
+		safeName = "unnamed" + ext
+	}
+
+	// Ensure unique filename in staging
+	destPath := filepath.Join(h.StagingDir, safeName)
+	if _, err := os.Stat(destPath); err == nil {
+		// File already exists, add numeric suffix
+		nameNoExt := strings.TrimSuffix(safeName, ext)
+		for i := 1; ; i++ {
+			destPath = filepath.Join(h.StagingDir, fmt.Sprintf("%s_%d%s", nameNoExt, i, ext))
+			if _, err := os.Stat(destPath); os.IsNotExist(err) {
+				safeName = fmt.Sprintf("%s_%d%s", nameNoExt, i, ext)
+				break
+			}
+		}
+	}
+
+	written, err := writeFn(destPath)
+	if err != nil {
+		return StagedUploadResponse{
+			OriginalFileName: originalFilename,
+			Status:           "rejected",
+		}
+	}
+
+	// Detect console from extension
+	consoleID, isAmbiguous := detectConsole(h.DB, ext)
+
+	status := "pending_scrape"
+	var possibleConsolesJSON string
+	var crc32Str string
+	var verificationStatus string
+	var canonicalName string
+	if isAmbiguous {
+		// Try auto-identification via CRC32 + DAT lookup before falling back to pending_console
+		if identified, identCRC, identVerification, identCanonical := h.tryIdentifyByDAT(destPath, written); identified != nil {
+			consoleID = identified
+			crc32Str = identCRC
+			verificationStatus = identVerification
+			canonicalName = identCanonical
+		} else {
+			status = "pending_console"
+			possibles := consolesForExtension(h.DB, ext)
+			if data, err := json.Marshal(possibles); err == nil {
+				possibleConsolesJSON = string(data)
+			}
+		}
+	}
+
+	// Create staged upload record
+	staged := db.StagedUpload{
+		FileName:           safeName,
+		OriginalFileName:   originalFilename,
+		FilePath:           destPath,
+		FileSize:           written,
+		ConsoleID:          consoleID,
+		PossibleConsoles:   possibleConsolesJSON,
+		Status:             status,
+		CRC32:              crc32Str,
+		VerificationStatus: verificationStatus,
+		CanonicalName:      canonicalName,
+	}
+	if err := h.DB.Create(&staged).Error; err != nil {
+		os.Remove(destPath)
+		slog.Warn("failed to create staged upload record", "file", safeName, "error", err)
+		return StagedUploadResponse{
+			OriginalFileName: originalFilename,
+			Status:           "rejected",
+		}
+	}
+
+	return toStagedUploadResponse(staged, h.DB)
+}
+
+// processZipUpload extracts a zip file upload and stages each ROM file found inside.
+// Non-ROM files inside the zip are silently skipped. Inner .zip files are treated
+// as ROM files (libretro cores can load zipped ROMs).
+func (h *UploadHandler) processZipUpload(header *multipart.FileHeader) []StagedUploadResponse {
+	// Save the zip to a temp file in the staging dir
+	tmpZipFile, err := os.CreateTemp(h.StagingDir, "upload-*.zip")
+	if err != nil {
+		slog.Warn("failed to create temp zip file", "error", err)
+		return []StagedUploadResponse{{
+			OriginalFileName: header.Filename,
+			Status:           "rejected",
+		}}
+	}
+	tmpZipPath := tmpZipFile.Name()
+	defer os.Remove(tmpZipPath) // Always clean up the temp zip
+
+	src, err := header.Open()
+	if err != nil {
+		tmpZipFile.Close()
+		slog.Warn("failed to open uploaded zip", "file", header.Filename, "error", err)
+		return []StagedUploadResponse{{
+			OriginalFileName: header.Filename,
+			Status:           "rejected",
+		}}
+	}
+
+	_, err = io.Copy(tmpZipFile, src)
+	src.Close()
+	tmpZipFile.Close()
+	if err != nil {
+		slog.Warn("failed to write uploaded zip to temp file", "file", header.Filename, "error", err)
+		return []StagedUploadResponse{{
+			OriginalFileName: header.Filename,
+			Status:           "rejected",
+		}}
+	}
+
+	return h.extractAndStageZip(tmpZipPath, header.Filename)
+}
+
+// extractAndStageZip opens a zip file, validates it, extracts ROM files, and
+// stages each one. Returns a list of StagedUploadResponse entries.
+func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName string) []StagedUploadResponse {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		slog.Warn("failed to open zip archive", "file", originalZipName, "error", err)
+		return []StagedUploadResponse{{
+			OriginalFileName: originalZipName,
+			Status:           "rejected",
+		}}
+	}
+	defer r.Close()
+
+	// Zip bomb protection: check file count
+	if len(r.File) > maxZipFileCount {
+		slog.Warn("zip archive exceeds maximum file count", "file", originalZipName, "count", len(r.File), "max", maxZipFileCount)
+		return []StagedUploadResponse{{
+			OriginalFileName: originalZipName,
+			Status:           "rejected",
+		}}
+	}
+
+	// Zip bomb protection: check total uncompressed size
+	var totalUncompressed uint64
+	for _, f := range r.File {
+		totalUncompressed += f.UncompressedSize64
+		if totalUncompressed > maxZipExtractedSize {
+			slog.Warn("zip archive exceeds maximum extracted size", "file", originalZipName, "max", maxZipExtractedSize)
+			return []StagedUploadResponse{{
+				OriginalFileName: originalZipName,
+				Status:           "rejected",
+			}}
+		}
+	}
+
+	var results []StagedUploadResponse
+	romFound := false
+	var totalExtracted int64
+
+	for _, zf := range r.File {
+		// Skip directories
+		if zf.FileInfo().IsDir() {
+			continue
+		}
+
+		ext := strings.ToLower(filepath.Ext(zf.Name))
+
+		// Skip files that aren't recognized ROM types.
+		// Inner .zip files are treated as ROMs (libretro can load them).
+		if !scanner.RomExtensions[ext] {
+			continue
+		}
+
+		romFound = true
+
+		// Use the base filename from the zip entry (strip directory paths)
+		entryBaseName := filepath.Base(zf.Name)
+
+		result := h.stageROMFile(entryBaseName, ext, func(destPath string) (int64, error) {
+			zfReader, err := zf.Open()
+			if err != nil {
+				return 0, fmt.Errorf("opening zip entry %s: %w", zf.Name, err)
+			}
+			defer zfReader.Close()
+
+			dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+			if err != nil {
+				return 0, err
+			}
+
+			// Limit extraction to prevent zip bombs even if uncompressed size was spoofed.
+			// Use remaining budget so cumulative extraction is bounded.
+			remaining := int64(maxZipExtractedSize) - totalExtracted
+			if remaining <= 0 {
+				dst.Close()
+				os.Remove(destPath)
+				return 0, fmt.Errorf("zip extraction exceeded maximum total size")
+			}
+			limitedReader := io.LimitReader(zfReader, remaining)
+			written, err := io.Copy(dst, limitedReader)
+			dst.Close()
+			if err != nil {
+				os.Remove(destPath)
+				return 0, fmt.Errorf("extracting zip entry %s: %w", zf.Name, err)
+			}
+			totalExtracted += written
+			return written, nil
+		})
+		results = append(results, result)
+	}
+
+	if !romFound {
+		return []StagedUploadResponse{{
+			OriginalFileName: originalZipName,
+			Status:           "rejected",
+		}}
+	}
+
+	return results
 }
 
 // ListUploads returns all staged uploads.

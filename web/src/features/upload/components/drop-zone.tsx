@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Archive } from "lucide-react";
 import { Button } from "@/components/ui";
 
 interface DropZoneProps {
@@ -47,12 +47,15 @@ export function DropZone({ onFiles, isUploading }: DropZoneProps) {
       onDragLeave={handleDragLeave}
       data-testid="upload-drop-zone"
     >
-      <Upload className="h-8 w-8 text-surface-500 mx-auto mb-3" />
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <Upload className="h-7 w-7 text-surface-500" />
+        <Archive className="h-7 w-7 text-surface-500" />
+      </div>
       <p className="text-sm text-surface-300 mb-1">
-        Drag and drop ROM files here, or click to browse
+        Drop ROM files or ZIP archives here, or click to browse
       </p>
       <p className="text-xs text-surface-500 mb-3">
-        Supports .nes, .sfc, .gba, .n64, .nds, .bin, .iso, and more
+        Supports .nes, .sfc, .gba, .n64, .nds, .bin, .iso, .zip, and more
       </p>
       <Button
         onClick={() => fileInputRef.current?.click()}
@@ -65,6 +68,7 @@ export function DropZone({ onFiles, isUploading }: DropZoneProps) {
         ref={fileInputRef}
         type="file"
         multiple
+        accept=".nes,.fds,.sfc,.smc,.gb,.gbc,.gba,.n64,.z64,.v64,.nds,.sms,.md,.gen,.pce,.a26,.cso,.pbp,.cue,.gdi,.cdi,.3ds,.cci,.cia,.gcm,.gcz,.rvz,.ciso,.xex,.god,.wbfs,.rpx,.wud,.wux,.nsp,.xci,.bin,.iso,.pkg,.xvd,.chd,.m3u,.zip,.7z"
         className="hidden"
         onChange={handleFileChange}
         data-testid="upload-file-input"
