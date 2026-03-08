@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -105,7 +105,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - uses: android-actions/setup-android@v3
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -164,7 +164,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
-          java-version: 17
+          java-version: 21
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -217,7 +217,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
-          java-version: 17
+          java-version: 21
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -255,7 +255,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
-          java-version: 17
+          java-version: 21
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -268,7 +268,7 @@ jobs:
           sudo flatpak install -y --noninteractive flathub \
             org.freedesktop.Platform//24.08 \
             org.freedesktop.Sdk//24.08 \
-            org.freedesktop.Sdk.Extension.openjdk17//24.08
+            org.freedesktop.Sdk.Extension.openjdk21//24.08
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -301,7 +301,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
-          java-version: 17
+          java-version: 21
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
