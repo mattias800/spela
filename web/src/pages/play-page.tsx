@@ -66,9 +66,11 @@ export function PlayPage() {
       .filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
-  const { data: autoSaveInfo } = useAutoSaveInfo(
+  const { data: autoSaveInfo, isLoading: autoSaveInfoLoading } = useAutoSaveInfo(
     !isFreshStart ? sessionId : undefined,
   );
+  const autoSaveInfoRef = useRef(autoSaveInfo);
+  autoSaveInfoRef.current = autoSaveInfo;
 
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isExitSaving, setIsExitSaving] = useState(false);
@@ -203,6 +205,8 @@ export function PlayPage() {
   // Initialize emulator once iframe is loaded and we have game data
   useEffect(() => {
     if (!iframeLoaded || !game || !isSupported || !emulatorJsCore) return;
+    // Wait for auto-save info to settle before initializing (avoids double-init)
+    if (!isFreshStart && autoSaveInfoLoading) return;
 
     // Disc switch flow: reload with combined bundle + save state + target disc
     if (pendingDiscSwitchRef.current && pendingDiscSwitchRef.current.saveData) {
@@ -246,10 +250,11 @@ export function PlayPage() {
     // Normal initialization flow
     async function init() {
       // Check for core mismatch before loading the auto-save
+      const currentAutoSave = autoSaveInfoRef.current;
       if (
         !isFreshStart &&
-        autoSaveInfo &&
-        autoSaveInfo.coreMatch === false &&
+        currentAutoSave &&
+        currentAutoSave.coreMatch === false &&
         !coreMismatchChoiceRef.current
       ) {
         setShowCoreMismatchModal(true);
@@ -297,7 +302,7 @@ export function PlayPage() {
 
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [iframeLoaded, game?.id, isSupported, emulatorJsCore, autoSaveInfo]);
+  }, [iframeLoaded, game?.id, isSupported, emulatorJsCore, autoSaveInfoLoading]);
 
   async function handleBack() {
     if (isExitSaving) return;
