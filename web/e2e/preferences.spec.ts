@@ -41,11 +41,25 @@ test.describe("Preferences Page", () => {
   test("can toggle a preference switch", async ({ page }) => {
     await page.goto("/preferences");
 
+    // Wait for preferences data to be rendered (Auto Save is true after reset,
+    // so its switch will be [checked] only once the API response is processed).
+    // Use longer timeout: under full-suite load the server may be slow.
+    await expect(
+      page.getByRole("switch", { name: /auto save/i }),
+    ).toBeChecked({ timeout: 30_000 });
+
     const toggle = page.getByRole("switch").first();
     await expect(toggle).toBeVisible();
 
     const initialState = await toggle.getAttribute("aria-checked");
+    const saveResponse = page.waitForResponse(
+      (resp) =>
+        resp.url().includes("/user/preferences") &&
+        resp.request().method() === "PUT" &&
+        resp.status() === 200,
+    );
     await toggle.click();
+    await saveResponse;
 
     await expect(toggle).toHaveAttribute(
       "aria-checked",

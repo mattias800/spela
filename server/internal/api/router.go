@@ -125,8 +125,13 @@ func NewRouter(cfg Config) *gin.Engine {
 	// Rate limiter for file upload endpoints (prevents storage abuse)
 	uploadLimiter := NewRateLimiter(30, time.Minute)
 
-	// Global per-user rate limiter for authenticated API endpoints (prevents abuse from compromised accounts)
-	userLimiter := NewRateLimiter(300, time.Minute)
+	// Global per-user rate limiter for authenticated API endpoints (prevents abuse from compromised accounts).
+	// In test mode, use a much higher limit to avoid spurious 429s during E2E tests.
+	userRateLimit := 300
+	if cfg.TestMode {
+		userRateLimit = 10000
+	}
+	userLimiter := NewRateLimiter(userRateLimit, time.Minute)
 
 	// Handlers
 	authHandler := &AuthHandler{DB: cfg.DB, JWTSecret: cfg.JWTSecret}

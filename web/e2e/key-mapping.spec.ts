@@ -15,17 +15,26 @@ const arrowsLeftPrefs = {
   raHardcoreEnabled: false,
 };
 
-async function mockPrefsAsArrowsLeft(page: import("@playwright/test").Page) {
+async function mockPrefsStateful(page: import("@playwright/test").Page) {
+  let currentPrefs = { ...arrowsLeftPrefs };
   await page.route("**/api/user/preferences", (route) => {
     if (route.request().method() === "GET") {
-      route.fulfill({ status: 200, json: arrowsLeftPrefs });
+      route.fulfill({ status: 200, json: currentPrefs });
+    } else if (route.request().method() === "PUT") {
+      const body = route.request().postDataJSON();
+      currentPrefs = { ...currentPrefs, ...body };
+      route.fulfill({ status: 200, json: currentPrefs });
     } else {
-      route.fulfill({ status: 200, json: arrowsLeftPrefs });
+      route.continue();
     }
   });
 }
 
 test.describe("Key Mapping Card", () => {
+  test.beforeAll(async () => {
+    await resetServer();
+  });
+
   test("displays Key Mapping heading on preferences page", async ({ page }) => {
     await page.goto("/preferences");
 
@@ -47,7 +56,7 @@ test.describe("Key Mapping Card", () => {
   });
 
   test("Arrows + Left is selected by default", async ({ page }) => {
-    await mockPrefsAsArrowsLeft(page);
+    await mockPrefsStateful(page);
     await page.goto("/preferences");
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
@@ -60,14 +69,14 @@ test.describe("Key Mapping Card", () => {
   test("clicking a mode button updates the active visual state", async ({
     page,
   }) => {
+    await mockPrefsStateful(page);
     await page.goto("/preferences");
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
     const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
     const customBtn = page.getByRole("button", { name: "Custom" });
 
-    // Ensure arrows-left is active to start
-    await arrowsBtn.click();
+    // Wait for preferences to load — ring-2 only appears when data is rendered
     await expect(arrowsBtn).toHaveClass(/ring-2/);
     await expect(wasdBtn).not.toHaveClass(/ring-2/);
 
@@ -90,7 +99,7 @@ test.describe("Key Mapping Card", () => {
 
 test.describe("Controller Visual", () => {
   test("shows correct key badges for arrows-left preset", async ({ page }) => {
-    await mockPrefsAsArrowsLeft(page);
+    await mockPrefsStateful(page);
     await page.goto("/preferences");
 
     // Ensure arrows-left is active (default)
@@ -144,6 +153,10 @@ test.describe("Controller Visual", () => {
 });
 
 test.describe("Custom Key Mapping Editor", () => {
+  test.beforeAll(async () => {
+    await resetServer();
+  });
+
   test("switching to custom mode shows the key capture editor", async ({
     page,
   }) => {
@@ -202,7 +215,12 @@ test.describe("Custom Key Mapping Editor", () => {
   test("key capture: click button shows listening state, press key captures it", async ({
     page,
   }) => {
+    // Mock preferences to ensure known initial state
+    await mockPrefsStateful(page);
     await page.goto("/preferences");
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).toHaveClass(/ring-2/);
     await page.getByRole("button", { name: "Custom" }).click();
 
     // Find the first key capture button (next to a label like "D-pad Up")
@@ -306,6 +324,11 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("per-console override persists after page reload", async ({ page }) => {
     await page.goto("/preferences");
 
+    // Wait for preferences data to render (longer timeout for full-suite load)
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).toHaveClass(/ring-2/, { timeout: 30_000 });
+
     const table = page
       .locator("table")
       .filter({ has: page.locator("th", { hasText: "Key Mapping" }) });
@@ -313,9 +336,15 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     await expect(firstSelect).toBeVisible();
 
     // Change to "WASD + Arrows" and wait for the save to complete
+    const saveResponse = page.waitForResponse(
+      (resp) =>
+        resp.url().includes("/user/preferences") &&
+        resp.request().method() === "PUT" &&
+        resp.status() === 200,
+    );
     await firstSelect.selectOption("wasd-arrows");
     await expect(firstSelect).toHaveValue("wasd-arrows");
-    await page.waitForTimeout(500);
+    await saveResponse;
 
     // Reload the page
     await page.reload();
@@ -338,13 +367,22 @@ test.describe("Key Mapping Persistence", () => {
   test("global mode change persists after page reload", async ({ page }) => {
     await page.goto("/preferences");
 
-    // Switch to WASD + Arrows
-    const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
-    await wasdBtn.click();
-    await expect(wasdBtn).toHaveClass(/ring-2/);
+    // Wait for preferences data to render (longer timeout for full-suite load)
+    await expect(
+      page.getByRole("button", { name: "Arrows + Left" }),
+    ).toHaveClass(/ring-2/, { timeout: 30_000 });
 
-    // Wait for the API call to complete
-    await page.waitForTimeout(500);
+    // Switch to WASD + Arrows and wait for the PUT to complete
+    const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
+    const saveResponse = page.waitForResponse(
+      (resp) =>
+        resp.url().includes("/user/preferences") &&
+        resp.request().method() === "PUT" &&
+        resp.status() === 200,
+    );
+    await wasdBtn.click();
+    await saveResponse;
+    await expect(wasdBtn).toHaveClass(/ring-2/);
 
     // Reload
     await page.reload();

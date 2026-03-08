@@ -16,7 +16,27 @@ export function useUpdatePreferences() {
     mutationFn: async (data: Partial<UserPreferences>) => {
       await api.put("/user/preferences", data);
     },
-    onSuccess: () => {
+    onMutate: async (newData: Partial<UserPreferences>) => {
+      await queryClient.cancelQueries({ queryKey: ["user", "preferences"] });
+      const previousPreferences = queryClient.getQueryData<UserPreferences>([
+        "user",
+        "preferences",
+      ]);
+      queryClient.setQueryData<UserPreferences>(
+        ["user", "preferences"],
+        (old) => (old ? { ...old, ...newData } : undefined),
+      );
+      return { previousPreferences };
+    },
+    onError: (_err, _newData, context) => {
+      if (context?.previousPreferences) {
+        queryClient.setQueryData(
+          ["user", "preferences"],
+          context.previousPreferences,
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "preferences"] });
     },
   });

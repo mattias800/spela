@@ -117,8 +117,15 @@ test.describe("Registration Approval Flow", () => {
     await expect(userRow).toBeVisible();
     await expect(userRow.getByText(/pending/i)).toBeVisible();
 
-    // Click "Approve" for this user
+    // Click "Approve" for this user and wait for the server response
+    const approveResponse = adminPage.waitForResponse(
+      (resp) =>
+        resp.url().includes("/api/admin/users/") &&
+        resp.request().method() === "PUT" &&
+        resp.status() === 200,
+    );
     await userRow.getByRole("button", { name: /approve/i }).click();
+    await approveResponse;
 
     // Wait for the row to update — "pending" badge should be gone
     await expect(userRow.getByText(/pending/i)).not.toBeVisible({
