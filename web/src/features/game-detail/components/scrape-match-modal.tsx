@@ -37,6 +37,7 @@ export function ScrapeMatchModal({
     if (open) {
       setSearchInput(currentTitle);
       setDebouncedQuery(currentTitle);
+      setApplyingIgdbId(null);
     }
   }, [open, currentTitle]);
 
@@ -85,7 +86,7 @@ export function ScrapeMatchModal({
     <Modal open={open} onClose={onClose} title="Fix Scrape Match" size="lg">
       <div className="space-y-4">
         {fileName && (
-          <p className="text-sm text-surface-400">
+          <p className="text-sm text-surface-400 truncate" title={fileName}>
             ROM: <span className="text-surface-200 font-mono">{fileName}</span>
           </p>
         )}
@@ -176,6 +177,7 @@ function IgdbResultItem({
       data-testid={`igdb-result-${result.igdbId}`}
       className={cn(
         "w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950",
         isCurrentMatch
           ? "bg-brand-500/10 border border-brand-500/30 cursor-default"
           : "hover:bg-surface-800 cursor-pointer border border-transparent",
