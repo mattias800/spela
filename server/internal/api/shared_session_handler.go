@@ -46,18 +46,25 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		return
 	}
 
-	// Verify game exists
+	// Verify game exists and load console for core resolution
 	var game db.Game
-	if err := h.DB.First(&game, gid).Error; err != nil {
+	if err := h.DB.Preload("Console").First(&game, gid).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}
 
+	// Determine the recommended core name for this game
+	coreName := game.CoreOverride
+	if coreName == "" {
+		coreName = game.Console.DefaultCore
+	}
+
 	// Create a GameSession to back this shared session
 	session := db.GameSession{
-		OwnerID: uid,
-		GameID:  uint(gid),
-		Name:    "Shared Session: " + req.Name,
+		OwnerID:  uid,
+		GameID:   uint(gid),
+		Name:     "Shared Session: " + req.Name,
+		CoreName: coreName,
 	}
 	if err := h.DB.Create(&session).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session for shared session"})
@@ -69,6 +76,7 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		GameID:    uint(gid),
 		Name:      req.Name,
 		Status:    "active",
+		CoreName:  coreName,
 		SessionID: &session.ID,
 	}
 	if err := h.DB.Create(&ss).Error; err != nil {
@@ -1091,6 +1099,7 @@ func (h *SharedSessionHandler) toSharedSessionResponse(r db.SharedSession) Share
 		ActiveUserID:   uintPtrToStringPtr(r.ActiveUserID),
 		ActiveUsername: activeUsername,
 		TurnTakenAt:    r.TurnTakenAt,
+		CoreName:       r.CoreName,
 		MemberCount:    len(r.Members),
 		SessionID:      uintPtrToStringPtr(r.SessionID),
 		CreatedAt:      r.CreatedAt,

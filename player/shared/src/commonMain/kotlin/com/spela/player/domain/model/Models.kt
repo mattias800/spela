@@ -631,6 +631,7 @@ data class GameSession(
     val lastPlayedByUsername: String? = null,
     val totalPlayTime: Long = 0,
     val screenshotUrl: String? = null,
+    val coreName: String? = null,
     val cheatsEnabled: Boolean = false,
     val isSharedSession: Boolean = false,
     val sharedSessionId: String? = null,

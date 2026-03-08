@@ -16,6 +16,7 @@ import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.feature.ingame.ChallengeCompletedDialog
 import com.spela.player.presentation.ui.feature.ingame.CheatsDialog
+import com.spela.player.presentation.ui.feature.ingame.CoreMismatchDialog
 import com.spela.player.presentation.ui.feature.ingame.ChallengeTimerHud
 import com.spela.player.presentation.ui.feature.ingame.FpsHud
 import com.spela.player.presentation.ui.feature.ingame.InGameOverlayPanel
@@ -208,6 +209,17 @@ fun InGameOverlay(
                 viewModel.onIntent(EmulationIntent.StopGame)
                 onExit()
             },
+        )
+    }
+
+    // Core mismatch dialog
+    if (state.showCoreMismatchDialog) {
+        CoreMismatchDialog(
+            saveCoreName = state.coreMismatchSaveCoreName,
+            currentCoreName = state.coreMismatchCurrentCoreName,
+            onTryAnyway = { viewModel.onIntent(EmulationIntent.CoreMismatchTryAnyway) },
+            onGameSaveOnly = { viewModel.onIntent(EmulationIntent.CoreMismatchGameSaveOnly) },
+            onStartFresh = { viewModel.onIntent(EmulationIntent.CoreMismatchStartFresh) },
         )
     }
 

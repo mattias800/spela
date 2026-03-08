@@ -1067,9 +1067,9 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/sessions/$sessionId").body()
     }
 
-    suspend fun updateSession(sessionId: String, name: String): GameSessionDto {
+    suspend fun updateSession(sessionId: String, name: String? = null, coreName: String? = null): GameSessionDto {
         return client.put("$baseUrl/api/sessions/$sessionId") {
-            setBody(UpdateSessionRequest(name = name))
+            setBody(UpdateSessionRequest(name = name, coreName = coreName))
         }.body()
     }
 
@@ -1089,11 +1089,14 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/sessions/$sessionId/saves").body()
     }
 
-    suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): SaveStateDto {
+    suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): SaveStateDto {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves",
             formData = formData {
                 append("name", name)
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -1116,10 +1119,13 @@ class SpelaApiClient(
         return response.body()
     }
 
-    suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?) {
+    suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String = "") {
         client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/auto",
             formData = formData {
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
                 append("save", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
@@ -1142,10 +1148,13 @@ class SpelaApiClient(
         return response.body()
     }
 
-    suspend fun uploadSessionSram(sessionId: String, data: ByteArray) {
+    suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = "") {
         client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/sram",
             formData = formData {
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
                 append("file", data, Headers.build {
                     append(HttpHeaders.ContentDisposition, "filename=\"sram.srm\"")
                     append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())

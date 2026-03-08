@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -942,6 +943,41 @@ func (h *AdminHandler) GetCheatStats(c *gin.Context) {
 		"totalGames":     totalGames,
 		"verifiedGames":  verifiedGames,
 	})
+}
+
+// CoreCompatibilityEntry is the API response for a single console's core compatibility.
+type CoreCompatibilityEntry struct {
+	ConsoleID   string `json:"consoleId"`
+	ConsoleName string `json:"consoleName"`
+	NativeCore  string `json:"nativeCore"`
+	WebCore     string `json:"webCore"`
+	Matched     bool   `json:"matched"`
+}
+
+// GetCoreCompatibility returns a list of consoles showing core compatibility
+// between the native player (DefaultCore) and the web browser (EmulatorJSCore).
+// GET /api/admin/core-compatibility
+func (h *AdminHandler) GetCoreCompatibility(c *gin.Context) {
+	var consoles []db.Console
+	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch consoles"})
+		return
+	}
+
+	result := make([]CoreCompatibilityEntry, 0, len(consoles))
+	for _, console := range consoles {
+		abbr := strings.ToLower(console.Abbreviation)
+		matched := console.DefaultCore == console.EmulatorJSCore
+		result = append(result, CoreCompatibilityEntry{
+			ConsoleID:   abbr,
+			ConsoleName: console.Name,
+			NativeCore:  console.DefaultCore,
+			WebCore:     console.EmulatorJSCore,
+			Matched:     matched,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"consoles": result})
 }
 
 // IGDBSource returns "env" if IGDB credentials are set via environment variables,

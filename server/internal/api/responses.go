@@ -510,6 +510,7 @@ type SharedSessionResponse struct {
 	ActiveUserID   *string    `json:"activeUserId"`
 	ActiveUsername string     `json:"activeUsername,omitempty"`
 	TurnTakenAt    *time.Time `json:"turnTakenAt"`
+	CoreName       string     `json:"coreName,omitempty"`
 	MemberCount    int        `json:"memberCount"`
 	SessionID      *string    `json:"sessionId,omitempty"`
 	CreatedAt      time.Time  `json:"createdAt"`
@@ -697,6 +698,8 @@ type SessionSaveResponse struct {
 	IsAuto        bool      `json:"isAuto"`
 	IsCurrent     bool      `json:"isCurrent"`
 	CoreName      string    `json:"coreName,omitempty"`
+	CoreMatch     *bool     `json:"coreMatch,omitempty"`
+	CurrentCore   string    `json:"currentCore,omitempty"`
 	Notes         string    `json:"notes,omitempty"`
 	Slot          *int      `json:"slot,omitempty"`
 	CreatedAt     time.Time `json:"createdAt"`

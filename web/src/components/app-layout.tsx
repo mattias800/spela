@@ -18,6 +18,7 @@ import {
   Menu,
   Trophy,
   Gamepad2,
+  GitCompareArrows,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -124,6 +125,11 @@ export function AppLayout() {
                 label: "Metadata Fix",
               },
               { to: "/admin/cheats", icon: Gamepad2, label: "Cheats" },
+              {
+                to: "/admin/core-compatibility",
+                icon: GitCompareArrows,
+                label: "Core Compatibility",
+              },
             ],
           },
         ]

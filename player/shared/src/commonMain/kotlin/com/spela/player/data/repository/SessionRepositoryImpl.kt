@@ -27,8 +27,8 @@ class SessionRepositoryImpl(
         apiClient.createSessionFromSharedSave(gameId, saveId).toDomain()
     }
 
-    override suspend fun updateSession(sessionId: String, name: String): Result<GameSession> = runCatching {
-        apiClient.updateSession(sessionId, name).toDomain()
+    override suspend fun updateSession(sessionId: String, name: String?, coreName: String?): Result<GameSession> = runCatching {
+        apiClient.updateSession(sessionId, name, coreName).toDomain()
     }
 
     override suspend fun deleteSession(sessionId: String): Result<Unit> = runCatching {
@@ -44,8 +44,9 @@ class SessionRepositoryImpl(
         name: String,
         data: ByteArray,
         screenshot: ByteArray?,
+        coreName: String,
     ): Result<SaveState> = runCatching {
-        apiClient.uploadSessionSave(sessionId, name, data, screenshot).toDomain()
+        apiClient.uploadSessionSave(sessionId, name, data, screenshot, coreName).toDomain()
     }
 
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> = runCatching {
@@ -56,16 +57,17 @@ class SessionRepositoryImpl(
         sessionId: String,
         data: ByteArray,
         screenshot: ByteArray?,
+        coreName: String,
     ): Result<Unit> = runCatching {
-        apiClient.uploadSessionAutoSave(sessionId, data, screenshot)
+        apiClient.uploadSessionAutoSave(sessionId, data, screenshot, coreName)
     }
 
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> = runCatching {
         apiClient.downloadSessionAutoSave(sessionId)
     }
 
-    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit> = runCatching {
-        apiClient.uploadSessionSram(sessionId, data)
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> = runCatching {
+        apiClient.uploadSessionSram(sessionId, data, coreName)
     }
 
     override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> = runCatching {

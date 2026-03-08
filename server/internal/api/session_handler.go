@@ -490,9 +490,11 @@ func (h *SessionHandler) ListSessionSaves(c *gin.Context) {
 		return
 	}
 
+	currentCore := h.getRecommendedCoreName(session.GameID)
+
 	result := make([]SessionSaveResponse, len(saves))
 	for i, s := range saves {
-		result[i] = h.toSaveResponse(s)
+		result[i] = h.toSaveResponse(s, currentCore)
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -570,7 +572,7 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 	h.DB.Model(&session).Updates(updates)
 
 	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusCreated, h.toSaveResponse(save))
+	c.JSON(http.StatusCreated, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
 }
 
 // DownloadSessionSave serves a session save state file.
@@ -669,7 +671,7 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 	}
 
 	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusOK, h.toSaveResponse(save))
+	c.JSON(http.StatusOK, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
 }
 
 // UploadAutoSave uploads an auto-save to a session.
@@ -757,7 +759,7 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 	h.DB.Model(&session).Updates(updates)
 
 	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusCreated, h.toSaveResponse(save))
+	c.JSON(http.StatusCreated, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
 }
 
 // GetAutoSave returns the latest auto-save for a session.
@@ -868,7 +870,7 @@ func (h *SessionHandler) UpsertSlotSave(c *gin.Context) {
 	h.DB.Model(&session).Updates(updates)
 
 	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusOK, h.toSaveResponse(save))
+	c.JSON(http.StatusOK, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
 }
 
 // DownloadSlotSave downloads the save from a specific slot.
@@ -920,9 +922,11 @@ func (h *SessionHandler) ListSlotSaves(c *gin.Context) {
 		return
 	}
 
+	currentCore := h.getRecommendedCoreName(session.GameID)
+
 	result := make([]SessionSaveResponse, len(saves))
 	for i, s := range saves {
-		result[i] = h.toSaveResponse(s)
+		result[i] = h.toSaveResponse(s, currentCore)
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -1230,8 +1234,8 @@ func (h *SessionHandler) resolveLastPlayedByUsernames(sessions []db.GameSession)
 	return result
 }
 
-func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveResponse {
-	return SessionSaveResponse{
+func (h *SessionHandler) toSaveResponse(s db.SessionSaveState, currentCore string) SessionSaveResponse {
+	resp := SessionSaveResponse{
 		ID:            strconv.FormatUint(uint64(s.ID), 10),
 		SessionID:     strconv.FormatUint(uint64(s.SessionID), 10),
 		UserID:        strconv.FormatUint(uint64(s.UserID), 10),
@@ -1247,6 +1251,27 @@ func (h *SessionHandler) toSaveResponse(s db.SessionSaveState) SessionSaveRespon
 		CreatedAt:     s.CreatedAt,
 		UpdatedAt:     s.UpdatedAt,
 	}
+	if currentCore != "" {
+		resp.CurrentCore = currentCore
+		if s.CoreName != "" {
+			match := s.CoreName == currentCore
+			resp.CoreMatch = &match
+		}
+	}
+	return resp
+}
+
+// getRecommendedCoreName returns the recommended core name for a game,
+// considering the game's core override and the console's default core.
+func (h *SessionHandler) getRecommendedCoreName(gameID uint) string {
+	var game db.Game
+	if err := h.DB.Preload("Console").First(&game, gameID).Error; err != nil {
+		return ""
+	}
+	if game.CoreOverride != "" {
+		return game.CoreOverride
+	}
+	return game.Console.DefaultCore
 }
 
 // enrichWithSharedSessionData looks up whether a session backs a shared session

@@ -1781,3 +1781,65 @@ func TestSharedSession_SessionTurnValidation_CannotUploadWithoutTurn(t *testing.
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code, "session owner should be blocked when shared session turn is held by another user")
 }
+
+// --- Core Name Tests ---
+
+func TestSharedSession_Create_IncludesCoreName(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game on NES (DefaultCore = "nestopia")
+	var console db.Console
+	database.Where("abbreviation = ?", "NES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "NES Game", FileName: "test.nes", FilePath: "/tmp/core_test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Core Test Session")
+
+	assert.Equal(t, "nestopia", resp["coreName"], "shared session should include the recommended core name")
+}
+
+func TestSharedSession_Create_UsesGameCoreOverride(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game on NES with a core override
+	var console db.Console
+	database.Where("abbreviation = ?", "NES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Override NES Game", FileName: "override.nes", FilePath: "/tmp/override_test.nes", FileSize: 100, CoreOverride: "fceux"}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Override Core Session")
+
+	assert.Equal(t, "fceux", resp["coreName"], "shared session should use the game's core override")
+}
+
+func TestSharedSession_GetDetail_IncludesCoreName(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.Where("abbreviation = ?", "SNES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "SNES Game", FileName: "test.sfc", FilePath: "/tmp/snes_core.sfc", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	created := createSharedSession(t, router, token, gameID, "SNES Session")
+	sharedSessionID := created["id"].(string)
+
+	// GET detail
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var detail map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &detail)
+	assert.Equal(t, "snes9x", detail["coreName"])
+}

@@ -1361,3 +1361,128 @@ func TestDuplicateSession_SharedSessionMember(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Contains(t, resp["name"], "(Copy)")
 }
+
+// --- Core Match Tests ---
+
+func uploadSessionSaveWithCore(t *testing.T, router http.Handler, token, sessionID, name, coreName string, data []byte) map[string]interface{} {
+	t.Helper()
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", name)
+	if coreName != "" {
+		writer.WriteField("coreName", coreName)
+	}
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write(data)
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code, "upload save failed: %s", w.Body.String())
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	return resp
+}
+
+func TestSaveResponse_CoreMatch_Matching(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	// The default console from setupSessionTestEnv is NES with DefaultCore "nestopia"
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload save with matching core name
+	resp := uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Save 1", "nestopia", []byte("data"))
+
+	assert.Equal(t, "nestopia", resp["coreName"])
+	assert.Equal(t, "nestopia", resp["currentCore"])
+	assert.Equal(t, true, resp["coreMatch"])
+}
+
+func TestSaveResponse_CoreMatch_Mismatched(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload save with a different core name
+	resp := uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Save 1", "fceux", []byte("data"))
+
+	assert.Equal(t, "fceux", resp["coreName"])
+	assert.Equal(t, "nestopia", resp["currentCore"])
+	assert.Equal(t, false, resp["coreMatch"])
+}
+
+func TestSaveResponse_CoreMatch_NoCoreName(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload save without core name
+	resp := uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Save 1", "", []byte("data"))
+
+	assert.Empty(t, resp["coreName"])
+	assert.Equal(t, "nestopia", resp["currentCore"])
+	// coreMatch should be nil (omitted) when save has no core name
+	assert.Nil(t, resp["coreMatch"])
+}
+
+func TestSaveResponse_CoreMatch_WithCoreOverride(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	// Set a core override on the game
+	env.database.Model(&db.Game{}).Where("id = ?", env.gameID).Update("core_override", "fceux")
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "Override Session")
+	sessionID := created["id"].(string)
+
+	// Upload save with the override core - should match
+	resp := uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Save 1", "fceux", []byte("data"))
+
+	assert.Equal(t, "fceux", resp["coreName"])
+	assert.Equal(t, "fceux", resp["currentCore"])
+	assert.Equal(t, true, resp["coreMatch"])
+
+	// Upload save with the default core - should NOT match because override takes priority
+	resp2 := uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Save 2", "nestopia", []byte("data2"))
+
+	assert.Equal(t, "nestopia", resp2["coreName"])
+	assert.Equal(t, "fceux", resp2["currentCore"])
+	assert.Equal(t, false, resp2["coreMatch"])
+}
+
+func TestListSessionSaves_IncludesCoreMatch(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
+	sessionID := created["id"].(string)
+
+	// Upload saves with different cores
+	uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Matching", "nestopia", []byte("data1"))
+	uploadSessionSaveWithCore(t, env.router, env.token, sessionID, "Mismatched", "fceux", []byte("data2"))
+
+	// List saves
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/sessions/"+sessionID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var saves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saves)
+	require.Len(t, saves, 2)
+
+	for _, save := range saves {
+		assert.Equal(t, "nestopia", save["currentCore"])
+		if save["coreName"] == "nestopia" {
+			assert.Equal(t, true, save["coreMatch"])
+		} else {
+			assert.Equal(t, false, save["coreMatch"])
+		}
+	}
+}

@@ -92,6 +92,11 @@ data class EmulationState(
     /** Session: set when playing within a game session. */
     val sessionId: String? = null,
 
+    /** Core mismatch: shown when auto-load detects a save from a different core. */
+    val showCoreMismatchDialog: Boolean = false,
+    val coreMismatchSaveCoreName: String = "",
+    val coreMismatchCurrentCoreName: String = "",
+
     /** Cheats */
     val hasCheats: Boolean = false,
     val enabledCheatCount: Int = 0,

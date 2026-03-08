@@ -936,6 +936,7 @@ data class GameSessionDto(
     val lastPlayedByUsername: String? = null,
     val totalPlayTime: Long = 0,
     val screenshotUrl: String? = null,
+    val coreName: String? = null,
     val cheatsEnabled: Boolean = false,
     val isSharedSession: Boolean = false,
     val sharedSessionId: String? = null,
@@ -951,7 +952,8 @@ data class CreateSessionRequest(
 
 @Serializable
 data class UpdateSessionRequest(
-    val name: String,
+    val name: String? = null,
+    val coreName: String? = null,
 )
 
 // Session Cheats

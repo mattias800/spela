@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { GameSession, SessionSave, SessionCheatConfig } from "@/types/api";
+import type {
+  GameSession,
+  SessionSave,
+  SessionCheatConfig,
+} from "@/types/api";
 
 export function useGameSessions(gameId: string) {
   return useQuery({
@@ -132,6 +136,16 @@ export function useDeleteSessionSave() {
         queryKey: ["session-saves", sessionId],
       });
     },
+  });
+}
+
+/** Fetch the latest auto-save metadata (not the file) to check core compatibility. */
+export function useAutoSaveInfo(sessionId: string | undefined) {
+  return useQuery({
+    queryKey: ["session-saves", sessionId],
+    queryFn: () => api.get<SessionSave[]>(`/sessions/${sessionId}/saves`),
+    enabled: !!sessionId,
+    select: (saves) => saves.find((s) => s.isAuto) ?? null,
   });
 }
 

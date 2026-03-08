@@ -13,6 +13,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
+ * Result of attempting to auto-load a save state.
+ * Used to communicate core compatibility issues to the caller.
+ */
+sealed class AutoLoadResult {
+    /** Save state loaded successfully. */
+    data object Loaded : AutoLoadResult()
+
+    /** Save state exists but was created with a different core. */
+    data class CoreMismatch(val saveCoreName: String, val currentCoreName: String) : AutoLoadResult()
+
+    /** No auto-save exists for this session. */
+    data object NoSave : AutoLoadResult()
+
+    /** An error occurred while loading. */
+    data class Error(val message: String) : AutoLoadResult()
+}
+
+/**
  * Manages all save-related operations: SRAM load/save, auto-save/load,
  * and manual save/load state. All operations are session-scoped.
  * When no session is active, operations are silently skipped.
@@ -67,12 +85,12 @@ class SaveManager(
 
             val sramData = libretroController.getSRAM()
             if (sramData != null && sramData.isNotEmpty()) {
-                runCatching { sessionRepository.uploadSessionSram(sessionId, sramData) }
+                runCatching { sessionRepository.uploadSessionSram(sessionId, sramData, currentCoreName) }
             } else {
                 // Directory-save fallback for cores like Dolphin
                 val zipData = saveDataRepository.zipSaveDirectory(gameId)
                 if (zipData != null) {
-                    runCatching { sessionRepository.uploadSessionSram(sessionId, zipData) }
+                    runCatching { sessionRepository.uploadSessionSram(sessionId, zipData, currentCoreName) }
                 }
             }
         } catch (_: Exception) {
@@ -83,20 +101,65 @@ class SaveManager(
     /**
      * Auto-load save state on game start (if enabled and applicable).
      * Downloads from session auto-save endpoint.
+     * Checks core compatibility before loading: if the save was created with a
+     * different core, returns [AutoLoadResult.CoreMismatch] instead of loading.
      * Called from within an IO coroutine.
      */
-    suspend fun autoLoadSaveState(gameId: String) {
-        val sessionId = currentSessionId ?: return
+    suspend fun autoLoadSaveState(gameId: String): AutoLoadResult {
+        val sessionId = currentSessionId ?: return AutoLoadResult.NoSave
+
+        println("[SaveManager] autoLoadSaveState: checking session $sessionId for core compatibility")
+
+        // Fetch session detail to check core name before downloading save data
+        val sessionCoreName = sessionRepository.getSession(sessionId).getOrNull()?.coreName
+        if (!sessionCoreName.isNullOrEmpty() && currentCoreName.isNotEmpty()
+            && sessionCoreName != currentCoreName
+        ) {
+            println("[SaveManager] autoLoadSaveState: core mismatch — save='$sessionCoreName' current='$currentCoreName'")
+            return AutoLoadResult.CoreMismatch(
+                saveCoreName = sessionCoreName,
+                currentCoreName = currentCoreName,
+            )
+        }
 
         println("[SaveManager] autoLoadSaveState: loading session $sessionId auto-save")
-        sessionRepository.downloadSessionAutoSave(sessionId).fold(
+        return sessionRepository.downloadSessionAutoSave(sessionId).fold(
             onSuccess = { saveData ->
                 println("[SaveManager] autoLoadSaveState: got ${saveData.size} bytes from session, unserializing")
                 val ok = libretroController.unserialize(saveData)
                 println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
+                AutoLoadResult.Loaded
             },
             onFailure = { e ->
                 println("[SaveManager] autoLoadSaveState: session auto-save failed: ${e.message}")
+                // Treat 404 / no-data as NoSave, other errors as Error
+                if (e.message?.contains("404") == true || e.message?.contains("not found", ignoreCase = true) == true) {
+                    AutoLoadResult.NoSave
+                } else {
+                    AutoLoadResult.Error(e.message ?: "Unknown error")
+                }
+            },
+        )
+    }
+
+    /**
+     * Force-load the auto-save despite a core mismatch.
+     * Called when the user chooses "Try Loading Anyway" after a mismatch warning.
+     * @return true if the save state was loaded successfully, false otherwise.
+     */
+    suspend fun forceAutoLoadSaveState(): Boolean {
+        val sessionId = currentSessionId ?: return false
+        println("[SaveManager] forceAutoLoadSaveState: loading session $sessionId auto-save (ignoring core mismatch)")
+        return sessionRepository.downloadSessionAutoSave(sessionId).fold(
+            onSuccess = { saveData ->
+                println("[SaveManager] forceAutoLoadSaveState: got ${saveData.size} bytes, unserializing")
+                val ok = libretroController.unserialize(saveData)
+                println("[SaveManager] forceAutoLoadSaveState: unserialize result=$ok")
+                ok
+            },
+            onFailure = { e ->
+                println("[SaveManager] forceAutoLoadSaveState: failed: ${e.message}")
+                false
             },
         )
     }
@@ -115,7 +178,7 @@ class SaveManager(
                 val sessionId = currentSessionId
                 if (sessionId != null) {
                     val screenshot = screenshotCapture?.captureScreenshot()
-                    val result = sessionRepository.uploadSessionAutoSave(sessionId, saveData, screenshot)
+                    val result = sessionRepository.uploadSessionAutoSave(sessionId, saveData, screenshot, currentCoreName)
                     println("[SaveManager] autoSaveOnStop: session upload result=${result.isSuccess}")
                 }
             }
@@ -139,7 +202,7 @@ class SaveManager(
             val sessionId = currentSessionId
             if (sessionId != null) {
                 val screenshot = screenshotCapture?.captureScreenshot()
-                sessionRepository.uploadSessionSave(sessionId, "Manual Save", saveData, screenshot).fold(
+                sessionRepository.uploadSessionSave(sessionId, "Manual Save", saveData, screenshot, currentCoreName).fold(
                     onSuccess = {
                         withContext(dispatchers.main) {
                             _state.update { it.copy(statusMessage = "State saved") }
@@ -196,6 +259,19 @@ class SaveManager(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Update the session's core name on the server.
+     * Called at emulation start so the session tracks which core is being used,
+     * even if the game crashes before any save is uploaded.
+     */
+    suspend fun updateSessionCoreName() {
+        val sessionId = currentSessionId ?: return
+        if (currentCoreName.isEmpty()) return
+        runCatching {
+            sessionRepository.updateSession(sessionId, coreName = currentCoreName)
         }
     }
 

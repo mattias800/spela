@@ -1142,10 +1142,13 @@ class FakeSessionRepository : SessionRepository {
         return Result.success(session)
     }
 
-    override suspend fun updateSession(sessionId: String, name: String): Result<GameSession> {
+    override suspend fun updateSession(sessionId: String, name: String?, coreName: String?): Result<GameSession> {
         val idx = sessions.indexOfFirst { it.id == sessionId }
         if (idx < 0) return Result.failure(Exception("Session not found"))
-        sessions[idx] = sessions[idx].copy(name = name)
+        var updated = sessions[idx]
+        if (name != null) updated = updated.copy(name = name)
+        if (coreName != null) updated = updated.copy(coreName = coreName)
+        sessions[idx] = updated
         return Result.success(sessions[idx])
     }
 
@@ -1157,7 +1160,7 @@ class FakeSessionRepository : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>> =
         Result.success(sessionSaves[sessionId] ?: emptyList())
 
-    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         val save = SaveState(
             id = (sessionSaves[sessionId]?.size?.toLong() ?: 0L) + 1,
             gameId = 0,
@@ -1171,7 +1174,7 @@ class FakeSessionRepository : SessionRepository {
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> =
         Result.success(ByteArray(256) { it.toByte() })
 
-    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?): Result<Unit> {
+    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
         autoSaves[sessionId] = data
         return Result.success(Unit)
     }
@@ -1180,7 +1183,7 @@ class FakeSessionRepository : SessionRepository {
         autoSaves[sessionId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No auto-save"))
 
-    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit> {
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> {
         sram[sessionId] = data
         return Result.success(Unit)
     }

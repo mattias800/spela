@@ -345,15 +345,15 @@ class StubSessionRepository : SessionRepository {
     override suspend fun getSessionsForGame(gameId: String) = Result.success(emptyList<GameSession>())
     override suspend fun getSession(sessionId: String) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun createSession(gameId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
-    override suspend fun updateSession(sessionId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun updateSession(sessionId: String, name: String?, coreName: String?) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?): Result<SaveState> {
+    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         uploadSessionSaveCallCount++
         return Result.success(SaveState(id = 1, gameId = 1, name = name))
     }
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
-    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?): Result<Unit> {
+    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
         return Result.success(Unit)
     }
@@ -361,7 +361,7 @@ class StubSessionRepository : SessionRepository {
         downloadSessionAutoSaveCallCount++
         return downloadSessionAutoSaveResult
     }
-    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray): Result<Unit> {
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> {
         uploadSessionSramCallCount++
         return Result.success(Unit)
     }

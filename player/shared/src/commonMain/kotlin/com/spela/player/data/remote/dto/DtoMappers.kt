@@ -521,6 +521,7 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
     lastPlayedByUsername = lastPlayedByUsername,
     totalPlayTime = totalPlayTime,
     screenshotUrl = screenshotUrl,
+    coreName = coreName,
     cheatsEnabled = cheatsEnabled,
     isSharedSession = isSharedSession,
     sharedSessionId = sharedSessionId,

@@ -142,6 +142,7 @@ export type ApiGetPath = WithQuery<
   | "/admin/igdb/status"
   | "/admin/cheats/stats"
   | "/admin/uploads"
+  | "/admin/core-compatibility"
 
   // WebSocket
   | "/ws"

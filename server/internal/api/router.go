@@ -446,6 +446,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
 			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
 			admin.GET("/cheats/stats", adminHandler.GetCheatStats)
+			admin.GET("/core-compatibility", adminHandler.GetCoreCompatibility)
 
 			// ROM uploads
 			admin.POST("/uploads", uploadHandler.UploadROMs)
