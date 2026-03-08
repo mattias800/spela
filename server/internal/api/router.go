@@ -561,20 +561,7 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 
 	// Save screenshots require authentication and ownership check
 	if strings.HasPrefix(reqPath, "save-screenshots/") {
-		// Extract user_id from path pattern: save-screenshots/user_{id}/...
-		parts := strings.SplitN(reqPath, "/", 3)
-		if len(parts) < 2 || !strings.HasPrefix(parts[1], "user_") {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-			return
-		}
-		pathUserIDStr := strings.TrimPrefix(parts[1], "user_")
-		pathUserID, err := strconv.ParseUint(pathUserIDStr, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-			return
-		}
-
-		// Require auth
+		// Require auth (token from header or query param)
 		var token string
 		header := c.GetHeader("Authorization")
 		if header != "" {
@@ -616,8 +603,38 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 			return
 		}
 
-		// Only the owning user or an admin can access save screenshots
-		if uint64(claims.UserID) != pathUserID && claims.Role != "admin" && claims.Role != "owner" {
+		parts := strings.SplitN(reqPath, "/", 4)
+
+		// Legacy format: save-screenshots/user_{id}/...
+		if len(parts) >= 2 && strings.HasPrefix(parts[1], "user_") {
+			pathUserIDStr := strings.TrimPrefix(parts[1], "user_")
+			pathUserID, parseErr := strconv.ParseUint(pathUserIDStr, 10, 64)
+			if parseErr != nil {
+				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				return
+			}
+			if uint64(claims.UserID) != pathUserID && claims.Role != "admin" && claims.Role != "owner" {
+				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				return
+			}
+		} else if len(parts) >= 3 && parts[1] == "sessions" && strings.HasPrefix(parts[2], "session_") {
+			// Session format: save-screenshots/sessions/session_{id}/...
+			sessionIDStr := strings.TrimPrefix(parts[2], "session_")
+			sessionID, parseErr := strconv.ParseUint(sessionIDStr, 10, 64)
+			if parseErr != nil {
+				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				return
+			}
+			var session db.GameSession
+			if err := h.DB.Select("id", "owner_id").First(&session, sessionID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+				return
+			}
+			if uint64(claims.UserID) != uint64(session.OwnerID) && claims.Role != "admin" && claims.Role != "owner" {
+				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				return
+			}
+		} else {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			return
 		}

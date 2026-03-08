@@ -215,6 +215,7 @@ export function GameDetailPage() {
       <ScrapeMatchModal
         gameId={game.id}
         currentTitle={game.title}
+        fileName={game.fileName}
         currentScraperId={game.scraperId}
         open={showScrapeMatch}
         onClose={() => setShowScrapeMatch(false)}
