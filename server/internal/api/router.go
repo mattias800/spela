@@ -506,6 +506,15 @@ func serveFrontend(frontendDir string) gin.HandlerFunc {
 			return
 		}
 
+		// Static asset paths must resolve to real files — never fall through
+		// to SPA. This prevents the SPA fallback from returning index.html
+		// (200 OK) for missing files, which breaks EmulatorJS CDN fallback
+		// (it checks for HTTP errors, not content type).
+		if strings.HasPrefix(reqPath, "/emulatorjs/") || strings.HasPrefix(reqPath, "/assets/") {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
 		// SPA fallback: serve index.html for any non-file path
 		c.File(filepath.Join(frontendDir, "index.html"))
 	}

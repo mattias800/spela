@@ -118,9 +118,9 @@
     // This also triggers a CDN version check that is harmlessly blocked by CSP.
     window.EJS_DEBUG_XX = true;
 
-    // Enable threaded WASM cores for full-speed emulation.
-    // Requires COOP/COEP headers (set by server and Vite dev config).
-    window.EJS_threads = true;
+    // Enable threaded WASM cores when SharedArrayBuffer is available.
+    // Requires COOP/COEP headers; falls back to non-threaded cores otherwise.
+    window.EJS_threads = typeof SharedArrayBuffer === "function";
 
     // Auto-load save state if provided
     if (config.saveStateData) {
