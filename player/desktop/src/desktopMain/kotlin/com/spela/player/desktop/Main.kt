@@ -21,6 +21,11 @@ import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import java.lang.foreign.Arena
+import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
+import java.lang.foreign.SymbolLookup
+import java.lang.foreign.ValueLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +34,7 @@ import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
 
 private val isMacOS = System.getProperty("os.name").orEmpty().contains("Mac", ignoreCase = true)
+private val isWindows = System.getProperty("os.name").orEmpty().contains("Windows", ignoreCase = true)
 
 fun main(args: Array<String>) {
     val autoStartGameId = args.indexOf("--game").let { idx ->
@@ -85,11 +91,25 @@ fun main(args: Array<String>) {
             }
         }
 
+        // Windows: transparent title bar matching the macOS appearance.
+        // On JBR (packaged MSI): uses JetBrains custom title bar API.
+        // On standard JDKs (dev): falls back to DWM via JDK 21 FFM API.
+        if (isWindows) {
+            LaunchedEffect(Unit) {
+                applyWindowsTransparentTitleBar(window)
+            }
+        }
+
         // On macOS, provide the title bar inset so SpTopBar and floating-bar screens
         // can offset their content below the native traffic light buttons.
         // The app's background/gradient extends to the top of the window, showing
         // through the transparent title bar.
-        CompositionLocalProvider(LocalTitleBarInset provides if (isMacOS) 28.dp else 0.dp) {
+        val titleBarInset = when {
+            isMacOS -> 28.dp
+            isWindows -> 32.dp
+            else -> 0.dp
+        }
+        CompositionLocalProvider(LocalTitleBarInset provides titleBarInset) {
             App()
         }
 
@@ -104,5 +124,55 @@ fun main(args: Array<String>) {
             }
         }
     }
+    }
+}
+
+/** Apply transparent/dark title bar on Windows via JBR API or DWM fallback. */
+private fun applyWindowsTransparentTitleBar(window: java.awt.Window) {
+    // Try JBR custom title bar first (works on JetBrains Runtime bundled in MSI)
+    if (System.getProperty("java.vendor").orEmpty().contains("JetBrains", ignoreCase = true)) {
+        try {
+            val rootPane = (window as? javax.swing.JFrame)?.rootPane ?: return
+            rootPane.putClientProperty("jetbrains.awt.customTitleBar.enabled", true)
+            rootPane.putClientProperty("jetbrains.awt.transparentTitleBarAppearance", true)
+            val bg = java.awt.Color(10, 10, 16)
+            window.background = bg
+            rootPane.background = bg
+            window.contentPane.background = bg
+            return
+        } catch (_: Exception) { /* fall through to DWM */ }
+    }
+
+    // Fallback: DWM API via JDK 21 Foreign Function & Memory API
+    try {
+        val peerField = java.awt.Component::class.java.getDeclaredField("peer")
+        peerField.isAccessible = true
+        val peer = peerField.get(window) ?: return
+        val hwnd = peer.javaClass.getMethod("getHWnd").invoke(peer) as Long
+
+        val linker = Linker.nativeLinker()
+        val dwm = SymbolLookup.libraryLookup("dwmapi.dll", Arena.global())
+        val dwmSetWindowAttribute = linker.downcallHandle(
+            dwm.find("DwmSetWindowAttribute").orElseThrow(),
+            FunctionDescriptor.of(
+                ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG,
+                ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
+            ),
+        )
+
+        Arena.ofConfined().use { arena ->
+            // DWMWA_USE_IMMERSIVE_DARK_MODE (20) — light caption icons on dark bg
+            val trueVal = arena.allocate(ValueLayout.JAVA_INT, 1)
+            dwmSetWindowAttribute.invoke(hwnd, 20, trueVal, 4)
+            // DWMWA_SYSTEMBACKDROP_TYPE (38) — Mica material (value 2)
+            val mica = arena.allocate(ValueLayout.JAVA_INT, 2)
+            dwmSetWindowAttribute.invoke(hwnd, 38, mica, 4)
+        }
+
+        val bg = java.awt.Color(10, 10, 16)
+        window.background = bg
+    } catch (e: Exception) {
+        // Graceful degradation — standard title bar on older Windows
+        System.err.println("Windows transparent title bar: ${e.message}")
     }
 }
