@@ -15,6 +15,7 @@ import {
   TableRowSkeleton,
 } from "@/components/ui";
 import { Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { User } from "@/types/api";
@@ -156,9 +157,12 @@ export function UserTable({
                         {user.username.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-surface-100">
+                        <Link
+                          to={`/users/${user.id}`}
+                          className="text-sm font-medium text-surface-100 hover:text-brand-400 transition-colors"
+                        >
                           {user.username}
-                        </span>
+                        </Link>
                         {user.id === currentUser?.id && (
                           <span className="ml-2 text-xs text-surface-500">
                             (you)
