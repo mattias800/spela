@@ -9,6 +9,7 @@ import {
   Zap,
   Layers,
   Save,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Button,
@@ -291,6 +292,15 @@ export function SessionDetailPage() {
                       <Badge variant="success" className="ml-2">
                         Current
                       </Badge>
+                    )}
+                    {save.coreMatch === false && (
+                      <span
+                        className="inline-flex items-center ml-2"
+                        title="This save state was created with a different emulator core and may not load correctly"
+                        aria-label="Core mismatch warning"
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning-500" />
+                      </span>
                     )}
                   </p>
                   <p className="text-xs text-surface-500">

@@ -660,9 +660,23 @@ export interface SessionSave {
   isAuto: boolean;
   isCurrent: boolean;
   coreName: string | null;
+  coreMatch: boolean | null;
+  currentCore: string | null;
   notes: string | null;
   slot: number | null;
   createdAt: string;
+}
+
+export interface CoreCompatibilityEntry {
+  consoleId: string;
+  consoleName: string;
+  nativeCore: string;
+  webCore: string;
+  matched: boolean;
+}
+
+export interface CoreCompatibilityResponse {
+  consoles: CoreCompatibilityEntry[];
 }
 
 export interface SessionCheatConfig {

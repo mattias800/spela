@@ -373,6 +373,7 @@ type SharedSession struct {
 	ActiveUserID *uint                  `json:"activeUserId,omitempty"`
 	TurnToken    string                 `gorm:"size:64" json:"-"`
 	TurnTakenAt  *time.Time             `json:"turnTakenAt,omitempty"`
+	CoreName     string                 `gorm:"size:128" json:"coreName,omitempty"`
 	SessionID    *uint                  `gorm:"index" json:"sessionId"`
 	Session      *GameSession           `json:"-"`
 	Members      []SharedSessionMember  `gorm:"foreignKey:SharedSessionID" json:"members,omitempty"`

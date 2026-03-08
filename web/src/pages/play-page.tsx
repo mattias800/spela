@@ -14,11 +14,16 @@ import { usePlaySession } from "@/hooks/use-play-session";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
+import { useAutoSaveInfo } from "@/hooks/use-sessions";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
 import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
+import {
+  CoreMismatchModal,
+  type CoreMismatchChoice,
+} from "@/features/play/components/core-mismatch-modal";
 import type { EmulatorPreferences } from "@/lib/emulator-protocol";
 import type { GameSession } from "@/types/api";
 
@@ -61,10 +66,16 @@ export function PlayPage() {
       .filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
+  const { data: autoSaveInfo } = useAutoSaveInfo(
+    !isFreshStart ? sessionId : undefined,
+  );
+
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isExitSaving, setIsExitSaving] = useState(false);
   const [isSwitchingDisc, setIsSwitchingDisc] = useState(false);
   const [currentDisc, setCurrentDisc] = useState(1);
+  const [showCoreMismatchModal, setShowCoreMismatchModal] = useState(false);
+  const coreMismatchChoiceRef = useRef<CoreMismatchChoice | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
   const pendingDiscSwitchRef = useRef<{
     targetDisc: number; // 0-indexed for EmulatorJS
@@ -234,6 +245,17 @@ export function PlayPage() {
 
     // Normal initialization flow
     async function init() {
+      // Check for core mismatch before loading the auto-save
+      if (
+        !isFreshStart &&
+        autoSaveInfo &&
+        autoSaveInfo.coreMatch === false &&
+        !coreMismatchChoiceRef.current
+      ) {
+        setShowCoreMismatchModal(true);
+        return; // Wait for user choice — will re-enter after choice is made
+      }
+
       const token = api.getAccessToken();
       const tokenSuffix = token
         ? `?token=${encodeURIComponent(token)}`
@@ -247,7 +269,13 @@ export function PlayPage() {
       const romUrl = isMultiDisc
         ? `/api/games/${game!.id}/discs/1/download?format=zip${token ? `&token=${encodeURIComponent(token)}` : ""}`
         : `/api/games/${game!.id}/download${tokenSuffix}`;
-      const saveStateData = await saveManager.loadInitialSave(isFreshStart);
+
+      // Determine whether to load the save state based on user choice
+      const choice = coreMismatchChoiceRef.current;
+      const skipSaveState = choice === "fresh" || choice === "sram-only";
+      const saveStateData = await saveManager.loadInitialSave(
+        isFreshStart || skipSaveState,
+      );
 
       // Build authenticated BIOS file URLs
       const biosUrls =
@@ -268,7 +296,8 @@ export function PlayPage() {
     }
 
     init();
-  }, [iframeLoaded, game?.id, isSupported, emulatorJsCore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iframeLoaded, game?.id, isSupported, emulatorJsCore, autoSaveInfo]);
 
   async function handleBack() {
     if (isExitSaving) return;
@@ -285,6 +314,21 @@ export function PlayPage() {
     queryClient.invalidateQueries({ queryKey: ["game-sessions"] });
     navigate(-1);
   }
+
+  const handleCoreMismatchChoice = useCallback(
+    (choice: CoreMismatchChoice) => {
+      coreMismatchChoiceRef.current = choice;
+      setShowCoreMismatchModal(false);
+      // Re-trigger init by toggling iframeLoaded — the init useEffect will
+      // re-run and use the stored choice.
+      setIframeLoaded(false);
+      const iframe = emulator.iframeRef.current;
+      if (iframe) {
+        iframe.src = "/emulator.html";
+      }
+    },
+    [emulator.iframeRef],
+  );
 
   // ── Loading state ─────────────────────────────────────────────────
 
@@ -340,6 +384,11 @@ export function PlayPage() {
 
   return (
     <div className="flex flex-col h-screen">
+      <CoreMismatchModal
+        open={showCoreMismatchModal}
+        onChoice={handleCoreMismatchChoice}
+      />
+
       <PlayToolbar
         game={game}
         emulatorStatus={emulator.status}

@@ -7,6 +7,7 @@ import type {
   MetadataMatchesResponse,
   IgdbSearchResult,
   RateLimitStatus,
+  CoreCompatibilityResponse,
 } from "@/types/api";
 
 export function useAdminUsers() {
@@ -341,5 +342,13 @@ export function useResetRateLimit() {
         queryKey: ["admin", "users", userId, "rate-limit"],
       });
     },
+  });
+}
+
+export function useCoreCompatibility() {
+  return useQuery({
+    queryKey: ["admin", "core-compatibility"],
+    queryFn: () =>
+      api.get<CoreCompatibilityResponse>("/admin/core-compatibility"),
   });
 }

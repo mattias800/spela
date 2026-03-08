@@ -85,6 +85,14 @@ sealed interface EmulationIntent {
     data object PlayWithLocalSave : EmulationIntent
     data object CancelLaunch : EmulationIntent
 
+    // Core mismatch
+    /** User chose "Try Loading Anyway" — attempt to load the mismatched save state. */
+    data object CoreMismatchTryAnyway : EmulationIntent
+    /** User chose "Start with Game Save Only" — skip save state, SRAM already loaded. */
+    data object CoreMismatchGameSaveOnly : EmulationIntent
+    /** User chose "Start Fresh" — skip all saves. */
+    data object CoreMismatchStartFresh : EmulationIntent
+
     // Cheats
     data object ShowCheatBrowser : EmulationIntent
     data object HideCheatBrowser : EmulationIntent

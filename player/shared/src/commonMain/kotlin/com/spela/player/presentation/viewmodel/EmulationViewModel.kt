@@ -195,6 +195,11 @@ class EmulationViewModel(
             EmulationIntent.PlayWithLocalSave -> playWithLocalSave()
             EmulationIntent.CancelLaunch -> cancelLaunch()
 
+            // Core mismatch
+            EmulationIntent.CoreMismatchTryAnyway -> handleCoreMismatchTryAnyway()
+            EmulationIntent.CoreMismatchGameSaveOnly -> handleCoreMismatchGameSaveOnly()
+            EmulationIntent.CoreMismatchStartFresh -> handleCoreMismatchStartFresh()
+
             // Cheats
             EmulationIntent.ShowCheatBrowser -> _state.update { it.copy(showCheatBrowser = true) }
             EmulationIntent.HideCheatBrowser -> _state.update { it.copy(showCheatBrowser = false) }
@@ -379,6 +384,9 @@ class EmulationViewModel(
                         challengeManager.currentCoreName = resolvedCoreName
                         saveManager.currentCoreName = resolvedCoreName
 
+                        // Update session with current core name (best effort)
+                        saveManager.updateSessionCoreName()
+
                         // Challenge mode: load challenge save state and start attempt
                         if (challengeId != null) {
                             challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
@@ -390,7 +398,7 @@ class EmulationViewModel(
                             // For non-HW cores, load save state immediately.
                             // HW render cores (e.g. Dolphin) boot asynchronously — their
                             // GPU thread isn't ready for retro_unserialize yet. Deferred below.
-                            saveManager.autoLoadSaveState(gameId)
+                            handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
                         }
 
                         // Set up netplay transport if in netplay mode
@@ -427,7 +435,7 @@ class EmulationViewModel(
                         if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
                             && challengeId == null && sharedSessionId == null
                         ) {
-                            saveManager.autoLoadSaveState(gameId)
+                            handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)
@@ -635,6 +643,9 @@ class EmulationViewModel(
                         showGiveUpConfirm = false,
                         challengeCompletedAttempt = null,
                         sessionId = null,
+                        showCoreMismatchDialog = false,
+                        coreMismatchSaveCoreName = "",
+                        coreMismatchCurrentCoreName = "",
                         hasCheats = false,
                         enabledCheatCount = 0,
                         showCheatBrowser = false,
@@ -643,6 +654,67 @@ class EmulationViewModel(
                 }
                 saveManager.currentSessionId = null
             }
+        }
+    }
+
+    /**
+     * Handles the result of an auto-load attempt.
+     * On core mismatch, pauses emulation and shows a dialog.
+     */
+    private suspend fun handleAutoLoadResult(result: AutoLoadResult) {
+        when (result) {
+            is AutoLoadResult.Loaded -> {
+                // Already unserialized by SaveManager — nothing else to do
+            }
+            is AutoLoadResult.CoreMismatch -> {
+                println("[Emulation] Core mismatch detected: save='${result.saveCoreName}' current='${result.currentCoreName}'")
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            showCoreMismatchDialog = true,
+                            coreMismatchSaveCoreName = result.saveCoreName,
+                            coreMismatchCurrentCoreName = result.currentCoreName,
+                        )
+                    }
+                }
+            }
+            is AutoLoadResult.NoSave -> {
+                // No save to load — game starts fresh
+            }
+            is AutoLoadResult.Error -> {
+                println("[Emulation] Auto-load error: ${result.message}")
+            }
+        }
+    }
+
+    private fun handleCoreMismatchTryAnyway() {
+        _state.update { it.copy(showCoreMismatchDialog = false) }
+        scope.launch(dispatchers.io) {
+            val success = saveManager.forceAutoLoadSaveState()
+            val message = if (success) {
+                "Save state loaded (compatibility not guaranteed)"
+            } else {
+                "Failed to load save state \u2014 starting without it"
+            }
+            withContext(dispatchers.main) {
+                _state.update { it.copy(statusMessage = message) }
+            }
+        }
+    }
+
+    private fun handleCoreMismatchGameSaveOnly() {
+        // SRAM was already loaded before the auto-save check, so just dismiss the dialog.
+        // The game will start from the title screen with in-game save progress intact.
+        _state.update { it.copy(showCoreMismatchDialog = false) }
+    }
+
+    private fun handleCoreMismatchStartFresh() {
+        // Dismiss dialog and clear SRAM so the game truly starts fresh with no
+        // in-game save data. This is destructive — the user chose to discard both
+        // the save state AND the in-game save progress.
+        _state.update { it.copy(showCoreMismatchDialog = false) }
+        scope.launch(dispatchers.io) {
+            libretroController.setSRAM(ByteArray(0))
         }
     }
 

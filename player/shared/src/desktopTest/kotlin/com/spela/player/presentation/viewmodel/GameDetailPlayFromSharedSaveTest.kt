@@ -168,15 +168,15 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
         )
         return Result.success(session)
     }
-    override suspend fun updateSession(sessionId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun updateSession(sessionId: String, name: String?, coreName: String?) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
-    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?) =
+    override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = 1, gameId = 1, name = name))
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
-    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?) = Result.success(Unit)
+    override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String) = Result.success(Unit)
     override suspend fun downloadSessionAutoSave(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
-    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray) = Result.success(Unit)
+    override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String) = Result.success(Unit)
     override suspend fun downloadSessionSram(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) =

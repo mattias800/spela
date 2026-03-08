@@ -19,6 +19,7 @@ import { AdminScanPage } from "@/pages/admin/scan-page";
 import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
 import { AdminCheatsPage } from "@/pages/admin/cheats-page";
 import { AdminBiosPage } from "@/pages/admin/bios-page";
+import { CoreCompatibilityPage } from "@/pages/admin/core-compatibility-page";
 import { UploadRomsPage } from "@/pages/admin/upload-roms-page";
 import { PreferencesPage } from "@/pages/preferences-page";
 import { PlayPage } from "@/pages/play-page";
@@ -171,6 +172,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <AdminCheatsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/core-compatibility"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <CoreCompatibilityPage />
                         </ProtectedRoute>
                       }
                     />
