@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Check, AlertTriangle } from "lucide-react";
+import { Search, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { Modal, SearchInput, Badge, Skeleton, useToast } from "@/components/ui";
 import { useIgdbSearch, useApplyIgdbMatch, useIgdbStatus } from "@/hooks/use-admin";
 import { cn } from "@/lib/cn";
@@ -8,6 +8,7 @@ import type { IgdbSearchResult } from "@/types/api";
 interface ScrapeMatchModalProps {
   gameId: string;
   currentTitle: string;
+  fileName?: string;
   currentScraperId?: string;
   open: boolean;
   onClose: () => void;
@@ -16,12 +17,14 @@ interface ScrapeMatchModalProps {
 export function ScrapeMatchModal({
   gameId,
   currentTitle,
+  fileName,
   currentScraperId,
   open,
   onClose,
 }: ScrapeMatchModalProps) {
   const [searchInput, setSearchInput] = useState(currentTitle);
   const [debouncedQuery, setDebouncedQuery] = useState(currentTitle);
+  const [applyingIgdbId, setApplyingIgdbId] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -56,15 +59,18 @@ export function ScrapeMatchModal({
 
   function handleSelect(result: IgdbSearchResult) {
     if (applyMatch.isPending) return;
+    setApplyingIgdbId(result.igdbId);
     applyMatch.mutate(
       { gameId, igdbId: result.igdbId },
       {
         onSuccess: () => {
           toast("success", `Matched to "${result.name}"`);
+          setApplyingIgdbId(null);
           onClose();
         },
         onError: () => {
           toast("error", "Failed to apply match");
+          setApplyingIgdbId(null);
         },
       },
     );
@@ -78,6 +84,11 @@ export function ScrapeMatchModal({
   return (
     <Modal open={open} onClose={onClose} title="Fix Scrape Match" size="lg">
       <div className="space-y-4">
+        {fileName && (
+          <p className="text-sm text-surface-400">
+            ROM: <span className="text-surface-200 font-mono">{fileName}</span>
+          </p>
+        )}
         <SearchInput
           ref={inputRef}
           value={searchInput}
@@ -128,6 +139,7 @@ export function ScrapeMatchModal({
                     String(result.igdbId) === currentIgdbId
                   }
                   isApplying={applyMatch.isPending}
+                  isThisApplying={applyingIgdbId === result.igdbId}
                   onSelect={() => handleSelect(result)}
                 />
               ))}
@@ -148,11 +160,13 @@ function IgdbResultItem({
   result,
   isCurrentMatch,
   isApplying,
+  isThisApplying,
   onSelect,
 }: {
   result: IgdbSearchResult;
   isCurrentMatch: boolean;
   isApplying: boolean;
+  isThisApplying: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -165,7 +179,8 @@ function IgdbResultItem({
         isCurrentMatch
           ? "bg-brand-500/10 border border-brand-500/30 cursor-default"
           : "hover:bg-surface-800 cursor-pointer border border-transparent",
-        isApplying && !isCurrentMatch && "opacity-50 cursor-not-allowed",
+        isThisApplying && "bg-surface-800 border border-brand-500/30",
+        isApplying && !isCurrentMatch && !isThisApplying && "opacity-50 cursor-not-allowed",
       )}
     >
       {/* Cover thumbnail */}
@@ -201,6 +216,9 @@ function IgdbResultItem({
               <Check className="h-3 w-3 mr-0.5" />
               Current
             </Badge>
+          )}
+          {isThisApplying && (
+            <Loader2 className="h-4 w-4 text-brand-400 animate-spin flex-shrink-0" />
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-surface-400">
