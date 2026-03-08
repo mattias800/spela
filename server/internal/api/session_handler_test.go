@@ -1486,3 +1486,106 @@ func TestListSessionSaves_IncludesCoreMatch(t *testing.T) {
 		}
 	}
 }
+
+// --- Session Screenshot Image Serving ---
+
+func TestServeSessionScreenshot_OwnerCanAccess(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	// Create a session and upload a save with a screenshot
+	created := createGameSession(t, env.router, env.token, env.gameID, "Screenshot Session")
+	sessionID := created["id"].(string)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", "Save with SS")
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write([]byte("save data"))
+	ssPart, _ := writer.CreateFormFile("screenshot", "screenshot.png")
+	ssPart.Write([]byte("PNG image data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	screenshotURL := saveResp["screenshotUrl"].(string)
+	require.NotEmpty(t, screenshotURL)
+
+	// Fetch the screenshot image using query token auth
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", screenshotURL+"?token="+env.token, nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code, "owner should be able to access session screenshot")
+}
+
+func TestServeSessionScreenshot_OtherUserDenied(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "Private Session")
+	sessionID := created["id"].(string)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", "Save")
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write([]byte("save data"))
+	ssPart, _ := writer.CreateFormFile("screenshot", "screenshot.png")
+	ssPart.Write([]byte("PNG image data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	screenshotURL := saveResp["screenshotUrl"].(string)
+
+	// Other user should be denied
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", screenshotURL+"?token="+env.token2, nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code, "non-owner should be denied access to session screenshot")
+}
+
+func TestServeSessionScreenshot_NoAuthDenied(t *testing.T) {
+	env := setupSessionTestEnv(t)
+
+	created := createGameSession(t, env.router, env.token, env.gameID, "Auth Session")
+	sessionID := created["id"].(string)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", "Save")
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write([]byte("save data"))
+	ssPart, _ := writer.CreateFormFile("screenshot", "screenshot.png")
+	ssPart.Write([]byte("PNG image data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	screenshotURL := saveResp["screenshotUrl"].(string)
+
+	// No token should return 401
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", screenshotURL, nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code, "unauthenticated request should be denied")
+}
