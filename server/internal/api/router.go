@@ -37,6 +37,7 @@ type Config struct {
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
 	Version                      string
+	TestMode                     bool // when true, registers POST /api/test/reset for E2E test isolation
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
@@ -461,6 +462,13 @@ func NewRouter(cfg Config) *gin.Engine {
 
 		// WebSocket
 		api.GET("/ws", cfg.Hub.HandleWebSocket)
+	}
+
+	// Test-only endpoint for E2E test isolation (only registered when SPELA_TEST_MODE=true).
+	// Registered outside the auth group so it can be called without a token.
+	if cfg.TestMode {
+		testHandler := &TestHandler{DB: cfg.DB}
+		r.POST("/api/test/reset", testHandler.Reset)
 	}
 
 	// Serve frontend static files when configured (unified single-container deployment)

@@ -41,6 +41,7 @@ func main() {
 	encryptionKeyRaw := os.Getenv("SPELA_ENCRYPTION_KEY")
 	frontendDir := os.Getenv("SPELA_FRONTEND_DIR")
 	challengeRateLimitRaw := getEnv("SPELA_CHALLENGE_RATE_LIMIT_SEC", "30")
+	testMode := os.Getenv("SPELA_TEST_MODE") == "true"
 
 	gameDirs := strings.Split(gameDirsRaw, ",")
 	var wsOrigins []string
@@ -64,13 +65,16 @@ func main() {
 	// Enforce secure JWT secret — always required, regardless of GIN_MODE.
 	// Self-hosted users may not know to set GIN_MODE=release, so we never
 	// allow a known default or short secret to protect against token forgery.
-	if jwtSecret == "change-me-in-production" {
-		slog.Error("FATAL: using default JWT secret; set SPELA_JWT_SECRET to a random value (>= 32 chars)")
-		os.Exit(1)
-	}
-	if len(jwtSecret) < 32 {
-		slog.Error("FATAL: JWT secret must be at least 32 characters; set a stronger SPELA_JWT_SECRET")
-		os.Exit(1)
+	// In test mode, skip this check to allow known test secrets.
+	if !testMode {
+		if jwtSecret == "change-me-in-production" {
+			slog.Error("FATAL: using default JWT secret; set SPELA_JWT_SECRET to a random value (>= 32 chars)")
+			os.Exit(1)
+		}
+		if len(jwtSecret) < 32 {
+			slog.Error("FATAL: JWT secret must be at least 32 characters; set a stronger SPELA_JWT_SECRET")
+			os.Exit(1)
+		}
 	}
 
 	// Derive or use explicit encryption key.
@@ -194,6 +198,7 @@ func main() {
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 		Version:                      version,
+		TestMode:                     testMode,
 	})
 
 	slog.Info("server listening", "port", port)
