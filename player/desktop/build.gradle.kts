@@ -128,9 +128,10 @@ compose.desktop {
     application {
         mainClass = "com.spela.player.desktop.MainKt"
 
-        jvmArgs += "-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}"
-
         nativeDistributions {
+            // Use $APPDIR so the packaged app finds native libs next to its jars.
+            // The dev `run` task gets the build-tree path separately below.
+            jvmArgs += "-Djava.library.path=\$APPDIR"
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Spela"
             val appVersion = project.findProperty("appVersion")?.toString() ?: "1.0.0"
@@ -240,8 +241,8 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
     }
 }
 
-// Pass native library path to Compose Hot Reload tasks.
-tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") }.configureEach {
+// Pass native library path to dev run and Compose Hot Reload tasks.
+tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") || it.name == "run" }.configureEach {
     jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")
 }
 
