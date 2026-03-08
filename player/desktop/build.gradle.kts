@@ -128,10 +128,11 @@ compose.desktop {
     application {
         mainClass = "com.spela.player.desktop.MainKt"
 
+        // Use forward slashes so the path isn't mangled by escape-character
+        // interpretation in the jpackage .cfg file on Windows.
+        jvmArgs += "-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath.replace('\\', '/')}"
+
         nativeDistributions {
-            // Use $APPDIR so the packaged app finds native libs next to its jars.
-            // The dev `run` task gets the build-tree path separately below.
-            jvmArgs += "-Djava.library.path=\$APPDIR"
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Spela"
             val appVersion = project.findProperty("appVersion")?.toString() ?: "1.0.0"
@@ -168,6 +169,26 @@ tasks.withType<Test> {
     timeout.set(Duration.ofMinutes(5))
     testLogging {
         events("failed")
+    }
+}
+
+// After jpackage creates the distributable, patch the .cfg file to replace the
+// build-machine's absolute native library path with $APPDIR so the packaged app
+// finds its native libs at runtime on end-user machines.
+tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDistributable" }.configureEach {
+    doLast {
+        val nativeAbsPath = nativeBuildDir.get().asFile.absolutePath.replace('\\', '/')
+        val appImageDir = project.layout.buildDirectory.dir("compose/binaries/main/app").get().asFile
+        appImageDir.walkTopDown()
+            .filter { it.name.endsWith(".cfg") }
+            .forEach { cfg ->
+                val original = cfg.readText()
+                val patched = original.replace(nativeAbsPath, "\$APPDIR")
+                if (patched != original) {
+                    cfg.writeText(patched)
+                    logger.lifecycle("Patched native library path in ${cfg.name}")
+                }
+            }
     }
 }
 
@@ -241,8 +262,8 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
     }
 }
 
-// Pass native library path to dev run and Compose Hot Reload tasks.
-tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") || it.name == "run" }.configureEach {
+// Pass native library path to Compose Hot Reload tasks.
+tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") }.configureEach {
     jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")
 }
 
