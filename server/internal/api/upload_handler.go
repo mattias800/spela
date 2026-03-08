@@ -274,6 +274,16 @@ func (h *UploadHandler) stageROMFile(originalFilename string, ext string, writeF
 		}
 	}
 
+	// Sanitize NES ROM headers (clean dirty padding bytes that cause load failures).
+	if ext == ".nes" {
+		if result := scanner.SanitizeNESHeader(destPath); result == "sanitized" {
+			slog.Info("sanitized dirty iNES header on upload", "file", safeName)
+		}
+		if err := scanner.ValidateNESHeader(destPath); err != nil {
+			slog.Warn("NES ROM header validation failed", "file", safeName, "error", err)
+		}
+	}
+
 	// Detect console from extension
 	consoleID, isAmbiguous := detectConsole(h.DB, ext)
 
