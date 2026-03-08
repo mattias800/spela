@@ -41,6 +41,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
 
   useEffect(() => {
+    // Fetch profile with one retry for transient failures (network blip,
+    // server busy).  Only clear tokens on definitive auth failures (401/403).
+    const fetchProfile = (retriesLeft: number): void => {
+      api
+        .get<User>("/user/profile")
+        .then((u) => {
+          setUser(u);
+          setIsLoading(false);
+        })
+        .catch((err: unknown) => {
+          const status =
+            err instanceof Error && "status" in err
+              ? (err as Error & { status: number }).status
+              : 0;
+          if (status === 401 || status === 403) {
+            api.clearTokens();
+            setIsLoading(false);
+            return;
+          }
+          if (retriesLeft > 0) {
+            setTimeout(() => fetchProfile(retriesLeft - 1), 500);
+            return;
+          }
+          setIsLoading(false);
+        });
+    };
+
     // Check setup status first
     fetch("/api/auth/setup-status")
       .then((res) => res.json())
@@ -59,13 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           return;
         }
-        api
-          .get<User>("/user/profile")
-          .then(setUser)
-          .catch(() => {
-            api.clearTokens();
-          })
-          .finally(() => setIsLoading(false));
+        fetchProfile(1);
       })
       .catch(() => {
         setNeedsSetup(false);

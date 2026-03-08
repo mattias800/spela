@@ -10,8 +10,13 @@ test.describe("Emulator Page", () => {
         route.fulfill({ json: [] }),
       );
 
-      // Navigate to games list, find Castlevania (NES — has emulatorJsCore)
-      await page.goto("/games");
+      // Navigate to games list, wait for API data before searching
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -33,7 +38,12 @@ test.describe("Emulator Page", () => {
         route.fulfill({ json: [] }),
       );
 
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -53,7 +63,12 @@ test.describe("Emulator Page", () => {
   test.describe("Emulator Page Layout", () => {
     test("shows game title and navigation controls", async ({ page }) => {
       // First find a valid game ID by navigating through the UI
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -84,7 +99,12 @@ test.describe("Emulator Page", () => {
     });
 
     test("shows emulator iframe", async ({ page }) => {
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -103,7 +123,12 @@ test.describe("Emulator Page", () => {
     });
 
     test("shows loading state while initializing", async ({ page }) => {
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -146,7 +171,12 @@ test.describe("Emulator Page", () => {
     });
 
     test("exit button returns to game detail page", async ({ page }) => {
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -188,7 +218,12 @@ test.describe("Emulator Page", () => {
         }
       });
 
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -233,7 +268,12 @@ test.describe("Emulator Page", () => {
         }
       });
 
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
@@ -250,7 +290,12 @@ test.describe("Emulator Page", () => {
     test("save button is disabled before emulator is playing", async ({
       page,
     }) => {
-      await page.goto("/games");
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes("/api/games") && resp.ok(),
+        ),
+        page.goto("/games"),
+      ]);
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 

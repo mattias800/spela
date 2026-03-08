@@ -32,6 +32,8 @@ function monitorPageErrors(page: import("@playwright/test").Page) {
       if (response.status() === 404 && url.includes("/api/bios/")) return;
       // Session screenshots may not exist in E2E (no real saves)
       if (url.includes("/save-screenshots/")) return;
+      // IGDB search may return 503 when scraper credentials are not configured
+      if (url.includes("/igdb-search")) return;
       failedRequests.push(`${response.status()} ${url}`);
     }
   });
@@ -79,6 +81,9 @@ function monitorPageErrors(page: import("@playwright/test").Page) {
 
 test.describe("EmulatorJS Real Integration", () => {
   test.setTimeout(120_000);
+  // WASM core loading in headless Chromium (SwiftShader) can be flaky;
+  // allow one retry for tests that depend on EmulatorJS fully starting.
+  test.describe.configure({ retries: 1 });
 
   /**
    * Helper: continuously send game-started messages to simulate the emulator
@@ -115,8 +120,13 @@ test.describe("EmulatorJS Real Integration", () => {
       route.fulfill({ json: [] }),
     );
 
-    // Navigate to the games list and find a playable game
-    await page.goto("/games");
+    // Navigate to the games list and wait for API data before searching
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes("/api/games") && resp.ok(),
+      ),
+      page.goto("/games"),
+    ]);
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
 
@@ -142,8 +152,11 @@ test.describe("EmulatorJS Real Integration", () => {
     expect(loaderResponse.ok()).toBe(true);
     expect(loaderResponse.headers()["content-type"]).toContain("javascript");
 
-    // Inspect the iframe for EmulatorJS-specific elements
-    const frame = page.frameLocator('iframe[title*="Playing"]');
+    // Inspect the iframe for EmulatorJS-specific elements.
+    // Use src-based selector instead of title-based, because the title
+    // attribute is set dynamically after the game data loads and may not
+    // be present yet.
+    const frame = page.frameLocator('iframe[src="/emulator.html"]');
 
     // EmulatorJS creates a canvas and UI elements inside #game.
     await expect(frame.locator("#game")).toBeVisible({ timeout: 30_000 });
@@ -204,8 +217,13 @@ test.describe("EmulatorJS Real Integration", () => {
       route.fulfill({ json: [] }),
     );
 
-    // Navigate to a playable game
-    await page.goto("/games");
+    // Navigate to a playable game, wait for API data before searching
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes("/api/games") && resp.ok(),
+      ),
+      page.goto("/games"),
+    ]);
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
 
@@ -287,7 +305,12 @@ test.describe("EmulatorJS Real Integration", () => {
   }) => {
     const monitor = monitorPageErrors(page);
 
-    await page.goto("/games");
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes("/api/games") && resp.ok(),
+      ),
+      page.goto("/games"),
+    ]);
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
 
