@@ -132,12 +132,7 @@ compose.desktop {
         // interpretation in the jpackage .cfg file on Windows.
         jvmArgs += "-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath.replace('\\', '/')}"
 
-        // Windows: AWT peer reflection + JDK FFM for transparent title bar
-        if (org.gradle.internal.os.OperatingSystem.current().isWindows) {
-            jvmArgs += "--add-opens=java.desktop/java.awt=ALL-UNNAMED"
-            jvmArgs += "--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED"
-            jvmArgs += "--enable-native-access=ALL-UNNAMED"
-        }
+        // JBR custom title bar doesn't need --add-opens; no FFM fallback.
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

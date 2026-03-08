@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: jetbrains
           java-version: 17
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -216,7 +216,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: jetbrains
           java-version: 17
       - name: Install dependencies
         run: |
@@ -254,7 +254,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: jetbrains
           java-version: 17
       - name: Install dependencies
         run: |
@@ -300,7 +300,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: jetbrains
           java-version: 17
       - uses: android-actions/setup-android@v3
         with:
