@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, resetServer } from "./fixtures";
 
 const arrowsLeftPrefs = {
   showPerformanceOverlay: false,
@@ -258,6 +258,10 @@ test.describe("Custom Key Mapping Editor", () => {
 });
 
 test.describe("Per-Console Key Mapping Overrides", () => {
+  test.beforeAll(async () => {
+    await resetServer();
+  });
+
   test("override table renders with console names and dropdowns", async ({
     page,
   }) => {
@@ -323,14 +327,14 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     const reloadedSelect = reloadedTable.locator("select").first();
     await expect(reloadedSelect).toBeVisible();
     await expect(reloadedSelect).toHaveValue("wasd-arrows");
-
-    // Reset back to global default to avoid test pollution
-    await reloadedSelect.selectOption("");
-    await page.waitForTimeout(500);
   });
 });
 
 test.describe("Key Mapping Persistence", () => {
+  test.beforeAll(async () => {
+    await resetServer();
+  });
+
   test("global mode change persists after page reload", async ({ page }) => {
     await page.goto("/preferences");
 
@@ -352,10 +356,6 @@ test.describe("Key Mapping Persistence", () => {
     await expect(
       page.getByRole("button", { name: "Arrows + Left" }),
     ).not.toHaveClass(/ring-2/);
-
-    // Reset to arrows-left to avoid test pollution
-    await page.getByRole("button", { name: "Arrows + Left" }).click();
-    await page.waitForTimeout(500);
   });
 
   test("custom key assignment persists after page reload", async ({ page }) => {
@@ -399,9 +399,5 @@ test.describe("Key Mapping Persistence", () => {
       .locator("..");
     const reloadedBtn = reloadedRow.locator("button");
     await expect(reloadedBtn).toHaveText("M");
-
-    // Reset to arrows-left to avoid test pollution
-    await page.getByRole("button", { name: "Arrows + Left" }).click();
-    await page.waitForTimeout(500);
   });
 });

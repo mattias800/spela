@@ -1,6 +1,10 @@
-import { test, expect } from "./fixtures";
+import { test, expect, resetServer } from "./fixtures";
 
 test.describe("Admin Settings — Allow Registration", () => {
+  test.beforeEach(async () => {
+    await resetServer();
+  });
+
   test("disabling Allow Registration persists after page reload", async ({
     page,
   }) => {
@@ -35,11 +39,6 @@ test.describe("Admin Settings — Allow Registration", () => {
       .getByRole("switch")
       .first();
     await expect(toggleAfterReload).toHaveAttribute("aria-checked", "false");
-
-    // Re-enable for clean state
-    await toggleAfterReload.click();
-    await page.getByRole("button", { name: /save settings/i }).click();
-    await expect(page.getByText("Settings saved")).toBeVisible();
   });
 
   test("registration endpoint returns 403 when registration is disabled", async ({
@@ -75,18 +74,5 @@ test.describe("Admin Settings — Allow Registration", () => {
       return { status: res.status };
     });
     expect(regResult.status).toBe(403);
-
-    // Re-enable registration
-    await page.evaluate(async () => {
-      const token = localStorage.getItem("accessToken");
-      await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ registration_enabled: "true" }),
-      });
-    });
   });
 });

@@ -1,4 +1,5 @@
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, resetServer } from "./fixtures";
+import type { BrowserContext, Page } from "@playwright/test";
 
 const API = "http://localhost:8080/api";
 
@@ -91,6 +92,8 @@ test.describe("Netplay invite flow (two browsers)", () => {
   let gameId: string;
 
   test.beforeAll(async () => {
+    await resetServer();
+
     // Get tokens
     adminToken = await apiLogin("admin", "admin123");
 

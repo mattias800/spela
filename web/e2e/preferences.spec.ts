@@ -1,6 +1,10 @@
-import { test, expect } from "./fixtures";
+import { test, expect, resetServer } from "./fixtures";
 
 test.describe("Preferences Page", () => {
+  test.beforeAll(async () => {
+    await resetServer();
+  });
+
   test("displays emulation settings with toggles", async ({ page }) => {
     await page.goto("/preferences");
 

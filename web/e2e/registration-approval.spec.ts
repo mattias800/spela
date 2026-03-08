@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, resetServer } from "./fixtures";
 
 /**
  * E2E tests for the registration approval workflow.
@@ -8,16 +8,17 @@ import { test, expect } from "@playwright/test";
  * we can test the unauthenticated registration flow directly.
  */
 
-// Each test run uses a unique suffix to avoid username conflicts across runs
-const suffix = Date.now();
-
 test.describe("Registration Approval Flow", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
+
+  test.beforeEach(async () => {
+    await resetServer();
+  });
 
   test("registration shows pending approval message instead of logging in", async ({
     page,
   }) => {
-    const username = `pendinguser${suffix}`;
+    const username = "pendinguser";
 
     await page.goto("/register");
     await page.getByLabel("Username").fill(username);
@@ -34,25 +35,22 @@ test.describe("Registration Approval Flow", () => {
   });
 
   test("pending user cannot log in", async ({ page }) => {
-    const username = `pendinglogin${suffix}`;
+    const username = "pendinglogin";
 
     // Register via API (bypass the UI to avoid waiting for the UI message test)
     await page.goto("/");
-    const regStatus = await page.evaluate(
-      async ([user, suffix]) => {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: `${user}${suffix}`,
-            email: `${user}${suffix}@test.com`,
-            password: "password123",
-          }),
-        });
-        return res.status;
-      },
-      [username, ""] as [string, string],
-    );
+    const regStatus = await page.evaluate(async (user: string) => {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: user,
+          email: `${user}@test.com`,
+          password: "password123",
+        }),
+      });
+      return res.status;
+    }, username);
     // Should return 202 (pending), not 201 (auto-login)
     expect(regStatus).toBe(202);
 
@@ -72,7 +70,7 @@ test.describe("Registration Approval Flow", () => {
   test("admin can approve a pending user and the user can then log in", async ({
     browser,
   }) => {
-    const username = `approvaltest${suffix}`;
+    const username = "approvaltest";
 
     // Step 1: Register a new user (unauthenticated context)
     const userCtx = await browser.newContext({
