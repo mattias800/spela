@@ -93,7 +93,7 @@ test.describe("Upload ROMs Page", () => {
     await expect(page.getByTestId("upload-drop-zone")).toBeVisible();
     await expect(page.getByText("No staged uploads")).toBeVisible();
     await expect(
-      page.getByText(/Drag and drop ROM files here/),
+      page.getByText(/Drop ROM files or ZIP archives here/),
     ).toBeVisible();
   });
 

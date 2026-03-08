@@ -12,8 +12,16 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "setup",
+      testMatch: /global-setup\.spec\.ts/,
+    },
+    {
       name: "chromium",
-      use: { browserName: "chromium" },
+      use: {
+        browserName: "chromium",
+        storageState: "./e2e/.auth/storage-state.json",
+      },
+      dependencies: ["setup"],
     },
   ],
 });

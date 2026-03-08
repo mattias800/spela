@@ -97,6 +97,42 @@ async function setupGameDetailSocialRoutes(
       }),
     });
   });
+
+  // Mock game sessions endpoint
+  await page.route(`**/api/games/${gameId}/sessions`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    });
+  });
+
+  // Mock game cheats endpoint
+  await page.route(`**/api/games/${gameId}/cheats`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    });
+  });
+
+  // Mock game challenges endpoint
+  await page.route(`**/api/games/${gameId}/challenges`, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 10 }),
+    });
+  });
+
+  // Mock collections endpoint
+  await page.route("**/api/collections/mine*", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 100 }),
+    });
+  });
 }
 
 test.describe("RetroAchievements - Preferences Page", () => {

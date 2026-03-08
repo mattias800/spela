@@ -6,7 +6,7 @@ describe("DropZone", () => {
   it("renders the drop zone with instructions", () => {
     render(<DropZone onFiles={vi.fn()} isUploading={false} />);
     expect(
-      screen.getByText(/Drag and drop ROM files here/),
+      screen.getByText(/Drop ROM files or ZIP archives here/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Select Files/ }),

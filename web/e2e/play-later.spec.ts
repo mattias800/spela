@@ -494,7 +494,7 @@ test.describe("Dashboard Play Later Section", () => {
     page: import("@playwright/test").Page,
     playLaterGames: Record<string, unknown>[],
   ) {
-    await page.route("**/api/games/recent*", (route) => {
+    await page.route("**/api/user/recent*", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -502,7 +502,7 @@ test.describe("Dashboard Play Later Section", () => {
       });
     });
 
-    await page.route("**/api/games/favorites*", (route) => {
+    await page.route("**/api/user/favorites*", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -531,7 +531,7 @@ test.describe("Dashboard Play Later Section", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: "[]",
+        body: JSON.stringify({ achievements: [] }),
       });
     });
 
@@ -563,6 +563,14 @@ test.describe("Dashboard Play Later Section", () => {
         body: JSON.stringify({ users: [] }),
       });
     });
+
+    await page.route("**/api/challenges?*", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 4 }),
+      });
+    });
   }
 
   test("dashboard shows Play Later section when queue has items", async ({
@@ -572,12 +580,18 @@ test.describe("Dashboard Play Later Section", () => {
 
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: "Play Later" })).toBeVisible(
-      { timeout: 10_000 },
-    );
+    const playLaterHeading = page.getByRole("heading", {
+      name: "Play Later",
+    });
+    await expect(playLaterHeading).toBeVisible({ timeout: 10_000 });
 
-    // Games should be visible in the section
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible();
+    // Assert within the section that contains the Play Later heading
+    const playLaterSection = page.locator("section", {
+      has: playLaterHeading,
+    });
+    await expect(
+      playLaterSection.getByText("Super Mario Bros.", { exact: true }),
+    ).toBeVisible();
   });
 
   test("dashboard hides Play Later section when queue is empty", async ({
