@@ -176,6 +176,9 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String) = Result.success(Unit)
     override suspend fun downloadSessionAutoSave(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
+    override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
+        Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot"))
+    override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String) = Result.success(Unit)
     override suspend fun downloadSessionSram(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
