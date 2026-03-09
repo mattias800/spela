@@ -11,6 +11,19 @@ fun formatPlayTime(seconds: Long): String {
 }
 
 /**
+ * Formats a rating like 92.5 for display. Avoids platform-specific String.format.
+ * Always shows one decimal place (e.g., "92.5", "95.0").
+ */
+fun formatRating(rating: Double): String {
+    val rounded = (rating * 10).toLong() / 10.0
+    return if (rounded == rounded.toLong().toDouble()) {
+        "${rounded.toLong()}.0"
+    } else {
+        rounded.toString()
+    }
+}
+
+/**
  * Formats a byte count into a human-readable string (e.g., "1.5 KB", "3.2 MB").
  */
 fun formatBytes(bytes: Long): String {

@@ -235,6 +235,17 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/developer-games").body()
     }
 
+    /** Returns featured games for the Explore page hero carousel */
+    suspend fun getExploreFeatured(): List<FeaturedGameDto> {
+        return client.get("$baseUrl/api/explore/featured").body()
+    }
+
+    /** Returns curated rows for the Explore page (Top Rated, Recently Added, etc.) */
+    suspend fun getExploreRows(): List<ExploreRowDto> {
+        val response: ExploreRowsResponseDto = client.get("$baseUrl/api/explore/rows").body()
+        return response.rows
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

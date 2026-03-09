@@ -172,6 +172,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	artworkHandler := &ArtworkHandler{DB: cfg.DB}
+	exploreHandler := &ExploreHandler{DB: cfg.DB}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
 		DB:            cfg.DB,
@@ -231,6 +232,13 @@ func NewRouter(cfg Config) *gin.Engine {
 
 		// Top Lists
 		api.GET("/top-lists/top-rated", consoleHandler.GetTopListAvailable)
+
+		// Explore
+		explore := api.Group("/explore")
+		{
+			explore.GET("/featured", exploreHandler.GetExploreFeatured)
+			explore.GET("/rows", exploreHandler.GetExploreRows)
+		}
 
 		// Games
 		api.GET("/games", gameHandler.ListGames)

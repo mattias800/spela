@@ -69,6 +69,7 @@ val commonModule = module {
     single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
+    single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 
@@ -322,6 +323,14 @@ val commonModule = module {
     factory {
         TopListsViewModel(
             gameRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+
+    factory {
+        ExploreViewModel(
+            exploreRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

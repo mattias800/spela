@@ -35,6 +35,7 @@ import { NetplaySessionPage } from "@/pages/netplay-session-page";
 import { LicensesPage } from "@/pages/licenses-page";
 import { ChallengesPage } from "@/pages/challenges-page";
 import { TopListsPage } from "@/pages/top-lists-page";
+import { ExplorePage } from "@/pages/explore-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
@@ -82,6 +83,7 @@ export function App() {
                     }
                   >
                     <Route index element={<DashboardPage />} />
+                    <Route path="explore" element={<ExplorePage />} />
                     <Route element={<LibraryLayout />}>
                       <Route path="consoles" element={<ConsolesPage />} />
                       <Route path="games" element={<GamesPage />} />

@@ -1,0 +1,355 @@
+package api
+
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/db"
+	"gorm.io/gorm"
+)
+
+// ExploreHandler handles explore page endpoints.
+type ExploreHandler struct {
+	DB *gorm.DB
+}
+
+// FeaturedGameResponse is the API response for a featured game in the hero carousel.
+type FeaturedGameResponse struct {
+	GameID              string  `json:"gameId"`
+	Title               string  `json:"title"`
+	HeroURL             string  `json:"heroUrl"`
+	LogoURL             string  `json:"logoUrl"`
+	ConsoleID           string  `json:"consoleId"`
+	ConsoleName         string  `json:"consoleName"`
+	ConsoleAbbreviation string  `json:"consoleAbbreviation"`
+	ConsoleColor        string  `json:"consoleColor"`
+	Rating              float64 `json:"rating"`
+	Genre               string  `json:"genre"`
+	IsFavorite          bool    `json:"isFavorite"`
+	IsPlayLater         bool    `json:"isPlayLater"`
+}
+
+// ExploreRowResponse is the API response for a single curated row on the explore page.
+type ExploreRowResponse struct {
+	ID    string         `json:"id"`
+	Title string         `json:"title"`
+	Games []GameResponse `json:"games"`
+}
+
+// ExploreRowsResponse is the API response for all explore rows.
+type ExploreRowsResponse struct {
+	Rows []ExploreRowResponse `json:"rows"`
+}
+
+// GetExploreFeatured returns featured games for the hero carousel.
+// Games must have both hero art and logo art from SteamGridDB, sorted by IGDB rating descending.
+func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
+	userID := getUserID(c)
+
+	// Find games that have hero art AND logo art, sorted by rating desc, limit 8
+	type featuredRow struct {
+		GameID    uint
+		Title     string
+		HeroURL   string
+		LogoURL   string
+		Rating    float64
+		Genre     string
+		ConsoleID uint
+	}
+
+	var rows []featuredRow
+	err := h.DB.
+		Table("games").
+		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, games.rating, games.genre, games.console_id").
+		Joins("JOIN game_artworks ON game_artworks.game_id = games.id").
+		Where("games.deleted_at IS NULL").
+		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
+		Order("games.rating DESC").
+		Limit(8).
+		Scan(&rows).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch featured games"})
+		return
+	}
+
+	if len(rows) == 0 {
+		c.JSON(http.StatusOK, []FeaturedGameResponse{})
+		return
+	}
+
+	// Batch-load console data for these games
+	consoleIDs := make([]uint, 0, len(rows))
+	for _, r := range rows {
+		consoleIDs = append(consoleIDs, r.ConsoleID)
+	}
+	var consoles []db.Console
+	if err := h.DB.Where("id IN ?", consoleIDs).Find(&consoles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch console data"})
+		return
+	}
+	consoleMap := make(map[uint]db.Console, len(consoles))
+	for _, con := range consoles {
+		consoleMap[con.ID] = con
+	}
+
+	// Batch-load user data (favorites, play later)
+	gameIDs := make([]uint, len(rows))
+	for i, r := range rows {
+		gameIDs[i] = r.GameID
+	}
+	favorites := make(map[uint]bool)
+	playLater := make(map[uint]bool)
+	if userID > 0 {
+		var favs []db.Favorite
+		if err := h.DB.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&favs).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch favorites"})
+			return
+		}
+		for _, f := range favs {
+			favorites[f.GameID] = true
+		}
+		var plItems []db.PlayLaterItem
+		if err := h.DB.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&plItems).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch play later items"})
+			return
+		}
+		for _, item := range plItems {
+			playLater[item.GameID] = true
+		}
+	}
+
+	result := make([]FeaturedGameResponse, len(rows))
+	for i, r := range rows {
+		con := consoleMap[r.ConsoleID]
+		abbr := strings.ToLower(con.Abbreviation)
+		result[i] = FeaturedGameResponse{
+			GameID:              strconv.FormatUint(uint64(r.GameID), 10),
+			Title:               r.Title,
+			HeroURL:             r.HeroURL,
+			LogoURL:             r.LogoURL,
+			ConsoleID:           abbr,
+			ConsoleName:         con.Name,
+			ConsoleAbbreviation: abbr,
+			ConsoleColor:        con.ColorTheme,
+			Rating:              r.Rating,
+			Genre:               r.Genre,
+			IsFavorite:          favorites[r.GameID],
+			IsPlayLater:         playLater[r.GameID],
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetExploreRows returns all curated shelf rows for the explore page.
+// Empty rows are omitted from the response.
+func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
+	userID := getUserID(c)
+
+	rows := []ExploreRowResponse{}
+
+	// Top Rated: top 20 games by IGDB rating, rating > 0
+	if row, err := h.buildTopRatedRow(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build top-rated row"})
+		return
+	} else if row != nil {
+		rows = append(rows, *row)
+	}
+
+	// Recently Added: top 20 games by created_at DESC
+	if row, err := h.buildRecentlyAddedRow(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recently-added row"})
+		return
+	} else if row != nil {
+		rows = append(rows, *row)
+	}
+
+	// Hidden Gems: high rating + low play time across all users
+	if row, err := h.buildHiddenGemsRow(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build hidden-gems row"})
+		return
+	} else if row != nil {
+		rows = append(rows, *row)
+	}
+
+	// Most Played on Your Server: top 20 by total play time across all users
+	if row, err := h.buildMostPlayedRow(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build most-played row"})
+		return
+	} else if row != nil {
+		rows = append(rows, *row)
+	}
+
+	c.JSON(http.StatusOK, ExploreRowsResponse{Rows: rows})
+}
+
+// buildTopRatedRow returns the top 20 games by IGDB rating, cross-console.
+func (h *ExploreHandler) buildTopRatedRow(userID uint) (*ExploreRowResponse, error) {
+	var games []db.Game
+	if err := h.DB.Preload("Console").
+		Where("rating > 0").
+		Order("rating DESC").
+		Limit(20).
+		Find(&games).Error; err != nil {
+		return nil, err
+	}
+
+	if len(games) == 0 {
+		return nil, nil
+	}
+
+	return &ExploreRowResponse{
+		ID:    "top-rated",
+		Title: "Top Rated",
+		Games: ToGameResponses(games, h.DB, userID),
+	}, nil
+}
+
+// buildRecentlyAddedRow returns the 20 most recently added games.
+func (h *ExploreHandler) buildRecentlyAddedRow(userID uint) (*ExploreRowResponse, error) {
+	var games []db.Game
+	if err := h.DB.Preload("Console").
+		Order("created_at DESC").
+		Limit(20).
+		Find(&games).Error; err != nil {
+		return nil, err
+	}
+
+	if len(games) == 0 {
+		return nil, nil
+	}
+
+	return &ExploreRowResponse{
+		ID:    "recently-added",
+		Title: "Recently Added",
+		Games: ToGameResponses(games, h.DB, userID),
+	}, nil
+}
+
+// buildHiddenGemsRow returns games with high IGDB rating but low total play time
+// across all users. Uses SQL to compute the play-time threshold and filter in a
+// single bounded query instead of loading all games/play history into memory.
+func (h *ExploreHandler) buildHiddenGemsRow(userID uint) (*ExploreRowResponse, error) {
+	// First, check if there are at least 5 games total (per acceptance criteria,
+	// hidden gems section is hidden when library is tiny)
+	var totalGames int64
+	if err := h.DB.Model(&db.Game{}).Count(&totalGames).Error; err != nil {
+		return nil, err
+	}
+	if totalGames < 5 {
+		return nil, nil
+	}
+
+	// Calculate the play-time threshold (25th percentile) in SQL.
+	// We only need the count of games with play time > 0 and the threshold value.
+	type thresholdRow struct {
+		TotalPlayTime int64
+	}
+	var playTimes []thresholdRow
+	if err := h.DB.Model(&db.PlayHistory{}).
+		Select("COALESCE(SUM(play_time), 0) as total_play_time").
+		Group("game_id").
+		Having("total_play_time > 0").
+		Order("total_play_time ASC").
+		Scan(&playTimes).Error; err != nil {
+		return nil, err
+	}
+
+	var threshold int64
+	if len(playTimes) > 0 {
+		idx := len(playTimes) / 4
+		threshold = playTimes[idx].TotalPlayTime
+		if threshold == 0 {
+			threshold = 1
+		}
+	}
+	// If threshold is 0 (no play history at all), all rated games qualify
+
+	// Query games with rating >= 75 and low/zero play time in a single bounded query.
+	// LEFT JOIN aggregated play history, filter where total play time <= threshold or NULL.
+	var games []db.Game
+	query := h.DB.Preload("Console").
+		Joins("LEFT JOIN (SELECT game_id, COALESCE(SUM(play_time), 0) as total_play_time FROM play_histories GROUP BY game_id) ph ON ph.game_id = games.id").
+		Where("games.rating >= 75").
+		Where("games.deleted_at IS NULL")
+
+	if threshold > 0 {
+		query = query.Where("ph.total_play_time IS NULL OR ph.total_play_time <= ?", threshold)
+	}
+
+	if err := query.
+		Order("games.rating DESC").
+		Limit(20).
+		Find(&games).Error; err != nil {
+		return nil, err
+	}
+
+	if len(games) == 0 {
+		return nil, nil
+	}
+
+	return &ExploreRowResponse{
+		ID:    "hidden-gems",
+		Title: "Hidden Gems",
+		Games: ToGameResponses(games, h.DB, userID),
+	}, nil
+}
+
+// buildMostPlayedRow returns the top 20 games by total play time across all users.
+func (h *ExploreHandler) buildMostPlayedRow(userID uint) (*ExploreRowResponse, error) {
+	// Aggregate play time per game across all users, bounded to top 20
+	type playTimeRow struct {
+		GameID        uint
+		TotalPlayTime int64
+	}
+	var playTimeRows []playTimeRow
+	if err := h.DB.Model(&db.PlayHistory{}).
+		Select("game_id, COALESCE(SUM(play_time), 0) as total_play_time").
+		Group("game_id").
+		Having("total_play_time > 0").
+		Order("total_play_time DESC").
+		Limit(20).
+		Scan(&playTimeRows).Error; err != nil {
+		return nil, err
+	}
+
+	if len(playTimeRows) == 0 {
+		return nil, nil
+	}
+
+	// Load the game objects (scoped to only the game IDs we need)
+	gameIDs := make([]uint, len(playTimeRows))
+	for i, r := range playTimeRows {
+		gameIDs[i] = r.GameID
+	}
+
+	var games []db.Game
+	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
+		return nil, err
+	}
+
+	if len(games) == 0 {
+		return nil, nil
+	}
+
+	// Re-sort games by total play time (the IN query may not preserve order)
+	gameMap := make(map[uint]db.Game, len(games))
+	for _, g := range games {
+		gameMap[g.ID] = g
+	}
+	sortedGames := make([]db.Game, 0, len(playTimeRows))
+	for _, r := range playTimeRows {
+		if g, ok := gameMap[r.GameID]; ok {
+			sortedGames = append(sortedGames, g)
+		}
+	}
+
+	return &ExploreRowResponse{
+		ID:    "most-played",
+		Title: "Most Played on Your Server",
+		Games: ToGameResponses(sortedGames, h.DB, userID),
+	}, nil
+}
+

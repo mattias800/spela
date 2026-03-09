@@ -29,7 +29,7 @@ class NavigationViewModel(
     val state: StateFlow<NavigationState> = _state.asStateFlow()
 
     private val sections = listOf(
-        SpScreen.Home, SpScreen.Consoles, SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
+        SpScreen.Home, SpScreen.Explore, SpScreen.Consoles, SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
     )
 
     init {
@@ -78,6 +78,7 @@ class NavigationViewModel(
                         )
                     } else if (current.currentScreen is SpScreen.Settings ||
                         current.currentScreen is SpScreen.Downloads ||
+                        current.currentScreen is SpScreen.Explore ||
                         current.currentScreen is SpScreen.Consoles ||
                         current.currentScreen is SpScreen.Collections ||
                         current.currentScreen is SpScreen.Activity
@@ -186,6 +187,7 @@ class NavigationViewModel(
 
     companion object {
         fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
+            is SpScreen.Explore -> BottomNavTab.EXPLORE
             is SpScreen.Consoles, is SpScreen.Console -> BottomNavTab.CONSOLES
             is SpScreen.Collections, is SpScreen.CollectionDetail -> BottomNavTab.COLLECTIONS
             is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY

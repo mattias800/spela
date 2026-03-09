@@ -1003,3 +1003,31 @@ data class CheatDto(
     val description: String = "",
     val code: String = "",
 )
+
+// Explore
+
+@Serializable
+data class FeaturedGameDto(
+    val gameId: String,
+    val title: String,
+    val heroUrl: String? = null,
+    val logoUrl: String? = null,
+    val consoleAbbreviation: String = "",
+    val consoleColor: String = "",
+    val rating: Double = 0.0,
+    val genre: String = "",
+    val isFavorite: Boolean = false,
+    val isPlayLater: Boolean = false,
+)
+
+@Serializable
+data class ExploreRowDto(
+    val id: String,
+    val title: String,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class ExploreRowsResponseDto(
+    val rows: List<ExploreRowDto>,
+)

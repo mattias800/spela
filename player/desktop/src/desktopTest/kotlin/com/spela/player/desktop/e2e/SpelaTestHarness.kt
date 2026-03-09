@@ -340,6 +340,14 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val exploreRepo = FakeExploreRepository()
+
+    val exploreViewModel = ExploreViewModel(
+        exploreRepository = exploreRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         androidx.compose.runtime.CompositionLocalProvider(
@@ -371,6 +379,7 @@ class SpelaTestHarness(
             connectivityMonitor = connectivityMonitor,
             sessionDetailViewModel = sessionDetailViewModel,
             topListsViewModel = topListsViewModel,
+            exploreViewModel = exploreViewModel,
             gamepadPortManager = gamepadPortManager,
         )
         }
