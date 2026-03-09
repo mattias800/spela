@@ -264,8 +264,11 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val userRepo = FakeUserRepository()
+
     val sharedSessionDetailViewModel = SharedSessionDetailViewModel(
         sharedSessionRepository = sharedSessionRepo,
+        userRepository = userRepo,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -326,6 +329,7 @@ class SpelaTestHarness(
     val netplayLobbyViewModel = NetplayLobbyViewModel(
         netplayRepository = netplayRepo,
         authRepository = authRepo,
+        userRepository = userRepo,
         dispatchers = dispatchers,
         scope = scope,
     )

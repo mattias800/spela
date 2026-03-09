@@ -14,4 +14,10 @@ sealed interface NetplayLobbyIntent {
     data class UpdateInputDelay(val inputDelay: Int) : NetplayLobbyIntent
     data object LeaveSession : NetplayLobbyIntent
     data object DismissError : NetplayLobbyIntent
+    data object ShowInviteSheet : NetplayLobbyIntent
+    data object HideInviteSheet : NetplayLobbyIntent
+    data class UpdateInviteSearchQuery(val query: String) : NetplayLobbyIntent
+    data class InviteSearchPage(val page: Int) : NetplayLobbyIntent
+    data class SendInvite(val username: String) : NetplayLobbyIntent
+    data object DismissInviteSuccess : NetplayLobbyIntent
 }

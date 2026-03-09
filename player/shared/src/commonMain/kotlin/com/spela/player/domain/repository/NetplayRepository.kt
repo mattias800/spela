@@ -10,4 +10,5 @@ interface NetplayRepository {
     suspend fun leaveSession(sessionId: String): Result<Unit>
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun updateInputDelay(sessionId: String, inputDelay: Int): Result<NetplaySession>
+    suspend fun sendNetplayInvite(sessionId: String, username: String): Result<Unit>
 }

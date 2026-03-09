@@ -386,6 +386,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/social/online", socialHandler.GetOnlineUsers)
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
 		api.GET("/users/search", socialHandler.SearchUsers)
+		api.GET("/users/recent-partners", socialHandler.GetRecentPartners)
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
 		api.GET("/users/:id/play-heatmap", statsHandler.GetPublicPlayHeatmap)
 

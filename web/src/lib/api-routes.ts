@@ -103,6 +103,7 @@ export type ApiGetPath = WithQuery<
   | "/social/online"
   | "/social/activity"
   | `/users/search`
+  | `/users/recent-partners`
   | `/users/${string}/profile`
   | `/users/${string}/play-heatmap`
 

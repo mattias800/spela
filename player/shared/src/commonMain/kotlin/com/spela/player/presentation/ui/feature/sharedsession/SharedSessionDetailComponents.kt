@@ -242,9 +242,8 @@ internal fun MemberItem(
 internal fun InviteSection(
     isInviting: Boolean,
     onInvite: (String) -> Unit,
+    onShowInviteSheet: () -> Unit = {},
 ) {
-    var username by remember { mutableStateOf("") }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -256,28 +255,10 @@ internal fun InviteSection(
             color = SpColor.OnBackground,
         )
         Spacer(Modifier.height(SpSpacing.Small))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            SpTextField(
-                value = username,
-                onValueChange = { username = it },
-                placeholder = "Username",
-                modifier = Modifier.weight(1f),
-            )
-            SpButton(
-                text = "Invite",
-                onClick = {
-                    if (username.isNotBlank()) {
-                        onInvite(username.trim())
-                        username = ""
-                    }
-                },
-                isLoading = isInviting,
-                enabled = username.isNotBlank(),
-            )
-        }
+        SpButton(
+            text = "Invite Player",
+            onClick = onShowInviteSheet,
+        )
     }
 }
 

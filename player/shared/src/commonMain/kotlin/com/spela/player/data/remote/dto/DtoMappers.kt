@@ -456,6 +456,14 @@ fun ChallengeLeaderboardEntryDto.toDomain(): ChallengeLeaderboardEntry = Challen
     isCurrentUser = isCurrentUser,
 )
 
+// User Search mappers
+
+fun UserSearchResultDto.toDomain(): UserSearchResult = UserSearchResult(
+    id = id,
+    username = username,
+    avatarUrl = avatarUrl,
+)
+
 // Netplay mappers
 
 fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(

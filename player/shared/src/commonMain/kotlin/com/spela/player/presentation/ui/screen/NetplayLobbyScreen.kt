@@ -40,6 +40,7 @@ import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.NetplayLobbyIntent
 import com.spela.player.presentation.ui.feature.netplay.InputDelaySection
 import com.spela.player.presentation.ui.feature.netplay.LobbyHeader
+import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -266,6 +267,21 @@ fun NetplayLobbyScreen(
                             )
                         }
 
+                        // Invite Player button (host only, while waiting, no client yet)
+                        if (session.hostUserId == currentUserId &&
+                            session.status == NetplaySessionStatus.WAITING &&
+                            session.clientUserId == null
+                        ) {
+                            item {
+                                Spacer(Modifier.height(SpSpacing.Default))
+                                SpButton(
+                                    text = "Invite Player",
+                                    onClick = { viewModel.onIntent(NetplayLobbyIntent.ShowInviteSheet) },
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                )
+                            }
+                        }
+
                         // Action buttons
                         item {
                             Spacer(Modifier.height(SpSpacing.XLarge))
@@ -299,6 +315,37 @@ fun NetplayLobbyScreen(
             },
             onDismiss = { viewModel.onIntent(NetplayLobbyIntent.DismissError) },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        // Invite success snackbar
+        SpSnackbar(
+            data = state.inviteSuccessMessage?.let {
+                SpSnackbarData(
+                    message = it,
+                    type = SpSnackbarType.Success,
+                )
+            },
+            onDismiss = { viewModel.onIntent(NetplayLobbyIntent.DismissInviteSuccess) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    // Invite player dialog
+    if (state.showInviteSheet) {
+        InvitePlayerSheet(
+            searchQuery = state.inviteSearchQuery,
+            onSearchQueryChange = { viewModel.onIntent(NetplayLobbyIntent.UpdateInviteSearchQuery(it)) },
+            searchResults = state.inviteSearchResults,
+            searchTotal = state.inviteSearchTotal,
+            searchPage = state.inviteSearchPage,
+            recentPartners = state.recentPartners,
+            isSearching = state.isSearchingUsers,
+            isLoadingRecentPartners = state.isLoadingRecentPartners,
+            invitingUsername = state.invitingUsername,
+            invitedUsernames = state.invitedUsernames,
+            onInvite = { viewModel.onIntent(NetplayLobbyIntent.SendInvite(it)) },
+            onPageChange = { viewModel.onIntent(NetplayLobbyIntent.InviteSearchPage(it)) },
+            onDismiss = { viewModel.onIntent(NetplayLobbyIntent.HideInviteSheet) },
         )
     }
 }

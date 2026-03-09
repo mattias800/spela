@@ -6,6 +6,7 @@ import type {
   ActivityFeedResponse,
   ActivityEvent,
   UserSearchResult,
+  UserSearchResponse,
 } from "@/types/api";
 
 export function useOnlineUsers() {
@@ -26,12 +27,24 @@ export function useActivityFeed(page: number = 1, pageSize: number = 20) {
   });
 }
 
-export function useSearchUsers(query: string) {
+export function useSearchUsers(
+  query: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
   return useQuery({
-    queryKey: ["users", "search", query],
+    queryKey: ["users", "search", query, page, pageSize],
     queryFn: () =>
-      api.get<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}`),
-    enabled: query.length >= 2,
+      api.get<UserSearchResponse>(
+        `/users/search?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`,
+      ),
+  });
+}
+
+export function useRecentPartners() {
+  return useQuery({
+    queryKey: ["users", "recent-partners"],
+    queryFn: () => api.get<UserSearchResult[]>("/users/recent-partners"),
   });
 }
 
