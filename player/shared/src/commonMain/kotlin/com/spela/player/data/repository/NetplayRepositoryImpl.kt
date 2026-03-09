@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.CreateNetplaySessionRequest
 import com.spela.player.data.remote.dto.JoinByInviteCodeRequest
+import com.spela.player.data.remote.dto.SendNetplayInviteRequest
 import com.spela.player.data.remote.dto.UpdateNetplaySettingsRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.NetplaySession
@@ -43,5 +44,9 @@ class NetplayRepositoryImpl(
 
     override suspend fun updateInputDelay(sessionId: String, inputDelay: Int): Result<NetplaySession> = runCatching {
         apiClient.updateNetplaySettings(sessionId, UpdateNetplaySettingsRequest(inputDelay)).toDomain()
+    }
+
+    override suspend fun sendNetplayInvite(sessionId: String, username: String): Result<Unit> = runCatching {
+        apiClient.sendNetplayInvite(sessionId, SendNetplayInviteRequest(username))
     }
 }

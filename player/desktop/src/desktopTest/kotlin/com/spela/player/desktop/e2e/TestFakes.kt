@@ -162,6 +162,11 @@ class FakeAuthRepository : AuthRepository {
     var registeredUsers = mutableMapOf("player" to "player123")
     private var tokens: AuthTokens? = null
 
+    /** Pre-set tokens so getCurrentUser() returns success without calling login(). */
+    fun simulateLoggedIn() {
+        tokens = AuthTokens("test-access-token", "test-refresh-token")
+    }
+
     override suspend fun login(
         serverUrl: String,
         username: String,
@@ -860,6 +865,26 @@ class FakeNetplayRepository : NetplayRepository {
     override suspend fun updateInputDelay(sessionId: String, inputDelay: Int): Result<NetplaySession> =
         currentSession?.let { Result.success(it.copy(inputDelay = inputDelay)) }
             ?: Result.failure(Exception("Session not found"))
+    override suspend fun sendNetplayInvite(sessionId: String, username: String): Result<Unit> =
+        Result.success(Unit)
+}
+
+class FakeUserRepository : UserRepository {
+    var searchResults: List<UserSearchResult> = emptyList()
+    var recentPartners: List<UserSearchResult> = emptyList()
+
+    override suspend fun searchUsers(query: String, page: Int, pageSize: Int): Result<UserSearchPage> =
+        Result.success(
+            UserSearchPage(
+                data = searchResults.filter { query.isEmpty() || it.username.contains(query, ignoreCase = true) },
+                total = searchResults.size.toLong(),
+                page = page,
+                pageSize = pageSize,
+            )
+        )
+
+    override suspend fun getRecentPartners(): Result<List<UserSearchResult>> =
+        Result.success(recentPartners)
 }
 
 class FakeChallengeRepository : ChallengeRepository {

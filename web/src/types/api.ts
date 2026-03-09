@@ -316,6 +316,13 @@ export interface UserSearchResult {
   avatarUrl?: string;
 }
 
+export interface UserSearchResponse {
+  data: UserSearchResult[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface OnlineUser {
   id: string;
   username: string;

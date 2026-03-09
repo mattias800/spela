@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ internal fun GameCommunityStatsSection(
     stats: GameStats?,
     isLoading: Boolean,
     modifier: Modifier = Modifier,
+    onPlayerClicked: ((userId: String) -> Unit)? = null,
 ) {
     if (isLoading || stats == null || stats.totalPlayers == 0) return
 
@@ -83,6 +85,7 @@ internal fun GameCommunityStatsSection(
                     rank = index + 1,
                     player = player,
                     maxPlayTime = maxPlayTime,
+                    onClick = onPlayerClicked?.let { { it(player.userId) } },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = SpSpacing.XXSmall),
@@ -121,6 +124,7 @@ private fun TopPlayerRow(
     rank: Int,
     player: TopPlayer,
     maxPlayTime: Long,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val rankColor = when (rank) {
@@ -130,7 +134,9 @@ private fun TopPlayerRow(
         else -> SpColor.OnBackgroundTertiary
     }
 
-    SpInnerCard(modifier = modifier) {
+    SpInnerCard(modifier = modifier.then(
+        if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    )) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

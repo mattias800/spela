@@ -1,6 +1,9 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.repository.SharedSessionRepository
+import com.spela.player.domain.repository.UserRepository
+import com.spela.player.presentation.delegate.InviteSheetDelegate
+import com.spela.player.presentation.delegate.InviteSheetState
 import com.spela.player.presentation.intent.SharedSessionDetailIntent
 import com.spela.player.presentation.state.SharedSessionDetailState
 import com.spela.player.util.DispatcherProvider
@@ -13,11 +16,21 @@ import kotlinx.coroutines.launch
 
 class SharedSessionDetailViewModel(
     private val sharedSessionRepository: SharedSessionRepository,
+    userRepository: UserRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(SharedSessionDetailState())
     val state: StateFlow<SharedSessionDetailState> = _state.asStateFlow()
+
+    private val inviteDelegate = InviteSheetDelegate(
+        userRepository = userRepository,
+        dispatchers = dispatchers,
+        scope = scope,
+        onStateUpdate = { inviteState -> _state.update { it.applyInviteState(inviteState) } },
+        getState = { _state.value.toInviteSheetState() },
+        onError = { msg -> _state.update { it.copy(error = msg) } },
+    )
 
     fun onIntent(intent: SharedSessionDetailIntent) {
         when (intent) {
@@ -30,6 +43,10 @@ class SharedSessionDetailViewModel(
             is SharedSessionDetailIntent.CopySaveToGame -> copySaveToGame(intent.sharedSessionId, intent.saveId)
             SharedSessionDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             SharedSessionDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
+            SharedSessionDetailIntent.ShowInviteSheet -> inviteDelegate.show()
+            SharedSessionDetailIntent.HideInviteSheet -> inviteDelegate.hide()
+            is SharedSessionDetailIntent.UpdateInviteSearchQuery -> inviteDelegate.updateSearchQuery(intent.query)
+            is SharedSessionDetailIntent.InviteSearchPage -> inviteDelegate.changePage(intent.page)
         }
     }
 
@@ -62,14 +79,22 @@ class SharedSessionDetailViewModel(
     }
 
     private fun inviteUser(sharedSessionId: String, username: String) {
+        inviteDelegate.markInviteSending(username)
         _state.update { it.copy(isInviting = true) }
         scope.launch(dispatchers.io) {
             sharedSessionRepository.inviteUser(sharedSessionId, username).fold(
                 onSuccess = {
-                    _state.update { it.copy(isInviting = false, successMessage = "Invitation sent to $username") }
+                    inviteDelegate.markInviteSuccess(username)
+                    _state.update {
+                        it.copy(
+                            isInviting = false,
+                            successMessage = "Invitation sent to $username",
+                        )
+                    }
                     loadSharedSession(sharedSessionId)
                 },
                 onFailure = { error ->
+                    inviteDelegate.markInviteFailed()
                     _state.update { it.copy(error = error.message, isInviting = false) }
                 },
             )
@@ -133,3 +158,31 @@ class SharedSessionDetailViewModel(
         }
     }
 }
+
+private fun SharedSessionDetailState.toInviteSheetState() = InviteSheetState(
+    showInviteSheet = showInviteSheet,
+    inviteSearchQuery = inviteSearchQuery,
+    inviteSearchResults = inviteSearchResults,
+    inviteSearchTotal = inviteSearchTotal,
+    inviteSearchPage = inviteSearchPage,
+    recentPartners = recentPartners,
+    isSearchingUsers = isSearchingUsers,
+    isLoadingRecentPartners = isLoadingRecentPartners,
+    invitingUsername = invitingUsername,
+    invitedUsernames = invitedUsernames,
+    inviteSuccessMessage = inviteSuccessMessage,
+)
+
+private fun SharedSessionDetailState.applyInviteState(s: InviteSheetState) = copy(
+    showInviteSheet = s.showInviteSheet,
+    inviteSearchQuery = s.inviteSearchQuery,
+    inviteSearchResults = s.inviteSearchResults,
+    inviteSearchTotal = s.inviteSearchTotal,
+    inviteSearchPage = s.inviteSearchPage,
+    recentPartners = s.recentPartners,
+    isSearchingUsers = s.isSearchingUsers,
+    isLoadingRecentPartners = s.isLoadingRecentPartners,
+    invitingUsername = s.invitingUsername,
+    invitedUsernames = s.invitedUsernames,
+    inviteSuccessMessage = s.inviteSuccessMessage,
+)

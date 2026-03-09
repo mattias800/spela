@@ -14,14 +14,20 @@ vi.mock("@/hooks/use-netplay", () => ({
 }));
 
 vi.mock("@/hooks/use-social", () => ({
-  useSearchUsers: vi.fn((query: string) => ({
-    data:
-      query.length >= 2
-        ? [
-            { id: "u1", username: "alice", avatarUrl: null },
-            { id: "u2", username: "bob", avatarUrl: "https://example.com/bob.png" },
-          ]
-        : [],
+  useSearchUsers: vi.fn((_query: string) => ({
+    data: {
+      data: [
+        { id: "u1", username: "alice", avatarUrl: null },
+        { id: "u2", username: "bob", avatarUrl: "https://example.com/bob.png" },
+      ],
+      total: 2,
+      page: 1,
+      pageSize: 10,
+    },
+    isLoading: false,
+  })),
+  useRecentPartners: vi.fn(() => ({
+    data: [],
     isLoading: false,
   })),
 }));
@@ -84,7 +90,7 @@ describe("NetplayInviteModal", () => {
     expect(screen.queryByText("Invite Player")).not.toBeInTheDocument();
   });
 
-  it("disables submit when no username is entered", () => {
+  it("shows user list with all users", () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -95,31 +101,12 @@ describe("NetplayInviteModal", () => {
         />
       </Wrapper>,
     );
-
-    const sendButton = screen.getByText("Send Invite").closest("button");
-    expect(sendButton).toBeDisabled();
-  });
-
-  it("shows search results when typing", async () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <NetplayInviteModal
-          sessionId="s1"
-          open={true}
-          onClose={vi.fn()}
-        />
-      </Wrapper>,
-    );
-
-    const searchInput = screen.getByPlaceholderText("Search for a user...");
-    await userEvent.type(searchInput, "al");
 
     expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("bob")).toBeInTheDocument();
   });
 
-  it("selects a user and fills the input when clicked", async () => {
+  it("calls mutate when invite button is clicked on a user", async () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -131,31 +118,8 @@ describe("NetplayInviteModal", () => {
       </Wrapper>,
     );
 
-    const searchInput = screen.getByPlaceholderText("Search for a user...");
-    await userEvent.type(searchInput, "al");
-    await userEvent.click(screen.getByText("alice"));
-
-    expect(searchInput).toHaveValue("alice");
-  });
-
-  it("calls mutate with sessionId and username on submit", async () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <NetplayInviteModal
-          sessionId="s1"
-          open={true}
-          onClose={vi.fn()}
-        />
-      </Wrapper>,
-    );
-
-    const searchInput = screen.getByPlaceholderText("Search for a user...");
-    await userEvent.type(searchInput, "al");
-    await userEvent.click(screen.getByText("alice"));
-
-    const sendButton = screen.getByText("Send Invite").closest("button")!;
-    await userEvent.click(sendButton);
+    const inviteButtons = screen.getAllByText("Invite");
+    await userEvent.click(inviteButtons[0]);
 
     expect(mockMutate).toHaveBeenCalledWith(
       { sessionId: "s1", username: "alice" },
@@ -180,7 +144,7 @@ describe("NetplayInviteModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("shows helper text about searching users", () => {
+  it("has a search input", () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -193,9 +157,7 @@ describe("NetplayInviteModal", () => {
     );
 
     expect(
-      screen.getByText(
-        "Search for users by name and invite them to this netplay session.",
-      ),
+      screen.getByPlaceholderText("Search users..."),
     ).toBeInTheDocument();
   });
 });

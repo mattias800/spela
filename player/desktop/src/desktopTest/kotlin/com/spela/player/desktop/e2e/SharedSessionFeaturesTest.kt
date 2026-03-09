@@ -554,6 +554,6 @@ class SharedSessionFeaturesTest {
         advance(harness)
 
         onNodeWithText("Invite a friend").assertExists()
-        onNodeWithText("Invite").assertExists()
+        onNodeWithText("Invite Player").assertExists()
     }
 }

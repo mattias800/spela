@@ -23,6 +23,10 @@ vi.mock("@/hooks/use-netplay", () => ({
 
 vi.mock("@/hooks/use-social", () => ({
   useSearchUsers: vi.fn(() => ({
+    data: { data: [], total: 0, page: 1, pageSize: 10 },
+    isLoading: false,
+  })),
+  useRecentPartners: vi.fn(() => ({
     data: [],
     isLoading: false,
   })),
@@ -152,7 +156,7 @@ describe("NetplaySessionPage", () => {
 
     expect(
       screen.getByText(
-        "Open this session in the Spela player app to join and play.",
+        "Netplay requires the Spela player app. Set up your session here, then open it in the app to play.",
       ),
     ).toBeInTheDocument();
   });
@@ -223,7 +227,7 @@ describe("NetplaySessionPage", () => {
 
     expect(
       screen.queryByText(
-        "Open this session in the Spela player app to join and play.",
+        "Netplay requires the Spela player app. Set up your session here, then open it in the app to play.",
       ),
     ).not.toBeInTheDocument();
   });

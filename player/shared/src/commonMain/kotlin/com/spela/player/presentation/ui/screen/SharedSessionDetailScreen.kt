@@ -25,6 +25,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.InviteSection
 import com.spela.player.presentation.ui.feature.sharedsession.MemberItem
 import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionHeader
 import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveItem
+import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
@@ -129,6 +130,9 @@ fun SharedSessionDetailScreen(
                                 onInvite = { username ->
                                     viewModel.onIntent(SharedSessionDetailIntent.InviteUser(sharedSessionId, username))
                                 },
+                                onShowInviteSheet = {
+                                    viewModel.onIntent(SharedSessionDetailIntent.ShowInviteSheet)
+                                },
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         }
@@ -194,6 +198,27 @@ fun SharedSessionDetailScreen(
             },
             onDismiss = { viewModel.onIntent(SharedSessionDetailIntent.DismissSuccess) },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    // Invite player dialog
+    if (state.showInviteSheet) {
+        InvitePlayerSheet(
+            searchQuery = state.inviteSearchQuery,
+            onSearchQueryChange = { viewModel.onIntent(SharedSessionDetailIntent.UpdateInviteSearchQuery(it)) },
+            searchResults = state.inviteSearchResults,
+            searchTotal = state.inviteSearchTotal,
+            searchPage = state.inviteSearchPage,
+            recentPartners = state.recentPartners,
+            isSearching = state.isSearchingUsers,
+            isLoadingRecentPartners = state.isLoadingRecentPartners,
+            invitingUsername = state.invitingUsername,
+            invitedUsernames = state.invitedUsernames,
+            onInvite = { username ->
+                viewModel.onIntent(SharedSessionDetailIntent.InviteUser(sharedSessionId, username))
+            },
+            onPageChange = { viewModel.onIntent(SharedSessionDetailIntent.InviteSearchPage(it)) },
+            onDismiss = { viewModel.onIntent(SharedSessionDetailIntent.HideInviteSheet) },
         )
     }
 }

@@ -4,6 +4,7 @@ import com.spela.player.domain.model.SharedSession
 import com.spela.player.domain.model.SharedSessionDetail
 import com.spela.player.domain.model.SharedSessionInvitation
 import com.spela.player.domain.model.SharedSessionSave
+import com.spela.player.domain.model.UserSearchResult
 
 data class SharedSessionListState(
     val sharedSessions: List<SharedSession> = emptyList(),
@@ -27,4 +28,15 @@ data class SharedSessionDetailState(
     val copyingSaveId: Long? = null,
     val error: String? = null,
     val successMessage: String? = null,
+    val showInviteSheet: Boolean = false,
+    val inviteSearchQuery: String = "",
+    val inviteSearchResults: List<UserSearchResult> = emptyList(),
+    val inviteSearchTotal: Long = 0,
+    val inviteSearchPage: Int = 1,
+    val recentPartners: List<UserSearchResult> = emptyList(),
+    val isSearchingUsers: Boolean = false,
+    val isLoadingRecentPartners: Boolean = false,
+    val invitingUsername: String? = null,
+    val invitedUsernames: List<String> = emptyList(),
+    val inviteSuccessMessage: String? = null,
 )

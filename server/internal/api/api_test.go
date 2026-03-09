@@ -2043,6 +2043,18 @@ func TestSearchUsers(t *testing.T) {
 		createNonOwnerUser(t, router, token, name, name+"@example.com", "password123")
 	}
 
+	// Helper to extract []map[string]interface{} from PaginatedResponse.Data
+	parseSearchResults := func(t *testing.T, body []byte) ([]map[string]interface{}, int64) {
+		t.Helper()
+		var resp map[string]interface{}
+		require.NoError(t, json.Unmarshal(body, &resp))
+		total := int64(resp["total"].(float64))
+		dataRaw, _ := json.Marshal(resp["data"])
+		var results []map[string]interface{}
+		json.Unmarshal(dataRaw, &results)
+		return results, total
+	}
+
 	t.Run("returns matching users by prefix", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/api/users/search?q=al", nil)
@@ -2050,8 +2062,8 @@ func TestSearchUsers(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var results []map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &results)
+		results, total := parseSearchResults(t, w.Body.Bytes())
+		assert.Equal(t, int64(2), total)
 		assert.Len(t, results, 2) // alice, alex
 		usernames := []string{results[0]["username"].(string), results[1]["username"].(string)}
 		assert.Contains(t, usernames, "alice")
@@ -2065,21 +2077,21 @@ func TestSearchUsers(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var results []map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &results)
+		results, total := parseSearchResults(t, w.Body.Bytes())
+		assert.Equal(t, int64(0), total)
 		assert.Len(t, results, 0) // "apitest" is the current user
 	})
 
-	t.Run("returns empty for short query", func(t *testing.T) {
+	t.Run("single char query now works", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/api/users/search?q=a", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var results []map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &results)
-		assert.Len(t, results, 0)
+		results, total := parseSearchResults(t, w.Body.Bytes())
+		assert.Equal(t, int64(2), total) // alice, alex
+		assert.Len(t, results, 2)
 	})
 
 	t.Run("returns empty for no match", func(t *testing.T) {
@@ -2089,8 +2101,8 @@ func TestSearchUsers(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var results []map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &results)
+		results, total := parseSearchResults(t, w.Body.Bytes())
+		assert.Equal(t, int64(0), total)
 		assert.Len(t, results, 0)
 	})
 
@@ -2101,8 +2113,7 @@ func TestSearchUsers(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var results []map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &results)
+		results, _ := parseSearchResults(t, w.Body.Bytes())
 		assert.Len(t, results, 1)
 		assert.Equal(t, "bob", results[0]["username"])
 		assert.NotEmpty(t, results[0]["id"])

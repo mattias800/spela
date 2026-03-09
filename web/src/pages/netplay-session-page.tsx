@@ -164,7 +164,7 @@ export function NetplaySessionPage() {
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-brand-500/10 border border-brand-500/20">
                 <Monitor className="h-4 w-4 text-brand-400 flex-shrink-0" />
                 <p className="text-sm text-brand-300">
-                  Open this session in the Spela player app to join and play.
+                  Netplay requires the Spela player app. Set up your session here, then open it in the app to play.
                 </p>
               </div>
             )}

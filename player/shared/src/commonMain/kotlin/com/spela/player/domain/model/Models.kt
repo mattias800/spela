@@ -647,6 +647,14 @@ data class SessionCheatConfig(
     val enabledIndices: List<Int>,
 )
 
+// User Search
+
+data class UserSearchResult(
+    val id: String,
+    val username: String,
+    val avatarUrl: String?,
+)
+
 // BIOS
 
 data class BiosConsoleStatus(
