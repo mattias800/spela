@@ -4,6 +4,15 @@ import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.ShaderPreset
 
+/**
+ * Information about a single save slot, used for the secondary screen save slots page.
+ */
+data class SaveSlotInfo(
+    val screenshotUrl: String? = null,
+    val timestamp: String? = null,
+    val isFilled: Boolean = false,
+)
+
 data class EmulationState(
     val gameId: String = "",
     val gameTitle: String = "",
@@ -86,6 +95,9 @@ data class EmulationState(
     /** Quick-save slots: currently selected slot number (1-10). */
     val activeSlot: Int = 1,
 
+    /** Quick-save slots: metadata for each slot (1-10), keyed by slot number. */
+    val saveSlots: Map<Int, SaveSlotInfo> = emptyMap(),
+
     /** Rewind: whether the rewind feature is enabled. */
     val rewindEnabled: Boolean = false,
     /** Rewind: whether rewind is currently active (holding down rewind). */
@@ -98,6 +110,9 @@ data class EmulationState(
     val showCoreMismatchDialog: Boolean = false,
     val coreMismatchSaveCoreName: String = "",
     val coreMismatchCurrentCoreName: String = "",
+
+    /** Default second screen page from user preferences. */
+    val defaultSecondScreenPage: String = "art",
 
     /** Cheats */
     val hasCheats: Boolean = false,

@@ -141,6 +141,7 @@ data class UserPreferences(
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
     val selectedKeyMapping: String = "default",
     val consoleKeyMappings: Map<String, ConsoleKeyMappingPref> = emptyMap(),
+    val defaultSecondScreenPage: String = "art",
 )
 
 data class DownloadedGame(

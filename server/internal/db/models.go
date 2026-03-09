@@ -38,7 +38,8 @@ type User struct {
 	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
 	SelectedTheme       string         `gorm:"size:64;default:default-dark" json:"selectedTheme"`
 	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
-	CustomKeyMapping    string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
+	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
+	DefaultSecondScreenPage string         `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
 }
 
 // LoginAttempt tracks failed login attempts per username for account lockout.

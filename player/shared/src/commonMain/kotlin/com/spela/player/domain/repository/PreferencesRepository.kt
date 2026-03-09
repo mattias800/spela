@@ -12,6 +12,7 @@ interface PreferencesRepository {
         selectedShader: String? = null,
         selectedTheme: String? = null,
         consoleShaders: Map<String, String>? = null,
+        defaultSecondScreenPage: String? = null,
     ): Result<UserPreferences>
     fun getDeviceShaderOverride(consoleId: String): ShaderPreset?
     fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?)

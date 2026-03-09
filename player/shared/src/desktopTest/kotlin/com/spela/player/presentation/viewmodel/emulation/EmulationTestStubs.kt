@@ -251,6 +251,7 @@ class StubPreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        defaultSecondScreenPage: String?,
     ) = Result.success(UserPreferences())
 
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
@@ -370,6 +371,9 @@ class StubSessionRepository : SessionRepository {
         downloadSessionSramCallCount++
         return downloadSessionSramResult
     }
+    override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
+        Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot"))
+    override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))

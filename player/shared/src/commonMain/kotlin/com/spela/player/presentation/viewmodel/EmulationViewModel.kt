@@ -185,6 +185,14 @@ class EmulationViewModel(
             EmulationIntent.QuickSave -> quickSaveToSlot()
             EmulationIntent.QuickLoad -> quickLoadFromSlot()
             is EmulationIntent.SelectSlot -> _state.update { it.copy(activeSlot = intent.slot) }
+            is EmulationIntent.SaveToSlot -> {
+                _state.update { it.copy(activeSlot = intent.slot) }
+                saveManager.saveToSlot(intent.slot)
+            }
+            is EmulationIntent.LoadFromSlot -> {
+                _state.update { it.copy(activeSlot = intent.slot) }
+                saveManager.loadFromSlot(intent.slot)
+            }
 
             // Rewind
             EmulationIntent.RewindStep -> rewindStep()
@@ -336,6 +344,7 @@ class EmulationViewModel(
                     it.copy(
                         showPerformanceOverlay = currentPreferences.showPerformanceOverlay,
                         selectedShader = resolvedShader,
+                        defaultSecondScreenPage = currentPreferences.defaultSecondScreenPage,
                     )
                 }
             }
@@ -423,6 +432,9 @@ class EmulationViewModel(
                         // the 3-second delay below, otherwise the display stays blank
                         // until achievements/heartbeats finish initializing.
                         showSecondaryDisplayIfAvailable()
+
+                        // Populate save slot thumbnails for the secondary screen
+                        saveManager.refreshSaveSlots()
 
                         // Re-check save state support after core has run a few frames
                         println("[Emulation] Starting 3-second delay for HW render init")
@@ -768,13 +780,13 @@ class EmulationViewModel(
         _state.update { it.copy(isFastForward = newState) }
     }
 
-    // Quick-save/load — uses session-scoped save/load
+    // Quick-save/load — uses the currently active slot
     private fun quickSaveToSlot() {
-        saveManager.saveState()
+        saveManager.saveToSlot(_state.value.activeSlot)
     }
 
     private fun quickLoadFromSlot() {
-        saveManager.loadState()
+        saveManager.loadFromSlot(_state.value.activeSlot)
     }
 
     // Rewind

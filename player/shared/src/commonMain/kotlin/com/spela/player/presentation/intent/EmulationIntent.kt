@@ -71,6 +71,10 @@ sealed interface EmulationIntent {
     data object QuickSave : EmulationIntent
     data object QuickLoad : EmulationIntent
     data class SelectSlot(val slot: Int) : EmulationIntent
+    /** Save state to the given slot (selects it first, then saves). */
+    data class SaveToSlot(val slot: Int) : EmulationIntent
+    /** Load state from the given slot (selects it first, then loads). */
+    data class LoadFromSlot(val slot: Int) : EmulationIntent
 
     // Rewind
     data object RewindStep : EmulationIntent

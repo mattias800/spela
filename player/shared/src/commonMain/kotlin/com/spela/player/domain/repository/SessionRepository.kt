@@ -16,6 +16,8 @@ interface SessionRepository {
     suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray>
     suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray>
+    suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
+    suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray>
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
     suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>

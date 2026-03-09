@@ -1168,6 +1168,37 @@ class SpelaApiClient(
         return response.body()
     }
 
+    suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): SaveStateDto {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves/slot/$slot",
+            formData = formData {
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
+                append("save", data, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"slot_${slot}.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ) {
+            method = HttpMethod.Put
+        }.body()
+    }
+
+    suspend fun downloadSlotSave(sessionId: String, slot: Int): ByteArray {
+        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/slot/$slot")
+        if (!response.status.isSuccess()) {
+            throw RuntimeException("Slot save download failed: HTTP ${response.status.value}")
+        }
+        return response.body()
+    }
+
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = "") {
         client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/sram",

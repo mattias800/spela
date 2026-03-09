@@ -66,6 +66,20 @@ class SessionRepositoryImpl(
         apiClient.downloadSessionAutoSave(sessionId)
     }
 
+    override suspend fun uploadSlotSave(
+        sessionId: String,
+        slot: Int,
+        data: ByteArray,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<SaveState> = runCatching {
+        apiClient.uploadSlotSave(sessionId, slot, data, screenshot, coreName).toDomain()
+    }
+
+    override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> = runCatching {
+        apiClient.downloadSlotSave(sessionId, slot)
+    }
+
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> = runCatching {
         apiClient.uploadSessionSram(sessionId, data, coreName)
     }

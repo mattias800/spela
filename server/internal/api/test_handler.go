@@ -90,20 +90,21 @@ func (h *TestHandler) Reset(c *gin.Context) {
 			return err
 		}
 		tx.Model(&db.User{}).Where("username = ?", "admin").Updates(map[string]interface{}{
-			"password_hash":         adminHash,
-			"role":                  "owner",
-			"disabled":              false,
-			"pending_approval":      false,
-			"show_perf_overlay":     false,
-			"auto_save_enabled":     true,
-			"auto_load_save_enabled": true,
-			"selected_shader":       "none",
-			"selected_theme":        "default-dark",
-			"selected_key_mapping":  "arrows-left",
-			"custom_key_mapping":    "",
-			"avatar_url":            "",
-			"token_version":         0,
-			"deleted_at":            nil,
+			"password_hash":              adminHash,
+			"role":                       "owner",
+			"disabled":                   false,
+			"pending_approval":           false,
+			"show_perf_overlay":          false,
+			"auto_save_enabled":          true,
+			"auto_load_save_enabled":     true,
+			"selected_shader":            "none",
+			"selected_theme":             "default-dark",
+			"default_second_screen_page": "art",
+			"selected_key_mapping":       "arrows-left",
+			"custom_key_mapping":         "",
+			"avatar_url":                 "",
+			"token_version":              0,
+			"deleted_at":                 nil,
 		})
 
 		// 14. Reset player user to default state
@@ -112,20 +113,21 @@ func (h *TestHandler) Reset(c *gin.Context) {
 			return err
 		}
 		tx.Model(&db.User{}).Where("username = ?", "player").Updates(map[string]interface{}{
-			"password_hash":         playerHash,
-			"role":                  "user",
-			"disabled":              false,
-			"pending_approval":      false,
-			"show_perf_overlay":     false,
-			"auto_save_enabled":     true,
-			"auto_load_save_enabled": true,
-			"selected_shader":       "none",
-			"selected_theme":        "default-dark",
-			"selected_key_mapping":  "arrows-left",
-			"custom_key_mapping":    "",
-			"avatar_url":            "",
-			"token_version":         0,
-			"deleted_at":            nil,
+			"password_hash":              playerHash,
+			"role":                       "user",
+			"disabled":                   false,
+			"pending_approval":           false,
+			"show_perf_overlay":          false,
+			"auto_save_enabled":          true,
+			"auto_load_save_enabled":     true,
+			"selected_shader":            "none",
+			"selected_theme":             "default-dark",
+			"default_second_screen_page": "art",
+			"selected_key_mapping":       "arrows-left",
+			"custom_key_mapping":         "",
+			"avatar_url":                 "",
+			"token_version":              0,
+			"deleted_at":                 nil,
 		})
 
 		return nil

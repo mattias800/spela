@@ -326,7 +326,7 @@ class NavigationViewModelTest {
 
     private class NoOpPreferencesRepository : PreferencesRepository {
         override suspend fun getPreferences() = Result.success(UserPreferences())
-        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?) = Result.success(UserPreferences())
+        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
         override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
         override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
         override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()

@@ -113,6 +113,7 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
             customMapping = it.value.customMapping,
         )
     },
+    defaultSecondScreenPage = defaultSecondScreenPage,
 )
 
 fun SharedSaveStateDto.toDomain(): SharedSaveState = SharedSaveState(

@@ -5,12 +5,15 @@ import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.presentation.state.EmulationState
+import com.spela.player.presentation.state.SaveSlotInfo
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Result of attempting to auto-load a save state.
@@ -207,6 +210,7 @@ class SaveManager(
                         withContext(dispatchers.main) {
                             _state.update { it.copy(statusMessage = "State saved") }
                         }
+                        refreshSaveSlots()
                     },
                     onFailure = { error ->
                         withContext(dispatchers.main) {
@@ -219,6 +223,72 @@ class SaveManager(
                 withContext(dispatchers.main) {
                     _state.update { it.copy(statusMessage = "State saved") }
                 }
+            }
+        }
+    }
+
+    /**
+     * Save state to a specific slot. Blocks in challenge/hardcore mode.
+     * Uses the slot-specific API endpoint (PUT /api/sessions/:id/saves/slot/:slot).
+     */
+    fun saveToSlot(slot: Int) {
+        if (_state.value.isChallengeMode) return
+        if (_state.value.isHardcoreMode) {
+            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
+        scope.launch(dispatchers.io) {
+            val saveData = libretroController.serialize() ?: return@launch
+            val sessionId = currentSessionId
+            if (sessionId != null) {
+                val screenshot = screenshotCapture?.captureScreenshot()
+                sessionRepository.uploadSlotSave(sessionId, slot, saveData, screenshot, currentCoreName).fold(
+                    onSuccess = {
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(statusMessage = "Saved to slot $slot") }
+                        }
+                        refreshSaveSlots()
+                    },
+                    onFailure = { error ->
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(error = "Failed to save to slot $slot: ${error.message}") }
+                        }
+                    },
+                )
+            } else {
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(statusMessage = "State saved") }
+                }
+            }
+        }
+    }
+
+    /**
+     * Load state from a specific slot. Blocks in challenge/hardcore mode.
+     * Uses the slot-specific API endpoint (GET /api/sessions/:id/saves/slot/:slot).
+     */
+    fun loadFromSlot(slot: Int) {
+        if (_state.value.isChallengeMode) return
+        if (_state.value.isHardcoreMode) {
+            _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
+        scope.launch(dispatchers.io) {
+            val sessionId = currentSessionId
+            if (sessionId != null) {
+                sessionRepository.downloadSlotSave(sessionId, slot).fold(
+                    onSuccess = { saveData ->
+                        libretroController.unserialize(saveData)
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(statusMessage = "Loaded from slot $slot") }
+                        }
+                    },
+                    onFailure = { error ->
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(error = "Failed to load from slot $slot: ${error.message}") }
+                        }
+                    },
+                )
             }
         }
     }
@@ -272,6 +342,37 @@ class SaveManager(
         if (currentCoreName.isEmpty()) return
         runCatching {
             sessionRepository.updateSession(sessionId, coreName = currentCoreName)
+        }
+    }
+
+    /**
+     * Fetch save states for the current session and update the save slot map.
+     * Each save state with a non-null slot is mapped to its corresponding slot number.
+     * Called on game start and after manual save operations to keep thumbnails fresh.
+     */
+    fun refreshSaveSlots() {
+        val sessionId = currentSessionId ?: return
+        scope.launch(dispatchers.io) {
+            sessionRepository.getSessionSaves(sessionId).onSuccess { saves ->
+                val slotMap = mutableMapOf<Int, SaveSlotInfo>()
+                for (save in saves) {
+                    val slot = save.slot ?: continue
+                    // Only keep the most recent save per slot (saves are ordered by time from server)
+                    if (slot in 1..10 && slot !in slotMap) {
+                        slotMap[slot] = SaveSlotInfo(
+                            screenshotUrl = save.screenshotUrl,
+                            timestamp = save.createdAt?.let { instant ->
+                                val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+                                "%02d:%02d".format(local.hour, local.minute)
+                            },
+                            isFilled = true,
+                        )
+                    }
+                }
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(saveSlots = slotMap) }
+                }
+            }
         }
     }
 

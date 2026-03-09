@@ -1,13 +1,16 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.Cheat
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.state.SaveSlotInfo
 import com.spela.player.presentation.ui.feature.ingame.SecondaryDashboardPage
 import com.spela.player.presentation.ui.feature.ingame.SecondaryScreenContent
 import com.spela.player.presentation.ui.feature.ingame.SecondarySaveSlotsPage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * E2E tests for the Second Screen Companion dashboard page and pager infrastructure.
@@ -76,6 +79,7 @@ class SecondaryScreenDashboardTest {
         activeSlot: Int = 1,
         hasCheats: Boolean = false,
         enabledCheatCount: Int = 0,
+        cheats: List<com.spela.player.domain.model.Cheat> = emptyList(),
         isFastForward: Boolean = false,
         rewindEnabled: Boolean = false,
     ) {
@@ -86,6 +90,7 @@ class SecondaryScreenDashboardTest {
                 activeSlot = activeSlot,
                 hasCheats = hasCheats,
                 enabledCheatCount = enabledCheatCount,
+                cheats = cheats,
                 isFastForward = isFastForward,
                 rewindEnabled = rewindEnabled,
                 onSave = {},
@@ -93,6 +98,7 @@ class SecondaryScreenDashboardTest {
                 onScreenshot = {},
                 onToggleFastForward = {},
                 onRewind = {},
+                onToggleCheat = { _, _ -> },
             )
         }
     }
@@ -124,7 +130,7 @@ class SecondaryScreenDashboardTest {
         renderDashboard(hasCheats = true, enabledCheatCount = 2)
 
         // Cheats card should show active count
-        onNodeWithContentDescription("2 cheats active")
+        onNodeWithContentDescription("2 cheats active, tap to manage")
             .assertExists()
             .assertIsDisplayed()
 
@@ -265,7 +271,10 @@ class SecondaryScreenDashboardTest {
         setContent {
             SecondarySaveSlotsPage(
                 activeSlot = 1,
+                saveSlots = emptyMap(),
                 onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
             )
         }
         waitForIdle()
@@ -287,7 +296,10 @@ class SecondaryScreenDashboardTest {
         setContent {
             SecondarySaveSlotsPage(
                 activeSlot = 7,
+                saveSlots = emptyMap(),
                 onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
             )
         }
         waitForIdle()
@@ -305,12 +317,15 @@ class SecondaryScreenDashboardTest {
         setContent {
             SecondarySaveSlotsPage(
                 activeSlot = 1,
+                saveSlots = emptyMap(),
                 onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
             )
         }
         waitForIdle()
 
-        onNodeWithText("Tap to select active slot").assertExists()
+        onNodeWithText("Swipe up: save \u2022 Hold: load").assertExists()
     }
 
     @Test
@@ -319,7 +334,10 @@ class SecondaryScreenDashboardTest {
         setContent {
             SecondarySaveSlotsPage(
                 activeSlot = 1,
+                saveSlots = emptyMap(),
                 onSelectSlot = { selectedSlot = it },
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
             )
         }
         waitForIdle()
@@ -329,5 +347,207 @@ class SecondaryScreenDashboardTest {
         waitForIdle()
 
         assert(selectedSlot == 3) { "Expected selectedSlot to be 3, was $selectedSlot" }
+    }
+
+    // -- Cheat Toggle Panel Tests ----------------------------------------------
+
+    private val testCheats = listOf(
+        Cheat(id = "c1", gameId = "1", index = 0, description = "Infinite Lives", code = "ABCD", enabled = false),
+        Cheat(id = "c2", gameId = "1", index = 1, description = "Invincibility", code = "EFGH", enabled = true),
+        Cheat(id = "c3", gameId = "1", index = 2, description = "Max Score", code = "IJKL", enabled = false),
+    )
+
+    @Test
+    fun cheatsCardTapOpensPanel() = runComposeUiTest {
+        renderDashboard(hasCheats = true, enabledCheatCount = 1, cheats = testCheats)
+
+        // Tap the cheats card to open the panel
+        onNodeWithContentDescription("1 cheats active, tap to manage").performClick()
+        waitForIdle()
+
+        // Verify the cheats panel is shown with the "Cheats" title
+        onNodeWithText("Cheats").assertExists().assertIsDisplayed()
+
+        // Verify individual cheat items are rendered
+        onNodeWithContentDescription("Cheat: Infinite Lives, disabled")
+            .assertExists()
+            .assertIsDisplayed()
+        onNodeWithContentDescription("Cheat: Invincibility, enabled")
+            .assertExists()
+            .assertIsDisplayed()
+        onNodeWithContentDescription("Cheat: Max Score, disabled")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun cheatsPanelClosesOnCloseButton() = runComposeUiTest {
+        renderDashboard(hasCheats = true, enabledCheatCount = 1, cheats = testCheats)
+
+        // Open cheats panel
+        onNodeWithContentDescription("1 cheats active, tap to manage").performClick()
+        waitForIdle()
+
+        // Verify panel is open
+        onNodeWithContentDescription("Close cheats panel").assertExists()
+
+        // Close the panel
+        onNodeWithContentDescription("Close cheats panel").performClick()
+        waitForIdle()
+
+        // Verify we're back to the dashboard — stat cards should be visible again
+        onNodeWithContentDescription("1 cheats active, tap to manage")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Close button should no longer be visible
+        onAllNodesWithContentDescription("Close cheats panel")
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun cheatsPanelToggleCallsCallback() = runComposeUiTest {
+        var toggledCheatId: String? = null
+        var toggledEnabled: Boolean? = null
+
+        setContent {
+            SecondaryDashboardPage(
+                fps = 60f,
+                frameTime = 16.7f,
+                activeSlot = 1,
+                hasCheats = true,
+                enabledCheatCount = 1,
+                cheats = testCheats,
+                isFastForward = false,
+                rewindEnabled = false,
+                onSave = {},
+                onLoad = {},
+                onScreenshot = {},
+                onToggleFastForward = {},
+                onRewind = {},
+                onToggleCheat = { id, enabled ->
+                    toggledCheatId = id
+                    toggledEnabled = enabled
+                },
+            )
+        }
+
+        // Open cheats panel
+        onNodeWithContentDescription("1 cheats active, tap to manage").performClick()
+        waitForIdle()
+
+        // Find the switch within the "Infinite Lives" cheat row and toggle it
+        // The SpSwitch is a child of the cheat row; clicking the row's switch toggles it
+        onNodeWithContentDescription("Cheat: Infinite Lives, disabled")
+            .onChildren()
+            .filterToOne(isToggleable())
+            .performClick()
+        waitForIdle()
+
+        assertTrue(toggledCheatId == "c1", "Expected cheat ID 'c1', got '$toggledCheatId'")
+        assertTrue(toggledEnabled == true, "Expected enabled to be true, got $toggledEnabled")
+    }
+
+    @Test
+    fun cheatsCardNotClickableWhenNoCheats() = runComposeUiTest {
+        renderDashboard(hasCheats = false, enabledCheatCount = 0, cheats = emptyList())
+
+        // "No cheats available" should be present (without "tap to manage")
+        onNodeWithContentDescription("No cheats available")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // "tap to manage" content description should NOT be present
+        onAllNodesWithContentDescription("0 cheats active, tap to manage")
+            .assertCountEquals(0)
+
+        // Tapping the card should not open the panel
+        onNodeWithContentDescription("No cheats available").performClick()
+        waitForIdle()
+
+        // The cheats panel "Close cheats panel" button should not appear
+        onAllNodesWithContentDescription("Close cheats panel")
+            .assertCountEquals(0)
+
+        // "No cheats" text should still be visible (dashboard is still showing)
+        onNodeWithText("No cheats")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    // -- Save Slots Gesture Hint & Thumbnail Tests -----------------------------
+
+    @Test
+    fun saveSlotsHintTextShowsGestures() = runComposeUiTest {
+        setContent {
+            SecondarySaveSlotsPage(
+                activeSlot = 1,
+                saveSlots = emptyMap(),
+                onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
+            )
+        }
+        waitForIdle()
+
+        // Verify the hint text shows save and load gesture instructions
+        onNodeWithText("Swipe up: save \u2022 Hold: load")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun saveSlotsShowsFilledSlotInfo() = runComposeUiTest {
+        val saveSlots = mapOf(
+            2 to SaveSlotInfo(
+                screenshotUrl = "https://example.com/screenshot.png",
+                timestamp = "12:34",
+                isFilled = true,
+            ),
+        )
+
+        setContent {
+            SecondarySaveSlotsPage(
+                activeSlot = 1,
+                saveSlots = saveSlots,
+                onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
+            )
+        }
+        waitForIdle()
+
+        // Filled slot 2 should have "filled" in its content description
+        onNodeWithContentDescription("Save slot 2, filled, saved at 12:34")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Empty slot 1 should NOT have "filled" — just "active"
+        onNodeWithContentDescription("Save slot 1, active")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun saveSlotsEmptySlotShowsPlaceholder() = runComposeUiTest {
+        setContent {
+            SecondarySaveSlotsPage(
+                activeSlot = 3,
+                saveSlots = emptyMap(),
+                onSelectSlot = {},
+                onSaveToSlot = {},
+                onLoadFromSlot = {},
+            )
+        }
+        waitForIdle()
+
+        // All empty slots (including active) show "+" placeholder text
+        onAllNodesWithText("+").assertCountEquals(10) // All 10 slots are empty
+
+        // Non-active empty slots show "Empty" label text
+        onAllNodesWithText("Empty").assertCountEquals(9) // 9 non-active empty slots
+
+        // Active empty slot shows "Active" label
+        onNodeWithContentDescription("Save slot 3, active").assertExists()
     }
 }
