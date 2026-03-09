@@ -72,6 +72,8 @@ fun GameDto.toDomain(): Game = Game(
     verificationTag = verificationTag,
     region = region,
     playable = playable,
+    heroUrl = heroUrl,
+    logoUrl = logoUrl,
 )
 
 /**

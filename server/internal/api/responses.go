@@ -68,6 +68,8 @@ type GameResponse struct {
 	VerificationStatus  string         `json:"verificationStatus,omitempty"`
 	VerificationTag     string         `json:"verificationTag,omitempty"`
 	Region              string         `json:"region,omitempty"`
+	HeroURL        string         `json:"heroUrl,omitempty"`
+	LogoURL        string         `json:"logoUrl,omitempty"`
 	BiosStatus     string         `json:"biosStatus,omitempty"`
 	IsFavorite     bool           `json:"isFavorite"`
 	IsInPlayLater  bool           `json:"isInPlayLater"`
@@ -130,6 +132,7 @@ type userGameData struct {
 	playHistory map[uint]*db.PlayHistory
 	userRatings map[uint]int            // gameID -> user's rating (1-5)
 	ratingAggs  map[uint]ratingAggregate // gameID -> aggregate rating data
+	artworks    map[uint]*db.GameArtwork // gameID -> artwork (hero, logo, etc.)
 }
 
 // loadUserGameData batch-loads favorites, play later, play history, ratings, and
@@ -142,9 +145,17 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 		playHistory: make(map[uint]*db.PlayHistory, len(gameIDs)),
 		userRatings: make(map[uint]int, len(gameIDs)),
 		ratingAggs:  make(map[uint]ratingAggregate, len(gameIDs)),
+		artworks:    make(map[uint]*db.GameArtwork, len(gameIDs)),
 	}
 	if database == nil || len(gameIDs) == 0 {
 		return data
+	}
+
+	// Batch-load artwork (hero/logo URLs from SteamGridDB)
+	var artworks []db.GameArtwork
+	database.Where("game_id IN ?", gameIDs).Find(&artworks)
+	for i := range artworks {
+		data.artworks[artworks[i].GameID] = &artworks[i]
 	}
 
 	// Batch-load rating aggregates (works even without a logged-in user)
@@ -292,6 +303,10 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		}
 		if rating, ok := data.userRatings[g.ID]; ok {
 			resp.UserRating = &rating
+		}
+		if artwork, ok := data.artworks[g.ID]; ok {
+			resp.HeroURL = artwork.HeroURL
+			resp.LogoURL = artwork.LogoURL
 		}
 	}
 

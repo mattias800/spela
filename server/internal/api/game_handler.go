@@ -313,6 +313,11 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		}
 	}
 
+	// Configure SteamGridDB if API key is set (best-effort artwork during auto-scrape)
+	if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
+		h.Scraper.ConfigureSteamGridDB(apiKey)
+	}
+
 	// Auto-scrape new games if IGDB is configured
 	if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
 		if h.Scraper.TryStartScrape() {
@@ -352,6 +357,11 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 	if game.ScrapeAttempts > 0 {
 		c.JSON(http.StatusOK, gin.H{"status": "already_scraped"})
 		return
+	}
+
+	// Configure SteamGridDB if API key is set (best-effort artwork)
+	if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
+		h.Scraper.ConfigureSteamGridDB(apiKey)
 	}
 
 	go func() {

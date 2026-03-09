@@ -21,13 +21,14 @@ import (
 
 // Scraper fetches game metadata from IGDB and box art from LibRetro Thumbnails (preferred) with IGDB fallback.
 type Scraper struct {
-	DB         *gorm.DB
-	Storage    *storage.Storage
-	HTTPClient *http.Client
-	IGDBClient *igdb.Client
-	DATCache   *DATCache
-	GameDirs   []string
-	cache      *nameCache
+	DB               *gorm.DB
+	Storage          *storage.Storage
+	HTTPClient       *http.Client
+	IGDBClient       *igdb.Client
+	SteamGridDBClient *SteamGridDBClient
+	DATCache         *DATCache
+	GameDirs         []string
+	cache            *nameCache
 
 	// Scrape state tracking (shared across handlers)
 	scrapeMu       sync.Mutex
@@ -327,6 +328,9 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	if game.Region == "" {
 		game.Region = ExtractRegion(game.FileName)
 	}
+
+	// --- SteamGridDB artwork (best-effort) ---
+	s.scrapeSteamGridDBArtwork(game, console)
 
 	game.ScrapeAttempts++
 
@@ -631,6 +635,9 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 		}
 	}
 
+	// --- SteamGridDB artwork (best-effort) ---
+	s.scrapeSteamGridDBArtwork(game, console)
+
 	game.ScrapeAttempts++
 
 	if err := s.DB.Save(game).Error; err != nil {
@@ -664,6 +671,46 @@ func (s *Scraper) downloadExternalImage(imageURL, subpath string) string {
 
 	slog.Debug("downloaded external image", "url", imageURL)
 	return savedPath
+}
+
+// scrapeSteamGridDBArtwork fetches artwork from SteamGridDB and saves it to the DB.
+// This is best-effort: if the API key is not configured, or SteamGridDB returns no results,
+// the game scrape still succeeds.
+func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
+	if s.SteamGridDBClient == nil {
+		return
+	}
+
+	// Check if artwork already exists for this game
+	var existing db.GameArtwork
+	if err := s.DB.Where("game_id = ?", game.ID).First(&existing).Error; err == nil {
+		// Artwork already exists, skip
+		return
+	}
+
+	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation)
+	if err != nil {
+		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
+		return
+	}
+
+	artwork.GameID = game.ID
+	if err := s.DB.Create(artwork).Error; err != nil {
+		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)
+		return
+	}
+
+	slog.Info("saved SteamGridDB artwork", "game", game.Title, "steamGridDbId", artwork.SteamGridDBID)
+}
+
+// ConfigureSteamGridDB sets up the SteamGridDB client from the given API key.
+// If apiKey is empty, the client is set to nil (disabled).
+func (s *Scraper) ConfigureSteamGridDB(apiKey string) {
+	if apiKey == "" {
+		s.SteamGridDBClient = nil
+		return
+	}
+	s.SteamGridDBClient = NewSteamGridDBClient(apiKey)
 }
 
 // ScrapeProgress holds progress information for a bulk scrape operation.

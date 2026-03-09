@@ -78,6 +78,8 @@ data class Game(
     val verificationTag: String? = null,
     val region: String? = null,
     val playable: Boolean = true,
+    val heroUrl: String? = null,
+    val logoUrl: String? = null,
 )
 
 @Serializable

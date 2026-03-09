@@ -8,6 +8,8 @@ data class EmulationState(
     val gameId: String = "",
     val gameTitle: String = "",
     val consoleId: String = "",
+    val consoleColorTheme: String? = null,
+    val heroUrl: String? = null,
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
     /** True when paused by Android lifecycle (e.g. clamshell close). */

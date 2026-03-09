@@ -622,6 +622,19 @@ type SessionCheatSetting struct {
 	Enabled    bool      `gorm:"default:false" json:"enabled"`
 }
 
+// GameArtwork stores SteamGridDB artwork URLs for a game (hero banners, grids, logos, icons).
+type GameArtwork struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	GameID        uint      `gorm:"uniqueIndex;not null" json:"gameId"`
+	SteamGridDBID int       `json:"steamGridDbId,omitempty"`
+	HeroURL       string    `gorm:"size:1024" json:"heroUrl,omitempty"`
+	GridURL       string    `gorm:"size:1024" json:"gridUrl,omitempty"`
+	LogoURL       string    `gorm:"size:1024" json:"logoUrl,omitempty"`
+	IconURL       string    `gorm:"size:1024" json:"iconUrl,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`

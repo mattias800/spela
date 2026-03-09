@@ -13,13 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,21 +28,23 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import com.spela.player.presentation.intent.EmulationIntent
+import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.screen.formatSessionDuration
-import com.spela.player.presentation.ui.components.EmulationActionButton
-import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -53,22 +54,34 @@ import org.koin.compose.koinInject
 
 private const val BURN_IN_IDLE_TIMEOUT_MS = 15_000L
 private const val BURN_IN_FADE_DURATION_MS = 5_000
+private const val PAGE_COUNT = 4
+private const val PAGE_ART = 0
+private const val PAGE_CONTROLS = 1
+private const val PAGE_DASHBOARD = 2
+private const val PAGE_SAVE_SLOTS = 3
 
 /**
  * Content composable displayed on the secondary screen during gameplay.
  *
- * Layout for ~3.92" screen:
+ * Layout for ~3.92" screen with swipeable pages:
  * ```
- * ┌─────────────────────────┐
- * │  Game Title    00:45:12  │  <- Game info bar
- * ├─────────────────────────┤
- * │                         │
- * │    [Touch Controls]     │  <- Main area: platform touch gamepad
- * │                         │
- * ├─────────────────────────┤
- * │ Save Load Shot FF │ FPS │  <- Quick actions + FPS
- * └─────────────────────────┘
+ * ┌─────────────────────────────┐
+ * │ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ │  <- 2dp console gradient line
+ * │  Game Title    00:45:12 SNES │  <- Persistent header
+ * ├─────────────────────────────┤
+ * │                             │
+ * │   [ Swipeable Page Content ] │  <- HorizontalPager
+ * │                             │
+ * ├─────────────────────────────┤
+ * │          *  o               │  <- Page indicator dots
+ * └─────────────────────────────┘
  * ```
+ *
+ * Pages:
+ * - Page 0: Art Display — hero artwork or focus mode
+ * - Page 1: Controls — platform touch gamepad
+ * - Page 2: Dashboard — stat cards + quick actions
+ * - Page 3: Save Slots — visual save slot selection
  */
 @Composable
 fun SecondaryScreenContent(
@@ -87,7 +100,19 @@ fun SecondaryScreenContent(
         label = "burnInAlpha",
     )
 
+    val pagerState = rememberPagerState(
+        initialPage = PAGE_ART,
+        pageCount = { PAGE_COUNT },
+    )
+
+    // Reset burn-in timer when swiping between pages
     if (!state.isDualScreenConsole) {
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }.collectLatest {
+                touchResetKey++
+            }
+        }
+
         LaunchedEffect(touchResetKey, state.isPaused) {
             isDimmed = false
             delay(BURN_IN_IDLE_TIMEOUT_MS)
@@ -135,33 +160,67 @@ fun SecondaryScreenContent(
                     .fillMaxSize()
                     .graphicsLayer { alpha = contentAlpha * burnInAlpha },
             ) {
-                // Game info bar
-                GameInfoBar(
+                // Persistent header with console gradient accent
+                CompanionHeader(
                     gameTitle = state.gameTitle,
                     sessionElapsedSeconds = state.sessionElapsedSeconds,
+                    consoleId = state.consoleId,
+                    consoleColorTheme = state.consoleColorTheme,
                 )
 
-                // Main content area (takes remaining space)
-                Box(
+                // Swipeable page content
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                ) {
-                    // Normal mode: touch gamepad controls
-                    PlatformTouchControls(
-                        controller = controller,
-                    )
+                ) { page ->
+                    when (page) {
+                        PAGE_ART -> {
+                            SecondaryArtPage(
+                                heroUrl = state.heroUrl,
+                                gameTitle = state.gameTitle,
+                                sessionElapsedSeconds = state.sessionElapsedSeconds,
+                                consoleId = state.consoleId,
+                                consoleColorTheme = state.consoleColorTheme,
+                            )
+                        }
+                        PAGE_CONTROLS -> {
+                            PlatformTouchControls(
+                                controller = controller,
+                            )
+                        }
+                        PAGE_DASHBOARD -> {
+                            SecondaryDashboardPage(
+                                fps = state.fps,
+                                frameTime = state.frameTime,
+                                activeSlot = state.activeSlot,
+                                hasCheats = state.hasCheats,
+                                enabledCheatCount = state.enabledCheatCount,
+                                isFastForward = state.isFastForward,
+                                rewindEnabled = state.rewindEnabled,
+                                onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
+                                onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
+                                onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+                                onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                                onRewind = { viewModel.onIntent(EmulationIntent.ToggleRewind) },
+                            )
+                        }
+                        PAGE_SAVE_SLOTS -> {
+                            SecondarySaveSlotsPage(
+                                activeSlot = state.activeSlot,
+                                onSelectSlot = { slot ->
+                                    viewModel.onIntent(EmulationIntent.SelectSlot(slot))
+                                },
+                            )
+                        }
+                    }
                 }
 
-                // Quick action bar + performance HUD
-                QuickActionBar(
-                    fps = state.fps,
-                    frameTime = state.frameTime,
-                    isFastForward = state.isFastForward,
-                    onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
-                    onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
-                    onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                    onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+                // Page indicator dots
+                PageIndicatorDots(
+                    pagerState = pagerState,
+                    pageCount = PAGE_COUNT,
                 )
             }
         }
@@ -203,123 +262,102 @@ fun SecondaryScreenContent(
     }
 }
 
+/**
+ * Persistent header with console gradient accent line, game title, session timer,
+ * and console badge.
+ */
 @Composable
-private fun GameInfoBar(
+private fun CompanionHeader(
     gameTitle: String,
     sessionElapsedSeconds: Long,
+    consoleId: String,
+    consoleColorTheme: String?,
 ) {
     val timeText = formatSessionDuration(sessionElapsedSeconds)
+    val (gradientFrom, gradientTo) = getConsoleGradient(consoleId, consoleColorTheme)
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SpColor.SurfaceVariant)
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
             .semantics {
                 contentDescription = "Now playing: $gameTitle"
             },
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = gameTitle,
-            style = SpTypography.TitleMedium,
-            color = SpColor.OnBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+        // Thin 2dp gradient accent line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(
+                    Brush.horizontalGradient(listOf(gradientFrom, gradientTo))
+                ),
         )
-        Spacer(Modifier.width(SpSpacing.Small))
-        Text(
-            text = timeText,
-            style = SpTypography.LabelLarge,
-            color = SpColor.OnBackgroundTertiary,
-        )
+
+        // Header content
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(SpColor.SurfaceVariant)
+                .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = gameTitle,
+                style = SpTypography.TitleMedium,
+                color = SpColor.OnBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(SpSpacing.Small))
+            Text(
+                text = timeText,
+                style = SpTypography.LabelLarge,
+                color = SpColor.OnBackgroundTertiary,
+            )
+            if (consoleId.isNotEmpty()) {
+                Spacer(Modifier.width(SpSpacing.Small))
+                Text(
+                    text = consoleId.uppercase(),
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+            }
+        }
     }
 }
 
+/**
+ * Horizontal row of page indicator dots. Active page dot uses [SpColor.Primary],
+ * inactive dots use [SpColor.OnBackgroundTertiary] at reduced alpha.
+ */
 @Composable
-private fun QuickActionBar(
-    fps: Float,
-    frameTime: Float,
-    isFastForward: Boolean,
-    onSave: () -> Unit,
-    onLoad: () -> Unit,
-    onScreenshot: () -> Unit,
-    onToggleFastForward: () -> Unit,
+private fun PageIndicatorDots(
+    pagerState: PagerState,
+    pageCount: Int,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SpColor.SurfaceVariant)
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium),
+            .padding(vertical = SpSpacing.Small),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Quick action buttons
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            QuickActionButton(
-                icon = Icons.Filled.Save,
-                label = "Save",
-                onClick = onSave,
-            )
-            QuickActionButton(
-                icon = Icons.Filled.FolderOpen,
-                label = "Load",
-                onClick = onLoad,
-            )
-            QuickActionButton(
-                icon = Icons.Filled.CameraAlt,
-                label = "Screenshot",
-                onClick = onScreenshot,
-            )
-            QuickActionButton(
-                icon = if (isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                label = if (isFastForward) "Normal" else "Fast",
-                isActive = isFastForward,
-                onClick = onToggleFastForward,
-            )
-        }
-
-        Spacer(Modifier.width(SpSpacing.Small))
-
-        // Performance HUD
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.semantics {
-                contentDescription = "%.0f FPS, %.1f ms frame time".format(fps, frameTime)
-            },
-        ) {
-            Text(
-                text = "%.0f FPS".format(fps),
-                style = SpTypography.LabelLarge,
-                color = fpsColor(fps),
-            )
-            Text(
-                text = "%.1fms".format(frameTime),
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
+        repeat(pageCount) { index ->
+            val isActive = pagerState.currentPage == index
+            val color = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary.copy(alpha = 0.4f)
+            if (index > 0) {
+                Spacer(Modifier.width(4.dp))
+            }
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .semantics {
+                        contentDescription = if (isActive) "Page ${index + 1} of $pageCount, active" else "Page ${index + 1} of $pageCount"
+                    },
             )
         }
     }
-}
-
-@Composable
-private fun QuickActionButton(
-    icon: ImageVector,
-    label: String,
-    isActive: Boolean = false,
-    onClick: () -> Unit,
-) {
-    EmulationActionButton(
-        icon = icon,
-        label = label,
-        onClick = onClick,
-        isActive = isActive,
-        buttonSize = 48.dp,
-        iconSize = 24.dp,
-        showLabel = false,
-        useFocusRing = false,
-    )
 }

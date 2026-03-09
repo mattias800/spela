@@ -171,6 +171,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
+	artworkHandler := &ArtworkHandler{DB: cfg.DB}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
 		DB:            cfg.DB,
@@ -241,6 +242,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.DELETE("/games/:id/play-time", gameHandler.StopPlaying)
 		api.GET("/games/:id/stats", gameHandler.GetGameStats)
 		api.GET("/games/:id/cheats", gameHandler.GetGameCheats)
+		api.GET("/games/:id/artwork", artworkHandler.GetGameArtwork)
 		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
 		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
 
