@@ -94,6 +94,19 @@ class SecondaryScreenDashboardTest {
         achievementProgress: List<AchievementProgress> = emptyList(),
         sessionAchievementUnlocks: List<SessionAchievementUnlock> = emptyList(),
         sessionElapsedSeconds: Long = 0,
+        // Challenge mode
+        challengeId: String? = null,
+        challengeObjective: String = "",
+        challengeElapsedMs: Long = 0,
+        onCompleteChallenge: () -> Unit = {},
+        onRestartChallenge: () -> Unit = {},
+        onGiveUpChallenge: () -> Unit = {},
+        // Netplay mode
+        isNetplayMode: Boolean = false,
+        netplayPeerUsername: String? = null,
+        netplayPeerLatencyMs: Int = 0,
+        netplayPeerDisconnected: Boolean = false,
+        netplayPausedByUsername: String? = null,
         onToggleCheat: (String, Boolean) -> Unit = { _, _ -> },
     ) {
         setContent {
@@ -115,6 +128,17 @@ class SecondaryScreenDashboardTest {
                 sessionElapsedSeconds = sessionElapsedSeconds,
                 isFastForward = isFastForward,
                 rewindEnabled = rewindEnabled,
+                challengeId = challengeId,
+                challengeObjective = challengeObjective,
+                challengeElapsedMs = challengeElapsedMs,
+                onCompleteChallenge = onCompleteChallenge,
+                onRestartChallenge = onRestartChallenge,
+                onGiveUpChallenge = onGiveUpChallenge,
+                isNetplayMode = isNetplayMode,
+                netplayPeerUsername = netplayPeerUsername,
+                netplayPeerLatencyMs = netplayPeerLatencyMs,
+                netplayPeerDisconnected = netplayPeerDisconnected,
+                netplayPausedByUsername = netplayPausedByUsername,
                 onSave = {},
                 onLoad = {},
                 onScreenshot = {},
@@ -798,5 +822,150 @@ class SecondaryScreenDashboardTest {
         onNodeWithText("No unlocks yet this session")
             .assertExists()
             .assertIsDisplayed()
+    }
+
+    // -- Challenge Mode Dashboard Tests ----------------------------------------
+
+    @Test
+    fun challengeModeDashboardShowsTimerAndObjective() = runComposeUiTest {
+        renderDashboard(
+            challengeId = "challenge-1",
+            challengeObjective = "Defeat the boss without taking damage",
+            challengeElapsedMs = 125_340, // 2:05.34
+        )
+        waitForIdle()
+
+        // Challenge mode dashboard container should be present
+        onNodeWithContentDescription("Challenge mode dashboard")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Timer should be visible with correct formatted time
+        onNodeWithContentDescription("Challenge timer: 2:05.34")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Objective text should be visible
+        onNodeWithContentDescription("Challenge objective: Defeat the boss without taking damage")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun challengeModeDashboardShowsActionButtons() = runComposeUiTest {
+        renderDashboard(
+            challengeId = "challenge-1",
+            challengeObjective = "Complete level 1",
+            challengeElapsedMs = 30_000,
+        )
+        waitForIdle()
+
+        // All three challenge action buttons should be present
+        onNodeWithContentDescription("Complete")
+            .assertExists()
+            .assertIsDisplayed()
+
+        onNodeWithContentDescription("Restart")
+            .assertExists()
+            .assertIsDisplayed()
+
+        onNodeWithContentDescription("Give Up")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun normalDashboardShownWhenNoChallengeActive() = runComposeUiTest {
+        renderDashboard(
+            challengeId = null,
+            fps = 60f,
+            frameTime = 16.7f,
+            activeSlot = 2,
+        )
+        waitForIdle()
+
+        // Normal stat cards should be visible
+        onNodeWithContentDescription("60 FPS, 16.7 ms frame time")
+            .assertExists()
+            .assertIsDisplayed()
+
+        onNodeWithContentDescription("Active save slot 2")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Challenge mode dashboard should NOT be present
+        onAllNodesWithContentDescription("Challenge mode dashboard")
+            .assertCountEquals(0)
+    }
+
+    // -- Netplay Card Tests ----------------------------------------------------
+
+    @Test
+    fun netplayCardShowsPeerAndLatency() = runComposeUiTest {
+        renderDashboard(
+            isNetplayMode = true,
+            netplayPeerUsername = "player2",
+            netplayPeerLatencyMs = 35,
+        )
+        waitForIdle()
+
+        // Netplay card should show peer username and latency
+        onNodeWithContentDescription("Netplay peer: player2, latency 35ms")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Peer username text should be visible
+        onNodeWithText("player2")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Latency text should be visible
+        onNodeWithText("35ms")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun netplayCardShowsDisconnectedState() = runComposeUiTest {
+        renderDashboard(
+            isNetplayMode = true,
+            netplayPeerUsername = "player2",
+            netplayPeerDisconnected = true,
+        )
+        waitForIdle()
+
+        // Disconnected state should be shown
+        onNodeWithContentDescription("Netplay peer disconnected")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // "Offline" text should be visible in the card
+        onNodeWithText("Offline")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun netplayCardReplacesCheatCard() = runComposeUiTest {
+        renderDashboard(
+            isNetplayMode = true,
+            netplayPeerUsername = "player2",
+            netplayPeerLatencyMs = 50,
+            hasCheats = true,
+            enabledCheatCount = 2,
+        )
+        waitForIdle()
+
+        // Netplay card SHOULD be visible
+        onNodeWithContentDescription("Netplay peer: player2, latency 50ms")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Cheats card should NOT be visible (replaced by netplay card)
+        onAllNodesWithContentDescription("2 cheats active, tap to manage")
+            .assertCountEquals(0)
+
+        onAllNodesWithContentDescription("No cheats available")
+            .assertCountEquals(0)
     }
 }

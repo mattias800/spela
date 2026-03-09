@@ -101,4 +101,7 @@ sealed interface EmulationIntent {
     data object ShowCheatBrowser : EmulationIntent
     data object HideCheatBrowser : EmulationIntent
     data class ToggleCheatInGame(val cheatId: String, val enabled: Boolean) : EmulationIntent
+
+    // Secondary screen toast
+    data object ClearSecondaryToast : EmulationIntent
 }

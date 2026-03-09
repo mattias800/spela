@@ -221,6 +221,19 @@ fun SecondaryScreenContent(
                                 sessionElapsedSeconds = state.sessionElapsedSeconds,
                                 isFastForward = state.isFastForward,
                                 rewindEnabled = state.rewindEnabled,
+                                // Challenge mode
+                                challengeId = state.challengeId,
+                                challengeObjective = state.challengeObjective,
+                                challengeElapsedMs = state.challengeElapsedMs,
+                                onCompleteChallenge = { viewModel.onIntent(EmulationIntent.CompleteChallenge) },
+                                onRestartChallenge = { viewModel.onIntent(EmulationIntent.RestartChallenge) },
+                                onGiveUpChallenge = { viewModel.onIntent(EmulationIntent.ShowGiveUpConfirm) },
+                                // Netplay mode
+                                isNetplayMode = state.isNetplayMode,
+                                netplayPeerUsername = state.netplayPeerUsername,
+                                netplayPeerLatencyMs = state.netplayPeerLatencyMs,
+                                netplayPeerDisconnected = state.netplayPeerDisconnected,
+                                netplayPausedByUsername = state.netplayPausedByUsername,
                                 onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                                 onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                                 onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
@@ -257,6 +270,19 @@ fun SecondaryScreenContent(
             }
         }
 
+        // Save/load toast overlay — positioned above page dots, below celebration
+        SecondaryToast(
+            toast = state.secondaryToast,
+            onToastShown = {
+                // Reset the OLED burn-in timer so the screen stays lit
+                // while the toast is visible
+                touchResetKey++
+            },
+            onDismiss = {
+                viewModel.onIntent(EmulationIntent.ClearSecondaryToast)
+            },
+        )
+
         // Achievement celebration overlay — shows on top of all pages
         SecondaryAchievementCelebration(
             achievementEvent = state.achievementEvent,
@@ -273,13 +299,21 @@ fun SecondaryScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(SpColor.Scrim)
-                    .graphicsLayer { alpha = burnInAlpha },
+                    .graphicsLayer { alpha = burnInAlpha }
+                    .semantics {
+                        contentDescription = if (state.netplayPausedByUsername != null) {
+                            "Game paused by ${state.netplayPausedByUsername}"
+                        } else {
+                            "Game paused"
+                        }
+                    },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "PAUSED",
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground.copy(alpha = 0.8f),
+                PauseOverlayContent(
+                    netplayPausedByUsername = state.netplayPausedByUsername,
+                    netplayPauseElapsedSeconds = state.netplayPauseElapsedSeconds,
+                    sessionElapsedSeconds = state.sessionElapsedSeconds,
+                    activeSlot = state.activeSlot,
                 )
             }
         }
@@ -368,6 +402,68 @@ private fun CompanionHeader(
             }
         }
     }
+}
+
+/**
+ * Enhanced pause overlay showing contextual information:
+ * - Session duration and active save slot
+ * - Netplay pause attribution when paused by a peer
+ */
+@Composable
+private fun PauseOverlayContent(
+    netplayPausedByUsername: String?,
+    netplayPauseElapsedSeconds: Long,
+    sessionElapsedSeconds: Long,
+    activeSlot: Int,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Main pause title — attributed to peer in netplay
+        val pauseTitle = if (netplayPausedByUsername != null) {
+            "PAUSED BY ${netplayPausedByUsername.uppercase()}"
+        } else {
+            "PAUSED"
+        }
+        Text(
+            text = pauseTitle,
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground.copy(alpha = 0.8f),
+        )
+
+        Spacer(Modifier.height(SpSpacing.Small))
+
+        // Pause duration for netplay, or session info for local pause
+        if (netplayPausedByUsername != null && netplayPauseElapsedSeconds > 0) {
+            Text(
+                text = "Paused for ${formatPauseDuration(netplayPauseElapsedSeconds)}",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.semantics {
+                    contentDescription = "Paused for ${formatPauseDuration(netplayPauseElapsedSeconds)}"
+                },
+            )
+        } else {
+            // Session info: duration and active slot
+            Text(
+                text = "Session: ${formatSessionDuration(sessionElapsedSeconds)}  ·  Slot $activeSlot",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.semantics {
+                    contentDescription = "Session ${formatSessionDuration(sessionElapsedSeconds)}, save slot $activeSlot"
+                },
+            )
+        }
+    }
+}
+
+/**
+ * Format pause duration as "M:SS" (minutes:seconds).
+ */
+private fun formatPauseDuration(totalSeconds: Long): String {
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "$minutes:%02d".format(seconds)
 }
 
 /**

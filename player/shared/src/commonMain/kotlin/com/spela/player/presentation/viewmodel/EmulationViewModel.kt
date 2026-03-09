@@ -217,6 +217,9 @@ class EmulationViewModel(
             EmulationIntent.ShowCheatBrowser -> _state.update { it.copy(showCheatBrowser = true) }
             EmulationIntent.HideCheatBrowser -> _state.update { it.copy(showCheatBrowser = false) }
             is EmulationIntent.ToggleCheatInGame -> toggleCheatInGame(intent.cheatId, intent.enabled)
+
+            // Secondary screen toast
+            EmulationIntent.ClearSecondaryToast -> _state.update { it.copy(secondaryToast = null) }
         }
     }
 
@@ -260,6 +263,7 @@ class EmulationViewModel(
                 isFastForward = false,
                 supportsSaveStates = true,
                 isHwRenderEnabled = false,
+                secondaryToast = null,
             )
         }
 
@@ -687,6 +691,7 @@ class EmulationViewModel(
                         achievementsLoading = false,
                         sessionAchievementUnlocks = emptyList(),
                         achievementEvent = null,
+                        secondaryToast = null,
                     )
                 }
                 saveManager.currentSessionId = null
