@@ -220,6 +220,9 @@ class EmulationViewModel(
 
             // Secondary screen toast
             EmulationIntent.ClearSecondaryToast -> _state.update { it.copy(secondaryToast = null) }
+
+            // Secondary screen touch control port
+            is EmulationIntent.SelectTouchControlPort -> _state.update { it.copy(touchControlPort = intent.port.coerceIn(0, 1)) }
         }
     }
 
@@ -264,6 +267,7 @@ class EmulationViewModel(
                 supportsSaveStates = true,
                 isHwRenderEnabled = false,
                 secondaryToast = null,
+                touchControlPort = 0,
             )
         }
 
@@ -298,6 +302,13 @@ class EmulationViewModel(
                             gameTitle = detail.game.title,
                             consoleId = detail.game.consoleId,
                             heroUrl = detail.game.heroUrl,
+                            gameDescription = detail.game.description,
+                            gameDeveloper = detail.game.developer,
+                            gamePublisher = detail.game.publisher,
+                            gameReleaseDate = detail.game.releaseDate,
+                            gameGenre = detail.game.genre,
+                            gameRating = detail.game.rating,
+                            gamePlayers = detail.game.players,
                         )
                     }
                 }
@@ -678,6 +689,13 @@ class EmulationViewModel(
                         sessionId = null,
                         consoleColorTheme = null,
                         heroUrl = null,
+                        gameDescription = null,
+                        gameDeveloper = null,
+                        gamePublisher = null,
+                        gameReleaseDate = null,
+                        gameGenre = null,
+                        gameRating = 0.0,
+                        gamePlayers = 0,
                         showCoreMismatchDialog = false,
                         coreMismatchSaveCoreName = "",
                         coreMismatchCurrentCoreName = "",
@@ -692,6 +710,7 @@ class EmulationViewModel(
                         sessionAchievementUnlocks = emptyList(),
                         achievementEvent = null,
                         secondaryToast = null,
+                        touchControlPort = 0,
                     )
                 }
                 saveManager.currentSessionId = null

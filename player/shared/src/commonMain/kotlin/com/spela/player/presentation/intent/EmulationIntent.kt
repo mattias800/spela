@@ -104,4 +104,7 @@ sealed interface EmulationIntent {
 
     // Secondary screen toast
     data object ClearSecondaryToast : EmulationIntent
+
+    // Secondary screen touch control port
+    data class SelectTouchControlPort(val port: Int) : EmulationIntent
 }

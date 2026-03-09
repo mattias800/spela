@@ -8,6 +8,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 actual fun PlatformTouchControls(
     controller: LibretroController,
     modifier: Modifier,
+    port: Int,
 ) {
     // No-op on desktop: keyboard and physical controller input is used instead.
 }

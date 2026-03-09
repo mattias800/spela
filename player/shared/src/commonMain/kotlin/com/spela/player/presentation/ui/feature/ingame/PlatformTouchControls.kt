@@ -13,4 +13,5 @@ import com.spela.player.presentation.viewmodel.LibretroController
 expect fun PlatformTouchControls(
     controller: LibretroController,
     modifier: Modifier = Modifier,
+    port: Int = 0,
 )
