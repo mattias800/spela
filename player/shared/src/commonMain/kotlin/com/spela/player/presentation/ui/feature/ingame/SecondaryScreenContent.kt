@@ -195,11 +195,22 @@ fun SecondaryScreenContent(
                                 sessionElapsedSeconds = state.sessionElapsedSeconds,
                                 consoleId = state.consoleId,
                                 consoleColorTheme = state.consoleColorTheme,
+                                gameDescription = state.gameDescription,
+                                gameDeveloper = state.gameDeveloper,
+                                gamePublisher = state.gamePublisher,
+                                gameReleaseDate = state.gameReleaseDate,
+                                gameGenre = state.gameGenre,
+                                gameRating = state.gameRating,
+                                gamePlayers = state.gamePlayers,
                             )
                         }
                         PAGE_CONTROLS -> {
-                            PlatformTouchControls(
+                            SecondaryControlsPage(
                                 controller = controller,
+                                touchControlPort = state.touchControlPort,
+                                onSelectPort = { port ->
+                                    viewModel.onIntent(EmulationIntent.SelectTouchControlPort(port))
+                                },
                             )
                         }
                         PAGE_DASHBOARD -> {

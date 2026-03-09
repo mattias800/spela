@@ -61,6 +61,7 @@ private val PressedAlpha = 0.60f
 fun TouchGamepadOverlay(
     controller: AndroidLibretroController,
     modifier: Modifier = Modifier,
+    port: Int = 0,
 ) {
     val buttonColor = Color.White.copy(alpha = IdleAlpha)
     val pressedColor = Color.White.copy(alpha = PressedAlpha)
@@ -85,6 +86,7 @@ fun TouchGamepadOverlay(
                 buttonColor = buttonColor,
                 pressedColor = pressedColor,
                 textColor = textColor,
+                port = port,
             )
         }
 
@@ -99,6 +101,7 @@ fun TouchGamepadOverlay(
                 buttonColor = buttonColor,
                 pressedColor = pressedColor,
                 textColor = textColor,
+                port = port,
             )
         }
 
@@ -121,6 +124,7 @@ fun TouchGamepadOverlay(
                 height = 40.dp,
                 shape = RoundedCornerShape(12.dp),
                 fontSize = 10,
+                port = port,
             )
             Spacer(Modifier.width(20.dp))
             GamepadButton(
@@ -135,6 +139,7 @@ fun TouchGamepadOverlay(
                 height = 40.dp,
                 shape = RoundedCornerShape(12.dp),
                 fontSize = 10,
+                port = port,
             )
         }
     }
@@ -150,6 +155,7 @@ private fun DPad(
     buttonColor: Color,
     pressedColor: Color,
     textColor: Color,
+    port: Int,
 ) {
     val btnSize = 38.dp
     val gap = 2.dp
@@ -169,6 +175,7 @@ private fun DPad(
                 topStart = 12.dp, topEnd = 12.dp,
                 bottomStart = 4.dp, bottomEnd = 4.dp,
             ),
+            port = port,
         )
         Spacer(Modifier.height(gap))
         // Left - Center - Right
@@ -187,6 +194,7 @@ private fun DPad(
                     topStart = 12.dp, bottomStart = 12.dp,
                     topEnd = 4.dp, bottomEnd = 4.dp,
                 ),
+                port = port,
             )
             Spacer(Modifier.width(gap))
             // Center filler
@@ -211,6 +219,7 @@ private fun DPad(
                     topEnd = 12.dp, bottomEnd = 12.dp,
                     topStart = 4.dp, bottomStart = 4.dp,
                 ),
+                port = port,
             )
         }
         Spacer(Modifier.height(gap))
@@ -229,6 +238,7 @@ private fun DPad(
                 bottomStart = 12.dp, bottomEnd = 12.dp,
                 topStart = 4.dp, topEnd = 4.dp,
             ),
+            port = port,
         )
     }
 }
@@ -243,6 +253,7 @@ private fun ActionButtons(
     buttonColor: Color,
     pressedColor: Color,
     textColor: Color,
+    port: Int,
 ) {
     val btnSize = 56.dp
     val gap = 12.dp
@@ -261,6 +272,7 @@ private fun ActionButtons(
                 width = btnSize,
                 height = btnSize,
                 shape = CircleShape,
+                port = port,
             )
         }
         Spacer(Modifier.width(gap))
@@ -276,6 +288,7 @@ private fun ActionButtons(
             width = btnSize,
             height = btnSize,
             shape = CircleShape,
+            port = port,
         )
     }
 }
@@ -298,6 +311,7 @@ private fun GamepadButton(
     height: Dp,
     shape: Shape,
     fontSize: Int = 15,
+    port: Int = 0,
 ) {
     val isPressed = remember { mutableStateOf(false) }
 
@@ -307,25 +321,25 @@ private fun GamepadButton(
             .clip(shape)
             .background(if (isPressed.value) pressedColor else buttonColor)
             .semantics { contentDescription = accessibilityLabel }
-            .pointerInput(buttonId) {
+            .pointerInput(buttonId, port) {
                 awaitPointerEventScope {
                     while (true) {
                         val event = awaitPointerEvent()
                         when (event.type) {
                             PointerEventType.Press -> {
                                 isPressed.value = true
-                                controller.setButton(0, buttonId, true)
+                                controller.setButton(port, buttonId, true)
                             }
                             PointerEventType.Release -> {
                                 val anyDown = event.changes.any { it.pressed }
                                 if (!anyDown) {
                                     isPressed.value = false
-                                    controller.setButton(0, buttonId, false)
+                                    controller.setButton(port, buttonId, false)
                                 }
                             }
                             PointerEventType.Exit -> {
                                 isPressed.value = false
-                                controller.setButton(0, buttonId, false)
+                                controller.setButton(port, buttonId, false)
                             }
                         }
                         event.changes.forEach { it.consume() }

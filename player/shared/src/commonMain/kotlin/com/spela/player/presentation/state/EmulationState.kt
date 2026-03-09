@@ -49,6 +49,13 @@ data class EmulationState(
     val consoleId: String = "",
     val consoleColorTheme: String? = null,
     val heroUrl: String? = null,
+    val gameDescription: String? = null,
+    val gameDeveloper: String? = null,
+    val gamePublisher: String? = null,
+    val gameReleaseDate: String? = null,
+    val gameGenre: String? = null,
+    val gameRating: Double = 0.0,
+    val gamePlayers: Int = 0,
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
     /** True when paused by Android lifecycle (e.g. clamshell close). */
@@ -159,6 +166,9 @@ data class EmulationState(
 
     /** Secondary screen toast: brief notification after save/load operations. */
     val secondaryToast: SecondaryToastData? = null,
+
+    /** Which port the touch controls target (0 = Player 1, 1 = Player 2). */
+    val touchControlPort: Int = 0,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

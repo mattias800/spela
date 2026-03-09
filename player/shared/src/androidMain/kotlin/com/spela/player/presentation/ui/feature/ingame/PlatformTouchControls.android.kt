@@ -15,6 +15,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 actual fun PlatformTouchControls(
     controller: LibretroController,
     modifier: Modifier,
+    port: Int,
 ) {
     val androidController = controller as? AndroidLibretroController ?: return
 
@@ -29,6 +30,7 @@ actual fun PlatformTouchControls(
         TouchGamepadOverlay(
             controller = androidController,
             modifier = modifier,
+            port = port,
         )
     }
 }
