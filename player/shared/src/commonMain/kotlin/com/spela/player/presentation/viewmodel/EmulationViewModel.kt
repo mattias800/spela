@@ -3,8 +3,10 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
+import com.spela.player.domain.model.AchievementEventType
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
+import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.repository.CheatRepository
@@ -13,8 +15,10 @@ import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
+import com.spela.player.presentation.state.SessionAchievementUnlock
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.presentation.state.GameSyncState
+import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -60,6 +64,7 @@ class EmulationViewModel(
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
     private val cheatRepository: CheatRepository? = null,
+    private val gameStatsRepository: GameStatsRepository? = null,
 ) {
     val state: StateFlow<EmulationState> = _state.asStateFlow()
 
@@ -244,6 +249,12 @@ class EmulationViewModel(
                 challengeAttemptId = null,
                 challengeElapsedMs = 0,
                 challengeCompletedAttempt = null,
+                achievementEvent = null,
+                achievements = emptyList(),
+                achievementProgress = emptyList(),
+                achievementTotalPoints = 0,
+                achievementsLoading = false,
+                sessionAchievementUnlocks = emptyList(),
                 error = null,
                 statusMessage = null,
                 isFastForward = false,
@@ -670,6 +681,12 @@ class EmulationViewModel(
                         enabledCheatCount = 0,
                         showCheatBrowser = false,
                         cheats = emptyList(),
+                        achievements = emptyList(),
+                        achievementProgress = emptyList(),
+                        achievementTotalPoints = 0,
+                        achievementsLoading = false,
+                        sessionAchievementUnlocks = emptyList(),
+                        achievementEvent = null,
                     )
                 }
                 saveManager.currentSessionId = null
@@ -831,6 +848,9 @@ class EmulationViewModel(
     }
 
     private fun initAchievements(gameId: String) {
+        // Fetch achievement list + progress from server for the tracker panel
+        fetchAchievements(gameId)
+
         scope.launch(dispatchers.io) {
             achievementsRepository.getRAToken().onSuccess { credentials ->
                 achievementsController.init()
@@ -849,17 +869,103 @@ class EmulationViewModel(
                 // Use gameId as hash for now (server can provide a proper hash later)
                 achievementsController.loadGame(gameId)
 
-                // Collect achievement events for UI
+                // Collect achievement events for UI + track session unlocks
                 scope.launch(dispatchers.default) {
                     achievementsController.events.collect { event ->
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(achievementEvent = event) }
+                            _state.update { state ->
+                                val newState = state.copy(achievementEvent = event)
+                                if (event.type == AchievementEventType.ACHIEVEMENT_TRIGGERED) {
+                                    handleAchievementTriggered(newState, event.title, event.points)
+                                } else {
+                                    newState
+                                }
+                            }
                         }
                     }
                 }
             }
             // If getRAToken fails, RA is not linked — silently skip
         }
+    }
+
+    /**
+     * Fetches achievement list and progress from the server API.
+     * Updates state with achievements data for the tracker panel on the secondary screen.
+     */
+    private fun fetchAchievements(gameId: String) {
+        val repo = gameStatsRepository ?: return
+        scope.launch(dispatchers.io) {
+            withContext(dispatchers.main) {
+                _state.update { it.copy(achievementsLoading = true) }
+            }
+            try {
+                val achievementsResult = repo.getGameAchievements(gameId)
+                val progressResult = repo.getAchievementProgress(gameId)
+
+                val achievements = achievementsResult.getOrDefault(emptyList())
+                val progress = progressResult.getOrDefault(emptyList())
+                val totalPoints = achievements.sumOf { it.points }
+
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            achievements = achievements,
+                            achievementProgress = progress,
+                            achievementTotalPoints = totalPoints,
+                            achievementsLoading = false,
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                println("[Emulation] Failed to fetch achievements: ${e.message}")
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(achievementsLoading = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles an ACHIEVEMENT_TRIGGERED event by updating the local progress
+     * (marking the achievement as unlocked) and adding it to the session feed.
+     */
+    private fun handleAchievementTriggered(
+        state: EmulationState,
+        title: String,
+        points: Int,
+    ): EmulationState {
+        val nowMs = Clock.System.now().toEpochMilliseconds()
+
+        // Find the matching achievement by title to get its ID
+        val matchedAchievement = state.achievements.find { it.title == title }
+        val achievementId = matchedAchievement?.id ?: 0L
+
+        // Add to session unlocks
+        val sessionUnlock = SessionAchievementUnlock(
+            achievementId = achievementId,
+            title = title,
+            points = points,
+            unlockedAtMs = nowMs,
+        )
+        val updatedSessionUnlocks = state.sessionAchievementUnlocks + sessionUnlock
+
+        // Update local progress — mark this achievement as unlocked if not already
+        val updatedProgress = if (achievementId != 0L && state.achievementProgress.none { it.achievementId == achievementId && it.unlockedAt != null }) {
+            state.achievementProgress + com.spela.player.domain.model.AchievementProgress(
+                achievementId = achievementId,
+                unlockedAt = Clock.System.now().toString(),
+                isHardcore = state.isHardcoreMode,
+                playTimeAtUnlock = state.sessionElapsedSeconds,
+            )
+        } else {
+            state.achievementProgress
+        }
+
+        return state.copy(
+            sessionAchievementUnlocks = updatedSessionUnlocks,
+            achievementProgress = updatedProgress,
+        )
     }
 
     private fun trackPerformance() {

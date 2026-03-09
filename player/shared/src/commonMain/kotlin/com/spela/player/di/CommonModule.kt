@@ -217,6 +217,7 @@ val commonModule = module {
             scope = get(),
             biosRepository = get(),
             cheatRepository = get(),
+            gameStatsRepository = get(),
         )
     }
 
