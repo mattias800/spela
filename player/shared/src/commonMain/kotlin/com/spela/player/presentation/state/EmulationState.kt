@@ -1,7 +1,9 @@
 package com.spela.player.presentation.state
 
 import com.spela.player.domain.model.AchievementEvent
+import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.BiosMissingFile
+import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.ShaderPreset
 
 /**
@@ -11,6 +13,16 @@ data class SaveSlotInfo(
     val screenshotUrl: String? = null,
     val timestamp: String? = null,
     val isFilled: Boolean = false,
+)
+
+/**
+ * An achievement unlocked during the current play session.
+ */
+data class SessionAchievementUnlock(
+    val achievementId: Long,
+    val title: String,
+    val points: Int,
+    val unlockedAtMs: Long,
 )
 
 data class EmulationState(
@@ -119,7 +131,21 @@ data class EmulationState(
     val enabledCheatCount: Int = 0,
     val showCheatBrowser: Boolean = false,
     val cheats: List<com.spela.player.domain.model.Cheat> = emptyList(),
+
+    /** Achievements: fetched from server for the current game. */
+    val achievements: List<GameAchievement> = emptyList(),
+    val achievementProgress: List<AchievementProgress> = emptyList(),
+    val achievementTotalPoints: Int = 0,
+    val achievementsLoading: Boolean = false,
+    val sessionAchievementUnlocks: List<SessionAchievementUnlock> = emptyList(),
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null
+
+    val hasAchievements: Boolean get() = achievements.isNotEmpty()
+    val achievementUnlockedCount: Int get() = achievementProgress.count { it.unlockedAt != null }
+    val achievementEarnedPoints: Int get() {
+        val unlockedIds = achievementProgress.filter { it.unlockedAt != null }.map { it.achievementId }.toSet()
+        return achievements.filter { it.id in unlockedIds }.sumOf { it.points }
+    }
 }

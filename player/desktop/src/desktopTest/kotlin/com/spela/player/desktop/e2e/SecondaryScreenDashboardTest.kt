@@ -1,9 +1,12 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.Cheat
+import com.spela.player.domain.model.GameAchievement
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.SaveSlotInfo
+import com.spela.player.presentation.state.SessionAchievementUnlock
 import com.spela.player.presentation.ui.feature.ingame.SecondaryDashboardPage
 import com.spela.player.presentation.ui.feature.ingame.SecondaryScreenContent
 import com.spela.player.presentation.ui.feature.ingame.SecondarySaveSlotsPage
@@ -82,6 +85,16 @@ class SecondaryScreenDashboardTest {
         cheats: List<com.spela.player.domain.model.Cheat> = emptyList(),
         isFastForward: Boolean = false,
         rewindEnabled: Boolean = false,
+        hasAchievements: Boolean = false,
+        achievementUnlockedCount: Int = 0,
+        achievementTotalCount: Int = 0,
+        achievementEarnedPoints: Int = 0,
+        achievementTotalPoints: Int = 0,
+        achievements: List<GameAchievement> = emptyList(),
+        achievementProgress: List<AchievementProgress> = emptyList(),
+        sessionAchievementUnlocks: List<SessionAchievementUnlock> = emptyList(),
+        sessionElapsedSeconds: Long = 0,
+        onToggleCheat: (String, Boolean) -> Unit = { _, _ -> },
     ) {
         setContent {
             SecondaryDashboardPage(
@@ -91,6 +104,15 @@ class SecondaryScreenDashboardTest {
                 hasCheats = hasCheats,
                 enabledCheatCount = enabledCheatCount,
                 cheats = cheats,
+                hasAchievements = hasAchievements,
+                achievementUnlockedCount = achievementUnlockedCount,
+                achievementTotalCount = achievementTotalCount,
+                achievementEarnedPoints = achievementEarnedPoints,
+                achievementTotalPoints = achievementTotalPoints,
+                achievements = achievements,
+                achievementProgress = achievementProgress,
+                sessionAchievementUnlocks = sessionAchievementUnlocks,
+                sessionElapsedSeconds = sessionElapsedSeconds,
                 isFastForward = isFastForward,
                 rewindEnabled = rewindEnabled,
                 onSave = {},
@@ -98,7 +120,7 @@ class SecondaryScreenDashboardTest {
                 onScreenshot = {},
                 onToggleFastForward = {},
                 onRewind = {},
-                onToggleCheat = { _, _ -> },
+                onToggleCheat = onToggleCheat,
             )
         }
     }
@@ -418,6 +440,15 @@ class SecondaryScreenDashboardTest {
                 hasCheats = true,
                 enabledCheatCount = 1,
                 cheats = testCheats,
+                hasAchievements = false,
+                achievementUnlockedCount = 0,
+                achievementTotalCount = 0,
+                achievementEarnedPoints = 0,
+                achievementTotalPoints = 0,
+                achievements = emptyList(),
+                achievementProgress = emptyList(),
+                sessionAchievementUnlocks = emptyList(),
+                sessionElapsedSeconds = 0,
                 isFastForward = false,
                 rewindEnabled = false,
                 onSave = {},
@@ -549,5 +580,223 @@ class SecondaryScreenDashboardTest {
 
         // Active empty slot shows "Active" label
         onNodeWithContentDescription("Save slot 3, active").assertExists()
+    }
+
+    // -- Achievement Tracker Tests ---------------------------------------------
+
+    private val testAchievements = listOf(
+        GameAchievement(id = 1L, title = "First Blood", description = "Defeat the first enemy", points = 5, badgeUrl = null, type = null, displayOrder = 1),
+        GameAchievement(id = 2L, title = "Speed Demon", description = "Complete level 1 in under 60 seconds", points = 10, badgeUrl = null, type = null, displayOrder = 2),
+        GameAchievement(id = 3L, title = "Completionist", description = "Find all secret areas", points = 25, badgeUrl = null, type = null, displayOrder = 3),
+    )
+
+    private val testAchievementProgressMixed = listOf(
+        AchievementProgress(achievementId = 1L, unlockedAt = "2026-01-15T10:30:00Z", isHardcore = false, playTimeAtUnlock = 120L),
+        AchievementProgress(achievementId = 2L, unlockedAt = null, isHardcore = false, playTimeAtUnlock = null),
+        AchievementProgress(achievementId = 3L, unlockedAt = null, isHardcore = false, playTimeAtUnlock = null),
+    )
+
+    private val testSessionUnlocks = listOf(
+        SessionAchievementUnlock(achievementId = 1L, title = "First Blood", points = 5, unlockedAtMs = System.currentTimeMillis() - 30_000),
+    )
+
+    @Test
+    fun achievementsCardShownWhenGameHasAchievements() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+        )
+
+        // Achievements stat card should be visible with correct count
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // The "1/3" text should be visible in the card
+        onNodeWithText("1/3")
+            .assertExists()
+    }
+
+    @Test
+    fun achievementsCardNotShownWhenNoAchievements() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = false,
+            achievementUnlockedCount = 0,
+            achievementTotalCount = 0,
+            achievements = emptyList(),
+        )
+
+        // No achievements card should be present
+        onAllNodesWithContentDescription("0 of 0 achievements unlocked, tap to view")
+            .assertCountEquals(0)
+
+        // No achievements-related "tap to view" description should be present
+        onAllNodes(hasContentDescription("achievements unlocked, tap to view", substring = true))
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun achievementsCardTapOpensPanel() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+        )
+
+        // Tap the achievements card to open the panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // Verify the achievements panel is shown
+        onNodeWithContentDescription("Achievements panel")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Verify the panel header text
+        onNodeWithText("Achievements")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun achievementsPanelShowsProgressSummary() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievementEarnedPoints = 5,
+            achievementTotalPoints = 40,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+        )
+
+        // Open the achievements panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // Verify the progress summary text is visible
+        onNodeWithContentDescription("1 of 3 achievements, 5 of 40 points")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun achievementsPanelShowsLockedAndUnlockedAchievements() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievementEarnedPoints = 5,
+            achievementTotalPoints = 40,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+        )
+
+        // Open the achievements panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // Unlocked achievement: "First Blood" should show as unlocked
+        onNodeWithContentDescription("First Blood, 5 points, unlocked")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Locked achievements should show as locked
+        onNodeWithContentDescription("Speed Demon, 10 points, locked")
+            .assertExists()
+            .assertIsDisplayed()
+        onNodeWithContentDescription("Completionist, 25 points, locked")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun achievementsPanelClosesOnCloseButton() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+        )
+
+        // Open the achievements panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // Verify panel is open
+        onNodeWithContentDescription("Close achievements panel").assertExists()
+
+        // Close the panel
+        onNodeWithContentDescription("Close achievements panel").performClick()
+        waitForIdle()
+
+        // Verify we're back to the dashboard — stat cards should be visible again
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Close button should no longer be visible
+        onAllNodesWithContentDescription("Close achievements panel")
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun sessionFeedShowsUnlocks() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievementEarnedPoints = 5,
+            achievementTotalPoints = 40,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+            sessionAchievementUnlocks = testSessionUnlocks,
+        )
+
+        // Open the achievements panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // "This Session" header should be visible
+        onNodeWithText("This Session")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // The session unlock item should be visible with the achievement title
+        onNode(hasContentDescription("Unlocked: First Blood", substring = true))
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun sessionFeedEmptyState() = runComposeUiTest {
+        renderDashboard(
+            hasAchievements = true,
+            achievementUnlockedCount = 1,
+            achievementTotalCount = 3,
+            achievements = testAchievements,
+            achievementProgress = testAchievementProgressMixed,
+            sessionAchievementUnlocks = emptyList(),
+        )
+
+        // Open the achievements panel
+        onNodeWithContentDescription("1 of 3 achievements unlocked, tap to view").performClick()
+        waitForIdle()
+
+        // "This Session" header should be visible
+        onNodeWithText("This Session")
+            .assertExists()
+            .assertIsDisplayed()
+
+        // Empty state text should be visible
+        onNodeWithText("No unlocks yet this session")
+            .assertExists()
+            .assertIsDisplayed()
     }
 }

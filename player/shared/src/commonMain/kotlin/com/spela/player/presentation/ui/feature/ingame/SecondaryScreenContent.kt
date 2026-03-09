@@ -210,6 +210,15 @@ fun SecondaryScreenContent(
                                 hasCheats = state.hasCheats,
                                 enabledCheatCount = state.enabledCheatCount,
                                 cheats = state.cheats,
+                                hasAchievements = state.hasAchievements,
+                                achievementUnlockedCount = state.achievementUnlockedCount,
+                                achievementTotalCount = state.achievements.size,
+                                achievementEarnedPoints = state.achievementEarnedPoints,
+                                achievementTotalPoints = state.achievementTotalPoints,
+                                achievements = state.achievements,
+                                achievementProgress = state.achievementProgress,
+                                sessionAchievementUnlocks = state.sessionAchievementUnlocks,
+                                sessionElapsedSeconds = state.sessionElapsedSeconds,
                                 isFastForward = state.isFastForward,
                                 rewindEnabled = state.rewindEnabled,
                                 onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
@@ -247,6 +256,16 @@ fun SecondaryScreenContent(
                 )
             }
         }
+
+        // Achievement celebration overlay — shows on top of all pages
+        SecondaryAchievementCelebration(
+            achievementEvent = state.achievementEvent,
+            onCelebrationStarted = {
+                // Reset the OLED burn-in timer so the screen stays lit
+                // during the celebration
+                touchResetKey++
+            },
+        )
 
         // Paused overlay with scrim for readability over art page
         if (state.isPaused) {
