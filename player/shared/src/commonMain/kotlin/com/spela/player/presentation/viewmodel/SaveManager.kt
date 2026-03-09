@@ -6,6 +6,8 @@ import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.state.SaveSlotInfo
+import com.spela.player.presentation.state.SecondaryToastData
+import com.spela.player.presentation.state.SecondaryToastType
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -208,7 +210,15 @@ class SaveManager(
                 sessionRepository.uploadSessionSave(sessionId, "Manual Save", saveData, screenshot, currentCoreName).fold(
                     onSuccess = {
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(statusMessage = "State saved") }
+                            _state.update {
+                                it.copy(
+                                    statusMessage = "State saved",
+                                    secondaryToast = SecondaryToastData(
+                                        message = "Saved to Slot ${it.activeSlot}",
+                                        type = SecondaryToastType.SAVE,
+                                    ),
+                                )
+                            }
                         }
                         refreshSaveSlots()
                     },
@@ -245,7 +255,15 @@ class SaveManager(
                 sessionRepository.uploadSlotSave(sessionId, slot, saveData, screenshot, currentCoreName).fold(
                     onSuccess = {
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(statusMessage = "Saved to slot $slot") }
+                            _state.update {
+                                it.copy(
+                                    statusMessage = "Saved to slot $slot",
+                                    secondaryToast = SecondaryToastData(
+                                        message = "Saved to Slot $slot",
+                                        type = SecondaryToastType.SAVE,
+                                    ),
+                                )
+                            }
                         }
                         refreshSaveSlots()
                     },
@@ -280,7 +298,15 @@ class SaveManager(
                     onSuccess = { saveData ->
                         libretroController.unserialize(saveData)
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(statusMessage = "Loaded from slot $slot") }
+                            _state.update {
+                                it.copy(
+                                    statusMessage = "Loaded from slot $slot",
+                                    secondaryToast = SecondaryToastData(
+                                        message = "Loaded Slot $slot",
+                                        type = SecondaryToastType.LOAD,
+                                    ),
+                                )
+                            }
                         }
                     },
                     onFailure = { error ->
@@ -310,7 +336,15 @@ class SaveManager(
                     onSuccess = { saveData ->
                         libretroController.unserialize(saveData)
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(statusMessage = "State loaded") }
+                            _state.update {
+                                it.copy(
+                                    statusMessage = "State loaded",
+                                    secondaryToast = SecondaryToastData(
+                                        message = "Loaded Slot ${it.activeSlot}",
+                                        type = SecondaryToastType.LOAD,
+                                    ),
+                                )
+                            }
                         }
                     },
                     onFailure = { error ->

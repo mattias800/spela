@@ -7,6 +7,24 @@ import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.ShaderPreset
 
 /**
+ * Type of secondary screen toast notification.
+ */
+enum class SecondaryToastType {
+    SAVE,
+    LOAD,
+}
+
+/**
+ * Data for a brief toast notification shown on the secondary screen
+ * after save/load operations complete.
+ */
+data class SecondaryToastData(
+    val message: String,
+    val type: SecondaryToastType,
+    val id: Long = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+)
+
+/**
  * Information about a single save slot, used for the secondary screen save slots page.
  */
 data class SaveSlotInfo(
@@ -138,6 +156,9 @@ data class EmulationState(
     val achievementTotalPoints: Int = 0,
     val achievementsLoading: Boolean = false,
     val sessionAchievementUnlocks: List<SessionAchievementUnlock> = emptyList(),
+
+    /** Secondary screen toast: brief notification after save/load operations. */
+    val secondaryToast: SecondaryToastData? = null,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

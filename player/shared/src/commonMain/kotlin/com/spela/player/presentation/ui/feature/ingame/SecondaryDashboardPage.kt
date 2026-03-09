@@ -30,7 +30,10 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -95,6 +98,19 @@ fun SecondaryDashboardPage(
     sessionElapsedSeconds: Long,
     isFastForward: Boolean,
     rewindEnabled: Boolean,
+    // Challenge mode
+    challengeId: String? = null,
+    challengeObjective: String = "",
+    challengeElapsedMs: Long = 0,
+    onCompleteChallenge: () -> Unit = {},
+    onRestartChallenge: () -> Unit = {},
+    onGiveUpChallenge: () -> Unit = {},
+    // Netplay mode
+    isNetplayMode: Boolean = false,
+    netplayPeerUsername: String? = null,
+    netplayPeerLatencyMs: Int = 0,
+    netplayPeerDisconnected: Boolean = false,
+    netplayPausedByUsername: String? = null,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
@@ -102,25 +118,30 @@ fun SecondaryDashboardPage(
     onRewind: () -> Unit,
     onToggleCheat: (cheatId: String, enabled: Boolean) -> Unit,
 ) {
+    val isChallengeActive = challengeId != null
     var activePanel by remember { mutableStateOf(DashboardPanel.DASHBOARD) }
 
+    // Determine the effective layout: challenge mode overrides the dashboard panel
+    data class DashboardTargetState(val panel: DashboardPanel, val isChallengeActive: Boolean)
+    val targetState = DashboardTargetState(activePanel, isChallengeActive)
+
     AnimatedContent(
-        targetState = activePanel,
+        targetState = targetState,
         transitionSpec = {
             (fadeIn() + slideInVertically { it / 4 })
                 .togetherWith(fadeOut() + slideOutVertically { -it / 4 })
         },
         label = "dashboardPanelTransition",
-    ) { panel ->
-        when (panel) {
-            DashboardPanel.CHEATS -> {
+    ) { state ->
+        when {
+            state.panel == DashboardPanel.CHEATS -> {
                 SecondaryCheatsPanel(
                     cheats = cheats,
                     onToggleCheat = onToggleCheat,
                     onDismiss = { activePanel = DashboardPanel.DASHBOARD },
                 )
             }
-            DashboardPanel.ACHIEVEMENTS -> {
+            state.panel == DashboardPanel.ACHIEVEMENTS -> {
                 SecondaryAchievementsPanel(
                     achievements = achievements,
                     achievementProgress = achievementProgress,
@@ -133,118 +154,407 @@ fun SecondaryDashboardPage(
                     onDismiss = { activePanel = DashboardPanel.DASHBOARD },
                 )
             }
-            DashboardPanel.DASHBOARD -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // Stat cards row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                    ) {
-                        StatCard(
-                            value = "%.0f".format(fps),
-                            valueColor = fpsColor(fps),
-                            label = "%.1fms".format(frameTime),
-                            contentDesc = "%.0f FPS, %.1f ms frame time".format(fps, frameTime),
-                            modifier = Modifier.weight(1f),
-                        )
-                        StatCard(
-                            value = "Slot $activeSlot",
-                            valueColor = SpColor.OnBackground,
-                            label = "Save slot",
-                            contentDesc = "Active save slot $activeSlot",
-                            modifier = Modifier.weight(1f),
-                        )
-                        StatCard(
-                            value = if (hasCheats) "$enabledCheatCount active" else "No cheats",
-                            valueColor = if (hasCheats && enabledCheatCount > 0) SpColor.Warning else SpColor.OnBackgroundTertiary,
-                            label = if (hasCheats) "Cheats \u2022 Tap" else "Cheats",
-                            contentDesc = if (hasCheats) "$enabledCheatCount cheats active, tap to manage" else "No cheats available",
-                            modifier = Modifier.weight(1f),
-                            onClick = if (hasCheats) {
-                                { activePanel = DashboardPanel.CHEATS }
-                            } else {
-                                null
-                            },
-                        )
-                        if (hasAchievements) {
-                            StatCard(
-                                value = "$achievementUnlockedCount/$achievementTotalCount",
-                                valueColor = if (achievementUnlockedCount > 0) SpColor.Success else SpColor.OnBackgroundTertiary,
-                                label = "Trophies \u2022 Tap",
-                                contentDesc = "$achievementUnlockedCount of $achievementTotalCount achievements unlocked, tap to view",
-                                modifier = Modifier.weight(1f),
-                                onClick = { activePanel = DashboardPanel.ACHIEVEMENTS },
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(SpSpacing.Medium))
-
-                    // Quick action row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        EmulationActionButton(
-                            icon = Icons.Filled.Save,
-                            label = "Save",
-                            onClick = onSave,
-                            buttonSize = ACTION_BUTTON_SIZE,
-                            iconSize = ACTION_ICON_SIZE,
-                            showLabel = false,
-                            useFocusRing = false,
-                        )
-                        EmulationActionButton(
-                            icon = Icons.Filled.FolderOpen,
-                            label = "Load",
-                            onClick = onLoad,
-                            buttonSize = ACTION_BUTTON_SIZE,
-                            iconSize = ACTION_ICON_SIZE,
-                            showLabel = false,
-                            useFocusRing = false,
-                        )
-                        EmulationActionButton(
-                            icon = Icons.Filled.CameraAlt,
-                            label = "Screenshot",
-                            onClick = onScreenshot,
-                            buttonSize = ACTION_BUTTON_SIZE,
-                            iconSize = ACTION_ICON_SIZE,
-                            showLabel = false,
-                            useFocusRing = false,
-                        )
-                        EmulationActionButton(
-                            icon = if (isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
-                            label = if (isFastForward) "Normal" else "Fast",
-                            isActive = isFastForward,
-                            onClick = onToggleFastForward,
-                            buttonSize = ACTION_BUTTON_SIZE,
-                            iconSize = ACTION_ICON_SIZE,
-                            showLabel = false,
-                            useFocusRing = false,
-                        )
-                        if (rewindEnabled) {
-                            EmulationActionButton(
-                                icon = Icons.Filled.FastRewind,
-                                label = "Rewind",
-                                onClick = onRewind,
-                                buttonSize = ACTION_BUTTON_SIZE,
-                                iconSize = ACTION_ICON_SIZE,
-                                showLabel = false,
-                                useFocusRing = false,
-                            )
-                        }
-                    }
-                }
+            state.isChallengeActive -> {
+                // Challenge mode dashboard layout
+                ChallengeModeDashboard(
+                    fps = fps,
+                    frameTime = frameTime,
+                    challengeElapsedMs = challengeElapsedMs,
+                    challengeObjective = challengeObjective,
+                    onCompleteChallenge = onCompleteChallenge,
+                    onRestartChallenge = onRestartChallenge,
+                    onGiveUpChallenge = onGiveUpChallenge,
+                )
+            }
+            else -> {
+                // Normal dashboard layout
+                NormalDashboard(
+                    fps = fps,
+                    frameTime = frameTime,
+                    activeSlot = activeSlot,
+                    hasCheats = hasCheats,
+                    enabledCheatCount = enabledCheatCount,
+                    hasAchievements = hasAchievements,
+                    achievementUnlockedCount = achievementUnlockedCount,
+                    achievementTotalCount = achievementTotalCount,
+                    isNetplayMode = isNetplayMode,
+                    netplayPeerUsername = netplayPeerUsername,
+                    netplayPeerLatencyMs = netplayPeerLatencyMs,
+                    netplayPeerDisconnected = netplayPeerDisconnected,
+                    netplayPausedByUsername = netplayPausedByUsername,
+                    isFastForward = isFastForward,
+                    rewindEnabled = rewindEnabled,
+                    onCheatsClick = if (hasCheats) {
+                        { activePanel = DashboardPanel.CHEATS }
+                    } else {
+                        null
+                    },
+                    onAchievementsClick = { activePanel = DashboardPanel.ACHIEVEMENTS },
+                    onSave = onSave,
+                    onLoad = onLoad,
+                    onScreenshot = onScreenshot,
+                    onToggleFastForward = onToggleFastForward,
+                    onRewind = onRewind,
+                )
             }
         }
     }
+}
+
+/**
+ * Challenge mode dashboard layout.
+ * Shows a small FPS card at the top, a large centered timer, the challenge objective,
+ * and three action buttons (Complete, Restart, Give Up).
+ */
+@Composable
+private fun ChallengeModeDashboard(
+    fps: Float,
+    frameTime: Float,
+    challengeElapsedMs: Long,
+    challengeObjective: String,
+    onCompleteChallenge: () -> Unit,
+    onRestartChallenge: () -> Unit,
+    onGiveUpChallenge: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
+            .semantics { contentDescription = "Challenge mode dashboard" },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Small FPS card at top
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            StatCard(
+                value = "%.0f".format(fps),
+                valueColor = fpsColor(fps),
+                label = "%.1fms".format(frameTime),
+                contentDesc = "%.0f FPS, %.1f ms frame time".format(fps, frameTime),
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        // Center area with timer and objective
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = formatChallengeTimer(challengeElapsedMs),
+                style = SpTypography.DisplayMedium,
+                color = SpColor.Primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics {
+                    contentDescription = "Challenge timer: ${formatChallengeTimer(challengeElapsedMs)}"
+                },
+            )
+            Spacer(Modifier.height(SpSpacing.Small))
+            Text(
+                text = challengeObjective,
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics {
+                    contentDescription = "Challenge objective: $challengeObjective"
+                },
+            )
+        }
+
+        // Action buttons row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            EmulationActionButton(
+                icon = Icons.Filled.Check,
+                label = "Complete",
+                isActive = true,
+                onClick = onCompleteChallenge,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = true,
+                useFocusRing = false,
+            )
+            EmulationActionButton(
+                icon = Icons.Filled.Refresh,
+                label = "Restart",
+                onClick = onRestartChallenge,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = true,
+                useFocusRing = false,
+            )
+            EmulationActionButton(
+                icon = Icons.Filled.Close,
+                label = "Give Up",
+                onClick = onGiveUpChallenge,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = true,
+                useFocusRing = false,
+            )
+        }
+    }
+}
+
+/**
+ * Normal (non-challenge) dashboard layout.
+ * Shows stat cards (FPS, save slot, cheats/netplay, and optionally achievements)
+ * and a quick action row (save, load, screenshot, fast forward, rewind).
+ */
+@Composable
+private fun NormalDashboard(
+    fps: Float,
+    frameTime: Float,
+    activeSlot: Int,
+    hasCheats: Boolean,
+    enabledCheatCount: Int,
+    hasAchievements: Boolean,
+    achievementUnlockedCount: Int,
+    achievementTotalCount: Int,
+    isNetplayMode: Boolean,
+    netplayPeerUsername: String?,
+    netplayPeerLatencyMs: Int,
+    netplayPeerDisconnected: Boolean,
+    netplayPausedByUsername: String?,
+    isFastForward: Boolean,
+    rewindEnabled: Boolean,
+    onCheatsClick: (() -> Unit)?,
+    onAchievementsClick: () -> Unit,
+    onSave: () -> Unit,
+    onLoad: () -> Unit,
+    onScreenshot: () -> Unit,
+    onToggleFastForward: () -> Unit,
+    onRewind: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Stat cards row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            StatCard(
+                value = "%.0f".format(fps),
+                valueColor = fpsColor(fps),
+                label = "%.1fms".format(frameTime),
+                contentDesc = "%.0f FPS, %.1f ms frame time".format(fps, frameTime),
+                modifier = Modifier.weight(1f),
+            )
+            StatCard(
+                value = "Slot $activeSlot",
+                valueColor = SpColor.OnBackground,
+                label = "Save slot",
+                contentDesc = "Active save slot $activeSlot",
+                modifier = Modifier.weight(1f),
+            )
+            if (isNetplayMode) {
+                // Netplay card replaces cheats card
+                NetplayStatCard(
+                    peerUsername = netplayPeerUsername,
+                    latencyMs = netplayPeerLatencyMs,
+                    isDisconnected = netplayPeerDisconnected,
+                    pausedByUsername = netplayPausedByUsername,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                StatCard(
+                    value = if (hasCheats) "$enabledCheatCount active" else "No cheats",
+                    valueColor = if (hasCheats && enabledCheatCount > 0) SpColor.Warning else SpColor.OnBackgroundTertiary,
+                    label = if (hasCheats) "Cheats \u2022 Tap" else "Cheats",
+                    contentDesc = if (hasCheats) "$enabledCheatCount cheats active, tap to manage" else "No cheats available",
+                    modifier = Modifier.weight(1f),
+                    onClick = onCheatsClick,
+                )
+            }
+            if (hasAchievements) {
+                StatCard(
+                    value = "$achievementUnlockedCount/$achievementTotalCount",
+                    valueColor = if (achievementUnlockedCount > 0) SpColor.Success else SpColor.OnBackgroundTertiary,
+                    label = "Trophies \u2022 Tap",
+                    contentDesc = "$achievementUnlockedCount of $achievementTotalCount achievements unlocked, tap to view",
+                    modifier = Modifier.weight(1f),
+                    onClick = onAchievementsClick,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(SpSpacing.Medium))
+
+        // Quick action row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            EmulationActionButton(
+                icon = Icons.Filled.Save,
+                label = "Save",
+                onClick = onSave,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = false,
+                useFocusRing = false,
+            )
+            EmulationActionButton(
+                icon = Icons.Filled.FolderOpen,
+                label = "Load",
+                onClick = onLoad,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = false,
+                useFocusRing = false,
+            )
+            EmulationActionButton(
+                icon = Icons.Filled.CameraAlt,
+                label = "Screenshot",
+                onClick = onScreenshot,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = false,
+                useFocusRing = false,
+            )
+            EmulationActionButton(
+                icon = if (isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
+                label = if (isFastForward) "Normal" else "Fast",
+                isActive = isFastForward,
+                onClick = onToggleFastForward,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
+                showLabel = false,
+                useFocusRing = false,
+            )
+            if (rewindEnabled) {
+                EmulationActionButton(
+                    icon = Icons.Filled.FastRewind,
+                    label = "Rewind",
+                    onClick = onRewind,
+                    buttonSize = ACTION_BUTTON_SIZE,
+                    iconSize = ACTION_ICON_SIZE,
+                    showLabel = false,
+                    useFocusRing = false,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Netplay info stat card showing peer username, latency, and connection status.
+ * Replaces the cheats card when a netplay session is active.
+ */
+@Composable
+private fun NetplayStatCard(
+    peerUsername: String?,
+    latencyMs: Int,
+    isDisconnected: Boolean,
+    pausedByUsername: String?,
+    modifier: Modifier = Modifier,
+) {
+    val displayValue: String
+    val displayValueColor: Color
+    val displayLabel: String
+    val displayContentDesc: String
+
+    when {
+        isDisconnected -> {
+            displayValue = "Offline"
+            displayValueColor = SpColor.Error
+            displayLabel = "Netplay"
+            displayContentDesc = "Netplay peer disconnected"
+        }
+        pausedByUsername != null -> {
+            displayValue = peerUsername ?: "Peer"
+            displayValueColor = SpColor.Warning
+            displayLabel = "Paused by $pausedByUsername"
+            displayContentDesc = "Netplay paused by $pausedByUsername"
+        }
+        else -> {
+            displayValue = peerUsername ?: "Peer"
+            displayValueColor = SpColor.OnBackground
+            displayLabel = "${latencyMs}ms"
+            displayContentDesc = "Netplay peer: ${peerUsername ?: "unknown"}, latency ${latencyMs}ms"
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(SpSpacing.CardCornerRadius))
+            .background(SpColor.Card)
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
+            .semantics { contentDescription = displayContentDesc },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = if (isDisconnected) Icons.Filled.WifiOff else Icons.Filled.Wifi,
+                contentDescription = null,
+                tint = if (isDisconnected) SpColor.Error else SpColor.OnBackgroundTertiary,
+                modifier = Modifier.size(SpSpacing.IconSmall),
+            )
+            Spacer(Modifier.width(SpSpacing.XSmall))
+            Text(
+                text = displayValue,
+                style = SpTypography.HeadlineSmall,
+                color = displayValueColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            text = displayLabel,
+            style = SpTypography.LabelSmall,
+            color = if (isDisconnected) SpColor.OnBackgroundTertiary else latencyColor(latencyMs),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * Formats a challenge elapsed time in milliseconds into a readable timer string.
+ * Uses MM:SS.cc format for durations under an hour, HH:MM:SS for longer durations.
+ */
+private fun formatChallengeTimer(elapsedMs: Long): String {
+    val safeElapsedMs = elapsedMs.coerceAtLeast(0)
+    val totalSeconds = safeElapsedMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    val millis = (safeElapsedMs % 1000) / 10  // centiseconds
+    return if (minutes >= 60) {
+        val hours = minutes / 60
+        "%d:%02d:%02d".format(hours, minutes % 60, seconds)
+    } else {
+        "%d:%02d.%02d".format(minutes, seconds, millis)
+    }
+}
+
+/**
+ * Returns a color for the given latency value:
+ * green (<50ms), yellow (50-100ms), red (>100ms).
+ */
+private fun latencyColor(latencyMs: Int): Color = when {
+    latencyMs < 50 -> SpColor.Success
+    latencyMs < 100 -> SpColor.Warning
+    else -> SpColor.Error
 }
 
 @Composable
