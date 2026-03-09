@@ -79,6 +79,30 @@ class GameDetailCommunitySectionsTest {
     }
 
     @Test
+    fun clickingTopPlayerNavigatesToUserProfile() = runComposeUiTest {
+        val harness = createHarnessOnGameDetail()
+        harness.gameStatsRepo.gameStats = GameStats(
+            totalPlayers = 5,
+            totalPlayTime = 100000,
+            averagePlayTime = 20000,
+            topPlayers = listOf(
+                TopPlayer("user-42", "SpeedKing", null, 50000),
+                TopPlayer("user-43", "CasualGamer", null, 30000),
+            ),
+        )
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness)
+
+        scrollToSection(hasTestTag("community_stats_section"))
+        onNodeWithText("SpeedKing").performClick()
+        advance(harness)
+
+        // UserProfile screen should be shown (profile fails to load in fake repo, shows fallback)
+        onNodeWithText("Profile not found").assertIsDisplayed()
+    }
+
+    @Test
     fun communityStatsShowsTopPlayers() = runComposeUiTest {
         val harness = createHarnessOnGameDetail()
         harness.gameStatsRepo.gameStats = GameStats(

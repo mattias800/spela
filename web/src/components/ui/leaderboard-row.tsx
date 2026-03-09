@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { PlayerAvatar } from "@/components/player-avatar";
 
@@ -8,6 +9,7 @@ interface LeaderboardRowProps {
   avatarUrl?: string;
   rank: ReactNode;
   children: ReactNode;
+  href?: string;
   usernameClassName?: string;
   "data-testid"?: string;
 }
@@ -18,6 +20,7 @@ export function LeaderboardRow({
   avatarUrl,
   rank,
   children,
+  href,
   usernameClassName,
   "data-testid": testId,
 }: LeaderboardRowProps) {
@@ -33,15 +36,28 @@ export function LeaderboardRow({
     >
       {rank}
       <PlayerAvatar username={username} avatarUrl={avatarUrl} />
-      <span
-        className={cn(
-          "text-sm font-medium truncate",
-          usernameClassName ?? "flex-shrink-0 w-28",
-          isCurrentUser ? "text-brand-400" : "text-surface-200",
-        )}
-      >
-        {username}
-      </span>
+      {href ? (
+        <Link
+          to={href}
+          className={cn(
+            "text-sm font-medium truncate hover:underline",
+            usernameClassName ?? "flex-shrink-0 w-28",
+            isCurrentUser ? "text-brand-400" : "text-surface-200",
+          )}
+        >
+          {username}
+        </Link>
+      ) : (
+        <span
+          className={cn(
+            "text-sm font-medium truncate",
+            usernameClassName ?? "flex-shrink-0 w-28",
+            isCurrentUser ? "text-brand-400" : "text-surface-200",
+          )}
+        >
+          {username}
+        </span>
+      )}
       {children}
     </div>
   );

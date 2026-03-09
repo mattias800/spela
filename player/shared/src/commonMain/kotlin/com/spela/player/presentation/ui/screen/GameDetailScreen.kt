@@ -111,6 +111,7 @@ fun GameDetailScreen(
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
     onNavigateToSharedSession: ((sharedSessionId: String) -> Unit)? = null,
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
+    onNavigateToUser: ((userId: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
@@ -257,6 +258,7 @@ fun GameDetailScreen(
                     GameCommunityStatsSection(
                         stats = state.gameStats,
                         isLoading = state.isLoadingStats,
+                        onPlayerClicked = onNavigateToUser,
                     )
                 }
 
