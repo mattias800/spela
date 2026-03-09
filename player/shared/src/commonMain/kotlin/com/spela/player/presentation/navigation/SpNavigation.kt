@@ -4,6 +4,7 @@ sealed class SpScreen(val route: String) {
     data object ServerConnection : SpScreen("server_connection")
     data object Login : SpScreen("login")
     data object Home : SpScreen("home")
+    data object Explore : SpScreen("explore")
     data object Consoles : SpScreen("consoles")
     data object AllGames : SpScreen("all_games")
     data object Favorites : SpScreen("favorites")

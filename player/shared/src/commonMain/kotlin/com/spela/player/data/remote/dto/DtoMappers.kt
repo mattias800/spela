@@ -545,3 +545,24 @@ fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
     cheatsEnabled = cheatsEnabled,
     enabledIndices = enabledIndices,
 )
+
+// Explore mappers
+
+fun FeaturedGameDto.toDomain(): FeaturedGame = FeaturedGame(
+    gameId = gameId,
+    title = title,
+    heroUrl = heroUrl,
+    logoUrl = logoUrl,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleColor = consoleColor,
+    rating = rating,
+    genre = genre,
+    isFavorite = isFavorite,
+    isPlayLater = isPlayLater,
+)
+
+fun ExploreRowDto.toDomain(): ExploreRow = ExploreRow(
+    id = id,
+    title = title,
+    games = games.map { it.toDomain() },
+)

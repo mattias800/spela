@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
+  Compass,
   Library,
   BarChart3,
   Activity,
@@ -61,6 +62,7 @@ export function AppLayout() {
       section: undefined,
       items: [
         { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/explore", icon: Compass, label: "Explore" },
         {
           to: "/consoles",
           icon: Library,

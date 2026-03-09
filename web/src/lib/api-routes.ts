@@ -17,6 +17,10 @@ export type ApiGetPath = WithQuery<
   // Auth
   | "/auth/setup-status"
 
+  // Explore
+  | "/explore/featured"
+  | "/explore/rows"
+
   // Consoles
   | "/consoles"
   | `/consoles/${string}/games`

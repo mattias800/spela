@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -47,6 +48,7 @@ enum class BottomNavTab(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Filled.Home),
+    EXPLORE("Explore", Icons.Filled.Explore),
     CONSOLES("Consoles", Icons.Filled.SportsEsports),
     COLLECTIONS("Collections", Icons.Filled.CollectionsBookmark),
     ACTIVITY("Activity", Icons.Filled.Notifications),

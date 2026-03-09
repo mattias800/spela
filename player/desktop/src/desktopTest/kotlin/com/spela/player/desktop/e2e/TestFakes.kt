@@ -1318,6 +1318,20 @@ class FakeSessionRepository : SessionRepository {
     fun getLastCheatConfig(sessionId: String): SessionCheatConfig? = sessionCheats[sessionId]
 }
 
+class FakeExploreRepository : ExploreRepository {
+    var featuredGames: List<FeaturedGame> = emptyList()
+    var exploreRows: List<ExploreRow> = emptyList()
+    var shouldFail: Boolean = false
+
+    override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load featured games"))
+        else Result.success(featuredGames)
+
+    override suspend fun getExploreRows(): Result<List<ExploreRow>> =
+        if (shouldFail) Result.failure(Exception("Failed to load explore rows"))
+        else Result.success(exploreRows)
+}
+
 class FakeCheatRepository : CheatRepository {
     var cheats: MutableList<Cheat> = mutableListOf()
 

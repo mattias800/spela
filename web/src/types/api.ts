@@ -815,6 +815,31 @@ export interface PossibleConsole {
   name: string;
 }
 
+// --- Explore ---
+
+export interface FeaturedGame {
+  gameId: string;
+  title: string;
+  heroUrl: string;
+  logoUrl: string | null;
+  consoleAbbreviation: string;
+  consoleColor: string;
+  rating: number;
+  genre: string;
+  isFavorite: boolean;
+  isPlayLater: boolean;
+}
+
+export interface ExploreRow {
+  id: string;
+  title: string;
+  games: Game[];
+}
+
+export interface ExploreRowsResponse {
+  rows: ExploreRow[];
+}
+
 export interface StagedUpload {
   id: string;
   fileName: string;

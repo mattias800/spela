@@ -8,6 +8,7 @@ import type { Game } from "@/types/api";
 interface GameCardProps {
   game: Game;
   aspectRatio?: number;
+  showConsoleBadge?: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
 }
@@ -15,6 +16,7 @@ interface GameCardProps {
 export function GameCard({
   game,
   aspectRatio,
+  showConsoleBadge,
   onToggleFavorite,
   onTogglePlayLater,
 }: GameCardProps) {
@@ -97,7 +99,10 @@ export function GameCard({
 
         {/* Console badge */}
         {game.consoleName && (
-          <div className="absolute bottom-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className={cn(
+            "absolute bottom-2.5 left-2.5 transition-opacity duration-300",
+            showConsoleBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}>
             <Badge variant="brand">{game.consoleName}</Badge>
           </div>
         )}

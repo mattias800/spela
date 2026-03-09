@@ -92,6 +92,7 @@ import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
+import com.spela.player.presentation.ui.screen.ExploreScreen
 import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -118,6 +119,7 @@ import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
+import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
@@ -153,6 +155,7 @@ fun SpelaApp(
     connectivityMonitor: ConnectivityMonitor,
     sessionDetailViewModel: SessionDetailViewModel? = null,
     topListsViewModel: TopListsViewModel? = null,
+    exploreViewModel: ExploreViewModel? = null,
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
 ) {
@@ -438,6 +441,19 @@ fun SpelaApp(
                                     hasActiveDownloads = downloadsState.activeDownloads.isNotEmpty(),
                                     activeNetplaySessions = activeNetplaySessions,
                                 )
+                            }
+
+                            is SpScreen.Explore -> {
+                                if (exploreViewModel != null) {
+                                    ExploreScreen(
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                    )
+                                }
                             }
 
                             is SpScreen.Console -> {
@@ -1079,6 +1095,7 @@ fun SpelaApp(
                         onTabSelected = { tab ->
                             val targetScreen = when (tab) {
                                 BottomNavTab.HOME -> SpScreen.Home
+                                BottomNavTab.EXPLORE -> SpScreen.Explore
                                 BottomNavTab.CONSOLES -> SpScreen.Consoles
                                 BottomNavTab.COLLECTIONS -> SpScreen.Collections
                                 BottomNavTab.ACTIVITY -> SpScreen.Activity
