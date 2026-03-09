@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Plus, X } from "lucide-react";
+import { Settings, Plus, X, Image } from "lucide-react";
 import {
   Button,
   Card,
@@ -31,6 +31,7 @@ export function AdminSettingsPage() {
   const [biosAutoDownload, setBiosAutoDownload] = useState(true);
   const [igdbClientId, setIgdbClientId] = useState("");
   const [igdbClientSecret, setIgdbClientSecret] = useState("");
+  const [steamgriddbApiKey, setSteamgriddbApiKey] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -41,6 +42,7 @@ export function AdminSettingsPage() {
       setBiosAutoDownload(settings["bios_auto_download"] !== "false");
       setIgdbClientId(settings["igdb_client_id"] ?? "");
       setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
+      setSteamgriddbApiKey(settings["steamgriddb_api_key"] ?? "");
     }
   }, [settings]);
 
@@ -68,6 +70,7 @@ export function AdminSettingsPage() {
       payload.igdb_client_id = igdbClientId;
       payload.igdb_client_secret = igdbClientSecret;
     }
+    payload.steamgriddb_api_key = steamgriddbApiKey;
     updateSettings.mutate(payload, {
       onSuccess: () => toast("success", "Settings saved"),
       onError: (err) =>
@@ -196,6 +199,37 @@ export function AdminSettingsPage() {
         onClientSecretChange={setIgdbClientSecret}
         envConfigured={igdbEnvConfigured}
       />
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+            <Image className="h-5 w-5 text-brand-400" />
+            SteamGridDB
+          </h2>
+          <p className="text-xs text-surface-500 mt-1">
+            Used for hero artwork on the companion display. Get a free API key
+            at{" "}
+            <a
+              href="https://www.steamgriddb.com/profile/preferences/api"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-400 hover:text-brand-300 underline"
+            >
+              steamgriddb.com
+            </a>
+            .
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Input
+            label="SteamGridDB API Key"
+            type="password"
+            placeholder="SteamGridDB API Key"
+            value={steamgriddbApiKey}
+            onChange={(e) => setSteamgriddbApiKey(e.target.value)}
+          />
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end">
         <Button

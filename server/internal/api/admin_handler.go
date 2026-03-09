@@ -193,7 +193,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 
 // secretSettingKeys are settings that should be masked in GET responses.
 var secretSettingKeys = map[string]bool{
-	"igdb_client_secret": true,
+	"igdb_client_secret":   true,
+	"steamgriddb_api_key":  true,
 }
 
 // GetSettings returns server settings (admin only).
@@ -226,6 +227,7 @@ var allowedSettingKeys = map[string]bool{
 	"igdb_client_id":       true,
 	"igdb_client_secret":   true,
 	"bios_auto_download":   true,
+	"steamgriddb_api_key":  true,
 }
 
 // UpdateSettings updates server settings (admin only).
@@ -304,6 +306,7 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 // Legacy ?force=true is equivalent to ?mode=all.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.tryConfigureIGDB()
+	h.tryConfigureSteamGridDB()
 
 	mode := c.Query("mode")
 	if mode == "" && c.Query("force") == "true" {
@@ -573,6 +576,7 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	}
 
 	h.tryConfigureIGDB()
+	h.tryConfigureSteamGridDB()
 
 	if err := h.Scraper.ScrapeGame(&game); err != nil {
 		slog.Warn("scrape failed", "game", game.Title, "error", err)
@@ -608,6 +612,26 @@ func (h *AdminHandler) tryConfigureIGDB() {
 		h.Scraper.IGDBClient.Close()
 	}
 	h.Scraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
+}
+
+// tryConfigureSteamGridDB loads the SteamGridDB API key from environment or database
+// settings and configures the scraper's SteamGridDB client.
+func (h *AdminHandler) tryConfigureSteamGridDB() {
+	apiKey := steamGridDBAPIKey(h.DB)
+	h.Scraper.ConfigureSteamGridDB(apiKey)
+}
+
+// steamGridDBAPIKey returns the SteamGridDB API key from the environment
+// variable SPELA_STEAMGRIDDB_API_KEY, falling back to the database setting.
+func steamGridDBAPIKey(database *gorm.DB) string {
+	if key := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); key != "" {
+		return key
+	}
+	var setting db.ServerSetting
+	if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err != nil {
+		return ""
+	}
+	return setting.Value
 }
 
 // CoverOption represents a single available cover art source.
@@ -903,6 +927,7 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 	}
 
 	h.tryConfigureIGDB()
+	h.tryConfigureSteamGridDB()
 
 	if err := h.Scraper.ScrapeGameWithIGDBMatch(&game, req.IGDBID); err != nil {
 		slog.Warn("IGDB match failed", "game", game.Title, "igdbId", req.IGDBID, "error", err)

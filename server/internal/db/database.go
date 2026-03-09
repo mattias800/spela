@@ -153,6 +153,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SessionSaveData{},
 		&SessionCheatSetting{},
 		&DailyPlayActivity{},
+		&GameArtwork{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
@@ -373,6 +374,9 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 
 	// SharedSaveState — move all
 	database.Model(&SharedSaveState{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// GameArtwork — delete duplicate (keeper keeps its own or we skip)
+	database.Where("game_id = ?", dupID).Delete(&GameArtwork{})
 
 	// GameAchievementCache — move all
 	database.Model(&GameAchievementCache{}).Where("game_id = ?", dupID).Update("game_id", keeperID)

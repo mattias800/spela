@@ -92,11 +92,8 @@ class SecondaryScreenBurnInTest {
         val harness = createHarnessWithNesGame()
         startGameAndRenderSecondary(harness)
 
-        // Game title should be visible in the info bar
+        // Game title should be visible in the persistent header
         onNodeWithContentDescription("Now playing: Castlevania").assertIsDisplayed()
-
-        // Save button should be visible in the quick action bar
-        onNodeWithContentDescription("Save").assertIsDisplayed()
 
         // Dimming overlay should NOT exist yet
         onAllNodesWithContentDescription("Screen dimmed for OLED protection")

@@ -49,6 +49,7 @@ import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.model.GameSession
 import com.spela.player.domain.model.SessionCheatConfig
 import com.spela.player.domain.repository.SessionRepository
+import com.spela.player.domain.usecase.GetConsolesUseCase
 import com.spela.player.domain.usecase.GetGameDetailUseCase
 import com.spela.player.domain.usecase.PrepareGameUseCase
 import com.spela.player.libretro.GamepadPortManager

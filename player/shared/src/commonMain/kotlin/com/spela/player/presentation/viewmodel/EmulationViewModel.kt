@@ -267,11 +267,17 @@ class EmulationViewModel(
             var consoleId = ""
             var consoleName = ""
             getGameDetailUseCase(gameId).onSuccess { detail ->
-                withContext(dispatchers.main) {
-                    _state.update { it.copy(gameTitle = detail.game.title, consoleId = detail.game.consoleId) }
-                }
                 consoleId = detail.game.consoleId
                 consoleName = detail.game.consoleName
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            gameTitle = detail.game.title,
+                            consoleId = detail.game.consoleId,
+                            heroUrl = detail.game.heroUrl,
+                        )
+                    }
+                }
             }
 
             // Pre-launch BIOS check
@@ -643,6 +649,8 @@ class EmulationViewModel(
                         showGiveUpConfirm = false,
                         challengeCompletedAttempt = null,
                         sessionId = null,
+                        consoleColorTheme = null,
+                        heroUrl = null,
                         showCoreMismatchDialog = false,
                         coreMismatchSaveCoreName = "",
                         coreMismatchCurrentCoreName = "",
