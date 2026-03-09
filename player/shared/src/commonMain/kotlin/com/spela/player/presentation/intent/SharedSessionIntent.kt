@@ -21,4 +21,8 @@ sealed interface SharedSessionDetailIntent {
     data class CopySaveToGame(val sharedSessionId: String, val saveId: Long) : SharedSessionDetailIntent
     data object DismissError : SharedSessionDetailIntent
     data object DismissSuccess : SharedSessionDetailIntent
+    data object ShowInviteSheet : SharedSessionDetailIntent
+    data object HideInviteSheet : SharedSessionDetailIntent
+    data class UpdateInviteSearchQuery(val query: String) : SharedSessionDetailIntent
+    data class InviteSearchPage(val page: Int) : SharedSessionDetailIntent
 }

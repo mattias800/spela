@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
@@ -200,17 +201,33 @@ func toPublicProfileGame(g db.Game, playTime int64) PublicProfileGame {
 }
 
 // SearchUsers returns users matching a search query, excluding the current user.
+// Supports pagination via page and pageSize query params (defaults: page=1, pageSize=20, max 50).
+// If q is empty, returns all non-disabled users (excluding self).
 func (h *SocialHandler) SearchUsers(c *gin.Context) {
 	uid := getUserID(c)
 	query := strings.TrimSpace(c.Query("q"))
-	if len(query) < 2 {
-		c.JSON(http.StatusOK, []UserSearchResult{})
-		return
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 50 {
+		pageSize = 20
 	}
 
+	base := h.DB.Where("id != ? AND disabled = ?", uid, false)
+	if query != "" {
+		base = base.Where("username LIKE ? ESCAPE '\\'", escapeLikePattern(query)+"%")
+	}
+
+	var total int64
+	base.Model(&db.User{}).Count(&total)
+
 	var users []db.User
-	if err := h.DB.Where("username LIKE ? ESCAPE '\\' AND id != ? AND disabled = ?", escapeLikePattern(query)+"%", uid, false).
-		Limit(10).
+	if err := base.Order("username ASC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
 		Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
 		return
@@ -223,6 +240,148 @@ func (h *SocialHandler) SearchUsers(c *gin.Context) {
 			Username:  u.Username,
 			AvatarURL: u.AvatarURL,
 		})
+	}
+
+	c.JSON(http.StatusOK, PaginatedResponse{
+		Data:     result,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	})
+}
+
+// GetRecentPartners returns users the current user has played with recently
+// (last 6 months) via netplay sessions or shared sessions.
+func (h *SocialHandler) GetRecentPartners(c *gin.Context) {
+	uid := getUserID(c)
+	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
+
+	// partnerInfo tracks the most recent interaction time per partner.
+	type partnerInfo struct {
+		lastSeen time.Time
+	}
+	partners := make(map[uint]*partnerInfo)
+
+	// 1. NetplaySession: find sessions where the current user was host or client.
+	var netplaySessions []db.NetplaySession
+	h.DB.Where(
+		"(host_user_id = ? OR client_user_id = ?) AND created_at >= ?",
+		uid, uid, sixMonthsAgo,
+	).Find(&netplaySessions)
+
+	for _, s := range netplaySessions {
+		var partnerID uint
+		if s.HostUserID == uid {
+			if s.ClientUserID == nil {
+				continue
+			}
+			partnerID = *s.ClientUserID
+		} else {
+			partnerID = s.HostUserID
+		}
+		if partnerID == uid {
+			continue
+		}
+		ts := s.CreatedAt
+		if p, ok := partners[partnerID]; ok {
+			if ts.After(p.lastSeen) {
+				p.lastSeen = ts
+			}
+		} else {
+			partners[partnerID] = &partnerInfo{lastSeen: ts}
+		}
+	}
+
+	// 2. SharedSessionMember: find shared sessions the user is a member of,
+	//    then find other members of those sessions.
+	var myMemberships []db.SharedSessionMember
+	h.DB.Where("user_id = ?", uid).Find(&myMemberships)
+
+	if len(myMemberships) > 0 {
+		sessionIDs := make([]uint, 0, len(myMemberships))
+		for _, m := range myMemberships {
+			sessionIDs = append(sessionIDs, m.SharedSessionID)
+		}
+
+		var otherMembers []db.SharedSessionMember
+		h.DB.Where("shared_session_id IN ? AND user_id != ?", sessionIDs, uid).
+			Find(&otherMembers)
+
+		// Look up creation time of the shared sessions for recency sorting.
+		var sharedSessions []db.SharedSession
+		h.DB.Where("id IN ? AND created_at >= ?", sessionIDs, sixMonthsAgo).
+			Find(&sharedSessions)
+		sessionCreatedAt := make(map[uint]time.Time, len(sharedSessions))
+		for _, ss := range sharedSessions {
+			sessionCreatedAt[ss.ID] = ss.CreatedAt
+		}
+
+		for _, m := range otherMembers {
+			ts, ok := sessionCreatedAt[m.SharedSessionID]
+			if !ok {
+				// Session was created more than 6 months ago; skip.
+				continue
+			}
+			if p, exists := partners[m.UserID]; exists {
+				if ts.After(p.lastSeen) {
+					p.lastSeen = ts
+				}
+			} else {
+				partners[m.UserID] = &partnerInfo{lastSeen: ts}
+			}
+		}
+	}
+
+	if len(partners) == 0 {
+		c.JSON(http.StatusOK, []UserSearchResult{})
+		return
+	}
+
+	// Collect partner IDs and sort by most recent first.
+	partnerIDs := make([]uint, 0, len(partners))
+	for id := range partners {
+		partnerIDs = append(partnerIDs, id)
+	}
+
+	// Fetch user records, excluding disabled users.
+	var users []db.User
+	h.DB.Where("id IN ? AND disabled = ?", partnerIDs, false).Find(&users)
+
+	// Build response sorted by most recent interaction.
+	type sortableResult struct {
+		result   UserSearchResult
+		lastSeen time.Time
+	}
+	sortable := make([]sortableResult, 0, len(users))
+	for _, u := range users {
+		p := partners[u.ID]
+		sortable = append(sortable, sortableResult{
+			result: UserSearchResult{
+				ID:        strconv.FormatUint(uint64(u.ID), 10),
+				Username:  u.Username,
+				AvatarURL: u.AvatarURL,
+			},
+			lastSeen: p.lastSeen,
+		})
+	}
+
+	// Sort by lastSeen descending (most recent first).
+	for i := 0; i < len(sortable); i++ {
+		for j := i + 1; j < len(sortable); j++ {
+			if sortable[j].lastSeen.After(sortable[i].lastSeen) {
+				sortable[i], sortable[j] = sortable[j], sortable[i]
+			}
+		}
+	}
+
+	// Limit to 10 results.
+	if len(sortable) > 10 {
+		sortable = sortable[:10]
+	}
+
+	result := make([]UserSearchResult, len(sortable))
+	for i, s := range sortable {
+		result[i] = s.result
 	}
 
 	c.JSON(http.StatusOK, result)

@@ -768,6 +768,26 @@ class SpelaApiClient(
         }.body()
     }
 
+    suspend fun sendNetplayInvite(sessionId: String, request: SendNetplayInviteRequest) {
+        client.post("$baseUrl/api/netplay/sessions/$sessionId/invites") {
+            setBody(request)
+        }
+    }
+
+    // User Search
+
+    suspend fun searchUsers(query: String = "", page: Int = 1, pageSize: Int = 20): UserSearchResponse {
+        return client.get("$baseUrl/api/users/search") {
+            parameter("q", query)
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    suspend fun getRecentPartners(): List<UserSearchResultDto> {
+        return client.get("$baseUrl/api/users/recent-partners").body()
+    }
+
     // Challenges
 
     suspend fun getChallenges(

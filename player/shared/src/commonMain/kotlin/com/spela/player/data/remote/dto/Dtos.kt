@@ -741,6 +741,26 @@ data class UpdateNetplaySettingsRequest(
     val inputDelay: Int,
 )
 
+@Serializable
+data class SendNetplayInviteRequest(
+    val username: String,
+)
+
+@Serializable
+data class UserSearchResultDto(
+    val id: String,
+    val username: String,
+    val avatarUrl: String? = null,
+)
+
+@Serializable
+data class UserSearchResponse(
+    val data: List<UserSearchResultDto>,
+    val total: Long,
+    val page: Int,
+    val pageSize: Int,
+)
+
 // Game Stats
 
 @Serializable

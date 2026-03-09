@@ -22,9 +22,17 @@ vi.mock("@/hooks/use-shared-sessions", () => ({
 
 vi.mock("@/hooks/use-social", () => ({
   useSearchUsers: vi.fn(() => ({
+    data: { data: [], total: 0, page: 1, pageSize: 10 },
+    isLoading: false,
+  })),
+  useRecentPartners: vi.fn(() => ({
     data: [],
     isLoading: false,
   })),
+}));
+
+vi.mock("@/hooks/use-debounced-value", () => ({
+  useDebouncedValue: vi.fn((value: string) => value),
 }));
 
 vi.mock("@/components/ui", async () => {

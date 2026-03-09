@@ -64,6 +64,7 @@ val commonModule = module {
     single<CollectionRepository> { CollectionRepositoryImpl(get()) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<NetplayRepository> { NetplayRepositoryImpl(get()) }
+    single<UserRepository> { UserRepositoryImpl(get()) }
     single<ChallengeRepository> { ChallengeRepositoryImpl(get()) }
     single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
@@ -240,6 +241,7 @@ val commonModule = module {
     factory {
         SharedSessionDetailViewModel(
             sharedSessionRepository = get(),
+            userRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
@@ -257,6 +259,7 @@ val commonModule = module {
         NetplayLobbyViewModel(
             netplayRepository = get(),
             authRepository = get(),
+            userRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

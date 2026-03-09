@@ -3,6 +3,9 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.domain.model.SharedSessionDetail
 import com.spela.player.domain.model.SharedSessionMember
 import com.spela.player.domain.model.SharedSessionSave
+import com.spela.player.domain.model.UserSearchResult
+import com.spela.player.domain.repository.UserRepository
+import com.spela.player.domain.repository.UserSearchPage
 import com.spela.player.presentation.intent.SharedSessionDetailIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -27,11 +30,13 @@ class SharedSessionDetailViewModelTest {
     }
 
     private lateinit var fakeRepo: FakeSharedSessionRepo
+    private lateinit var fakeUserRepo: FakeUserRepo
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeSharedSessionRepo()
+        fakeUserRepo = FakeUserRepo()
     }
 
     @AfterTest
@@ -43,6 +48,7 @@ class SharedSessionDetailViewModelTest {
         val scope = CoroutineScope(testDispatcher)
         return SharedSessionDetailViewModel(
             sharedSessionRepository = fakeRepo,
+            userRepository = fakeUserRepo,
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -307,4 +313,12 @@ class SharedSessionDetailViewModelTest {
         vm.onIntent(SharedSessionDetailIntent.DismissSuccess)
         assertNull(vm.state.value.successMessage)
     }
+}
+
+private class FakeUserRepo : UserRepository {
+    override suspend fun searchUsers(query: String, page: Int, pageSize: Int): Result<UserSearchPage> =
+        Result.success(UserSearchPage(data = emptyList(), total = 0, page = page, pageSize = pageSize))
+
+    override suspend fun getRecentPartners(): Result<List<UserSearchResult>> =
+        Result.success(emptyList())
 }
