@@ -104,8 +104,16 @@ fun SecondaryScreenContent(
         label = "burnInAlpha",
     )
 
+    val initialPage = remember(state.defaultSecondScreenPage) {
+        when (state.defaultSecondScreenPage) {
+            "controls" -> PAGE_CONTROLS
+            "dashboard" -> PAGE_DASHBOARD
+            "save_slots" -> PAGE_SAVE_SLOTS
+            else -> PAGE_ART
+        }
+    }
     val pagerState = rememberPagerState(
-        initialPage = PAGE_ART,
+        initialPage = initialPage,
         pageCount = { PAGE_COUNT },
     )
 
@@ -201,6 +209,7 @@ fun SecondaryScreenContent(
                                 activeSlot = state.activeSlot,
                                 hasCheats = state.hasCheats,
                                 enabledCheatCount = state.enabledCheatCount,
+                                cheats = state.cheats,
                                 isFastForward = state.isFastForward,
                                 rewindEnabled = state.rewindEnabled,
                                 onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
@@ -208,13 +217,23 @@ fun SecondaryScreenContent(
                                 onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
                                 onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
                                 onRewind = { viewModel.onIntent(EmulationIntent.ToggleRewind) },
+                                onToggleCheat = { cheatId, enabled ->
+                                    viewModel.onIntent(EmulationIntent.ToggleCheatInGame(cheatId, enabled))
+                                },
                             )
                         }
                         PAGE_SAVE_SLOTS -> {
                             SecondarySaveSlotsPage(
                                 activeSlot = state.activeSlot,
+                                saveSlots = state.saveSlots,
                                 onSelectSlot = { slot ->
                                     viewModel.onIntent(EmulationIntent.SelectSlot(slot))
+                                },
+                                onSaveToSlot = { slot ->
+                                    viewModel.onIntent(EmulationIntent.SaveToSlot(slot))
+                                },
+                                onLoadFromSlot = { slot ->
+                                    viewModel.onIntent(EmulationIntent.LoadFromSlot(slot))
                                 },
                             )
                         }

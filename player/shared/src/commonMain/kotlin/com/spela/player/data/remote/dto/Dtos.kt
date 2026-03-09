@@ -176,6 +176,7 @@ data class UserPreferencesDto(
     val selectedKeyMapping: String = "default",
     val customKeyMapping: Map<String, String> = emptyMap(),
     val consoleKeyMappings: Map<String, ConsoleKeyMappingDto> = emptyMap(),
+    val defaultSecondScreenPage: String = "art",
 )
 
 @Serializable
@@ -189,6 +190,7 @@ data class UpdatePreferencesRequest(
     val selectedKeyMapping: String? = null,
     val customKeyMapping: Map<String, String>? = null,
     val consoleKeyMappings: Map<String, ConsoleKeyMappingDto>? = null,
+    val defaultSecondScreenPage: String? = null,
 )
 
 // Devices

@@ -590,6 +590,7 @@ class FakePreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        defaultSecondScreenPage: String?,
     ): Result<UserPreferences> = Result.success(UserPreferences())
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
     override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
@@ -1134,6 +1135,7 @@ class FakeSessionRepository : SessionRepository {
     var sessions: MutableList<GameSession> = mutableListOf()
     private val sessionSaves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
+    private val slotSaves = mutableMapOf<String, ByteArray>() // key: "$sessionId:$slot"
     private val sram = mutableMapOf<String, ByteArray>()
     private val sessionCheats = mutableMapOf<String, SessionCheatConfig>()
     private var nextId = 1
@@ -1207,6 +1209,26 @@ class FakeSessionRepository : SessionRepository {
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> =
         autoSaves[sessionId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No auto-save"))
+
+    override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
+        val key = "$sessionId:$slot"
+        slotSaves[key] = data
+        val save = SaveState(
+            id = (sessionSaves[sessionId]?.size?.toLong() ?: 0L) + 1,
+            gameId = 0,
+            name = "Slot $slot",
+            isAuto = false,
+            slot = slot,
+        )
+        sessionSaves.getOrPut(sessionId) { mutableListOf() }.add(save)
+        return Result.success(save)
+    }
+
+    override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> {
+        val key = "$sessionId:$slot"
+        return slotSaves[key]?.let { Result.success(it) }
+            ?: Result.failure(Exception("No save in slot $slot"))
+    }
 
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> {
         sram[sessionId] = data

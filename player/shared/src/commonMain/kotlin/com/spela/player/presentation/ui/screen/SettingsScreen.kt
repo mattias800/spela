@@ -308,6 +308,32 @@ fun SettingsScreen(
                 }
             }
 
+            // Second Screen section
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Second Screen") }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SpSpacing.Small),
+                    ) {
+                        SecondScreenPageOption.entries.forEachIndexed { index, option ->
+                            SpRadioOption(
+                                title = option.displayName,
+                                description = option.description,
+                                isSelected = state.defaultSecondScreenPage == option.apiId,
+                                onClick = { viewModel.onIntent(SettingsIntent.SelectDefaultSecondScreenPage(option.apiId)) },
+                            )
+                            if (index < SecondScreenPageOption.entries.size - 1) {
+                                SettingsDivider()
+                            }
+                        }
+                    }
+                }
+            }
+
             // Emulation section
             item { Spacer(Modifier.height(SpSpacing.Medium)) }
             item { SettingsSectionHeader(title = "Emulation") }
@@ -647,4 +673,15 @@ internal enum class ThemeOption(
     NINTENDO_COLORFUL("nintendo-colorful", "Nintendo Colorful", "Bright, joyful, retro"),
     OCEAN_DARK("ocean-dark", "Ocean Dark", "Deep blue dark theme"),
     SUNSET_WARM("sunset-warm", "Sunset Warm", "Warm amber light theme"),
+}
+
+internal enum class SecondScreenPageOption(
+    val apiId: String,
+    val displayName: String,
+    val description: String,
+) {
+    ART("art", "Art Display", "Game artwork from SteamGridDB"),
+    CONTROLS("controls", "Controls", "Touch gamepad controls"),
+    DASHBOARD("dashboard", "Dashboard", "Stats and quick actions"),
+    SAVE_SLOTS("save_slots", "Save Slots", "Visual save slot management"),
 }

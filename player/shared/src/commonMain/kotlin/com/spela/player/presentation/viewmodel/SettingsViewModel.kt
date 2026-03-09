@@ -57,6 +57,7 @@ data class SettingsState(
     val scrollIndex: Int = 0,
     val scrollOffset: Int = 0,
     val orientationLock: String = "auto",
+    val defaultSecondScreenPage: String = "art",
 )
 
 sealed interface SettingsIntent {
@@ -91,6 +92,7 @@ sealed interface SettingsIntent {
     data class SaveScrollPosition(val index: Int, val offset: Int) : SettingsIntent
     data object SyncNow : SettingsIntent
     data class SetOrientationLock(val mode: String) : SettingsIntent
+    data class SelectDefaultSecondScreenPage(val page: String) : SettingsIntent
 }
 
 class SettingsViewModel(
@@ -176,6 +178,7 @@ class SettingsViewModel(
                 _state.update { it.copy(scrollIndex = intent.index, scrollOffset = intent.offset) }
             SettingsIntent.SyncNow -> syncNow()
             is SettingsIntent.SetOrientationLock -> setOrientationLock(intent.mode)
+            is SettingsIntent.SelectDefaultSecondScreenPage -> selectDefaultSecondScreenPage(intent.page)
         }
     }
 
@@ -236,6 +239,7 @@ class SettingsViewModel(
                         selectedShader = prefs.selectedShader,
                         selectedTheme = prefs.selectedTheme,
                         consoleShaders = prefs.consoleShaders,
+                        defaultSecondScreenPage = prefs.defaultSecondScreenPage,
                     )
                 }
             }
@@ -285,6 +289,16 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             preferencesRepository.updatePreferences(selectedTheme = theme).onFailure {
                 _state.update { it.copy(selectedTheme = previous) }
+            }
+        }
+    }
+
+    private fun selectDefaultSecondScreenPage(page: String) {
+        val previous = _state.value.defaultSecondScreenPage
+        _state.update { it.copy(defaultSecondScreenPage = page) }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(defaultSecondScreenPage = page).onFailure {
+                _state.update { it.copy(defaultSecondScreenPage = previous) }
             }
         }
     }

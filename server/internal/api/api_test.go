@@ -1028,6 +1028,85 @@ func TestUpdatePreferences_ThemeSelection(t *testing.T) {
 	assert.Equal(t, true, prefs["showPerformanceOverlay"])
 }
 
+func TestGetPreferences_DefaultSecondScreenPage(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &prefs)
+	require.NoError(t, err)
+	assert.Equal(t, "art", prefs["defaultSecondScreenPage"])
+}
+
+func TestUpdatePreferences_DefaultSecondScreenPage(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Test each valid value
+	for _, value := range []string{"art", "controls", "dashboard", "save_slots"} {
+		body, _ := json.Marshal(map[string]interface{}{
+			"defaultSecondScreenPage": value,
+		})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code, "should accept value %q", value)
+
+		var prefs map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &prefs)
+		assert.Equal(t, value, prefs["defaultSecondScreenPage"])
+
+		// GET to verify persistence
+		w = httptest.NewRecorder()
+		req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		json.Unmarshal(w.Body.Bytes(), &prefs)
+		assert.Equal(t, value, prefs["defaultSecondScreenPage"])
+	}
+}
+
+func TestUpdatePreferences_DefaultSecondScreenPage_InvalidValue(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	for _, value := range []string{"invalid", "ART", "Controls", "", "game_info"} {
+		body, _ := json.Marshal(map[string]interface{}{
+			"defaultSecondScreenPage": value,
+		})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code, "should reject value %q", value)
+	}
+
+	// Verify the preference was not changed from default
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assert.Equal(t, "art", prefs["defaultSecondScreenPage"])
+}
+
 func TestGetOnlineUsers_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)

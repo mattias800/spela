@@ -170,18 +170,19 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 
 // preferencesResponse is the JSON shape for the preferences endpoints.
 type preferencesResponse struct {
-	ShowPerformanceOverlay bool                           `json:"showPerformanceOverlay"`
-	AutoSaveEnabled        bool                           `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled    bool                           `json:"autoLoadSaveEnabled"`
-	SelectedShader         string                         `json:"selectedShader"`
-	SelectedTheme          string                         `json:"selectedTheme"`
-	ConsoleShaders         map[string]string              `json:"consoleShaders"`
-	SelectedKeyMapping     string                         `json:"selectedKeyMapping"`
-	CustomKeyMapping       map[string]string              `json:"customKeyMapping"`
-	ConsoleKeyMappings     map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
-	RALinked               bool                           `json:"raLinked"`
-	RAUsername             string                         `json:"raUsername"`
-	RAHardcoreEnabled      bool                           `json:"raHardcoreEnabled"`
+	ShowPerformanceOverlay  bool                           `json:"showPerformanceOverlay"`
+	AutoSaveEnabled         bool                           `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled     bool                           `json:"autoLoadSaveEnabled"`
+	SelectedShader          string                         `json:"selectedShader"`
+	SelectedTheme           string                         `json:"selectedTheme"`
+	DefaultSecondScreenPage string                         `json:"defaultSecondScreenPage"`
+	ConsoleShaders          map[string]string              `json:"consoleShaders"`
+	SelectedKeyMapping      string                         `json:"selectedKeyMapping"`
+	CustomKeyMapping        map[string]string              `json:"customKeyMapping"`
+	ConsoleKeyMappings      map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
+	RALinked                bool                           `json:"raLinked"`
+	RAUsername              string                         `json:"raUsername"`
+	RAHardcoreEnabled       bool                           `json:"raHardcoreEnabled"`
 }
 
 type consoleKeyMappingDTO struct {
@@ -213,22 +214,28 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		selectedTheme = "default-dark"
 	}
 
+	defaultSecondScreenPage := user.DefaultSecondScreenPage
+	if defaultSecondScreenPage == "" {
+		defaultSecondScreenPage = "art"
+	}
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
 	c.JSON(http.StatusOK, preferencesResponse{
-		ShowPerformanceOverlay: user.ShowPerfOverlay,
-		AutoSaveEnabled:        user.AutoSaveEnabled,
-		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
-		SelectedShader:         user.SelectedShader,
-		SelectedTheme:          selectedTheme,
-		ConsoleShaders:         consoleShaders,
-		SelectedKeyMapping:     selectedKeyMapping,
-		CustomKeyMapping:       customKeyMapping,
-		ConsoleKeyMappings:     consoleKeyMappings,
-		RALinked:               raLinked,
-		RAUsername:             raCred.RAUsername,
-		RAHardcoreEnabled:      raCred.HardcoreEnabled,
+		ShowPerformanceOverlay:  user.ShowPerfOverlay,
+		AutoSaveEnabled:         user.AutoSaveEnabled,
+		AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
+		SelectedShader:          user.SelectedShader,
+		SelectedTheme:           selectedTheme,
+		DefaultSecondScreenPage: defaultSecondScreenPage,
+		ConsoleShaders:          consoleShaders,
+		SelectedKeyMapping:      selectedKeyMapping,
+		CustomKeyMapping:        customKeyMapping,
+		ConsoleKeyMappings:      consoleKeyMappings,
+		RALinked:                raLinked,
+		RAUsername:              raCred.RAUsername,
+		RAHardcoreEnabled:       raCred.HardcoreEnabled,
 	})
 }
 
@@ -243,15 +250,16 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 
 	var req struct {
-		ShowPerformanceOverlay *bool                            `json:"showPerformanceOverlay"`
-		AutoSaveEnabled        *bool                            `json:"autoSaveEnabled"`
-		AutoLoadSaveEnabled    *bool                            `json:"autoLoadSaveEnabled"`
-		SelectedShader         *string                          `json:"selectedShader"`
-		SelectedTheme          *string                          `json:"selectedTheme"`
-		ConsoleShaders         map[string]string                `json:"consoleShaders"`
-		SelectedKeyMapping     *string                          `json:"selectedKeyMapping"`
-		CustomKeyMapping       map[string]string                `json:"customKeyMapping"`
-		ConsoleKeyMappings     map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
+		ShowPerformanceOverlay  *bool                            `json:"showPerformanceOverlay"`
+		AutoSaveEnabled         *bool                            `json:"autoSaveEnabled"`
+		AutoLoadSaveEnabled     *bool                            `json:"autoLoadSaveEnabled"`
+		SelectedShader          *string                          `json:"selectedShader"`
+		SelectedTheme           *string                          `json:"selectedTheme"`
+		DefaultSecondScreenPage *string                          `json:"defaultSecondScreenPage"`
+		ConsoleShaders          map[string]string                `json:"consoleShaders"`
+		SelectedKeyMapping      *string                          `json:"selectedKeyMapping"`
+		CustomKeyMapping        map[string]string                `json:"customKeyMapping"`
+		ConsoleKeyMappings      map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -273,6 +281,14 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 	if req.SelectedTheme != nil {
 		user.SelectedTheme = *req.SelectedTheme
+	}
+	if req.DefaultSecondScreenPage != nil {
+		valid := map[string]bool{"art": true, "controls": true, "dashboard": true, "save_slots": true}
+		if !valid[*req.DefaultSecondScreenPage] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid defaultSecondScreenPage value; must be one of: art, controls, dashboard, save_slots"})
+			return
+		}
+		user.DefaultSecondScreenPage = *req.DefaultSecondScreenPage
 	}
 	if req.SelectedKeyMapping != nil {
 		user.SelectedKeyMapping = *req.SelectedKeyMapping
@@ -366,22 +382,28 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		selectedTheme = "default-dark"
 	}
 
+	defaultSecondScreenPage := user.DefaultSecondScreenPage
+	if defaultSecondScreenPage == "" {
+		defaultSecondScreenPage = "art"
+	}
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
 	c.JSON(http.StatusOK, preferencesResponse{
-		ShowPerformanceOverlay: user.ShowPerfOverlay,
-		AutoSaveEnabled:        user.AutoSaveEnabled,
-		AutoLoadSaveEnabled:    user.AutoLoadSaveEnabled,
-		SelectedShader:         user.SelectedShader,
-		SelectedTheme:          selectedTheme,
-		ConsoleShaders:         consoleShaders,
-		SelectedKeyMapping:     selectedKeyMapping,
-		CustomKeyMapping:       customKeyMapping,
-		ConsoleKeyMappings:     consoleKeyMappings,
-		RALinked:               raLinked,
-		RAUsername:             raCred.RAUsername,
-		RAHardcoreEnabled:      raCred.HardcoreEnabled,
+		ShowPerformanceOverlay:  user.ShowPerfOverlay,
+		AutoSaveEnabled:         user.AutoSaveEnabled,
+		AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
+		SelectedShader:          user.SelectedShader,
+		SelectedTheme:           selectedTheme,
+		DefaultSecondScreenPage: defaultSecondScreenPage,
+		ConsoleShaders:          consoleShaders,
+		SelectedKeyMapping:      selectedKeyMapping,
+		CustomKeyMapping:        customKeyMapping,
+		ConsoleKeyMappings:      consoleKeyMappings,
+		RALinked:                raLinked,
+		RAUsername:              raCred.RAUsername,
+		RAHardcoreEnabled:       raCred.HardcoreEnabled,
 	})
 }
 

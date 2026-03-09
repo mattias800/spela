@@ -251,6 +251,7 @@ class StubPreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        defaultSecondScreenPage: String?,
     ) = Result.success(UserPreferences())
 
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
