@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Storage manages file operations for ROMs, saves, cores, and images.
@@ -492,8 +493,13 @@ func (s *Storage) WriteSessionSRAM(sessionID uint, filename string, data io.Read
 }
 
 // WriteSessionScreenshot stores a session screenshot image.
+// A Unix timestamp is embedded in the filename so each upload produces a unique
+// URL, preventing browsers from serving a stale cached version.
 func (s *Storage) WriteSessionScreenshot(sessionID uint, filename string, data io.Reader) (string, error) {
-	subpath := fmt.Sprintf("save-screenshots/sessions/session_%d/%s", sessionID, sanitizeFilename(filename))
+	ext := filepath.Ext(filename)
+	base := strings.TrimSuffix(sanitizeFilename(filename), ext)
+	timestamped := fmt.Sprintf("%s_%d%s", base, time.Now().Unix(), ext)
+	subpath := fmt.Sprintf("save-screenshots/sessions/session_%d/%s", sessionID, timestamped)
 	return s.WriteImage(subpath, data)
 }
 
