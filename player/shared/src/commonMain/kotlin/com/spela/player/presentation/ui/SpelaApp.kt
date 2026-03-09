@@ -544,6 +544,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(targetGameId))
                                         )
                                     },
+                                    onNavigateToUser = { userId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
                                 )
                             }
 

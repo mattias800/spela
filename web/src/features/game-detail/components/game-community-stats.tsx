@@ -135,6 +135,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
                   isCurrentUser={isCurrentUser}
                   username={player.username}
                   avatarUrl={player.avatarUrl}
+                  href={`/users/${player.userId}`}
                   rank={
                     <span
                       className={cn(
