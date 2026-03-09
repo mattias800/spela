@@ -33,6 +33,9 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+private val ACTION_BUTTON_SIZE = 48.dp
+private val ACTION_ICON_SIZE = 24.dp
+
 /**
  * Dashboard page for the secondary screen companion.
  *
@@ -101,8 +104,8 @@ fun SecondaryDashboardPage(
                 icon = Icons.Filled.Save,
                 label = "Save",
                 onClick = onSave,
-                buttonSize = 48.dp,
-                iconSize = 24.dp,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
                 showLabel = false,
                 useFocusRing = false,
             )
@@ -110,8 +113,8 @@ fun SecondaryDashboardPage(
                 icon = Icons.Filled.FolderOpen,
                 label = "Load",
                 onClick = onLoad,
-                buttonSize = 48.dp,
-                iconSize = 24.dp,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
                 showLabel = false,
                 useFocusRing = false,
             )
@@ -119,8 +122,8 @@ fun SecondaryDashboardPage(
                 icon = Icons.Filled.CameraAlt,
                 label = "Screenshot",
                 onClick = onScreenshot,
-                buttonSize = 48.dp,
-                iconSize = 24.dp,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
                 showLabel = false,
                 useFocusRing = false,
             )
@@ -129,8 +132,8 @@ fun SecondaryDashboardPage(
                 label = if (isFastForward) "Normal" else "Fast",
                 isActive = isFastForward,
                 onClick = onToggleFastForward,
-                buttonSize = 48.dp,
-                iconSize = 24.dp,
+                buttonSize = ACTION_BUTTON_SIZE,
+                iconSize = ACTION_ICON_SIZE,
                 showLabel = false,
                 useFocusRing = false,
             )

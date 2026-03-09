@@ -710,6 +710,9 @@ func (s *Scraper) ConfigureSteamGridDB(apiKey string) {
 		s.SteamGridDBClient = nil
 		return
 	}
+	if s.SteamGridDBClient != nil && s.SteamGridDBClient.APIKey == apiKey {
+		return
+	}
 	s.SteamGridDBClient = NewSteamGridDBClient(apiKey)
 }
 

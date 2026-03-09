@@ -59,6 +59,10 @@ private const val PAGE_ART = 0
 private const val PAGE_CONTROLS = 1
 private const val PAGE_DASHBOARD = 2
 private const val PAGE_SAVE_SLOTS = 3
+private val GRADIENT_LINE_HEIGHT = 2.dp
+private val DOT_SIZE = 6.dp
+private val DOT_SPACING = 4.dp
+private val PAGE_NAMES = arrayOf("Art", "Controls", "Dashboard", "Save Slots")
 
 /**
  * Content composable displayed on the secondary screen during gameplay.
@@ -225,11 +229,12 @@ fun SecondaryScreenContent(
             }
         }
 
-        // Paused overlay
+        // Paused overlay with scrim for readability over art page
         if (state.isPaused) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(SpColor.Scrim)
                     .graphicsLayer { alpha = burnInAlpha },
                 contentAlignment = Alignment.Center,
             ) {
@@ -287,7 +292,7 @@ private fun CompanionHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
+                .height(GRADIENT_LINE_HEIGHT)
                 .background(
                     Brush.horizontalGradient(listOf(gradientFrom, gradientTo))
                 ),
@@ -347,15 +352,16 @@ private fun PageIndicatorDots(
             val isActive = pagerState.currentPage == index
             val color = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary.copy(alpha = 0.4f)
             if (index > 0) {
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(DOT_SPACING))
             }
+            val pageName = PAGE_NAMES.getOrElse(index) { "Page" }
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(DOT_SIZE)
                     .clip(CircleShape)
                     .background(color)
                     .semantics {
-                        contentDescription = if (isActive) "Page ${index + 1} of $pageCount, active" else "Page ${index + 1} of $pageCount"
+                        contentDescription = if (isActive) "$pageName, ${index + 1} of $pageCount, active" else "$pageName, ${index + 1} of $pageCount"
                     },
             )
         }

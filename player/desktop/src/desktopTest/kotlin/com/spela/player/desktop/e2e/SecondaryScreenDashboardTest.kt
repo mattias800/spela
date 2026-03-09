@@ -245,16 +245,16 @@ class SecondaryScreenDashboardTest {
         val harness = createHarnessWithNesGame()
         startGameAndRenderSecondary(harness)
 
-        // Page 1 should be active (initial page is Art = page 0, displayed as "Page 1 of 4")
-        onNodeWithContentDescription("Page 1 of 4, active")
+        // Art page should be active (initial page)
+        onNodeWithContentDescription("Art, 1 of 4, active")
             .assertExists()
 
-        // Pages 2, 3, 4 should be present but not active
-        onNodeWithContentDescription("Page 2 of 4")
+        // Other pages should be present but not active
+        onNodeWithContentDescription("Controls, 2 of 4")
             .assertExists()
-        onNodeWithContentDescription("Page 3 of 4")
+        onNodeWithContentDescription("Dashboard, 3 of 4")
             .assertExists()
-        onNodeWithContentDescription("Page 4 of 4")
+        onNodeWithContentDescription("Save Slots, 4 of 4")
             .assertExists()
     }
 
