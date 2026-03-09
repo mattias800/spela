@@ -581,10 +581,30 @@ experience that scales to tens of thousands of games. Beautiful, personalized, a
 - **Player:** New Explore tab with matching sections and screens
 - **Tests:** Full coverage per phase — unit + E2E for backend, web, and player
 
-## Open Questions
+## Decisions
 
-- [ ] Should Explore replace the current Dashboard/Home, or live alongside it?
-- [ ] Should we gate the Explore page behind a minimum library size? (e.g., only show when >100 games)
-- [ ] Admin curation: how much control should the admin have over featured content?
-- [ ] IGDB rate limiting: do we need to batch/throttle the Phase 2 enrichment backfill?
-- [ ] Should franchise pages show games NOT in the library (as "missing from your collection")?
+1. **Explore lives alongside Dashboard/Home.** Keep the existing Dashboard for now. We'll likely
+   replace it later, but for now Explore is a new tab/route.
+
+2. **No library size gate.** Explore is available to everyone regardless of library size. We may
+   revisit this later, but for now keep it open.
+
+3. **No admin curation.** Zero admin burden — the Explore page is fully algorithmic. Set up the
+   server and it just works. Featured content is auto-selected (highest-rated with hero art, etc.).
+
+4. **Respect IGDB/SteamGridDB rate limits. Cache everything locally.** The enrichment backfill
+   (Phase 2) must be throttled to stay within IGDB's 4 req/sec limit. All IGDB and SteamGridDB
+   data must be stored locally so the Explore page works even when external APIs are down. Data
+   may be stale, but the feature must never break due to an external service outage.
+
+5. **Always show games not in the library, but clearly indicate them.** Franchise pages, top-rated
+   lists, and similar-games rows should include games the user doesn't own. These must be visually
+   distinct — use a consistent design system approach:
+   - **Web:** A shared component prop (e.g., `missingInLibrary`) that the design system uses to
+     render the distinction (dimmed art, overlay icon, badge — the design system decides how).
+   - **Player app:** An equivalent `Sp*` component parameter.
+   - **Consistency is key:** The same visual treatment everywhere, decided by the shared component
+     library, not by individual features or screens.
+   - The existing "top rated" list on the console screen already dims missing games — we should
+     unify this with the new shared approach and make it clearer to users what "missing" means
+     (e.g., a small icon overlay or "Not in library" label).
