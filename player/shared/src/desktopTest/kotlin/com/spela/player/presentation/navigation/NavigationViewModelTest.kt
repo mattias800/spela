@@ -182,6 +182,9 @@ class NavigationViewModelTest {
         assertEquals(SpScreen.Home, vm.state.value.currentScreen)
 
         vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Explore, vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
 
         vm.onIntent(NavigationIntent.NextSection)
@@ -250,6 +253,7 @@ class NavigationViewModelTest {
 
         // Navigate to Collections via section cycling (empty backstack)
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.NextSection) // Explore
         vm.onIntent(NavigationIntent.NextSection) // Consoles
         vm.onIntent(NavigationIntent.NextSection) // Collections
         assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
