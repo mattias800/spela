@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type {
   FeaturedGame,
+  FeaturedSeries,
+  SeriesDetail,
+  GameSeriesLink,
+  GameFranchiseLink,
   ExploreRowsResponse,
   Theme,
   Keyword,
@@ -63,5 +67,37 @@ export function useKeywordGames(
         `/keywords/${keywordId}/games?page=${page}&pageSize=${pageSize}`,
       ),
     enabled: !!keywordId,
+  });
+}
+
+export function useFeaturedSeries() {
+  return useQuery({
+    queryKey: ["explore", "series", "featured"],
+    queryFn: () => api.get<FeaturedSeries[]>("/explore/series/featured"),
+  });
+}
+
+export function useSeriesDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ["series", id],
+    queryFn: () => api.get<SeriesDetail>(`/series/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useGameSeries(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["games", gameId, "series"],
+    queryFn: () => api.get<GameSeriesLink[]>(`/games/${gameId}/series`),
+    enabled: !!gameId,
+  });
+}
+
+export function useGameFranchises(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["games", gameId, "franchises"],
+    queryFn: () =>
+      api.get<GameFranchiseLink[]>(`/games/${gameId}/franchises`),
+    enabled: !!gameId,
   });
 }

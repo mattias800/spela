@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, Game, ExploreRowsResponse, Theme, Keyword } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -11,6 +11,7 @@ vi.mock("@/hooks/use-explore", () => ({
   useExploreRows: vi.fn(),
   useThemes: vi.fn(),
   useKeywords: vi.fn(),
+  useFeaturedSeries: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-games", () => ({
@@ -29,12 +30,13 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
 const mockUseThemes = useThemes as ReturnType<typeof vi.fn>;
 const mockUseKeywords = useKeywords as ReturnType<typeof vi.fn>;
+const mockUseFeaturedSeries = useFeaturedSeries as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -89,6 +91,11 @@ const mockThemes: Theme[] = [
 const mockKeywords: Keyword[] = [
   { id: "100", name: "Time Travel", gameCount: 15 },
   { id: "101", name: "Post-Apocalyptic", gameCount: 12 },
+];
+
+const mockFeaturedSeries: FeaturedSeries[] = [
+  { id: 1, name: "Super Mario", libraryGames: 5, totalGames: 12, consoleCount: 3, heroUrl: "/hero/mario.jpg" },
+  { id: 2, name: "The Legend of Zelda", libraryGames: 4, totalGames: 10, consoleCount: 2, heroUrl: "/hero/zelda.jpg" },
 ];
 
 const mockRows: ExploreRowsResponse = {
@@ -164,6 +171,10 @@ describe("ExplorePage", () => {
     });
     mockUseKeywords.mockReturnValue({
       data: mockKeywords,
+      isLoading: false,
+    });
+    mockUseFeaturedSeries.mockReturnValue({
+      data: mockFeaturedSeries,
       isLoading: false,
     });
   });
@@ -330,5 +341,30 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("keyword-chips-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the series shelf section", () => {
+    renderPage();
+    expect(screen.getByTestId("series-shelf")).toBeInTheDocument();
+    expect(screen.getByText("Super Mario")).toBeInTheDocument();
+    expect(screen.getByText("The Legend of Zelda")).toBeInTheDocument();
+  });
+
+  it("hides series shelf when no featured series available", () => {
+    mockUseFeaturedSeries.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("series-shelf")).not.toBeInTheDocument();
+  });
+
+  it("shows series shelf skeleton while loading", () => {
+    mockUseFeaturedSeries.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("series-shelf-skeleton")).toBeInTheDocument();
   });
 });

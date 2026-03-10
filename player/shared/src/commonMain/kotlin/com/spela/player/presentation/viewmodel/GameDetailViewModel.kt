@@ -12,6 +12,7 @@ import com.spela.player.domain.usecase.TogglePlayLaterUseCase
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.CheatRepository
+import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.RatingRepository
 import com.spela.player.domain.repository.SharedSessionRepository
@@ -51,6 +52,7 @@ class GameDetailViewModel(
     private val biosRepository: BiosRepository? = null,
     private val cheatRepository: CheatRepository? = null,
     private val sessionRepository: SessionRepository? = null,
+    private val exploreRepository: ExploreRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameDetailState())
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
@@ -167,6 +169,8 @@ class GameDetailViewModel(
         loadReviews(gameId)
         loadSimilarGames(gameId)
         loadDeveloperGames(gameId)
+        loadGameSeriesLinks(gameId)
+        loadGameFranchiseLinks(gameId)
     }
 
     private fun loadBiosStatus() {
@@ -676,6 +680,30 @@ class GameDetailViewModel(
                 onFailure = {
                     _state.update { it.copy(isLoadingDeveloperGames = false) }
                 },
+            )
+        }
+    }
+
+    private fun loadGameSeriesLinks(gameId: String) {
+        val repo = exploreRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.getGameSeries(gameId).fold(
+                onSuccess = { series ->
+                    _state.update { it.copy(gameSeries = series) }
+                },
+                onFailure = { /* silently ignore — series links are optional */ },
+            )
+        }
+    }
+
+    private fun loadGameFranchiseLinks(gameId: String) {
+        val repo = exploreRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.getGameFranchises(gameId).fold(
+                onSuccess = { franchises ->
+                    _state.update { it.copy(gameFranchises = franchises) }
+                },
+                onFailure = { /* silently ignore — franchise links are optional */ },
             )
         }
     }

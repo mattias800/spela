@@ -2,8 +2,10 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
+import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.util.DispatcherProvider
@@ -20,14 +22,16 @@ data class ExploreState(
     val rows: List<ExploreRow> = emptyList(),
     val themes: List<Theme> = emptyList(),
     val keywords: List<Keyword> = emptyList(),
+    val featuredSeries: List<FeaturedSeries> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
     val isLoadingKeywords: Boolean = false,
+    val isLoadingFeaturedSeries: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -46,6 +50,26 @@ data class KeywordDetailState(
     val error: String? = null,
 )
 
+data class SeriesDetailState(
+    val seriesId: String = "",
+    val seriesName: String = "",
+    val detail: SeriesDetail? = null,
+    val consoleFilter: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null,
+) {
+    val filteredGames: List<com.spela.player.domain.model.SeriesGame>
+        get() {
+            val games = detail?.games ?: return emptyList()
+            val filtered = if (consoleFilter != null) {
+                games.filter { it.consoleAbbreviation == consoleFilter }
+            } else {
+                games
+            }
+            return filtered.sortedWith(compareBy(nullsLast()) { it.releaseDate })
+        }
+}
+
 class ExploreViewModel(
     private val exploreRepository: ExploreRepository,
     private val dispatchers: DispatcherProvider,
@@ -60,18 +84,24 @@ class ExploreViewModel(
     private val _keywordDetailState = MutableStateFlow(KeywordDetailState())
     val keywordDetailState: StateFlow<KeywordDetailState> = _keywordDetailState.asStateFlow()
 
+    private val _seriesDetailState = MutableStateFlow(SeriesDetailState())
+    val seriesDetailState: StateFlow<SeriesDetailState> = _seriesDetailState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
     private var keywordsJob: Job? = null
     private var themeDetailJob: Job? = null
     private var keywordDetailJob: Job? = null
+    private var featuredSeriesJob: Job? = null
+    private var seriesDetailJob: Job? = null
 
     fun load() {
         loadFeatured()
         loadRows()
         loadThemes()
         loadKeywords()
+        loadFeaturedSeries()
     }
 
     fun dismissError() {
@@ -118,6 +148,31 @@ class ExploreViewModel(
 
     fun dismissKeywordDetailError() {
         _keywordDetailState.update { it.copy(error = null) }
+    }
+
+    fun loadSeriesDetail(seriesId: String, seriesName: String) {
+        seriesDetailJob?.cancel()
+        _seriesDetailState.update {
+            SeriesDetailState(seriesId = seriesId, seriesName = seriesName, isLoading = true)
+        }
+        seriesDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getSeriesDetail(seriesId).fold(
+                onSuccess = { detail ->
+                    _seriesDetailState.update { it.copy(detail = detail, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _seriesDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun setSeriesConsoleFilter(abbreviation: String?) {
+        _seriesDetailState.update { it.copy(consoleFilter = abbreviation) }
+    }
+
+    fun dismissSeriesDetailError() {
+        _seriesDetailState.update { it.copy(error = null) }
     }
 
     private fun loadFeatured() {
@@ -175,6 +230,21 @@ class ExploreViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoadingKeywords = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun loadFeaturedSeries() {
+        if (featuredSeriesJob?.isActive == true) return
+        _state.update { it.copy(isLoadingFeaturedSeries = true) }
+        featuredSeriesJob = scope.launch(dispatchers.io) {
+            exploreRepository.getFeaturedSeries().fold(
+                onSuccess = { series ->
+                    _state.update { it.copy(featuredSeries = series, isLoadingFeaturedSeries = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingFeaturedSeries = false, error = error.message) }
                 },
             )
         }

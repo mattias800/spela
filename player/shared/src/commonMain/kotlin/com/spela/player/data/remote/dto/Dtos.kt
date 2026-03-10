@@ -1047,3 +1047,63 @@ data class KeywordDto(
     val name: String,
     val gameCount: Int = 0,
 )
+
+// Series & Franchise
+
+@Serializable
+data class FeaturedSeriesDto(
+    val id: String,
+    val name: String,
+    val libraryGames: Int = 0,
+    val totalGames: Int = 0,
+    val consoleCount: Int = 0,
+    val heroUrl: String? = null,
+)
+
+@Serializable
+data class SeriesDetailDto(
+    val id: String,
+    val name: String,
+    val heroUrl: String? = null,
+    val consoles: List<SeriesConsoleDto> = emptyList(),
+    val libraryGames: Int = 0,
+    val totalGames: Int = 0,
+    val games: List<SeriesGameDto> = emptyList(),
+)
+
+@Serializable
+data class SeriesConsoleDto(
+    val abbreviation: String,
+    val name: String,
+    val color: String = "#6366f1",
+    val gameCount: Int = 0,
+)
+
+@Serializable
+data class SeriesGameDto(
+    val igdbGameId: Int,
+    val name: String,
+    val inLibrary: Boolean = false,
+    val localGameId: String? = null,
+    val coverUrl: String? = null,
+    val releaseDate: String? = null,
+    val rating: Double = 0.0,
+    val consoleAbbreviation: String? = null,
+    val consoleName: String? = null,
+    val consoleColor: String? = null,
+)
+
+@Serializable
+data class GameSeriesLinkDto(
+    val id: String,
+    val name: String,
+    val totalGames: Int = 0,
+    val libraryGames: Int = 0,
+)
+
+@Serializable
+data class GameFranchiseLinkDto(
+    val id: String,
+    val name: String,
+    val gameCount: Int = 0,
+)

@@ -30,3 +30,55 @@ data class Keyword(
     val name: String,
     val gameCount: Int,
 )
+
+data class FeaturedSeries(
+    val id: String,
+    val name: String,
+    val libraryGames: Int,
+    val totalGames: Int,
+    val consoleCount: Int,
+    val heroUrl: String?,
+)
+
+data class SeriesDetail(
+    val id: String,
+    val name: String,
+    val heroUrl: String?,
+    val consoles: List<SeriesConsole>,
+    val libraryGames: Int,
+    val totalGames: Int,
+    val games: List<SeriesGame>,
+)
+
+data class SeriesConsole(
+    val abbreviation: String,
+    val name: String,
+    val color: String,
+    val gameCount: Int,
+)
+
+data class SeriesGame(
+    val igdbGameId: Int,
+    val name: String,
+    val inLibrary: Boolean,
+    val localGameId: String?,
+    val coverUrl: String?,
+    val releaseDate: String?,
+    val rating: Double,
+    val consoleAbbreviation: String?,
+    val consoleName: String?,
+    val consoleColor: String?,
+)
+
+data class GameSeriesLink(
+    val id: String,
+    val name: String,
+    val totalGames: Int,
+    val libraryGames: Int,
+)
+
+data class GameFranchiseLink(
+    val id: String,
+    val name: String,
+    val gameCount: Int,
+)

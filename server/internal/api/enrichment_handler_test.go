@@ -355,6 +355,118 @@ func TestListSeries_WithData(t *testing.T) {
 	assert.Equal(t, 2, result[0].LibraryGames)
 }
 
+func TestListSeries_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Mario1", 90)
+	game2 := createEnrichTestGame(t, env.database, "Mario2", 85)
+
+	series := db.GameSeries{
+		IGDBCollectionID: 789,
+		Name:             "Super Mario",
+	}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Super Mario Bros.",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "Super Mario Bros. 2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: nil, IGDBGameID: 300, Name: "Super Mario Bros. 3",
+	})
+
+	// Soft-delete game2
+	env.database.Delete(&game2)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/series", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []SeriesListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	require.Len(t, result, 1)
+
+	assert.Equal(t, "Super Mario", result[0].Name)
+	assert.Equal(t, 3, result[0].TotalGames)
+	assert.Equal(t, 1, result[0].LibraryGames) // Only game1, game2 is soft-deleted
+}
+
+func TestListThemes_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Zelda", 90)
+	game2 := createEnrichTestGame(t, env.database, "Mario", 85)
+
+	env.database.Create(&db.GameTheme{GameID: game1.ID, IGDBThemeID: 1, Name: "Fantasy"})
+	env.database.Create(&db.GameTheme{GameID: game2.ID, IGDBThemeID: 1, Name: "Fantasy"})
+
+	// Soft-delete game2
+	env.database.Delete(&game2)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/themes", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var themes []ThemeResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &themes))
+	require.Len(t, themes, 1)
+	assert.Equal(t, 1, themes[0].GameCount) // Only game1
+}
+
+func TestListKeywords_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Zelda", 90)
+	game2 := createEnrichTestGame(t, env.database, "Mario", 85)
+
+	env.database.Create(&db.GameKeyword{GameID: game1.ID, IGDBKeywordID: 100, Name: "open world"})
+	env.database.Create(&db.GameKeyword{GameID: game2.ID, IGDBKeywordID: 100, Name: "open world"})
+
+	// Soft-delete game2
+	env.database.Delete(&game2)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/keywords", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var keywords []KeywordResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &keywords))
+	require.Len(t, keywords, 1)
+	assert.Equal(t, 1, keywords[0].GameCount) // Only game1
+}
+
+func TestListFranchises_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Zelda1", 90)
+	game2 := createEnrichTestGame(t, env.database, "Zelda2", 85)
+
+	env.database.Create(&db.GameFranchise{GameID: game1.ID, IGDBFranchiseID: 100, FranchiseName: "The Legend of Zelda"})
+	env.database.Create(&db.GameFranchise{GameID: game2.ID, IGDBFranchiseID: 100, FranchiseName: "The Legend of Zelda"})
+
+	// Soft-delete game2
+	env.database.Delete(&game2)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/franchises", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var franchises []FranchiseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &franchises))
+	require.Len(t, franchises, 1)
+	assert.Equal(t, 1, franchises[0].GameCount) // Only game1
+}
+
 func TestGetSeriesDetail_Success(t *testing.T) {
 	env := setupEnrichTestEnv(t)
 
@@ -494,6 +606,392 @@ func TestTriggerEnrichMetadata_NoIGDBConfig(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// --- Extended Series Detail tests ---
+
+func TestGetSeriesDetail_ExtendedFields(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	// Create a game on NES console
+	game1 := createEnrichTestGame(t, env.database, "Zelda1", 90)
+	// Update with more fields
+	env.database.Model(&game1).Updates(map[string]interface{}{
+		"release_date": "1986-02-21",
+	})
+
+	// Create second game on SNES console
+	var snesConsole db.Console
+	require.NoError(t, env.database.Where("abbreviation = ?", "SNES").First(&snesConsole).Error)
+	game2 := db.Game{
+		ConsoleID:   snesConsole.ID,
+		Title:       "Zelda2",
+		FileName:    "Zelda2.sfc",
+		FilePath:    "SNES/Zelda2.sfc",
+		Rating:      95,
+		ReleaseDate: "1991-11-21",
+		ScraperID:   "igdb:2000",
+	}
+	require.NoError(t, env.database.Create(&game2).Error)
+
+	// Create hero artwork for game2 (highest rated)
+	env.database.Create(&db.GameArtwork{
+		GameID:  game2.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/zelda2.png",
+	})
+
+	series := db.GameSeries{
+		IGDBCollectionID: 100,
+		Name:             "The Legend of Zelda",
+	}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Zelda 1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "Zelda 2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: nil, IGDBGameID: 300, Name: "Zelda 3",
+	})
+
+	url := fmt.Sprintf("/api/series/%d", series.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var detail SeriesDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &detail))
+
+	// Top-level extended fields
+	assert.Equal(t, "The Legend of Zelda", detail.Name)
+	assert.Equal(t, 2, detail.LibraryGames)
+	assert.Equal(t, 3, detail.TotalGames)
+	assert.Equal(t, "https://cdn.steamgriddb.com/hero/zelda2.png", detail.HeroURL)
+
+	// Consoles list
+	require.Len(t, detail.Consoles, 2)
+	consoleMap := make(map[string]SeriesConsoleInfo)
+	for _, c := range detail.Consoles {
+		consoleMap[c.Abbreviation] = c
+	}
+	assert.Equal(t, 1, consoleMap["nes"].GameCount)
+	assert.Equal(t, 1, consoleMap["snes"].GameCount)
+
+	// Per-game fields
+	require.Len(t, detail.Games, 3)
+
+	// Find game1 (Zelda 1) in the response
+	var zelda1, zelda2 *SeriesGameResponse
+	for i := range detail.Games {
+		if detail.Games[i].IGDBGameID == 100 {
+			zelda1 = &detail.Games[i]
+		}
+		if detail.Games[i].IGDBGameID == 200 {
+			zelda2 = &detail.Games[i]
+		}
+	}
+	require.NotNil(t, zelda1)
+	require.NotNil(t, zelda2)
+
+	assert.True(t, zelda1.InLibrary)
+	assert.Equal(t, "1986-02-21", zelda1.ReleaseDate)
+	assert.Equal(t, 90.0, zelda1.Rating)
+	assert.Equal(t, "nes", zelda1.ConsoleAbbreviation)
+	assert.NotEmpty(t, zelda1.ConsoleName)
+
+	assert.True(t, zelda2.InLibrary)
+	assert.Equal(t, "1991-11-21", zelda2.ReleaseDate)
+	assert.Equal(t, 95.0, zelda2.Rating)
+	assert.Equal(t, "snes", zelda2.ConsoleAbbreviation)
+
+	// Non-local game should have no per-game fields
+	var zelda3 *SeriesGameResponse
+	for i := range detail.Games {
+		if detail.Games[i].IGDBGameID == 300 {
+			zelda3 = &detail.Games[i]
+		}
+	}
+	require.NotNil(t, zelda3)
+	assert.False(t, zelda3.InLibrary)
+	assert.Empty(t, zelda3.ReleaseDate)
+	assert.Equal(t, 0.0, zelda3.Rating)
+	assert.Empty(t, zelda3.ConsoleAbbreviation)
+}
+
+func TestGetSeriesDetail_HeroFromBestRatedGame(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	// Create two games: lower rated has hero, higher rated does not
+	game1 := createEnrichTestGame(t, env.database, "LowRated", 50)
+	game2 := createEnrichTestGame(t, env.database, "HighRated", 99)
+
+	env.database.Create(&db.GameArtwork{
+		GameID:  game1.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/low.png",
+	})
+	env.database.Create(&db.GameArtwork{
+		GameID:  game2.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/high.png",
+	})
+
+	series := db.GameSeries{IGDBCollectionID: 200, Name: "Test Series"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Low",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "High",
+	})
+
+	url := fmt.Sprintf("/api/series/%d", series.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var detail SeriesDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &detail))
+
+	// Hero should come from the highest-rated game
+	assert.Equal(t, "https://cdn.steamgriddb.com/hero/high.png", detail.HeroURL)
+}
+
+func TestGetSeriesDetail_NoHeroArt(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game := createEnrichTestGame(t, env.database, "NoArt", 80)
+	series := db.GameSeries{IGDBCollectionID: 300, Name: "No Art Series"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game.ID, IGDBGameID: 100, Name: "NoArt",
+	})
+
+	url := fmt.Sprintf("/api/series/%d", series.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var detail SeriesDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &detail))
+
+	assert.Empty(t, detail.HeroURL)
+}
+
+// --- GetGameSeries tests ---
+
+func TestGetGameSeries_Empty(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+	game := createEnrichTestGame(t, env.database, "Lonely Game", 80)
+
+	url := fmt.Sprintf("/api/games/%d/series", game.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Empty(t, result)
+}
+
+func TestGetGameSeries_WithData(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Mario1", 90)
+	game2 := createEnrichTestGame(t, env.database, "Mario2", 85)
+
+	series := db.GameSeries{IGDBCollectionID: 789, Name: "Super Mario"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Mario 1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "Mario 2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: nil, IGDBGameID: 300, Name: "Mario 3",
+	})
+
+	url := fmt.Sprintf("/api/games/%d/series", game1.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	require.Len(t, result, 1)
+	assert.Equal(t, "Super Mario", result[0].Name)
+	assert.Equal(t, 3, result[0].TotalGames)
+	assert.Equal(t, 2, result[0].LibraryGames)
+}
+
+func TestGetGameSeries_GameNotFound(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/99999/series", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetGameSeries_InvalidID(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/abc/series", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetGameSeries_MultipleSeries(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game := createEnrichTestGame(t, env.database, "CrossoverGame", 90)
+
+	series1 := db.GameSeries{IGDBCollectionID: 100, Name: "Series A"}
+	series2 := db.GameSeries{IGDBCollectionID: 200, Name: "Series B"}
+	require.NoError(t, env.database.Create(&series1).Error)
+	require.NoError(t, env.database.Create(&series2).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series1.ID, GameID: &game.ID, IGDBGameID: 100, Name: "Game",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series2.ID, GameID: &game.ID, IGDBGameID: 100, Name: "Game",
+	})
+
+	url := fmt.Sprintf("/api/games/%d/series", game.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Len(t, result, 2)
+}
+
+// --- GetGameFranchises tests ---
+
+func TestGetGameFranchises_Empty(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+	game := createEnrichTestGame(t, env.database, "NoFranchise", 80)
+
+	url := fmt.Sprintf("/api/games/%d/franchises", game.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameFranchiseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Empty(t, result)
+}
+
+func TestGetGameFranchises_WithData(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Zelda1", 90)
+	game2 := createEnrichTestGame(t, env.database, "Zelda2", 85)
+
+	env.database.Create(&db.GameFranchise{GameID: game1.ID, IGDBFranchiseID: 100, FranchiseName: "The Legend of Zelda"})
+	env.database.Create(&db.GameFranchise{GameID: game2.ID, IGDBFranchiseID: 100, FranchiseName: "The Legend of Zelda"})
+
+	url := fmt.Sprintf("/api/games/%d/franchises", game1.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameFranchiseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	require.Len(t, result, 1)
+	assert.Equal(t, "100", result[0].ID)
+	assert.Equal(t, "The Legend of Zelda", result[0].Name)
+	assert.Equal(t, 2, result[0].GameCount)
+}
+
+func TestGetGameFranchises_GameNotFound(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/99999/franchises", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetGameFranchises_InvalidID(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/abc/franchises", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetGameFranchises_MultipleFranchises(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game := createEnrichTestGame(t, env.database, "CrossFranchise", 90)
+
+	env.database.Create(&db.GameFranchise{GameID: game.ID, IGDBFranchiseID: 100, FranchiseName: "Franchise A"})
+	env.database.Create(&db.GameFranchise{GameID: game.ID, IGDBFranchiseID: 200, FranchiseName: "Franchise B"})
+
+	url := fmt.Sprintf("/api/games/%d/franchises", game.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameFranchiseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Len(t, result, 2)
+}
+
+func TestGetGameFranchises_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupEnrichTestEnv(t)
+
+	game1 := createEnrichTestGame(t, env.database, "Alive", 90)
+	game2 := createEnrichTestGame(t, env.database, "Deleted", 85)
+
+	env.database.Create(&db.GameFranchise{GameID: game1.ID, IGDBFranchiseID: 100, FranchiseName: "TestFranchise"})
+	env.database.Create(&db.GameFranchise{GameID: game2.ID, IGDBFranchiseID: 100, FranchiseName: "TestFranchise"})
+
+	// Soft-delete game2
+	env.database.Delete(&game2)
+
+	url := fmt.Sprintf("/api/games/%d/franchises", game1.ID)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []GameFranchiseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	require.Len(t, result, 1)
+	assert.Equal(t, 1, result[0].GameCount) // Only the alive game
 }
 
 // --- Authentication tests ---

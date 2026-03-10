@@ -578,3 +578,55 @@ fun KeywordDto.toDomain(): Keyword = Keyword(
     name = name,
     gameCount = gameCount,
 )
+
+fun FeaturedSeriesDto.toDomain(): FeaturedSeries = FeaturedSeries(
+    id = id,
+    name = name,
+    libraryGames = libraryGames,
+    totalGames = totalGames,
+    consoleCount = consoleCount,
+    heroUrl = heroUrl,
+)
+
+fun SeriesDetailDto.toDomain(): SeriesDetail = SeriesDetail(
+    id = id,
+    name = name,
+    heroUrl = heroUrl,
+    consoles = consoles.map { it.toDomain() },
+    libraryGames = libraryGames,
+    totalGames = totalGames,
+    games = games.map { it.toDomain() },
+)
+
+fun SeriesConsoleDto.toDomain(): SeriesConsole = SeriesConsole(
+    abbreviation = abbreviation,
+    name = name,
+    color = color,
+    gameCount = gameCount,
+)
+
+fun SeriesGameDto.toDomain(): SeriesGame = SeriesGame(
+    igdbGameId = igdbGameId,
+    name = name,
+    inLibrary = inLibrary,
+    localGameId = localGameId,
+    coverUrl = coverUrl,
+    releaseDate = releaseDate,
+    rating = rating,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleName = consoleName,
+    consoleColor = consoleColor,
+)
+
+fun GameSeriesLinkDto.toDomain(): GameSeriesLink = GameSeriesLink(
+    id = id,
+    name = name,
+    totalGames = totalGames,
+    libraryGames = libraryGames,
+)
+
+fun GameFranchiseLinkDto.toDomain(): GameFranchiseLink = GameFranchiseLink(
+    id = id,
+    name = name,
+    gameCount = gameCount,
+)

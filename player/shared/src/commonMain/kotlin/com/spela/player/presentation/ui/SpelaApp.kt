@@ -94,6 +94,7 @@ import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
+import com.spela.player.presentation.ui.screen.ExploreSeriesScreen
 import com.spela.player.presentation.ui.screen.ExploreThemeScreen
 import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
@@ -464,6 +465,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreKeyword(keywordId, keywordName))
                                             )
                                         },
+                                        onSeriesSelected = { seriesId, seriesName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreSeries(seriesId, seriesName))
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -491,6 +497,24 @@ fun SpelaApp(
                                     ExploreKeywordScreen(
                                         keywordId = screen.keywordId,
                                         keywordName = screen.keywordName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreSeries -> {
+                                if (exploreViewModel != null) {
+                                    ExploreSeriesScreen(
+                                        seriesId = screen.seriesId,
+                                        seriesName = screen.seriesName,
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(
@@ -611,6 +635,11 @@ fun SpelaApp(
                                     onNavigateToUser = { userId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.UserProfile(userId))
+                                        )
+                                    },
+                                    onNavigateToSeries = { seriesId, seriesName ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExploreSeries(seriesId, seriesName))
                                         )
                                     },
                                 )
