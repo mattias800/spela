@@ -119,7 +119,7 @@ const mockForYou: ForYouResponse = {
     {
       type: "because_you_played",
       title: "Because you played Chrono Trigger",
-      source_game: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
+      sourceGame: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
       games: [makeGame({ id: "fy1", title: "For You Game 1" })],
     },
   ],
@@ -127,7 +127,7 @@ const mockForYou: ForYouResponse = {
 
 const mockPlayersLikeYou: PlayersLikeYouResponse = {
   games: [makeGame({ id: "ply1", title: "Players Pick" })],
-  similar_users_count: 5,
+  similarUsersCount: 5,
 };
 
 const mockRows: ExploreRowsResponse = {
@@ -460,7 +460,7 @@ describe("ExplorePage", () => {
 
   it("hides Players Like You shelf when no data", () => {
     mockUsePlayersLikeYou.mockReturnValue({
-      data: { games: [], similar_users_count: 0 },
+      data: { games: [], similarUsersCount: 0 },
       isLoading: false,
     });
     renderPage();
