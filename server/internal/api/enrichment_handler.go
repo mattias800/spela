@@ -59,6 +59,7 @@ func (h *EnrichmentHandler) ListThemes(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 
@@ -164,6 +165,7 @@ func (h *EnrichmentHandler) ListKeywords(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 

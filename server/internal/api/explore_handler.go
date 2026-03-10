@@ -134,6 +134,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, []FeaturedGameResponse{})
 		return
 	}
@@ -199,6 +200,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 
@@ -241,6 +243,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 		rows = append(rows, *row)
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, ExploreRowsResponse{Rows: rows})
 }
 
@@ -442,6 +445,7 @@ func (h *ExploreHandler) GetExploreFeaturedSeries(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, []FeaturedSeriesResponse{})
 		return
 	}
@@ -530,6 +534,7 @@ func (h *ExploreHandler) GetExploreFeaturedSeries(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 
@@ -555,6 +560,7 @@ var moodDefinitions = []MoodResponse{
 // GetExploreMoods returns the list of available moods for the mood picker.
 // GET /api/explore/moods
 func (h *ExploreHandler) GetExploreMoods(c *gin.Context) {
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, moodDefinitions)
 }
 
@@ -591,6 +597,7 @@ func (h *ExploreHandler) GetMoodGames(c *gin.Context) {
 		return
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, ToGameResponses(games, h.DB, userID))
 }
 
@@ -851,6 +858,7 @@ func (h *ExploreHandler) GetSurpriseGame(c *gin.Context) {
 		return
 	}
 
+	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }
 
@@ -961,6 +969,7 @@ func (h *ExploreHandler) GetForYou(c *gin.Context) {
 		rows = append(rows, *expandRow)
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, ForYouResponse{Rows: rows})
 }
 
@@ -1359,6 +1368,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, TasteProfileResponse{
 		TotalPlayTime: totalPlayTime,
 		Genres:        genres,
@@ -1388,6 +1398,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	}
 
 	if len(myFavIDs) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, PlayersLikeYouResponse{
 			Games:             []GameResponse{},
 			SimilarUsersCount: 0,
@@ -1418,6 +1429,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	}
 
 	if len(overlaps) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, PlayersLikeYouResponse{
 			Games:             []GameResponse{},
 			SimilarUsersCount: 0,
@@ -1509,6 +1521,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	}
 
 	if len(recGameRows) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, PlayersLikeYouResponse{
 			Games:             []GameResponse{},
 			SimilarUsersCount: len(similarUsers),
@@ -1541,6 +1554,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, PlayersLikeYouResponse{
 		Games:             ToGameResponses(sorted, h.DB, userID),
 		SimilarUsersCount: len(similarUsers),
@@ -1571,6 +1585,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, DeveloperListResponse{Developers: []DeveloperSummary{}})
 		return
 	}
@@ -1622,6 +1637,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperListResponse{Developers: developers})
 }
 
@@ -1650,6 +1666,7 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		canonicalName = games[0].Developer
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperDetailResponse{
 		Name:      canonicalName,
 		GameCount: len(games),
@@ -1684,6 +1701,7 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		canonicalName = games[0].Publisher
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, PublisherDetailResponse{
 		Name:      canonicalName,
 		GameCount: len(games),
@@ -1770,6 +1788,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 		Where("LOWER(developer) = LOWER(?) AND deleted_at IS NULL", selectedDev.Developer).
 		Count(&totalGameCount)
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperSpotlightResponse{
 		Name:      selectedDev.Developer,
 		GameCount: int(totalGameCount),
@@ -1949,6 +1968,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 		return result
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, ConsoleShowcaseResponse{
 		Console:        ToConsoleResponse(console),
 		Essentials:     toResponses(essentials),
@@ -2187,6 +2207,7 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 		highlights = append(highlights, highlight)
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, ConsoleHighlightsResponse{Consoles: highlights})
 }
 
@@ -2338,6 +2359,7 @@ func (h *ExploreHandler) GetScreenshotGallery(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, ScreenshotGalleryResponse{
 		Screenshots: items,
 		Page:        page,
@@ -2401,6 +2423,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, ArtworkGalleryResponse{
 		Artworks:   items,
 		Page:       page,
@@ -2469,6 +2492,7 @@ func (h *ExploreHandler) GetCoverGallery(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, CoverGalleryResponse{
 		Covers:     items,
 		Page:       page,
@@ -2636,6 +2660,7 @@ func (h *ExploreHandler) GetTrending(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=30")
 		c.JSON(http.StatusOK, TrendingResponse{Games: []TrendingGameResponse{}})
 		return
 	}
@@ -2678,6 +2703,7 @@ func (h *ExploreHandler) GetTrending(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=30")
 	c.JSON(http.StatusOK, TrendingResponse{Games: result})
 }
 
@@ -2708,6 +2734,7 @@ func (h *ExploreHandler) GetCommunityTop(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, CommunityTopResponse{Games: []CommunityTopGame{}})
 		return
 	}
@@ -2750,6 +2777,7 @@ func (h *ExploreHandler) GetCommunityTop(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, CommunityTopResponse{Games: result})
 }
 
@@ -2782,6 +2810,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, CultClassicsResponse{Games: []CultClassicGame{}})
 		return
 	}
@@ -2819,6 +2848,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, CultClassicsResponse{Games: result})
 }
 
@@ -2849,6 +2879,7 @@ func (h *ExploreHandler) GetRecentlyReviewed(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=30")
 		c.JSON(http.StatusOK, RecentlyReviewedResponse{Reviews: []RecentReviewItem{}})
 		return
 	}
@@ -2892,6 +2923,7 @@ func (h *ExploreHandler) GetRecentlyReviewed(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=30")
 	c.JSON(http.StatusOK, RecentlyReviewedResponse{Reviews: result})
 }
 
@@ -2952,6 +2984,7 @@ func (h *ExploreHandler) GetActiveNow(c *gin.Context) {
 	}
 
 	if len(activeMap) == 0 {
+		c.Header("Cache-Control", "private, max-age=30")
 		c.JSON(http.StatusOK, ActiveNowResponse{Games: []ActiveNowItem{}})
 		return
 	}
@@ -3003,6 +3036,7 @@ func (h *ExploreHandler) GetActiveNow(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=30")
 	c.JSON(http.StatusOK, ActiveNowResponse{Games: result})
 }
 
@@ -3165,6 +3199,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 	}
 
 	if len(matched) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, OnThisDayResponse{Date: dateLabel, Games: []GameResponse{}})
 		return
 	}
@@ -3182,6 +3217,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 		result[i] = toGameResponseWithData(g, &userData)
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, OnThisDayResponse{Date: dateLabel, Games: result})
 }
 
@@ -3213,10 +3249,12 @@ func (h *ExploreHandler) GetBestOfYear(c *gin.Context) {
 	}
 
 	if len(games) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, BestOfYearResponse{Year: year, Games: []GameResponse{}})
 		return
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, BestOfYearResponse{
 		Year:  year,
 		Games: ToGameResponses(games, h.DB, userID),
@@ -3279,6 +3317,7 @@ func (h *ExploreHandler) GetYourAnniversaries(c *gin.Context) {
 	}
 
 	if len(allAnniversaries) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, AnniversariesResponse{Anniversaries: []AnniversaryItem{}})
 		return
 	}
@@ -3330,6 +3369,7 @@ func (h *ExploreHandler) GetYourAnniversaries(c *gin.Context) {
 		return result[i].Game.Title < result[j].Game.Title
 	})
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, AnniversariesResponse{Anniversaries: result})
 }
 
@@ -3382,10 +3422,12 @@ func (h *ExploreHandler) GetDecades(c *gin.Context) {
 	}
 
 	if len(games) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, DecadesResponse{Decade: decade, Label: label, Games: []GameResponse{}})
 		return
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DecadesResponse{
 		Decade: decade,
 		Label:  label,
@@ -3437,6 +3479,7 @@ func (h *ExploreHandler) GetEasyToComplete(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, EasyToCompleteResponse{Games: []AchievementGameResponse{}})
 		return
 	}
@@ -3517,6 +3560,7 @@ func (h *ExploreHandler) GetEasyToComplete(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, EasyToCompleteResponse{Games: result})
 }
 
@@ -3559,6 +3603,7 @@ func (h *ExploreHandler) GetHardestGames(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, HardestGamesResponse{Games: []AchievementGameResponse{}})
 		return
 	}
@@ -3626,6 +3671,7 @@ func (h *ExploreHandler) GetHardestGames(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, HardestGamesResponse{Games: result})
 }
 
@@ -3671,6 +3717,7 @@ func (h *ExploreHandler) GetAlmostDone(c *gin.Context) {
 	}
 
 	if len(filtered) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, AlmostDoneResponse{Games: []AlmostDoneGame{}})
 		return
 	}
@@ -3716,6 +3763,7 @@ func (h *ExploreHandler) GetAlmostDone(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, AlmostDoneResponse{Games: result})
 }
 
@@ -3761,6 +3809,7 @@ func (h *ExploreHandler) GetFreshChallenges(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, FreshChallengesResponse{Games: []FreshChallengeGame{}})
 		return
 	}
@@ -3797,6 +3846,7 @@ func (h *ExploreHandler) GetFreshChallenges(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, FreshChallengesResponse{Games: result})
 }
 
@@ -3821,6 +3871,7 @@ func (h *ExploreHandler) GetActiveChallenges(c *gin.Context) {
 	}
 
 	if len(challenges) == 0 {
+		c.Header("Cache-Control", "private, max-age=120")
 		c.JSON(http.StatusOK, ActiveChallengesResponse{Challenges: []ExploreChallengeResponse{}})
 		return
 	}
@@ -3853,6 +3904,7 @@ func (h *ExploreHandler) GetActiveChallenges(c *gin.Context) {
 		})
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, ActiveChallengesResponse{Challenges: result})
 }
 
@@ -3927,6 +3979,7 @@ func (h *ExploreHandler) GetWizardSteps(c *gin.Context) {
 		},
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, WizardResponse{Steps: steps})
 }
 
@@ -4020,6 +4073,7 @@ func (h *ExploreHandler) GetWizardResults(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, WizardResultsResponse{
 		Games: ToGameResponses(games, h.DB, userID),
 		Title: title,
@@ -4181,6 +4235,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		},
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, ExplorerBadgesResponse{Badges: badges})
 }
 
@@ -4281,6 +4336,7 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		overallPct = totalPlayed * 100 / totalGames
 	}
 
+	c.Header("Cache-Control", "private, max-age=120")
 	c.JSON(http.StatusOK, CompletionistMapResponse{
 		Consoles:    consoles,
 		TotalGames:  totalGames,

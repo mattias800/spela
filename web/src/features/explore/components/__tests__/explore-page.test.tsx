@@ -55,6 +55,10 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
+vi.mock("@/hooks/use-in-view", () => ({
+  useInView: () => ({ ref: vi.fn(), isInView: true }),
+}));
+
 import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade, useEasyToComplete, useHardestGames, useAlmostDone, useFreshChallenges, useActiveChallenges } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
