@@ -59,6 +59,7 @@ func (h *EnrichmentHandler) ListThemes(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 
@@ -164,6 +165,7 @@ func (h *EnrichmentHandler) ListKeywords(c *gin.Context) {
 		}
 	}
 
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, result)
 }
 
@@ -768,12 +770,14 @@ func (h *EnrichmentHandler) GetGameFranchises(c *gin.Context) {
 		return
 	}
 
+	// Check game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}
 
+	// Find franchise associations for this game
 	var franchises []db.GameFranchise
 	if err := h.DB.Where("game_id = ?", gameID).Find(&franchises).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch franchises"})

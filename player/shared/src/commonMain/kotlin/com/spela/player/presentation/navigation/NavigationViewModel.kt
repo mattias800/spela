@@ -187,7 +187,14 @@ class NavigationViewModel(
 
     companion object {
         fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
-            is SpScreen.Explore -> BottomNavTab.EXPLORE
+            is SpScreen.Explore,
+            is SpScreen.ExploreTheme,
+            is SpScreen.ExploreKeyword,
+            is SpScreen.ExploreSeries,
+            is SpScreen.ExploreMood,
+            is SpScreen.ExploreDeveloper,
+            is SpScreen.ExplorePublisher,
+            -> BottomNavTab.EXPLORE
             is SpScreen.Consoles, is SpScreen.Console -> BottomNavTab.CONSOLES
             is SpScreen.Collections, is SpScreen.CollectionDetail -> BottomNavTab.COLLECTIONS
             is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY

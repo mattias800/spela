@@ -1,6 +1,7 @@
 package com.spela.player.data.remote.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class LoginRequest(
@@ -1106,4 +1107,414 @@ data class GameFranchiseLinkDto(
     val id: String,
     val name: String,
     val gameCount: Int = 0,
+)
+
+
+@Serializable
+data class MoodDefinitionDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: String,
+    val gradient: List<String>,
+)
+
+// For You (Personalized Recommendations)
+
+@Serializable
+data class ForYouRowDto(
+    val type: String,
+    val title: String,
+    val sourceGame: GameDto? = null,
+    val genre: String? = null,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class ForYouResponseDto(
+    val rows: List<ForYouRowDto>,
+)
+
+@Serializable
+data class TasteBreakdownDto(
+    val name: String,
+    val percentage: Double,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+@Serializable
+data class ConsoleBreakdownDto(
+    val name: String,
+    val abbreviation: String,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+@Serializable
+data class TasteProfileDto(
+    val totalPlayTime: Long,
+    val genres: List<TasteBreakdownDto>,
+    val themes: List<TasteBreakdownDto>,
+    val topConsoles: List<ConsoleBreakdownDto>,
+)
+
+@Serializable
+data class PlayersLikeYouResponseDto(
+    val games: List<GameDto>,
+    val similarUsersCount: Int,
+)
+
+// Developer / Publisher
+
+@Serializable
+data class DeveloperSummaryDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+)
+
+@Serializable
+data class DeveloperListResponseDto(
+    val developers: List<DeveloperSummaryDto>,
+)
+
+@Serializable
+data class DeveloperDetailResponseDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class DeveloperSpotlightResponseDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val topGames: List<GameDto>,
+    val heroUrl: String = "",
+)
+
+// Console Showcase
+
+@Serializable
+data class GenreCountDto(
+    val name: String,
+    val gameCount: Int,
+)
+
+@Serializable
+data class ConsoleShowcaseDto(
+    val console: ConsoleDto,
+    val essentials: List<GameDto>,
+    val hiddenGems: List<GameDto>,
+    val genreBreakdown: List<GenreCountDto>,
+    val topDevelopers: List<DeveloperSummaryDto>,
+    val recentlyPlayed: List<GameDto>,
+)
+
+@Serializable
+data class ConsoleHighlightDto(
+    val id: String,
+    val name: String,
+    val colorTheme: String,
+    val iconUrl: String,
+    val logoUrl: String,
+    val gameCount: Int,
+    val topGame: GameDto? = null,
+)
+
+@Serializable
+data class ConsoleHighlightsResponseDto(
+    val consoles: List<ConsoleHighlightDto>,
+)
+
+// Artwork Gallery
+
+@Serializable
+data class ArtworkItemDto(
+    val url: String,
+    val width: Int,
+    val height: Int,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)
+
+@Serializable
+data class ArtworkGalleryResponseDto(
+    val artworks: List<ArtworkItemDto>,
+    val page: Int,
+    val totalPages: Int,
+    val totalCount: Int,
+)
+
+// Screenshot Gallery
+
+@Serializable
+data class ScreenshotItemDto(
+    val url: String,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)
+
+@Serializable
+data class ScreenshotGalleryResponseDto(
+    val screenshots: List<ScreenshotItemDto>,
+    val page: Int,
+    val totalPages: Int,
+    val totalCount: Int,
+)
+
+// --- Phase 10: Social & Community Discovery ---
+
+@Serializable
+data class TrendingGameDto(
+    val game: GameDto,
+    val playersThisWeek: Int,
+)
+
+@Serializable
+data class TrendingResponseDto(
+    val games: List<TrendingGameDto>,
+)
+
+@Serializable
+data class CommunityTopGameDto(
+    val game: GameDto,
+    val avgRating: Double,
+    val ratingCount: Int,
+)
+
+@Serializable
+data class CommunityTopResponseDto(
+    val games: List<CommunityTopGameDto>,
+)
+
+@Serializable
+data class CultClassicGameDto(
+    val game: GameDto,
+    val communityRating: Double,
+    val igdbRating: Double,
+    val ratingCount: Int,
+)
+
+@Serializable
+data class CultClassicsResponseDto(
+    val games: List<CultClassicGameDto>,
+)
+
+@Serializable
+data class RecentReviewItemDto(
+    val game: GameDto,
+    val rating: Int,
+    val review: String,
+    val reviewerName: String,
+    val reviewedAt: String,
+)
+
+@Serializable
+data class RecentlyReviewedResponseDto(
+    val reviews: List<RecentReviewItemDto>,
+)
+
+@Serializable
+data class ActiveNowItemDto(
+    val game: GameDto,
+    val activeSessions: Int,
+    val activeChallenges: Int,
+)
+
+@Serializable
+data class ActiveNowResponseDto(
+    val games: List<ActiveNowItemDto>,
+)
+
+// --- Phase 11: Temporal Discovery ---
+
+@Serializable
+data class OnThisDayResponseDto(
+    val date: String,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class BestOfYearResponseDto(
+    val year: Int,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class AnniversaryItemDto(
+    val game: GameDto,
+    val yearsAgo: Int,
+    val playedAt: String,
+)
+
+@Serializable
+data class YourAnniversariesResponseDto(
+    val anniversaries: List<AnniversaryItemDto>,
+)
+
+@Serializable
+data class DecadeResponseDto(
+    val decade: String,
+    val label: String,
+    val games: List<GameDto>,
+)
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery ---
+
+@Serializable
+data class AchievementGameItemDto(
+    val game: GameDto,
+    val totalAchievements: Int,
+    val avgCompletion: Float,
+    val playersAttempted: Int,
+    val playersCompleted: Int,
+)
+
+@Serializable
+data class EasyToCompleteResponseDto(
+    val games: List<AchievementGameItemDto>,
+)
+
+@Serializable
+data class HardestGamesResponseDto(
+    val games: List<AchievementGameItemDto>,
+)
+
+@Serializable
+data class AlmostDoneGameDto(
+    val game: GameDto,
+    val unlockedCount: Int,
+    val totalCount: Int,
+    val completionPercent: Float,
+)
+
+@Serializable
+data class AlmostDoneResponseDto(
+    val games: List<AlmostDoneGameDto>,
+)
+
+@Serializable
+data class FreshChallengeGameDto(
+    val game: GameDto,
+    val totalAchievements: Int,
+    val totalPoints: Int,
+)
+
+@Serializable
+data class FreshChallengesResponseDto(
+    val games: List<FreshChallengeGameDto>,
+)
+
+@Serializable
+data class ExploreChallengeDto(
+    val id: String,
+    val creatorUsername: String,
+    val gameId: String,
+    val gameTitle: String,
+    val gameCoverUrl: String? = null,
+    val consoleName: String? = null,
+    val name: String,
+    val description: String? = null,
+    val type: String,
+    val difficulty: String,
+    val attemptCount: Int,
+    val completionCount: Int,
+    val expiresAt: String? = null,
+    val createdAt: String,
+)
+
+@Serializable
+data class ActiveChallengesResponseDto(
+    val challenges: List<ExploreChallengeDto>,
+)
+
+// --- Phase 13: Advanced Search & Saved Searches ---
+
+@Serializable
+data class SavedSearchDto(
+    val id: String,
+    val name: String,
+    val filters: Map<String, JsonPrimitive> = emptyMap(),
+    val createdAt: String = "",
+)
+
+@Serializable
+data class CreateSavedSearchRequest(
+    val name: String,
+    val filters: Map<String, JsonPrimitive>,
+)
+
+// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+
+@Serializable
+data class WizardOptionDto(
+    val id: String,
+    val label: String,
+    val description: String = "",
+    val imageUrl: String = "",
+)
+
+@Serializable
+data class WizardStepDto(
+    val step: Int,
+    val title: String,
+    val type: String,
+    val options: List<WizardOptionDto>,
+)
+
+@Serializable
+data class WizardResponseDto(
+    val steps: List<WizardStepDto>,
+)
+
+@Serializable
+data class WizardResultsResponseDto(
+    val games: List<GameDto>,
+    val title: String,
+)
+
+@Serializable
+data class ExplorerBadgeDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: String,
+    val earned: Boolean,
+    val progress: Int,
+    val target: Int,
+)
+
+@Serializable
+data class ExplorerBadgesResponseDto(
+    val badges: List<ExplorerBadgeDto>,
+)
+
+@Serializable
+data class CompletionistConsoleDto(
+    val id: String,
+    val name: String,
+    val totalGames: Int,
+    val playedGames: Int,
+    val percentage: Int,
+)
+
+@Serializable
+data class CompletionistMapResponseDto(
+    val consoles: List<CompletionistConsoleDto>,
+    val totalGames: Int,
+    val totalPlayed: Int,
+    val overallPct: Int,
 )

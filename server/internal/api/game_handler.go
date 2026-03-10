@@ -36,36 +36,178 @@ type GameHandler struct {
 func (h *GameHandler) ListGames(c *gin.Context) {
 	var games []db.Game
 	query := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots")
+	countQuery := h.DB.Model(&db.Game{})
 
-	if consoleAbbr := c.Query("consoleId"); consoleAbbr != "" {
-		var console db.Console
-		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err == nil {
-			query = query.Where("console_id = ?", console.ID)
-		} else {
-			// Unknown console abbreviation — return empty list
-			c.JSON(http.StatusOK, []GameResponse{})
+	userID := getUserID(c)
+
+	// --- Console filter (multi-select with backward compat) ---
+	consoles := c.Query("consoles")
+	if consoles == "" {
+		consoles = c.Query("consoleId")
+	}
+	if consoles != "" {
+		abbrs := strings.Split(consoles, ",")
+		var consoleIDs []uint
+		for _, abbr := range abbrs {
+			abbr = strings.TrimSpace(abbr)
+			if abbr == "" {
+				continue
+			}
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", abbr).First(&console).Error; err == nil {
+				consoleIDs = append(consoleIDs, console.ID)
+			}
+		}
+		if len(consoleIDs) == 0 {
+			// All abbreviations unknown — return empty list
+			c.JSON(http.StatusOK, PaginatedResponse{
+				Data:     []GameResponse{},
+				Total:    0,
+				Page:     1,
+				PageSize: 50,
+			})
 			return
 		}
-	}
-	if search := c.Query("search"); search != "" {
-		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
-	}
-	if genre := c.Query("genre"); genre != "" {
-		query = query.Where("genre = ?", genre)
+		query = query.Where("console_id IN ?", consoleIDs)
+		countQuery = countQuery.Where("console_id IN ?", consoleIDs)
 	}
 
-	// Phase 2 Explore: enrichment-based filters (JOIN against enrichment tables)
-	if themeID := c.Query("theme"); themeID != "" {
+	// --- Text search ---
+	if search := c.Query("search"); search != "" {
+		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
+		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
+	}
+
+	// --- Genre filter (multi-select with backward compat) ---
+	genres := c.Query("genres")
+	if genres == "" {
+		genres = c.Query("genre")
+	}
+	if genres != "" {
+		genreList := strings.Split(genres, ",")
+		var trimmed []string
+		for _, g := range genreList {
+			g = strings.TrimSpace(g)
+			if g != "" {
+				trimmed = append(trimmed, g)
+			}
+		}
+		if len(trimmed) > 0 {
+			query = query.Where("genre IN ?", trimmed)
+			countQuery = countQuery.Where("genre IN ?", trimmed)
+		}
+	}
+
+	// Track whether any join-based filter is active (needs DISTINCT to avoid duplicates)
+	needsDistinct := false
+
+	// --- Theme filter (multi-select with backward compat) ---
+	themes := c.Query("themes")
+	if themes == "" {
+		themes = c.Query("theme")
+	}
+	if themes != "" {
+		themeIDs := strings.Split(themes, ",")
 		query = query.Joins("JOIN game_themes ON game_themes.game_id = games.id").
-			Where("game_themes.igdb_theme_id = ?", themeID)
+			Where("game_themes.igdb_theme_id IN ?", themeIDs)
+		countQuery = countQuery.Joins("JOIN game_themes ON game_themes.game_id = games.id").
+			Where("game_themes.igdb_theme_id IN ?", themeIDs)
+		needsDistinct = true
 	}
-	if keywordID := c.Query("keyword"); keywordID != "" {
+
+	// --- Keyword filter (multi-select with backward compat) ---
+	keywords := c.Query("keywords")
+	if keywords == "" {
+		keywords = c.Query("keyword")
+	}
+	if keywords != "" {
+		keywordIDs := strings.Split(keywords, ",")
 		query = query.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
-			Where("game_keywords.igdb_keyword_id = ?", keywordID)
+			Where("game_keywords.igdb_keyword_id IN ?", keywordIDs)
+		countQuery = countQuery.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
+			Where("game_keywords.igdb_keyword_id IN ?", keywordIDs)
+		needsDistinct = true
 	}
-	if perspectiveID := c.Query("perspective"); perspectiveID != "" {
+
+	// --- Perspective filter (multi-select with backward compat) ---
+	perspectives := c.Query("perspectives")
+	if perspectives == "" {
+		perspectives = c.Query("perspective")
+	}
+	if perspectives != "" {
+		perspectiveIDs := strings.Split(perspectives, ",")
 		query = query.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
-			Where("game_player_perspectives.igdb_perspective_id = ?", perspectiveID)
+			Where("game_player_perspectives.igdb_perspective_id IN ?", perspectiveIDs)
+		countQuery = countQuery.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
+			Where("game_player_perspectives.igdb_perspective_id IN ?", perspectiveIDs)
+		needsDistinct = true
+	}
+
+	// --- Developer filter (substring match) ---
+	if developer := c.Query("developer"); developer != "" {
+		query = query.Where("games.developer LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(developer)+"%")
+		countQuery = countQuery.Where("games.developer LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(developer)+"%")
+	}
+
+	// --- Publisher filter (substring match) ---
+	if publisher := c.Query("publisher"); publisher != "" {
+		query = query.Where("games.publisher LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(publisher)+"%")
+		countQuery = countQuery.Where("games.publisher LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(publisher)+"%")
+	}
+
+	// --- Year range filters ---
+	if yearMin := c.Query("yearMin"); yearMin != "" {
+		if y, err := strconv.Atoi(yearMin); err == nil && y >= 1970 && y <= 2100 {
+			query = query.Where("release_date >= ?", fmt.Sprintf("%d", y))
+			countQuery = countQuery.Where("release_date >= ?", fmt.Sprintf("%d", y))
+		}
+	}
+	if yearMax := c.Query("yearMax"); yearMax != "" {
+		if y, err := strconv.Atoi(yearMax); err == nil && y >= 1970 && y <= 2100 {
+			query = query.Where("release_date < ?", fmt.Sprintf("%d", y+1))
+			countQuery = countQuery.Where("release_date < ?", fmt.Sprintf("%d", y+1))
+		}
+	}
+
+	// --- Rating range filters ---
+	if ratingMin := c.Query("ratingMin"); ratingMin != "" {
+		if r, err := strconv.ParseFloat(ratingMin, 64); err == nil && r >= 0 && r <= 100 {
+			query = query.Where("games.rating >= ?", r)
+			countQuery = countQuery.Where("games.rating >= ?", r)
+		}
+	}
+	if ratingMax := c.Query("ratingMax"); ratingMax != "" {
+		if r, err := strconv.ParseFloat(ratingMax, 64); err == nil && r >= 0 && r <= 100 {
+			query = query.Where("games.rating <= ?", r)
+			countQuery = countQuery.Where("games.rating <= ?", r)
+		}
+	}
+
+	// --- Play status filter (requires user context) ---
+	if playStatus := c.Query("playStatus"); playStatus != "" && userID > 0 {
+		switch playStatus {
+		case "unplayed":
+			query = query.Joins("LEFT JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID).
+				Where("play_histories.id IS NULL")
+			countQuery = countQuery.Joins("LEFT JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID).
+				Where("play_histories.id IS NULL")
+		case "played":
+			query = query.Joins("JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID)
+			countQuery = countQuery.Joins("JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID)
+			needsDistinct = true
+		case "favorited":
+			query = query.Joins("JOIN favorites ON favorites.game_id = games.id AND favorites.user_id = ? AND favorites.deleted_at IS NULL", userID)
+			countQuery = countQuery.Joins("JOIN favorites ON favorites.game_id = games.id AND favorites.user_id = ? AND favorites.deleted_at IS NULL", userID)
+		case "play-later":
+			query = query.Joins("JOIN play_later_items ON play_later_items.game_id = games.id AND play_later_items.user_id = ? AND play_later_items.deleted_at IS NULL", userID)
+			countQuery = countQuery.Joins("JOIN play_later_items ON play_later_items.game_id = games.id AND play_later_items.user_id = ? AND play_later_items.deleted_at IS NULL", userID)
+		}
+	}
+
+	// Apply DISTINCT when join-based filters are active to prevent duplicate rows
+	if needsDistinct {
+		query = query.Distinct("games.*")
+		countQuery = countQuery.Distinct("games.id")
 	}
 
 	// Sorting - whitelist both column and direction to prevent SQL injection
@@ -77,7 +219,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 	if o := c.Query("sortOrder"); o != "" {
 		order = o
 	}
-	allowedSorts := map[string]bool{"title": true, "created_at": true, "file_size": true, "rating": true}
+	allowedSorts := map[string]bool{"title": true, "created_at": true, "file_size": true, "rating": true, "release_date": true}
 	if !allowedSorts[sort] {
 		sort = "title"
 	}
@@ -99,35 +241,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		perPage = 50
 	}
 
-	// Count with the same filters applied (reuse the resolved console ID
-	// from the data query above so we compare numeric IDs, not abbreviations).
 	var total int64
-	countQuery := h.DB.Model(&db.Game{})
-	if consoleAbbr := c.Query("consoleId"); consoleAbbr != "" {
-		var countConsole db.Console
-		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&countConsole).Error; err == nil {
-			countQuery = countQuery.Where("console_id = ?", countConsole.ID)
-		}
-	}
-	if search := c.Query("search"); search != "" {
-		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
-	}
-	if genre := c.Query("genre"); genre != "" {
-		countQuery = countQuery.Where("genre = ?", genre)
-	}
-	// Phase 2 Explore: enrichment-based filters for count query
-	if themeID := c.Query("theme"); themeID != "" {
-		countQuery = countQuery.Joins("JOIN game_themes ON game_themes.game_id = games.id").
-			Where("game_themes.igdb_theme_id = ?", themeID)
-	}
-	if keywordID := c.Query("keyword"); keywordID != "" {
-		countQuery = countQuery.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
-			Where("game_keywords.igdb_keyword_id = ?", keywordID)
-	}
-	if perspectiveID := c.Query("perspective"); perspectiveID != "" {
-		countQuery = countQuery.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
-			Where("game_player_perspectives.igdb_perspective_id = ?", perspectiveID)
-	}
 	countQuery.Count(&total)
 
 	offset := (page - 1) * perPage
@@ -136,7 +250,6 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		return
 	}
 
-	userID := getUserID(c)
 	c.JSON(http.StatusOK, PaginatedResponse{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,

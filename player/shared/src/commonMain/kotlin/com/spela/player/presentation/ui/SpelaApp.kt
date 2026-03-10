@@ -92,9 +92,15 @@ import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
+import com.spela.player.presentation.ui.screen.ExploreConsoleShowcaseScreen
+import com.spela.player.presentation.ui.screen.ExploreDeveloperScreen
+import com.spela.player.presentation.ui.screen.ExploreGalleryScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
+import com.spela.player.presentation.ui.screen.ExploreMoodScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
 import com.spela.player.presentation.ui.screen.ExploreSeriesScreen
+import com.spela.player.presentation.ui.screen.ExploreSearchScreen
+import com.spela.player.presentation.ui.screen.ExploreWizardScreen
 import com.spela.player.presentation.ui.screen.ExploreThemeScreen
 import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
@@ -455,6 +461,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
+                                        onChallengeSelected = { challengeId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ChallengeDetail(challengeId))
+                                            )
+                                        },
                                         onThemeSelected = { themeId, themeName ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreTheme(themeId, themeName))
@@ -468,6 +479,43 @@ fun SpelaApp(
                                         onSeriesSelected = { seriesId, seriesName ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreSeries(seriesId, seriesName))
+                                            )
+                                        },
+                                        onMoodSelected = { moodId, moodName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreMood(moodId, moodName))
+                                            )
+                                        },
+                                        onDeveloperSelected = { name ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                            )
+                                        },
+                                        onConsoleSelected = { consoleId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreConsoleShowcase(consoleId))
+                                            )
+                                        },
+                                        onGallerySelected = {
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreGallery)
+                                            )
+                                        },
+                                        onSurpriseMe = {
+                                            exploreViewModel.loadSurpriseGame { gameId ->
+                                                navigationViewModel.onIntent(
+                                                    NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                                )
+                                            }
+                                        },
+                                        onSearchSelected = {
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreSearch)
+                                            )
+                                        },
+                                        onWizardSelected = {
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreWizard)
                                             )
                                         },
                                     )
@@ -515,6 +563,130 @@ fun SpelaApp(
                                     ExploreSeriesScreen(
                                         seriesId = screen.seriesId,
                                         seriesName = screen.seriesName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreMood -> {
+                                if (exploreViewModel != null) {
+                                    ExploreMoodScreen(
+                                        moodId = screen.moodId,
+                                        moodName = screen.moodName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreDeveloper -> {
+                                if (exploreViewModel != null) {
+                                    ExploreDeveloperScreen(
+                                        name = screen.name,
+                                        isDeveloper = true,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExplorePublisher -> {
+                                if (exploreViewModel != null) {
+                                    ExploreDeveloperScreen(
+                                        name = screen.name,
+                                        isDeveloper = false,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreConsoleShowcase -> {
+                                if (exploreViewModel != null) {
+                                    ExploreConsoleShowcaseScreen(
+                                        consoleId = screen.consoleId,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onDeveloperSelected = { name ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreGallery -> {
+                                if (exploreViewModel != null) {
+                                    ExploreGalleryScreen(
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreSearch -> {
+                                if (exploreViewModel != null) {
+                                    ExploreSearchScreen(
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreWizard -> {
+                                if (exploreViewModel != null) {
+                                    ExploreWizardScreen(
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(

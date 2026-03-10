@@ -4,24 +4,40 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ActiveNowSection
+import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSection
+import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSkeleton
+import com.spela.player.presentation.ui.feature.explore.CommunityTopSection
+import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSection
+import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSkeleton
+import com.spela.player.presentation.ui.feature.explore.CultClassicsSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSkeleton
+import com.spela.player.presentation.ui.feature.explore.ForYouSection
+import com.spela.player.presentation.ui.feature.explore.ForYouSkeleton
 import com.spela.player.presentation.ui.feature.explore.GameShelf
 import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.HeroCarousel
@@ -30,9 +46,27 @@ import com.spela.player.presentation.ui.feature.explore.KeywordChips
 import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
 import com.spela.player.presentation.ui.feature.explore.SeriesShelf
 import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
+import com.spela.player.presentation.ui.feature.explore.MoodPicker
+import com.spela.player.presentation.ui.feature.explore.MoodPickerSkeleton
+import com.spela.player.presentation.ui.feature.explore.RecentlyReviewedSection
+import com.spela.player.presentation.ui.feature.explore.SeriesShelf
+import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
+import com.spela.player.presentation.ui.feature.explore.SocialSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
+import com.spela.player.presentation.ui.feature.explore.AchievementSectionSkeleton
+import com.spela.player.presentation.ui.feature.explore.ActiveChallengesSection
+import com.spela.player.presentation.ui.feature.explore.AlmostDoneSection
+import com.spela.player.presentation.ui.feature.explore.AnniversariesSection
+import com.spela.player.presentation.ui.feature.explore.EasyToCompleteSection
+import com.spela.player.presentation.ui.feature.explore.FreshChallengesSection
+import com.spela.player.presentation.ui.feature.explore.HardestGamesSection
+import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
+import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
+import com.spela.player.presentation.ui.feature.explore.TrendingSection
+import com.spela.player.presentation.ui.feature.explore.WildFeaturesSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
@@ -43,6 +77,15 @@ fun ExploreScreen(
     onThemeSelected: ((themeId: String, themeName: String) -> Unit)? = null,
     onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
+
+    onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
+    onDeveloperSelected: ((name: String) -> Unit)? = null,
+    onConsoleSelected: ((consoleId: String) -> Unit)? = null,
+    onChallengeSelected: ((challengeId: String) -> Unit)? = null,
+    onGallerySelected: (() -> Unit)? = null,
+    onSurpriseMe: (() -> Unit)? = null,
+    onWizardSelected: (() -> Unit)? = null,
+    onSearchSelected: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -99,6 +142,121 @@ fun ExploreScreen(
                                     vertical = SpSpacing.Default,
                                 ),
                             )
+                        }
+                    }
+
+                    // Advanced search entry point
+                    item {
+                        SpChip(
+                            text = "Advanced Search & Filters",
+                            onClick = { onSearchSelected?.invoke() },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = null,
+                                    tint = SpColor.OnBackgroundSecondary,
+                                    modifier = Modifier.height(16.dp),
+                                )
+                            },
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = SpSpacing.ScreenHorizontal,
+                                    vertical = SpSpacing.Small,
+                                )
+                                .testTag("explore_search_chip"),
+                        )
+                    }
+
+                    // Console quick-jump section
+                    item {
+                        if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Console",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ConsoleQuickJumpSkeleton()
+                            }
+                        } else if (state.consoleHighlights.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Console",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_consoles_section"),
+                            ) {
+                                ConsoleQuickJumpSection(
+                                    consoles = state.consoleHighlights,
+                                    onConsoleSelected = { consoleId ->
+                                        onConsoleSelected?.invoke(consoleId)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    // Mood picker section
+                    item {
+                        if (state.isLoadingMoods && state.moods.isEmpty()) {
+                            SpTitledSection(
+                                title = "What are you in the mood for?",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                MoodPickerSkeleton()
+                            }
+                        } else if (state.moods.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "What are you in the mood for?",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_moods_section"),
+                            ) {
+                                MoodPicker(
+                                    moods = state.moods,
+                                    onMoodSelected = { moodId, moodName ->
+                                        onMoodSelected?.invoke(moodId, moodName)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    // Wild Features — Lucky & Wizard
+                    item {
+                        WildFeaturesSection(
+                            onSurpriseMe = { onSurpriseMe?.invoke() },
+                            onWizardSelected = { onWizardSelected?.invoke() },
+                            modifier = Modifier
+                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                .testTag("explore_wild_features"),
+                        )
+                    }
+
+                    // For You section (personalized recommendations)
+                    item {
+                        if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
+                            SpTitledSection(
+                                title = "For You",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ForYouSkeleton()
+                            }
+                        } else if (state.forYouRows.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "For You",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_for_you_section"),
+                            ) {
+                                ForYouSection(
+                                    rows = state.forYouRows,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
                         }
                     }
 
@@ -186,6 +344,382 @@ fun ExploreScreen(
                         }
                     }
 
+
+                    // Developer spotlight section
+                    item {
+                        if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
+                            SpTitledSection(
+                                title = "Developer Spotlight",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                DeveloperSpotlightSkeleton()
+                            }
+                        } else if (state.developerSpotlight != null) {
+                            SpTitledSection(
+                                title = "Developer Spotlight",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_developer_spotlight_section"),
+                            ) {
+                                DeveloperSpotlightSection(
+                                    spotlight = state.developerSpotlight!!,
+                                    onDeveloperSelected = { name ->
+                                        onDeveloperSelected?.invoke(name)
+                                    },
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Artwork showcase section
+                    item {
+                        if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
+                            SpTitledSection(
+                                title = "Visual Discovery",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ArtworkShowcaseSkeleton()
+                            }
+                        } else if (state.artworkShowcase.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Visual Discovery",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_artwork_section"),
+                            ) {
+                                ArtworkShowcaseSection(
+                                    artworks = state.artworkShowcase,
+                                    onGameSelected = onGameSelected,
+                                    onGallerySelected = onGallerySelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Social & Community Discovery sections
+                    // Trending
+                    item {
+                        if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Trending on Your Server",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.trendingGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Trending on Your Server",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_trending_section"),
+                            ) {
+                                TrendingSection(
+                                    games = state.trendingGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Community Favorites
+                    item {
+                        if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Community Favorites",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.communityTopGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Community Favorites",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_community_top_section"),
+                            ) {
+                                CommunityTopSection(
+                                    games = state.communityTopGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Cult Classics
+                    item {
+                        if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
+                            SpTitledSection(
+                                title = "Cult Classics",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.cultClassics.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Cult Classics",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_cult_classics_section"),
+                            ) {
+                                CultClassicsSection(
+                                    games = state.cultClassics,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Active Right Now
+                    item {
+                        if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Active Right Now",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.activeNowGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Active Right Now",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_active_now_section"),
+                            ) {
+                                ActiveNowSection(
+                                    games = state.activeNowGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Recently Reviewed
+                    item {
+                        if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
+                            SpTitledSection(
+                                title = "Recently Reviewed",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.recentReviews.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Recently Reviewed",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_recently_reviewed_section"),
+                            ) {
+                                RecentlyReviewedSection(
+                                    reviews = state.recentReviews,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Temporal Discovery: On This Day
+                    item {
+                        if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "On This Day",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                TemporalSectionSkeleton()
+                            }
+                        } else if (state.onThisDayGames.isNotEmpty()) {
+                            val title = if (state.onThisDayDate.isNotEmpty()) {
+                                "On This Day (${state.onThisDayDate})"
+                            } else {
+                                "On This Day"
+                            }
+                            SpTitledSection(
+                                title = title,
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_on_this_day_section"),
+                            ) {
+                                OnThisDaySection(
+                                    games = state.onThisDayGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Temporal Discovery: Your Anniversaries
+                    item {
+                        if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
+                            SpTitledSection(
+                                title = "Your Anniversaries",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                TemporalSectionSkeleton()
+                            }
+                        } else if (state.anniversaries.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Your Anniversaries",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_anniversaries_section"),
+                            ) {
+                                AnniversariesSection(
+                                    anniversaries = state.anniversaries,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Easy to 100%
+                    item {
+                        if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Easy to 100%",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.easyToCompleteGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Easy to 100%",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_easy_to_complete_section"),
+                            ) {
+                                EasyToCompleteSection(
+                                    games = state.easyToCompleteGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Mount Everest (Hardest)
+                    item {
+                        if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Mount Everest",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.hardestGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Mount Everest",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_hardest_games_section"),
+                            ) {
+                                HardestGamesSection(
+                                    games = state.hardestGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Almost Done
+                    item {
+                        if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Almost Done",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.almostDoneGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Almost Done",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_almost_done_section"),
+                            ) {
+                                AlmostDoneSection(
+                                    games = state.almostDoneGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Fresh Challenges
+                    item {
+                        if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Fresh Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.freshChallengeGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Fresh Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_fresh_challenges_section"),
+                            ) {
+                                FreshChallengesSection(
+                                    games = state.freshChallengeGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Active Challenges
+                    item {
+                        if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
+                            SpTitledSection(
+                                title = "Active Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.activeChallenges.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Active Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_active_challenges_section"),
+                            ) {
+                                ActiveChallengesSection(
+                                    challenges = state.activeChallenges,
+                                    onChallengeClick = { challengeId ->
+                                        onChallengeSelected?.invoke(challengeId)
+                                    },
+                                )
+                            }
+                        }
+                    }
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {
                         // Loading skeletons for rows

@@ -272,6 +272,7 @@ export function GameHero({
               icon={Building2}
               label="Developer"
               value={game.developer}
+              href={`/explore/developers/${encodeURIComponent(game.developer)}`}
             />
           )}
           {game.publisher && (
@@ -279,6 +280,7 @@ export function GameHero({
               icon={Building2}
               label="Publisher"
               value={game.publisher}
+              href={`/explore/publishers/${encodeURIComponent(game.publisher)}`}
             />
           )}
           {game.releaseDate && (

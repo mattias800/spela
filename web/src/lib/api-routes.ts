@@ -21,6 +21,48 @@ export type ApiGetPath = WithQuery<
   | "/explore/featured"
   | "/explore/rows"
   | "/explore/series/featured"
+  | "/explore/moods"
+  | `/explore/mood/${string}`
+  | "/explore/surprise"
+  | "/explore/for-you"
+  | "/explore/players-like-you"
+  | "/explore/screenshots"
+  | "/explore/artwork"
+  | "/explore/covers"
+
+  // Console Showcase
+  | `/explore/consoles/${string}/showcase`
+  | "/explore/console-highlights"
+
+  // Temporal Discovery
+  | "/explore/on-this-day"
+  | `/explore/best-of-year/${string}`
+  | `/explore/decades/${string}`
+  | "/explore/your-anniversaries"
+
+  // Social & Community Discovery
+  | "/explore/trending"
+  | "/explore/community-top"
+  | "/explore/cult-classics"
+  | "/explore/recently-reviewed"
+  | "/explore/active-now"
+
+  // Achievement & Challenge Discovery
+  | "/explore/easy-to-complete"
+  | "/explore/hardest-games"
+  | "/explore/almost-done"
+  | "/explore/fresh-challenges"
+  | "/explore/active-challenges"
+
+  // Wild Features (Wizard)
+  | "/explore/wizard"
+  | "/explore/wizard/results"
+
+  // Developers & Publishers
+  | "/explore/developers"
+  | "/explore/developers/spotlight"
+  | `/explore/developers/${string}`
+  | `/explore/publishers/${string}`
 
   // Series
   | `/series/${string}`
@@ -102,7 +144,11 @@ export type ApiGetPath = WithQuery<
   | "/user/shared-session-invites/count"
   | "/user/ra/status"
   | "/user/ra/token"
+  | "/user/taste-profile"
   | "/user/achievements/recent"
+  | "/user/saved-searches"
+  | "/user/explorer-badges"
+  | "/user/completionist-map"
 
   // Shared Sessions
   | "/shared-sessions"
@@ -200,6 +246,7 @@ export type ApiPostPath = WithQuery<
   | "/user/ra/link"
   | `/user/shared-session-invites/${string}/accept`
   | `/user/shared-session-invites/${string}/decline`
+  | "/user/saved-searches"
 
   // Collections
   | "/collections"
@@ -308,6 +355,7 @@ export type ApiDeletePath = WithQuery<
   | `/user/devices/${string}`
   | "/user/ra/link"
   | `/user/games/${string}/keymapping`
+  | `/user/saved-searches/${string}`
 
   // Collections
   | `/collections/${string}`

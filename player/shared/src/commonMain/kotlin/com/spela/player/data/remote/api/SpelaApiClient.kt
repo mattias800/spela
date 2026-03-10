@@ -294,6 +294,214 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/franchises").body()
     }
 
+    /** Returns available mood definitions for the mood picker */
+    suspend fun getMoods(): List<MoodDefinitionDto> {
+        return client.get("$baseUrl/api/explore/moods").body()
+    }
+
+    /** Returns games matching a mood */
+    suspend fun getMoodGames(mood: String): List<GameDto> {
+        return client.get("$baseUrl/api/explore/mood/$mood").body()
+    }
+
+    /** Returns a single random surprise game */
+    suspend fun getSurpriseGame(): GameDto {
+        return client.get("$baseUrl/api/explore/surprise").body()
+    }
+
+    /** Returns personalized "For You" recommendation rows */
+    suspend fun getForYou(): ForYouResponseDto {
+        return client.get("$baseUrl/api/explore/for-you").body()
+    }
+
+    /** Returns the user's taste profile (genre/theme/console breakdown) */
+    suspend fun getTasteProfile(): TasteProfileDto {
+        return client.get("$baseUrl/api/user/taste-profile").body()
+    }
+
+    /** Returns collaborative filtering recommendations */
+    suspend fun getPlayersLikeYou(): PlayersLikeYouResponseDto {
+        return client.get("$baseUrl/api/explore/players-like-you").body()
+    }
+
+    /** Returns list of developer summaries */
+    suspend fun getDevelopers(): DeveloperListResponseDto {
+        return client.get("$baseUrl/api/explore/developers").body()
+    }
+
+    /** Returns detail for a specific developer */
+    suspend fun getDeveloperDetail(name: String): DeveloperDetailResponseDto {
+        val encoded = name.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/developers/$encoded").body()
+    }
+
+    /** Returns detail for a specific publisher (same response type as developer) */
+    suspend fun getPublisherDetail(name: String): DeveloperDetailResponseDto {
+        val encoded = name.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/publishers/$encoded").body()
+    }
+
+    /** Returns developer spotlight for the Explore page */
+    suspend fun getDeveloperSpotlight(): DeveloperSpotlightResponseDto {
+        return client.get("$baseUrl/api/explore/developers/spotlight").body()
+    }
+
+    /** Returns console showcase data for a specific console */
+    suspend fun getConsoleShowcase(consoleId: String): ConsoleShowcaseDto {
+        val encoded = consoleId.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/consoles/$encoded/showcase").body()
+    }
+
+    /** Returns console highlights for the Explore page quick-jump section */
+    suspend fun getConsoleHighlights(): ConsoleHighlightsResponseDto {
+        return client.get("$baseUrl/api/explore/console-highlights").body()
+    }
+
+    /** Returns a paginated list of IGDB artwork for the gallery */
+    suspend fun getArtworkGallery(page: Int = 1): ArtworkGalleryResponseDto {
+        return client.get("$baseUrl/api/explore/artwork") {
+            parameter("page", page)
+        }.body()
+    }
+
+    /** Returns a paginated list of screenshots for the gallery */
+    suspend fun getScreenshotGallery(page: Int = 1): ScreenshotGalleryResponseDto {
+        return client.get("$baseUrl/api/explore/screenshots") {
+            parameter("page", page)
+        }.body()
+    }
+
+    /** Returns trending games (most played this week) */
+    suspend fun getTrending(): TrendingResponseDto {
+        return client.get("$baseUrl/api/explore/trending").body()
+    }
+
+    /** Returns community top-rated games */
+    suspend fun getCommunityTop(): CommunityTopResponseDto {
+        return client.get("$baseUrl/api/explore/community-top").body()
+    }
+
+    /** Returns cult classics (high community, low IGDB) */
+    suspend fun getCultClassics(): CultClassicsResponseDto {
+        return client.get("$baseUrl/api/explore/cult-classics").body()
+    }
+
+    /** Returns recently reviewed games */
+    suspend fun getRecentlyReviewed(): RecentlyReviewedResponseDto {
+        return client.get("$baseUrl/api/explore/recently-reviewed").body()
+    }
+
+    /** Returns games with active shared sessions or challenges */
+    suspend fun getActiveNow(): ActiveNowResponseDto {
+        return client.get("$baseUrl/api/explore/active-now").body()
+    }
+
+    /** Returns games released on this day in history */
+    suspend fun getOnThisDay(): OnThisDayResponseDto {
+        return client.get("$baseUrl/api/explore/on-this-day").body()
+    }
+
+    /** Returns best games from a given year */
+    suspend fun getBestOfYear(year: Int): BestOfYearResponseDto {
+        return client.get("$baseUrl/api/explore/best-of-year/$year").body()
+    }
+
+    /** Returns personal play anniversaries */
+    suspend fun getYourAnniversaries(): YourAnniversariesResponseDto {
+        return client.get("$baseUrl/api/explore/your-anniversaries").body()
+    }
+
+    /** Returns games from a specific decade */
+    suspend fun getDecade(decade: String): DecadeResponseDto {
+        return client.get("$baseUrl/api/explore/decades/$decade").body()
+    }
+
+    /** Returns games that are easy to 100% complete */
+    suspend fun getEasyToComplete(): EasyToCompleteResponseDto {
+        return client.get("$baseUrl/api/explore/easy-to-complete").body()
+    }
+
+    /** Returns the hardest games to complete */
+    suspend fun getHardestGames(): HardestGamesResponseDto {
+        return client.get("$baseUrl/api/explore/hardest-games").body()
+    }
+
+    /** Returns games the user is almost done completing */
+    suspend fun getAlmostDone(): AlmostDoneResponseDto {
+        return client.get("$baseUrl/api/explore/almost-done").body()
+    }
+
+    /** Returns games with fresh achievement content */
+    suspend fun getFreshChallenges(): FreshChallengesResponseDto {
+        return client.get("$baseUrl/api/explore/fresh-challenges").body()
+    }
+
+    /** Returns active community challenges */
+    suspend fun getActiveChallenges(): ActiveChallengesResponseDto {
+        return client.get("$baseUrl/api/explore/active-challenges").body()
+    }
+
+    /** Returns games filtered by multi-faceted criteria */
+    suspend fun getFilteredGames(
+        filters: Map<String, String>,
+        page: Int? = null,
+        pageSize: Int? = null,
+    ): GameListResponse {
+        return client.get("$baseUrl/api/games") {
+            filters.forEach { (key, value) ->
+                parameter(key, value)
+            }
+            page?.let { parameter("page", it) }
+            pageSize?.let { parameter("pageSize", it) }
+        }.body()
+    }
+
+    /** Returns user's saved searches */
+    suspend fun getSavedSearches(): List<SavedSearchDto> {
+        return client.get("$baseUrl/api/user/saved-searches").body()
+    }
+
+    /** Creates a new saved search */
+    suspend fun createSavedSearch(name: String, filters: Map<String, String>): SavedSearchDto {
+        return client.post("$baseUrl/api/user/saved-searches") {
+            setBody(CreateSavedSearchRequest(
+                name = name,
+                filters = filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
+            ))
+        }.body()
+    }
+
+    /** Deletes a saved search */
+    suspend fun deleteSavedSearch(id: String) {
+        client.delete("$baseUrl/api/user/saved-searches/$id")
+    }
+
+    // --- Phase 14: Wild Features ---
+
+    /** Returns the decision wizard step configuration */
+    suspend fun getWizardSteps(): WizardResponseDto {
+        return client.get("$baseUrl/api/explore/wizard").body()
+    }
+
+    /** Returns wizard recommendations based on mood/era/vibe choices */
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): WizardResultsResponseDto {
+        return client.get("$baseUrl/api/explore/wizard/results") {
+            parameter("mood", mood)
+            parameter("era", era)
+            parameter("vibe", vibe)
+        }.body()
+    }
+
+    /** Returns the user's explorer badges */
+    suspend fun getExplorerBadges(): ExplorerBadgesResponseDto {
+        return client.get("$baseUrl/api/user/explorer-badges").body()
+    }
+
+    /** Returns the user's completionist map (per-console progress) */
+    suspend fun getCompletionistMap(): CompletionistMapResponseDto {
+        return client.get("$baseUrl/api/user/completionist-map").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

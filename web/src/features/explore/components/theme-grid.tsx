@@ -127,7 +127,7 @@ export function ThemeGrid({ themes, isLoading }: ThemeGridProps) {
         {canScrollLeft && (
           <button
             onClick={() => scroll("left")}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/themes:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/themes:opacity-100 group-focus-within/themes:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:opacity-100 transition-all duration-300 shadow-lg"
             aria-label="Scroll themes left"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -136,7 +136,7 @@ export function ThemeGrid({ themes, isLoading }: ThemeGridProps) {
         {canScrollRight && (
           <button
             onClick={() => scroll("right")}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/themes:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/themes:opacity-100 group-focus-within/themes:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:opacity-100 transition-all duration-300 shadow-lg"
             aria-label="Scroll themes right"
           >
             <ChevronRight className="h-5 w-5" />
@@ -155,7 +155,7 @@ export function ThemeGrid({ themes, isLoading }: ThemeGridProps) {
             <Link
               key={theme.id}
               to={`/explore/themes/${theme.id}`}
-              className="w-44 sm:w-48 lg:w-52 flex-shrink-0"
+              className="w-44 sm:w-48 lg:w-52 flex-shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
               role="listitem"
             >
               <div

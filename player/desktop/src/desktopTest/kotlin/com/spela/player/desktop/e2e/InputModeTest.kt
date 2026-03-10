@@ -131,6 +131,6 @@ class InputModeTest {
 
         // Should still be in gamepad mode with the section indicator
         onNodeWithContentDescription("Section indicator").assertExists()
-        onNodeWithContentDescription("Section: Consoles, active").assertExists()
+        onNodeWithContentDescription("Section: Explore, active").assertExists()
     }
 }

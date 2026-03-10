@@ -1329,6 +1329,38 @@ class FakeExploreRepository : ExploreRepository {
     var seriesDetails: Map<String, SeriesDetail> = emptyMap()
     var gameSeriesLinks: Map<String, List<GameSeriesLink>> = emptyMap()
     var gameFranchiseLinks: Map<String, List<GameFranchiseLink>> = emptyMap()
+    var moodsList: List<MoodDefinition> = emptyList()
+    var moodGames: Map<String, List<Game>> = emptyMap()
+    var surpriseGame: Game? = null
+    var forYouRows: List<ForYouRow> = emptyList()
+    var tasteProfile: TasteProfile? = null
+    var playersLikeYou: PlayersLikeYouResult? = null
+    var developerSummaries: List<DeveloperSummary> = emptyList()
+    var developerDetails: Map<String, DeveloperDetail> = emptyMap()
+    var publisherDetails: Map<String, DeveloperDetail> = emptyMap()
+    var developerSpotlightData: DeveloperSpotlight? = null
+    var consoleShowcases: Map<String, ConsoleShowcase> = emptyMap()
+    var consoleHighlightsList: List<ConsoleHighlight> = emptyList()
+    var artworkItems: List<ArtworkItem> = emptyList()
+    var screenshotItems: List<ScreenshotItem> = emptyList()
+    var trendingGames: List<TrendingGame> = emptyList()
+    var communityTopGames: List<CommunityTopGame> = emptyList()
+    var cultClassicsList: List<CultClassicGame> = emptyList()
+    var recentReviews: List<RecentReviewItem> = emptyList()
+    var activeNowGames: List<ActiveNowItem> = emptyList()
+    var onThisDayDate: String = ""
+    var onThisDayGames: List<Game> = emptyList()
+    var bestOfYearGames: Map<Int, List<Game>> = emptyMap()
+    var anniversariesList: List<AnniversaryItem> = emptyList()
+    var decadeResults: Map<String, Pair<String, List<Game>>> = emptyMap()
+    var easyToCompleteGames: List<AchievementGameItem> = emptyList()
+    var hardestGamesList: List<AchievementGameItem> = emptyList()
+    var almostDoneGamesList: List<AlmostDoneGame> = emptyList()
+    var freshChallengeGamesList: List<FreshChallengeGame> = emptyList()
+    var activeChallengesList: List<ExploreChallenge> = emptyList()
+    var filteredGames: List<Game> = emptyList()
+    var savedSearchesList: List<SavedSearch> = mutableListOf()
+    var createdSavedSearch: SavedSearch? = null
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1374,6 +1406,208 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>> =
         if (shouldFail) Result.failure(Exception("Failed to load game franchises"))
         else Result.success(gameFranchiseLinks[gameId] ?: emptyList())
+
+    override suspend fun getMoods(): Result<List<MoodDefinition>> =
+        if (shouldFail) Result.failure(Exception("Failed to load moods"))
+        else Result.success(moodsList)
+
+    override suspend fun getMoodGames(mood: String): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load mood games"))
+        else Result.success(moodGames[mood] ?: emptyList())
+
+    override suspend fun getSurpriseGame(): Result<Game> =
+        if (shouldFail) Result.failure(Exception("Failed to load surprise game"))
+        else {
+            val game = surpriseGame
+            if (game != null) Result.success(game)
+            else Result.failure(Exception("No surprise game available"))
+        }
+
+    override suspend fun getForYou(): Result<List<ForYouRow>> =
+        if (shouldFail) Result.failure(Exception("Failed to load for-you rows"))
+        else Result.success(forYouRows)
+
+    override suspend fun getTasteProfile(): Result<TasteProfile> =
+        if (shouldFail) Result.failure(Exception("Failed to load taste profile"))
+        else {
+            val profile = tasteProfile
+            if (profile != null) Result.success(profile)
+            else Result.failure(Exception("No taste profile available"))
+        }
+
+    override suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult> =
+        if (shouldFail) Result.failure(Exception("Failed to load players like you"))
+        else {
+            val result = playersLikeYou
+            if (result != null) Result.success(result)
+            else Result.failure(Exception("No players like you available"))
+        }
+
+    override suspend fun getDevelopers(): Result<List<DeveloperSummary>> =
+        if (shouldFail) Result.failure(Exception("Failed to load developers"))
+        else Result.success(developerSummaries)
+
+    override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load developer detail"))
+        else {
+            val detail = developerDetails[name]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Developer not found"))
+        }
+
+    override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load publisher detail"))
+        else {
+            val detail = publisherDetails[name]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Publisher not found"))
+        }
+
+    override suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight> =
+        if (shouldFail) Result.failure(Exception("Failed to load developer spotlight"))
+        else {
+            val spotlight = developerSpotlightData
+            if (spotlight != null) Result.success(spotlight)
+            else Result.failure(Exception("No developer spotlight available"))
+        }
+
+    override suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase> =
+        if (shouldFail) Result.failure(Exception("Failed to load console showcase"))
+        else {
+            val showcase = consoleShowcases[consoleId]
+            if (showcase != null) Result.success(showcase)
+            else Result.failure(Exception("Console not found"))
+        }
+
+    override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> =
+        if (shouldFail) Result.failure(Exception("Failed to load console highlights"))
+        else Result.success(consoleHighlightsList)
+
+    override suspend fun getArtworkGallery(page: Int): Result<List<ArtworkItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load artwork gallery"))
+        else Result.success(artworkItems)
+
+    override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load screenshot gallery"))
+        else Result.success(screenshotItems)
+
+    override suspend fun getTrending(): Result<List<TrendingGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load trending"))
+        else Result.success(trendingGames)
+
+    override suspend fun getCommunityTop(): Result<List<CommunityTopGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load community top"))
+        else Result.success(communityTopGames)
+
+    override suspend fun getCultClassics(): Result<List<CultClassicGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load cult classics"))
+        else Result.success(cultClassicsList)
+
+    override suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load recently reviewed"))
+        else Result.success(recentReviews)
+
+    override suspend fun getActiveNow(): Result<List<ActiveNowItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load active now"))
+        else Result.success(activeNowGames)
+
+    override suspend fun getOnThisDay(): Result<Pair<String, List<Game>>> =
+        if (shouldFail) Result.failure(Exception("Failed to load on this day"))
+        else Result.success(Pair(onThisDayDate, onThisDayGames))
+
+    override suspend fun getBestOfYear(year: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load best of year"))
+        else Result.success(bestOfYearGames[year] ?: emptyList())
+
+    override suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load anniversaries"))
+        else Result.success(anniversariesList)
+
+    override suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>> =
+        if (shouldFail) Result.failure(Exception("Failed to load decade"))
+        else {
+            val result = decadeResults[decade]
+            if (result != null) Result.success(result)
+            else Result.success(Pair("", emptyList()))
+        }
+
+    override suspend fun getEasyToComplete(): Result<List<AchievementGameItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load easy to complete"))
+        else Result.success(easyToCompleteGames)
+
+    override suspend fun getHardestGames(): Result<List<AchievementGameItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load hardest games"))
+        else Result.success(hardestGamesList)
+
+    override suspend fun getAlmostDone(): Result<List<AlmostDoneGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load almost done"))
+        else Result.success(almostDoneGamesList)
+
+    override suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load fresh challenges"))
+        else Result.success(freshChallengeGamesList)
+
+    override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> =
+        if (shouldFail) Result.failure(Exception("Failed to load active challenges"))
+        else Result.success(activeChallengesList)
+
+    override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load filtered games"))
+        else Result.success(filteredGames)
+
+    override suspend fun getSavedSearches(): Result<List<SavedSearch>> =
+        if (shouldFail) Result.failure(Exception("Failed to load saved searches"))
+        else Result.success(savedSearchesList)
+
+    override suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch> =
+        if (shouldFail) Result.failure(Exception("Failed to create saved search"))
+        else {
+            val search = createdSavedSearch ?: SavedSearch(
+                id = "saved-${savedSearchesList.size + 1}",
+                name = name,
+                filters = filters,
+                createdAt = "2026-03-10T00:00:00Z",
+            )
+            savedSearchesList = savedSearchesList + search
+            Result.success(search)
+        }
+
+    override suspend fun deleteSavedSearch(id: String): Result<Unit> =
+        if (shouldFail) Result.failure(Exception("Failed to delete saved search"))
+        else {
+            savedSearchesList = savedSearchesList.filter { it.id != id }
+            Result.success(Unit)
+        }
+
+    var wizardSteps: List<WizardStep> = listOf(
+        WizardStep(1, "What are you in the mood for?", "mood", listOf(
+            WizardOption("action", "Action & Excitement", "Fast-paced thrills"),
+            WizardOption("chill", "Chill & Relaxing", "Laid-back vibes"),
+        )),
+        WizardStep(2, "Pick an era", "era", listOf(
+            WizardOption("80s", "The 80s", "Birth of console gaming"),
+            WizardOption("any", "Any Era", "Surprise me"),
+        )),
+        WizardStep(3, "Refine your vibe", "vibe", listOf(
+            WizardOption("solo", "Solo Adventure", "Just me and the game"),
+            WizardOption("any", "Anything Goes", "No preference"),
+        )),
+    )
+    var wizardResults: WizardResults = WizardResults(emptyList(), "Your Perfect Picks")
+    var explorerBadges: List<ExplorerBadge> = emptyList()
+    var completionistMapData: CompletionistMap = CompletionistMap(emptyList(), 0, 0, 0)
+
+    override suspend fun getWizardSteps(): Result<List<WizardStep>> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(wizardSteps)
+
+    override suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(wizardResults)
+
+    override suspend fun getExplorerBadges(): Result<List<ExplorerBadge>> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(explorerBadges)
+
+    override suspend fun getCompletionistMap(): Result<CompletionistMap> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(completionistMapData)
 }
 
 class FakeCheatRepository : CheatRepository {

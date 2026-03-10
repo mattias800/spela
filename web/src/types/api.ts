@@ -113,10 +113,33 @@ export interface GameFilters {
   search?: string;
   consoleId?: string;
   genre?: string;
-  sortBy?: "title" | "created_at" | "file_size" | "rating";
+  // Multi-select filters (comma-separated when sent to API)
+  consoles?: string[];
+  genres?: string[];
+  themes?: string[];
+  keywords?: string[];
+  perspectives?: string[];
+  // Text search filters
+  developer?: string;
+  publisher?: string;
+  // Range filters
+  yearMin?: number;
+  yearMax?: number;
+  ratingMin?: number;
+  ratingMax?: number;
+  // Play status
+  playStatus?: "unplayed" | "played" | "favorited" | "play-later";
+  sortBy?: "title" | "created_at" | "file_size" | "rating" | "release_date";
   sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+}
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  filters: Record<string, string | number>;
+  createdAt: string;
 }
 
 export interface MetadataMatchesResponse {
@@ -895,6 +918,100 @@ export interface FranchiseDetail {
   games: SeriesGame[];
 }
 
+// --- Visual Browsing / Gallery ---
+
+export interface ScreenshotItem {
+  url: string;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+}
+
+export interface ScreenshotGalleryResponse {
+  screenshots: ScreenshotItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export interface ArtworkItem {
+  url: string;
+  width: number;
+  height: number;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+}
+
+export interface ArtworkGalleryResponse {
+  artworks: ArtworkItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export interface CoverItem {
+  coverUrl: string;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+  rating: number;
+  coverAspectRatio: number;
+}
+
+export interface CoverGalleryResponse {
+  covers: CoverItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+// --- Console Showcase ---
+
+export interface GenreCount {
+  name: string;
+  gameCount: number;
+}
+
+export interface ConsoleShowcase {
+  console: Console;
+  essentials: Game[];
+  hiddenGems: Game[];
+  genreBreakdown: GenreCount[];
+  topDevelopers: DeveloperSummary[];
+  recentlyPlayed: Game[];
+}
+
+export interface ConsoleHighlight {
+  id: string;
+  name: string;
+  colorTheme: string;
+  iconUrl: string;
+  logoUrl: string;
+  gameCount: number;
+  topGame: Game | null;
+}
+
+export interface ConsoleHighlightsResponse {
+  consoles: ConsoleHighlight[];
+}
+
+// --- Moods ---
+
+export interface MoodDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  gradient: string[];
+}
+
 // --- Explore ---
 
 export interface FeaturedGame {
@@ -920,6 +1037,87 @@ export interface ExploreRowsResponse {
   rows: ExploreRow[];
 }
 
+// --- For You / Personalized Recommendations ---
+
+/** GameSummary is a full Game object when returned by recommendation endpoints */
+export type GameSummary = Game;
+
+export interface ForYouRow {
+  type: "because_you_played" | "more_genre" | "unfinished" | "expand_horizons";
+  title: string;
+  sourceGame?: GameSummary;
+  genre?: string;
+  games: GameSummary[];
+}
+
+export interface ForYouResponse {
+  rows: ForYouRow[];
+}
+
+export interface TasteBreakdown {
+  name: string;
+  percentage: number;
+  playTime: number;
+  gameCount: number;
+}
+
+export interface ConsoleBreakdown {
+  name: string;
+  abbreviation: string;
+  playTime: number;
+  gameCount: number;
+}
+
+export interface TasteProfile {
+  totalPlayTime: number;
+  genres: TasteBreakdown[];
+  themes: TasteBreakdown[];
+  topConsoles: ConsoleBreakdown[];
+}
+
+export interface PlayersLikeYouResponse {
+  games: GameSummary[];
+  similarUsersCount: number;
+}
+
+// --- Developers & Publishers ---
+
+export interface DeveloperSummary {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+}
+
+export interface DeveloperListResponse {
+  developers: DeveloperSummary[];
+}
+
+export interface DeveloperDetailResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  games: Game[];
+}
+
+export interface PublisherDetailResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  games: Game[];
+}
+
+export interface DeveloperSpotlightResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  topGames: Game[];
+  heroUrl: string;
+}
+
 export interface StagedUpload {
   id: string;
   fileName: string;
@@ -935,4 +1133,200 @@ export interface StagedUpload {
   verificationStatus: string;
   crc32: string;
   canonicalName: string;
+}
+
+// --- Phase 10: Social & Community Discovery ---
+
+export interface TrendingGame {
+  game: Game;
+  playersThisWeek: number;
+}
+
+export interface TrendingResponse {
+  games: TrendingGame[];
+}
+
+export interface CommunityTopGame {
+  game: Game;
+  avgRating: number;
+  ratingCount: number;
+}
+
+export interface CommunityTopResponse {
+  games: CommunityTopGame[];
+}
+
+export interface CultClassicGame {
+  game: Game;
+  communityRating: number;
+  igdbRating: number;
+  ratingCount: number;
+}
+
+export interface CultClassicsResponse {
+  games: CultClassicGame[];
+}
+
+export interface RecentReviewItem {
+  game: Game;
+  rating: number;
+  review: string;
+  reviewerName: string;
+  reviewedAt: string;
+}
+
+export interface RecentlyReviewedResponse {
+  reviews: RecentReviewItem[];
+}
+
+export interface ActiveNowItem {
+  game: Game;
+  activeSessions: number;
+  activeChallenges: number;
+}
+
+export interface ActiveNowResponse {
+  games: ActiveNowItem[];
+}
+
+// --- Phase 11: Temporal Discovery ---
+
+export interface OnThisDayResponse {
+  date: string;
+  games: Game[];
+}
+
+export interface BestOfYearResponse {
+  year: number;
+  games: Game[];
+}
+
+export interface AnniversaryItem {
+  game: Game;
+  yearsAgo: number;
+  playedAt: string;
+}
+
+export interface YourAnniversariesResponse {
+  anniversaries: AnniversaryItem[];
+}
+
+export interface DecadeResponse {
+  decade: string;
+  label: string;
+  games: Game[];
+}
+
+// --- Phase 12: Achievement & Challenge Discovery ---
+
+export interface AchievementGameItem {
+  game: Game;
+  totalAchievements: number;
+  avgCompletion: number;
+  playersAttempted: number;
+  playersCompleted: number;
+}
+
+export interface EasyToCompleteResponse {
+  games: AchievementGameItem[];
+}
+
+export interface HardestGamesResponse {
+  games: AchievementGameItem[];
+}
+
+export interface AlmostDoneGame {
+  game: Game;
+  unlockedCount: number;
+  totalCount: number;
+  completionPercent: number;
+}
+
+export interface AlmostDoneResponse {
+  games: AlmostDoneGame[];
+}
+
+export interface FreshChallengeGame {
+  game: Game;
+  totalAchievements: number;
+  totalPoints: number;
+}
+
+export interface FreshChallengesResponse {
+  games: FreshChallengeGame[];
+}
+
+export interface ExploreChallenge {
+  id: string;
+  creatorUsername: string;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  consoleName?: string;
+  name: string;
+  description?: string;
+  type: ChallengeType;
+  difficulty: ChallengeDifficulty;
+  attemptCount: number;
+  completionCount: number;
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export interface ActiveChallengesResponse {
+  challenges: ExploreChallenge[];
+}
+
+// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+
+export interface WizardOption {
+  id: string;
+  label: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export interface WizardStep {
+  step: number;
+  title: string;
+  type: string;
+  options: WizardOption[];
+}
+
+export interface WizardResponse {
+  steps: WizardStep[];
+}
+
+export interface WizardResultsResponse {
+  games: Game[];
+  title: string;
+}
+
+export interface ExplorerBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+}
+
+export interface ExplorerBadgesResponse {
+  badges: ExplorerBadge[];
+}
+
+export interface CompletionistConsole {
+  id: string;
+  name: string;
+  totalGames: number;
+  playedGames: number;
+  percentage: number;
+}
+
+export interface CompletionistMapResponse {
+  consoles: CompletionistConsole[];
+  totalGames: number;
+  totalPlayed: number;
+  overallPct: number;
 }

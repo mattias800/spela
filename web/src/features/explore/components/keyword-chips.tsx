@@ -82,7 +82,7 @@ export function KeywordChips({ keywords, isLoading }: KeywordChipsProps) {
         {canScrollLeft && (
           <button
             onClick={() => scroll("left")}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/keywords:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/keywords:opacity-100 group-focus-within/keywords:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:opacity-100 transition-all duration-300 shadow-lg"
             aria-label="Scroll keywords left"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -91,7 +91,7 @@ export function KeywordChips({ keywords, isLoading }: KeywordChipsProps) {
         {canScrollRight && (
           <button
             onClick={() => scroll("right")}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/keywords:opacity-100 transition-all duration-300 shadow-lg"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/keywords:opacity-100 group-focus-within/keywords:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:opacity-100 transition-all duration-300 shadow-lg"
             aria-label="Scroll keywords right"
           >
             <ChevronRight className="h-5 w-5" />
@@ -111,7 +111,7 @@ export function KeywordChips({ keywords, isLoading }: KeywordChipsProps) {
               key={keyword.id}
               to={`/explore/keywords/${keyword.id}`}
               role="listitem"
-              className="flex-shrink-0"
+              className="flex-shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
             >
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface-800/60 border border-surface-700/50 text-surface-200 hover:bg-surface-700/60 hover:border-surface-600/50 hover:text-surface-100 transition-all duration-200 group/chip">
                 <Tag className="h-3.5 w-3.5 text-surface-400 group-hover/chip:text-brand-400 transition-colors" />

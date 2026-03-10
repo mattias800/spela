@@ -1,14 +1,41 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.AchievementGameItem
+import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AlmostDoneGame
+import com.spela.player.domain.model.AnniversaryItem
+import com.spela.player.domain.model.ArtworkItem
+import com.spela.player.domain.model.CommunityTopGame
+import com.spela.player.domain.model.ConsoleHighlight
+import com.spela.player.domain.model.ConsoleShowcase
+import com.spela.player.domain.model.CultClassicGame
+import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.DeveloperSpotlight
+import com.spela.player.domain.model.DeveloperSummary
+import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+
+import com.spela.player.domain.model.ForYouRow
+import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.SeriesDetail
+import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.domain.model.PlayersLikeYouResult
+import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.CompletionistMap
+import com.spela.player.domain.model.ExplorerBadge
+import com.spela.player.domain.model.SavedSearch
+import com.spela.player.domain.model.ScreenshotItem
+import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
+import com.spela.player.domain.model.TrendingGame
+import com.spela.player.domain.model.WizardResults
+import com.spela.player.domain.model.WizardStep
 
 interface ExploreRepository {
     suspend fun getFeaturedGames(): Result<List<FeaturedGame>>
@@ -21,4 +48,41 @@ interface ExploreRepository {
     suspend fun getSeriesDetail(id: String): Result<SeriesDetail>
     suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>>
     suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>>
+
+    suspend fun getMoods(): Result<List<MoodDefinition>>
+    suspend fun getMoodGames(mood: String): Result<List<Game>>
+    suspend fun getSurpriseGame(): Result<Game>
+    suspend fun getForYou(): Result<List<ForYouRow>>
+    suspend fun getTasteProfile(): Result<TasteProfile>
+    suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult>
+    suspend fun getDevelopers(): Result<List<DeveloperSummary>>
+    suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail>
+    suspend fun getPublisherDetail(name: String): Result<DeveloperDetail>
+    suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight>
+    suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase>
+    suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>>
+    suspend fun getArtworkGallery(page: Int = 1): Result<List<ArtworkItem>>
+    suspend fun getScreenshotGallery(page: Int = 1): Result<List<ScreenshotItem>>
+    suspend fun getTrending(): Result<List<TrendingGame>>
+    suspend fun getCommunityTop(): Result<List<CommunityTopGame>>
+    suspend fun getCultClassics(): Result<List<CultClassicGame>>
+    suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>>
+    suspend fun getActiveNow(): Result<List<ActiveNowItem>>
+    suspend fun getOnThisDay(): Result<Pair<String, List<Game>>>
+    suspend fun getBestOfYear(year: Int): Result<List<Game>>
+    suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>>
+    suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>>
+    suspend fun getEasyToComplete(): Result<List<AchievementGameItem>>
+    suspend fun getHardestGames(): Result<List<AchievementGameItem>>
+    suspend fun getAlmostDone(): Result<List<AlmostDoneGame>>
+    suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>>
+    suspend fun getActiveChallenges(): Result<List<ExploreChallenge>>
+    suspend fun getFilteredGames(filters: Map<String, String>, page: Int = 1, pageSize: Int = 20): Result<List<Game>>
+    suspend fun getSavedSearches(): Result<List<SavedSearch>>
+    suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch>
+    suspend fun deleteSavedSearch(id: String): Result<Unit>
+    suspend fun getWizardSteps(): Result<List<WizardStep>>
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults>
+    suspend fun getExplorerBadges(): Result<List<ExplorerBadge>>
+    suspend fun getCompletionistMap(): Result<CompletionistMap>
 }

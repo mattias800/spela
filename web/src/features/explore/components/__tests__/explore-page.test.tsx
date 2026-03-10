@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -12,6 +12,31 @@ vi.mock("@/hooks/use-explore", () => ({
   useThemes: vi.fn(),
   useKeywords: vi.fn(),
   useFeaturedSeries: vi.fn(),
+  useMoods: vi.fn(),
+  useForYou: vi.fn(),
+  usePlayersLikeYou: vi.fn(),
+  useDeveloperSpotlight: vi.fn(),
+  useConsoleHighlights: vi.fn(),
+  useArtworkGallery: vi.fn(),
+  useTrending: vi.fn(),
+  useCommunityTop: vi.fn(),
+  useCultClassics: vi.fn(),
+  useRecentlyReviewed: vi.fn(),
+  useActiveNow: vi.fn(),
+  useOnThisDay: vi.fn(),
+  useBestOfYear: vi.fn(),
+  useYourAnniversaries: vi.fn(),
+  useDecade: vi.fn(),
+  useEasyToComplete: vi.fn(),
+  useHardestGames: vi.fn(),
+  useAlmostDone: vi.fn(),
+  useFreshChallenges: vi.fn(),
+  useActiveChallenges: vi.fn(),
+  useSurpriseGame: vi.fn(() => ({
+    data: undefined,
+    refetch: vi.fn(),
+    isSuccess: false,
+  })),
 }));
 
 vi.mock("@/hooks/use-games", () => ({
@@ -30,13 +55,37 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries } from "@/hooks/use-explore";
+vi.mock("@/hooks/use-in-view", () => ({
+  useInView: () => ({ ref: vi.fn(), isInView: true }),
+}));
+
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade, useEasyToComplete, useHardestGames, useAlmostDone, useFreshChallenges, useActiveChallenges } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
 const mockUseThemes = useThemes as ReturnType<typeof vi.fn>;
 const mockUseKeywords = useKeywords as ReturnType<typeof vi.fn>;
 const mockUseFeaturedSeries = useFeaturedSeries as ReturnType<typeof vi.fn>;
+const mockUseMoods = useMoods as ReturnType<typeof vi.fn>;
+const mockUseForYou = useForYou as ReturnType<typeof vi.fn>;
+const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
+const mockUseDeveloperSpotlight = useDeveloperSpotlight as ReturnType<typeof vi.fn>;
+const mockUseConsoleHighlights = useConsoleHighlights as ReturnType<typeof vi.fn>;
+const mockUseArtworkGallery = useArtworkGallery as ReturnType<typeof vi.fn>;
+const mockUseTrending = useTrending as ReturnType<typeof vi.fn>;
+const mockUseCommunityTop = useCommunityTop as ReturnType<typeof vi.fn>;
+const mockUseCultClassics = useCultClassics as ReturnType<typeof vi.fn>;
+const mockUseRecentlyReviewed = useRecentlyReviewed as ReturnType<typeof vi.fn>;
+const mockUseActiveNow = useActiveNow as ReturnType<typeof vi.fn>;
+const mockUseOnThisDay = useOnThisDay as ReturnType<typeof vi.fn>;
+const mockUseBestOfYear = useBestOfYear as ReturnType<typeof vi.fn>;
+const mockUseYourAnniversaries = useYourAnniversaries as ReturnType<typeof vi.fn>;
+const mockUseDecade = useDecade as ReturnType<typeof vi.fn>;
+const mockUseEasyToComplete = useEasyToComplete as ReturnType<typeof vi.fn>;
+const mockUseHardestGames = useHardestGames as ReturnType<typeof vi.fn>;
+const mockUseAlmostDone = useAlmostDone as ReturnType<typeof vi.fn>;
+const mockUseFreshChallenges = useFreshChallenges as ReturnType<typeof vi.fn>;
+const mockUseActiveChallenges = useActiveChallenges as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -97,6 +146,36 @@ const mockFeaturedSeries: FeaturedSeries[] = [
   { id: "1", name: "Super Mario", libraryGames: 5, totalGames: 12, consoleCount: 3, heroUrl: "/hero/mario.jpg" },
   { id: "2", name: "The Legend of Zelda", libraryGames: 4, totalGames: 10, consoleCount: 2, heroUrl: "/hero/zelda.jpg" },
 ];
+
+const mockMoods: MoodDefinition[] = [
+  { id: "chill", name: "Chill", description: "Relaxing games", icon: "😌", gradient: ["#1a237e", "#4a148c"] },
+  { id: "intense", name: "Intense", description: "Heart-pounding action", icon: "🔥", gradient: ["#b71c1c", "#ff6f00"] },
+];
+
+const mockForYou: ForYouResponse = {
+  rows: [
+    {
+      type: "because_you_played",
+      title: "Because you played Chrono Trigger",
+      sourceGame: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
+      games: [makeGame({ id: "fy1", title: "For You Game 1" })],
+    },
+  ],
+};
+
+const mockPlayersLikeYou: PlayersLikeYouResponse = {
+  games: [makeGame({ id: "ply1", title: "Players Pick" })],
+  similarUsersCount: 5,
+};
+
+const mockDeveloperSpotlight: DeveloperSpotlightResponse = {
+  name: "Capcom",
+  gameCount: 10,
+  avgRating: 85.5,
+  consoles: ["SNES", "GBA"],
+  topGames: [makeGame({ id: "sp1", title: "Spotlight Game 1" })],
+  heroUrl: "/hero/capcom.jpg",
+};
 
 const mockRows: ExploreRowsResponse = {
   rows: [
@@ -175,6 +254,86 @@ describe("ExplorePage", () => {
     });
     mockUseFeaturedSeries.mockReturnValue({
       data: mockFeaturedSeries,
+      isLoading: false,
+    });
+    mockUseMoods.mockReturnValue({
+      data: mockMoods,
+      isLoading: false,
+    });
+    mockUseForYou.mockReturnValue({
+      data: mockForYou,
+      isLoading: false,
+    });
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: mockPlayersLikeYou,
+      isLoading: false,
+    });
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: mockDeveloperSpotlight,
+      isLoading: false,
+    });
+    mockUseConsoleHighlights.mockReturnValue({
+      data: { consoles: [] },
+      isLoading: false,
+    });
+    mockUseArtworkGallery.mockReturnValue({
+      data: { artworks: [], page: 1, totalPages: 0, totalCount: 0 },
+      isLoading: false,
+    });
+    mockUseTrending.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseCommunityTop.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseCultClassics.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseRecentlyReviewed.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseActiveNow.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseOnThisDay.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseBestOfYear.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseYourAnniversaries.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseDecade.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseEasyToComplete.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseHardestGames.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseAlmostDone.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseFreshChallenges.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseActiveChallenges.mockReturnValue({
+      data: undefined,
       isLoading: false,
     });
   });
@@ -366,5 +525,102 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("series-shelf-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the mood picker section", () => {
+    renderPage();
+    expect(screen.getByTestId("mood-picker")).toBeInTheDocument();
+    expect(screen.getByText("Chill")).toBeInTheDocument();
+    expect(screen.getByText("Intense")).toBeInTheDocument();
+  });
+
+  it("hides mood picker when no moods available", () => {
+    mockUseMoods.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("mood-picker")).not.toBeInTheDocument();
+  });
+
+  it("shows mood picker skeleton while loading", () => {
+    mockUseMoods.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("mood-picker-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the For You section", () => {
+    renderPage();
+    expect(screen.getByTestId("for-you-section")).toBeInTheDocument();
+    expect(screen.getByText("For You Game 1")).toBeInTheDocument();
+  });
+
+  it("renders the Players Like You shelf", () => {
+    renderPage();
+    expect(screen.getByTestId("players-like-you-shelf")).toBeInTheDocument();
+    expect(screen.getByText("Players Pick")).toBeInTheDocument();
+  });
+
+  it("hides For You section when no data", () => {
+    mockUseForYou.mockReturnValue({
+      data: { rows: [] },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("for-you-section")).not.toBeInTheDocument();
+  });
+
+  it("hides Players Like You shelf when no data", () => {
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: { games: [], similarUsersCount: 0 },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("players-like-you-shelf")).not.toBeInTheDocument();
+  });
+
+  it("shows For You skeleton while loading", () => {
+    mockUseForYou.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("for-you-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows Players Like You skeleton while loading", () => {
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("players-like-you-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the developer spotlight section", () => {
+    renderPage();
+    expect(screen.getByTestId("developer-spotlight")).toBeInTheDocument();
+    expect(screen.getByText("Spotlight Game 1")).toBeInTheDocument();
+  });
+
+  it("hides developer spotlight when no data", () => {
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("developer-spotlight")).not.toBeInTheDocument();
+  });
+
+  it("shows developer spotlight skeleton while loading", () => {
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("developer-spotlight-skeleton")).toBeInTheDocument();
   });
 });

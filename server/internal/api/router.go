@@ -173,6 +173,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	artworkHandler := &ArtworkHandler{DB: cfg.DB}
 	exploreHandler := &ExploreHandler{DB: cfg.DB}
+	savedSearchHandler := &SavedSearchHandler{DB: cfg.DB}
 	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
@@ -240,6 +241,36 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/featured", exploreHandler.GetExploreFeatured)
 			explore.GET("/rows", exploreHandler.GetExploreRows)
 			explore.GET("/series/featured", exploreHandler.GetExploreFeaturedSeries)
+			explore.GET("/moods", exploreHandler.GetExploreMoods)
+			explore.GET("/mood/:mood", exploreHandler.GetMoodGames)
+			explore.GET("/surprise", exploreHandler.GetSurpriseGame)
+			explore.GET("/for-you", exploreHandler.GetForYou)
+			explore.GET("/players-like-you", exploreHandler.GetPlayersLikeYou)
+			explore.GET("/developers", exploreHandler.GetDevelopers)
+			explore.GET("/developers/spotlight", exploreHandler.GetDeveloperSpotlight)
+			explore.GET("/developers/:name", exploreHandler.GetDeveloperDetail)
+			explore.GET("/publishers/:name", exploreHandler.GetPublisherDetail)
+			explore.GET("/consoles/:id/showcase", exploreHandler.GetConsoleShowcase)
+			explore.GET("/console-highlights", exploreHandler.GetConsoleHighlights)
+			explore.GET("/screenshots", exploreHandler.GetScreenshotGallery)
+			explore.GET("/artwork", exploreHandler.GetArtworkGallery)
+			explore.GET("/covers", exploreHandler.GetCoverGallery)
+			explore.GET("/trending", exploreHandler.GetTrending)
+			explore.GET("/community-top", exploreHandler.GetCommunityTop)
+			explore.GET("/cult-classics", exploreHandler.GetCultClassics)
+			explore.GET("/recently-reviewed", exploreHandler.GetRecentlyReviewed)
+			explore.GET("/active-now", exploreHandler.GetActiveNow)
+			explore.GET("/on-this-day", exploreHandler.GetOnThisDay)
+			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
+			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
+			explore.GET("/decades/:decade", exploreHandler.GetDecades)
+			explore.GET("/easy-to-complete", exploreHandler.GetEasyToComplete)
+			explore.GET("/hardest-games", exploreHandler.GetHardestGames)
+			explore.GET("/almost-done", exploreHandler.GetAlmostDone)
+			explore.GET("/fresh-challenges", exploreHandler.GetFreshChallenges)
+			explore.GET("/active-challenges", exploreHandler.GetActiveChallenges)
+			explore.GET("/wizard", exploreHandler.GetWizardSteps)
+			explore.GET("/wizard/results", exploreHandler.GetWizardResults)
 		}
 
 		// Games
@@ -318,6 +349,9 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/stats", userHandler.GetUserStats)
 		api.GET("/user/play-stats", userHandler.GetPlayStats)
 		api.GET("/user/play-heatmap", statsHandler.GetPlayHeatmap)
+		api.GET("/user/taste-profile", exploreHandler.GetTasteProfile)
+		api.GET("/user/explorer-badges", exploreHandler.GetExplorerBadges)
+		api.GET("/user/completionist-map", exploreHandler.GetCompletionistMap)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
@@ -327,6 +361,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/games/:gameId/keymapping", gameKeyMappingHandler.GetGameKeyMapping)
 		api.PUT("/user/games/:gameId/keymapping", gameKeyMappingHandler.UpdateGameKeyMapping)
 		api.DELETE("/user/games/:gameId/keymapping", gameKeyMappingHandler.DeleteGameKeyMapping)
+
+		// Saved Searches
+		api.POST("/user/saved-searches", savedSearchHandler.CreateSavedSearch)
+		api.GET("/user/saved-searches", savedSearchHandler.ListSavedSearches)
+		api.DELETE("/user/saved-searches/:id", savedSearchHandler.DeleteSavedSearch)
 
 		// Play Later
 		api.GET("/user/play-later", playLaterHandler.ListPlayLater)

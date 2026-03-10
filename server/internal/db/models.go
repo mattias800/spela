@@ -730,6 +730,17 @@ type GameArtworkImage struct {
 	Height      int       `json:"height"`
 }
 
+// SavedSearch represents a user's saved filter configuration for the game library.
+type SavedSearch struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"index;not null" json:"userId"`
+	Name      string         `gorm:"size:255;not null" json:"name"`
+	Filters   string         `gorm:"type:text;not null" json:"filters"` // JSON-encoded filter params
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`

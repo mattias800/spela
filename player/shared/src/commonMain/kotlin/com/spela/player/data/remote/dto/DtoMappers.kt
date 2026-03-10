@@ -630,3 +630,254 @@ fun GameFranchiseLinkDto.toDomain(): GameFranchiseLink = GameFranchiseLink(
     name = name,
     gameCount = gameCount,
 )
+
+
+fun MoodDefinitionDto.toDomain(): MoodDefinition = MoodDefinition(
+    id = id,
+    name = name,
+    description = description,
+    icon = icon,
+    gradient = gradient,
+)
+
+fun ForYouRowDto.toDomain(): ForYouRow = ForYouRow(
+    type = type,
+    title = title,
+    sourceGame = sourceGame?.toDomain(),
+    genre = genre,
+    games = games.map { it.toDomain() },
+)
+
+fun TasteBreakdownDto.toDomain(): TasteBreakdown = TasteBreakdown(
+    name = name,
+    percentage = percentage,
+    playTime = playTime,
+    gameCount = gameCount,
+)
+
+fun ConsoleBreakdownDto.toDomain(): ConsoleBreakdown = ConsoleBreakdown(
+    name = name,
+    abbreviation = abbreviation,
+    playTime = playTime,
+    gameCount = gameCount,
+)
+
+fun TasteProfileDto.toDomain(): TasteProfile = TasteProfile(
+    totalPlayTime = totalPlayTime,
+    genres = genres.map { it.toDomain() },
+    themes = themes.map { it.toDomain() },
+    topConsoles = topConsoles.map { it.toDomain() },
+)
+
+fun PlayersLikeYouResponseDto.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
+    games = games.map { it.toDomain() },
+    similarUsersCount = similarUsersCount,
+)
+
+// Developer / Publisher mappers
+
+fun DeveloperSummaryDto.toDomain(): DeveloperSummary = DeveloperSummary(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+)
+
+fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+    games = games.map { it.toDomain() },
+)
+
+fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+    topGames = topGames.map { it.toDomain() },
+    heroUrl = heroUrl.ifBlank { null },
+)
+
+// Console Showcase mappers
+
+fun GenreCountDto.toDomain(): GenreCount = GenreCount(
+    name = name,
+    gameCount = gameCount,
+)
+
+fun ConsoleShowcaseDto.toDomain(): ConsoleShowcase = ConsoleShowcase(
+    console = console.toDomain(),
+    essentials = essentials.map { it.toDomain() },
+    hiddenGems = hiddenGems.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toDomain() },
+    topDevelopers = topDevelopers.map { it.toDomain() },
+    recentlyPlayed = recentlyPlayed.map { it.toDomain() },
+)
+
+fun ConsoleHighlightDto.toDomain(): ConsoleHighlight = ConsoleHighlight(
+    id = id,
+    name = name,
+    colorTheme = colorTheme,
+    iconUrl = iconUrl,
+    logoUrl = logoUrl,
+    gameCount = gameCount,
+    topGame = topGame?.toDomain(),
+)
+
+fun ArtworkItemDto.toDomain(): ArtworkItem = ArtworkItem(
+    url = url,
+    width = width,
+    height = height,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleColor = consoleColor,
+)
+
+fun ScreenshotItemDto.toDomain(): ScreenshotItem = ScreenshotItem(
+    url = url,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleColor = consoleColor,
+)
+
+// --- Phase 10: Social & Community Discovery ---
+
+fun TrendingGameDto.toDomain(): TrendingGame = TrendingGame(
+    game = game.toDomain(),
+    playersThisWeek = playersThisWeek,
+)
+
+fun CommunityTopGameDto.toDomain(): CommunityTopGame = CommunityTopGame(
+    game = game.toDomain(),
+    avgRating = avgRating,
+    ratingCount = ratingCount,
+)
+
+fun CultClassicGameDto.toDomain(): CultClassicGame = CultClassicGame(
+    game = game.toDomain(),
+    communityRating = communityRating,
+    igdbRating = igdbRating,
+    ratingCount = ratingCount,
+)
+
+fun RecentReviewItemDto.toDomain(): RecentReviewItem = RecentReviewItem(
+    game = game.toDomain(),
+    rating = rating,
+    review = review,
+    reviewerName = reviewerName,
+    reviewedAt = reviewedAt,
+)
+
+fun ActiveNowItemDto.toDomain(): ActiveNowItem = ActiveNowItem(
+    game = game.toDomain(),
+    activeSessions = activeSessions,
+    activeChallenges = activeChallenges,
+)
+
+// --- Phase 11: Temporal Discovery ---
+
+fun AnniversaryItemDto.toDomain(): AnniversaryItem = AnniversaryItem(
+    game = game.toDomain(),
+    yearsAgo = yearsAgo,
+    playedAt = playedAt,
+)
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery ---
+
+fun AchievementGameItemDto.toDomain() = AchievementGameItem(
+    game = game.toDomain(),
+    totalAchievements = totalAchievements,
+    avgCompletion = avgCompletion,
+    playersAttempted = playersAttempted,
+    playersCompleted = playersCompleted,
+)
+
+fun AlmostDoneGameDto.toDomain() = AlmostDoneGame(
+    game = game.toDomain(),
+    unlockedCount = unlockedCount,
+    totalCount = totalCount,
+    completionPercent = completionPercent,
+)
+
+fun FreshChallengeGameDto.toDomain() = FreshChallengeGame(
+    game = game.toDomain(),
+    totalAchievements = totalAchievements,
+    totalPoints = totalPoints,
+)
+
+fun ExploreChallengeDto.toDomain() = ExploreChallenge(
+    id = id,
+    creatorUsername = creatorUsername,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    consoleName = consoleName,
+    name = name,
+    description = description,
+    type = type,
+    difficulty = difficulty,
+    attemptCount = attemptCount,
+    completionCount = completionCount,
+    expiresAt = expiresAt,
+    createdAt = createdAt,
+)
+
+// --- Phase 13: Advanced Search & Saved Searches ---
+
+fun SavedSearchDto.toDomain() = SavedSearch(
+    id = id,
+    name = name,
+    filters = filters.mapValues { (_, v) -> v.content },
+    createdAt = createdAt,
+)
+
+// --- Phase 14: Wild Features ---
+
+fun WizardOptionDto.toDomain() = WizardOption(
+    id = id,
+    label = label,
+    description = description,
+)
+
+fun WizardStepDto.toDomain() = WizardStep(
+    step = step,
+    title = title,
+    type = type,
+    options = options.map { it.toDomain() },
+)
+
+fun WizardResultsResponseDto.toDomain() = WizardResults(
+    games = games.map { it.toDomain() },
+    title = title,
+)
+
+fun ExplorerBadgeDto.toDomain() = ExplorerBadge(
+    id = id,
+    name = name,
+    description = description,
+    icon = icon,
+    earned = earned,
+    progress = progress,
+    target = target,
+)
+
+fun CompletionistConsoleDto.toDomain() = CompletionistConsole(
+    id = id,
+    name = name,
+    totalGames = totalGames,
+    playedGames = playedGames,
+    percentage = percentage,
+)
+
+fun CompletionistMapResponseDto.toDomain() = CompletionistMap(
+    consoles = consoles.map { it.toDomain() },
+    totalGames = totalGames,
+    totalPlayed = totalPlayed,
+    overallPct = overallPct,
+)
