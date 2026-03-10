@@ -49,8 +49,6 @@ import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.MoodPicker
 import com.spela.player.presentation.ui.feature.explore.MoodPickerSkeleton
 import com.spela.player.presentation.ui.feature.explore.RecentlyReviewedSection
-import com.spela.player.presentation.ui.feature.explore.SeriesShelf
-import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.SocialSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton

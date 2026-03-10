@@ -51,7 +51,6 @@ data class ExploreState(
     val themes: List<Theme> = emptyList(),
     val keywords: List<Keyword> = emptyList(),
     val featuredSeries: List<FeaturedSeries> = emptyList(),
-
     val moods: List<MoodDefinition> = emptyList(),
     val forYouRows: List<ForYouRow> = emptyList(),
     val developerSpotlight: DeveloperSpotlight? = null,
@@ -75,10 +74,6 @@ data class ExploreState(
     val isLoadingThemes: Boolean = false,
     val isLoadingKeywords: Boolean = false,
     val isLoadingFeaturedSeries: Boolean = false,
-    val error: String? = null,
-) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && !isLoading
     val isLoadingMoods: Boolean = false,
     val isLoadingForYou: Boolean = false,
     val isLoadingDeveloperSpotlight: Boolean = false,
