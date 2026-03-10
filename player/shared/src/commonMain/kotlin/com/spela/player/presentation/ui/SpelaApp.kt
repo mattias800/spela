@@ -92,7 +92,6 @@ import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
-import com.spela.player.presentation.ui.screen.ExploreConsoleShowcaseScreen
 import com.spela.player.presentation.ui.screen.ExploreDeveloperScreen
 import com.spela.player.presentation.ui.screen.ExploreGalleryScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
@@ -494,7 +493,7 @@ fun SpelaApp(
                                         },
                                         onConsoleSelected = { consoleId ->
                                             navigationViewModel.onIntent(
-                                                NavigationIntent.NavigateTo(SpScreen.ExploreConsoleShowcase(consoleId))
+                                                NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
                                             )
                                         },
                                         onGallerySelected = {
@@ -622,28 +621,6 @@ fun SpelaApp(
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
-                                            )
-                                        },
-                                        onBack = {
-                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
-                                        },
-                                    )
-                                }
-                            }
-
-                            is SpScreen.ExploreConsoleShowcase -> {
-                                if (exploreViewModel != null) {
-                                    ExploreConsoleShowcaseScreen(
-                                        consoleId = screen.consoleId,
-                                        viewModel = exploreViewModel,
-                                        onGameSelected = { gameId ->
-                                            navigationViewModel.onIntent(
-                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
-                                            )
-                                        },
-                                        onDeveloperSelected = { name ->
-                                            navigationViewModel.onIntent(
-                                                NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
                                             )
                                         },
                                         onBack = {

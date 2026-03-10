@@ -112,7 +112,7 @@ export function ConsoleQuickJump({
             return (
               <Link
                 key={con.id}
-                to={`/explore/consoles/${con.id}`}
+                to={`/consoles/${con.id}`}
                 className="group/card flex-shrink-0 w-36 rounded-xl border border-white/[0.06] p-4 transition-all duration-200 hover:border-white/[0.12] hover:-translate-y-0.5 hover:shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, ${color}30, ${color}08)`,
