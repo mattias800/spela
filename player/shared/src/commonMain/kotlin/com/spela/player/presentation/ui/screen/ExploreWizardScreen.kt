@@ -1,6 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,19 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,16 +28,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.feature.explore.GameShelf
+import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @Composable
@@ -68,7 +64,7 @@ fun ExploreWizardScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = titleBarInset, start = 8.dp, end = 16.dp),
+                .padding(top = titleBarInset, start = SpSpacing.Small, end = SpSpacing.Default),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -83,22 +79,57 @@ fun ExploreWizardScreen(
                 contentDescription = null,
                 tint = SpColor.Primary,
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(SpSpacing.Small))
             Text(
                 text = "Decision Wizard",
                 color = SpColor.OnBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
+                style = SpTypography.HeadlineMedium,
             )
         }
 
         // Loading state
         if (state.isLoadingSteps) {
+            // Loading skeleton for steps
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Default),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                // Title skeleton
+                Box(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .height(SpSpacing.XLarge)
+                        .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
+                        .background(SpColor.SurfaceVariant),
+                )
+                // Option card skeletons
+                repeat(4) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
+                            .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
+                            .background(SpColor.SurfaceVariant),
+                    )
+                }
+            }
+            return@Column
+        }
+
+        // Error state
+        if (state.error != null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = SpColor.Primary)
+                SpEmptyState(
+                    icon = Icons.Filled.AutoFixHigh,
+                    title = "Something went wrong",
+                    message = state.error ?: "Failed to load wizard. Please try again.",
+                    modifier = Modifier.testTag("wizard_error_state"),
+                )
             }
             return@Column
         }
@@ -106,14 +137,12 @@ fun ExploreWizardScreen(
         // Progress bar
         if (state.steps.isNotEmpty()) {
             val progress = state.currentStep.toFloat() / state.steps.size.toFloat()
-            LinearProgressIndicator(
-                progress = { progress },
+            SpProgressBar(
+                progress = progress,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = 8.dp)
+                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small)
                     .testTag("wizard_progress"),
-                color = SpColor.Primary,
-                trackColor = SpColor.SurfaceVariant,
             )
         }
 
@@ -127,47 +156,40 @@ fun ExploreWizardScreen(
                         horizontal = SpSpacing.ScreenHorizontal,
                         vertical = SpSpacing.Default,
                     ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     item {
                         Text(
                             text = step.title,
                             color = SpColor.OnBackground,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp,
+                            style = SpTypography.HeadlineLarge,
                             modifier = Modifier.testTag("wizard_step_title"),
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(SpSpacing.Small))
                     }
 
                     items(step.options.size) { index ->
                         val option = step.options[index]
-                        Surface(
+                        SpCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    viewModel.selectWizardOption(step.type, option.id)
-                                }
                                 .testTag("wizard_option_${option.id}"),
-                            shape = RoundedCornerShape(12.dp),
-                            color = SpColor.Surface,
-                            shadowElevation = 2.dp,
+                            onClick = { viewModel.selectWizardOption(step.type, option.id) },
                         ) {
                             Column(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(SpSpacing.Default),
                             ) {
                                 Text(
                                     text = option.label,
                                     color = SpColor.OnBackground,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
+                                    style = SpTypography.TitleLarge,
                                 )
                                 if (option.description.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(SpSpacing.XSmall))
                                     Text(
                                         text = option.description,
                                         color = SpColor.OnBackgroundSecondary,
-                                        fontSize = 13.sp,
+                                        style = SpTypography.BodySmall,
                                     )
                                 }
                             }
@@ -186,7 +208,7 @@ fun ExploreWizardScreen(
                                     contentDescription = null,
                                     tint = SpColor.OnBackgroundSecondary,
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(SpSpacing.XSmall))
                                 Text(
                                     text = "Back",
                                     color = SpColor.OnBackgroundSecondary,
@@ -199,12 +221,7 @@ fun ExploreWizardScreen(
         } else {
             // Results
             if (state.isLoadingResults) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = SpColor.Primary)
-                }
+                GameShelfSkeleton()
             } else if (state.resultGames.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -217,7 +234,7 @@ fun ExploreWizardScreen(
                             message = "No games match your preferences. Try different choices!",
                             modifier = Modifier.testTag("wizard_empty_state"),
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(SpSpacing.Default))
                         TextButton(onClick = { viewModel.restartWizard() }) {
                             Text("Try Again", color = SpColor.Primary)
                         }
@@ -234,15 +251,14 @@ fun ExploreWizardScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = 8.dp),
+                                .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 text = state.resultTitle.ifEmpty { "Your Perfect Picks" },
                                 color = SpColor.OnBackground,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
+                                style = SpTypography.HeadlineMedium,
                                 modifier = Modifier.testTag("wizard_results_title"),
                             )
                             Row {

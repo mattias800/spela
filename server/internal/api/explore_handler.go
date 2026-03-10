@@ -829,8 +829,8 @@ func (h *ExploreHandler) GetSurpriseGame(c *gin.Context) {
 		query = query.Where("genre = ?", genre)
 	}
 
-	// Optional minimum rating (default 0 for no threshold)
-	minRating := 0.0
+	// Optional minimum rating (default 70 for quality threshold)
+	minRating := 70.0
 	if mr := c.Query("minRating"); mr != "" {
 		if r, err := strconv.ParseFloat(mr, 64); err == nil && r >= 0 && r <= 100 {
 			minRating = r
@@ -3971,7 +3971,7 @@ func (h *ExploreHandler) GetWizardResults(c *gin.Context) {
 	// Vibe -> refinement
 	switch vibe {
 	case "solo":
-		query = query.Where("(players IS NULL OR players = 1)")
+		query = query.Where("(players IS NULL OR players = 0 OR players = 1)")
 	case "multiplayer":
 		query = query.Where("players > 1")
 	case "short":
@@ -4053,51 +4053,75 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 
 	// Count distinct consoles played
 	var consolesPlayed int64
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT COUNT(DISTINCT g.console_id)
 		FROM play_histories ph
 		JOIN games g ON g.id = ph.game_id
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL AND g.deleted_at IS NULL
-	`, userID).Scan(&consolesPlayed)
+	`, userID).Scan(&consolesPlayed).Error; err != nil {
+		slog.Error("failed to query consoles played", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 
 	// Count total consoles with games
 	var totalConsoles int64
-	h.DB.Raw(`SELECT COUNT(DISTINCT console_id) FROM games WHERE deleted_at IS NULL`).Scan(&totalConsoles)
+	if err := h.DB.Raw(`SELECT COUNT(DISTINCT console_id) FROM games WHERE deleted_at IS NULL`).Scan(&totalConsoles).Error; err != nil {
+		slog.Error("failed to query total consoles", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 
 	// Count distinct genres played
 	var genresPlayed int64
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT COUNT(DISTINCT g.genre)
 		FROM play_histories ph
 		JOIN games g ON g.id = ph.game_id
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL AND g.deleted_at IS NULL AND g.genre != ''
-	`, userID).Scan(&genresPlayed)
+	`, userID).Scan(&genresPlayed).Error; err != nil {
+		slog.Error("failed to query genres played", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 
 	// Count distinct decades played
 	var decadesPlayed int64
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT COUNT(DISTINCT CAST(SUBSTR(g.release_date, 1, 3) AS TEXT))
 		FROM play_histories ph
 		JOIN games g ON g.id = ph.game_id
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL AND g.deleted_at IS NULL
 		AND g.release_date != '' AND LENGTH(g.release_date) >= 4
-	`, userID).Scan(&decadesPlayed)
+	`, userID).Scan(&decadesPlayed).Error; err != nil {
+		slog.Error("failed to query decades played", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 
 	// Count total games played
 	var gamesPlayed int64
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT COUNT(DISTINCT ph.game_id)
 		FROM play_histories ph
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL
-	`, userID).Scan(&gamesPlayed)
+	`, userID).Scan(&gamesPlayed).Error; err != nil {
+		slog.Error("failed to query games played", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 
 	// Count total play time (seconds)
 	var totalPlayTime int64
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT COALESCE(SUM(ph.play_time), 0)
 		FROM play_histories ph
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL
-	`, userID).Scan(&totalPlayTime)
+	`, userID).Scan(&totalPlayTime).Error; err != nil {
+		slog.Error("failed to query total play time", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		return
+	}
 	totalHours := totalPlayTime / 3600
 
 	badges := []ExplorerBadge{
@@ -4194,7 +4218,7 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		TotalGames   int
 	}
 	var consoleRows []consoleRow
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT c.id AS console_id, c.name AS console_name, c.abbreviation, COUNT(g.id) AS total_games
 		FROM consoles c
 		JOIN games g ON g.console_id = c.id AND g.deleted_at IS NULL
@@ -4202,7 +4226,11 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		GROUP BY c.id
 		HAVING COUNT(g.id) > 0
 		ORDER BY c.name
-	`).Scan(&consoleRows)
+	`).Scan(&consoleRows).Error; err != nil {
+		slog.Error("failed to query console counts", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute completionist map"})
+		return
+	}
 
 	// Get per-console played counts for this user
 	type playedRow struct {
@@ -4210,13 +4238,17 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		PlayedGames int
 	}
 	var playedRows []playedRow
-	h.DB.Raw(`
+	if err := h.DB.Raw(`
 		SELECT g.console_id, COUNT(DISTINCT g.id) AS played_games
 		FROM play_histories ph
 		JOIN games g ON g.id = ph.game_id AND g.deleted_at IS NULL
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL
 		GROUP BY g.console_id
-	`, userID).Scan(&playedRows)
+	`, userID).Scan(&playedRows).Error; err != nil {
+		slog.Error("failed to query played counts", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute completionist map"})
+		return
+	}
 
 	playedMap := make(map[uint]int)
 	for _, pr := range playedRows {

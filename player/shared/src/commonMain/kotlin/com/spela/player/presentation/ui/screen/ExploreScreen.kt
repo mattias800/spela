@@ -215,9 +215,6 @@ fun ExploreScreen(
                                     onMoodSelected = { moodId, moodName ->
                                         onMoodSelected?.invoke(moodId, moodName)
                                     },
-                                    onSurpriseMe = {
-                                        onSurpriseMe?.invoke()
-                                    },
                                 )
                             }
                         }

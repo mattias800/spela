@@ -38,7 +38,6 @@ import com.spela.player.util.parseHexColor
 fun MoodPicker(
     moods: List<MoodDefinition>,
     onMoodSelected: (moodId: String, moodName: String) -> Unit,
-    onSurpriseMe: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
@@ -51,11 +50,6 @@ fun MoodPicker(
                 mood = item,
                 onClick = { onMoodSelected(item.id, item.name) },
             )
-        }
-
-        // "Surprise Me" card at the end
-        item {
-            SurpriseMeCard(onClick = onSurpriseMe)
         }
     }
 }
@@ -112,60 +106,6 @@ private fun MoodCard(
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SurpriseMeCard(
-    onClick: () -> Unit,
-) {
-    val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
-    val gradientColors = listOf(Color(0xFF880E4F), Color(0xFFE91E63))
-
-    SpCard(
-        modifier = Modifier
-            .width(200.dp)
-            .height(100.dp)
-            .testTag("mood_card_surprise")
-            .semantics {
-                contentDescription = "Surprise Me, pick a random game"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .clip(shape)
-                .background(Brush.linearGradient(gradientColors)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(SpSpacing.Medium),
-            ) {
-                Text(
-                    text = "\uD83C\uDFB2",
-                    style = SpTypography.TitleLarge,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = "Surprise Me",
-                    style = SpTypography.TitleLarge,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = "Pick a random game",
-                    style = SpTypography.LabelSmall,
-                    color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
                 )
             }

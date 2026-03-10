@@ -142,13 +142,15 @@ export function ExploreWizardPage() {
           </div>
 
           {currentStep > 0 && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleBack}
-              className="mt-6 inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 transition-colors"
+              icon={<ArrowLeft className="h-4 w-4" />}
+              className="mt-6"
             >
-              <ArrowLeft className="h-4 w-4" />
               Back
-            </button>
+            </Button>
           )}
         </div>
       ) : isComplete ? (
