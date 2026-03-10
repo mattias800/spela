@@ -762,6 +762,20 @@ func (h *AdminHandler) SetGameCover(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load console"})
 			return
 		}
+		// Validate libretroName against known regional variants to prevent SSRF
+		gameName := strings.TrimSuffix(game.FileName, filepath.Ext(game.FileName))
+		variants := h.Scraper.FindRegionalVariants(console.Abbreviation, gameName)
+		validName := false
+		for _, v := range variants {
+			if v.LibRetroName == req.LibRetroName {
+				validName = true
+				break
+			}
+		}
+		if !validName {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "libretroName is not a known regional variant for this game"})
+			return
+		}
 		gameIDStr := fmt.Sprintf("%d", game.ID)
 		subpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
 		path := h.Scraper.DownloadRegionalCover(console.Abbreviation, req.LibRetroName, subpath)
