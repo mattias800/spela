@@ -636,6 +636,77 @@ type GameArtwork struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
+// --- Phase 2 Explore: IGDB Enrichment models ---
+
+// GameTheme stores an IGDB theme associated with a game (e.g., "Fantasy", "Sci-Fi").
+type GameTheme struct {
+	ID          uint      `gorm:"primarykey" json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	GameID      uint      `gorm:"uniqueIndex:idx_game_theme;not null" json:"gameId"`
+	IGDBThemeID int       `gorm:"uniqueIndex:idx_game_theme;not null" json:"igdbThemeId"`
+	Name        string    `gorm:"size:255;not null" json:"name"`
+}
+
+// GameKeyword stores an IGDB keyword associated with a game (e.g., "time travel", "zombies").
+type GameKeyword struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time `json:"createdAt"`
+	GameID        uint      `gorm:"uniqueIndex:idx_game_keyword;not null" json:"gameId"`
+	IGDBKeywordID int       `gorm:"uniqueIndex:idx_game_keyword;not null" json:"igdbKeywordId"`
+	Name          string    `gorm:"size:255;not null" json:"name"`
+}
+
+// GamePlayerPerspective stores a player perspective for a game (e.g., "First person", "Side view").
+type GamePlayerPerspective struct {
+	ID                uint      `gorm:"primarykey" json:"id"`
+	CreatedAt         time.Time `json:"createdAt"`
+	GameID            uint      `gorm:"uniqueIndex:idx_game_perspective;not null" json:"gameId"`
+	IGDBPerspectiveID int       `gorm:"uniqueIndex:idx_game_perspective;not null" json:"igdbPerspectiveId"`
+	Name              string    `gorm:"size:255;not null" json:"name"`
+}
+
+// GameFranchise stores a franchise association for a game (e.g., "Mario", "Zelda").
+type GameFranchise struct {
+	ID              uint      `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time `json:"createdAt"`
+	GameID          uint      `gorm:"uniqueIndex:idx_game_franchise;not null" json:"gameId"`
+	IGDBFranchiseID int       `gorm:"uniqueIndex:idx_game_franchise;not null" json:"igdbFranchiseId"`
+	FranchiseName   string    `gorm:"size:255;not null" json:"franchiseName"`
+}
+
+// GameSeries represents an IGDB collection (game series like "Super Mario", "The Legend of Zelda").
+// Named "Series" to avoid collision with user-created GameCollection.
+type GameSeries struct {
+	ID               uint              `gorm:"primarykey" json:"id"`
+	CreatedAt        time.Time         `json:"createdAt"`
+	UpdatedAt        time.Time         `json:"updatedAt"`
+	IGDBCollectionID int               `gorm:"uniqueIndex;not null" json:"igdbCollectionId"`
+	Name             string            `gorm:"size:255;not null" json:"name"`
+	Entries          []GameSeriesEntry `gorm:"foreignKey:SeriesID" json:"entries,omitempty"`
+}
+
+// GameSeriesEntry represents a game within a series. GameID is nullable because the
+// game may not be in the local library (supports "You own 8 of 15 games" display).
+type GameSeriesEntry struct {
+	ID           uint      `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time `json:"createdAt"`
+	SeriesID     uint      `gorm:"uniqueIndex:idx_series_igdb_game;not null" json:"seriesId"`
+	GameID       *uint     `gorm:"index" json:"gameId"`
+	IGDBGameID   int       `gorm:"uniqueIndex:idx_series_igdb_game;not null" json:"igdbGameId"`
+	Name         string    `gorm:"size:255;not null" json:"name"`
+	CoverImageID string    `gorm:"size:255" json:"coverImageId"`
+}
+
+// GameArtworkImage stores IGDB promotional artwork (distinct from SteamGridDB GameArtwork).
+type GameArtworkImage struct {
+	ID          uint      `gorm:"primarykey" json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	GameID      uint      `gorm:"uniqueIndex:idx_game_artwork_image;not null" json:"gameId"`
+	IGDBImageID string    `gorm:"uniqueIndex:idx_game_artwork_image;size:255;not null" json:"igdbImageId"`
+	Width       int       `json:"width"`
+	Height      int       `json:"height"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`

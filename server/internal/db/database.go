@@ -154,6 +154,14 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SessionCheatSetting{},
 		&DailyPlayActivity{},
 		&GameArtwork{},
+		// Phase 2 Explore: IGDB enrichment
+		&GameTheme{},
+		&GameKeyword{},
+		&GamePlayerPerspective{},
+		&GameFranchise{},
+		&GameSeries{},
+		&GameSeriesEntry{},
+		&GameArtworkImage{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
@@ -450,6 +458,76 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 			database.Unscoped().Delete(&ci)
 		}
 	}
+
+	// --- Phase 2 Enrichment tables ---
+
+	// GameTheme — move, skip if keeper already has same theme
+	var dupThemes []GameTheme
+	database.Where("game_id = ?", dupID).Find(&dupThemes)
+	for _, t := range dupThemes {
+		var count int64
+		database.Model(&GameTheme{}).Where("game_id = ? AND igdb_theme_id = ?", keeperID, t.IGDBThemeID).Count(&count)
+		if count == 0 {
+			database.Model(&t).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&t)
+		}
+	}
+
+	// GameKeyword — move, skip if keeper already has same keyword
+	var dupKeywords []GameKeyword
+	database.Where("game_id = ?", dupID).Find(&dupKeywords)
+	for _, k := range dupKeywords {
+		var count int64
+		database.Model(&GameKeyword{}).Where("game_id = ? AND igdb_keyword_id = ?", keeperID, k.IGDBKeywordID).Count(&count)
+		if count == 0 {
+			database.Model(&k).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&k)
+		}
+	}
+
+	// GamePlayerPerspective — move, skip if keeper already has same perspective
+	var dupPerspectives []GamePlayerPerspective
+	database.Where("game_id = ?", dupID).Find(&dupPerspectives)
+	for _, p := range dupPerspectives {
+		var count int64
+		database.Model(&GamePlayerPerspective{}).Where("game_id = ? AND igdb_perspective_id = ?", keeperID, p.IGDBPerspectiveID).Count(&count)
+		if count == 0 {
+			database.Model(&p).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&p)
+		}
+	}
+
+	// GameFranchise — move, skip if keeper already has same franchise
+	var dupFranchises []GameFranchise
+	database.Where("game_id = ?", dupID).Find(&dupFranchises)
+	for _, f := range dupFranchises {
+		var count int64
+		database.Model(&GameFranchise{}).Where("game_id = ? AND igdb_franchise_id = ?", keeperID, f.IGDBFranchiseID).Count(&count)
+		if count == 0 {
+			database.Model(&f).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&f)
+		}
+	}
+
+	// GameArtworkImage — move, skip if keeper already has same image
+	var dupArtworks []GameArtworkImage
+	database.Where("game_id = ?", dupID).Find(&dupArtworks)
+	for _, a := range dupArtworks {
+		var count int64
+		database.Model(&GameArtworkImage{}).Where("game_id = ? AND igdb_image_id = ?", keeperID, a.IGDBImageID).Count(&count)
+		if count == 0 {
+			database.Model(&a).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&a)
+		}
+	}
+
+	// GameSeriesEntry — update any entries pointing to the duplicate game
+	database.Model(&GameSeriesEntry{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
 	// PlayHistory — merge: keep highest play time and latest timestamp per user
 	var dupPH []PlayHistory

@@ -54,6 +54,20 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		query = query.Where("genre = ?", genre)
 	}
 
+	// Phase 2 Explore: enrichment-based filters (JOIN against enrichment tables)
+	if themeID := c.Query("theme"); themeID != "" {
+		query = query.Joins("JOIN game_themes ON game_themes.game_id = games.id").
+			Where("game_themes.igdb_theme_id = ?", themeID)
+	}
+	if keywordID := c.Query("keyword"); keywordID != "" {
+		query = query.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
+			Where("game_keywords.igdb_keyword_id = ?", keywordID)
+	}
+	if perspectiveID := c.Query("perspective"); perspectiveID != "" {
+		query = query.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
+			Where("game_player_perspectives.igdb_perspective_id = ?", perspectiveID)
+	}
+
 	// Sorting - whitelist both column and direction to prevent SQL injection
 	sort := c.DefaultQuery("sort", "title")
 	if s := c.Query("sortBy"); s != "" {
@@ -100,6 +114,19 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 	}
 	if genre := c.Query("genre"); genre != "" {
 		countQuery = countQuery.Where("genre = ?", genre)
+	}
+	// Phase 2 Explore: enrichment-based filters for count query
+	if themeID := c.Query("theme"); themeID != "" {
+		countQuery = countQuery.Joins("JOIN game_themes ON game_themes.game_id = games.id").
+			Where("game_themes.igdb_theme_id = ?", themeID)
+	}
+	if keywordID := c.Query("keyword"); keywordID != "" {
+		countQuery = countQuery.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
+			Where("game_keywords.igdb_keyword_id = ?", keywordID)
+	}
+	if perspectiveID := c.Query("perspective"); perspectiveID != "" {
+		countQuery = countQuery.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
+			Where("game_player_perspectives.igdb_perspective_id = ?", perspectiveID)
 	}
 	countQuery.Count(&total)
 

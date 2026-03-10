@@ -173,6 +173,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	artworkHandler := &ArtworkHandler{DB: cfg.DB}
 	exploreHandler := &ExploreHandler{DB: cfg.DB}
+	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
 		DB:            cfg.DB,
@@ -416,6 +417,16 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/challenges", challengeHandler.ListGameChallenges)
 		api.GET("/user/challenges", challengeHandler.ListMyChallenges)
 
+		// Enrichment: Themes, Keywords, Series, Franchises
+		api.GET("/themes", enrichmentHandler.ListThemes)
+		api.GET("/themes/:id/games", enrichmentHandler.ListThemeGames)
+		api.GET("/keywords", enrichmentHandler.ListKeywords)
+		api.GET("/keywords/:id/games", enrichmentHandler.ListKeywordGames)
+		api.GET("/series", enrichmentHandler.ListSeries)
+		api.GET("/series/:id", enrichmentHandler.GetSeriesDetail)
+		api.GET("/franchises", enrichmentHandler.ListFranchises)
+		api.GET("/franchises/:id/games", enrichmentHandler.ListFranchiseGames)
+
 		// RetroAchievements
 		api.POST("/user/ra/link", raHandler.LinkAccount)
 		api.DELETE("/user/ra/link", raHandler.UnlinkAccount)
@@ -463,6 +474,10 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
 			admin.GET("/cheats/stats", adminHandler.GetCheatStats)
 			admin.GET("/core-compatibility", adminHandler.GetCoreCompatibility)
+
+			// Enrichment backfill
+			admin.POST("/enrich-metadata", enrichmentHandler.TriggerEnrichMetadata)
+			admin.GET("/enrich-metadata/status", enrichmentHandler.EnrichMetadataStatus)
 
 			// ROM uploads
 			admin.POST("/uploads", uploadHandler.UploadROMs)
