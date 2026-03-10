@@ -100,11 +100,11 @@ export function ExplorePage() {
   const {
     data: forYouData,
     isLoading: isForYouLoading,
-  } = useForYou();
+  } = useForYou(social.isInView);
   const {
     data: playersLikeYouData,
     isLoading: isPlayersLoading,
-  } = usePlayersLikeYou();
+  } = usePlayersLikeYou(social.isInView);
 
   // Social section
   const {
@@ -258,13 +258,15 @@ export function ExplorePage() {
       {/* Wild Features — Lucky & Wizard */}
       <WildFeaturesSection />
 
-      {/* For You — personalized recommendations */}
-      <ForYouSection
-        rows={forYouData?.rows}
-        isLoading={isForYouLoading}
-        onToggleFavorite={handleToggleFavorite}
-        onTogglePlayLater={handleTogglePlayLater}
-      />
+      {/* Personalized & Social Discovery — lazy-loaded */}
+      <div ref={social.ref}>
+        <ForYouSection
+          rows={forYouData?.rows}
+          isLoading={isForYouLoading}
+          onToggleFavorite={handleToggleFavorite}
+          onTogglePlayLater={handleTogglePlayLater}
+        />
+      </div>
 
       {/* Players Like You */}
       <PlayersLikeYouShelf
@@ -275,15 +277,12 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Social Discovery — lazy-loaded */}
-      <div ref={social.ref}>
-        <TrendingShelf
-          games={trendingData?.games}
-          isLoading={isTrendingLoading}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      </div>
+      <TrendingShelf
+        games={trendingData?.games}
+        isLoading={isTrendingLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       <CommunityTopShelf
         games={communityTopData?.games}

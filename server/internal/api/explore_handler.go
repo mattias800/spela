@@ -3199,7 +3199,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 	}
 
 	if len(matched) == 0 {
-		c.Header("Cache-Control", "private, max-age=30")
+		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, OnThisDayResponse{Date: dateLabel, Games: []GameResponse{}})
 		return
 	}
@@ -3217,7 +3217,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 		result[i] = toGameResponseWithData(g, &userData)
 	}
 
-	c.Header("Cache-Control", "private, max-age=30")
+	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, OnThisDayResponse{Date: dateLabel, Games: result})
 }
 
