@@ -1,5 +1,6 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
@@ -15,6 +16,7 @@ import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
+import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
@@ -42,4 +44,6 @@ interface ExploreRepository {
     suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight>
     suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase>
     suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>>
+    suspend fun getArtworkGallery(page: Int = 1): Result<List<ArtworkItem>>
+    suspend fun getScreenshotGallery(page: Int = 1): Result<List<ScreenshotItem>>
 }

@@ -883,6 +883,60 @@ export interface GameFranchiseLink {
   gameCount: number;
 }
 
+// --- Visual Browsing / Gallery ---
+
+export interface ScreenshotItem {
+  url: string;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+}
+
+export interface ScreenshotGalleryResponse {
+  screenshots: ScreenshotItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export interface ArtworkItem {
+  url: string;
+  width: number;
+  height: number;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+}
+
+export interface ArtworkGalleryResponse {
+  artworks: ArtworkItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export interface CoverItem {
+  coverUrl: string;
+  gameId: string;
+  gameTitle: string;
+  consoleName: string;
+  consoleAbbreviation: string;
+  consoleColor: string;
+  rating: number;
+  coverAspectRatio: number;
+}
+
+export interface CoverGalleryResponse {
+  covers: CoverItem[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
 // --- Console Showcase ---
 
 export interface GenreCount {

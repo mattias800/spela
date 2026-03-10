@@ -1230,3 +1230,45 @@ data class ConsoleHighlightDto(
 data class ConsoleHighlightsResponseDto(
     val consoles: List<ConsoleHighlightDto>,
 )
+
+// Artwork Gallery
+
+@Serializable
+data class ArtworkItemDto(
+    val url: String,
+    val width: Int,
+    val height: Int,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)
+
+@Serializable
+data class ArtworkGalleryResponseDto(
+    val artworks: List<ArtworkItemDto>,
+    val page: Int,
+    val totalPages: Int,
+    val totalCount: Int,
+)
+
+// Screenshot Gallery
+
+@Serializable
+data class ScreenshotItemDto(
+    val url: String,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)
+
+@Serializable
+data class ScreenshotGalleryResponseDto(
+    val screenshots: List<ScreenshotItemDto>,
+    val page: Int,
+    val totalPages: Int,
+    val totalCount: Int,
+)

@@ -251,6 +251,9 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/publishers/:name", exploreHandler.GetPublisherDetail)
 			explore.GET("/consoles/:id/showcase", exploreHandler.GetConsoleShowcase)
 			explore.GET("/console-highlights", exploreHandler.GetConsoleHighlights)
+			explore.GET("/screenshots", exploreHandler.GetScreenshotGallery)
+			explore.GET("/artwork", exploreHandler.GetArtworkGallery)
+			explore.GET("/covers", exploreHandler.GetCoverGallery)
 		}
 
 		// Games

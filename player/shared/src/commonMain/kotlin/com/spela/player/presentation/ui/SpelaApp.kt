@@ -94,6 +94,7 @@ import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.ExploreConsoleShowcaseScreen
 import com.spela.player.presentation.ui.screen.ExploreDeveloperScreen
+import com.spela.player.presentation.ui.screen.ExploreGalleryScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreMoodScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
@@ -488,6 +489,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreConsoleShowcase(consoleId))
                                             )
                                         },
+                                        onGallerySelected = {
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreGallery)
+                                            )
+                                        },
                                         onSurpriseMe = {
                                             exploreViewModel.loadSurpriseGame { gameId ->
                                                 navigationViewModel.onIntent(
@@ -620,6 +626,22 @@ fun SpelaApp(
                                         onDeveloperSelected = { name ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreGallery -> {
+                                if (exploreViewModel != null) {
+                                    ExploreGalleryScreen(
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
                                         onBack = {
