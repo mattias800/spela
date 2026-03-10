@@ -19,6 +19,8 @@ import type {
   DeveloperDetailResponse,
   PublisherDetailResponse,
   DeveloperSpotlightResponse,
+  ConsoleShowcase,
+  ConsoleHighlightsResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -190,5 +192,24 @@ export function useDeveloperSpotlight() {
     queryKey: ["explore", "developers", "spotlight"],
     queryFn: () =>
       api.get<DeveloperSpotlightResponse>("/explore/developers/spotlight"),
+  });
+}
+
+export function useConsoleShowcase(consoleId: string) {
+  return useQuery({
+    queryKey: ["console-showcase", consoleId],
+    queryFn: () =>
+      api.get<ConsoleShowcase>(
+        `/explore/consoles/${encodeURIComponent(consoleId)}/showcase`,
+      ),
+    enabled: !!consoleId,
+  });
+}
+
+export function useConsoleHighlights() {
+  return useQuery({
+    queryKey: ["console-highlights"],
+    queryFn: () =>
+      api.get<ConsoleHighlightsResponse>("/explore/console-highlights"),
   });
 }

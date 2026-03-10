@@ -148,3 +148,27 @@ data class DeveloperSpotlight(
     val topGames: List<Game>,
     val heroUrl: String?,
 )
+
+data class GenreCount(
+    val name: String,
+    val gameCount: Int,
+)
+
+data class ConsoleShowcase(
+    val console: Console,
+    val essentials: List<Game>,
+    val hiddenGems: List<Game>,
+    val genreBreakdown: List<GenreCount>,
+    val topDevelopers: List<DeveloperSummary>,
+    val recentlyPlayed: List<Game>,
+)
+
+data class ConsoleHighlight(
+    val id: String,
+    val name: String,
+    val colorTheme: String,
+    val iconUrl: String,
+    val logoUrl: String,
+    val gameCount: Int,
+    val topGame: Game?,
+)

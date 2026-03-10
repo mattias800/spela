@@ -1196,3 +1196,37 @@ data class DeveloperSpotlightResponseDto(
     val topGames: List<GameDto>,
     val heroUrl: String = "",
 )
+
+// Console Showcase
+
+@Serializable
+data class GenreCountDto(
+    val name: String,
+    val gameCount: Int,
+)
+
+@Serializable
+data class ConsoleShowcaseDto(
+    val console: ConsoleDto,
+    val essentials: List<GameDto>,
+    val hiddenGems: List<GameDto>,
+    val genreBreakdown: List<GenreCountDto>,
+    val topDevelopers: List<DeveloperSummaryDto>,
+    val recentlyPlayed: List<GameDto>,
+)
+
+@Serializable
+data class ConsoleHighlightDto(
+    val id: String,
+    val name: String,
+    val colorTheme: String,
+    val iconUrl: String,
+    val logoUrl: String,
+    val gameCount: Int,
+    val topGame: GameDto? = null,
+)
+
+@Serializable
+data class ConsoleHighlightsResponseDto(
+    val consoles: List<ConsoleHighlightDto>,
+)

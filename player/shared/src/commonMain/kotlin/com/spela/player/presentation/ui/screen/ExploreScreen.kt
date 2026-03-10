@@ -22,6 +22,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSection
+import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSection
 import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSkeleton
 import com.spela.player.presentation.ui.feature.explore.ForYouSection
@@ -51,6 +53,7 @@ fun ExploreScreen(
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
     onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
     onDeveloperSelected: ((name: String) -> Unit)? = null,
+    onConsoleSelected: ((consoleId: String) -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
@@ -108,6 +111,34 @@ fun ExploreScreen(
                                     vertical = SpSpacing.Default,
                                 ),
                             )
+                        }
+                    }
+
+                    // Console quick-jump section
+                    item {
+                        if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Console",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ConsoleQuickJumpSkeleton()
+                            }
+                        } else if (state.consoleHighlights.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Console",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_consoles_section"),
+                            ) {
+                                ConsoleQuickJumpSection(
+                                    consoles = state.consoleHighlights,
+                                    onConsoleSelected = { consoleId ->
+                                        onConsoleSelected?.invoke(consoleId)
+                                    },
+                                )
+                            }
                         }
                     }
 

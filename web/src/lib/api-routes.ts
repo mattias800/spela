@@ -27,6 +27,10 @@ export type ApiGetPath = WithQuery<
   | "/explore/for-you"
   | "/explore/players-like-you"
 
+  // Console Showcase
+  | `/explore/consoles/${string}/showcase`
+  | "/explore/console-highlights"
+
   // Developers & Publishers
   | "/explore/developers"
   | "/explore/developers/spotlight"

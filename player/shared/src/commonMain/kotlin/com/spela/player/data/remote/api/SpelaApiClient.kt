@@ -346,6 +346,17 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/developers/spotlight").body()
     }
 
+    /** Returns console showcase data for a specific console */
+    suspend fun getConsoleShowcase(consoleId: String): ConsoleShowcaseDto {
+        val encoded = consoleId.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/consoles/$encoded/showcase").body()
+    }
+
+    /** Returns console highlights for the Explore page quick-jump section */
+    suspend fun getConsoleHighlights(): ConsoleHighlightsResponseDto {
+        return client.get("$baseUrl/api/explore/console-highlights").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

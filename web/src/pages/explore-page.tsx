@@ -10,6 +10,7 @@ import { DeveloperSpotlight } from "@/features/explore/components/developer-spot
 import { MoodPicker } from "@/features/explore/components/mood-picker";
 import { ForYouSection } from "@/features/explore/components/for-you-section";
 import { PlayersLikeYouShelf } from "@/features/explore/components/players-like-you-shelf";
+import { ConsoleQuickJump } from "@/features/explore/components/console-quick-jump";
 import {
   useExploreFeatured,
   useExploreRows,
@@ -20,6 +21,7 @@ import {
   useForYou,
   usePlayersLikeYou,
   useDeveloperSpotlight,
+  useConsoleHighlights,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -63,6 +65,10 @@ export function ExplorePage() {
     data: spotlightData,
     isLoading: isSpotlightLoading,
   } = useDeveloperSpotlight();
+  const {
+    data: consoleHighlightsData,
+    isLoading: isConsoleHighlightsLoading,
+  } = useConsoleHighlights();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -118,6 +124,12 @@ export function ExplorePage() {
 
       {/* Hero Carousel */}
       <HeroCarousel games={featuredGames} isLoading={isFeaturedLoading} />
+
+      {/* Console Quick-Jump */}
+      <ConsoleQuickJump
+        consoles={consoleHighlightsData?.consoles}
+        isLoading={isConsoleHighlightsLoading}
+      />
 
       {/* Mood Picker */}
       <MoodPicker moods={moods} isLoading={isMoodsLoading} />

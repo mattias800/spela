@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ConsoleHighlight
+import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.ExploreRow
@@ -31,6 +33,7 @@ data class ExploreState(
     val moods: List<MoodDefinition> = emptyList(),
     val forYouRows: List<ForYouRow> = emptyList(),
     val developerSpotlight: DeveloperSpotlight? = null,
+    val consoleHighlights: List<ConsoleHighlight> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -39,10 +42,11 @@ data class ExploreState(
     val isLoadingMoods: Boolean = false,
     val isLoadingForYou: Boolean = false,
     val isLoadingDeveloperSpotlight: Boolean = false,
+    val isLoadingConsoleHighlights: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -88,6 +92,13 @@ data class DeveloperDetailState(
         }
 }
 
+data class ConsoleShowcaseState(
+    val consoleId: String = "",
+    val showcase: ConsoleShowcase? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null,
+)
+
 data class SeriesDetailState(
     val seriesId: String = "",
     val seriesName: String = "",
@@ -131,6 +142,9 @@ class ExploreViewModel(
     private val _developerDetailState = MutableStateFlow(DeveloperDetailState())
     val developerDetailState: StateFlow<DeveloperDetailState> = _developerDetailState.asStateFlow()
 
+    private val _consoleShowcaseState = MutableStateFlow(ConsoleShowcaseState())
+    val consoleShowcaseState: StateFlow<ConsoleShowcaseState> = _consoleShowcaseState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -144,6 +158,8 @@ class ExploreViewModel(
     private var forYouJob: Job? = null
     private var developerSpotlightJob: Job? = null
     private var developerDetailJob: Job? = null
+    private var consoleHighlightsJob: Job? = null
+    private var consoleShowcaseJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -154,6 +170,7 @@ class ExploreViewModel(
         loadMoods()
         loadForYou()
         loadDeveloperSpotlight()
+        loadConsoleHighlights()
     }
 
     fun dismissError() {
@@ -424,5 +441,41 @@ class ExploreViewModel(
 
     fun dismissDeveloperDetailError() {
         _developerDetailState.update { it.copy(error = null) }
+    }
+
+    private fun loadConsoleHighlights() {
+        if (consoleHighlightsJob?.isActive == true) return
+        _state.update { it.copy(isLoadingConsoleHighlights = true) }
+        consoleHighlightsJob = scope.launch(dispatchers.io) {
+            exploreRepository.getConsoleHighlights().fold(
+                onSuccess = { highlights ->
+                    _state.update { it.copy(consoleHighlights = highlights, isLoadingConsoleHighlights = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingConsoleHighlights = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadConsoleShowcase(consoleId: String) {
+        consoleShowcaseJob?.cancel()
+        _consoleShowcaseState.update {
+            ConsoleShowcaseState(consoleId = consoleId, isLoading = true)
+        }
+        consoleShowcaseJob = scope.launch(dispatchers.io) {
+            exploreRepository.getConsoleShowcase(consoleId).fold(
+                onSuccess = { showcase ->
+                    _consoleShowcaseState.update { it.copy(showcase = showcase, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _consoleShowcaseState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun dismissConsoleShowcaseError() {
+        _consoleShowcaseState.update { it.copy(error = null) }
     }
 }

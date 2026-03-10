@@ -1,5 +1,7 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.ConsoleHighlight
+import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
@@ -38,4 +40,6 @@ interface ExploreRepository {
     suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail>
     suspend fun getPublisherDetail(name: String): Result<DeveloperDetail>
     suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight>
+    suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase>
+    suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>>
 }

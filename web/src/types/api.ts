@@ -883,6 +883,36 @@ export interface GameFranchiseLink {
   gameCount: number;
 }
 
+// --- Console Showcase ---
+
+export interface GenreCount {
+  name: string;
+  gameCount: number;
+}
+
+export interface ConsoleShowcase {
+  console: Console;
+  essentials: Game[];
+  hiddenGems: Game[];
+  genreBreakdown: GenreCount[];
+  topDevelopers: DeveloperSummary[];
+  recentlyPlayed: Game[];
+}
+
+export interface ConsoleHighlight {
+  id: string;
+  name: string;
+  colorTheme: string;
+  iconUrl: string;
+  logoUrl: string;
+  gameCount: number;
+  topGame: Game | null;
+}
+
+export interface ConsoleHighlightsResponse {
+  consoles: ConsoleHighlight[];
+}
+
 // --- Moods ---
 
 export interface MoodDefinition {

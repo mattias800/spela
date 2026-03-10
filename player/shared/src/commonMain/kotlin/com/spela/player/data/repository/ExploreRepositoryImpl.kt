@@ -2,6 +2,8 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.ConsoleHighlight
+import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
@@ -200,5 +202,46 @@ class ExploreRepositoryImpl(
                 )
             },
         )
+    }
+
+    override suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase> = runCatching {
+        val dto = apiClient.getConsoleShowcase(consoleId)
+        dto.toDomain().copy(
+            essentials = dto.essentials.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                    logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
+            hiddenGems = dto.hiddenGems.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                    logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
+            recentlyPlayed = dto.recentlyPlayed.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                    logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
+        )
+    }
+
+    override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> = runCatching {
+        apiClient.getConsoleHighlights().consoles.map { dto ->
+            dto.toDomain().copy(
+                iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
+                logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
+                topGame = dto.topGame?.let { gameDto ->
+                    gameDto.toDomain().copy(
+                        coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    )
+                },
+            )
+        }
     }
 }
