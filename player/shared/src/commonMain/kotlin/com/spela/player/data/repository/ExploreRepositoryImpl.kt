@@ -28,6 +28,7 @@ import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
@@ -378,6 +379,28 @@ class ExploreRepositoryImpl(
 
     override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> = runCatching {
         apiClient.getActiveChallenges().challenges.map { it.toDomain() }
+    }
+
+    override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
+        apiClient.getFilteredGames(filters, page, pageSize).data.map { gameDto ->
+            gameDto.toDomain().copy(
+                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+            )
+        }
+    }
+
+    override suspend fun getSavedSearches(): Result<List<SavedSearch>> = runCatching {
+        apiClient.getSavedSearches().map { it.toDomain() }
+    }
+
+    override suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch> = runCatching {
+        apiClient.createSavedSearch(name, filters).toDomain()
+    }
+
+    override suspend fun deleteSavedSearch(id: String): Result<Unit> = runCatching {
+        apiClient.deleteSavedSearch(id)
     }
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(

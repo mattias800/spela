@@ -18,9 +18,11 @@ import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.GameFilters
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
@@ -139,6 +141,17 @@ data class ScreenshotGalleryState(
     val error: String? = null,
 )
 
+data class GameSearchState(
+    val filters: GameFilters = GameFilters(),
+    val results: List<Game> = emptyList(),
+    val savedSearches: List<SavedSearch> = emptyList(),
+    val isLoading: Boolean = false,
+    val isLoadingSavedSearches: Boolean = false,
+    val isSaving: Boolean = false,
+    val showFilterPanel: Boolean = false,
+    val error: String? = null,
+)
+
 data class SeriesDetailState(
     val seriesId: String = "",
     val seriesName: String = "",
@@ -190,6 +203,9 @@ class ExploreViewModel(
     private val _screenshotGalleryState = MutableStateFlow(ScreenshotGalleryState())
     val screenshotGalleryState: StateFlow<ScreenshotGalleryState> = _screenshotGalleryState.asStateFlow()
 
+    private val _gameSearchState = MutableStateFlow(GameSearchState())
+    val gameSearchState: StateFlow<GameSearchState> = _gameSearchState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -210,6 +226,9 @@ class ExploreViewModel(
     private var temporalJob: Job? = null
     private var achievementJob: Job? = null
     private var screenshotGalleryJob: Job? = null
+    private var searchJob: Job? = null
+    private var savedSearchesJob: Job? = null
+    private var savingSearchJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -674,5 +693,97 @@ class ExploreViewModel(
 
     fun dismissScreenshotGalleryError() {
         _screenshotGalleryState.update { it.copy(error = null) }
+    }
+
+    // --- Phase 13: Advanced Search & Multi-Faceted Filtering ---
+
+    fun updateFilters(filters: GameFilters) {
+        _gameSearchState.update { it.copy(filters = filters) }
+    }
+
+    fun toggleFilterPanel() {
+        _gameSearchState.update { it.copy(showFilterPanel = !it.showFilterPanel) }
+    }
+
+    fun applyFilters() {
+        val filters = _gameSearchState.value.filters
+        searchJob?.cancel()
+        _gameSearchState.update { it.copy(isLoading = true, error = null, showFilterPanel = false) }
+        searchJob = scope.launch(dispatchers.io) {
+            exploreRepository.getFilteredGames(filters.toQueryMap(), page = 1, pageSize = 50).fold(
+                onSuccess = { games ->
+                    _gameSearchState.update { it.copy(results = games, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _gameSearchState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun clearFilters() {
+        _gameSearchState.update { it.copy(filters = GameFilters(), results = emptyList()) }
+    }
+
+    fun loadSavedSearches() {
+        savedSearchesJob?.cancel()
+        _gameSearchState.update { it.copy(isLoadingSavedSearches = true) }
+        savedSearchesJob = scope.launch(dispatchers.io) {
+            exploreRepository.getSavedSearches().fold(
+                onSuccess = { searches ->
+                    _gameSearchState.update { it.copy(savedSearches = searches, isLoadingSavedSearches = false) }
+                },
+                onFailure = { error ->
+                    _gameSearchState.update { it.copy(isLoadingSavedSearches = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun saveCurrentSearch(name: String) {
+        val filters = _gameSearchState.value.filters
+        if (filters.isEmpty) return
+        savingSearchJob?.cancel()
+        _gameSearchState.update { it.copy(isSaving = true) }
+        savingSearchJob = scope.launch(dispatchers.io) {
+            exploreRepository.createSavedSearch(name, filters.toQueryMap()).fold(
+                onSuccess = { savedSearch ->
+                    _gameSearchState.update {
+                        it.copy(
+                            savedSearches = it.savedSearches + savedSearch,
+                            isSaving = false,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _gameSearchState.update { it.copy(isSaving = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun deleteSavedSearch(id: String) {
+        scope.launch(dispatchers.io) {
+            exploreRepository.deleteSavedSearch(id).fold(
+                onSuccess = {
+                    _gameSearchState.update {
+                        it.copy(savedSearches = it.savedSearches.filter { s -> s.id != id })
+                    }
+                },
+                onFailure = { error ->
+                    _gameSearchState.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun applySavedSearch(savedSearch: SavedSearch) {
+        val filters = GameFilters.fromQueryMap(savedSearch.filters)
+        _gameSearchState.update { it.copy(filters = filters) }
+        applyFilters()
+    }
+
+    fun dismissSearchError() {
+        _gameSearchState.update { it.copy(error = null) }
     }
 }

@@ -826,3 +826,12 @@ fun ExploreChallengeDto.toDomain() = ExploreChallenge(
     expiresAt = expiresAt,
     createdAt = createdAt,
 )
+
+// --- Phase 13: Advanced Search & Saved Searches ---
+
+fun SavedSearchDto.toDomain() = SavedSearch(
+    id = id,
+    name = name,
+    filters = filters.mapValues { (_, v) -> v.content },
+    createdAt = createdAt,
+)

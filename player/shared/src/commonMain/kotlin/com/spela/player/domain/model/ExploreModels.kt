@@ -274,3 +274,76 @@ data class ExploreChallenge(
     val expiresAt: String?,
     val createdAt: String,
 )
+
+// --- Phase 13: Advanced Search & Multi-Faceted Filtering ---
+
+data class SavedSearch(
+    val id: String,
+    val name: String,
+    val filters: Map<String, String>,
+    val createdAt: String,
+)
+
+data class GameFilters(
+    val search: String = "",
+    val consoles: List<String> = emptyList(),
+    val genres: List<String> = emptyList(),
+    val themes: List<String> = emptyList(),
+    val keywords: List<String> = emptyList(),
+    val perspectives: List<String> = emptyList(),
+    val developer: String = "",
+    val publisher: String = "",
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val ratingMin: Double? = null,
+    val ratingMax: Double? = null,
+    val playStatus: String = "",
+    val sortBy: String = "",
+    val sortOrder: String = "",
+) {
+    val isEmpty: Boolean
+        get() = search.isBlank() && consoles.isEmpty() && genres.isEmpty() &&
+            themes.isEmpty() && keywords.isEmpty() && perspectives.isEmpty() &&
+            developer.isBlank() && publisher.isBlank() &&
+            yearMin == null && yearMax == null &&
+            ratingMin == null && ratingMax == null &&
+            playStatus.isBlank() && sortBy.isBlank()
+
+    fun toQueryMap(): Map<String, String> = buildMap {
+        if (search.isNotBlank()) put("search", search)
+        if (consoles.isNotEmpty()) put("consoles", consoles.joinToString(","))
+        if (genres.isNotEmpty()) put("genres", genres.joinToString(","))
+        if (themes.isNotEmpty()) put("themes", themes.joinToString(","))
+        if (keywords.isNotEmpty()) put("keywords", keywords.joinToString(","))
+        if (perspectives.isNotEmpty()) put("perspectives", perspectives.joinToString(","))
+        if (developer.isNotBlank()) put("developer", developer)
+        if (publisher.isNotBlank()) put("publisher", publisher)
+        yearMin?.let { put("yearMin", it.toString()) }
+        yearMax?.let { put("yearMax", it.toString()) }
+        ratingMin?.let { put("ratingMin", it.toString()) }
+        ratingMax?.let { put("ratingMax", it.toString()) }
+        if (playStatus.isNotBlank()) put("playStatus", playStatus)
+        if (sortBy.isNotBlank()) put("sortBy", sortBy)
+        if (sortOrder.isNotBlank()) put("sortOrder", sortOrder)
+    }
+
+    companion object {
+        fun fromQueryMap(map: Map<String, String>): GameFilters = GameFilters(
+            search = map["search"] ?: "",
+            consoles = map["consoles"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            genres = map["genres"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            themes = map["themes"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            keywords = map["keywords"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            perspectives = map["perspectives"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            developer = map["developer"] ?: "",
+            publisher = map["publisher"] ?: "",
+            yearMin = map["yearMin"]?.toIntOrNull(),
+            yearMax = map["yearMax"]?.toIntOrNull(),
+            ratingMin = map["ratingMin"]?.toDoubleOrNull(),
+            ratingMax = map["ratingMax"]?.toDoubleOrNull(),
+            playStatus = map["playStatus"] ?: "",
+            sortBy = map["sortBy"] ?: "",
+            sortOrder = map["sortOrder"] ?: "",
+        )
+    }
+}

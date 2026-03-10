@@ -1358,6 +1358,9 @@ class FakeExploreRepository : ExploreRepository {
     var almostDoneGamesList: List<AlmostDoneGame> = emptyList()
     var freshChallengeGamesList: List<FreshChallengeGame> = emptyList()
     var activeChallengesList: List<ExploreChallenge> = emptyList()
+    var filteredGames: List<Game> = emptyList()
+    var savedSearchesList: List<SavedSearch> = mutableListOf()
+    var createdSavedSearch: SavedSearch? = null
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1547,6 +1550,34 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> =
         if (shouldFail) Result.failure(Exception("Failed to load active challenges"))
         else Result.success(activeChallengesList)
+
+    override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load filtered games"))
+        else Result.success(filteredGames)
+
+    override suspend fun getSavedSearches(): Result<List<SavedSearch>> =
+        if (shouldFail) Result.failure(Exception("Failed to load saved searches"))
+        else Result.success(savedSearchesList)
+
+    override suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch> =
+        if (shouldFail) Result.failure(Exception("Failed to create saved search"))
+        else {
+            val search = createdSavedSearch ?: SavedSearch(
+                id = "saved-${savedSearchesList.size + 1}",
+                name = name,
+                filters = filters,
+                createdAt = "2026-03-10T00:00:00Z",
+            )
+            savedSearchesList = savedSearchesList + search
+            Result.success(search)
+        }
+
+    override suspend fun deleteSavedSearch(id: String): Result<Unit> =
+        if (shouldFail) Result.failure(Exception("Failed to delete saved search"))
+        else {
+            savedSearchesList = savedSearchesList.filter { it.id != id }
+            Result.success(Unit)
+        }
 }
 
 class FakeCheatRepository : CheatRepository {

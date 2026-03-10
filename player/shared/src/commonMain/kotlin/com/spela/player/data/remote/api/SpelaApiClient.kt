@@ -441,6 +441,41 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/active-challenges").body()
     }
 
+    /** Returns games filtered by multi-faceted criteria */
+    suspend fun getFilteredGames(
+        filters: Map<String, String>,
+        page: Int? = null,
+        pageSize: Int? = null,
+    ): GameListResponse {
+        return client.get("$baseUrl/api/games") {
+            filters.forEach { (key, value) ->
+                parameter(key, value)
+            }
+            page?.let { parameter("page", it) }
+            pageSize?.let { parameter("pageSize", it) }
+        }.body()
+    }
+
+    /** Returns user's saved searches */
+    suspend fun getSavedSearches(): List<SavedSearchDto> {
+        return client.get("$baseUrl/api/user/saved-searches").body()
+    }
+
+    /** Creates a new saved search */
+    suspend fun createSavedSearch(name: String, filters: Map<String, String>): SavedSearchDto {
+        return client.post("$baseUrl/api/user/saved-searches") {
+            setBody(CreateSavedSearchRequest(
+                name = name,
+                filters = filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
+            ))
+        }.body()
+    }
+
+    /** Deletes a saved search */
+    suspend fun deleteSavedSearch(id: String) {
+        client.delete("$baseUrl/api/user/saved-searches/$id")
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

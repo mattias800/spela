@@ -1,6 +1,7 @@
 package com.spela.player.data.remote.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class LoginRequest(
@@ -1437,4 +1438,20 @@ data class ExploreChallengeDto(
 @Serializable
 data class ActiveChallengesResponseDto(
     val challenges: List<ExploreChallengeDto>,
+)
+
+// --- Phase 13: Advanced Search & Saved Searches ---
+
+@Serializable
+data class SavedSearchDto(
+    val id: String,
+    val name: String,
+    val filters: Map<String, JsonPrimitive> = emptyMap(),
+    val createdAt: String = "",
+)
+
+@Serializable
+data class CreateSavedSearchRequest(
+    val name: String,
+    val filters: Map<String, JsonPrimitive>,
 )
