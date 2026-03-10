@@ -192,3 +192,37 @@ data class ScreenshotItem(
     val consoleAbbreviation: String,
     val consoleColor: String,
 )
+
+// --- Phase 10: Social & Community Discovery ---
+
+data class TrendingGame(
+    val game: Game,
+    val playersThisWeek: Int,
+)
+
+data class CommunityTopGame(
+    val game: Game,
+    val avgRating: Double,
+    val ratingCount: Int,
+)
+
+data class CultClassicGame(
+    val game: Game,
+    val communityRating: Double,
+    val igdbRating: Double,
+    val ratingCount: Int,
+)
+
+data class RecentReviewItem(
+    val game: Game,
+    val rating: Int,
+    val review: String,
+    val reviewerName: String,
+    val reviewedAt: String,
+)
+
+data class ActiveNowItem(
+    val game: Game,
+    val activeSessions: Int,
+    val activeChallenges: Int,
+)

@@ -744,3 +744,37 @@ fun ScreenshotItemDto.toDomain(): ScreenshotItem = ScreenshotItem(
     consoleAbbreviation = consoleAbbreviation,
     consoleColor = consoleColor,
 )
+
+// --- Phase 10: Social & Community Discovery ---
+
+fun TrendingGameDto.toDomain(): TrendingGame = TrendingGame(
+    game = game.toDomain(),
+    playersThisWeek = playersThisWeek,
+)
+
+fun CommunityTopGameDto.toDomain(): CommunityTopGame = CommunityTopGame(
+    game = game.toDomain(),
+    avgRating = avgRating,
+    ratingCount = ratingCount,
+)
+
+fun CultClassicGameDto.toDomain(): CultClassicGame = CultClassicGame(
+    game = game.toDomain(),
+    communityRating = communityRating,
+    igdbRating = igdbRating,
+    ratingCount = ratingCount,
+)
+
+fun RecentReviewItemDto.toDomain(): RecentReviewItem = RecentReviewItem(
+    game = game.toDomain(),
+    rating = rating,
+    review = review,
+    reviewerName = reviewerName,
+    reviewedAt = reviewedAt,
+)
+
+fun ActiveNowItemDto.toDomain(): ActiveNowItem = ActiveNowItem(
+    game = game.toDomain(),
+    activeSessions = activeSessions,
+    activeChallenges = activeChallenges,
+)

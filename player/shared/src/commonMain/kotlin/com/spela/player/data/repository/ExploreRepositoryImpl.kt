@@ -1,10 +1,14 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.ActiveNowItem
 import com.spela.player.domain.model.ArtworkItem
+import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
+import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
@@ -18,10 +22,12 @@ import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
+import com.spela.player.domain.model.RecentReviewItem
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
+import com.spela.player.domain.model.TrendingGame
 import com.spela.player.domain.repository.ExploreRepository
 
 class ExploreRepositoryImpl(
@@ -262,4 +268,48 @@ class ExploreRepositoryImpl(
             )
         }
     }
+
+    override suspend fun getTrending(): Result<List<TrendingGame>> = runCatching {
+        apiClient.getTrending().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getCommunityTop(): Result<List<CommunityTopGame>> = runCatching {
+        apiClient.getCommunityTop().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getCultClassics(): Result<List<CultClassicGame>> = runCatching {
+        apiClient.getCultClassics().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>> = runCatching {
+        apiClient.getRecentlyReviewed().reviews.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getActiveNow(): Result<List<ActiveNowItem>> = runCatching {
+        apiClient.getActiveNow().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(
+        coverUrl = apiClient.resolveUrl(dto.coverUrl),
+    )
 }

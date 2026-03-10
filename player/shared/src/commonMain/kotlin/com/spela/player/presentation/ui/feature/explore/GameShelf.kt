@@ -53,19 +53,20 @@ fun GameShelf(
             ExploreGameCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },
+                modifier = Modifier.width(SpSpacing.CoverMediumWidth),
             )
         }
     }
 }
 
 @Composable
-private fun ExploreGameCard(
+internal fun ExploreGameCard(
     game: Game,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
+        modifier = modifier
             .testTag("explore_game_card_${game.id}")
             .semantics {
                 contentDescription = "${game.title}, ${game.consoleName}"

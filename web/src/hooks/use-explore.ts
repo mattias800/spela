@@ -24,6 +24,11 @@ import type {
   ScreenshotGalleryResponse,
   ArtworkGalleryResponse,
   CoverGalleryResponse,
+  TrendingResponse,
+  CommunityTopResponse,
+  CultClassicsResponse,
+  RecentlyReviewedResponse,
+  ActiveNowResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -248,5 +253,41 @@ export function useCoverGallery(page: number, consoleFilter?: string) {
     queryKey: ["cover-gallery", page, consoleFilter],
     queryFn: () =>
       api.get<CoverGalleryResponse>(`/explore/covers?${params}`),
+  });
+}
+
+export function useTrending() {
+  return useQuery({
+    queryKey: ["explore", "trending"],
+    queryFn: () => api.get<TrendingResponse>("/explore/trending"),
+  });
+}
+
+export function useCommunityTop() {
+  return useQuery({
+    queryKey: ["explore", "community-top"],
+    queryFn: () => api.get<CommunityTopResponse>("/explore/community-top"),
+  });
+}
+
+export function useCultClassics() {
+  return useQuery({
+    queryKey: ["explore", "cult-classics"],
+    queryFn: () => api.get<CultClassicsResponse>("/explore/cult-classics"),
+  });
+}
+
+export function useRecentlyReviewed() {
+  return useQuery({
+    queryKey: ["explore", "recently-reviewed"],
+    queryFn: () =>
+      api.get<RecentlyReviewedResponse>("/explore/recently-reviewed"),
+  });
+}
+
+export function useActiveNow() {
+  return useQuery({
+    queryKey: ["explore", "active-now"],
+    queryFn: () => api.get<ActiveNowResponse>("/explore/active-now"),
   });
 }

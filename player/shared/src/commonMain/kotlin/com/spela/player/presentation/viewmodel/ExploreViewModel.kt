@@ -1,8 +1,11 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ActiveNowItem
 import com.spela.player.domain.model.ArtworkItem
+import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
+import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.ExploreRow
@@ -12,9 +15,11 @@ import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.domain.model.RecentReviewItem
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
+import com.spela.player.domain.model.TrendingGame
 import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +28,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -37,6 +44,11 @@ data class ExploreState(
     val developerSpotlight: DeveloperSpotlight? = null,
     val consoleHighlights: List<ConsoleHighlight> = emptyList(),
     val artworkShowcase: List<ArtworkItem> = emptyList(),
+    val trendingGames: List<TrendingGame> = emptyList(),
+    val communityTopGames: List<CommunityTopGame> = emptyList(),
+    val cultClassics: List<CultClassicGame> = emptyList(),
+    val recentReviews: List<RecentReviewItem> = emptyList(),
+    val activeNowGames: List<ActiveNowItem> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -47,10 +59,11 @@ data class ExploreState(
     val isLoadingDeveloperSpotlight: Boolean = false,
     val isLoadingConsoleHighlights: Boolean = false,
     val isLoadingArtwork: Boolean = false,
+    val isLoadingSocial: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork || isLoadingSocial
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && trendingGames.isEmpty() && communityTopGames.isEmpty() && cultClassics.isEmpty() && recentReviews.isEmpty() && activeNowGames.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -178,6 +191,7 @@ class ExploreViewModel(
     private var consoleHighlightsJob: Job? = null
     private var consoleShowcaseJob: Job? = null
     private var artworkShowcaseJob: Job? = null
+    private var socialJob: Job? = null
     private var screenshotGalleryJob: Job? = null
 
     fun load() {
@@ -191,6 +205,7 @@ class ExploreViewModel(
         loadDeveloperSpotlight()
         loadConsoleHighlights()
         loadArtworkShowcase()
+        loadSocialData()
     }
 
     fun dismissError() {
@@ -511,6 +526,32 @@ class ExploreViewModel(
                     _state.update { it.copy(isLoadingArtwork = false, error = error.message) }
                 },
             )
+        }
+    }
+
+    private fun loadSocialData() {
+        if (socialJob?.isActive == true) return
+        _state.update { it.copy(isLoadingSocial = true) }
+        socialJob = scope.launch(dispatchers.io) {
+            // Load all social endpoints concurrently
+            val trendingDeferred = async { exploreRepository.getTrending() }
+            val communityTopDeferred = async { exploreRepository.getCommunityTop() }
+            val cultClassicsDeferred = async { exploreRepository.getCultClassics() }
+            val recentlyReviewedDeferred = async { exploreRepository.getRecentlyReviewed() }
+            val activeNowDeferred = async { exploreRepository.getActiveNow() }
+
+            awaitAll(trendingDeferred, communityTopDeferred, cultClassicsDeferred, recentlyReviewedDeferred, activeNowDeferred)
+
+            _state.update { current ->
+                current.copy(
+                    trendingGames = trendingDeferred.await().getOrDefault(emptyList()),
+                    communityTopGames = communityTopDeferred.await().getOrDefault(emptyList()),
+                    cultClassics = cultClassicsDeferred.await().getOrDefault(emptyList()),
+                    recentReviews = recentlyReviewedDeferred.await().getOrDefault(emptyList()),
+                    activeNowGames = activeNowDeferred.await().getOrDefault(emptyList()),
+                    isLoadingSocial = false,
+                )
+            }
         }
     }
 

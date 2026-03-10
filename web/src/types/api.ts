@@ -1099,3 +1099,57 @@ export interface StagedUpload {
   crc32: string;
   canonicalName: string;
 }
+
+// --- Phase 10: Social & Community Discovery ---
+
+export interface TrendingGame {
+  game: Game;
+  playersThisWeek: number;
+}
+
+export interface TrendingResponse {
+  games: TrendingGame[];
+}
+
+export interface CommunityTopGame {
+  game: Game;
+  avgRating: number;
+  ratingCount: number;
+}
+
+export interface CommunityTopResponse {
+  games: CommunityTopGame[];
+}
+
+export interface CultClassicGame {
+  game: Game;
+  communityRating: number;
+  igdbRating: number;
+  ratingCount: number;
+}
+
+export interface CultClassicsResponse {
+  games: CultClassicGame[];
+}
+
+export interface RecentReviewItem {
+  game: Game;
+  rating: number;
+  review: string;
+  reviewerName: string;
+  reviewedAt: string;
+}
+
+export interface RecentlyReviewedResponse {
+  reviews: RecentReviewItem[];
+}
+
+export interface ActiveNowItem {
+  game: Game;
+  activeSessions: number;
+  activeChallenges: number;
+}
+
+export interface ActiveNowResponse {
+  games: ActiveNowItem[];
+}

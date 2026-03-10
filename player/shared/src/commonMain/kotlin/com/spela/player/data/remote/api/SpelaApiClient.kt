@@ -371,6 +371,31 @@ class SpelaApiClient(
         }.body()
     }
 
+    /** Returns trending games (most played this week) */
+    suspend fun getTrending(): TrendingResponseDto {
+        return client.get("$baseUrl/api/explore/trending").body()
+    }
+
+    /** Returns community top-rated games */
+    suspend fun getCommunityTop(): CommunityTopResponseDto {
+        return client.get("$baseUrl/api/explore/community-top").body()
+    }
+
+    /** Returns cult classics (high community, low IGDB) */
+    suspend fun getCultClassics(): CultClassicsResponseDto {
+        return client.get("$baseUrl/api/explore/cult-classics").body()
+    }
+
+    /** Returns recently reviewed games */
+    suspend fun getRecentlyReviewed(): RecentlyReviewedResponseDto {
+        return client.get("$baseUrl/api/explore/recently-reviewed").body()
+    }
+
+    /** Returns games with active shared sessions or challenges */
+    suspend fun getActiveNow(): ActiveNowResponseDto {
+        return client.get("$baseUrl/api/explore/active-now").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

@@ -34,6 +34,13 @@ export type ApiGetPath = WithQuery<
   | `/explore/consoles/${string}/showcase`
   | "/explore/console-highlights"
 
+  // Social & Community Discovery
+  | "/explore/trending"
+  | "/explore/community-top"
+  | "/explore/cult-classics"
+  | "/explore/recently-reviewed"
+  | "/explore/active-now"
+
   // Developers & Publishers
   | "/explore/developers"
   | "/explore/developers/spotlight"
