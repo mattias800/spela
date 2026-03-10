@@ -65,10 +65,20 @@ import {
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
+import { useInView } from "@/hooks/use-in-view";
 
 export function ExplorePage() {
   const { isAdmin } = useAuth();
   const [bestOfYear, setBestOfYear] = useState(DEFAULT_YEAR);
+
+  // Lazy-loading sentinels: sections only fetch when scrolled into view.
+  // rootMargin 400px = start loading before the section is visible.
+  const social = useInView({ rootMargin: "400px" });
+  const temporal = useInView({ rootMargin: "400px" });
+  const achievements = useInView({ rootMargin: "400px" });
+  const catalogBottom = useInView({ rootMargin: "400px" });
+
+  // --- Tier 1: Always loaded (above-the-fold) ---
   const {
     data: featuredGames,
     isLoading: isFeaturedLoading,
@@ -78,21 +88,15 @@ export function ExplorePage() {
     isLoading: isRowsLoading,
   } = useExploreRows();
   const {
-    data: themes,
-    isLoading: isThemesLoading,
-  } = useThemes();
-  const {
-    data: keywords,
-    isLoading: isKeywordsLoading,
-  } = useKeywords(30);
-  const {
-    data: featuredSeries,
-    isLoading: isSeriesLoading,
-  } = useFeaturedSeries();
+    data: consoleHighlightsData,
+    isLoading: isConsoleHighlightsLoading,
+  } = useConsoleHighlights();
   const {
     data: moods,
     isLoading: isMoodsLoading,
   } = useMoods();
+
+  // --- Tier 2: Lazy-loaded when scrolled near ---
   const {
     data: forYouData,
     isLoading: isForYouLoading,
@@ -101,74 +105,91 @@ export function ExplorePage() {
     data: playersLikeYouData,
     isLoading: isPlayersLoading,
   } = usePlayersLikeYou();
-  const {
-    data: spotlightData,
-    isLoading: isSpotlightLoading,
-  } = useDeveloperSpotlight();
-  const {
-    data: consoleHighlightsData,
-    isLoading: isConsoleHighlightsLoading,
-  } = useConsoleHighlights();
-  const {
-    data: artworkData,
-    isLoading: isArtworkLoading,
-  } = useArtworkGallery(1);
+
+  // Social section
   const {
     data: trendingData,
     isLoading: isTrendingLoading,
-  } = useTrending();
+  } = useTrending(social.isInView);
   const {
     data: communityTopData,
     isLoading: isCommunityTopLoading,
-  } = useCommunityTop();
+  } = useCommunityTop(social.isInView);
   const {
     data: cultClassicsData,
     isLoading: isCultClassicsLoading,
-  } = useCultClassics();
-  const {
-    data: recentlyReviewedData,
-    isLoading: isRecentlyReviewedLoading,
-  } = useRecentlyReviewed();
+  } = useCultClassics(social.isInView);
   const {
     data: activeNowData,
     isLoading: isActiveNowLoading,
-  } = useActiveNow();
+  } = useActiveNow(social.isInView);
+  const {
+    data: recentlyReviewedData,
+    isLoading: isRecentlyReviewedLoading,
+  } = useRecentlyReviewed(social.isInView);
+
+  // Temporal section
   const {
     data: onThisDayData,
     isLoading: isOnThisDayLoading,
-  } = useOnThisDay();
-  const {
-    data: bestOfYearData,
-    isLoading: isBestOfYearLoading,
-  } = useBestOfYear(bestOfYear);
+  } = useOnThisDay(temporal.isInView);
   const {
     data: anniversariesData,
     isLoading: isAnniversariesLoading,
-  } = useYourAnniversaries();
+  } = useYourAnniversaries(temporal.isInView);
+  const {
+    data: bestOfYearData,
+    isLoading: isBestOfYearLoading,
+  } = useBestOfYear(bestOfYear, temporal.isInView);
   const {
     data: decadeData,
     isLoading: isDecadeLoading,
-  } = useDecade("90s");
+  } = useDecade("90s", temporal.isInView);
+
+  // Achievement section
   const {
     data: easyToCompleteData,
     isLoading: isEasyToCompleteLoading,
-  } = useEasyToComplete();
+  } = useEasyToComplete(achievements.isInView);
   const {
     data: hardestGamesData,
     isLoading: isHardestGamesLoading,
-  } = useHardestGames();
+  } = useHardestGames(achievements.isInView);
   const {
     data: almostDoneData,
     isLoading: isAlmostDoneLoading,
-  } = useAlmostDone();
+  } = useAlmostDone(achievements.isInView);
   const {
     data: freshChallengesData,
     isLoading: isFreshChallengesLoading,
-  } = useFreshChallenges();
+  } = useFreshChallenges(achievements.isInView);
   const {
     data: activeChallengesData,
     isLoading: isActiveChallengesLoading,
-  } = useActiveChallenges();
+  } = useActiveChallenges(achievements.isInView);
+
+  // Catalog bottom section (themes, keywords, series, spotlight, artwork)
+  const {
+    data: themes,
+    isLoading: isThemesLoading,
+  } = useThemes(catalogBottom.isInView);
+  const {
+    data: keywords,
+    isLoading: isKeywordsLoading,
+  } = useKeywords(30, catalogBottom.isInView);
+  const {
+    data: featuredSeries,
+    isLoading: isSeriesLoading,
+  } = useFeaturedSeries(catalogBottom.isInView);
+  const {
+    data: spotlightData,
+    isLoading: isSpotlightLoading,
+  } = useDeveloperSpotlight(catalogBottom.isInView);
+  const {
+    data: artworkData,
+    isLoading: isArtworkLoading,
+  } = useArtworkGallery(1, catalogBottom.isInView);
+
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -254,15 +275,16 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Trending */}
-      <TrendingShelf
-        games={trendingData?.games}
-        isLoading={isTrendingLoading}
-        onToggleFavorite={handleToggleFavorite}
-        onTogglePlayLater={handleTogglePlayLater}
-      />
+      {/* Social Discovery — lazy-loaded */}
+      <div ref={social.ref}>
+        <TrendingShelf
+          games={trendingData?.games}
+          isLoading={isTrendingLoading}
+          onToggleFavorite={handleToggleFavorite}
+          onTogglePlayLater={handleTogglePlayLater}
+        />
+      </div>
 
-      {/* Community Favorites */}
       <CommunityTopShelf
         games={communityTopData?.games}
         isLoading={isCommunityTopLoading}
@@ -270,7 +292,6 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Cult Classics */}
       <CultClassicsShelf
         games={cultClassicsData?.games}
         isLoading={isCultClassicsLoading}
@@ -278,7 +299,6 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Active Right Now */}
       <ActiveNowShelf
         games={activeNowData?.games}
         isLoading={isActiveNowLoading}
@@ -286,7 +306,6 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Recently Reviewed */}
       <RecentlyReviewedShelf
         reviews={recentlyReviewedData?.reviews}
         isLoading={isRecentlyReviewedLoading}
@@ -294,13 +313,15 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Temporal Discovery */}
-      <OnThisDayShelf
-        data={onThisDayData}
-        isLoading={isOnThisDayLoading}
-        onToggleFavorite={handleToggleFavorite}
-        onTogglePlayLater={handleTogglePlayLater}
-      />
+      {/* Temporal Discovery — lazy-loaded */}
+      <div ref={temporal.ref}>
+        <OnThisDayShelf
+          data={onThisDayData}
+          isLoading={isOnThisDayLoading}
+          onToggleFavorite={handleToggleFavorite}
+          onTogglePlayLater={handleTogglePlayLater}
+        />
+      </div>
 
       <AnniversariesShelf
         anniversaries={anniversariesData?.anniversaries}
@@ -325,13 +346,15 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Achievement & Challenge Discovery */}
-      <EasyToCompleteShelf
-        data={easyToCompleteData}
-        isLoading={isEasyToCompleteLoading}
-        onToggleFavorite={handleToggleFavorite}
-        onTogglePlayLater={handleTogglePlayLater}
-      />
+      {/* Achievement & Challenge Discovery — lazy-loaded */}
+      <div ref={achievements.ref}>
+        <EasyToCompleteShelf
+          data={easyToCompleteData}
+          isLoading={isEasyToCompleteLoading}
+          onToggleFavorite={handleToggleFavorite}
+          onTogglePlayLater={handleTogglePlayLater}
+        />
+      </div>
 
       <HardestGamesShelf
         data={hardestGamesData}
@@ -377,16 +400,15 @@ export function ExplorePage() {
         />
       ) : null}
 
-      {/* Theme Grid */}
-      <ThemeGrid themes={themes} isLoading={isThemesLoading} />
+      {/* Catalog bottom — lazy-loaded */}
+      <div ref={catalogBottom.ref}>
+        <ThemeGrid themes={themes} isLoading={isThemesLoading} />
+      </div>
 
-      {/* Keyword Chips */}
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
 
-      {/* Series shelf */}
       <SeriesShelf series={featuredSeries} isLoading={isSeriesLoading} />
 
-      {/* Developer Spotlight */}
       <DeveloperSpotlight
         spotlight={spotlightData}
         isLoading={isSpotlightLoading}
@@ -394,7 +416,6 @@ export function ExplorePage() {
         onTogglePlayLater={handleTogglePlayLater}
       />
 
-      {/* Artwork Showcase */}
       <ArtworkShowcase
         artworks={artworkData?.artworks}
         isLoading={isArtworkLoading}
