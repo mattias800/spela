@@ -98,6 +98,9 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		}
 	}
 
+	// Track whether any join-based filter is active (needs DISTINCT to avoid duplicates)
+	needsDistinct := false
+
 	// --- Theme filter (multi-select with backward compat) ---
 	themes := c.Query("themes")
 	if themes == "" {
@@ -109,6 +112,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 			Where("game_themes.igdb_theme_id IN ?", themeIDs)
 		countQuery = countQuery.Joins("JOIN game_themes ON game_themes.game_id = games.id").
 			Where("game_themes.igdb_theme_id IN ?", themeIDs)
+		needsDistinct = true
 	}
 
 	// --- Keyword filter (multi-select with backward compat) ---
@@ -122,6 +126,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 			Where("game_keywords.igdb_keyword_id IN ?", keywordIDs)
 		countQuery = countQuery.Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
 			Where("game_keywords.igdb_keyword_id IN ?", keywordIDs)
+		needsDistinct = true
 	}
 
 	// --- Perspective filter (multi-select with backward compat) ---
@@ -135,15 +140,16 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 			Where("game_player_perspectives.igdb_perspective_id IN ?", perspectiveIDs)
 		countQuery = countQuery.Joins("JOIN game_player_perspectives ON game_player_perspectives.game_id = games.id").
 			Where("game_player_perspectives.igdb_perspective_id IN ?", perspectiveIDs)
+		needsDistinct = true
 	}
 
-	// --- Developer filter (LIKE, case-insensitive) ---
+	// --- Developer filter (substring match) ---
 	if developer := c.Query("developer"); developer != "" {
 		query = query.Where("games.developer LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(developer)+"%")
 		countQuery = countQuery.Where("games.developer LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(developer)+"%")
 	}
 
-	// --- Publisher filter (LIKE, case-insensitive) ---
+	// --- Publisher filter (substring match) ---
 	if publisher := c.Query("publisher"); publisher != "" {
 		query = query.Where("games.publisher LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(publisher)+"%")
 		countQuery = countQuery.Where("games.publisher LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(publisher)+"%")
@@ -165,13 +171,13 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 
 	// --- Rating range filters ---
 	if ratingMin := c.Query("ratingMin"); ratingMin != "" {
-		if r, err := strconv.ParseFloat(ratingMin, 64); err == nil {
+		if r, err := strconv.ParseFloat(ratingMin, 64); err == nil && r >= 0 && r <= 100 {
 			query = query.Where("games.rating >= ?", r)
 			countQuery = countQuery.Where("games.rating >= ?", r)
 		}
 	}
 	if ratingMax := c.Query("ratingMax"); ratingMax != "" {
-		if r, err := strconv.ParseFloat(ratingMax, 64); err == nil {
+		if r, err := strconv.ParseFloat(ratingMax, 64); err == nil && r >= 0 && r <= 100 {
 			query = query.Where("games.rating <= ?", r)
 			countQuery = countQuery.Where("games.rating <= ?", r)
 		}
@@ -188,6 +194,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		case "played":
 			query = query.Joins("JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID)
 			countQuery = countQuery.Joins("JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID)
+			needsDistinct = true
 		case "favorited":
 			query = query.Joins("JOIN favorites ON favorites.game_id = games.id AND favorites.user_id = ? AND favorites.deleted_at IS NULL", userID)
 			countQuery = countQuery.Joins("JOIN favorites ON favorites.game_id = games.id AND favorites.user_id = ? AND favorites.deleted_at IS NULL", userID)
@@ -195,6 +202,12 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 			query = query.Joins("JOIN play_later_items ON play_later_items.game_id = games.id AND play_later_items.user_id = ? AND play_later_items.deleted_at IS NULL", userID)
 			countQuery = countQuery.Joins("JOIN play_later_items ON play_later_items.game_id = games.id AND play_later_items.user_id = ? AND play_later_items.deleted_at IS NULL", userID)
 		}
+	}
+
+	// Apply DISTINCT when join-based filters are active to prevent duplicate rows
+	if needsDistinct {
+		query = query.Distinct("games.*")
+		countQuery = countQuery.Distinct("games.id")
 	}
 
 	// Sorting - whitelist both column and direction to prevent SQL injection

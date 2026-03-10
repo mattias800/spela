@@ -87,7 +87,7 @@ export function GamesPage() {
     ...parseUrlFilters(searchParams),
   }));
 
-  // Sync filters to URL (debounced to avoid excessive updates)
+  // Sync filters to URL
   useEffect(() => {
     const params = filtersToUrl({ ...filters, search: debouncedSearch || undefined });
     const current = searchParams.toString();
@@ -95,7 +95,7 @@ export function GamesPage() {
     if (current !== next) {
       setSearchParams(params, { replace: true });
     }
-  }, [filters, debouncedSearch]);
+  }, [filters, debouncedSearch, searchParams, setSearchParams]);
 
   const { data, isLoading } = useGames({
     ...filters,

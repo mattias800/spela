@@ -464,7 +464,10 @@ class SpelaApiClient(
     /** Creates a new saved search */
     suspend fun createSavedSearch(name: String, filters: Map<String, String>): SavedSearchDto {
         return client.post("$baseUrl/api/user/saved-searches") {
-            setBody(CreateSavedSearchRequest(name = name, filters = filters))
+            setBody(CreateSavedSearchRequest(
+                name = name,
+                filters = filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
+            ))
         }.body()
     }
 

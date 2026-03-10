@@ -29,18 +29,20 @@ function ChipPicker({
 }) {
   const [expanded, setExpanded] = useState(false);
   const visibleOptions = expanded ? options : options.slice(0, 12);
+  const labelId = `${testId}-label`;
 
   return (
     <div data-testid={testId}>
-      <label className="block text-sm font-medium text-surface-300 mb-2">
+      <span id={labelId} className="block text-sm font-medium text-surface-300 mb-2">
         {label}
-      </label>
-      <div className="flex flex-wrap gap-1.5">
+      </span>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={labelId}>
         {visibleOptions.map((opt) => {
           const isSelected = selected.includes(opt.value);
           return (
             <button
               key={opt.value}
+              aria-pressed={isSelected}
               onClick={() =>
                 onChange(
                   isSelected
@@ -103,9 +105,9 @@ function RangeInput({
 }) {
   return (
     <div data-testid={testId}>
-      <label className="block text-sm font-medium text-surface-300 mb-2">
+      <span className="block text-sm font-medium text-surface-300 mb-2">
         {label}
-      </label>
+      </span>
       <div className="flex items-center gap-2">
         <input
           type="number"
@@ -114,6 +116,7 @@ function RangeInput({
           placeholder={String(min)}
           value={valueMin ?? ""}
           onChange={(e) => onChangeMin(e.target.value ? Number(e.target.value) : undefined)}
+          aria-label={`${label} minimum`}
           className="w-24 rounded-lg bg-surface-900 border border-surface-700 px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
           data-testid={`${testId}-min`}
         />
@@ -125,6 +128,7 @@ function RangeInput({
           placeholder={String(max)}
           value={valueMax ?? ""}
           onChange={(e) => onChangeMax(e.target.value ? Number(e.target.value) : undefined)}
+          aria-label={`${label} maximum`}
           className="w-24 rounded-lg bg-surface-900 border border-surface-700 px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
           data-testid={`${testId}-max`}
         />
@@ -168,7 +172,7 @@ function SavedSearchItem({
       </button>
       <button
         onClick={onDelete}
-        className="p-1.5 rounded text-surface-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+        className="p-1.5 rounded text-surface-500 hover:text-red-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all"
         aria-label={`Delete ${search.name}`}
         data-testid="saved-search-delete"
       >
@@ -274,6 +278,7 @@ export function AdvancedFilterPanel({
       {/* Toggle button */}
       <button
         onClick={onToggle}
+        aria-expanded={isOpen}
         className={cn(
           "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all",
           isOpen
@@ -368,12 +373,13 @@ export function AdvancedFilterPanel({
           )}
 
           {/* Developer / Publisher */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-surface-300 mb-2">
+              <label htmlFor="filter-developer" className="block text-sm font-medium text-surface-300 mb-2">
                 Developer
               </label>
               <Input
+                id="filter-developer"
                 placeholder="e.g. Nintendo"
                 value={filters.developer ?? ""}
                 onChange={(e) =>
@@ -387,10 +393,11 @@ export function AdvancedFilterPanel({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-surface-300 mb-2">
+              <label htmlFor="filter-publisher" className="block text-sm font-medium text-surface-300 mb-2">
                 Publisher
               </label>
               <Input
+                id="filter-publisher"
                 placeholder="e.g. Konami"
                 value={filters.publisher ?? ""}
                 onChange={(e) =>
@@ -439,13 +446,14 @@ export function AdvancedFilterPanel({
 
           {/* Play status */}
           <div data-testid="play-status-filter">
-            <label className="block text-sm font-medium text-surface-300 mb-2">
+            <span id="play-status-label" className="block text-sm font-medium text-surface-300 mb-2">
               Play Status
-            </label>
-            <div className="flex flex-wrap gap-1.5">
+            </span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="play-status-label">
               {PLAY_STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.label}
+                  aria-pressed={filters.playStatus === opt.value}
                   onClick={() =>
                     onFiltersChange((f) => ({
                       ...f,
@@ -507,6 +515,7 @@ export function AdvancedFilterPanel({
                     setSaveName("");
                   }}
                   className="p-2 text-surface-400 hover:text-surface-200"
+                  aria-label="Cancel"
                 >
                   <X className="h-4 w-4" />
                 </button>

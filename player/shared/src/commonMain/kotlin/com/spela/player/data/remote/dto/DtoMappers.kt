@@ -832,6 +832,6 @@ fun ExploreChallengeDto.toDomain() = ExploreChallenge(
 fun SavedSearchDto.toDomain() = SavedSearch(
     id = id,
     name = name,
-    filters = filters,
+    filters = filters.mapValues { (_, v) -> v.content },
     createdAt = createdAt,
 )
