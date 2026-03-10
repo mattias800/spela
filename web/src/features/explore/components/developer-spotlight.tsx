@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui";
 import { GameCard } from "@/components/game-card";
-import { GameCardSkeleton } from "@/components/ui";
 import type { DeveloperSpotlightResponse, Game } from "@/types/api";
 
 interface DeveloperSpotlightProps {

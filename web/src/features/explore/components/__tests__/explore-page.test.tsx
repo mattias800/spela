@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse, ArtworkGalleryResponse, OnThisDayResponse, BestOfYearResponse, YourAnniversariesResponse, DecadeResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
