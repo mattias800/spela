@@ -1153,3 +1153,31 @@ export interface ActiveNowItem {
 export interface ActiveNowResponse {
   games: ActiveNowItem[];
 }
+
+// --- Phase 11: Temporal Discovery ---
+
+export interface OnThisDayResponse {
+  date: string;
+  games: Game[];
+}
+
+export interface BestOfYearResponse {
+  year: number;
+  games: Game[];
+}
+
+export interface AnniversaryItem {
+  game: Game;
+  yearsAgo: number;
+  playedAt: string;
+}
+
+export interface YourAnniversariesResponse {
+  anniversaries: AnniversaryItem[];
+}
+
+export interface DecadeResponse {
+  decade: string;
+  label: string;
+  games: Game[];
+}

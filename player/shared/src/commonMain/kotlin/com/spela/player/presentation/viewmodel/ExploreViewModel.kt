@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
@@ -49,6 +50,9 @@ data class ExploreState(
     val cultClassics: List<CultClassicGame> = emptyList(),
     val recentReviews: List<RecentReviewItem> = emptyList(),
     val activeNowGames: List<ActiveNowItem> = emptyList(),
+    val onThisDayDate: String = "",
+    val onThisDayGames: List<Game> = emptyList(),
+    val anniversaries: List<AnniversaryItem> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -60,10 +64,11 @@ data class ExploreState(
     val isLoadingConsoleHighlights: Boolean = false,
     val isLoadingArtwork: Boolean = false,
     val isLoadingSocial: Boolean = false,
+    val isLoadingTemporal: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork || isLoadingSocial
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && trendingGames.isEmpty() && communityTopGames.isEmpty() && cultClassics.isEmpty() && recentReviews.isEmpty() && activeNowGames.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork || isLoadingSocial || isLoadingTemporal
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && trendingGames.isEmpty() && communityTopGames.isEmpty() && cultClassics.isEmpty() && recentReviews.isEmpty() && activeNowGames.isEmpty() && onThisDayGames.isEmpty() && anniversaries.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -192,6 +197,7 @@ class ExploreViewModel(
     private var consoleShowcaseJob: Job? = null
     private var artworkShowcaseJob: Job? = null
     private var socialJob: Job? = null
+    private var temporalJob: Job? = null
     private var screenshotGalleryJob: Job? = null
 
     fun load() {
@@ -206,6 +212,7 @@ class ExploreViewModel(
         loadConsoleHighlights()
         loadArtworkShowcase()
         loadSocialData()
+        loadTemporalData()
     }
 
     fun dismissError() {
@@ -550,6 +557,27 @@ class ExploreViewModel(
                     recentReviews = recentlyReviewedDeferred.await().getOrDefault(emptyList()),
                     activeNowGames = activeNowDeferred.await().getOrDefault(emptyList()),
                     isLoadingSocial = false,
+                )
+            }
+        }
+    }
+
+    private fun loadTemporalData() {
+        if (temporalJob?.isActive == true) return
+        _state.update { it.copy(isLoadingTemporal = true) }
+        temporalJob = scope.launch(dispatchers.io) {
+            val onThisDayDeferred = async { exploreRepository.getOnThisDay() }
+            val anniversariesDeferred = async { exploreRepository.getYourAnniversaries() }
+
+            awaitAll(onThisDayDeferred, anniversariesDeferred)
+
+            val onThisDayResult = onThisDayDeferred.await()
+            _state.update { current ->
+                current.copy(
+                    onThisDayDate = onThisDayResult.getOrNull()?.first ?: "",
+                    onThisDayGames = onThisDayResult.getOrNull()?.second ?: emptyList(),
+                    anniversaries = anniversariesDeferred.await().getOrDefault(emptyList()),
+                    isLoadingTemporal = false,
                 )
             }
         }

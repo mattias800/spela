@@ -29,6 +29,10 @@ import type {
   CultClassicsResponse,
   RecentlyReviewedResponse,
   ActiveNowResponse,
+  OnThisDayResponse,
+  BestOfYearResponse,
+  YourAnniversariesResponse,
+  DecadeResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -289,5 +293,35 @@ export function useActiveNow() {
   return useQuery({
     queryKey: ["explore", "active-now"],
     queryFn: () => api.get<ActiveNowResponse>("/explore/active-now"),
+  });
+}
+
+export function useOnThisDay() {
+  return useQuery({
+    queryKey: ["explore", "on-this-day"],
+    queryFn: () => api.get<OnThisDayResponse>("/explore/on-this-day"),
+  });
+}
+
+export function useBestOfYear(year: number) {
+  return useQuery({
+    queryKey: ["explore", "best-of-year", year],
+    queryFn: () => api.get<BestOfYearResponse>(`/explore/best-of-year/${year}`),
+  });
+}
+
+export function useYourAnniversaries() {
+  return useQuery({
+    queryKey: ["explore", "your-anniversaries"],
+    queryFn: () =>
+      api.get<YourAnniversariesResponse>("/explore/your-anniversaries"),
+  });
+}
+
+export function useDecade(decade: string) {
+  return useQuery({
+    queryKey: ["explore", "decades", decade],
+    queryFn: () => api.get<DecadeResponse>(`/explore/decades/${decade}`),
+    enabled: !!decade,
   });
 }

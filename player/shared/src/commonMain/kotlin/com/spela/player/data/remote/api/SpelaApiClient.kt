@@ -396,6 +396,26 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/active-now").body()
     }
 
+    /** Returns games released on this day in history */
+    suspend fun getOnThisDay(): OnThisDayResponseDto {
+        return client.get("$baseUrl/api/explore/on-this-day").body()
+    }
+
+    /** Returns best games from a given year */
+    suspend fun getBestOfYear(year: Int): BestOfYearResponseDto {
+        return client.get("$baseUrl/api/explore/best-of-year/$year").body()
+    }
+
+    /** Returns personal play anniversaries */
+    suspend fun getYourAnniversaries(): YourAnniversariesResponseDto {
+        return client.get("$baseUrl/api/explore/your-anniversaries").body()
+    }
+
+    /** Returns games from a specific decade */
+    suspend fun getDecade(decade: String): DecadeResponseDto {
+        return client.get("$baseUrl/api/explore/decades/$decade").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

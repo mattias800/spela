@@ -1,6 +1,7 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
@@ -56,4 +57,8 @@ interface ExploreRepository {
     suspend fun getCultClassics(): Result<List<CultClassicGame>>
     suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>>
     suspend fun getActiveNow(): Result<List<ActiveNowItem>>
+    suspend fun getOnThisDay(): Result<Pair<String, List<Game>>>
+    suspend fun getBestOfYear(year: Int): Result<List<Game>>
+    suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>>
+    suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>>
 }

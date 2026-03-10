@@ -1336,3 +1336,36 @@ data class ActiveNowItemDto(
 data class ActiveNowResponseDto(
     val games: List<ActiveNowItemDto>,
 )
+
+// --- Phase 11: Temporal Discovery ---
+
+@Serializable
+data class OnThisDayResponseDto(
+    val date: String,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class BestOfYearResponseDto(
+    val year: Int,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class AnniversaryItemDto(
+    val game: GameDto,
+    val yearsAgo: Int,
+    val playedAt: String,
+)
+
+@Serializable
+data class YourAnniversariesResponseDto(
+    val anniversaries: List<AnniversaryItemDto>,
+)
+
+@Serializable
+data class DecadeResponseDto(
+    val decade: String,
+    val label: String,
+    val games: List<GameDto>,
+)
