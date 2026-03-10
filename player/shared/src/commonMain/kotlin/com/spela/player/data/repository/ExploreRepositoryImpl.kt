@@ -3,7 +3,9 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AlmostDoneGame
 import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
@@ -13,10 +15,12 @@ import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
+import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.ForYouRow
+import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
@@ -338,6 +342,42 @@ class ExploreRepositoryImpl(
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
         Pair(dto.label, games)
+    }
+
+    override suspend fun getEasyToComplete(): Result<List<AchievementGameItem>> = runCatching {
+        apiClient.getEasyToComplete().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getHardestGames(): Result<List<AchievementGameItem>> = runCatching {
+        apiClient.getHardestGames().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getAlmostDone(): Result<List<AlmostDoneGame>> = runCatching {
+        apiClient.getAlmostDone().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>> = runCatching {
+        apiClient.getFreshChallenges().games.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> = runCatching {
+        apiClient.getActiveChallenges().challenges.map { it.toDomain() }
     }
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(

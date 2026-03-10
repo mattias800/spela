@@ -263,6 +263,11 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
 			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
 			explore.GET("/decades/:decade", exploreHandler.GetDecades)
+			explore.GET("/easy-to-complete", exploreHandler.GetEasyToComplete)
+			explore.GET("/hardest-games", exploreHandler.GetHardestGames)
+			explore.GET("/almost-done", exploreHandler.GetAlmostDone)
+			explore.GET("/fresh-challenges", exploreHandler.GetFreshChallenges)
+			explore.GET("/active-challenges", exploreHandler.GetActiveChallenges)
 		}
 
 		// Games

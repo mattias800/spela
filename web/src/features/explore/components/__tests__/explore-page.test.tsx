@@ -27,6 +27,11 @@ vi.mock("@/hooks/use-explore", () => ({
   useBestOfYear: vi.fn(),
   useYourAnniversaries: vi.fn(),
   useDecade: vi.fn(),
+  useEasyToComplete: vi.fn(),
+  useHardestGames: vi.fn(),
+  useAlmostDone: vi.fn(),
+  useFreshChallenges: vi.fn(),
+  useActiveChallenges: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -50,7 +55,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade, useEasyToComplete, useHardestGames, useAlmostDone, useFreshChallenges, useActiveChallenges } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -72,6 +77,11 @@ const mockUseOnThisDay = useOnThisDay as ReturnType<typeof vi.fn>;
 const mockUseBestOfYear = useBestOfYear as ReturnType<typeof vi.fn>;
 const mockUseYourAnniversaries = useYourAnniversaries as ReturnType<typeof vi.fn>;
 const mockUseDecade = useDecade as ReturnType<typeof vi.fn>;
+const mockUseEasyToComplete = useEasyToComplete as ReturnType<typeof vi.fn>;
+const mockUseHardestGames = useHardestGames as ReturnType<typeof vi.fn>;
+const mockUseAlmostDone = useAlmostDone as ReturnType<typeof vi.fn>;
+const mockUseFreshChallenges = useFreshChallenges as ReturnType<typeof vi.fn>;
+const mockUseActiveChallenges = useActiveChallenges as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -299,6 +309,26 @@ describe("ExplorePage", () => {
       isLoading: false,
     });
     mockUseDecade.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseEasyToComplete.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseHardestGames.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseAlmostDone.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseFreshChallenges.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseActiveChallenges.mockReturnValue({
       data: undefined,
       isLoading: false,
     });

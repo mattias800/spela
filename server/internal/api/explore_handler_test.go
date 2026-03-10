@@ -3474,3 +3474,497 @@ func TestParseReleaseDateYear_Empty(t *testing.T) {
 	_, ok := parseReleaseDateYear("")
 	assert.False(t, ok)
 }
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery tests ---
+
+func TestGetEasyToComplete_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Easy Game", 90.0)
+	game2 := createExploreGame(t, env.database, "NES", "Medium Game", 80.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Easy Game: 10 achievements, user unlocked 9 (90%)
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    100,
+		GameID:      game1.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 9; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user.ID,
+			AchievementRAID: uint(i),
+			RAGameID:        100,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	// Medium Game: 20 achievements, user unlocked 10 (50%)
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    200,
+		GameID:      game2.ID,
+		TotalCount:  20,
+		TotalPoints: 200,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 10; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user.ID,
+			AchievementRAID: uint(100 + i),
+			RAGameID:        200,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/easy-to-complete", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp EasyToCompleteResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 2)
+
+	// Easy Game (90%) should be first
+	assert.Equal(t, "Easy Game", resp.Games[0].Game.Title)
+	assert.Equal(t, 10, resp.Games[0].TotalAchievements)
+	assert.Equal(t, 90.0, resp.Games[0].AvgCompletion)
+	assert.Equal(t, 1, resp.Games[0].PlayersAttempted)
+
+	// Medium Game (50%) should be second
+	assert.Equal(t, "Medium Game", resp.Games[1].Game.Title)
+	assert.Equal(t, 20, resp.Games[1].TotalAchievements)
+	assert.Equal(t, 50.0, resp.Games[1].AvgCompletion)
+}
+
+func TestGetEasyToComplete_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No achievement data at all
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/easy-to-complete", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp EasyToCompleteResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetHardestGames_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Hard Game", 85.0)
+	game2 := createExploreGame(t, env.database, "NES", "Easier Game", 80.0)
+
+	var user1 db.User
+	require.NoError(t, env.database.First(&user1).Error)
+
+	// Create a second user
+	user2Token := createNonOwnerUser(t, env.router, env.token, "hardplayer", "hard@example.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "hardplayer").First(&user2).Error)
+
+	// Hard Game: 20 achievements, user1 unlocked 2, user2 unlocked 4 => avg 3/20 = 15%
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    300,
+		GameID:      game1.ID,
+		TotalCount:  20,
+		TotalPoints: 200,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 2; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user1.ID,
+			AchievementRAID: uint(i),
+			RAGameID:        300,
+			UnlockedAt:      time.Now(),
+		})
+	}
+	for i := 1; i <= 4; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user2.ID,
+			AchievementRAID: uint(200 + i),
+			RAGameID:        300,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	// Easier Game: 10 achievements, user1 unlocked 5, user2 unlocked 7 => avg 6/10 = 60%
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    400,
+		GameID:      game2.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 5; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user1.ID,
+			AchievementRAID: uint(300 + i),
+			RAGameID:        400,
+			UnlockedAt:      time.Now(),
+		})
+	}
+	for i := 1; i <= 7; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user2.ID,
+			AchievementRAID: uint(400 + i),
+			RAGameID:        400,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/hardest-games", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp HardestGamesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 2)
+
+	// Hard Game (15%) should be first (hardest)
+	assert.Equal(t, "Hard Game", resp.Games[0].Game.Title)
+	assert.Equal(t, 20, resp.Games[0].TotalAchievements)
+	assert.Equal(t, 2, resp.Games[0].PlayersAttempted)
+
+	// Easier Game (60%) should be second
+	assert.Equal(t, "Easier Game", resp.Games[1].Game.Title)
+}
+
+func TestGetHardestGames_MinPlayers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Solo Game", 85.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Only 1 user has attempted — should be excluded (minimum 2 required)
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    500,
+		GameID:      game.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	env.database.Create(&db.UserAchievementProgress{
+		UserID:          user.ID,
+		AchievementRAID: 1,
+		RAGameID:        500,
+		UnlockedAt:      time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/hardest-games", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp HardestGamesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetAlmostDone_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Almost Done Game", 90.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// 10 achievements, user unlocked 9 (90%)
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    600,
+		GameID:      game.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 9; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user.ID,
+			AchievementRAID: uint(600 + i),
+			RAGameID:        600,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/almost-done", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AlmostDoneResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Almost Done Game", resp.Games[0].Game.Title)
+	assert.Equal(t, 9, resp.Games[0].UnlockedCount)
+	assert.Equal(t, 10, resp.Games[0].TotalCount)
+	assert.Equal(t, 90.0, resp.Games[0].CompletionPercent)
+}
+
+func TestGetAlmostDone_ExcludesCompleted(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Completed Game", 90.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// 10 achievements, user unlocked all 10 (100%) — should NOT appear
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    700,
+		GameID:      game.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 10; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user.ID,
+			AchievementRAID: uint(700 + i),
+			RAGameID:        700,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/almost-done", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AlmostDoneResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetAlmostDone_ExcludesLowProgress(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Low Progress Game", 85.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// 10 achievements, user unlocked 5 (50%) — should NOT appear (below 80%)
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    800,
+		GameID:      game.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	for i := 1; i <= 5; i++ {
+		env.database.Create(&db.UserAchievementProgress{
+			UserID:          user.ID,
+			AchievementRAID: uint(800 + i),
+			RAGameID:        800,
+			UnlockedAt:      time.Now(),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/almost-done", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AlmostDoneResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetAlmostDone_NoProgress(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No achievement progress at all
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/almost-done", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AlmostDoneResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetFreshChallenges_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Fresh RA Game", 90.0)
+	game2 := createExploreGame(t, env.database, "NES", "Started RA Game", 85.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Fresh RA Game: has achievements, user has 0 unlocks — should appear
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    900,
+		GameID:      game1.ID,
+		TotalCount:  15,
+		TotalPoints: 150,
+		CachedAt:    time.Now(),
+	})
+
+	// Started RA Game: user has 1 unlock — should NOT appear
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    1000,
+		GameID:      game2.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	env.database.Create(&db.UserAchievementProgress{
+		UserID:          user.ID,
+		AchievementRAID: 999,
+		RAGameID:        1000,
+		UnlockedAt:      time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/fresh-challenges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp FreshChallengesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Fresh RA Game", resp.Games[0].Game.Title)
+	assert.Equal(t, 15, resp.Games[0].TotalAchievements)
+	assert.Equal(t, 150, resp.Games[0].TotalPoints)
+}
+
+func TestGetFreshChallenges_ExcludesStarted(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Started Game", 90.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Game has achievements and user has already started
+	env.database.Create(&db.GameAchievementCache{
+		RAGameID:    1100,
+		GameID:      game.ID,
+		TotalCount:  10,
+		TotalPoints: 100,
+		CachedAt:    time.Now(),
+	})
+	env.database.Create(&db.UserAchievementProgress{
+		UserID:          user.ID,
+		AchievementRAID: 1100,
+		RAGameID:        1100,
+		UnlockedAt:      time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/fresh-challenges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp FreshChallengesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetActiveChallenges_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Challenge Game", 88.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	env.database.Create(&db.Challenge{
+		CreatorID:    user.ID,
+		GameID:       game.ID,
+		Name:         "Speed Run Challenge",
+		Description:  "Beat the game fast",
+		Type:         "speedrun",
+		Difficulty:   "hard",
+		Status:       "active",
+		SaveFilePath: "/tmp/test.sav",
+		AttemptCount: 5,
+		CompletionCount: 2,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/active-challenges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ActiveChallengesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Challenges, 1)
+	assert.Equal(t, "Speed Run Challenge", resp.Challenges[0].Name)
+	assert.Equal(t, "Beat the game fast", resp.Challenges[0].Description)
+	assert.Equal(t, "speedrun", resp.Challenges[0].Type)
+	assert.Equal(t, "hard", resp.Challenges[0].Difficulty)
+	assert.Equal(t, "apitest", resp.Challenges[0].CreatorUsername)
+	assert.Equal(t, "Challenge Game", resp.Challenges[0].GameTitle)
+	assert.Equal(t, 5, resp.Challenges[0].AttemptCount)
+	assert.Equal(t, 2, resp.Challenges[0].CompletionCount)
+}
+
+func TestGetActiveChallenges_ExcludesExpired(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Expired Challenge Game", 85.0)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	past := time.Now().Add(-24 * time.Hour)
+	env.database.Create(&db.Challenge{
+		CreatorID:    user.ID,
+		GameID:       game.ID,
+		Name:         "Expired Challenge",
+		Type:         "completion",
+		Difficulty:   "easy",
+		Status:       "active",
+		SaveFilePath: "/tmp/test.sav",
+		ExpiresAt:    &past,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/active-challenges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ActiveChallengesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Challenges)
+}
+
+func TestGetActiveChallenges_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No challenges at all
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/active-challenges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ActiveChallengesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Challenges)
+}

@@ -1353,6 +1353,11 @@ class FakeExploreRepository : ExploreRepository {
     var bestOfYearGames: Map<Int, List<Game>> = emptyMap()
     var anniversariesList: List<AnniversaryItem> = emptyList()
     var decadeResults: Map<String, Pair<String, List<Game>>> = emptyMap()
+    var easyToCompleteGames: List<AchievementGameItem> = emptyList()
+    var hardestGamesList: List<AchievementGameItem> = emptyList()
+    var almostDoneGamesList: List<AlmostDoneGame> = emptyList()
+    var freshChallengeGamesList: List<FreshChallengeGame> = emptyList()
+    var activeChallengesList: List<ExploreChallenge> = emptyList()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1522,6 +1527,26 @@ class FakeExploreRepository : ExploreRepository {
             if (result != null) Result.success(result)
             else Result.success(Pair("", emptyList()))
         }
+
+    override suspend fun getEasyToComplete(): Result<List<AchievementGameItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load easy to complete"))
+        else Result.success(easyToCompleteGames)
+
+    override suspend fun getHardestGames(): Result<List<AchievementGameItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load hardest games"))
+        else Result.success(hardestGamesList)
+
+    override suspend fun getAlmostDone(): Result<List<AlmostDoneGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load almost done"))
+        else Result.success(almostDoneGamesList)
+
+    override suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load fresh challenges"))
+        else Result.success(freshChallengeGamesList)
+
+    override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> =
+        if (shouldFail) Result.failure(Exception("Failed to load active challenges"))
+        else Result.success(activeChallengesList)
 }
 
 class FakeCheatRepository : CheatRepository {

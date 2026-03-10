@@ -1369,3 +1369,72 @@ data class DecadeResponseDto(
     val label: String,
     val games: List<GameDto>,
 )
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery ---
+
+@Serializable
+data class AchievementGameItemDto(
+    val game: GameDto,
+    val totalAchievements: Int,
+    val avgCompletion: Float,
+    val playersAttempted: Int,
+    val playersCompleted: Int,
+)
+
+@Serializable
+data class EasyToCompleteResponseDto(
+    val games: List<AchievementGameItemDto>,
+)
+
+@Serializable
+data class HardestGamesResponseDto(
+    val games: List<AchievementGameItemDto>,
+)
+
+@Serializable
+data class AlmostDoneGameDto(
+    val game: GameDto,
+    val unlockedCount: Int,
+    val totalCount: Int,
+    val completionPercent: Float,
+)
+
+@Serializable
+data class AlmostDoneResponseDto(
+    val games: List<AlmostDoneGameDto>,
+)
+
+@Serializable
+data class FreshChallengeGameDto(
+    val game: GameDto,
+    val totalAchievements: Int,
+    val totalPoints: Int,
+)
+
+@Serializable
+data class FreshChallengesResponseDto(
+    val games: List<FreshChallengeGameDto>,
+)
+
+@Serializable
+data class ExploreChallengeDto(
+    val id: String,
+    val creatorUsername: String,
+    val gameId: String,
+    val gameTitle: String,
+    val gameCoverUrl: String? = null,
+    val consoleName: String? = null,
+    val name: String,
+    val description: String? = null,
+    val type: String,
+    val difficulty: String,
+    val attemptCount: Int,
+    val completionCount: Int,
+    val expiresAt: String? = null,
+    val createdAt: String,
+)
+
+@Serializable
+data class ActiveChallengesResponseDto(
+    val challenges: List<ExploreChallengeDto>,
+)

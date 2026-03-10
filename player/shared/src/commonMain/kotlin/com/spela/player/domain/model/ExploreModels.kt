@@ -234,3 +234,43 @@ data class AnniversaryItem(
     val yearsAgo: Int,
     val playedAt: String,
 )
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery ---
+
+data class AchievementGameItem(
+    val game: Game,
+    val totalAchievements: Int,
+    val avgCompletion: Float,
+    val playersAttempted: Int,
+    val playersCompleted: Int,
+)
+
+data class AlmostDoneGame(
+    val game: Game,
+    val unlockedCount: Int,
+    val totalCount: Int,
+    val completionPercent: Float,
+)
+
+data class FreshChallengeGame(
+    val game: Game,
+    val totalAchievements: Int,
+    val totalPoints: Int,
+)
+
+data class ExploreChallenge(
+    val id: String,
+    val creatorUsername: String,
+    val gameId: String,
+    val gameTitle: String,
+    val gameCoverUrl: String?,
+    val consoleName: String?,
+    val name: String,
+    val description: String?,
+    val type: String,
+    val difficulty: String,
+    val attemptCount: Int,
+    val completionCount: Int,
+    val expiresAt: String?,
+    val createdAt: String,
+)

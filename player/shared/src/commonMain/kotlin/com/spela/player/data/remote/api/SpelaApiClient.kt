@@ -416,6 +416,31 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/decades/$decade").body()
     }
 
+    /** Returns games that are easy to 100% complete */
+    suspend fun getEasyToComplete(): EasyToCompleteResponseDto {
+        return client.get("$baseUrl/api/explore/easy-to-complete").body()
+    }
+
+    /** Returns the hardest games to complete */
+    suspend fun getHardestGames(): HardestGamesResponseDto {
+        return client.get("$baseUrl/api/explore/hardest-games").body()
+    }
+
+    /** Returns games the user is almost done completing */
+    suspend fun getAlmostDone(): AlmostDoneResponseDto {
+        return client.get("$baseUrl/api/explore/almost-done").body()
+    }
+
+    /** Returns games with fresh achievement content */
+    suspend fun getFreshChallenges(): FreshChallengesResponseDto {
+        return client.get("$baseUrl/api/explore/fresh-challenges").body()
+    }
+
+    /** Returns active community challenges */
+    suspend fun getActiveChallenges(): ActiveChallengesResponseDto {
+        return client.get("$baseUrl/api/explore/active-challenges").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

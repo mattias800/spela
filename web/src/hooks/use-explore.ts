@@ -33,6 +33,11 @@ import type {
   BestOfYearResponse,
   YourAnniversariesResponse,
   DecadeResponse,
+  EasyToCompleteResponse,
+  HardestGamesResponse,
+  AlmostDoneResponse,
+  FreshChallengesResponse,
+  ActiveChallengesResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -323,5 +328,40 @@ export function useDecade(decade: string) {
     queryKey: ["explore", "decades", decade],
     queryFn: () => api.get<DecadeResponse>(`/explore/decades/${decade}`),
     enabled: !!decade,
+  });
+}
+
+export function useEasyToComplete() {
+  return useQuery({
+    queryKey: ["explore", "easy-to-complete"],
+    queryFn: () => api.get<EasyToCompleteResponse>("/explore/easy-to-complete"),
+  });
+}
+
+export function useHardestGames() {
+  return useQuery({
+    queryKey: ["explore", "hardest-games"],
+    queryFn: () => api.get<HardestGamesResponse>("/explore/hardest-games"),
+  });
+}
+
+export function useAlmostDone() {
+  return useQuery({
+    queryKey: ["explore", "almost-done"],
+    queryFn: () => api.get<AlmostDoneResponse>("/explore/almost-done"),
+  });
+}
+
+export function useFreshChallenges() {
+  return useQuery({
+    queryKey: ["explore", "fresh-challenges"],
+    queryFn: () => api.get<FreshChallengesResponse>("/explore/fresh-challenges"),
+  });
+}
+
+export function useActiveChallenges() {
+  return useQuery({
+    queryKey: ["explore", "active-challenges"],
+    queryFn: () => api.get<ActiveChallengesResponse>("/explore/active-challenges"),
   });
 }
