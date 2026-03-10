@@ -815,6 +815,20 @@ export interface PossibleConsole {
   name: string;
 }
 
+// --- Themes & Keywords ---
+
+export interface Theme {
+  id: string;
+  name: string;
+  gameCount: number;
+}
+
+export interface Keyword {
+  id: string;
+  name: string;
+  gameCount: number;
+}
+
 // --- Explore ---
 
 export interface FeaturedGame {

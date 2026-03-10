@@ -566,3 +566,15 @@ fun ExploreRowDto.toDomain(): ExploreRow = ExploreRow(
     title = title,
     games = games.map { it.toDomain() },
 )
+
+fun ThemeDto.toDomain(): Theme = Theme(
+    id = id,
+    name = name,
+    gameCount = gameCount,
+)
+
+fun KeywordDto.toDomain(): Keyword = Keyword(
+    id = id,
+    name = name,
+    gameCount = gameCount,
+)

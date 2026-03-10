@@ -3,7 +3,14 @@ import { Link } from "react-router-dom";
 import { EmptyState, Button } from "@/components/ui";
 import { HeroCarousel } from "@/features/explore/components/hero-carousel";
 import { GameShelf } from "@/features/explore/components/game-shelf";
-import { useExploreFeatured, useExploreRows } from "@/hooks/use-explore";
+import { ThemeGrid } from "@/features/explore/components/theme-grid";
+import { KeywordChips } from "@/features/explore/components/keyword-chips";
+import {
+  useExploreFeatured,
+  useExploreRows,
+  useThemes,
+  useKeywords,
+} from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +25,14 @@ export function ExplorePage() {
     data: rowsData,
     isLoading: isRowsLoading,
   } = useExploreRows();
+  const {
+    data: themes,
+    isLoading: isThemesLoading,
+  } = useThemes();
+  const {
+    data: keywords,
+    isLoading: isKeywordsLoading,
+  } = useKeywords(30);
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -58,6 +73,10 @@ export function ExplorePage() {
     );
   }
 
+  // Split rows: show first row, then themes/keywords, then remaining rows
+  const firstRow = rows[0];
+  const remainingRows = rows.slice(1);
+
   return (
     <div className="space-y-10" data-testid="explore-page">
       <div>
@@ -70,22 +89,39 @@ export function ExplorePage() {
       {/* Hero Carousel */}
       <HeroCarousel games={featuredGames} isLoading={isFeaturedLoading} />
 
-      {/* Shelf rows */}
+      {/* First shelf row */}
       {isRowsLoading ? (
-        <>
-          <GameShelf
-            title="Top Rated"
-            games={undefined}
-            isLoading={true}
-          />
-          <GameShelf
-            title="Recently Added"
-            games={undefined}
-            isLoading={true}
-          />
-        </>
+        <GameShelf
+          title="Top Rated"
+          games={undefined}
+          isLoading={true}
+        />
+      ) : firstRow ? (
+        <GameShelf
+          key={firstRow.id}
+          title={firstRow.title}
+          games={firstRow.games}
+          isLoading={false}
+          onToggleFavorite={handleToggleFavorite}
+          onTogglePlayLater={handleTogglePlayLater}
+        />
+      ) : null}
+
+      {/* Theme Grid */}
+      <ThemeGrid themes={themes} isLoading={isThemesLoading} />
+
+      {/* Keyword Chips */}
+      <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
+
+      {/* Remaining shelf rows */}
+      {isRowsLoading ? (
+        <GameShelf
+          title="Recently Added"
+          games={undefined}
+          isLoading={true}
+        />
       ) : (
-        rows.map((row) => (
+        remainingRows.map((row) => (
           <GameShelf
             key={row.id}
             title={row.title}

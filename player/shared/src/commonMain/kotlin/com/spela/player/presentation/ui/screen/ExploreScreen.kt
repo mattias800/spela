@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,6 +26,10 @@ import com.spela.player.presentation.ui.feature.explore.GameShelf
 import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.HeroCarousel
 import com.spela.player.presentation.ui.feature.explore.HeroCarouselSkeleton
+import com.spela.player.presentation.ui.feature.explore.KeywordChips
+import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
+import com.spela.player.presentation.ui.feature.explore.ThemeGrid
+import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
@@ -35,6 +38,8 @@ import com.spela.player.presentation.viewmodel.ExploreViewModel
 fun ExploreScreen(
     viewModel: ExploreViewModel,
     onGameSelected: (String) -> Unit,
+    onThemeSelected: ((themeId: String, themeName: String) -> Unit)? = null,
+    onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -91,6 +96,62 @@ fun ExploreScreen(
                                     vertical = SpSpacing.Default,
                                 ),
                             )
+                        }
+                    }
+
+                    // Theme grid section
+                    item {
+                        if (state.isLoadingThemes && state.themes.isEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Theme",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ThemeGridSkeleton()
+                            }
+                        } else if (state.themes.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Theme",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_themes_section"),
+                            ) {
+                                ThemeGrid(
+                                    themes = state.themes,
+                                    onThemeSelected = { themeId, themeName ->
+                                        onThemeSelected?.invoke(themeId, themeName)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    // Keyword chips section
+                    item {
+                        if (state.isLoadingKeywords && state.keywords.isEmpty()) {
+                            SpTitledSection(
+                                title = "Popular Keywords",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                KeywordChipsSkeleton()
+                            }
+                        } else if (state.keywords.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Popular Keywords",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_keywords_section"),
+                            ) {
+                                KeywordChips(
+                                    keywords = state.keywords,
+                                    onKeywordSelected = { keywordId, keywordName ->
+                                        onKeywordSelected?.invoke(keywordId, keywordName)
+                                    },
+                                )
+                            }
                         }
                     }
 
