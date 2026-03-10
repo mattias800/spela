@@ -21,6 +21,9 @@ export type ApiGetPath = WithQuery<
   | "/explore/featured"
   | "/explore/rows"
   | "/explore/series/featured"
+  | "/explore/moods"
+  | `/explore/mood/${string}`
+  | "/explore/surprise"
 
   // Series
   | `/series/${string}`

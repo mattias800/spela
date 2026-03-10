@@ -28,6 +28,8 @@ import com.spela.player.presentation.ui.feature.explore.HeroCarousel
 import com.spela.player.presentation.ui.feature.explore.HeroCarouselSkeleton
 import com.spela.player.presentation.ui.feature.explore.KeywordChips
 import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
+import com.spela.player.presentation.ui.feature.explore.MoodPicker
+import com.spela.player.presentation.ui.feature.explore.MoodPickerSkeleton
 import com.spela.player.presentation.ui.feature.explore.SeriesShelf
 import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
@@ -43,6 +45,8 @@ fun ExploreScreen(
     onThemeSelected: ((themeId: String, themeName: String) -> Unit)? = null,
     onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
+    onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
+    onSurpriseMe: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -99,6 +103,37 @@ fun ExploreScreen(
                                     vertical = SpSpacing.Default,
                                 ),
                             )
+                        }
+                    }
+
+                    // Mood picker section
+                    item {
+                        if (state.isLoadingMoods && state.moods.isEmpty()) {
+                            SpTitledSection(
+                                title = "What are you in the mood for?",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                MoodPickerSkeleton()
+                            }
+                        } else if (state.moods.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "What are you in the mood for?",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_moods_section"),
+                            ) {
+                                MoodPicker(
+                                    moods = state.moods,
+                                    onMoodSelected = { moodId, moodName ->
+                                        onMoodSelected?.invoke(moodId, moodName)
+                                    },
+                                    onSurpriseMe = {
+                                        onSurpriseMe?.invoke()
+                                    },
+                                )
+                            }
                         }
                     }
 

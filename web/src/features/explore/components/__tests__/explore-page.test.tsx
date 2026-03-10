@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -12,6 +12,12 @@ vi.mock("@/hooks/use-explore", () => ({
   useThemes: vi.fn(),
   useKeywords: vi.fn(),
   useFeaturedSeries: vi.fn(),
+  useMoods: vi.fn(),
+  useSurpriseGame: vi.fn(() => ({
+    data: undefined,
+    refetch: vi.fn(),
+    isSuccess: false,
+  })),
 }));
 
 vi.mock("@/hooks/use-games", () => ({
@@ -30,13 +36,14 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
 const mockUseThemes = useThemes as ReturnType<typeof vi.fn>;
 const mockUseKeywords = useKeywords as ReturnType<typeof vi.fn>;
 const mockUseFeaturedSeries = useFeaturedSeries as ReturnType<typeof vi.fn>;
+const mockUseMoods = useMoods as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -96,6 +103,11 @@ const mockKeywords: Keyword[] = [
 const mockFeaturedSeries: FeaturedSeries[] = [
   { id: "1", name: "Super Mario", libraryGames: 5, totalGames: 12, consoleCount: 3, heroUrl: "/hero/mario.jpg" },
   { id: "2", name: "The Legend of Zelda", libraryGames: 4, totalGames: 10, consoleCount: 2, heroUrl: "/hero/zelda.jpg" },
+];
+
+const mockMoods: MoodDefinition[] = [
+  { id: "chill", name: "Chill", description: "Relaxing games", icon: "😌", gradient: ["#1a237e", "#4a148c"] },
+  { id: "intense", name: "Intense", description: "Heart-pounding action", icon: "🔥", gradient: ["#b71c1c", "#ff6f00"] },
 ];
 
 const mockRows: ExploreRowsResponse = {
@@ -175,6 +187,10 @@ describe("ExplorePage", () => {
     });
     mockUseFeaturedSeries.mockReturnValue({
       data: mockFeaturedSeries,
+      isLoading: false,
+    });
+    mockUseMoods.mockReturnValue({
+      data: mockMoods,
       isLoading: false,
     });
   });
@@ -366,5 +382,30 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("series-shelf-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the mood picker section", () => {
+    renderPage();
+    expect(screen.getByTestId("mood-picker")).toBeInTheDocument();
+    expect(screen.getByText("Chill")).toBeInTheDocument();
+    expect(screen.getByText("Intense")).toBeInTheDocument();
+  });
+
+  it("hides mood picker when no moods available", () => {
+    mockUseMoods.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("mood-picker")).not.toBeInTheDocument();
+  });
+
+  it("shows mood picker skeleton while loading", () => {
+    mockUseMoods.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("mood-picker-skeleton")).toBeInTheDocument();
   });
 });

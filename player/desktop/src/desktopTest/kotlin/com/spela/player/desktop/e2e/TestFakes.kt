@@ -1329,6 +1329,9 @@ class FakeExploreRepository : ExploreRepository {
     var seriesDetails: Map<String, SeriesDetail> = emptyMap()
     var gameSeriesLinks: Map<String, List<GameSeriesLink>> = emptyMap()
     var gameFranchiseLinks: Map<String, List<GameFranchiseLink>> = emptyMap()
+    var moodsList: List<MoodDefinition> = emptyList()
+    var moodGames: Map<String, List<Game>> = emptyMap()
+    var surpriseGame: Game? = null
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1374,6 +1377,22 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>> =
         if (shouldFail) Result.failure(Exception("Failed to load game franchises"))
         else Result.success(gameFranchiseLinks[gameId] ?: emptyList())
+
+    override suspend fun getMoods(): Result<List<MoodDefinition>> =
+        if (shouldFail) Result.failure(Exception("Failed to load moods"))
+        else Result.success(moodsList)
+
+    override suspend fun getMoodGames(mood: String): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load mood games"))
+        else Result.success(moodGames[mood] ?: emptyList())
+
+    override suspend fun getSurpriseGame(): Result<Game> =
+        if (shouldFail) Result.failure(Exception("Failed to load surprise game"))
+        else {
+            val game = surpriseGame
+            if (game != null) Result.success(game)
+            else Result.failure(Exception("No surprise game available"))
+        }
 }
 
 class FakeCheatRepository : CheatRepository {

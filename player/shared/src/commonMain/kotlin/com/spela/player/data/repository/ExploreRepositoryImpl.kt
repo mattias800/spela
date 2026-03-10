@@ -9,6 +9,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
@@ -94,5 +95,28 @@ class ExploreRepositoryImpl(
 
     override suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>> = runCatching {
         apiClient.getGameFranchises(gameId).map { it.toDomain() }
+    }
+
+    override suspend fun getMoods(): Result<List<MoodDefinition>> = runCatching {
+        apiClient.getMoods().map { it.toDomain() }
+    }
+
+    override suspend fun getMoodGames(mood: String): Result<List<Game>> = runCatching {
+        apiClient.getMoodGames(mood).map { gameDto ->
+            gameDto.toDomain().copy(
+                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+            )
+        }
+    }
+
+    override suspend fun getSurpriseGame(): Result<Game> = runCatching {
+        val gameDto = apiClient.getSurpriseGame()
+        gameDto.toDomain().copy(
+            coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+            heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+            logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+        )
     }
 }

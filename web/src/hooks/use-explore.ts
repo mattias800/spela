@@ -10,6 +10,8 @@ import type {
   Theme,
   Keyword,
   GamesResponse,
+  MoodDefinition,
+  Game,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -99,5 +101,28 @@ export function useGameFranchises(gameId: string | undefined) {
     queryFn: () =>
       api.get<GameFranchiseLink[]>(`/games/${gameId}/franchises`),
     enabled: !!gameId,
+  });
+}
+
+export function useMoods() {
+  return useQuery({
+    queryKey: ["explore", "moods"],
+    queryFn: () => api.get<MoodDefinition[]>("/explore/moods"),
+  });
+}
+
+export function useMoodGames(mood: string | undefined) {
+  return useQuery({
+    queryKey: ["explore", "mood", mood],
+    queryFn: () => api.get<Game[]>(`/explore/mood/${mood}`),
+    enabled: !!mood,
+  });
+}
+
+export function useSurpriseGame() {
+  return useQuery({
+    queryKey: ["explore", "surprise"],
+    queryFn: () => api.get<Game>("/explore/surprise"),
+    enabled: false,
   });
 }
