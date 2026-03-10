@@ -183,7 +183,10 @@ jobs:
           ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
-          distribution: jetbrains
+          # JBR is needed on Windows/Linux for transparent title bar; macOS uses
+          # native apple.awt.transparentTitleBar which works with any JDK.
+          # Temurin avoids GitHub API rate limits on macOS runners.
+          distribution: ${{ runner.os == 'macOS' && 'temurin' || 'jetbrains' }}
           java-version: 21
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Linux dependencies
