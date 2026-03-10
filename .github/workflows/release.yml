@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.0.58)'
+        required: true
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 permissions:
   contents: write
@@ -20,6 +28,8 @@ jobs:
         working-directory: server
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod
@@ -35,6 +45,8 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -52,6 +64,8 @@ jobs:
         working-directory: player
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -76,9 +90,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - name: Extract version from tag
         id: meta
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -102,6 +118,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -130,7 +148,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :android:assembleRelease -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew :android:assembleRelease -PappVersion=${RELEASE_TAG#v}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -161,6 +179,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
@@ -200,7 +220,7 @@ jobs:
       - name: Build package
         working-directory: player
         shell: bash
-        run: ./gradlew ${{ matrix.format }} -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew ${{ matrix.format }} -PappVersion=${RELEASE_TAG#v}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -215,6 +235,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
@@ -236,7 +258,7 @@ jobs:
             Linux-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew createDistributable -PappVersion=${RELEASE_TAG#v}
       - name: Build AppImage
         working-directory: player
         run: bash linux/build-appimage.sh --arch x86_64
@@ -254,6 +276,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
@@ -283,7 +307,7 @@ jobs:
             Linux-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew createDistributable -PappVersion=${RELEASE_TAG#v}
       - name: Build Flatpak
         working-directory: player
         run: bash linux/flatpak/build-flatpak.sh
@@ -301,6 +325,8 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-java@v4
         with:
           distribution: jetbrains
@@ -325,10 +351,10 @@ jobs:
             Linux-ARM64-gradle-
       - name: Build distributable
         working-directory: player
-        run: ./gradlew createDistributable -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew createDistributable -PappVersion=${RELEASE_TAG#v}
       - name: Build DEB
         working-directory: player
-        run: ./gradlew packageDeb -PappVersion=${GITHUB_REF_NAME#v}
+        run: ./gradlew packageDeb -PappVersion=${RELEASE_TAG#v}
       - name: Build AppImage
         working-directory: player
         run: bash linux/build-appimage.sh --arch aarch64
@@ -357,6 +383,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -365,7 +393,7 @@ jobs:
           merge-multiple: true
       - name: Collect release files
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_TAG#v}"
           mkdir -p release
           find artifacts -type f \( \
             -name "*.apk" -o -name "*.dmg" -o -name "*.deb" \
@@ -394,5 +422,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
           files: release/*
