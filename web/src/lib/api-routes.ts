@@ -21,6 +21,12 @@ export type ApiGetPath = WithQuery<
   | "/explore/featured"
   | "/explore/rows"
 
+  // Themes & Keywords
+  | "/themes"
+  | `/themes/${string}/games`
+  | "/keywords"
+  | `/keywords/${string}/games`
+
   // Consoles
   | "/consoles"
   | `/consoles/${string}/games`

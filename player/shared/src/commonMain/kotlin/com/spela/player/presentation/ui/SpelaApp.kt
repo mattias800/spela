@@ -92,7 +92,9 @@ import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
+import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
+import com.spela.player.presentation.ui.screen.ExploreThemeScreen
 import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
 import com.spela.player.presentation.ui.theme.SpColor
@@ -451,6 +453,52 @@ fun SpelaApp(
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
+                                        },
+                                        onThemeSelected = { themeId, themeName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreTheme(themeId, themeName))
+                                            )
+                                        },
+                                        onKeywordSelected = { keywordId, keywordName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreKeyword(keywordId, keywordName))
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreTheme -> {
+                                if (exploreViewModel != null) {
+                                    ExploreThemeScreen(
+                                        themeId = screen.themeId,
+                                        themeName = screen.themeName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreKeyword -> {
+                                if (exploreViewModel != null) {
+                                    ExploreKeywordScreen(
+                                        keywordId = screen.keywordId,
+                                        keywordName = screen.keywordName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
                                     )
                                 }

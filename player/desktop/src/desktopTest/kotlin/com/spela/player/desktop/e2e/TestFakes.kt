@@ -1321,6 +1321,10 @@ class FakeSessionRepository : SessionRepository {
 class FakeExploreRepository : ExploreRepository {
     var featuredGames: List<FeaturedGame> = emptyList()
     var exploreRows: List<ExploreRow> = emptyList()
+    var themes: List<Theme> = emptyList()
+    var keywords: List<Keyword> = emptyList()
+    var themeGames: Map<String, List<Game>> = emptyMap()
+    var keywordGames: Map<String, List<Game>> = emptyMap()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1330,6 +1334,22 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getExploreRows(): Result<List<ExploreRow>> =
         if (shouldFail) Result.failure(Exception("Failed to load explore rows"))
         else Result.success(exploreRows)
+
+    override suspend fun getThemes(): Result<List<Theme>> =
+        if (shouldFail) Result.failure(Exception("Failed to load themes"))
+        else Result.success(themes)
+
+    override suspend fun getThemeGames(themeId: String, page: Int, pageSize: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load theme games"))
+        else Result.success(themeGames[themeId] ?: emptyList())
+
+    override suspend fun getKeywords(limit: Int): Result<List<Keyword>> =
+        if (shouldFail) Result.failure(Exception("Failed to load keywords"))
+        else Result.success(keywords)
+
+    override suspend fun getKeywordGames(keywordId: String, page: Int, pageSize: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load keyword games"))
+        else Result.success(keywordGames[keywordId] ?: emptyList())
 }
 
 class FakeCheatRepository : CheatRepository {

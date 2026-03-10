@@ -246,6 +246,34 @@ class SpelaApiClient(
         return response.rows
     }
 
+    /** Returns all themes with game counts, sorted by count DESC */
+    suspend fun getThemes(): List<ThemeDto> {
+        return client.get("$baseUrl/api/themes").body()
+    }
+
+    /** Returns paginated games for a theme */
+    suspend fun getThemeGames(themeId: String, page: Int = 1, pageSize: Int = 20): GameListResponse {
+        return client.get("$baseUrl/api/themes/$themeId/games") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
+    /** Returns top keywords by game count */
+    suspend fun getKeywords(limit: Int = 50): List<KeywordDto> {
+        return client.get("$baseUrl/api/keywords") {
+            parameter("limit", limit)
+        }.body()
+    }
+
+    /** Returns paginated games for a keyword */
+    suspend fun getKeywordGames(keywordId: String, page: Int = 1, pageSize: Int = 20): GameListResponse {
+        return client.get("$baseUrl/api/keywords/$keywordId/games") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+        }.body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

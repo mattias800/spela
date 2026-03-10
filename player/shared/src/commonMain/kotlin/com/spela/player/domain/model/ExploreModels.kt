@@ -18,3 +18,15 @@ data class ExploreRow(
     val title: String,
     val games: List<Game>,
 )
+
+data class Theme(
+    val id: String,
+    val name: String,
+    val gameCount: Int,
+)
+
+data class Keyword(
+    val id: String,
+    val name: String,
+    val gameCount: Int,
+)

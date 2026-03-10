@@ -2,6 +2,9 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
+import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -15,13 +18,33 @@ import kotlinx.coroutines.launch
 data class ExploreState(
     val featuredGames: List<FeaturedGame> = emptyList(),
     val rows: List<ExploreRow> = emptyList(),
+    val themes: List<Theme> = emptyList(),
+    val keywords: List<Keyword> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
+    val isLoadingThemes: Boolean = false,
+    val isLoadingKeywords: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && !isLoading
 }
+
+data class ThemeDetailState(
+    val themeId: String = "",
+    val themeName: String = "",
+    val games: List<Game> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+)
+
+data class KeywordDetailState(
+    val keywordId: String = "",
+    val keywordName: String = "",
+    val games: List<Game> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+)
 
 class ExploreViewModel(
     private val exploreRepository: ExploreRepository,
@@ -31,16 +54,70 @@ class ExploreViewModel(
     private val _state = MutableStateFlow(ExploreState())
     val state: StateFlow<ExploreState> = _state.asStateFlow()
 
+    private val _themeDetailState = MutableStateFlow(ThemeDetailState())
+    val themeDetailState: StateFlow<ThemeDetailState> = _themeDetailState.asStateFlow()
+
+    private val _keywordDetailState = MutableStateFlow(KeywordDetailState())
+    val keywordDetailState: StateFlow<KeywordDetailState> = _keywordDetailState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
+    private var themesJob: Job? = null
+    private var keywordsJob: Job? = null
+    private var themeDetailJob: Job? = null
+    private var keywordDetailJob: Job? = null
 
     fun load() {
         loadFeatured()
         loadRows()
+        loadThemes()
+        loadKeywords()
     }
 
     fun dismissError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun loadThemeGames(themeId: String, themeName: String) {
+        themeDetailJob?.cancel()
+        _themeDetailState.update {
+            ThemeDetailState(themeId = themeId, themeName = themeName, isLoading = true)
+        }
+        themeDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getThemeGames(themeId, page = 1, pageSize = 50).fold(
+                onSuccess = { games ->
+                    _themeDetailState.update { it.copy(games = games, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _themeDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadKeywordGames(keywordId: String, keywordName: String) {
+        keywordDetailJob?.cancel()
+        _keywordDetailState.update {
+            KeywordDetailState(keywordId = keywordId, keywordName = keywordName, isLoading = true)
+        }
+        keywordDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getKeywordGames(keywordId, page = 1, pageSize = 50).fold(
+                onSuccess = { games ->
+                    _keywordDetailState.update { it.copy(games = games, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _keywordDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun dismissThemeDetailError() {
+        _themeDetailState.update { it.copy(error = null) }
+    }
+
+    fun dismissKeywordDetailError() {
+        _keywordDetailState.update { it.copy(error = null) }
     }
 
     private fun loadFeatured() {
@@ -68,6 +145,36 @@ class ExploreViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoadingRows = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun loadThemes() {
+        if (themesJob?.isActive == true) return
+        _state.update { it.copy(isLoadingThemes = true) }
+        themesJob = scope.launch(dispatchers.io) {
+            exploreRepository.getThemes().fold(
+                onSuccess = { themes ->
+                    _state.update { it.copy(themes = themes, isLoadingThemes = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingThemes = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun loadKeywords() {
+        if (keywordsJob?.isActive == true) return
+        _state.update { it.copy(isLoadingKeywords = true) }
+        keywordsJob = scope.launch(dispatchers.io) {
+            exploreRepository.getKeywords().fold(
+                onSuccess = { keywords ->
+                    _state.update { it.copy(keywords = keywords, isLoadingKeywords = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingKeywords = false, error = error.message) }
                 },
             )
         }

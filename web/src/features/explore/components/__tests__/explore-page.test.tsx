@@ -3,12 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, Game, ExploreRowsResponse } from "@/types/api";
+import type { FeaturedGame, Game, ExploreRowsResponse, Theme, Keyword } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
   useExploreFeatured: vi.fn(),
   useExploreRows: vi.fn(),
+  useThemes: vi.fn(),
+  useKeywords: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-games", () => ({
@@ -27,10 +29,12 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
+const mockUseThemes = useThemes as ReturnType<typeof vi.fn>;
+const mockUseKeywords = useKeywords as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -75,6 +79,16 @@ function makeGame(overrides: Partial<Game> = {}): Game {
 const mockFeatured: FeaturedGame[] = [
   makeFeaturedGame({ gameId: "1", title: "Hero Game One" }),
   makeFeaturedGame({ gameId: "2", title: "Hero Game Two" }),
+];
+
+const mockThemes: Theme[] = [
+  { id: "17", name: "Science Fiction", gameCount: 42 },
+  { id: "18", name: "Horror", gameCount: 28 },
+];
+
+const mockKeywords: Keyword[] = [
+  { id: "100", name: "Time Travel", gameCount: 15 },
+  { id: "101", name: "Post-Apocalyptic", gameCount: 12 },
 ];
 
 const mockRows: ExploreRowsResponse = {
@@ -142,6 +156,14 @@ describe("ExplorePage", () => {
     });
     mockUseExploreRows.mockReturnValue({
       data: mockRows,
+      isLoading: false,
+    });
+    mockUseThemes.mockReturnValue({
+      data: mockThemes,
+      isLoading: false,
+    });
+    mockUseKeywords.mockReturnValue({
+      data: mockKeywords,
       isLoading: false,
     });
   });
@@ -258,5 +280,55 @@ describe("ExplorePage", () => {
     renderPage();
     expect(screen.queryByTestId("shelf-Top Rated")).not.toBeInTheDocument();
     expect(screen.getByTestId("shelf-Recently Added")).toBeInTheDocument();
+  });
+
+  it("renders the theme grid section", () => {
+    renderPage();
+    expect(screen.getByTestId("theme-grid")).toBeInTheDocument();
+    expect(screen.getByText("Science Fiction")).toBeInTheDocument();
+    expect(screen.getByText("Horror")).toBeInTheDocument();
+  });
+
+  it("renders the keyword chips section", () => {
+    renderPage();
+    expect(screen.getByTestId("keyword-chips")).toBeInTheDocument();
+    expect(screen.getByText("Time Travel")).toBeInTheDocument();
+    expect(screen.getByText("Post-Apocalyptic")).toBeInTheDocument();
+  });
+
+  it("hides theme grid when no themes available", () => {
+    mockUseThemes.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("theme-grid")).not.toBeInTheDocument();
+  });
+
+  it("hides keyword chips when no keywords available", () => {
+    mockUseKeywords.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("keyword-chips")).not.toBeInTheDocument();
+  });
+
+  it("shows theme grid skeleton while loading", () => {
+    mockUseThemes.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("theme-grid-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows keyword chips skeleton while loading", () => {
+    mockUseKeywords.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("keyword-chips-skeleton")).toBeInTheDocument();
   });
 });
