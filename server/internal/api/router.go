@@ -173,6 +173,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	artworkHandler := &ArtworkHandler{DB: cfg.DB}
 	exploreHandler := &ExploreHandler{DB: cfg.DB}
+	savedSearchHandler := &SavedSearchHandler{DB: cfg.DB}
 	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
 	setupHandler := &SetupHandler{
@@ -356,6 +357,11 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/games/:gameId/keymapping", gameKeyMappingHandler.GetGameKeyMapping)
 		api.PUT("/user/games/:gameId/keymapping", gameKeyMappingHandler.UpdateGameKeyMapping)
 		api.DELETE("/user/games/:gameId/keymapping", gameKeyMappingHandler.DeleteGameKeyMapping)
+
+		// Saved Searches
+		api.POST("/user/saved-searches", savedSearchHandler.CreateSavedSearch)
+		api.GET("/user/saved-searches", savedSearchHandler.ListSavedSearches)
+		api.DELETE("/user/saved-searches/:id", savedSearchHandler.DeleteSavedSearch)
 
 		// Play Later
 		api.GET("/user/play-later", playLaterHandler.ListPlayLater)
