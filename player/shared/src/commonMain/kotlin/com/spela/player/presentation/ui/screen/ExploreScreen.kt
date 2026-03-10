@@ -22,6 +22,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSection
+import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSkeleton
 import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSection
@@ -54,6 +56,7 @@ fun ExploreScreen(
     onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
     onDeveloperSelected: ((name: String) -> Unit)? = null,
     onConsoleSelected: ((consoleId: String) -> Unit)? = null,
+    onGallerySelected: (() -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
@@ -307,6 +310,33 @@ fun ExploreScreen(
                                         onDeveloperSelected?.invoke(name)
                                     },
                                     onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Artwork showcase section
+                    item {
+                        if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
+                            SpTitledSection(
+                                title = "Visual Discovery",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ArtworkShowcaseSkeleton()
+                            }
+                        } else if (state.artworkShowcase.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Visual Discovery",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_artwork_section"),
+                            ) {
+                                ArtworkShowcaseSection(
+                                    artworks = state.artworkShowcase,
+                                    onGameSelected = onGameSelected,
+                                    onGallerySelected = onGallerySelected,
                                 )
                             }
                         }

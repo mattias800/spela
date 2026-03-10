@@ -2511,3 +2511,221 @@ func TestGetConsoleHighlights_TopGameRequiresHeroArt(t *testing.T) {
 	assert.Equal(t, 1, nesEntry.GameCount)
 	assert.Nil(t, nesEntry.TopGame) // No hero art = no top game
 }
+
+// --- Phase 9: Visual Browsing — Gallery & Art Modes ---
+
+func TestGetScreenshotGallery_Success(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Chrono Trigger", 95.0)
+	game2 := createExploreGame(t, env.database, "NES", "Super Mario Bros", 90.0)
+
+	// Create screenshots
+	env.database.Create(&db.GameScreenshot{GameID: game1.ID, URL: "snes/chrono/screenshot_0.jpg", Position: 0})
+	env.database.Create(&db.GameScreenshot{GameID: game1.ID, URL: "snes/chrono/screenshot_1.jpg", Position: 1})
+	env.database.Create(&db.GameScreenshot{GameID: game2.ID, URL: "nes/smb/screenshot_0.jpg", Position: 0})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/screenshots", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ScreenshotGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 3, resp.TotalCount)
+	assert.Equal(t, 1, resp.Page)
+	assert.Equal(t, 1, resp.TotalPages)
+	assert.Len(t, resp.Screenshots, 3)
+
+	// Verify screenshot fields are populated
+	for _, s := range resp.Screenshots {
+		assert.NotEmpty(t, s.URL)
+		assert.NotEmpty(t, s.GameID)
+		assert.NotEmpty(t, s.GameTitle)
+		assert.NotEmpty(t, s.ConsoleName)
+		assert.NotEmpty(t, s.ConsoleAbbr)
+		assert.NotEmpty(t, s.ConsoleColor)
+	}
+}
+
+func TestGetScreenshotGallery_ConsoleFilter(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	snesGame := createExploreGame(t, env.database, "SNES", "Chrono Trigger", 95.0)
+	nesGame := createExploreGame(t, env.database, "NES", "Super Mario Bros", 90.0)
+
+	env.database.Create(&db.GameScreenshot{GameID: snesGame.ID, URL: "snes/chrono/screenshot_0.jpg", Position: 0})
+	env.database.Create(&db.GameScreenshot{GameID: nesGame.ID, URL: "nes/smb/screenshot_0.jpg", Position: 0})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/screenshots?console=snes", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ScreenshotGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 1, resp.TotalCount)
+	require.Len(t, resp.Screenshots, 1)
+	assert.Equal(t, "snes", resp.Screenshots[0].ConsoleAbbr)
+	assert.Equal(t, "Chrono Trigger", resp.Screenshots[0].GameTitle)
+}
+
+func TestGetScreenshotGallery_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/screenshots", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ScreenshotGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 0, resp.TotalCount)
+	assert.Equal(t, 1, resp.Page)
+	assert.Equal(t, 0, resp.TotalPages)
+	assert.Empty(t, resp.Screenshots)
+}
+
+func TestGetArtworkGallery_Success(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Chrono Trigger", 95.0)
+	game2 := createExploreGame(t, env.database, "NES", "Super Mario Bros", 85.0)
+
+	// Create IGDB artwork images
+	env.database.Create(&db.GameArtworkImage{GameID: game1.ID, IGDBImageID: "abc123", Width: 1920, Height: 1080})
+	env.database.Create(&db.GameArtworkImage{GameID: game2.ID, IGDBImageID: "def456", Width: 1280, Height: 720})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/artwork", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ArtworkGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 2, resp.TotalCount)
+	assert.Equal(t, 1, resp.Page)
+	assert.Equal(t, 1, resp.TotalPages)
+	require.Len(t, resp.Artworks, 2)
+
+	// Ordered by rating DESC, so Chrono Trigger (95) first
+	assert.Equal(t, "Chrono Trigger", resp.Artworks[0].GameTitle)
+	assert.Equal(t, 1920, resp.Artworks[0].Width)
+	assert.Equal(t, 1080, resp.Artworks[0].Height)
+	// Verify IGDB URL construction
+	assert.Contains(t, resp.Artworks[0].URL, "abc123")
+	assert.Contains(t, resp.Artworks[0].URL, "t_screenshot_big")
+	assert.Contains(t, resp.Artworks[0].URL, "images.igdb.com")
+
+	assert.Equal(t, "Super Mario Bros", resp.Artworks[1].GameTitle)
+	assert.NotEmpty(t, resp.Artworks[1].ConsoleAbbr)
+	assert.NotEmpty(t, resp.Artworks[1].ConsoleColor)
+}
+
+func TestGetCoverGallery_Success(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Chrono Trigger", 95.0)
+	game2 := createExploreGame(t, env.database, "NES", "Super Mario Bros", 85.0)
+	// game3 has no cover — should not appear
+	createExploreGame(t, env.database, "GBA", "No Cover Game", 80.0)
+
+	// Set cover URLs
+	env.database.Model(&game1).Update("cover_url", "snes/chrono/cover.jpg")
+	env.database.Model(&game2).Update("cover_url", "nes/smb/cover.jpg")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/covers", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp CoverGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 2, resp.TotalCount)
+	assert.Equal(t, 1, resp.Page)
+	require.Len(t, resp.Covers, 2)
+
+	// Ordered by rating DESC
+	assert.Equal(t, "Chrono Trigger", resp.Covers[0].GameTitle)
+	assert.Equal(t, 95.0, resp.Covers[0].Rating)
+	assert.Contains(t, resp.Covers[0].CoverURL, "snes/chrono/cover.jpg")
+	assert.Greater(t, resp.Covers[0].CoverAspectRatio, 0.0)
+
+	assert.Equal(t, "Super Mario Bros", resp.Covers[1].GameTitle)
+	assert.Equal(t, 85.0, resp.Covers[1].Rating)
+}
+
+func TestGetCoverGallery_ConsoleFilter(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	snesGame := createExploreGame(t, env.database, "SNES", "Chrono Trigger", 95.0)
+	nesGame := createExploreGame(t, env.database, "NES", "Super Mario Bros", 85.0)
+
+	env.database.Model(&snesGame).Update("cover_url", "snes/chrono/cover.jpg")
+	env.database.Model(&nesGame).Update("cover_url", "nes/smb/cover.jpg")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/covers?console=NES", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp CoverGalleryResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 1, resp.TotalCount)
+	require.Len(t, resp.Covers, 1)
+	assert.Equal(t, "Super Mario Bros", resp.Covers[0].GameTitle)
+	assert.Equal(t, "nes", resp.Covers[0].ConsoleAbbr)
+}
+
+func TestGetCoverGallery_Pagination(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create enough games to require multiple pages (using limit=2 for easy testing)
+	for i := 0; i < 5; i++ {
+		g := createExploreGame(t, env.database, "SNES", fmt.Sprintf("Game %d", i), float64(90-i))
+		env.database.Model(&g).Update("cover_url", fmt.Sprintf("snes/game%d/cover.jpg", i))
+	}
+
+	// Page 1 with limit=2
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("GET", "/api/explore/covers?page=1&limit=2", nil)
+	req1.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w1, req1)
+
+	assert.Equal(t, http.StatusOK, w1.Code)
+
+	var resp1 CoverGalleryResponse
+	require.NoError(t, json.Unmarshal(w1.Body.Bytes(), &resp1))
+	assert.Equal(t, 5, resp1.TotalCount)
+	assert.Equal(t, 3, resp1.TotalPages)
+	assert.Equal(t, 1, resp1.Page)
+	assert.Len(t, resp1.Covers, 2)
+
+	// Page 2 with limit=2
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/explore/covers?page=2&limit=2", nil)
+	req2.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	var resp2 CoverGalleryResponse
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp2))
+	assert.Equal(t, 2, resp2.Page)
+	assert.Len(t, resp2.Covers, 2)
+
+	// Page 2 should have different games than page 1
+	assert.NotEqual(t, resp1.Covers[0].GameID, resp2.Covers[0].GameID)
+}

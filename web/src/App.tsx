@@ -43,6 +43,8 @@ import { DeveloperDetailPage } from "@/pages/developer-detail-page";
 import { PublisherDetailPage } from "@/pages/publisher-detail-page";
 import { ExploreMoodPage } from "@/pages/explore-mood-page";
 import { ConsoleShowcasePage } from "@/pages/console-showcase-page";
+import { ScreenshotGalleryPage } from "@/pages/screenshot-gallery-page";
+import { CoverGalleryPage } from "@/pages/cover-gallery-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
@@ -102,6 +104,14 @@ export function App() {
                     <Route
                       path="explore/series/:id"
                       element={<ExploreSeriesPage />}
+                    />
+                    <Route
+                      path="explore/gallery"
+                      element={<ScreenshotGalleryPage />}
+                    />
+                    <Route
+                      path="explore/covers"
+                      element={<CoverGalleryPage />}
                     />
                     <Route
                       path="explore/consoles/:id"

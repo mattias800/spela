@@ -1341,6 +1341,8 @@ class FakeExploreRepository : ExploreRepository {
     var developerSpotlightData: DeveloperSpotlight? = null
     var consoleShowcases: Map<String, ConsoleShowcase> = emptyMap()
     var consoleHighlightsList: List<ConsoleHighlight> = emptyList()
+    var artworkItems: List<ArtworkItem> = emptyList()
+    var screenshotItems: List<ScreenshotItem> = emptyList()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1462,6 +1464,14 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> =
         if (shouldFail) Result.failure(Exception("Failed to load console highlights"))
         else Result.success(consoleHighlightsList)
+
+    override suspend fun getArtworkGallery(page: Int): Result<List<ArtworkItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load artwork gallery"))
+        else Result.success(artworkItems)
+
+    override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load screenshot gallery"))
+        else Result.success(screenshotItems)
 }
 
 class FakeCheatRepository : CheatRepository {

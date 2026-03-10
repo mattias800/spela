@@ -357,6 +357,20 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/console-highlights").body()
     }
 
+    /** Returns a paginated list of IGDB artwork for the gallery */
+    suspend fun getArtworkGallery(page: Int = 1): ArtworkGalleryResponseDto {
+        return client.get("$baseUrl/api/explore/artwork") {
+            parameter("page", page)
+        }.body()
+    }
+
+    /** Returns a paginated list of screenshots for the gallery */
+    suspend fun getScreenshotGallery(page: Int = 1): ScreenshotGalleryResponseDto {
+        return client.get("$baseUrl/api/explore/screenshots") {
+            parameter("page", page)
+        }.body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

@@ -6,6 +6,7 @@ import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
 import { KeywordChips } from "@/features/explore/components/keyword-chips";
 import { SeriesShelf } from "@/features/explore/components/series-shelf";
+import { ArtworkShowcase } from "@/features/explore/components/artwork-showcase";
 import { DeveloperSpotlight } from "@/features/explore/components/developer-spotlight";
 import { MoodPicker } from "@/features/explore/components/mood-picker";
 import { ForYouSection } from "@/features/explore/components/for-you-section";
@@ -22,6 +23,7 @@ import {
   usePlayersLikeYou,
   useDeveloperSpotlight,
   useConsoleHighlights,
+  useArtworkGallery,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -69,6 +71,10 @@ export function ExplorePage() {
     data: consoleHighlightsData,
     isLoading: isConsoleHighlightsLoading,
   } = useConsoleHighlights();
+  const {
+    data: artworkData,
+    isLoading: isArtworkLoading,
+  } = useArtworkGallery(1);
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -184,6 +190,12 @@ export function ExplorePage() {
         isLoading={isSpotlightLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Artwork Showcase */}
+      <ArtworkShowcase
+        artworks={artworkData?.artworks}
+        isLoading={isArtworkLoading}
       />
 
       {/* Remaining shelf rows */}

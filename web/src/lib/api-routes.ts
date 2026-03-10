@@ -26,6 +26,9 @@ export type ApiGetPath = WithQuery<
   | "/explore/surprise"
   | "/explore/for-you"
   | "/explore/players-like-you"
+  | "/explore/screenshots"
+  | "/explore/artwork"
+  | "/explore/covers"
 
   // Console Showcase
   | `/explore/consoles/${string}/showcase`

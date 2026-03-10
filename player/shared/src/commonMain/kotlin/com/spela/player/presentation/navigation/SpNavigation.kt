@@ -36,6 +36,7 @@ sealed class SpScreen(val route: String) {
     data class ExploreDeveloper(val name: String) : SpScreen("explore_developer/$name")
     data class ExplorePublisher(val name: String) : SpScreen("explore_publisher/$name")
     data class ExploreConsoleShowcase(val consoleId: String) : SpScreen("explore_console/$consoleId")
+    data object ExploreGallery : SpScreen("explore_gallery")
 }
 
 data class NavigationState(

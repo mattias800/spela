@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse, ArtworkGalleryResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -17,6 +17,7 @@ vi.mock("@/hooks/use-explore", () => ({
   usePlayersLikeYou: vi.fn(),
   useDeveloperSpotlight: vi.fn(),
   useConsoleHighlights: vi.fn(),
+  useArtworkGallery: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -40,7 +41,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -52,6 +53,7 @@ const mockUseForYou = useForYou as ReturnType<typeof vi.fn>;
 const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
 const mockUseDeveloperSpotlight = useDeveloperSpotlight as ReturnType<typeof vi.fn>;
 const mockUseConsoleHighlights = useConsoleHighlights as ReturnType<typeof vi.fn>;
+const mockUseArtworkGallery = useArtworkGallery as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -240,6 +242,10 @@ describe("ExplorePage", () => {
     });
     mockUseConsoleHighlights.mockReturnValue({
       data: { consoles: [] },
+      isLoading: false,
+    });
+    mockUseArtworkGallery.mockReturnValue({
+      data: { artworks: [], page: 1, totalPages: 0, totalCount: 0 },
       isLoading: false,
     });
   });

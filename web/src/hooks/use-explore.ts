@@ -21,6 +21,9 @@ import type {
   DeveloperSpotlightResponse,
   ConsoleShowcase,
   ConsoleHighlightsResponse,
+  ScreenshotGalleryResponse,
+  ArtworkGalleryResponse,
+  CoverGalleryResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -211,5 +214,39 @@ export function useConsoleHighlights() {
     queryKey: ["console-highlights"],
     queryFn: () =>
       api.get<ConsoleHighlightsResponse>("/explore/console-highlights"),
+  });
+}
+
+export function useScreenshotGallery(
+  page: number,
+  filters?: { console?: string; genre?: string },
+) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (filters?.console) params.set("console", filters.console);
+  if (filters?.genre) params.set("genre", filters.genre);
+  return useQuery({
+    queryKey: ["screenshot-gallery", page, filters],
+    queryFn: () =>
+      api.get<ScreenshotGalleryResponse>(
+        `/explore/screenshots?${params}`,
+      ),
+  });
+}
+
+export function useArtworkGallery(page: number) {
+  return useQuery({
+    queryKey: ["artwork-gallery", page],
+    queryFn: () =>
+      api.get<ArtworkGalleryResponse>(`/explore/artwork?page=${page}`),
+  });
+}
+
+export function useCoverGallery(page: number, consoleFilter?: string) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (consoleFilter) params.set("console", consoleFilter);
+  return useQuery({
+    queryKey: ["cover-gallery", page, consoleFilter],
+    queryFn: () =>
+      api.get<CoverGalleryResponse>(`/explore/covers?${params}`),
   });
 }

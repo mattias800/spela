@@ -724,3 +724,23 @@ fun ConsoleHighlightDto.toDomain(): ConsoleHighlight = ConsoleHighlight(
     gameCount = gameCount,
     topGame = topGame?.toDomain(),
 )
+
+fun ArtworkItemDto.toDomain(): ArtworkItem = ArtworkItem(
+    url = url,
+    width = width,
+    height = height,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleColor = consoleColor,
+)
+
+fun ScreenshotItemDto.toDomain(): ScreenshotItem = ScreenshotItem(
+    url = url,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+    consoleAbbreviation = consoleAbbreviation,
+    consoleColor = consoleColor,
+)

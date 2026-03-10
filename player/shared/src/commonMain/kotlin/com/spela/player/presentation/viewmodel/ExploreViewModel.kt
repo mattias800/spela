@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
@@ -11,6 +12,7 @@ import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
@@ -34,6 +36,7 @@ data class ExploreState(
     val forYouRows: List<ForYouRow> = emptyList(),
     val developerSpotlight: DeveloperSpotlight? = null,
     val consoleHighlights: List<ConsoleHighlight> = emptyList(),
+    val artworkShowcase: List<ArtworkItem> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -43,10 +46,11 @@ data class ExploreState(
     val isLoadingForYou: Boolean = false,
     val isLoadingDeveloperSpotlight: Boolean = false,
     val isLoadingConsoleHighlights: Boolean = false,
+    val isLoadingArtwork: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -99,6 +103,14 @@ data class ConsoleShowcaseState(
     val error: String? = null,
 )
 
+data class ScreenshotGalleryState(
+    val screenshots: List<ScreenshotItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val page: Int = 1,
+    val hasMore: Boolean = true,
+    val error: String? = null,
+)
+
 data class SeriesDetailState(
     val seriesId: String = "",
     val seriesName: String = "",
@@ -118,6 +130,8 @@ data class SeriesDetailState(
             return filtered.sortedWith(compareBy(nullsLast()) { it.releaseDate })
         }
 }
+
+private const val GALLERY_PAGE_SIZE = 40
 
 class ExploreViewModel(
     private val exploreRepository: ExploreRepository,
@@ -145,6 +159,9 @@ class ExploreViewModel(
     private val _consoleShowcaseState = MutableStateFlow(ConsoleShowcaseState())
     val consoleShowcaseState: StateFlow<ConsoleShowcaseState> = _consoleShowcaseState.asStateFlow()
 
+    private val _screenshotGalleryState = MutableStateFlow(ScreenshotGalleryState())
+    val screenshotGalleryState: StateFlow<ScreenshotGalleryState> = _screenshotGalleryState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -160,6 +177,8 @@ class ExploreViewModel(
     private var developerDetailJob: Job? = null
     private var consoleHighlightsJob: Job? = null
     private var consoleShowcaseJob: Job? = null
+    private var artworkShowcaseJob: Job? = null
+    private var screenshotGalleryJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -171,6 +190,7 @@ class ExploreViewModel(
         loadForYou()
         loadDeveloperSpotlight()
         loadConsoleHighlights()
+        loadArtworkShowcase()
     }
 
     fun dismissError() {
@@ -477,5 +497,76 @@ class ExploreViewModel(
 
     fun dismissConsoleShowcaseError() {
         _consoleShowcaseState.update { it.copy(error = null) }
+    }
+
+    private fun loadArtworkShowcase() {
+        if (artworkShowcaseJob?.isActive == true) return
+        _state.update { it.copy(isLoadingArtwork = true) }
+        artworkShowcaseJob = scope.launch(dispatchers.io) {
+            exploreRepository.getArtworkGallery(page = 1).fold(
+                onSuccess = { artworks ->
+                    _state.update { it.copy(artworkShowcase = artworks, isLoadingArtwork = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingArtwork = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadScreenshotGallery() {
+        screenshotGalleryJob?.cancel()
+        _screenshotGalleryState.update {
+            ScreenshotGalleryState(isLoading = true)
+        }
+        screenshotGalleryJob = scope.launch(dispatchers.io) {
+            exploreRepository.getScreenshotGallery(page = 1).fold(
+                onSuccess = { screenshots ->
+                    _screenshotGalleryState.update {
+                        it.copy(
+                            screenshots = screenshots,
+                            isLoading = false,
+                            page = 1,
+                            hasMore = screenshots.size >= GALLERY_PAGE_SIZE,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _screenshotGalleryState.update {
+                        it.copy(isLoading = false, error = error.message)
+                    }
+                },
+            )
+        }
+    }
+
+    fun loadMoreScreenshots() {
+        val current = _screenshotGalleryState.value
+        if (current.isLoading || !current.hasMore) return
+        _screenshotGalleryState.update { it.copy(isLoading = true) }
+        val nextPage = current.page + 1
+        screenshotGalleryJob = scope.launch(dispatchers.io) {
+            exploreRepository.getScreenshotGallery(page = nextPage).fold(
+                onSuccess = { screenshots ->
+                    _screenshotGalleryState.update {
+                        it.copy(
+                            screenshots = it.screenshots + screenshots,
+                            isLoading = false,
+                            page = nextPage,
+                            hasMore = screenshots.size >= GALLERY_PAGE_SIZE,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _screenshotGalleryState.update {
+                        it.copy(isLoading = false, error = error.message)
+                    }
+                },
+            )
+        }
+    }
+
+    fun dismissScreenshotGalleryError() {
+        _screenshotGalleryState.update { it.copy(error = null) }
     }
 }

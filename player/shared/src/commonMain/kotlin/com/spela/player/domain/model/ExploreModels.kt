@@ -172,3 +172,23 @@ data class ConsoleHighlight(
     val gameCount: Int,
     val topGame: Game?,
 )
+
+data class ArtworkItem(
+    val url: String,
+    val width: Int,
+    val height: Int,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)
+
+data class ScreenshotItem(
+    val url: String,
+    val gameId: String,
+    val gameTitle: String,
+    val consoleName: String,
+    val consoleAbbreviation: String,
+    val consoleColor: String,
+)

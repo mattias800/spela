@@ -2,6 +2,7 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.DeveloperDetail
@@ -17,6 +18,7 @@ import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
+import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
@@ -241,6 +243,22 @@ class ExploreRepositoryImpl(
                         coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     )
                 },
+            )
+        }
+    }
+
+    override suspend fun getArtworkGallery(page: Int): Result<List<ArtworkItem>> = runCatching {
+        apiClient.getArtworkGallery(page).artworks.map { dto ->
+            dto.toDomain().copy(
+                url = apiClient.resolveUrl(dto.url) ?: dto.url,
+            )
+        }
+    }
+
+    override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> = runCatching {
+        apiClient.getScreenshotGallery(page).screenshots.map { dto ->
+            dto.toDomain().copy(
+                url = apiClient.resolveUrl(dto.url) ?: dto.url,
             )
         }
     }
