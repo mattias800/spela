@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -35,8 +36,8 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 `
 	require.NoError(t, os.WriteFile(datPath, []byte(datContent), 0o644))
 
-	// Set up IGDB mock that records the search query
-	var searchQuery string
+	// Set up IGDB mock that records all request queries
+	var searchQueries []string
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "test-token",
@@ -50,7 +51,7 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 		// Parse the search query from the IGDB request body
 		body := make([]byte, 4096)
 		n, _ := r.Body.Read(body)
-		searchQuery = string(body[:n])
+		searchQueries = append(searchQueries, string(body[:n]))
 
 		json.NewEncoder(w).Encode([]igdb.Game{
 			{ID: 1, Name: "Castlevania"},
@@ -112,7 +113,14 @@ func TestScrapeIGDB_CRCMatch_RenamesAndUsesCanonicalName(t *testing.T) {
 	assert.True(t, os.IsNotExist(err))
 
 	// Verify IGDB was searched with the canonical name (cleaned from "Castlevania (USA).nes")
-	assert.Contains(t, searchQuery, "Castlevania")
+	foundCastlevania := false
+	for _, q := range searchQueries {
+		if strings.Contains(q, "Castlevania") {
+			foundCastlevania = true
+			break
+		}
+	}
+	assert.True(t, foundCastlevania, "expected at least one IGDB query to contain 'Castlevania', got: %v", searchQueries)
 
 	// Verify the game got metadata from IGDB
 	assert.Equal(t, "Castlevania", game.Title)

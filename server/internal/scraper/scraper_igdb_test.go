@@ -29,7 +29,12 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, database.AutoMigrate(&db.Console{}, &db.Game{}, &db.GameScreenshot{}))
+	require.NoError(t, database.AutoMigrate(
+		&db.Console{}, &db.Game{}, &db.GameScreenshot{},
+		&db.GameTheme{}, &db.GameKeyword{}, &db.GamePlayerPerspective{},
+		&db.GameFranchise{}, &db.GameSeries{}, &db.GameSeriesEntry{},
+		&db.GameArtworkImage{},
+	))
 	return database
 }
 

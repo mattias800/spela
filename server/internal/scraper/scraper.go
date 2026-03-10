@@ -34,6 +34,11 @@ type Scraper struct {
 	scrapeMu       sync.Mutex
 	scraping       bool
 	scrapeProgress *ScrapeProgress
+
+	// Enrichment state tracking
+	enrichMu       sync.Mutex
+	enriching      bool
+	enrichProgress *EnrichProgress
 }
 
 // NewScraper creates a new metadata scraper instance.
@@ -58,10 +63,13 @@ func (s *Scraper) IsIGDBConfigured() bool {
 
 // TryStartScrape attempts to acquire the scrape lock.
 // Returns true if the lock was acquired (caller must call FinishScrape when done).
+// Also checks the enrichment lock — scraping and enrichment are mutually exclusive.
 func (s *Scraper) TryStartScrape() bool {
 	s.scrapeMu.Lock()
 	defer s.scrapeMu.Unlock()
-	if s.scraping {
+	s.enrichMu.Lock()
+	defer s.enrichMu.Unlock()
+	if s.scraping || s.enriching {
 		return false
 	}
 	s.scraping = true
@@ -92,6 +100,47 @@ func (s *Scraper) GetScrapeStatus() (bool, *ScrapeProgress) {
 	}
 	p := *s.scrapeProgress
 	return s.scraping, &p
+}
+
+// TryStartEnrich attempts to acquire the enrichment lock.
+// Returns true if the lock was acquired (caller must call FinishEnrich when done).
+// Also checks the scrape lock — enrichment and scraping are mutually exclusive.
+func (s *Scraper) TryStartEnrich() bool {
+	s.scrapeMu.Lock()
+	defer s.scrapeMu.Unlock()
+	s.enrichMu.Lock()
+	defer s.enrichMu.Unlock()
+	if s.scraping || s.enriching {
+		return false
+	}
+	s.enriching = true
+	return true
+}
+
+// FinishEnrich releases the enrichment lock and clears progress.
+func (s *Scraper) FinishEnrich() {
+	s.enrichMu.Lock()
+	s.enriching = false
+	s.enrichProgress = nil
+	s.enrichMu.Unlock()
+}
+
+// SetEnrichProgress updates the current enrichment progress.
+func (s *Scraper) SetEnrichProgress(p *EnrichProgress) {
+	s.enrichMu.Lock()
+	s.enrichProgress = p
+	s.enrichMu.Unlock()
+}
+
+// GetEnrichStatus returns whether an enrichment is active and the current progress.
+func (s *Scraper) GetEnrichStatus() (bool, *EnrichProgress) {
+	s.enrichMu.Lock()
+	defer s.enrichMu.Unlock()
+	if s.enrichProgress == nil {
+		return s.enriching, nil
+	}
+	p := *s.enrichProgress
+	return s.enriching, &p
 }
 
 // AbbreviationToLibRetro maps console abbreviations to LibRetro system names.
@@ -443,6 +492,10 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	s.applyIGDBMatch(game, console, match, gameIDStr, forceTitle)
 
 	slog.Info("IGDB match found", "game", searchName, "matched", match.Name, "igdbId", match.ID)
+
+	// Enrichment: fetch themes, keywords, perspectives, franchises, artworks
+	s.enrichGameMetadata(game, match.ID)
+
 	return nil
 }
 
@@ -644,8 +697,334 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 		return fmt.Errorf("saving scraped metadata: %w", err)
 	}
 
+	// Enrichment: fetch themes, keywords, perspectives, franchises, artworks
+	s.enrichGameMetadata(game, igdbID)
+
 	slog.Info("re-scraped with manual IGDB match", "game", game.Title, "igdbId", igdbID, "scraperId", game.ScraperID)
 	return nil
+}
+
+// enrichGameMetadata fetches extended IGDB metadata (themes, keywords, perspectives,
+// franchises, artworks) and stores them in the database. Errors are logged but do not
+// fail the overall scrape — the game will simply lack enrichment data.
+func (s *Scraper) enrichGameMetadata(game *db.Game, igdbGameID int) {
+	if s.IGDBClient == nil || !s.IGDBClient.IsConfigured() {
+		return
+	}
+
+	enrichment, err := s.IGDBClient.GetGameEnrichment(igdbGameID)
+	if err != nil {
+		slog.Warn("IGDB enrichment failed, skipping", "game", game.Title, "igdbId", igdbGameID, "error", err)
+		return
+	}
+	if enrichment == nil {
+		return
+	}
+
+	s.storeEnrichmentData(game, enrichment, igdbGameID)
+}
+
+// storeEnrichmentData persists enrichment data to the DB, replacing any existing data.
+func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrichment, igdbGameID int) {
+	// Delete old enrichment data to prevent duplicates on re-scrape
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameTheme{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameKeyword{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GamePlayerPerspective{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameFranchise{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameArtworkImage{})
+
+	// Store themes
+	for _, t := range enrichment.Themes {
+		s.DB.Create(&db.GameTheme{
+			GameID:      game.ID,
+			IGDBThemeID: t.ID,
+			Name:        t.Name,
+		})
+	}
+
+	// Store keywords
+	for _, k := range enrichment.Keywords {
+		s.DB.Create(&db.GameKeyword{
+			GameID:        game.ID,
+			IGDBKeywordID: k.ID,
+			Name:          k.Name,
+		})
+	}
+
+	// Store player perspectives
+	for _, p := range enrichment.PlayerPerspectives {
+		s.DB.Create(&db.GamePlayerPerspective{
+			GameID:            game.ID,
+			IGDBPerspectiveID: p.ID,
+			Name:              p.Name,
+		})
+	}
+
+	// Store franchises (reuse name from existing DB entries when possible)
+	for _, fID := range enrichment.Franchises {
+		var existing db.GameFranchise
+		if err := s.DB.Where("igdb_franchise_id = ?", fID).First(&existing).Error; err == nil {
+			// Reuse the cached franchise name
+			s.DB.Create(&db.GameFranchise{
+				GameID:          game.ID,
+				IGDBFranchiseID: fID,
+				FranchiseName:   existing.FranchiseName,
+			})
+		} else if s.IGDBClient != nil {
+			// Fetch franchise name from IGDB
+			franchise, fetchErr := s.IGDBClient.GetFranchise(fID)
+			if fetchErr != nil {
+				slog.Warn("failed to fetch franchise from IGDB", "franchiseId", fID, "error", fetchErr)
+				continue
+			}
+			if franchise != nil {
+				s.DB.Create(&db.GameFranchise{
+					GameID:          game.ID,
+					IGDBFranchiseID: fID,
+					FranchiseName:   franchise.Name,
+				})
+			}
+		}
+	}
+
+	// Store artworks
+	for _, a := range enrichment.Artworks {
+		if a.ImageID == "" {
+			continue
+		}
+		s.DB.Create(&db.GameArtworkImage{
+			GameID:      game.ID,
+			IGDBImageID: a.ImageID,
+			Width:       a.Width,
+			Height:      a.Height,
+		})
+	}
+
+	// Handle series (IGDB collection)
+	if enrichment.CollectionID != nil {
+		s.handleSeriesForGame(game, *enrichment.CollectionID)
+	}
+}
+
+// handleSeriesForGame creates or reuses a GameSeries for the IGDB collection
+// and links the current game to it via GameSeriesEntry.
+func (s *Scraper) handleSeriesForGame(game *db.Game, igdbCollectionID int) {
+	var series db.GameSeries
+	if err := s.DB.Where("igdb_collection_id = ?", igdbCollectionID).First(&series).Error; err != nil {
+		// Series doesn't exist yet — fetch from IGDB
+		if s.IGDBClient == nil {
+			return
+		}
+		collectionData, fetchErr := s.IGDBClient.GetCollection(igdbCollectionID)
+		if fetchErr != nil {
+			slog.Warn("failed to fetch collection from IGDB", "collectionId", igdbCollectionID, "error", fetchErr)
+			return
+		}
+		if collectionData == nil {
+			return
+		}
+		series = db.GameSeries{
+			IGDBCollectionID: igdbCollectionID,
+			Name:             collectionData.Name,
+		}
+		if err := s.DB.Create(&series).Error; err != nil {
+			slog.Warn("failed to create game series", "name", collectionData.Name, "error", err)
+			return
+		}
+	}
+
+	// Create/update the entry for this local game
+	igdbID := 0
+	if _, parseErr := fmt.Sscanf(game.ScraperID, "igdb:%d", &igdbID); parseErr != nil || igdbID == 0 {
+		return
+	}
+
+	var entry db.GameSeriesEntry
+	result := s.DB.Where("series_id = ? AND igdb_game_id = ?", series.ID, igdbID).First(&entry)
+	if result.Error != nil {
+		// Create new entry
+		gameID := game.ID
+		s.DB.Create(&db.GameSeriesEntry{
+			SeriesID:   series.ID,
+			GameID:     &gameID,
+			IGDBGameID: igdbID,
+			Name:       game.Title,
+		})
+	} else {
+		// Update existing entry to link to local game
+		if entry.GameID == nil {
+			gameID := game.ID
+			s.DB.Model(&entry).Update("game_id", &gameID)
+		}
+	}
+}
+
+// EnrichGameOnly fetches and stores enrichment data for a game that already has
+// an IGDB match. Unlike ScrapeGame, it does NOT re-download cover art, screenshots,
+// or any other basic metadata. Used by the backfill endpoint.
+func (s *Scraper) EnrichGameOnly(game *db.Game) error {
+	if s.IGDBClient == nil || !s.IGDBClient.IsConfigured() {
+		return fmt.Errorf("IGDB client is not configured")
+	}
+
+	// Extract IGDB ID from scraper ID
+	var igdbID int
+	if _, err := fmt.Sscanf(game.ScraperID, "igdb:%d", &igdbID); err != nil || igdbID == 0 {
+		return fmt.Errorf("game %q has no valid IGDB scraper ID: %s", game.Title, game.ScraperID)
+	}
+
+	enrichment, err := s.IGDBClient.GetGameEnrichment(igdbID)
+	if err != nil {
+		return fmt.Errorf("fetching enrichment for %q (igdb:%d): %w", game.Title, igdbID, err)
+	}
+	if enrichment == nil {
+		return nil // game not found on IGDB — not an error
+	}
+
+	s.storeEnrichmentData(game, enrichment, igdbID)
+	return nil
+}
+
+// PopulateSeriesEntries fetches all games in a series from IGDB and populates
+// GameSeriesEntry rows (with GameID null for non-library games).
+// This is called during backfill to power "You own 8 of 15 games" displays.
+func (s *Scraper) PopulateSeriesEntries(series *db.GameSeries) error {
+	if s.IGDBClient == nil || !s.IGDBClient.IsConfigured() {
+		return fmt.Errorf("IGDB client is not configured")
+	}
+
+	collectionData, err := s.IGDBClient.GetCollection(series.IGDBCollectionID)
+	if err != nil {
+		return fmt.Errorf("fetching collection %d: %w", series.IGDBCollectionID, err)
+	}
+	if collectionData == nil || len(collectionData.GameIDs) == 0 {
+		return nil
+	}
+
+	// Fetch game names and covers from IGDB
+	gameInfos, err := s.IGDBClient.GetCollectionGames(collectionData.GameIDs)
+	if err != nil {
+		return fmt.Errorf("fetching collection game details: %w", err)
+	}
+
+	// Build a map of IGDB game ID -> local game ID
+	var localGames []db.Game
+	s.DB.Select("id, scraper_id").Where("scraper_id LIKE 'igdb:%'").Find(&localGames)
+	localMap := make(map[int]uint) // igdbID -> local game ID
+	for _, g := range localGames {
+		var igdbID int
+		if _, parseErr := fmt.Sscanf(g.ScraperID, "igdb:%d", &igdbID); parseErr == nil && igdbID > 0 {
+			localMap[igdbID] = g.ID
+		}
+	}
+
+	// Upsert entries
+	for _, info := range gameInfos {
+		var entry db.GameSeriesEntry
+		result := s.DB.Where("series_id = ? AND igdb_game_id = ?", series.ID, info.ID).First(&entry)
+		if result.Error != nil {
+			// Create new entry
+			newEntry := db.GameSeriesEntry{
+				SeriesID:     series.ID,
+				IGDBGameID:   info.ID,
+				Name:         info.Name,
+				CoverImageID: info.CoverImageID,
+			}
+			if localID, ok := localMap[info.ID]; ok {
+				newEntry.GameID = &localID
+			}
+			s.DB.Create(&newEntry)
+		} else {
+			// Update existing entry
+			updates := map[string]interface{}{
+				"name":           info.Name,
+				"cover_image_id": info.CoverImageID,
+			}
+			if localID, ok := localMap[info.ID]; ok {
+				updates["game_id"] = localID
+			}
+			s.DB.Model(&entry).Updates(updates)
+		}
+	}
+
+	return nil
+}
+
+// EnrichProgress holds progress information for a metadata enrichment operation.
+type EnrichProgress struct {
+	Current   int    `json:"current"`
+	Total     int    `json:"total"`
+	GameName  string `json:"gameName"`
+	Successes int    `json:"successes"`
+	Failures  int    `json:"failures"`
+}
+
+// EnrichAll enriches games with IGDB metadata.
+// Mode "missing" (default) only enriches games without themes; "all" re-enriches everything.
+// If onProgress is non-nil, it is called after each game.
+func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, int, error) {
+	var games []db.Game
+	switch mode {
+	case "all":
+		if err := s.DB.Where("scraper_id LIKE 'igdb:%'").Find(&games).Error; err != nil {
+			return 0, 0, fmt.Errorf("loading IGDB-matched games: %w", err)
+		}
+	default: // "missing"
+		// Games with IGDB match but no themes (never enriched)
+		if err := s.DB.Where("scraper_id LIKE 'igdb:%'").
+			Where("id NOT IN (SELECT DISTINCT game_id FROM game_themes)").
+			Find(&games).Error; err != nil {
+			return 0, 0, fmt.Errorf("loading unenriched games: %w", err)
+		}
+	}
+
+	total := len(games)
+	successes := 0
+	failures := 0
+
+	// Track series we've populated to avoid redundant GetCollection calls
+	populatedSeries := make(map[uint]bool)
+
+	for i := range games {
+		if err := s.EnrichGameOnly(&games[i]); err != nil {
+			slog.Warn("enrichment failed for game", "game", games[i].Title, "error", err)
+			failures++
+		} else {
+			successes++
+
+			// Check if this game's series needs full population
+			var entries []db.GameSeriesEntry
+			s.DB.Where("game_id = ?", games[i].ID).Find(&entries)
+			for _, entry := range entries {
+				if !populatedSeries[entry.SeriesID] {
+					var series db.GameSeries
+					if err := s.DB.First(&series, entry.SeriesID).Error; err == nil {
+						// Only populate if series has few entries (likely not yet populated)
+						var entryCount int64
+						s.DB.Model(&db.GameSeriesEntry{}).Where("series_id = ?", series.ID).Count(&entryCount)
+						if entryCount <= 1 {
+							if popErr := s.PopulateSeriesEntries(&series); popErr != nil {
+								slog.Warn("failed to populate series entries", "series", series.Name, "error", popErr)
+							}
+						}
+						populatedSeries[entry.SeriesID] = true
+					}
+				}
+			}
+		}
+
+		if onProgress != nil {
+			onProgress(EnrichProgress{
+				Current:   i + 1,
+				Total:     total,
+				GameName:  games[i].Title,
+				Successes: successes,
+				Failures:  failures,
+			})
+		}
+	}
+
+	return successes, total, nil
 }
 
 // downloadExternalImage downloads an image from an external URL and saves it locally.

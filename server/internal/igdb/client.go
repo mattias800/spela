@@ -590,6 +590,342 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	return games, nil
 }
 
+// --- Enrichment types for Phase 2 Explore ---
+
+// GameEnrichment holds extended metadata fetched from IGDB for a single game.
+type GameEnrichment struct {
+	Themes             []EnrichmentNamedItem `json:"themes"`
+	Keywords           []EnrichmentNamedItem `json:"keywords"`
+	PlayerPerspectives []EnrichmentNamedItem `json:"player_perspectives"`
+	Franchises         []int                 `json:"franchises"`       // raw franchise IDs
+	CollectionID       *int                  `json:"collection_id"`    // IGDB collection (series) ID, nil if none
+	Artworks           []ArtworkData         `json:"artworks"`
+}
+
+// EnrichmentNamedItem holds an IGDB entity with an ID and name.
+type EnrichmentNamedItem struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// ArtworkData holds IGDB artwork image metadata.
+type ArtworkData struct {
+	ImageID string `json:"image_id"`
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
+}
+
+// FranchiseData holds IGDB franchise details.
+type FranchiseData struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	GameIDs []int  `json:"games"`
+}
+
+// CollectionData holds IGDB collection (series) details.
+type CollectionData struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	GameIDs []int  `json:"games"`
+}
+
+// CollectionGameInfo holds basic info about a game within a collection.
+type CollectionGameInfo struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	CoverImageID string `json:"cover_image_id"`
+}
+
+// GetGameEnrichment fetches extended metadata for a game: themes, keywords,
+// player perspectives, franchise IDs, collection ID, and artworks.
+// Returns nil, nil if the game is not found.
+func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields themes.name,keywords.name,player_perspectives.name,franchises,collection,artworks.image_id,artworks.width,artworks.height; where id = %d; limit 1;`,
+		igdbID,
+	)
+
+	slog.Info("IGDB get game enrichment request", "igdbID", igdbID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB enrichment request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for enrichment: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB enrichment response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []struct {
+		Themes             []EnrichmentNamedItem `json:"themes"`
+		Keywords           []EnrichmentNamedItem `json:"keywords"`
+		PlayerPerspectives []EnrichmentNamedItem `json:"player_perspectives"`
+		Franchises         []int                 `json:"franchises"`
+		Collection         *int                  `json:"collection"`
+		Artworks           []struct {
+			ImageID string `json:"image_id"`
+			Width   int    `json:"width"`
+			Height  int    `json:"height"`
+		} `json:"artworks"`
+	}
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB enrichment response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB get game enrichment: not found", "igdbID", igdbID)
+		return nil, nil
+	}
+
+	r := results[0]
+	enrichment := &GameEnrichment{
+		Themes:             r.Themes,
+		Keywords:           r.Keywords,
+		PlayerPerspectives: r.PlayerPerspectives,
+		Franchises:         r.Franchises,
+		CollectionID:       r.Collection,
+	}
+
+	for _, a := range r.Artworks {
+		enrichment.Artworks = append(enrichment.Artworks, ArtworkData{
+			ImageID: a.ImageID,
+			Width:   a.Width,
+			Height:  a.Height,
+		})
+	}
+
+	slog.Info("IGDB get game enrichment response", "igdbID", igdbID,
+		"themes", len(enrichment.Themes), "keywords", len(enrichment.Keywords),
+		"perspectives", len(enrichment.PlayerPerspectives),
+		"franchises", len(enrichment.Franchises),
+		"artworks", len(enrichment.Artworks))
+
+	return enrichment, nil
+}
+
+// GetCollection fetches an IGDB collection (series) by ID.
+// Returns the collection name and the list of game IDs.
+// Returns nil, nil if the collection is not found.
+func (c *Client) GetCollection(collectionID int) (*CollectionData, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name,games; where id = %d; limit 1;`,
+		collectionID,
+	)
+
+	slog.Info("IGDB get collection request", "collectionID", collectionID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/collections", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB collection request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for collection: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB collection response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []CollectionData
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB collection response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB get collection: not found", "collectionID", collectionID)
+		return nil, nil
+	}
+
+	slog.Info("IGDB get collection response", "collectionID", collectionID,
+		"name", results[0].Name, "games", len(results[0].GameIDs))
+
+	return &results[0], nil
+}
+
+// GetFranchise fetches an IGDB franchise by ID.
+// Returns the franchise name and the list of game IDs.
+// Returns nil, nil if the franchise is not found.
+func (c *Client) GetFranchise(franchiseID int) (*FranchiseData, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name,games; where id = %d; limit 1;`,
+		franchiseID,
+	)
+
+	slog.Info("IGDB get franchise request", "franchiseID", franchiseID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/franchises", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB franchise request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for franchise: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB franchise response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []FranchiseData
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB franchise response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB get franchise: not found", "franchiseID", franchiseID)
+		return nil, nil
+	}
+
+	slog.Info("IGDB get franchise response", "franchiseID", franchiseID,
+		"name", results[0].Name, "games", len(results[0].GameIDs))
+
+	return &results[0], nil
+}
+
+// GetCollectionGames fetches basic info for games within a collection.
+// Returns name and cover for each game ID provided.
+func (c *Client) GetCollectionGames(gameIDs []int) ([]CollectionGameInfo, error) {
+	if len(gameIDs) == 0 {
+		return nil, nil
+	}
+
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	// Process in batches of 50 (IGDB limit)
+	var allGames []CollectionGameInfo
+	for i := 0; i < len(gameIDs); i += 50 {
+		end := i + 50
+		if end > len(gameIDs) {
+			end = len(gameIDs)
+		}
+		batch := gameIDs[i:end]
+
+		<-c.rateLimiter
+
+		idStrs := make([]string, len(batch))
+		for j, id := range batch {
+			idStrs[j] = fmt.Sprintf("%d", id)
+		}
+
+		query := fmt.Sprintf(
+			`fields name,cover.image_id; where id = (%s); limit %d;`,
+			strings.Join(idStrs, ","), len(batch),
+		)
+
+		c.mu.Lock()
+		token := c.token.AccessToken
+		c.mu.Unlock()
+
+		req, err := http.NewRequest("POST", igdbAPIBase+"/games", strings.NewReader(query))
+		if err != nil {
+			return nil, fmt.Errorf("creating IGDB collection games request: %w", err)
+		}
+		req.Header.Set("Client-ID", c.ClientID)
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("calling IGDB API for collection games: %w", err)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("reading IGDB collection games response: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+		}
+
+		var games []struct {
+			ID    int    `json:"id"`
+			Name  string `json:"name"`
+			Cover *Image `json:"cover"`
+		}
+		if err := json.Unmarshal(body, &games); err != nil {
+			return nil, fmt.Errorf("decoding IGDB collection games response: %w", err)
+		}
+
+		for _, g := range games {
+			info := CollectionGameInfo{
+				ID:   g.ID,
+				Name: g.Name,
+			}
+			if g.Cover != nil {
+				info.CoverImageID = g.Cover.ImageID
+			}
+			allGames = append(allGames, info)
+		}
+	}
+
+	return allGames, nil
+}
+
 // escapeQuery sanitizes user input for IGDB Apicalypse queries.
 // Escapes double quotes and removes semicolons to prevent query injection.
 func escapeQuery(s string) string {
