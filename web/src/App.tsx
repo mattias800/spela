@@ -44,7 +44,6 @@ import { DeveloperDetailPage } from "@/pages/developer-detail-page";
 import { PublisherDetailPage } from "@/pages/publisher-detail-page";
 import { ExploreMoodPage } from "@/pages/explore-mood-page";
 import { ExploreWizardPage } from "@/pages/explore-wizard-page";
-import { ConsoleShowcasePage } from "@/pages/console-showcase-page";
 import { ScreenshotGalleryPage } from "@/pages/screenshot-gallery-page";
 import { CoverGalleryPage } from "@/pages/cover-gallery-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
@@ -118,10 +117,6 @@ export function App() {
                     <Route
                       path="explore/covers"
                       element={<CoverGalleryPage />}
-                    />
-                    <Route
-                      path="explore/consoles/:id"
-                      element={<ConsoleShowcasePage />}
                     />
                     <Route
                       path="explore/mood/:mood"

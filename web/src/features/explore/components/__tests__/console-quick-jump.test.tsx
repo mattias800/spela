@@ -113,17 +113,17 @@ describe("ConsoleQuickJump", () => {
     expect(screen.getByText("25 games")).toBeInTheDocument();
   });
 
-  it("each card links to showcase page", () => {
+  it("each card links to console detail page", () => {
     renderComponent();
     const snesCard = screen.getByTestId("console-card-snes");
     expect(snesCard.tagName).toBe("A");
-    expect(snesCard).toHaveAttribute("href", "/explore/consoles/snes");
+    expect(snesCard).toHaveAttribute("href", "/consoles/snes");
 
     const nesCard = screen.getByTestId("console-card-nes");
-    expect(nesCard).toHaveAttribute("href", "/explore/consoles/nes");
+    expect(nesCard).toHaveAttribute("href", "/consoles/nes");
 
     const gbaCard = screen.getByTestId("console-card-gba");
-    expect(gbaCard).toHaveAttribute("href", "/explore/consoles/gba");
+    expect(gbaCard).toHaveAttribute("href", "/consoles/gba");
   });
 
   it("renders loading skeleton when loading", () => {
