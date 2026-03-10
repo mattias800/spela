@@ -705,6 +705,7 @@ fun SpelaApp(
                                 ConsoleScreen(
                                     consoleId = screen.consoleId,
                                     viewModel = gameListViewModel,
+                                    exploreViewModel = exploreViewModel,
                                     onGameSelected = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
@@ -712,6 +713,11 @@ fun SpelaApp(
                                     },
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onDeveloperSelected = { name ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                        )
                                     },
                                     onNavigateToConsoleSettings = {
                                         navigationViewModel.onIntent(

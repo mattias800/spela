@@ -1,11 +1,13 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { Star } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 import { BackButton, Skeleton, GameCardSkeleton } from "@/components/ui";
-import { GameShelf } from "@/features/explore/components/game-shelf";
+import {
+  ConsoleEssentials,
+  ConsoleHiddenGems,
+  ConsoleGenreBreakdown,
+  ConsoleTopDevelopers,
+  ConsoleRecentlyPlayed,
+} from "@/features/explore/components/console-showcase-sections";
 import { useConsoleShowcase } from "@/hooks/use-explore";
-import { useToggleFavorite } from "@/hooks/use-games";
-import { useTogglePlayLater } from "@/hooks/use-play-later";
-import type { GenreCount, DeveloperSummary } from "@/types/api";
 
 function ShowcasePageSkeleton() {
   return (
@@ -62,8 +64,6 @@ export function ConsoleShowcasePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: showcase, isLoading } = useConsoleShowcase(id ?? "");
-  const { toggle: handleToggleFavorite } = useToggleFavorite();
-  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   if (isLoading) {
     return (
@@ -103,7 +103,6 @@ export function ConsoleShowcasePage() {
         className="relative rounded-2xl overflow-hidden border border-white/[0.06]"
         data-testid="console-showcase-hero"
       >
-        {/* Color gradient background */}
         <div
           className="absolute inset-0"
           style={{
@@ -113,7 +112,6 @@ export function ConsoleShowcasePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
         <div className="relative p-8 sm:p-10 flex items-center gap-6">
-          {/* Console logo */}
           {con.logoUrl && (
             <img
               src={con.logoUrl}
@@ -140,105 +138,11 @@ export function ConsoleShowcasePage() {
         </div>
       </div>
 
-      {/* Essentials Shelf */}
-      {showcase.essentials.length > 0 && (
-        <GameShelf
-          title="Essentials"
-          games={showcase.essentials}
-          isLoading={false}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      )}
-
-      {/* Hidden Gems Shelf */}
-      {showcase.hiddenGems.length > 0 && (
-        <GameShelf
-          title="Hidden Gems"
-          games={showcase.hiddenGems}
-          isLoading={false}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      )}
-
-      {/* Genre Breakdown */}
-      {showcase.genreBreakdown.length > 0 && (
-        <section data-testid="genre-breakdown" aria-labelledby="genre-breakdown-heading">
-          <h2 id="genre-breakdown-heading" className="text-xl font-bold text-surface-100 mb-5">
-            Genre Breakdown
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {showcase.genreBreakdown.map((genre: GenreCount) => (
-              <div
-                key={genre.name}
-                className="rounded-xl border border-white/[0.06] p-4"
-                style={{
-                  background: `linear-gradient(135deg, ${colorTheme}15, transparent)`,
-                }}
-                data-testid={`genre-card-${genre.name}`}
-              >
-                <p className="text-sm font-semibold text-surface-100">
-                  {genre.name}
-                </p>
-                <p className="text-xs text-surface-400 mt-1">
-                  {genre.gameCount}{" "}
-                  {genre.gameCount === 1 ? "game" : "games"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Studios That Defined This Console */}
-      {showcase.topDevelopers.length > 0 && (
-        <section data-testid="top-developers" aria-labelledby="top-developers-heading">
-          <h2 id="top-developers-heading" className="text-xl font-bold text-surface-100 mb-5">
-            Studios That Defined This Console
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {showcase.topDevelopers.map((dev: DeveloperSummary) => (
-              <Link
-                key={dev.name}
-                to={`/explore/developers/${encodeURIComponent(dev.name)}`}
-                className="group/dev rounded-xl border border-white/[0.06] p-4 transition-colors hover:border-white/[0.12]"
-                style={{
-                  background: `linear-gradient(135deg, ${colorTheme}10, transparent)`,
-                }}
-                data-testid={`developer-card-${dev.name}`}
-              >
-                <p className="text-sm font-semibold text-surface-100 group-hover/dev:text-brand-400 transition-colors">
-                  {dev.name}
-                </p>
-                <p className="text-xs text-surface-400 mt-1">
-                  {dev.gameCount}{" "}
-                  {dev.gameCount === 1 ? "game" : "games"}
-                </p>
-                {dev.avgRating > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs text-surface-400 mt-1">
-                    <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                    {dev.avgRating.toFixed(1)}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recently Played */}
-      {showcase.recentlyPlayed.length > 0 && (
-        <div data-testid="recently-played-section">
-          <GameShelf
-            title="Recently Played"
-            games={showcase.recentlyPlayed}
-            isLoading={false}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </div>
-      )}
+      <ConsoleEssentials consoleId={id!} />
+      <ConsoleHiddenGems consoleId={id!} />
+      <ConsoleGenreBreakdown consoleId={id!} />
+      <ConsoleTopDevelopers consoleId={id!} />
+      <ConsoleRecentlyPlayed consoleId={id!} />
     </div>
   );
 }
