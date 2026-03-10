@@ -47,7 +47,13 @@ import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.SocialSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
+import com.spela.player.presentation.ui.feature.explore.AchievementSectionSkeleton
+import com.spela.player.presentation.ui.feature.explore.ActiveChallengesSection
+import com.spela.player.presentation.ui.feature.explore.AlmostDoneSection
 import com.spela.player.presentation.ui.feature.explore.AnniversariesSection
+import com.spela.player.presentation.ui.feature.explore.EasyToCompleteSection
+import com.spela.player.presentation.ui.feature.explore.FreshChallengesSection
+import com.spela.player.presentation.ui.feature.explore.HardestGamesSection
 import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
 import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.TrendingSection
@@ -65,6 +71,7 @@ fun ExploreScreen(
     onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
     onDeveloperSelected: ((name: String) -> Unit)? = null,
     onConsoleSelected: ((consoleId: String) -> Unit)? = null,
+    onChallengeSelected: ((challengeId: String) -> Unit)? = null,
     onGallerySelected: (() -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
 ) {
@@ -534,6 +541,138 @@ fun ExploreScreen(
                                 AnniversariesSection(
                                     anniversaries = state.anniversaries,
                                     onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Easy to 100%
+                    item {
+                        if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Easy to 100%",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.easyToCompleteGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Easy to 100%",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_easy_to_complete_section"),
+                            ) {
+                                EasyToCompleteSection(
+                                    games = state.easyToCompleteGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Mount Everest (Hardest)
+                    item {
+                        if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Mount Everest",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.hardestGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Mount Everest",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_hardest_games_section"),
+                            ) {
+                                HardestGamesSection(
+                                    games = state.hardestGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Almost Done
+                    item {
+                        if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Almost Done",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.almostDoneGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Almost Done",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_almost_done_section"),
+                            ) {
+                                AlmostDoneSection(
+                                    games = state.almostDoneGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Fresh Challenges
+                    item {
+                        if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Fresh Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.freshChallengeGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Fresh Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_fresh_challenges_section"),
+                            ) {
+                                FreshChallengesSection(
+                                    games = state.freshChallengeGames,
+                                    onGameClick = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Achievement Discovery: Active Challenges
+                    item {
+                        if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
+                            SpTitledSection(
+                                title = "Active Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                AchievementSectionSkeleton()
+                            }
+                        } else if (state.activeChallenges.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Active Challenges",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_active_challenges_section"),
+                            ) {
+                                ActiveChallengesSection(
+                                    challenges = state.activeChallenges,
+                                    onChallengeClick = { challengeId ->
+                                        onChallengeSelected?.invoke(challengeId)
+                                    },
                                 )
                             }
                         }

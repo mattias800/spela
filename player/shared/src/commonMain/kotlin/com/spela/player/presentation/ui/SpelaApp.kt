@@ -459,6 +459,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
+                                        onChallengeSelected = { challengeId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ChallengeDetail(challengeId))
+                                            )
+                                        },
                                         onThemeSelected = { themeId, themeName ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreTheme(themeId, themeName))

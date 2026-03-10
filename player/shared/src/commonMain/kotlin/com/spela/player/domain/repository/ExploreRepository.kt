@@ -1,6 +1,8 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AlmostDoneGame
 import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
@@ -10,10 +12,12 @@ import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
+import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.ForYouRow
+import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
@@ -61,4 +65,9 @@ interface ExploreRepository {
     suspend fun getBestOfYear(year: Int): Result<List<Game>>
     suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>>
     suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>>
+    suspend fun getEasyToComplete(): Result<List<AchievementGameItem>>
+    suspend fun getHardestGames(): Result<List<AchievementGameItem>>
+    suspend fun getAlmostDone(): Result<List<AlmostDoneGame>>
+    suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>>
+    suspend fun getActiveChallenges(): Result<List<ExploreChallenge>>
 }

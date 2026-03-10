@@ -1181,3 +1181,63 @@ export interface DecadeResponse {
   label: string;
   games: Game[];
 }
+
+// --- Phase 12: Achievement & Challenge Discovery ---
+
+export interface AchievementGameItem {
+  game: Game;
+  totalAchievements: number;
+  avgCompletion: number;
+  playersAttempted: number;
+  playersCompleted: number;
+}
+
+export interface EasyToCompleteResponse {
+  games: AchievementGameItem[];
+}
+
+export interface HardestGamesResponse {
+  games: AchievementGameItem[];
+}
+
+export interface AlmostDoneGame {
+  game: Game;
+  unlockedCount: number;
+  totalCount: number;
+  completionPercent: number;
+}
+
+export interface AlmostDoneResponse {
+  games: AlmostDoneGame[];
+}
+
+export interface FreshChallengeGame {
+  game: Game;
+  totalAchievements: number;
+  totalPoints: number;
+}
+
+export interface FreshChallengesResponse {
+  games: FreshChallengeGame[];
+}
+
+export interface ExploreChallenge {
+  id: string;
+  creatorUsername: string;
+  gameId: string;
+  gameTitle: string;
+  gameCoverUrl?: string;
+  consoleName?: string;
+  name: string;
+  description?: string;
+  type: ChallengeType;
+  difficulty: ChallengeDifficulty;
+  attemptCount: number;
+  completionCount: number;
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export interface ActiveChallengesResponse {
+  challenges: ExploreChallenge[];
+}

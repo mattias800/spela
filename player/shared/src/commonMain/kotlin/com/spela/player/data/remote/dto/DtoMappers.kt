@@ -786,3 +786,43 @@ fun AnniversaryItemDto.toDomain(): AnniversaryItem = AnniversaryItem(
     yearsAgo = yearsAgo,
     playedAt = playedAt,
 )
+
+// --- Phase 12: Achievement & Challenge-Driven Discovery ---
+
+fun AchievementGameItemDto.toDomain() = AchievementGameItem(
+    game = game.toDomain(),
+    totalAchievements = totalAchievements,
+    avgCompletion = avgCompletion,
+    playersAttempted = playersAttempted,
+    playersCompleted = playersCompleted,
+)
+
+fun AlmostDoneGameDto.toDomain() = AlmostDoneGame(
+    game = game.toDomain(),
+    unlockedCount = unlockedCount,
+    totalCount = totalCount,
+    completionPercent = completionPercent,
+)
+
+fun FreshChallengeGameDto.toDomain() = FreshChallengeGame(
+    game = game.toDomain(),
+    totalAchievements = totalAchievements,
+    totalPoints = totalPoints,
+)
+
+fun ExploreChallengeDto.toDomain() = ExploreChallenge(
+    id = id,
+    creatorUsername = creatorUsername,
+    gameId = gameId,
+    gameTitle = gameTitle,
+    gameCoverUrl = gameCoverUrl,
+    consoleName = consoleName,
+    name = name,
+    description = description,
+    type = type,
+    difficulty = difficulty,
+    attemptCount = attemptCount,
+    completionCount = completionCount,
+    expiresAt = expiresAt,
+    createdAt = createdAt,
+)

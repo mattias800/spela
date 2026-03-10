@@ -28,6 +28,13 @@ import {
   DEFAULT_YEAR,
 } from "@/features/explore/components/temporal-shelves";
 import {
+  EasyToCompleteShelf,
+  HardestGamesShelf,
+  AlmostDoneShelf,
+  FreshChallengesShelf,
+  ActiveChallengesShelf,
+} from "@/features/explore/components/achievement-shelves";
+import {
   useExploreFeatured,
   useExploreRows,
   useThemes,
@@ -48,6 +55,11 @@ import {
   useBestOfYear,
   useYourAnniversaries,
   useDecade,
+  useEasyToComplete,
+  useHardestGames,
+  useAlmostDone,
+  useFreshChallenges,
+  useActiveChallenges,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -136,6 +148,26 @@ export function ExplorePage() {
     data: decadeData,
     isLoading: isDecadeLoading,
   } = useDecade("90s");
+  const {
+    data: easyToCompleteData,
+    isLoading: isEasyToCompleteLoading,
+  } = useEasyToComplete();
+  const {
+    data: hardestGamesData,
+    isLoading: isHardestGamesLoading,
+  } = useHardestGames();
+  const {
+    data: almostDoneData,
+    isLoading: isAlmostDoneLoading,
+  } = useAlmostDone();
+  const {
+    data: freshChallengesData,
+    isLoading: isFreshChallengesLoading,
+  } = useFreshChallenges();
+  const {
+    data: activeChallengesData,
+    isLoading: isActiveChallengesLoading,
+  } = useActiveChallenges();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -287,6 +319,40 @@ export function ExplorePage() {
         isLoading={isDecadeLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Achievement & Challenge Discovery */}
+      <EasyToCompleteShelf
+        data={easyToCompleteData}
+        isLoading={isEasyToCompleteLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <HardestGamesShelf
+        data={hardestGamesData}
+        isLoading={isHardestGamesLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <AlmostDoneShelf
+        data={almostDoneData}
+        isLoading={isAlmostDoneLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <FreshChallengesShelf
+        data={freshChallengesData}
+        isLoading={isFreshChallengesLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <ActiveChallengesShelf
+        data={activeChallengesData}
+        isLoading={isActiveChallengesLoading}
       />
 
       {/* First shelf row */}

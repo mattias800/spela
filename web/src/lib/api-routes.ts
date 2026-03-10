@@ -47,6 +47,13 @@ export type ApiGetPath = WithQuery<
   | "/explore/recently-reviewed"
   | "/explore/active-now"
 
+  // Achievement & Challenge Discovery
+  | "/explore/easy-to-complete"
+  | "/explore/hardest-games"
+  | "/explore/almost-done"
+  | "/explore/fresh-challenges"
+  | "/explore/active-challenges"
+
   // Developers & Publishers
   | "/explore/developers"
   | "/explore/developers/spotlight"

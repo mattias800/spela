@@ -1,6 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AlmostDoneGame
 import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
@@ -9,10 +11,12 @@ import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
+import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.ForYouRow
+import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
@@ -53,6 +57,11 @@ data class ExploreState(
     val onThisDayDate: String = "",
     val onThisDayGames: List<Game> = emptyList(),
     val anniversaries: List<AnniversaryItem> = emptyList(),
+    val easyToCompleteGames: List<AchievementGameItem> = emptyList(),
+    val hardestGames: List<AchievementGameItem> = emptyList(),
+    val almostDoneGames: List<AlmostDoneGame> = emptyList(),
+    val freshChallengeGames: List<FreshChallengeGame> = emptyList(),
+    val activeChallenges: List<ExploreChallenge> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -65,10 +74,11 @@ data class ExploreState(
     val isLoadingArtwork: Boolean = false,
     val isLoadingSocial: Boolean = false,
     val isLoadingTemporal: Boolean = false,
+    val isLoadingAchievement: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork || isLoadingSocial || isLoadingTemporal
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && trendingGames.isEmpty() && communityTopGames.isEmpty() && cultClassics.isEmpty() && recentReviews.isEmpty() && activeNowGames.isEmpty() && onThisDayGames.isEmpty() && anniversaries.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight || isLoadingConsoleHighlights || isLoadingArtwork || isLoadingSocial || isLoadingTemporal || isLoadingAchievement
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && consoleHighlights.isEmpty() && artworkShowcase.isEmpty() && trendingGames.isEmpty() && communityTopGames.isEmpty() && cultClassics.isEmpty() && recentReviews.isEmpty() && activeNowGames.isEmpty() && onThisDayGames.isEmpty() && anniversaries.isEmpty() && easyToCompleteGames.isEmpty() && hardestGames.isEmpty() && almostDoneGames.isEmpty() && freshChallengeGames.isEmpty() && activeChallenges.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -198,6 +208,7 @@ class ExploreViewModel(
     private var artworkShowcaseJob: Job? = null
     private var socialJob: Job? = null
     private var temporalJob: Job? = null
+    private var achievementJob: Job? = null
     private var screenshotGalleryJob: Job? = null
 
     fun load() {
@@ -213,6 +224,7 @@ class ExploreViewModel(
         loadArtworkShowcase()
         loadSocialData()
         loadTemporalData()
+        loadAchievementData()
     }
 
     fun dismissError() {
@@ -578,6 +590,31 @@ class ExploreViewModel(
                     onThisDayGames = onThisDayResult.getOrNull()?.second ?: emptyList(),
                     anniversaries = anniversariesDeferred.await().getOrDefault(emptyList()),
                     isLoadingTemporal = false,
+                )
+            }
+        }
+    }
+
+    private fun loadAchievementData() {
+        if (achievementJob?.isActive == true) return
+        _state.update { it.copy(isLoadingAchievement = true) }
+        achievementJob = scope.launch(dispatchers.io) {
+            val easyDeferred = async { exploreRepository.getEasyToComplete() }
+            val hardestDeferred = async { exploreRepository.getHardestGames() }
+            val almostDoneDeferred = async { exploreRepository.getAlmostDone() }
+            val freshDeferred = async { exploreRepository.getFreshChallenges() }
+            val activeDeferred = async { exploreRepository.getActiveChallenges() }
+
+            awaitAll(easyDeferred, hardestDeferred, almostDoneDeferred, freshDeferred, activeDeferred)
+
+            _state.update { current ->
+                current.copy(
+                    easyToCompleteGames = easyDeferred.await().getOrDefault(emptyList()),
+                    hardestGames = hardestDeferred.await().getOrDefault(emptyList()),
+                    almostDoneGames = almostDoneDeferred.await().getOrDefault(emptyList()),
+                    freshChallengeGames = freshDeferred.await().getOrDefault(emptyList()),
+                    activeChallenges = activeDeferred.await().getOrDefault(emptyList()),
+                    isLoadingAchievement = false,
                 )
             }
         }
