@@ -13,6 +13,13 @@ import { ForYouSection } from "@/features/explore/components/for-you-section";
 import { PlayersLikeYouShelf } from "@/features/explore/components/players-like-you-shelf";
 import { ConsoleQuickJump } from "@/features/explore/components/console-quick-jump";
 import {
+  TrendingShelf,
+  CommunityTopShelf,
+  CultClassicsShelf,
+  RecentlyReviewedShelf,
+  ActiveNowShelf,
+} from "@/features/explore/components/social-shelves";
+import {
   useExploreFeatured,
   useExploreRows,
   useThemes,
@@ -24,6 +31,11 @@ import {
   useDeveloperSpotlight,
   useConsoleHighlights,
   useArtworkGallery,
+  useTrending,
+  useCommunityTop,
+  useCultClassics,
+  useRecentlyReviewed,
+  useActiveNow,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -75,6 +87,26 @@ export function ExplorePage() {
     data: artworkData,
     isLoading: isArtworkLoading,
   } = useArtworkGallery(1);
+  const {
+    data: trendingData,
+    isLoading: isTrendingLoading,
+  } = useTrending();
+  const {
+    data: communityTopData,
+    isLoading: isCommunityTopLoading,
+  } = useCommunityTop();
+  const {
+    data: cultClassicsData,
+    isLoading: isCultClassicsLoading,
+  } = useCultClassics();
+  const {
+    data: recentlyReviewedData,
+    isLoading: isRecentlyReviewedLoading,
+  } = useRecentlyReviewed();
+  const {
+    data: activeNowData,
+    isLoading: isActiveNowLoading,
+  } = useActiveNow();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -153,6 +185,46 @@ export function ExplorePage() {
         games={playersLikeYouData?.games}
         isLoading={isPlayersLoading}
         similarUsersCount={playersLikeYouData?.similarUsersCount ?? 0}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Trending */}
+      <TrendingShelf
+        games={trendingData?.games}
+        isLoading={isTrendingLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Community Favorites */}
+      <CommunityTopShelf
+        games={communityTopData?.games}
+        isLoading={isCommunityTopLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Cult Classics */}
+      <CultClassicsShelf
+        games={cultClassicsData?.games}
+        isLoading={isCultClassicsLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Active Right Now */}
+      <ActiveNowShelf
+        games={activeNowData?.games}
+        isLoading={isActiveNowLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Recently Reviewed */}
+      <RecentlyReviewedShelf
+        reviews={recentlyReviewedData?.reviews}
+        isLoading={isRecentlyReviewedLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
       />

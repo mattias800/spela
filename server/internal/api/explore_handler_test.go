@@ -2729,3 +2729,277 @@ func TestGetCoverGallery_Pagination(t *testing.T) {
 	// Page 2 should have different games than page 1
 	assert.NotEqual(t, resp1.Covers[0].GameID, resp2.Covers[0].GameID)
 }
+
+// --- Phase 10: Social & Community Discovery tests ---
+
+func TestGetTrending_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/trending", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp TrendingResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetTrending_ReturnsGamesByPlayerCount(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Trending Game 1", 85.0)
+	game2 := createExploreGame(t, env.database, "NES", "Trending Game 2", 75.0)
+
+	var user1 db.User
+	require.NoError(t, env.database.First(&user1).Error)
+
+	user2Token := createNonOwnerUser(t, env.router, env.token, "trending_player", "trending@example.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "trending_player").First(&user2).Error)
+
+	// game1: played by 2 users this week
+	env.database.Create(&db.PlayHistory{UserID: user1.ID, GameID: game1.ID, PlayTime: 100, LastPlayed: time.Now()})
+	env.database.Create(&db.PlayHistory{UserID: user2.ID, GameID: game1.ID, PlayTime: 200, LastPlayed: time.Now()})
+	// game2: played by 1 user this week
+	env.database.Create(&db.PlayHistory{UserID: user1.ID, GameID: game2.ID, PlayTime: 300, LastPlayed: time.Now()})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/trending", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp TrendingResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 2)
+	// game1 (2 players) should come first
+	assert.Equal(t, "Trending Game 1", resp.Games[0].Game.Title)
+	assert.Equal(t, 2, resp.Games[0].PlayersThisWeek)
+	assert.Equal(t, "Trending Game 2", resp.Games[1].Game.Title)
+	assert.Equal(t, 1, resp.Games[1].PlayersThisWeek)
+}
+
+func TestGetTrending_ExcludesOldActivity(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Old Game", 90.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Play history from 10 days ago — should NOT appear in trending
+	env.database.Create(&db.PlayHistory{UserID: user.ID, GameID: game.ID, PlayTime: 500, LastPlayed: time.Now().AddDate(0, 0, -10)})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/trending", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp TrendingResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetCommunityTop_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/community-top", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CommunityTopResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetCommunityTop_RequiresMinRatings(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "One Rating Game", 80.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Only 1 rating — should not appear (minimum is 2)
+	env.database.Create(&db.GameRating{UserID: user.ID, GameID: game.ID, Rating: 5})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/community-top", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CommunityTopResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetCommunityTop_ReturnsRankedGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Community Best", 60.0)
+	game2 := createExploreGame(t, env.database, "NES", "Community Good", 90.0)
+
+	var user1 db.User
+	require.NoError(t, env.database.First(&user1).Error)
+	user2Token := createNonOwnerUser(t, env.router, env.token, "rater2", "rater2@example.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "rater2").First(&user2).Error)
+
+	// game1: avg 5.0
+	env.database.Create(&db.GameRating{UserID: user1.ID, GameID: game1.ID, Rating: 5})
+	env.database.Create(&db.GameRating{UserID: user2.ID, GameID: game1.ID, Rating: 5})
+	// game2: avg 3.5
+	env.database.Create(&db.GameRating{UserID: user1.ID, GameID: game2.ID, Rating: 4})
+	env.database.Create(&db.GameRating{UserID: user2.ID, GameID: game2.ID, Rating: 3})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/community-top", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CommunityTopResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 2)
+	assert.Equal(t, "Community Best", resp.Games[0].Game.Title)
+	assert.Equal(t, 5.0, resp.Games[0].AvgRating)
+	assert.Equal(t, 2, resp.Games[0].RatingCount)
+}
+
+func TestGetCultClassics_ReturnsHighCommunityLowIGDB(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Cult classic: high community rating but low IGDB
+	cult := createExploreGame(t, env.database, "SNES", "Cult Classic", 50.0)
+	// Not a cult classic: high IGDB rating too
+	nonCult := createExploreGame(t, env.database, "NES", "Mainstream Hit", 90.0)
+
+	var user1 db.User
+	require.NoError(t, env.database.First(&user1).Error)
+	user2Token := createNonOwnerUser(t, env.router, env.token, "cult_rater", "cult@example.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "cult_rater").First(&user2).Error)
+
+	// Both get high community ratings
+	env.database.Create(&db.GameRating{UserID: user1.ID, GameID: cult.ID, Rating: 5})
+	env.database.Create(&db.GameRating{UserID: user2.ID, GameID: cult.ID, Rating: 4})
+	env.database.Create(&db.GameRating{UserID: user1.ID, GameID: nonCult.ID, Rating: 5})
+	env.database.Create(&db.GameRating{UserID: user2.ID, GameID: nonCult.ID, Rating: 5})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/cult-classics", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CultClassicsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	// Only the cult classic (IGDB < 75) should appear
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Cult Classic", resp.Games[0].Game.Title)
+	assert.GreaterOrEqual(t, resp.Games[0].CommunityRating, 4.0)
+	assert.Less(t, resp.Games[0].IgdbRating, 75.0)
+}
+
+func TestGetRecentlyReviewed_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/recently-reviewed", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp RecentlyReviewedResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Reviews)
+}
+
+func TestGetRecentlyReviewed_ReturnsReviewsWithText(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Reviewed Game", 85.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Rating with review text — should appear
+	env.database.Create(&db.GameRating{UserID: user.ID, GameID: game.ID, Rating: 4, Review: "Great classic RPG!"})
+	// Rating without review text — should NOT appear
+	game2 := createExploreGame(t, env.database, "NES", "No Review Game", 70.0)
+	user2Token := createNonOwnerUser(t, env.router, env.token, "reviewer2", "reviewer2@example.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "reviewer2").First(&user2).Error)
+	env.database.Create(&db.GameRating{UserID: user2.ID, GameID: game2.ID, Rating: 3})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/recently-reviewed", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp RecentlyReviewedResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Reviews, 1)
+	assert.Equal(t, "Reviewed Game", resp.Reviews[0].Game.Title)
+	assert.Equal(t, 4, resp.Reviews[0].Rating)
+	assert.Equal(t, "Great classic RPG!", resp.Reviews[0].Review)
+}
+
+func TestGetActiveNow_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/active-now", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ActiveNowResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetActiveNow_ReturnsMergedSessions(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Active Game", 88.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create active shared session
+	env.database.Create(&db.SharedSession{
+		OwnerID: user.ID,
+		GameID:  game.ID,
+		Name:    "Test Session",
+		Status:  "active",
+	})
+	// Create active challenge
+	env.database.Create(&db.Challenge{
+		CreatorID:    user.ID,
+		GameID:       game.ID,
+		Name:         "Speed Run",
+		Status:       "active",
+		SaveFilePath: "/tmp/test.sav",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/active-now", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ActiveNowResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Active Game", resp.Games[0].Game.Title)
+	assert.Equal(t, 1, resp.Games[0].ActiveSessions)
+	assert.Equal(t, 1, resp.Games[0].ActiveChallenges)
+}

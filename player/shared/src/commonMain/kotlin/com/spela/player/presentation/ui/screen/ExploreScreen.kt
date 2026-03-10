@@ -22,10 +22,13 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ActiveNowSection
 import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSection
 import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSkeleton
+import com.spela.player.presentation.ui.feature.explore.CommunityTopSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleQuickJumpSkeleton
+import com.spela.player.presentation.ui.feature.explore.CultClassicsSection
 import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSection
 import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSkeleton
 import com.spela.player.presentation.ui.feature.explore.ForYouSection
@@ -38,10 +41,13 @@ import com.spela.player.presentation.ui.feature.explore.KeywordChips
 import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
 import com.spela.player.presentation.ui.feature.explore.MoodPicker
 import com.spela.player.presentation.ui.feature.explore.MoodPickerSkeleton
+import com.spela.player.presentation.ui.feature.explore.RecentlyReviewedSection
 import com.spela.player.presentation.ui.feature.explore.SeriesShelf
 import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
+import com.spela.player.presentation.ui.feature.explore.SocialSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
+import com.spela.player.presentation.ui.feature.explore.TrendingSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
@@ -337,6 +343,137 @@ fun ExploreScreen(
                                     artworks = state.artworkShowcase,
                                     onGameSelected = onGameSelected,
                                     onGallerySelected = onGallerySelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Social & Community Discovery sections
+                    // Trending
+                    item {
+                        if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Trending on Your Server",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.trendingGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Trending on Your Server",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_trending_section"),
+                            ) {
+                                TrendingSection(
+                                    games = state.trendingGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Community Favorites
+                    item {
+                        if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Community Favorites",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.communityTopGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Community Favorites",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_community_top_section"),
+                            ) {
+                                CommunityTopSection(
+                                    games = state.communityTopGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Cult Classics
+                    item {
+                        if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
+                            SpTitledSection(
+                                title = "Cult Classics",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.cultClassics.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Cult Classics",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_cult_classics_section"),
+                            ) {
+                                CultClassicsSection(
+                                    games = state.cultClassics,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Active Right Now
+                    item {
+                        if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "Active Right Now",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.activeNowGames.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Active Right Now",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_active_now_section"),
+                            ) {
+                                ActiveNowSection(
+                                    games = state.activeNowGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Recently Reviewed
+                    item {
+                        if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
+                            SpTitledSection(
+                                title = "Recently Reviewed",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SocialSectionSkeleton()
+                            }
+                        } else if (state.recentReviews.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Recently Reviewed",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_recently_reviewed_section"),
+                            ) {
+                                RecentlyReviewedSection(
+                                    reviews = state.recentReviews,
+                                    onGameSelected = onGameSelected,
                                 )
                             }
                         }

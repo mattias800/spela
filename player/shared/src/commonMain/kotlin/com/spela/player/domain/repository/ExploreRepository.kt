@@ -1,8 +1,11 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.ActiveNowItem
 import com.spela.player.domain.model.ArtworkItem
+import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
+import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
@@ -16,10 +19,12 @@ import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
+import com.spela.player.domain.model.RecentReviewItem
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
+import com.spela.player.domain.model.TrendingGame
 
 interface ExploreRepository {
     suspend fun getFeaturedGames(): Result<List<FeaturedGame>>
@@ -46,4 +51,9 @@ interface ExploreRepository {
     suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>>
     suspend fun getArtworkGallery(page: Int = 1): Result<List<ArtworkItem>>
     suspend fun getScreenshotGallery(page: Int = 1): Result<List<ScreenshotItem>>
+    suspend fun getTrending(): Result<List<TrendingGame>>
+    suspend fun getCommunityTop(): Result<List<CommunityTopGame>>
+    suspend fun getCultClassics(): Result<List<CultClassicGame>>
+    suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>>
+    suspend fun getActiveNow(): Result<List<ActiveNowItem>>
 }

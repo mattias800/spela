@@ -1272,3 +1272,67 @@ data class ScreenshotGalleryResponseDto(
     val totalPages: Int,
     val totalCount: Int,
 )
+
+// --- Phase 10: Social & Community Discovery ---
+
+@Serializable
+data class TrendingGameDto(
+    val game: GameDto,
+    val playersThisWeek: Int,
+)
+
+@Serializable
+data class TrendingResponseDto(
+    val games: List<TrendingGameDto>,
+)
+
+@Serializable
+data class CommunityTopGameDto(
+    val game: GameDto,
+    val avgRating: Double,
+    val ratingCount: Int,
+)
+
+@Serializable
+data class CommunityTopResponseDto(
+    val games: List<CommunityTopGameDto>,
+)
+
+@Serializable
+data class CultClassicGameDto(
+    val game: GameDto,
+    val communityRating: Double,
+    val igdbRating: Double,
+    val ratingCount: Int,
+)
+
+@Serializable
+data class CultClassicsResponseDto(
+    val games: List<CultClassicGameDto>,
+)
+
+@Serializable
+data class RecentReviewItemDto(
+    val game: GameDto,
+    val rating: Int,
+    val review: String,
+    val reviewerName: String,
+    val reviewedAt: String,
+)
+
+@Serializable
+data class RecentlyReviewedResponseDto(
+    val reviews: List<RecentReviewItemDto>,
+)
+
+@Serializable
+data class ActiveNowItemDto(
+    val game: GameDto,
+    val activeSessions: Int,
+    val activeChallenges: Int,
+)
+
+@Serializable
+data class ActiveNowResponseDto(
+    val games: List<ActiveNowItemDto>,
+)

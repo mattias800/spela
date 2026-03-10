@@ -254,6 +254,11 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/screenshots", exploreHandler.GetScreenshotGallery)
 			explore.GET("/artwork", exploreHandler.GetArtworkGallery)
 			explore.GET("/covers", exploreHandler.GetCoverGallery)
+			explore.GET("/trending", exploreHandler.GetTrending)
+			explore.GET("/community-top", exploreHandler.GetCommunityTop)
+			explore.GET("/cult-classics", exploreHandler.GetCultClassics)
+			explore.GET("/recently-reviewed", exploreHandler.GetRecentlyReviewed)
+			explore.GET("/active-now", exploreHandler.GetActiveNow)
 		}
 
 		// Games

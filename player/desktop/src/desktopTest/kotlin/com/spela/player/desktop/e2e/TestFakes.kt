@@ -1343,6 +1343,11 @@ class FakeExploreRepository : ExploreRepository {
     var consoleHighlightsList: List<ConsoleHighlight> = emptyList()
     var artworkItems: List<ArtworkItem> = emptyList()
     var screenshotItems: List<ScreenshotItem> = emptyList()
+    var trendingGames: List<TrendingGame> = emptyList()
+    var communityTopGames: List<CommunityTopGame> = emptyList()
+    var cultClassicsList: List<CultClassicGame> = emptyList()
+    var recentReviews: List<RecentReviewItem> = emptyList()
+    var activeNowGames: List<ActiveNowItem> = emptyList()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1472,6 +1477,26 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> =
         if (shouldFail) Result.failure(Exception("Failed to load screenshot gallery"))
         else Result.success(screenshotItems)
+
+    override suspend fun getTrending(): Result<List<TrendingGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load trending"))
+        else Result.success(trendingGames)
+
+    override suspend fun getCommunityTop(): Result<List<CommunityTopGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load community top"))
+        else Result.success(communityTopGames)
+
+    override suspend fun getCultClassics(): Result<List<CultClassicGame>> =
+        if (shouldFail) Result.failure(Exception("Failed to load cult classics"))
+        else Result.success(cultClassicsList)
+
+    override suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load recently reviewed"))
+        else Result.success(recentReviews)
+
+    override suspend fun getActiveNow(): Result<List<ActiveNowItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load active now"))
+        else Result.success(activeNowGames)
 }
 
 class FakeCheatRepository : CheatRepository {

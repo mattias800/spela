@@ -18,6 +18,11 @@ vi.mock("@/hooks/use-explore", () => ({
   useDeveloperSpotlight: vi.fn(),
   useConsoleHighlights: vi.fn(),
   useArtworkGallery: vi.fn(),
+  useTrending: vi.fn(),
+  useCommunityTop: vi.fn(),
+  useCultClassics: vi.fn(),
+  useRecentlyReviewed: vi.fn(),
+  useActiveNow: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -41,7 +46,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -54,6 +59,11 @@ const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
 const mockUseDeveloperSpotlight = useDeveloperSpotlight as ReturnType<typeof vi.fn>;
 const mockUseConsoleHighlights = useConsoleHighlights as ReturnType<typeof vi.fn>;
 const mockUseArtworkGallery = useArtworkGallery as ReturnType<typeof vi.fn>;
+const mockUseTrending = useTrending as ReturnType<typeof vi.fn>;
+const mockUseCommunityTop = useCommunityTop as ReturnType<typeof vi.fn>;
+const mockUseCultClassics = useCultClassics as ReturnType<typeof vi.fn>;
+const mockUseRecentlyReviewed = useRecentlyReviewed as ReturnType<typeof vi.fn>;
+const mockUseActiveNow = useActiveNow as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -246,6 +256,26 @@ describe("ExplorePage", () => {
     });
     mockUseArtworkGallery.mockReturnValue({
       data: { artworks: [], page: 1, totalPages: 0, totalCount: 0 },
+      isLoading: false,
+    });
+    mockUseTrending.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseCommunityTop.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseCultClassics.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseRecentlyReviewed.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseActiveNow.mockReturnValue({
+      data: undefined,
       isLoading: false,
     });
   });
