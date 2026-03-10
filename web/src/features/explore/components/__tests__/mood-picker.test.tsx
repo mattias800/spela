@@ -1,19 +1,9 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { MoodPicker } from "@/features/explore/components/mood-picker";
 import type { MoodDefinition } from "@/types/api";
-
-// Mock use-explore hooks
-const mockRefetch = vi.fn();
-vi.mock("@/hooks/use-explore", () => ({
-  useSurpriseGame: vi.fn(() => ({
-    data: undefined,
-    refetch: mockRefetch,
-    isSuccess: false,
-  })),
-}));
 
 const mockMoods: MoodDefinition[] = [
   {
@@ -107,18 +97,6 @@ describe("MoodPicker", () => {
 
     const intenseLink = screen.getByTestId("mood-card-intense");
     expect(intenseLink).toHaveAttribute("href", "/explore/mood/intense");
-  });
-
-  it("renders the surprise me button", () => {
-    renderComponent();
-    expect(screen.getByTestId("surprise-me-button")).toBeInTheDocument();
-    expect(screen.getByText("Surprise Me")).toBeInTheDocument();
-  });
-
-  it("calls refetch when surprise me button is clicked", () => {
-    renderComponent();
-    fireEvent.click(screen.getByTestId("surprise-me-button"));
-    expect(mockRefetch).toHaveBeenCalled();
   });
 
   it("renders mood descriptions", () => {

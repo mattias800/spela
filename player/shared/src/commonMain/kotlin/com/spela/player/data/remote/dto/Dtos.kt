@@ -1455,3 +1455,65 @@ data class CreateSavedSearchRequest(
     val name: String,
     val filters: Map<String, JsonPrimitive>,
 )
+
+// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+
+@Serializable
+data class WizardOptionDto(
+    val id: String,
+    val label: String,
+    val description: String = "",
+    val imageUrl: String = "",
+)
+
+@Serializable
+data class WizardStepDto(
+    val step: Int,
+    val title: String,
+    val type: String,
+    val options: List<WizardOptionDto>,
+)
+
+@Serializable
+data class WizardResponseDto(
+    val steps: List<WizardStepDto>,
+)
+
+@Serializable
+data class WizardResultsResponseDto(
+    val games: List<GameDto>,
+    val title: String,
+)
+
+@Serializable
+data class ExplorerBadgeDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: String,
+    val earned: Boolean,
+    val progress: Int,
+    val target: Int,
+)
+
+@Serializable
+data class ExplorerBadgesResponseDto(
+    val badges: List<ExplorerBadgeDto>,
+)
+
+@Serializable
+data class CompletionistConsoleDto(
+    val id: String,
+    val name: String,
+    val totalGames: Int,
+    val playedGames: Int,
+    val percentage: Int,
+)
+
+@Serializable
+data class CompletionistMapResponseDto(
+    val consoles: List<CompletionistConsoleDto>,
+    val totalGames: Int,
+    val totalPlayed: Int,
+    val overallPct: Int,
+)

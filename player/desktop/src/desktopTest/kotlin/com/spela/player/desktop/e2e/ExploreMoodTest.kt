@@ -174,7 +174,7 @@ class ExploreMoodTest {
     }
 
     @Test
-    fun surpriseMeButtonExists() = runComposeUiTest {
+    fun luckyButtonExistsInWildFeatures() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.moodsList = sampleMoods
 
@@ -182,8 +182,7 @@ class ExploreMoodTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Explore))
         advance(harness)
 
-        // The "Surprise Me" card should exist in the mood picker row.
-        // It may require scrolling since it's at the end of the LazyRow.
-        onNodeWithTag("mood_card_surprise").assertExists()
+        // The "I'm Feeling Lucky" button should exist in the Wild Features section.
+        onNodeWithTag("wild_lucky_button").assertExists()
     }
 }

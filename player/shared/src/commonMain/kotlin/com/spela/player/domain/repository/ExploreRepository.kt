@@ -25,12 +25,16 @@ import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.CompletionistMap
+import com.spela.player.domain.model.ExplorerBadge
 import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.model.TrendingGame
+import com.spela.player.domain.model.WizardResults
+import com.spela.player.domain.model.WizardStep
 
 interface ExploreRepository {
     suspend fun getFeaturedGames(): Result<List<FeaturedGame>>
@@ -75,4 +79,8 @@ interface ExploreRepository {
     suspend fun getSavedSearches(): Result<List<SavedSearch>>
     suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch>
     suspend fun deleteSavedSearch(id: String): Result<Unit>
+    suspend fun getWizardSteps(): Result<List<WizardStep>>
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults>
+    suspend fun getExplorerBadges(): Result<List<ExplorerBadge>>
+    suspend fun getCompletionistMap(): Result<CompletionistMap>
 }

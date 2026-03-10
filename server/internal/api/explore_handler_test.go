@@ -3968,3 +3968,291 @@ func TestGetActiveChallenges_Empty(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Empty(t, resp.Challenges)
 }
+
+// --- Phase 14: Wild Features tests ---
+
+func TestGetSurpriseGame_WithFilters(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games with different consoles and genres
+	game := createExploreGame(t, env.database, "SNES", "SNES Action Game", 85.0)
+	env.database.Model(&game).Updates(map[string]interface{}{"cover_url": "http://example.com/cover.jpg", "genre": "Action"})
+	game2 := createExploreGame(t, env.database, "NES", "NES Puzzle Game", 75.0)
+	env.database.Model(&game2).Updates(map[string]interface{}{"cover_url": "http://example.com/cover2.jpg", "genre": "Puzzle"})
+
+	// Filter by console
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise?console=SNES", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var gameResp GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &gameResp))
+	assert.Equal(t, "SNES Action Game", gameResp.Title)
+}
+
+func TestGetSurpriseGame_WithGenreFilter(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Puzzle Master", 80.0)
+	env.database.Model(&game).Updates(map[string]interface{}{"cover_url": "http://example.com/cover.jpg", "genre": "Puzzle"})
+	game2 := createExploreGame(t, env.database, "SNES", "Action Hero", 80.0)
+	env.database.Model(&game2).Updates(map[string]interface{}{"cover_url": "http://example.com/cover2.jpg", "genre": "Action"})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise?genre=Puzzle", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var gameResp GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &gameResp))
+	assert.Equal(t, "Puzzle Master", gameResp.Title)
+}
+
+func TestGetSurpriseGame_WithMinRating(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Low Rated", 30.0)
+	env.database.Model(&game).Update("cover_url", "http://example.com/cover.jpg")
+	game2 := createExploreGame(t, env.database, "SNES", "High Rated", 90.0)
+	env.database.Model(&game2).Update("cover_url", "http://example.com/cover2.jpg")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise?minRating=80", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var gameResp GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &gameResp))
+	assert.Equal(t, "High Rated", gameResp.Title)
+}
+
+func TestGetSurpriseGame_NoMatch(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No games at all
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise?console=SNES&minRating=99", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetWizardSteps(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/wizard", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp WizardResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Len(t, resp.Steps, 3)
+	assert.Equal(t, "mood", resp.Steps[0].Type)
+	assert.Equal(t, "era", resp.Steps[1].Type)
+	assert.Equal(t, "vibe", resp.Steps[2].Type)
+	assert.Len(t, resp.Steps[0].Options, 5)
+}
+
+func TestGetWizardResults_ActionMood(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create action games with covers
+	for i := 0; i < 6; i++ {
+		g := createExploreGame(t, env.database, "SNES", fmt.Sprintf("Action Game %d", i), 80.0+float64(i))
+		env.database.Model(&g).Updates(map[string]interface{}{
+			"cover_url":    fmt.Sprintf("http://example.com/cover%d.jpg", i),
+			"genre":        "Action",
+			"release_date": "1993-01-01",
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/wizard/results?mood=action&era=early90s&vibe=solo", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp WizardResultsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.LessOrEqual(t, len(resp.Games), 5)
+	assert.Equal(t, "Action-Packed Picks", resp.Title)
+}
+
+func TestGetWizardResults_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No games, should return empty but still succeed
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/wizard/results?mood=story&era=80s&vibe=long", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp WizardResultsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.NotNil(t, resp.Games)
+}
+
+func TestGetExplorerBadges_NeverPlayed(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/explorer-badges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ExplorerBadgesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Len(t, resp.Badges, 6)
+	// All badges should have progress 0 and not be earned
+	for _, b := range resp.Badges {
+		assert.False(t, b.Earned, "Badge %s should not be earned", b.ID)
+		assert.Equal(t, 0, b.Progress, "Badge %s should have 0 progress", b.ID)
+	}
+}
+
+func TestGetExplorerBadges_WithPlayHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Get user ID
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create games on different consoles and genres
+	consoles := []string{"SNES", "NES", "GBA"}
+	genres := []string{"Action", "RPG", "Puzzle"}
+	for i, abbr := range consoles {
+		game := createExploreGame(t, env.database, abbr, fmt.Sprintf("Game %d", i), 80.0)
+		env.database.Model(&game).Update("genre", genres[i])
+		// Add play history
+		ph := db.PlayHistory{
+			UserID:   user.ID,
+			GameID:   game.ID,
+			PlayTime: 3600, // 1 hour each
+		}
+		require.NoError(t, env.database.Create(&ph).Error)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/explorer-badges", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp ExplorerBadgesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Find specific badges
+	var consoleBadge, genreBadge, gamesBadge, timeBadge ExplorerBadge
+	for _, b := range resp.Badges {
+		switch b.ID {
+		case "console-explorer":
+			consoleBadge = b
+		case "genre-master":
+			genreBadge = b
+		case "centurion":
+			gamesBadge = b
+		case "dedicated-gamer":
+			timeBadge = b
+		}
+	}
+
+	assert.Equal(t, 3, consoleBadge.Progress)
+	assert.Equal(t, 3, genreBadge.Progress)
+	assert.Equal(t, 3, gamesBadge.Progress)
+	assert.Equal(t, 3, timeBadge.Progress) // 3 hours total
+}
+
+func TestGetExplorerBadges_Unauthenticated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/explorer-badges", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestGetCompletionistMap_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create some games
+	createExploreGame(t, env.database, "SNES", "SNES Game 1", 80.0)
+	createExploreGame(t, env.database, "NES", "NES Game 1", 80.0)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/completionist-map", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CompletionistMapResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.GreaterOrEqual(t, len(resp.Consoles), 2)
+	assert.Equal(t, 0, resp.TotalPlayed)
+	assert.Equal(t, 0, resp.OverallPct)
+	// Every console should have 0 played
+	for _, c := range resp.Consoles {
+		assert.Equal(t, 0, c.PlayedGames)
+		assert.Equal(t, 0, c.Percentage)
+	}
+}
+
+func TestGetCompletionistMap_WithPlayHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create 3 SNES games, play 2 of them
+	g1 := createExploreGame(t, env.database, "SNES", "SNES 1", 80.0)
+	g2 := createExploreGame(t, env.database, "SNES", "SNES 2", 80.0)
+	createExploreGame(t, env.database, "SNES", "SNES 3", 80.0)
+
+	// Create 1 NES game, play it
+	g4 := createExploreGame(t, env.database, "NES", "NES 1", 80.0)
+
+	for _, gid := range []uint{g1.ID, g2.ID, g4.ID} {
+		ph := db.PlayHistory{UserID: user.ID, GameID: gid, PlayTime: 600}
+		require.NoError(t, env.database.Create(&ph).Error)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/completionist-map", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp CompletionistMapResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 3, resp.TotalPlayed)
+	assert.Greater(t, resp.TotalGames, 0)
+
+	// Find SNES and NES in the response
+	for _, c := range resp.Consoles {
+		if c.Name == "Super Nintendo Entertainment System" || c.Name == "SNES" {
+			assert.Equal(t, 2, c.PlayedGames)
+			assert.Equal(t, 3, c.TotalGames)
+			assert.Equal(t, 66, c.Percentage) // 2/3 = 66%
+		}
+	}
+}
+
+func TestGetCompletionistMap_Unauthenticated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/completionist-map", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}

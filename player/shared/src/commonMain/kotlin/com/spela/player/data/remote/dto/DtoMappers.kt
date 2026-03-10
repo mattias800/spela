@@ -835,3 +835,48 @@ fun SavedSearchDto.toDomain() = SavedSearch(
     filters = filters.mapValues { (_, v) -> v.content },
     createdAt = createdAt,
 )
+
+// --- Phase 14: Wild Features ---
+
+fun WizardOptionDto.toDomain() = WizardOption(
+    id = id,
+    label = label,
+    description = description,
+)
+
+fun WizardStepDto.toDomain() = WizardStep(
+    step = step,
+    title = title,
+    type = type,
+    options = options.map { it.toDomain() },
+)
+
+fun WizardResultsResponseDto.toDomain() = WizardResults(
+    games = games.map { it.toDomain() },
+    title = title,
+)
+
+fun ExplorerBadgeDto.toDomain() = ExplorerBadge(
+    id = id,
+    name = name,
+    description = description,
+    icon = icon,
+    earned = earned,
+    progress = progress,
+    target = target,
+)
+
+fun CompletionistConsoleDto.toDomain() = CompletionistConsole(
+    id = id,
+    name = name,
+    totalGames = totalGames,
+    playedGames = playedGames,
+    percentage = percentage,
+)
+
+fun CompletionistMapResponseDto.toDomain() = CompletionistMap(
+    consoles = consoles.map { it.toDomain() },
+    totalGames = totalGames,
+    totalPlayed = totalPlayed,
+    overallPct = overallPct,
+)

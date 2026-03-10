@@ -62,6 +62,7 @@ import com.spela.player.presentation.ui.feature.explore.HardestGamesSection
 import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
 import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.TrendingSection
+import com.spela.player.presentation.ui.feature.explore.WildFeaturesSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -80,6 +81,7 @@ fun ExploreScreen(
     onChallengeSelected: ((challengeId: String) -> Unit)? = null,
     onGallerySelected: (() -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
+    onWizardSelected: (() -> Unit)? = null,
     onSearchSelected: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
@@ -213,12 +215,20 @@ fun ExploreScreen(
                                     onMoodSelected = { moodId, moodName ->
                                         onMoodSelected?.invoke(moodId, moodName)
                                     },
-                                    onSurpriseMe = {
-                                        onSurpriseMe?.invoke()
-                                    },
                                 )
                             }
                         }
+                    }
+
+                    // Wild Features — Lucky & Wizard
+                    item {
+                        WildFeaturesSection(
+                            onSurpriseMe = { onSurpriseMe?.invoke() },
+                            onWizardSelected = { onWizardSelected?.invoke() },
+                            modifier = Modifier
+                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                .testTag("explore_wild_features"),
+                        )
                     }
 
                     // For You section (personalized recommendations)

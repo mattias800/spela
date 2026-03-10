@@ -1578,6 +1578,36 @@ class FakeExploreRepository : ExploreRepository {
             savedSearchesList = savedSearchesList.filter { it.id != id }
             Result.success(Unit)
         }
+
+    var wizardSteps: List<WizardStep> = listOf(
+        WizardStep(1, "What are you in the mood for?", "mood", listOf(
+            WizardOption("action", "Action & Excitement", "Fast-paced thrills"),
+            WizardOption("chill", "Chill & Relaxing", "Laid-back vibes"),
+        )),
+        WizardStep(2, "Pick an era", "era", listOf(
+            WizardOption("80s", "The 80s", "Birth of console gaming"),
+            WizardOption("any", "Any Era", "Surprise me"),
+        )),
+        WizardStep(3, "Refine your vibe", "vibe", listOf(
+            WizardOption("solo", "Solo Adventure", "Just me and the game"),
+            WizardOption("any", "Anything Goes", "No preference"),
+        )),
+    )
+    var wizardResults: WizardResults = WizardResults(emptyList(), "Your Perfect Picks")
+    var explorerBadges: List<ExplorerBadge> = emptyList()
+    var completionistMapData: CompletionistMap = CompletionistMap(emptyList(), 0, 0, 0)
+
+    override suspend fun getWizardSteps(): Result<List<WizardStep>> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(wizardSteps)
+
+    override suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(wizardResults)
+
+    override suspend fun getExplorerBadges(): Result<List<ExplorerBadge>> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(explorerBadges)
+
+    override suspend fun getCompletionistMap(): Result<CompletionistMap> =
+        if (shouldFail) Result.failure(Exception("Failed")) else Result.success(completionistMapData)
 }
 
 class FakeCheatRepository : CheatRepository {

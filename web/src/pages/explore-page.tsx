@@ -34,6 +34,7 @@ import {
   FreshChallengesShelf,
   ActiveChallengesShelf,
 } from "@/features/explore/components/achievement-shelves";
+import { WildFeaturesSection } from "@/features/explore/components/wild-features";
 import {
   useExploreFeatured,
   useExploreRows,
@@ -232,6 +233,9 @@ export function ExplorePage() {
 
       {/* Mood Picker */}
       <MoodPicker moods={moods} isLoading={isMoodsLoading} />
+
+      {/* Wild Features — Lucky & Wizard */}
+      <WildFeaturesSection />
 
       {/* For You — personalized recommendations */}
       <ForYouSection

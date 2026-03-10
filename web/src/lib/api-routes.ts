@@ -54,6 +54,10 @@ export type ApiGetPath = WithQuery<
   | "/explore/fresh-challenges"
   | "/explore/active-challenges"
 
+  // Wild Features (Wizard)
+  | "/explore/wizard"
+  | "/explore/wizard/results"
+
   // Developers & Publishers
   | "/explore/developers"
   | "/explore/developers/spotlight"
@@ -140,6 +144,8 @@ export type ApiGetPath = WithQuery<
   | "/user/taste-profile"
   | "/user/achievements/recent"
   | "/user/saved-searches"
+  | "/user/explorer-badges"
+  | "/user/completionist-map"
 
   // Shared Sessions
   | "/shared-sessions"

@@ -28,12 +28,16 @@ import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.CompletionistMap
+import com.spela.player.domain.model.ExplorerBadge
 import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.model.TrendingGame
+import com.spela.player.domain.model.WizardResults
+import com.spela.player.domain.model.WizardStep
 import com.spela.player.domain.repository.ExploreRepository
 
 class ExploreRepositoryImpl(
@@ -401,6 +405,29 @@ class ExploreRepositoryImpl(
 
     override suspend fun deleteSavedSearch(id: String): Result<Unit> = runCatching {
         apiClient.deleteSavedSearch(id)
+    }
+
+    override suspend fun getWizardSteps(): Result<List<WizardStep>> = runCatching {
+        apiClient.getWizardSteps().steps.map { it.toDomain() }
+    }
+
+    override suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults> = runCatching {
+        val response = apiClient.getWizardResults(mood, era, vibe)
+        WizardResults(
+            games = response.games.map { dto ->
+                val game = dto.toDomain()
+                resolveGameCovers(game, dto)
+            },
+            title = response.title,
+        )
+    }
+
+    override suspend fun getExplorerBadges(): Result<List<ExplorerBadge>> = runCatching {
+        apiClient.getExplorerBadges().badges.map { it.toDomain() }
+    }
+
+    override suspend fun getCompletionistMap(): Result<CompletionistMap> = runCatching {
+        apiClient.getCompletionistMap().toDomain()
     }
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(

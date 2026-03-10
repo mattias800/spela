@@ -275,6 +275,51 @@ data class ExploreChallenge(
     val createdAt: String,
 )
 
+// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+
+data class WizardOption(
+    val id: String,
+    val label: String,
+    val description: String,
+)
+
+data class WizardStep(
+    val step: Int,
+    val title: String,
+    val type: String,
+    val options: List<WizardOption>,
+)
+
+data class WizardResults(
+    val games: List<Game>,
+    val title: String,
+)
+
+data class ExplorerBadge(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: String,
+    val earned: Boolean,
+    val progress: Int,
+    val target: Int,
+)
+
+data class CompletionistConsole(
+    val id: String,
+    val name: String,
+    val totalGames: Int,
+    val playedGames: Int,
+    val percentage: Int,
+)
+
+data class CompletionistMap(
+    val consoles: List<CompletionistConsole>,
+    val totalGames: Int,
+    val totalPlayed: Int,
+    val overallPct: Int,
+)
+
 // --- Phase 13: Advanced Search & Multi-Faceted Filtering ---
 
 data class SavedSearch(

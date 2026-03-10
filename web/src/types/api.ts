@@ -1264,3 +1264,57 @@ export interface ExploreChallenge {
 export interface ActiveChallengesResponse {
   challenges: ExploreChallenge[];
 }
+
+// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+
+export interface WizardOption {
+  id: string;
+  label: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export interface WizardStep {
+  step: number;
+  title: string;
+  type: string;
+  options: WizardOption[];
+}
+
+export interface WizardResponse {
+  steps: WizardStep[];
+}
+
+export interface WizardResultsResponse {
+  games: Game[];
+  title: string;
+}
+
+export interface ExplorerBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+}
+
+export interface ExplorerBadgesResponse {
+  badges: ExplorerBadge[];
+}
+
+export interface CompletionistConsole {
+  id: string;
+  name: string;
+  totalGames: number;
+  playedGames: number;
+  percentage: number;
+}
+
+export interface CompletionistMapResponse {
+  consoles: CompletionistConsole[];
+  totalGames: number;
+  totalPlayed: number;
+  overallPct: number;
+}
