@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Badge, Skeleton } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 import type { ArtworkItem } from "@/types/api";
 
 interface ArtworkShowcaseProps {
