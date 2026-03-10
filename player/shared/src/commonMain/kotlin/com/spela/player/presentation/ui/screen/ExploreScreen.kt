@@ -44,6 +44,8 @@ import com.spela.player.presentation.ui.feature.explore.HeroCarousel
 import com.spela.player.presentation.ui.feature.explore.HeroCarouselSkeleton
 import com.spela.player.presentation.ui.feature.explore.KeywordChips
 import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
+import com.spela.player.presentation.ui.feature.explore.SeriesShelf
+import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.MoodPicker
 import com.spela.player.presentation.ui.feature.explore.MoodPickerSkeleton
 import com.spela.player.presentation.ui.feature.explore.RecentlyReviewedSection
@@ -75,6 +77,7 @@ fun ExploreScreen(
     onThemeSelected: ((themeId: String, themeName: String) -> Unit)? = null,
     onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
+
     onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
     onDeveloperSelected: ((name: String) -> Unit)? = null,
     onConsoleSelected: ((consoleId: String) -> Unit)? = null,
@@ -340,6 +343,7 @@ fun ExploreScreen(
                             }
                         }
                     }
+
 
                     // Developer spotlight section
                     item {
@@ -716,7 +720,6 @@ fun ExploreScreen(
                             }
                         }
                     }
-
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {
                         // Loading skeletons for rows

@@ -1053,6 +1053,7 @@ func TestGetExploreFeaturedSeries_Limit20(t *testing.T) {
 	assert.Len(t, resp, 20, "should be limited to 20 series")
 }
 
+
 // --- Helper: create game with custom genre and players ---
 
 func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, genre string, players int) db.Game {

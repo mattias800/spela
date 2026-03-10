@@ -15,11 +15,13 @@ import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFilters
 import com.spela.player.domain.model.Keyword
+
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.RecentReviewItem
 import com.spela.player.domain.model.CompletionistMap
@@ -49,6 +51,7 @@ data class ExploreState(
     val themes: List<Theme> = emptyList(),
     val keywords: List<Keyword> = emptyList(),
     val featuredSeries: List<FeaturedSeries> = emptyList(),
+
     val moods: List<MoodDefinition> = emptyList(),
     val forYouRows: List<ForYouRow> = emptyList(),
     val developerSpotlight: DeveloperSpotlight? = null,
@@ -72,6 +75,10 @@ data class ExploreState(
     val isLoadingThemes: Boolean = false,
     val isLoadingKeywords: Boolean = false,
     val isLoadingFeaturedSeries: Boolean = false,
+    val error: String? = null,
+) {
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && !isLoading
     val isLoadingMoods: Boolean = false,
     val isLoadingForYou: Boolean = false,
     val isLoadingDeveloperSpotlight: Boolean = false,
@@ -101,6 +108,7 @@ data class KeywordDetailState(
     val isLoading: Boolean = false,
     val error: String? = null,
 )
+
 
 data class MoodDetailState(
     val moodId: String = "",
@@ -178,7 +186,6 @@ data class CompletionistMapState(
     val data: CompletionistMap? = null,
     val isLoading: Boolean = false,
 )
-
 data class SeriesDetailState(
     val seriesId: String = "",
     val seriesName: String = "",
@@ -199,8 +206,8 @@ data class SeriesDetailState(
         }
 }
 
-private const val GALLERY_PAGE_SIZE = 40
 
+private const val GALLERY_PAGE_SIZE = 40
 class ExploreViewModel(
     private val exploreRepository: ExploreRepository,
     private val dispatchers: DispatcherProvider,
@@ -217,6 +224,7 @@ class ExploreViewModel(
 
     private val _seriesDetailState = MutableStateFlow(SeriesDetailState())
     val seriesDetailState: StateFlow<SeriesDetailState> = _seriesDetailState.asStateFlow()
+
 
     private val _moodDetailState = MutableStateFlow(MoodDetailState())
     val moodDetailState: StateFlow<MoodDetailState> = _moodDetailState.asStateFlow()
@@ -241,7 +249,6 @@ class ExploreViewModel(
 
     private val _completionistMapState = MutableStateFlow(CompletionistMapState())
     val completionistMapState: StateFlow<CompletionistMapState> = _completionistMapState.asStateFlow()
-
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -250,6 +257,7 @@ class ExploreViewModel(
     private var keywordDetailJob: Job? = null
     private var featuredSeriesJob: Job? = null
     private var seriesDetailJob: Job? = null
+
     private var moodsJob: Job? = null
     private var moodDetailJob: Job? = null
     private var forYouJob: Job? = null
@@ -272,6 +280,7 @@ class ExploreViewModel(
         loadThemes()
         loadKeywords()
         loadFeaturedSeries()
+
         loadMoods()
         loadForYou()
         loadDeveloperSpotlight()
@@ -427,6 +436,7 @@ class ExploreViewModel(
             )
         }
     }
+
 
     private fun loadMoods() {
         if (moodsJob?.isActive == true) return

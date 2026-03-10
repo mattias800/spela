@@ -762,13 +762,15 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 
 	// Store franchises (reuse name from existing DB entries when possible)
 	for _, fID := range enrichment.Franchises {
+		var franchiseName string
 		var existing db.GameFranchise
 		if err := s.DB.Where("igdb_franchise_id = ?", fID).First(&existing).Error; err == nil {
 			// Reuse the cached franchise name
+			franchiseName = existing.FranchiseName
 			s.DB.Create(&db.GameFranchise{
 				GameID:          game.ID,
 				IGDBFranchiseID: fID,
-				FranchiseName:   existing.FranchiseName,
+				FranchiseName:   franchiseName,
 			})
 		} else if s.IGDBClient != nil {
 			// Fetch franchise name from IGDB
@@ -778,12 +780,16 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 				continue
 			}
 			if franchise != nil {
+				franchiseName = franchise.Name
 				s.DB.Create(&db.GameFranchise{
 					GameID:          game.ID,
 					IGDBFranchiseID: fID,
-					FranchiseName:   franchise.Name,
+					FranchiseName:   franchiseName,
 				})
 			}
+		}
+		if franchiseName != "" {
+			s.handleFranchiseForGame(game, fID, franchiseName)
 		}
 	}
 
@@ -849,6 +855,48 @@ func (s *Scraper) handleSeriesForGame(game *db.Game, igdbCollectionID int) {
 			GameID:     &gameID,
 			IGDBGameID: igdbID,
 			Name:       game.Title,
+		})
+	} else {
+		// Update existing entry to link to local game
+		if entry.GameID == nil {
+			gameID := game.ID
+			s.DB.Model(&entry).Update("game_id", &gameID)
+		}
+	}
+}
+
+// handleFranchiseForGame creates or reuses a GameFranchiseGroup for the IGDB franchise
+// and links the current game to it via GameFranchiseEntry.
+func (s *Scraper) handleFranchiseForGame(game *db.Game, igdbFranchiseID int, franchiseName string) {
+	var group db.GameFranchiseGroup
+	if err := s.DB.Where("igdb_franchise_id = ?", igdbFranchiseID).First(&group).Error; err != nil {
+		// Group doesn't exist yet — create it
+		group = db.GameFranchiseGroup{
+			IGDBFranchiseID: igdbFranchiseID,
+			Name:            franchiseName,
+		}
+		if err := s.DB.Create(&group).Error; err != nil {
+			slog.Warn("failed to create franchise group", "name", franchiseName, "error", err)
+			return
+		}
+	}
+
+	// Create/update the entry for this local game
+	igdbID := 0
+	if _, parseErr := fmt.Sscanf(game.ScraperID, "igdb:%d", &igdbID); parseErr != nil || igdbID == 0 {
+		return
+	}
+
+	var entry db.GameFranchiseEntry
+	result := s.DB.Where("franchise_group_id = ? AND igdb_game_id = ?", group.ID, igdbID).First(&entry)
+	if result.Error != nil {
+		// Create new entry
+		gameID := game.ID
+		s.DB.Create(&db.GameFranchiseEntry{
+			FranchiseGroupID: group.ID,
+			GameID:           &gameID,
+			IGDBGameID:       igdbID,
+			Name:             game.Title,
 		})
 	} else {
 		// Update existing entry to link to local game
@@ -950,6 +998,68 @@ func (s *Scraper) PopulateSeriesEntries(series *db.GameSeries) error {
 	return nil
 }
 
+// PopulateFranchiseEntries fetches all games in a franchise from IGDB and populates
+// GameFranchiseEntry rows (with GameID null for non-library games).
+func (s *Scraper) PopulateFranchiseEntries(group *db.GameFranchiseGroup) error {
+	if s.IGDBClient == nil || !s.IGDBClient.IsConfigured() {
+		return fmt.Errorf("IGDB client is not configured")
+	}
+
+	franchiseData, err := s.IGDBClient.GetFranchise(group.IGDBFranchiseID)
+	if err != nil {
+		return fmt.Errorf("fetching franchise %d: %w", group.IGDBFranchiseID, err)
+	}
+	if franchiseData == nil || len(franchiseData.GameIDs) == 0 {
+		return nil
+	}
+
+	// Fetch game names and covers from IGDB (reuses the collection games endpoint)
+	gameInfos, err := s.IGDBClient.GetCollectionGames(franchiseData.GameIDs)
+	if err != nil {
+		return fmt.Errorf("fetching franchise game details: %w", err)
+	}
+
+	// Build a map of IGDB game ID -> local game ID
+	var localGames []db.Game
+	s.DB.Select("id, scraper_id").Where("scraper_id LIKE 'igdb:%'").Find(&localGames)
+	localMap := make(map[int]uint)
+	for _, g := range localGames {
+		var igdbID int
+		if _, parseErr := fmt.Sscanf(g.ScraperID, "igdb:%d", &igdbID); parseErr == nil && igdbID > 0 {
+			localMap[igdbID] = g.ID
+		}
+	}
+
+	// Upsert entries
+	for _, info := range gameInfos {
+		var entry db.GameFranchiseEntry
+		result := s.DB.Where("franchise_group_id = ? AND igdb_game_id = ?", group.ID, info.ID).First(&entry)
+		if result.Error != nil {
+			newEntry := db.GameFranchiseEntry{
+				FranchiseGroupID: group.ID,
+				IGDBGameID:       info.ID,
+				Name:             info.Name,
+				CoverImageID:     info.CoverImageID,
+			}
+			if localID, ok := localMap[info.ID]; ok {
+				newEntry.GameID = &localID
+			}
+			s.DB.Create(&newEntry)
+		} else {
+			updates := map[string]interface{}{
+				"name":           info.Name,
+				"cover_image_id": info.CoverImageID,
+			}
+			if localID, ok := localMap[info.ID]; ok {
+				updates["game_id"] = localID
+			}
+			s.DB.Model(&entry).Updates(updates)
+		}
+	}
+
+	return nil
+}
+
 // EnrichProgress holds progress information for a metadata enrichment operation.
 type EnrichProgress struct {
 	Current   int    `json:"current"`
@@ -982,8 +1092,9 @@ func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, 
 	successes := 0
 	failures := 0
 
-	// Track series we've populated to avoid redundant GetCollection calls
+	// Track series/franchises we've populated to avoid redundant API calls
 	populatedSeries := make(map[uint]bool)
+	populatedFranchises := make(map[uint]bool)
 
 	for i := range games {
 		if err := s.EnrichGameOnly(&games[i]); err != nil {
@@ -1008,6 +1119,25 @@ func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, 
 							}
 						}
 						populatedSeries[entry.SeriesID] = true
+					}
+				}
+			}
+
+			// Check if this game's franchises need full population
+			var gameFranchises []db.GameFranchise
+			s.DB.Where("game_id = ?", games[i].ID).Find(&gameFranchises)
+			for _, gf := range gameFranchises {
+				var group db.GameFranchiseGroup
+				if err := s.DB.Where("igdb_franchise_id = ?", gf.IGDBFranchiseID).First(&group).Error; err == nil {
+					if !populatedFranchises[group.ID] {
+						var entryCount int64
+						s.DB.Model(&db.GameFranchiseEntry{}).Where("franchise_group_id = ?", group.ID).Count(&entryCount)
+						if entryCount <= 1 {
+							if popErr := s.PopulateFranchiseEntries(&group); popErr != nil {
+								slog.Warn("failed to populate franchise entries", "franchise", group.Name, "error", popErr)
+							}
+						}
+						populatedFranchises[group.ID] = true
 					}
 				}
 			}

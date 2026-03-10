@@ -631,6 +631,7 @@ fun GameFranchiseLinkDto.toDomain(): GameFranchiseLink = GameFranchiseLink(
     gameCount = gameCount,
 )
 
+
 fun MoodDefinitionDto.toDomain(): MoodDefinition = MoodDefinition(
     id = id,
     name = name,

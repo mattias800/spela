@@ -19,12 +19,14 @@ import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
@@ -32,7 +34,6 @@ import com.spela.player.domain.model.CompletionistMap
 import com.spela.player.domain.model.ExplorerBadge
 import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
-import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.model.TrendingGame
@@ -122,6 +123,7 @@ class ExploreRepositoryImpl(
     override suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>> = runCatching {
         apiClient.getGameFranchises(gameId).map { it.toDomain() }
     }
+
 
     override suspend fun getMoods(): Result<List<MoodDefinition>> = runCatching {
         apiClient.getMoods().map { it.toDomain() }

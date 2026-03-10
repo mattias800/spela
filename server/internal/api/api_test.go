@@ -77,6 +77,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.GameFranchise{},
 		&db.GameSeries{},
 		&db.GameSeriesEntry{},
+		&db.GameFranchiseGroup{},
+		&db.GameFranchiseEntry{},
 		&db.GameArtworkImage{},
 		&db.SavedSearch{},
 	)

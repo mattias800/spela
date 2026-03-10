@@ -39,6 +39,7 @@ import { ExplorePage } from "@/pages/explore-page";
 import { ExploreThemePage } from "@/pages/explore-theme-page";
 import { ExploreKeywordPage } from "@/pages/explore-keyword-page";
 import { ExploreSeriesPage } from "@/pages/explore-series-page";
+import { ExploreFranchisePage } from "@/pages/explore-franchise-page";
 import { DeveloperDetailPage } from "@/pages/developer-detail-page";
 import { PublisherDetailPage } from "@/pages/publisher-detail-page";
 import { ExploreMoodPage } from "@/pages/explore-mood-page";
@@ -105,6 +106,10 @@ export function App() {
                     <Route
                       path="explore/series/:id"
                       element={<ExploreSeriesPage />}
+                    />
+                    <Route
+                      path="explore/franchise/:id"
+                      element={<ExploreFranchisePage />}
                     />
                     <Route
                       path="explore/gallery"

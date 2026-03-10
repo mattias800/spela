@@ -161,6 +161,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameFranchise{},
 		&GameSeries{},
 		&GameSeriesEntry{},
+		&GameFranchiseGroup{},
+		&GameFranchiseEntry{},
 		&GameArtworkImage{},
 		// Phase 13: Saved Searches
 		&SavedSearch{},
@@ -530,6 +532,9 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 
 	// GameSeriesEntry — update any entries pointing to the duplicate game
 	database.Model(&GameSeriesEntry{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
+
+	// GameFranchiseEntry — update any entries pointing to the duplicate game
+	database.Model(&GameFranchiseEntry{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
 	// PlayHistory — merge: keep highest play time and latest timestamp per user
 	var dupPH []PlayHistory

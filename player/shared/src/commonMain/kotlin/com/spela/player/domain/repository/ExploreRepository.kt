@@ -16,12 +16,14 @@ import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
@@ -29,7 +31,6 @@ import com.spela.player.domain.model.CompletionistMap
 import com.spela.player.domain.model.ExplorerBadge
 import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
-import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.model.TrendingGame
@@ -47,6 +48,7 @@ interface ExploreRepository {
     suspend fun getSeriesDetail(id: String): Result<SeriesDetail>
     suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>>
     suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>>
+
     suspend fun getMoods(): Result<List<MoodDefinition>>
     suspend fun getMoodGames(mood: String): Result<List<Game>>
     suspend fun getSurpriseGame(): Result<Game>

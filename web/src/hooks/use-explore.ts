@@ -4,6 +4,7 @@ import type {
   FeaturedGame,
   FeaturedSeries,
   SeriesDetail,
+  FranchiseDetail,
   GameSeriesLink,
   GameFranchiseLink,
   ExploreRowsResponse,
@@ -324,6 +325,15 @@ export function useSeriesDetail(id: string | undefined) {
   });
 }
 
+export function useFranchiseDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ["franchises", id],
+    queryFn: () => api.get<FranchiseDetail>(`/franchises/${id}`),
+    enabled: !!id,
+    staleTime: STALE_LONG,
+  });
+}
+
 export function useGameSeries(gameId: string | undefined) {
   return useQuery({
     queryKey: ["games", gameId, "series"],
@@ -481,3 +491,4 @@ export function useCompletionistMap() {
     staleTime: STALE_MEDIUM,
   });
 }
+

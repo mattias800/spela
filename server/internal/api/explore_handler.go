@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
+
 // --- Phase 7: Developer & Publisher Spotlight ---
 
 // DeveloperSummary is the API response for a single developer in the developer list.
@@ -58,7 +59,6 @@ type DeveloperSpotlightResponse struct {
 	TopGames  []GameResponse `json:"topGames"`
 	HeroURL   string         `json:"heroUrl"`
 }
-
 // FeaturedSeriesResponse is the API response for a featured series on the Explore page.
 type FeaturedSeriesResponse struct {
 	ID           string `json:"id"`
@@ -445,6 +445,7 @@ func (h *ExploreHandler) GetExploreFeaturedSeries(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
+
 		c.Header("Cache-Control", "private, max-age=300")
 		c.JSON(http.StatusOK, []FeaturedSeriesResponse{})
 		return
@@ -4344,4 +4345,3 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		OverallPct:  overallPct,
 	})
 }
-

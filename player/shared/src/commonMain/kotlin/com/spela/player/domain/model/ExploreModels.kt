@@ -83,6 +83,7 @@ data class GameFranchiseLink(
     val gameCount: Int,
 )
 
+
 data class MoodDefinition(
     val id: String,
     val name: String,

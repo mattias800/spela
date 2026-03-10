@@ -399,6 +399,10 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 						}
 					}
 				}
+			} else {
+				// Game not found (e.g. soft-deleted and filtered by GORM)
+				gameResp.InLibrary = false
+				gameResp.LocalGameID = nil
 			}
 		}
 		games[i] = gameResp
@@ -526,6 +530,145 @@ func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 	})
 }
 
+// FranchiseDetailResponse is the API response for a franchise detail view.
+type FranchiseDetailResponse struct {
+	ID              string               `json:"id"`
+	IGDBFranchiseID int                  `json:"igdbFranchiseId"`
+	Name            string               `json:"name"`
+	HeroURL         string               `json:"heroUrl,omitempty"`
+	LibraryGames    int                  `json:"libraryGames"`
+	TotalGames      int                  `json:"totalGames"`
+	Consoles        []SeriesConsoleInfo  `json:"consoles"`
+	Games           []SeriesGameResponse `json:"games"`
+}
+
+// GetFranchiseDetail returns a franchise with all its games (local and non-local).
+// GET /api/franchises/:id
+func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
+	id := c.Param("id")
+	var franchise db.GameFranchiseGroup
+
+	// Try lookup by DB primary key first, then by IGDB franchise ID as fallback.
+	// This handles the transitional state where GetGameFranchises may emit an IGDB ID
+	// before the GameFranchiseGroup has been populated.
+	if err := h.DB.Preload("Entries").First(&franchise, id).Error; err != nil {
+		if err2 := h.DB.Preload("Entries").Where("igdb_franchise_id = ?", id).First(&franchise).Error; err2 != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "franchise not found"})
+			return
+		}
+	}
+
+	// Collect local game IDs for batch loading
+	var localGameIDs []uint
+	for _, entry := range franchise.Entries {
+		if entry.GameID != nil {
+			localGameIDs = append(localGameIDs, *entry.GameID)
+		}
+	}
+
+	// Batch-load local games with console data
+	gameMap := make(map[uint]db.Game)
+	if len(localGameIDs) > 0 {
+		var localGames []db.Game
+		h.DB.Preload("Console").Where("id IN ?", localGameIDs).Find(&localGames)
+		for _, g := range localGames {
+			gameMap[g.ID] = g
+		}
+	}
+
+	// Batch-load hero artwork for local games
+	artworkMap := make(map[uint]db.GameArtwork)
+	if len(localGameIDs) > 0 {
+		var artworks []db.GameArtwork
+		h.DB.Where("game_id IN ? AND hero_url != ''", localGameIDs).Find(&artworks)
+		for _, a := range artworks {
+			artworkMap[a.GameID] = a
+		}
+	}
+
+	// Build per-game responses and track consoles
+	consoleCountMap := make(map[uint]int)
+	consoleInfoMap := make(map[uint]db.Console)
+	libraryGames := 0
+
+	var bestHeroURL string
+	var bestHeroRating float64 = -1
+
+	games := make([]SeriesGameResponse, len(franchise.Entries))
+	for i, entry := range franchise.Entries {
+		gameResp := SeriesGameResponse{
+			IGDBGameID: entry.IGDBGameID,
+			Name:       entry.Name,
+			InLibrary:  entry.GameID != nil,
+		}
+		if entry.GameID != nil {
+			localID := strconv.FormatUint(uint64(*entry.GameID), 10)
+			gameResp.LocalGameID = &localID
+
+			if g, ok := gameMap[*entry.GameID]; ok {
+				if g.DeletedAt.Valid {
+					gameResp.InLibrary = false
+					gameResp.LocalGameID = nil
+				} else {
+					libraryGames++
+
+					if g.CoverURL != "" {
+						coverURL := resolveImageURL(g.CoverURL)
+						gameResp.CoverURL = &coverURL
+					}
+					gameResp.ReleaseDate = g.ReleaseDate
+					gameResp.Rating = g.Rating
+
+					if g.Console.ID != 0 {
+						abbr := strings.ToLower(g.Console.Abbreviation)
+						gameResp.ConsoleAbbreviation = abbr
+						gameResp.ConsoleName = g.Console.Name
+						gameResp.ConsoleColor = g.Console.ColorTheme
+						consoleCountMap[g.Console.ID]++
+						consoleInfoMap[g.Console.ID] = g.Console
+					}
+
+					if artwork, ok := artworkMap[*entry.GameID]; ok {
+						if g.Rating > bestHeroRating {
+							bestHeroRating = g.Rating
+							bestHeroURL = artwork.HeroURL
+						}
+					}
+				}
+			} else {
+				// Game not found (e.g. soft-deleted and filtered by GORM)
+				gameResp.InLibrary = false
+				gameResp.LocalGameID = nil
+			}
+		}
+		games[i] = gameResp
+	}
+
+	// Build console info list
+	consoles := make([]SeriesConsoleInfo, 0, len(consoleCountMap))
+	for consoleID, count := range consoleCountMap {
+		con := consoleInfoMap[consoleID]
+		consoles = append(consoles, SeriesConsoleInfo{
+			Abbreviation: strings.ToLower(con.Abbreviation),
+			Name:         con.Name,
+			Color:        con.ColorTheme,
+			GameCount:    count,
+		})
+	}
+
+	c.Header("Cache-Control", "private, max-age=300")
+	c.JSON(http.StatusOK, FranchiseDetailResponse{
+		ID:              strconv.FormatUint(uint64(franchise.ID), 10),
+		IGDBFranchiseID: franchise.IGDBFranchiseID,
+		Name:            franchise.Name,
+		HeroURL:         bestHeroURL,
+		LibraryGames:    libraryGames,
+		TotalGames:      len(franchise.Entries),
+		Consoles:        consoles,
+		Games:           games,
+	})
+}
+
 // --- Per-game series/franchise endpoints ---
 
 // GameSeriesResponse is the API response for a series that a game belongs to.
@@ -612,9 +755,10 @@ func (h *EnrichmentHandler) GetGameSeries(c *gin.Context) {
 
 // GameFranchiseResponse is the API response for a franchise that a game belongs to.
 type GameFranchiseResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	GameCount int    `json:"gameCount"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	TotalGames   int    `json:"totalGames"`
+	LibraryGames int    `json:"libraryGames"`
 }
 
 // GetGameFranchises returns the franchises that a game belongs to.
@@ -645,42 +789,46 @@ func (h *EnrichmentHandler) GetGameFranchises(c *gin.Context) {
 		return
 	}
 
-	// Collect unique franchise IDs
-	franchiseIDs := make([]int, 0, len(franchises))
+	// Try to use the new GameFranchiseGroup tables for accurate counts
+	result := make([]GameFranchiseResponse, 0, len(franchises))
 	seen := make(map[int]bool)
-	franchiseNames := make(map[int]string)
 	for _, f := range franchises {
-		if !seen[f.IGDBFranchiseID] {
-			franchiseIDs = append(franchiseIDs, f.IGDBFranchiseID)
-			seen[f.IGDBFranchiseID] = true
+		if seen[f.IGDBFranchiseID] {
+			continue
 		}
-		franchiseNames[f.IGDBFranchiseID] = f.FranchiseName
-	}
+		seen[f.IGDBFranchiseID] = true
 
-	// Query game counts per franchise
-	type franchiseRow struct {
-		IGDBFranchiseID int
-		GameCount       int
-	}
-
-	var rows []franchiseRow
-	if err := h.DB.Model(&db.GameFranchise{}).
-		Joins("JOIN games ON games.id = game_franchises.game_id AND games.deleted_at IS NULL").
-		Select("igdb_franchise_id, COUNT(DISTINCT game_franchises.game_id) as game_count").
-		Where("igdb_franchise_id IN ?", franchiseIDs).
-		Group("igdb_franchise_id").
-		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch franchise counts"})
-		return
-	}
-
-	result := make([]GameFranchiseResponse, len(rows))
-	for i, r := range rows {
-		result[i] = GameFranchiseResponse{
-			ID:        strconv.Itoa(r.IGDBFranchiseID),
-			Name:      franchiseNames[r.IGDBFranchiseID],
-			GameCount: r.GameCount,
+		resp := GameFranchiseResponse{
+			Name: f.FranchiseName,
 		}
+
+		// Look for the franchise group
+		var group db.GameFranchiseGroup
+		if err := h.DB.Where("igdb_franchise_id = ?", f.IGDBFranchiseID).First(&group).Error; err == nil {
+			resp.ID = strconv.FormatUint(uint64(group.ID), 10)
+			// Count entries
+			var totalCount int64
+			h.DB.Model(&db.GameFranchiseEntry{}).Where("franchise_group_id = ?", group.ID).Count(&totalCount)
+			resp.TotalGames = int(totalCount)
+			var libraryCount int64
+			h.DB.Model(&db.GameFranchiseEntry{}).
+				Joins("JOIN games ON games.id = game_franchise_entries.game_id AND games.deleted_at IS NULL").
+				Where("game_franchise_entries.franchise_group_id = ?", group.ID).
+				Count(&libraryCount)
+			resp.LibraryGames = int(libraryCount)
+		} else {
+			// Fallback: use IGDB franchise ID and count local games only
+			resp.ID = strconv.Itoa(f.IGDBFranchiseID)
+			var count int64
+			h.DB.Model(&db.GameFranchise{}).
+				Joins("JOIN games ON games.id = game_franchises.game_id AND games.deleted_at IS NULL").
+				Where("game_franchises.igdb_franchise_id = ?", f.IGDBFranchiseID).
+				Count(&count)
+			resp.TotalGames = int(count)
+			resp.LibraryGames = int(count)
+		}
+
+		result = append(result, resp)
 	}
 
 	c.JSON(http.StatusOK, result)

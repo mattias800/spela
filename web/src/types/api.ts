@@ -903,7 +903,19 @@ export interface GameSeriesLink {
 export interface GameFranchiseLink {
   id: string;
   name: string;
-  gameCount: number;
+  totalGames: number;
+  libraryGames: number;
+}
+
+export interface FranchiseDetail {
+  id: string;
+  igdbFranchiseId: number;
+  name: string;
+  heroUrl: string;
+  consoles: SeriesConsole[];
+  libraryGames: number;
+  totalGames: number;
+  games: SeriesGame[];
 }
 
 // --- Visual Browsing / Gallery ---

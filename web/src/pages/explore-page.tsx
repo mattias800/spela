@@ -402,6 +402,7 @@ export function ExplorePage() {
 
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
 
+      {/* Series shelf */}
       <SeriesShelf series={featuredSeries} isLoading={isSeriesLoading} />
 
       <DeveloperSpotlight

@@ -1,27 +1,22 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { BackButton, Skeleton } from "@/components/ui";
-import { useSeriesDetail } from "@/hooks/use-explore";
+import { useFranchiseDetail } from "@/hooks/use-explore";
 import { GameTimelineCard } from "@/features/explore/components/game-timeline-card";
 import { cn } from "@/lib/cn";
 import type { SeriesConsole } from "@/types/api";
 
-function SeriesPageSkeleton() {
+function FranchisePageSkeleton() {
   return (
-    <div className="space-y-8" data-testid="series-detail-skeleton">
-      {/* Hero skeleton */}
+    <div className="space-y-8" data-testid="franchise-detail-skeleton">
       <Skeleton className="w-full h-64 sm:h-80 lg:h-96 rounded-2xl" />
-      {/* Title */}
       <Skeleton className="w-64 h-10" />
-      {/* Progress bar */}
       <Skeleton className="w-full h-2 rounded-full" />
-      {/* Console badges */}
       <div className="flex gap-2">
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} className="w-24 h-7 rounded-full" />
         ))}
       </div>
-      {/* Timeline */}
       <div className="space-y-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="w-full h-20 rounded-xl" />
@@ -31,62 +26,60 @@ function SeriesPageSkeleton() {
   );
 }
 
-export function ExploreSeriesPage() {
+export function ExploreFranchisePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: series, isLoading } = useSeriesDetail(id);
+  const { data: franchise, isLoading } = useFranchiseDetail(id);
   const [consoleFilter, setConsoleFilter] = useState<string | null>(null);
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl space-y-6">
         <BackButton onClick={() => navigate("/explore")}>
           Back to Explore
         </BackButton>
-        <SeriesPageSkeleton />
+        <FranchisePageSkeleton />
       </div>
     );
   }
 
-  if (!series) {
+  if (!franchise) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl space-y-6">
         <BackButton onClick={() => navigate("/explore")}>
           Back to Explore
         </BackButton>
         <p className="text-surface-400 text-center py-20">
-          Series not found
+          Franchise not found
         </p>
       </div>
     );
   }
 
-  // Sort games by release date, games without dates go to end
-  const sortedGames = [...series.games].sort((a, b) => {
+  const sortedGames = [...franchise.games].sort((a, b) => {
     if (!a.releaseDate && !b.releaseDate) return 0;
     if (!a.releaseDate) return 1;
     if (!b.releaseDate) return -1;
     return a.releaseDate.localeCompare(b.releaseDate);
   });
 
-  // Filter by console if selected
   const filteredGames = consoleFilter
     ? sortedGames.filter((g) => g.consoleAbbreviation === consoleFilter)
     : sortedGames;
 
   const progressPercent =
-    series.totalGames > 0
-      ? Math.round((series.libraryGames / series.totalGames) * 100)
+    franchise.totalGames > 0
+      ? Math.round((franchise.libraryGames / franchise.totalGames) * 100)
       : 0;
 
   return (
-    <div className="space-y-8" data-testid="series-detail-page">
+    <div className="space-y-8" data-testid="franchise-detail-page">
       {/* Full-width hero banner */}
-      {series.heroUrl ? (
+      {franchise.heroUrl ? (
         <div className="relative w-full h-64 sm:h-80 lg:h-96 -mx-6">
           <div className="relative w-full h-full rounded-2xl overflow-hidden">
             <img
-              src={series.heroUrl}
+              src={franchise.heroUrl}
               alt=""
               className="w-full h-full object-cover"
             />
@@ -104,21 +97,21 @@ export function ExploreSeriesPage() {
             {/* Title + progress overlaid at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
               <h1 className="text-4xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3">
-                {series.name}
+                {franchise.name}
               </h1>
               <div className="flex items-center gap-4" data-testid="ownership-progress">
                 <p className="text-sm text-white/80">
-                  You own {series.libraryGames} of {series.totalGames} games
+                  You own {franchise.libraryGames} of {franchise.totalGames} games
                 </p>
                 <div className="flex-1 max-w-xs h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
                   <div
                     className="h-full bg-brand-400 rounded-full transition-all duration-500"
                     style={{ width: `${progressPercent}%` }}
                     role="progressbar"
-                    aria-valuenow={series.libraryGames}
+                    aria-valuenow={franchise.libraryGames}
                     aria-valuemin={0}
-                    aria-valuemax={series.totalGames}
-                    aria-label={`${series.libraryGames} of ${series.totalGames} games owned`}
+                    aria-valuemax={franchise.totalGames}
+                    aria-label={`${franchise.libraryGames} of ${franchise.totalGames} games owned`}
                   />
                 </div>
               </div>
@@ -130,29 +123,27 @@ export function ExploreSeriesPage() {
           <BackButton onClick={() => navigate("/explore")}>
             Back to Explore
           </BackButton>
-          <h1 className="text-4xl font-bold text-surface-100">{series.name}</h1>
-          {/* Ownership progress */}
+          <h1 className="text-4xl font-bold text-surface-100">{franchise.name}</h1>
           <div data-testid="ownership-progress">
             <p className="text-sm text-surface-400 mb-2">
-              You own {series.libraryGames} of {series.totalGames} games
+              You own {franchise.libraryGames} of {franchise.totalGames} games
             </p>
             <div className="w-full h-2 bg-surface-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-brand-500 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
                 role="progressbar"
-                aria-valuenow={series.libraryGames}
+                aria-valuenow={franchise.libraryGames}
                 aria-valuemin={0}
-                aria-valuemax={series.totalGames}
-                aria-label={`${series.libraryGames} of ${series.totalGames} games owned`}
+                aria-valuemax={franchise.totalGames}
+                aria-label={`${franchise.libraryGames} of ${franchise.totalGames} games owned`}
               />
             </div>
           </div>
         </>
       )}
 
-      {/* Console badges */}
-      {series.consoles.length > 0 && (
+      {franchise.consoles.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="console-filters">
           <button
             onClick={() => setConsoleFilter(null)}
@@ -163,9 +154,9 @@ export function ExploreSeriesPage() {
                 : "bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700",
             )}
           >
-            All ({series.games.length})
+            All ({franchise.games.length})
           </button>
-          {series.consoles.map((console: SeriesConsole) => (
+          {franchise.consoles.map((console: SeriesConsole) => (
             <button
               key={console.abbreviation}
               onClick={() =>
@@ -197,10 +188,9 @@ export function ExploreSeriesPage() {
         </div>
       )}
 
-      {/* Timeline */}
-      <div className="max-w-4xl space-y-3" data-testid="series-timeline">
+      <div className="max-w-4xl space-y-3" data-testid="franchise-timeline">
         {filteredGames.map((game) => (
-          <GameTimelineCard key={game.igdbGameId} game={game} testIdPrefix="series" />
+          <GameTimelineCard key={game.igdbGameId} game={game} testIdPrefix="franchise" />
         ))}
         {filteredGames.length === 0 && (
           <p className="text-sm text-surface-500 text-center py-8">
