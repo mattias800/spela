@@ -54,6 +54,7 @@ func setupIGDBTestEnv(t *testing.T, twitchServer *httptest.Server) (*gorm.DB, *g
 		{
 			admin.POST("/igdb/test", igdbHandler.TestIGDB)
 			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
+			admin.GET("/steamgriddb/status", adminHandler.GetSteamGridDBStatus)
 			admin.GET("/settings", adminHandler.GetSettings)
 			admin.PUT("/settings", adminHandler.UpdateSettings)
 		}
@@ -318,4 +319,68 @@ func TestSettingsMasking_EmptySecret(t *testing.T) {
 
 	// Empty secret should NOT be masked (returns empty string)
 	assert.Equal(t, "", resp["igdb_client_secret"])
+}
+
+func TestGetSteamGridDBStatus(t *testing.T) {
+	tests := []struct {
+		name       string
+		envKey     string
+		dbKey      string
+		wantSource string
+		wantConf   bool
+	}{
+		{
+			name:       "not configured",
+			envKey:     "",
+			dbKey:      "",
+			wantSource: "none",
+			wantConf:   false,
+		},
+		{
+			name:       "configured via database",
+			envKey:     "",
+			dbKey:      "db-api-key",
+			wantSource: "database",
+			wantConf:   true,
+		},
+		{
+			name:       "configured via env",
+			envKey:     "env-api-key",
+			dbKey:      "",
+			wantSource: "env",
+			wantConf:   true,
+		},
+		{
+			name:       "env takes precedence over database",
+			envKey:     "env-api-key",
+			dbKey:      "db-api-key",
+			wantSource: "env",
+			wantConf:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			database, router := setupIGDBTestEnv(t, nil)
+			token := createIGDBTestUser(t, database, "admin")
+
+			if tt.envKey != "" {
+				t.Setenv("SPELA_STEAMGRIDDB_API_KEY", tt.envKey)
+			}
+			if tt.dbKey != "" {
+				database.Create(&db.ServerSetting{Key: "steamgriddb_api_key", Value: tt.dbKey})
+			}
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/api/admin/steamgriddb/status", nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			var resp map[string]interface{}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			assert.Equal(t, tt.wantConf, resp["configured"])
+			assert.Equal(t, tt.wantSource, resp["source"])
+		})
+	}
 }

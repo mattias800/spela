@@ -14,12 +14,6 @@ interface CoverArtSelectorProps {
   onClose: () => void;
 }
 
-const sourceLabels: Record<string, string> = {
-  libretro: "LibRetro",
-  igdb: "IGDB",
-  custom: "Custom",
-};
-
 export function CoverArtSelector({
   gameId,
   aspectRatio,
@@ -35,13 +29,20 @@ export function CoverArtSelector({
   // Only show if there are multiple cover options
   if (data.covers.length < 2) return null;
 
-  function handleSelect(source: CoverOption["source"]) {
-    if (source === data!.active) return;
+  function handleSelect(cover: CoverOption) {
+    if (cover.source === data!.active && cover.source !== "libretro-regional") {
+      return;
+    }
     setCover.mutate(
-      { gameId, source },
+      {
+        gameId,
+        source: cover.source,
+        libretroName: cover.libretroName,
+      },
       {
         onSuccess: () => {
-          toast("success", `Cover art set to ${sourceLabels[source] ?? source}`);
+          const label = cover.label ?? cover.source;
+          toast("success", `Cover art set to ${label}`);
           onClose();
         },
         onError: () => {
@@ -54,14 +55,21 @@ export function CoverArtSelector({
   return (
     <Modal open={open} onClose={onClose} title="Cover Art Source" size="lg">
       <div className="flex flex-wrap gap-4" data-testid="cover-art-selector">
-        {data.covers.map((cover) => {
-          const isActive = cover.source === data.active;
+        {data.covers.map((cover, index) => {
+          const isActive =
+            cover.source === data.active &&
+            cover.source !== "libretro-regional";
+          const label = cover.label ?? cover.source;
+          const key =
+            cover.source === "libretro-regional"
+              ? `regional-${index}`
+              : cover.source;
           return (
             <button
-              key={cover.source}
-              onClick={() => handleSelect(cover.source)}
+              key={key}
+              onClick={() => handleSelect(cover)}
               disabled={setCover.isPending}
-              data-testid={`cover-option-${cover.source}`}
+              data-testid={`cover-option-${key}`}
               className={cn(
                 "group relative rounded-xl overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900",
                 isActive
@@ -76,7 +84,7 @@ export function CoverArtSelector({
               >
                 <img
                   src={cover.url}
-                  alt={`${sourceLabels[cover.source] ?? cover.source} cover`}
+                  alt={`${label} cover`}
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
@@ -95,7 +103,7 @@ export function CoverArtSelector({
               )}
               <div className="bg-surface-900/90 px-2 py-1 text-center">
                 <span className="text-xs font-medium text-surface-300">
-                  {sourceLabels[cover.source] ?? cover.source}
+                  {label}
                 </span>
               </div>
             </button>

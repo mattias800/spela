@@ -328,6 +328,31 @@ func TestGetGameCovers_CustomPreMigrationCover(t *testing.T) {
 	assert.Contains(t, resp.Covers[0].URL, "/api/images/")
 }
 
+func TestSetGameCover_RegionalRejectsUnknownLibRetroName(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	_, adminToken := createAdminUser(t, database)
+	game := createTestGame(t, database)
+
+	// Attempt to set a libretro-regional cover with an arbitrary name
+	// that is not a known regional variant — should be rejected (SSRF prevention)
+	body, _ := json.Marshal(map[string]interface{}{
+		"source":      "libretro-regional",
+		"libretroName": "../../etc/passwd",
+	})
+	req := httptest.NewRequest("PUT", "/api/admin/games/"+strconv.Itoa(int(game.ID))+"/covers", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Contains(t, resp["error"], "not a known regional variant")
+}
+
 func TestSetGameCover_SetsCoverManuallySet(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router := NewRouter(*cfg)

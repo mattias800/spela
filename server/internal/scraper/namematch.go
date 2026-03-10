@@ -223,6 +223,51 @@ func hasPreferredRegion(rawName string) bool {
 	return strings.Contains(lower, "(usa") || strings.Contains(lower, "(world") || strings.Contains(lower, "(us)")
 }
 
+// RegionalVariant represents a LibRetro thumbnail entry for a specific region.
+type RegionalVariant struct {
+	LibRetroName string // raw name from the LibRetro listing (without .png)
+	Region       string // extracted region (e.g. "USA", "Japan, Europe")
+}
+
+// findAllMatches returns all entries that match the given normalized query
+// above the given threshold. Used to discover regional variants of a game.
+func findAllMatches(normalizedQuery string, entries []nameEntry, threshold float64) []nameEntry {
+	if normalizedQuery == "" || len(entries) == 0 {
+		return nil
+	}
+
+	var matches []nameEntry
+	for _, e := range entries {
+		var score float64
+
+		if e.Normalized == normalizedQuery {
+			score = 1.0
+		} else if strings.HasPrefix(e.Normalized, normalizedQuery) || strings.HasPrefix(normalizedQuery, e.Normalized) {
+			shorter := len(normalizedQuery)
+			longer := len(e.Normalized)
+			if shorter > longer {
+				shorter, longer = longer, shorter
+			}
+			score = 0.90 + 0.05*float64(shorter)/float64(longer)
+		} else if strings.Contains(e.Normalized, normalizedQuery) || strings.Contains(normalizedQuery, e.Normalized) {
+			shorter := len(normalizedQuery)
+			longer := len(e.Normalized)
+			if shorter > longer {
+				shorter, longer = longer, shorter
+			}
+			score = 0.80 + 0.05*float64(shorter)/float64(longer)
+		} else {
+			score = jaroWinkler(normalizedQuery, e.Normalized)
+		}
+
+		if score >= threshold || score == 1.0 {
+			matches = append(matches, e)
+		}
+	}
+
+	return matches
+}
+
 // findBestMatch finds the best matching entry from the list for the given normalized query.
 // Returns the match, the score, and whether a match was found.
 func findBestMatch(normalizedQuery string, entries []nameEntry, threshold float64) (nameEntry, float64, bool) {

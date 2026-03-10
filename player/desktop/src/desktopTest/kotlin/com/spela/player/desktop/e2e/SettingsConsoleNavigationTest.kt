@@ -1,5 +1,6 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -142,10 +143,12 @@ class SettingsConsoleNavigationTest {
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // Scroll to Controls section
+        // Scroll to Controls section header (use heading semantics to distinguish
+        // from the "Controls" radio option in the Second Screen section)
+        val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
         onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Controls"))
-        onNodeWithText("Controls").assertIsDisplayed()
+            .performScrollToNode(hasText("Controls") and isHeading)
+        onNode(hasText("Controls") and isHeading).assertIsDisplayed()
 
         // No scope tabs should be present for controls
         // (The "Default" text might exist for other reasons like the theme,

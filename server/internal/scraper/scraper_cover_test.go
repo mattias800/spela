@@ -227,6 +227,62 @@ func TestScrapeGame_ReScrape_ClearsBothCovers(t *testing.T) {
 	assert.Empty(t, game.CoverURL, "active cover should be cleared when no source available")
 }
 
+func TestFindRegionalVariants(t *testing.T) {
+	s := &Scraper{
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		cache: &nameCache{entries: map[string][]nameEntry{
+			"Nintendo - Nintendo Entertainment System": {
+				{Raw: "Castlevania (USA)", Normalized: normalizeName("Castlevania (USA)"), Priority: 0},
+				{Raw: "Castlevania (Europe)", Normalized: normalizeName("Castlevania (Europe)"), Priority: 0},
+				{Raw: "Castlevania (Japan)", Normalized: normalizeName("Castlevania (Japan)"), Priority: 0},
+				{Raw: "Castlevania (USA) (Rev A)", Normalized: normalizeName("Castlevania (USA) (Rev A)"), Priority: 1},
+				{Raw: "Castlevania (Beta)", Normalized: normalizeName("Castlevania (Beta)"), Priority: 5},
+				{Raw: "Super Mario Bros. (World)", Normalized: normalizeName("Super Mario Bros. (World)"), Priority: 0},
+			},
+		}},
+	}
+
+	t.Run("returns regional variants excluding best match", func(t *testing.T) {
+		// The best match for "Castlevania (USA)" is "Castlevania (USA)" itself,
+		// which should be excluded from the variants. Europe, Japan, Rev A should remain.
+		variants := s.FindRegionalVariants("NES", "Castlevania (USA)")
+		assert.GreaterOrEqual(t, len(variants), 2, "should find at least Europe and Japan variants")
+		for _, v := range variants {
+			// The best match (USA, priority 0, preferred region) should be excluded
+			assert.NotEqual(t, "Castlevania (USA)", v.LibRetroName, "should exclude the best match")
+			assert.NotContains(t, v.LibRetroName, "Beta", "should exclude low-quality entries")
+		}
+		// Verify regions are extracted
+		regions := make(map[string]bool)
+		for _, v := range variants {
+			regions[v.Region] = true
+		}
+		assert.True(t, regions["Europe"], "should include Europe variant")
+		assert.True(t, regions["Japan"], "should include Japan variant")
+	})
+
+	t.Run("returns nil for unknown console", func(t *testing.T) {
+		variants := s.FindRegionalVariants("UNKNOWN", "Castlevania")
+		assert.Nil(t, variants)
+	})
+
+	t.Run("returns nil when no matches", func(t *testing.T) {
+		variants := s.FindRegionalVariants("NES", "Nonexistent Game XYZ")
+		assert.Nil(t, variants)
+	})
+}
+
+func TestLibRetroThumbnailURL(t *testing.T) {
+	url := LibRetroThumbnailURL("NES", "Castlevania (Europe)")
+	assert.Contains(t, url, "thumbnails.libretro.com")
+	assert.Contains(t, url, "Nintendo%20-%20Nintendo%20Entertainment%20System")
+	assert.Contains(t, url, "Named_Boxarts")
+	assert.Contains(t, url, "Castlevania%20%28Europe%29.png")
+
+	empty := LibRetroThumbnailURL("UNKNOWN", "test")
+	assert.Empty(t, empty)
+}
+
 func TestScrapeGame_ReScrape_PreservesManualOverride(t *testing.T) {
 	// Image server that serves both IGDB and LibRetro images
 	imageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

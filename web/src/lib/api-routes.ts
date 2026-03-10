@@ -206,6 +206,7 @@ export type ApiGetPath = WithQuery<
   | `/admin/games/${string}/igdb-search`
   | "/admin/metadata-matches"
   | "/admin/igdb/status"
+  | "/admin/steamgriddb/status"
   | "/admin/cheats/stats"
   | "/admin/uploads"
   | "/admin/core-compatibility"

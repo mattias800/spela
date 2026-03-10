@@ -33,7 +33,6 @@ import { SharedSavesList } from "@/features/game-detail/components/shared-saves-
 import { GameActiveSharedSessions } from "@/features/shared-sessions/components/game-active-shared-sessions";
 import { GameSessions } from "@/features/sessions/components/game-sessions";
 import { useGameSessions } from "@/hooks/use-sessions";
-import { GameCheats } from "@/features/game-detail/components/game-cheats";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
 import { useGameSeries, useGameFranchises } from "@/hooks/use-explore";
@@ -288,8 +287,6 @@ export function GameDetailPage() {
         screenshotUrls={game.screenshotUrls}
         gameTitle={game.title}
       />
-
-      <GameCheats gameId={game.id} />
 
       {isPlayable && (
         <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
