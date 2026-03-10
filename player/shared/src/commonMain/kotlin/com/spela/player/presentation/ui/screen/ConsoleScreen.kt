@@ -68,6 +68,11 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
+import com.spela.player.presentation.ui.feature.explore.ConsoleGenreBreakdown
+import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
+import com.spela.player.presentation.ui.feature.explore.ConsoleRecentlyPlayed
+import com.spela.player.presentation.ui.feature.explore.ConsoleTopDevelopers
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.home.TopRatedRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
@@ -79,6 +84,7 @@ import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
 private data class SortOption(val key: String, val label: String)
@@ -94,8 +100,10 @@ private val sortOptions = listOf(
 fun ConsoleScreen(
     consoleId: String,
     viewModel: GameListViewModel,
+    exploreViewModel: ExploreViewModel? = null,
     onGameSelected: (String) -> Unit,
     onBack: () -> Unit,
+    onDeveloperSelected: (String) -> Unit = {},
     onNavigateToConsoleSettings: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
@@ -119,6 +127,10 @@ fun ConsoleScreen(
 
     LaunchedEffect(consoleId) {
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
+    }
+
+    LaunchedEffect(consoleId) {
+        exploreViewModel?.loadConsoleShowcase(consoleId)
     }
 
     // Auto-focus search field when it becomes visible
@@ -275,6 +287,24 @@ fun ConsoleScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = SpSpacing.Small),
                             )
+                        }
+                    }
+
+                    if (exploreViewModel != null) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleEssentials(exploreViewModel, onGameSelected)
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleHiddenGems(exploreViewModel, onGameSelected)
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleGenreBreakdown(exploreViewModel)
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected)
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            ConsoleRecentlyPlayed(exploreViewModel, onGameSelected)
                         }
                     }
 

@@ -16,6 +16,13 @@ import { useBiosStatus } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
+import {
+  ConsoleEssentials,
+  ConsoleHiddenGems,
+  ConsoleGenreBreakdown,
+  ConsoleTopDevelopers,
+  ConsoleRecentlyPlayed,
+} from "@/features/explore/components/console-showcase-sections";
 import { Pagination } from "@/components/pagination";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
@@ -157,6 +164,12 @@ export function ConsoleDetailPage() {
         }}
         className="max-w-sm"
       />
+
+      <ConsoleEssentials consoleId={id!} />
+      <ConsoleHiddenGems consoleId={id!} />
+      <ConsoleGenreBreakdown consoleId={id!} />
+      <ConsoleTopDevelopers consoleId={id!} />
+      <ConsoleRecentlyPlayed consoleId={id!} />
 
       {/* Games grid */}
       {isLoading ? (

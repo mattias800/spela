@@ -1,28 +1,17 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,35 +19,25 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.spela.player.domain.model.DeveloperSummary
-import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.GenreCount
 import com.spela.player.presentation.ui.components.PlatformBackHandler
-import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpChip
-import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
-import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
-import com.spela.player.presentation.ui.feature.explore.GameShelf
-import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
+import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
+import com.spela.player.presentation.ui.feature.explore.ConsoleGenreBreakdown
+import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
+import com.spela.player.presentation.ui.feature.explore.ConsoleRecentlyPlayed
+import com.spela.player.presentation.ui.feature.explore.ConsoleTopDevelopers
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
-import com.spela.player.util.formatRating
 import com.spela.player.util.parseHexColor
 
 @Composable
@@ -153,94 +132,24 @@ fun ExploreConsoleShowcaseScreen(
                             }
                         }
 
-                        // Essentials section
-                        if (showcase.essentials.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Essentials",
-                                    edgeToEdgeContent = true,
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("console_essentials_section"),
-                                ) {
-                                    GameShelf(
-                                        games = showcase.essentials,
-                                        onGameSelected = onGameSelected,
-                                    )
-                                }
-                            }
+                        item {
+                            ConsoleEssentials(viewModel, onGameSelected)
                         }
 
-                        // Hidden Gems section
-                        if (showcase.hiddenGems.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Hidden Gems",
-                                    edgeToEdgeContent = true,
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("console_hidden_gems_section"),
-                                ) {
-                                    GameShelf(
-                                        games = showcase.hiddenGems,
-                                        onGameSelected = onGameSelected,
-                                    )
-                                }
-                            }
+                        item {
+                            ConsoleHiddenGems(viewModel, onGameSelected)
                         }
 
-                        // Genre Breakdown section
-                        if (showcase.genreBreakdown.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Genre Breakdown",
-                                    edgeToEdgeContent = true,
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("console_genre_breakdown_section"),
-                                ) {
-                                    GenreBreakdownChips(
-                                        genres = showcase.genreBreakdown,
-                                        accentColor = accentColor,
-                                    )
-                                }
-                            }
+                        item {
+                            ConsoleGenreBreakdown(viewModel)
                         }
 
-                        // Top Developers section
-                        if (showcase.topDevelopers.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Top Developers",
-                                    edgeToEdgeContent = true,
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("console_top_developers_section"),
-                                ) {
-                                    TopDevelopersList(
-                                        developers = showcase.topDevelopers,
-                                        onDeveloperSelected = onDeveloperSelected,
-                                    )
-                                }
-                            }
+                        item {
+                            ConsoleTopDevelopers(viewModel, onDeveloperSelected)
                         }
 
-                        // Recently Played section (only if non-empty)
-                        if (showcase.recentlyPlayed.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Recently Played",
-                                    edgeToEdgeContent = true,
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("console_recently_played_section"),
-                                ) {
-                                    GameShelf(
-                                        games = showcase.recentlyPlayed,
-                                        onGameSelected = onGameSelected,
-                                    )
-                                }
-                            }
+                        item {
+                            ConsoleRecentlyPlayed(viewModel, onGameSelected)
                         }
                     }
                 }
@@ -273,104 +182,5 @@ fun ExploreConsoleShowcaseScreen(
             onDismiss = { viewModel.dismissConsoleShowcaseError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun GenreBreakdownChips(
-    genres: List<GenreCount>,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    FlowRow(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .testTag("genre_breakdown_chips"),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        genres.forEach { genre ->
-            SpChip(
-                text = "${genre.name} (${genre.gameCount})",
-                color = accentColor,
-                modifier = Modifier
-                    .testTag("genre_chip_${genre.name}")
-                    .semantics {
-                        contentDescription = "${genre.name}, ${genre.gameCount} games"
-                    },
-            )
-        }
-    }
-}
-
-@Composable
-private fun TopDevelopersList(
-    developers: List<DeveloperSummary>,
-    onDeveloperSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .testTag("top_developers_list"),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        developers.forEach { developer ->
-            SpCard(
-                onClick = { onDeveloperSelected(developer.name) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("developer_card_${developer.name}")
-                    .semantics {
-                        contentDescription = "${developer.name}, ${developer.gameCount} games"
-                    },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(SpSpacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            text = developer.name,
-                            style = SpTypography.TitleSmall,
-                            color = SpColor.OnCard,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XXSmall))
-                        Text(
-                            text = "${developer.gameCount} games",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-
-                    if (developer.avgRating > 0) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = SpColor.Rating,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Text(
-                                text = formatRating(developer.avgRating),
-                                style = SpTypography.BodyMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
