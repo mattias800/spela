@@ -6,7 +6,6 @@ import { MemoryRouter } from "react-router-dom";
 import { AdminSettingsPage } from "./settings-page";
 
 const mockSettings = {
-  gameDirectories: "/games",
   registration_enabled: "true",
   scrapeOnScan: "true",
   igdb_client_id: "test-client-id",
@@ -14,7 +13,6 @@ const mockSettings = {
 };
 
 const mockSettingsEmpty = {
-  gameDirectories: "/games",
   registration_enabled: "true",
   scrapeOnScan: "true",
   igdb_client_id: "",
@@ -29,6 +27,7 @@ vi.mock("@/hooks/use-admin", () => ({
   useUpdateSettings: vi.fn(),
   useTestIgdbCredentials: vi.fn(),
   useIgdbStatus: vi.fn(),
+  useSteamGridDBStatus: vi.fn(),
 }));
 
 vi.mock("@/components/ui", async () => {
@@ -45,6 +44,7 @@ import {
   useUpdateSettings,
   useTestIgdbCredentials,
   useIgdbStatus,
+  useSteamGridDBStatus,
 } from "@/hooks/use-admin";
 
 const mockUseServerSettings = useServerSettings as ReturnType<typeof vi.fn>;
@@ -53,6 +53,9 @@ const mockUseTestIgdbCredentials = useTestIgdbCredentials as ReturnType<
   typeof vi.fn
 >;
 const mockUseIgdbStatus = useIgdbStatus as ReturnType<typeof vi.fn>;
+const mockUseSteamGridDBStatus = useSteamGridDBStatus as ReturnType<
+  typeof vi.fn
+>;
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -83,6 +86,9 @@ beforeEach(() => {
   });
   mockUseIgdbStatus.mockReturnValue({
     data: { configured: true, status: "connected" },
+  });
+  mockUseSteamGridDBStatus.mockReturnValue({
+    data: { configured: false, source: "none" },
   });
 });
 
@@ -266,5 +272,82 @@ describe("AdminSettingsPage - No ScreenScraper UI", () => {
     expect(
       screen.queryByText(/Default Scraper Source/),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("AdminSettingsPage - No Game Directories UI", () => {
+  it("does not render a Game Directories card", () => {
+    renderPage();
+    expect(screen.queryByText("Game Directories")).not.toBeInTheDocument();
+  });
+
+  it("does not render directory input or add button", () => {
+    renderPage();
+    expect(
+      screen.queryByPlaceholderText("/path/to/games"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not include gameDirectories in save payload", async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    expect(mockUpdateMutate).toHaveBeenCalledTimes(1);
+    const payload = mockUpdateMutate.mock.calls[0][0] as Record<
+      string,
+      string
+    >;
+    expect(payload).not.toHaveProperty("gameDirectories");
+  });
+});
+
+describe("AdminSettingsPage - SteamGridDB env var detection", () => {
+  it("shows env-configured message when SteamGridDB is set via env", () => {
+    mockUseSteamGridDBStatus.mockReturnValue({
+      data: { configured: true, source: "env" },
+    });
+    renderPage();
+    expect(
+      screen.getByText("Configured via environment variables"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("SPELA_STEAMGRIDDB_API_KEY"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("SteamGridDB API Key"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows input field when SteamGridDB is configured via database", () => {
+    mockUseSteamGridDBStatus.mockReturnValue({
+      data: { configured: true, source: "database" },
+    });
+    renderPage();
+    expect(
+      screen.getByPlaceholderText("SteamGridDB API Key"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows input field when SteamGridDB is not configured", () => {
+    mockUseSteamGridDBStatus.mockReturnValue({
+      data: { configured: false, source: "none" },
+    });
+    renderPage();
+    expect(
+      screen.getByPlaceholderText("SteamGridDB API Key"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not send steamgriddb_api_key in payload when configured via env", async () => {
+    mockUseSteamGridDBStatus.mockReturnValue({
+      data: { configured: true, source: "env" },
+    });
+    renderPage();
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    expect(mockUpdateMutate).toHaveBeenCalledTimes(1);
+    const payload = mockUpdateMutate.mock.calls[0][0] as Record<
+      string,
+      string
+    >;
+    expect(payload).not.toHaveProperty("steamgriddb_api_key");
   });
 });

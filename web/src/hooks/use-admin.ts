@@ -211,8 +211,10 @@ export function useScrapeStatus() {
 }
 
 export interface CoverOption {
-  source: "libretro" | "igdb" | "custom";
+  source: "libretro" | "igdb" | "custom" | "libretro-regional";
   url: string;
+  label?: string;
+  libretroName?: string;
 }
 
 export interface GameCoversResponse {
@@ -235,11 +237,13 @@ export function useSetGameCover() {
     mutationFn: async ({
       gameId,
       source,
+      libretroName,
     }: {
       gameId: string;
       source: CoverOption["source"];
+      libretroName?: string;
     }) => {
-      await api.put(`/admin/games/${gameId}/covers`, { source });
+      await api.put(`/admin/games/${gameId}/covers`, { source, libretroName });
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -261,6 +265,17 @@ export function useIgdbStatus() {
         source: "env" | "database" | "none";
         error?: string;
       }>("/admin/igdb/status"),
+  });
+}
+
+export function useSteamGridDBStatus() {
+  return useQuery({
+    queryKey: ["admin", "steamgriddb-status"],
+    queryFn: () =>
+      api.get<{
+        configured: boolean;
+        source: "env" | "database" | "none";
+      }>("/admin/steamgriddb/status"),
   });
 }
 

@@ -397,6 +397,7 @@ fun SpelaApp(
                                 HomeScreen(
                                     viewModel = gameListViewModel,
                                     socialViewModel = socialViewModel,
+                                    settingsViewModel = settingsViewModel,
                                     onGameSelected = { gameId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))

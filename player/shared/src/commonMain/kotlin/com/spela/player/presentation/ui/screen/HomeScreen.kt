@@ -1,5 +1,8 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,12 +41,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -51,12 +59,16 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
@@ -73,6 +85,8 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameListViewModel
+import com.spela.player.presentation.viewmodel.SettingsIntent
+import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import org.jetbrains.compose.resources.painterResource
 import spela_player.shared.generated.resources.Res
@@ -83,6 +97,7 @@ import spela_player.shared.generated.resources.spela_icon
 fun HomeScreen(
     viewModel: GameListViewModel,
     socialViewModel: SocialViewModel,
+    settingsViewModel: SettingsViewModel? = null,
     onGameSelected: (String) -> Unit,
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
@@ -207,6 +222,19 @@ fun HomeScreen(
                                             },
                                         )
                                     }
+                                }
+                            }
+
+                            // Device name banner
+                            if (settingsViewModel != null) {
+                                item {
+                                    val settingsState by settingsViewModel.state.collectAsState()
+                                    DeviceNameBanner(
+                                        deviceName = settingsState.deviceName,
+                                        onSave = { name ->
+                                            settingsViewModel.onIntent(SettingsIntent.UpdateDeviceName(name))
+                                        },
+                                    )
                                 }
                             }
 
@@ -460,6 +488,69 @@ fun HomeScreen(
             onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+@Composable
+private fun DeviceNameBanner(
+    deviceName: String,
+    onSave: (String) -> Unit,
+) {
+    var nameInput by remember { mutableStateOf("") }
+
+    AnimatedVisibility(
+        visible = deviceName.isBlank(),
+        enter = expandVertically(),
+        exit = shrinkVertically(),
+        modifier = Modifier.testTag("device_name_banner"),
+    ) {
+        SpCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                .semantics { contentDescription = "Name this device banner" },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(SpSpacing.Default),
+            ) {
+                Text(
+                    text = "Name this device",
+                    style = SpTypography.TitleMedium,
+                    color = SpColor.OnCard,
+                )
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                Text(
+                    text = "Give this device a name so you can identify it across your account.",
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+                Spacer(Modifier.height(SpSpacing.Medium))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    SpTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        placeholder = "My device",
+                        modifier = Modifier.weight(1f),
+                    )
+                    SpButton(
+                        text = "Save",
+                        onClick = {
+                            if (nameInput.isNotBlank()) {
+                                onSave(nameInput)
+                            }
+                        },
+                        style = SpButtonStyle.Primary,
+                        enabled = nameInput.isNotBlank(),
+                    )
+                }
+            }
+        }
     }
 }
 

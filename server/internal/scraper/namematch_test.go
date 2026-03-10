@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -419,6 +420,56 @@ func TestFindBestMatch_EmptyInputs(t *testing.T) {
 	if found {
 		t.Error("expected no match for empty entries")
 	}
+}
+
+func TestFindAllMatches(t *testing.T) {
+	entry := func(raw string) nameEntry {
+		return nameEntry{
+			Raw:        raw,
+			Normalized: normalizeName(raw),
+			Priority:   computePriority(raw),
+		}
+	}
+
+	entries := []nameEntry{
+		entry("Castlevania (USA)"),
+		entry("Castlevania (Europe)"),
+		entry("Castlevania (Japan)"),
+		entry("Castlevania (USA) (Rev A)"),
+		entry("Castlevania (USA) [b]"),
+		entry("Castlevania (Beta)"),
+		entry("Super Mario Bros. (World)"),
+		entry("Totally Different Game (USA)"),
+	}
+
+	t.Run("finds all regional variants of a game", func(t *testing.T) {
+		normalized := normalizeName("Castlevania")
+		matches := findAllMatches(normalized, entries, 0.88)
+		// Should match all Castlevania entries (USA, Europe, Japan, Rev A, bad dump, beta)
+		// but not Super Mario Bros or Totally Different Game
+		if len(matches) < 3 {
+			t.Errorf("expected at least 3 matches for Castlevania, got %d", len(matches))
+		}
+		for _, m := range matches {
+			if !strings.Contains(m.Normalized, "castlevania") {
+				t.Errorf("unexpected match: %q", m.Raw)
+			}
+		}
+	})
+
+	t.Run("empty query returns nil", func(t *testing.T) {
+		matches := findAllMatches("", entries, 0.88)
+		if matches != nil {
+			t.Errorf("expected nil for empty query, got %d matches", len(matches))
+		}
+	})
+
+	t.Run("no matches returns nil", func(t *testing.T) {
+		matches := findAllMatches("nonexistent game xyz", entries, 0.88)
+		if len(matches) != 0 {
+			t.Errorf("expected 0 matches, got %d", len(matches))
+		}
+	})
 }
 
 // almostEqual checks if two floats are approximately equal.

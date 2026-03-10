@@ -27,6 +27,7 @@ class DashboardSectionOrderTest {
     private fun createLoggedInHarness(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.authRepo.preSetTokens()
+        harness.deviceManager.setDeviceName("Test Device")
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         return harness
     }

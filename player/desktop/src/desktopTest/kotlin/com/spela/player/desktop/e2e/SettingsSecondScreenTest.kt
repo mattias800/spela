@@ -65,7 +65,6 @@ class SettingsSecondScreenTest {
         // Controls option (scroll back up if needed)
         onNodeWithTag("settings_list")
             .performScrollToNode(hasText("Touch gamepad controls"))
-        onNodeWithText("Controls").assertIsDisplayed()
         onNodeWithText("Touch gamepad controls").assertIsDisplayed()
     }
 }

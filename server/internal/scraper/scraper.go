@@ -260,6 +260,76 @@ func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath str
 	return s.tryDownloadImage(system, match.Raw, imageType, subpath)
 }
 
+// FindRegionalVariants returns all regional box art variants available on LibRetro
+// for the given game. It searches the LibRetro name cache for entries that match
+// the game name (by normalized fuzzy matching) and have different region tags.
+// The currentLibRetroName is excluded from the results if provided.
+func (s *Scraper) FindRegionalVariants(consoleAbbr, gameName string) []RegionalVariant {
+	system, ok := AbbreviationToLibRetro[consoleAbbr]
+	if !ok {
+		return nil
+	}
+
+	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	if err != nil {
+		slog.Warn("failed to load LibRetro listing for regional variants", "system", system, "error", err)
+		return nil
+	}
+
+	normalized := normalizeName(gameName)
+
+	// Find which entry was used as the default cover (the best match from scraping)
+	// so we can exclude it from the regional variants list.
+	bestMatch, _, bestFound := findBestMatch(normalized, entries, 0.88)
+
+	matches := findAllMatches(normalized, entries, 0.88)
+
+	var variants []RegionalVariant
+	for _, m := range matches {
+		// Skip low-quality entries
+		if m.Priority > 2 {
+			continue
+		}
+		// Skip the entry that was used as the default cover
+		if bestFound && m.Raw == bestMatch.Raw {
+			continue
+		}
+		region := ExtractRegion(m.Raw)
+		if region == "" {
+			region = "Unknown"
+		}
+		variants = append(variants, RegionalVariant{
+			LibRetroName: m.Raw,
+			Region:       region,
+		})
+	}
+
+	return variants
+}
+
+// DownloadRegionalCover downloads a specific LibRetro box art by its raw name
+// and saves it to the given subpath. Returns the stored path or empty string on failure.
+func (s *Scraper) DownloadRegionalCover(consoleAbbr, libRetroName, subpath string) string {
+	system, ok := AbbreviationToLibRetro[consoleAbbr]
+	if !ok {
+		return ""
+	}
+	return s.tryDownloadImage(system, libRetroName, "Named_Boxarts", subpath)
+}
+
+// LibRetroThumbnailURL constructs the direct URL to a LibRetro thumbnail.
+func LibRetroThumbnailURL(consoleAbbr, libRetroName string) string {
+	system, ok := AbbreviationToLibRetro[consoleAbbr]
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s/Named_Boxarts/%s.png",
+		libRetroThumbnailBase,
+		url.PathEscape(system),
+		url.PathEscape(libRetroName),
+	)
+}
+
 // ScrapeGame fetches metadata from IGDB (if configured) and images from IGDB/LibRetro.
 func (s *Scraper) ScrapeGame(game *db.Game) error {
 	// Load console if not preloaded

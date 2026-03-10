@@ -228,21 +228,6 @@ fun SettingsScreen(
                                 color = SpColor.OnBackgroundTertiary,
                             )
                         }
-                        Spacer(Modifier.height(SpSpacing.Default))
-                        SpTextField(
-                            value = state.deviceName,
-                            onValueChange = { viewModel.onIntent(SettingsIntent.UpdateDeviceName(it)) },
-                            label = "Device Name",
-                            placeholder = "My device",
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(SpSpacing.Default))
-                        SpButton(
-                            text = "Sign Out",
-                            onClick = { viewModel.onIntent(SettingsIntent.ShowLogoutConfirm) },
-                            style = SpButtonStyle.Outlined,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
                     }
                 }
             }
@@ -623,6 +608,35 @@ fun SettingsScreen(
                             contentDescription = "Open credits and licenses",
                             tint = SpColor.OnBackgroundTertiary,
                             modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+            }
+
+            // Device Name & Sign Out section (at the bottom)
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item { SettingsSectionHeader(title = "Device & Account") }
+
+            item {
+                SpCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpSpacing.Default),
+                    ) {
+                        SpTextField(
+                            value = state.deviceName,
+                            onValueChange = { viewModel.onIntent(SettingsIntent.UpdateDeviceName(it)) },
+                            label = "Device Name",
+                            placeholder = "My device",
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(SpSpacing.Default))
+                        SpButton(
+                            text = "Sign Out",
+                            onClick = { viewModel.onIntent(SettingsIntent.ShowLogoutConfirm) },
+                            style = SpButtonStyle.Outlined,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }

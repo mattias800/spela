@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Plus, X, Image } from "lucide-react";
+import { Image, CheckCircle2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -12,6 +12,7 @@ import {
   useServerSettings,
   useUpdateSettings,
   useIgdbStatus,
+  useSteamGridDBStatus,
 } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
@@ -21,11 +22,10 @@ import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-bann
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useServerSettings();
   const { data: igdbStatus } = useIgdbStatus();
+  const { data: steamgriddbStatus } = useSteamGridDBStatus();
   const updateSettings = useUpdateSettings();
   const { toast } = useToast();
 
-  const [gameDirectories, setGameDirectories] = useState<string[]>([]);
-  const [newDir, setNewDir] = useState("");
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
   const [biosAutoDownload, setBiosAutoDownload] = useState(true);
@@ -35,8 +35,6 @@ export function AdminSettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      const dirs = settings["gameDirectories"] ?? "";
-      setGameDirectories(dirs ? dirs.split(",") : []);
       setAllowRegistration(settings["registration_enabled"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
       setBiosAutoDownload(settings["bios_auto_download"] !== "false");
@@ -46,21 +44,8 @@ export function AdminSettingsPage() {
     }
   }, [settings]);
 
-  function handleAddDir() {
-    const dir = newDir.trim();
-    if (dir && !gameDirectories.includes(dir)) {
-      setGameDirectories((prev) => [...prev, dir]);
-      setNewDir("");
-    }
-  }
-
-  function handleRemoveDir(index: number) {
-    setGameDirectories((prev) => prev.filter((_, i) => i !== index));
-  }
-
   function handleSave() {
     const payload: Record<string, string> = {
-      gameDirectories: gameDirectories.join(","),
       registration_enabled: String(allowRegistration),
       scrapeOnScan: String(scrapeOnScan),
       bios_auto_download: String(biosAutoDownload),
@@ -70,7 +55,9 @@ export function AdminSettingsPage() {
       payload.igdb_client_id = igdbClientId;
       payload.igdb_client_secret = igdbClientSecret;
     }
-    payload.steamgriddb_api_key = steamgriddbApiKey;
+    if (!steamgriddbEnvConfigured) {
+      payload.steamgriddb_api_key = steamgriddbApiKey;
+    }
     updateSettings.mutate(payload, {
       onSuccess: () => toast("success", "Settings saved"),
       onError: (err) =>
@@ -89,6 +76,7 @@ export function AdminSettingsPage() {
 
   const igdbNotConfigured = igdbStatus && !igdbStatus.configured;
   const igdbEnvConfigured = igdbStatus?.source === "env";
+  const steamgriddbEnvConfigured = steamgriddbStatus?.source === "env";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -100,48 +88,6 @@ export function AdminSettingsPage() {
       </div>
 
       {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
-
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-            <Settings className="h-5 w-5 text-brand-400" />
-            Game Directories
-          </h2>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {gameDirectories.map((dir, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <code className="flex-1 px-3 py-2 rounded-lg bg-surface-800 text-sm text-surface-200 font-mono">
-                {dir}
-              </code>
-              <button
-                onClick={() => handleRemoveDir(i)}
-                className="p-2 rounded-lg text-surface-400 hover:text-danger-500 hover:bg-danger-500/10 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="/path/to/games"
-              value={newDir}
-              onChange={(e) => setNewDir(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddDir();
-                }
-              }}
-              className="flex-1"
-            />
-            <Button variant="secondary" onClick={handleAddDir}>
-              <Plus className="h-4 w-4" />
-              Add
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -221,13 +167,31 @@ export function AdminSettingsPage() {
           </p>
         </CardHeader>
         <CardContent>
-          <Input
-            label="SteamGridDB API Key"
-            type="password"
-            placeholder="SteamGridDB API Key"
-            value={steamgriddbApiKey}
-            onChange={(e) => setSteamgriddbApiKey(e.target.value)}
-          />
+          {steamgriddbEnvConfigured ? (
+            <div className="rounded-xl bg-surface-800/50 border border-surface-700/50 p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-success-500 flex-shrink-0" />
+                <p className="text-sm text-surface-200">
+                  Configured via environment variables
+                </p>
+              </div>
+              <p className="mt-1.5 ml-6 text-xs text-surface-500">
+                SteamGridDB API key is set through{" "}
+                <code className="px-1 py-0.5 rounded bg-surface-800 text-surface-300 font-mono">
+                  SPELA_STEAMGRIDDB_API_KEY
+                </code>
+                . To change it, update your environment and restart the server.
+              </p>
+            </div>
+          ) : (
+            <Input
+              label="SteamGridDB API Key"
+              type="password"
+              placeholder="SteamGridDB API Key"
+              value={steamgriddbApiKey}
+              onChange={(e) => setSteamgriddbApiKey(e.target.value)}
+            />
+          )}
         </CardContent>
       </Card>
 
