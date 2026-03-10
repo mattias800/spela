@@ -42,6 +42,7 @@ import { ExploreSeriesPage } from "@/pages/explore-series-page";
 import { DeveloperDetailPage } from "@/pages/developer-detail-page";
 import { PublisherDetailPage } from "@/pages/publisher-detail-page";
 import { ExploreMoodPage } from "@/pages/explore-mood-page";
+import { ExploreWizardPage } from "@/pages/explore-wizard-page";
 import { ConsoleShowcasePage } from "@/pages/console-showcase-page";
 import { ScreenshotGalleryPage } from "@/pages/screenshot-gallery-page";
 import { CoverGalleryPage } from "@/pages/cover-gallery-page";
@@ -120,6 +121,10 @@ export function App() {
                     <Route
                       path="explore/mood/:mood"
                       element={<ExploreMoodPage />}
+                    />
+                    <Route
+                      path="explore/wizard"
+                      element={<ExploreWizardPage />}
                     />
                     <Route
                       path="explore/developers/:name"

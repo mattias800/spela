@@ -5,6 +5,9 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { PlayHeatmap } from "@/components/play-heatmap";
 import { useMostPlayedGames, useMostActivePlayers } from "@/hooks/use-stats";
 import { useMyPlayHeatmap } from "@/hooks/use-play-heatmap";
+import { useExplorerBadges, useCompletionistMap } from "@/hooks/use-explore";
+import { ExplorerBadgesSection } from "@/features/explore/components/explorer-badges";
+import { CompletionistMapSection } from "@/features/explore/components/completionist-map";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -103,6 +106,9 @@ export function StatsPage() {
     useMostPlayedGames();
   const { data: mostActive, isLoading: isLoadingMostActive } =
     useMostActivePlayers();
+  const { data: badgesData, isLoading: isLoadingBadges } = useExplorerBadges();
+  const { data: completionistData, isLoading: isLoadingCompletionist } =
+    useCompletionistMap();
 
   const hasNoData =
     !isLoadingMostPlayed &&
@@ -147,6 +153,18 @@ export function StatsPage() {
           )}
         </section>
       )}
+
+      {/* Explorer Badges */}
+      <ExplorerBadgesSection
+        badges={badgesData?.badges}
+        isLoading={isLoadingBadges}
+      />
+
+      {/* Completionist Map */}
+      <CompletionistMapSection
+        data={completionistData}
+        isLoading={isLoadingCompletionist}
+      />
 
       {/* Most Played Games / Hall of Fame */}
       {(isLoadingMostPlayed ||

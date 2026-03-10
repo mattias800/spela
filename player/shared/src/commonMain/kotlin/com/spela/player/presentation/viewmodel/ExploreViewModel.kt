@@ -22,11 +22,14 @@ import com.spela.player.domain.model.GameFilters
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.CompletionistMap
+import com.spela.player.domain.model.ExplorerBadge
 import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.model.TrendingGame
+import com.spela.player.domain.model.WizardStep
 import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -152,6 +155,30 @@ data class GameSearchState(
     val error: String? = null,
 )
 
+data class WizardState(
+    val steps: List<WizardStep> = emptyList(),
+    val currentStep: Int = 0,
+    val selections: Map<String, String> = emptyMap(),
+    val resultGames: List<Game> = emptyList(),
+    val resultTitle: String = "",
+    val isLoadingSteps: Boolean = false,
+    val isLoadingResults: Boolean = false,
+    val error: String? = null,
+) {
+    val isComplete: Boolean get() = currentStep >= steps.size && steps.isNotEmpty()
+    val currentStepData: WizardStep? get() = steps.getOrNull(currentStep)
+}
+
+data class ExplorerBadgesState(
+    val badges: List<ExplorerBadge> = emptyList(),
+    val isLoading: Boolean = false,
+)
+
+data class CompletionistMapState(
+    val data: CompletionistMap? = null,
+    val isLoading: Boolean = false,
+)
+
 data class SeriesDetailState(
     val seriesId: String = "",
     val seriesName: String = "",
@@ -205,6 +232,15 @@ class ExploreViewModel(
 
     private val _gameSearchState = MutableStateFlow(GameSearchState())
     val gameSearchState: StateFlow<GameSearchState> = _gameSearchState.asStateFlow()
+
+    private val _wizardState = MutableStateFlow(WizardState())
+    val wizardState: StateFlow<WizardState> = _wizardState.asStateFlow()
+
+    private val _explorerBadgesState = MutableStateFlow(ExplorerBadgesState())
+    val explorerBadgesState: StateFlow<ExplorerBadgesState> = _explorerBadgesState.asStateFlow()
+
+    private val _completionistMapState = MutableStateFlow(CompletionistMapState())
+    val completionistMapState: StateFlow<CompletionistMapState> = _completionistMapState.asStateFlow()
 
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
@@ -785,5 +821,100 @@ class ExploreViewModel(
 
     fun dismissSearchError() {
         _gameSearchState.update { it.copy(error = null) }
+    }
+
+    // --- Phase 14: Wild Features ---
+
+    fun loadWizardSteps() {
+        scope.launch(dispatchers.io) {
+            _wizardState.update { it.copy(isLoadingSteps = true) }
+            exploreRepository.getWizardSteps().fold(
+                onSuccess = { steps ->
+                    _wizardState.update {
+                        it.copy(steps = steps, isLoadingSteps = false, currentStep = 0, selections = emptyMap(), resultGames = emptyList())
+                    }
+                },
+                onFailure = { error ->
+                    _wizardState.update { it.copy(isLoadingSteps = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun selectWizardOption(type: String, optionId: String) {
+        _wizardState.update {
+            val newSelections = it.selections + (type to optionId)
+            val newStep = it.currentStep + 1
+            it.copy(selections = newSelections, currentStep = newStep)
+        }
+        // If we just completed the wizard, load results
+        if (_wizardState.value.isComplete) {
+            loadWizardResults()
+        }
+    }
+
+    fun wizardGoBack() {
+        _wizardState.update {
+            if (it.currentStep > 0) it.copy(currentStep = it.currentStep - 1)
+            else it
+        }
+    }
+
+    fun restartWizard() {
+        _wizardState.update {
+            it.copy(currentStep = 0, selections = emptyMap(), resultGames = emptyList(), resultTitle = "")
+        }
+    }
+
+    private fun loadWizardResults() {
+        val state = _wizardState.value
+        val mood = state.selections["mood"] ?: ""
+        val era = state.selections["era"] ?: ""
+        val vibe = state.selections["vibe"] ?: ""
+        scope.launch(dispatchers.io) {
+            _wizardState.update { it.copy(isLoadingResults = true) }
+            exploreRepository.getWizardResults(mood, era, vibe).fold(
+                onSuccess = { results ->
+                    _wizardState.update {
+                        it.copy(resultGames = results.games, resultTitle = results.title, isLoadingResults = false)
+                    }
+                },
+                onFailure = { error ->
+                    _wizardState.update { it.copy(isLoadingResults = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun shuffleWizardResults() {
+        loadWizardResults()
+    }
+
+    fun loadExplorerBadges() {
+        scope.launch(dispatchers.io) {
+            _explorerBadgesState.update { it.copy(isLoading = true) }
+            exploreRepository.getExplorerBadges().fold(
+                onSuccess = { badges ->
+                    _explorerBadgesState.update { it.copy(badges = badges, isLoading = false) }
+                },
+                onFailure = {
+                    _explorerBadgesState.update { it.copy(isLoading = false) }
+                },
+            )
+        }
+    }
+
+    fun loadCompletionistMap() {
+        scope.launch(dispatchers.io) {
+            _completionistMapState.update { it.copy(isLoading = true) }
+            exploreRepository.getCompletionistMap().fold(
+                onSuccess = { data ->
+                    _completionistMapState.update { it.copy(data = data, isLoading = false) }
+                },
+                onFailure = {
+                    _completionistMapState.update { it.copy(isLoading = false) }
+                },
+            )
+        }
     }
 }

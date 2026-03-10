@@ -476,6 +476,32 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/user/saved-searches/$id")
     }
 
+    // --- Phase 14: Wild Features ---
+
+    /** Returns the decision wizard step configuration */
+    suspend fun getWizardSteps(): WizardResponseDto {
+        return client.get("$baseUrl/api/explore/wizard").body()
+    }
+
+    /** Returns wizard recommendations based on mood/era/vibe choices */
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): WizardResultsResponseDto {
+        return client.get("$baseUrl/api/explore/wizard/results") {
+            parameter("mood", mood)
+            parameter("era", era)
+            parameter("vibe", vibe)
+        }.body()
+    }
+
+    /** Returns the user's explorer badges */
+    suspend fun getExplorerBadges(): ExplorerBadgesResponseDto {
+        return client.get("$baseUrl/api/user/explorer-badges").body()
+    }
+
+    /** Returns the user's completionist map (per-console progress) */
+    suspend fun getCompletionistMap(): CompletionistMapResponseDto {
+        return client.get("$baseUrl/api/user/completionist-map").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

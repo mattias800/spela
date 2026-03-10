@@ -38,6 +38,10 @@ import type {
   AlmostDoneResponse,
   FreshChallengesResponse,
   ActiveChallengesResponse,
+  WizardResponse,
+  WizardResultsResponse,
+  ExplorerBadgesResponse,
+  CompletionistMapResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -363,5 +367,44 @@ export function useActiveChallenges() {
   return useQuery({
     queryKey: ["explore", "active-challenges"],
     queryFn: () => api.get<ActiveChallengesResponse>("/explore/active-challenges"),
+  });
+}
+
+// --- Phase 14: Wild Features ---
+
+export function useWizardSteps() {
+  return useQuery({
+    queryKey: ["explore", "wizard"],
+    queryFn: () => api.get<WizardResponse>("/explore/wizard"),
+  });
+}
+
+export function useWizardResults(
+  mood: string,
+  era: string,
+  vibe: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["explore", "wizard", "results", mood, era, vibe],
+    queryFn: () =>
+      api.get<WizardResultsResponse>(
+        `/explore/wizard/results?mood=${mood}&era=${era}&vibe=${vibe}`,
+      ),
+    enabled,
+  });
+}
+
+export function useExplorerBadges() {
+  return useQuery({
+    queryKey: ["user", "explorer-badges"],
+    queryFn: () => api.get<ExplorerBadgesResponse>("/user/explorer-badges"),
+  });
+}
+
+export function useCompletionistMap() {
+  return useQuery({
+    queryKey: ["user", "completionist-map"],
+    queryFn: () => api.get<CompletionistMapResponse>("/user/completionist-map"),
   });
 }
