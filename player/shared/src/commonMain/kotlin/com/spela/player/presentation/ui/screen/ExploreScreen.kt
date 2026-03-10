@@ -22,6 +22,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperSpotlightSkeleton
 import com.spela.player.presentation.ui.feature.explore.ForYouSection
 import com.spela.player.presentation.ui.feature.explore.ForYouSkeleton
 import com.spela.player.presentation.ui.feature.explore.GameShelf
@@ -48,6 +50,7 @@ fun ExploreScreen(
     onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
     onMoodSelected: ((moodId: String, moodName: String) -> Unit)? = null,
+    onDeveloperSelected: ((name: String) -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
@@ -244,6 +247,35 @@ fun ExploreScreen(
                                     onSeriesSelected = { seriesId, seriesName ->
                                         onSeriesSelected?.invoke(seriesId, seriesName)
                                     },
+                                )
+                            }
+                        }
+                    }
+
+                    // Developer spotlight section
+                    item {
+                        if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
+                            SpTitledSection(
+                                title = "Developer Spotlight",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                DeveloperSpotlightSkeleton()
+                            }
+                        } else if (state.developerSpotlight != null) {
+                            SpTitledSection(
+                                title = "Developer Spotlight",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_developer_spotlight_section"),
+                            ) {
+                                DeveloperSpotlightSection(
+                                    spotlight = state.developerSpotlight!!,
+                                    onDeveloperSelected = { name ->
+                                        onDeveloperSelected?.invoke(name)
+                                    },
+                                    onGameSelected = onGameSelected,
                                 )
                             }
                         }

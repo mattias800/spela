@@ -1162,3 +1162,37 @@ data class PlayersLikeYouResponseDto(
     val games: List<GameDto>,
     val similarUsersCount: Int,
 )
+
+// Developer / Publisher
+
+@Serializable
+data class DeveloperSummaryDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+)
+
+@Serializable
+data class DeveloperListResponseDto(
+    val developers: List<DeveloperSummaryDto>,
+)
+
+@Serializable
+data class DeveloperDetailResponseDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class DeveloperSpotlightResponseDto(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val topGames: List<GameDto>,
+    val heroUrl: String = "",
+)

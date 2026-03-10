@@ -324,6 +324,28 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/players-like-you").body()
     }
 
+    /** Returns list of developer summaries */
+    suspend fun getDevelopers(): DeveloperListResponseDto {
+        return client.get("$baseUrl/api/explore/developers").body()
+    }
+
+    /** Returns detail for a specific developer */
+    suspend fun getDeveloperDetail(name: String): DeveloperDetailResponseDto {
+        val encoded = name.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/developers/$encoded").body()
+    }
+
+    /** Returns detail for a specific publisher (same response type as developer) */
+    suspend fun getPublisherDetail(name: String): DeveloperDetailResponseDto {
+        val encoded = name.encodeURLParameter()
+        return client.get("$baseUrl/api/explore/publishers/$encoded").body()
+    }
+
+    /** Returns developer spotlight for the Explore page */
+    suspend fun getDeveloperSpotlight(): DeveloperSpotlightResponseDto {
+        return client.get("$baseUrl/api/explore/developers/spotlight").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

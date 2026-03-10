@@ -1335,6 +1335,10 @@ class FakeExploreRepository : ExploreRepository {
     var forYouRows: List<ForYouRow> = emptyList()
     var tasteProfile: TasteProfile? = null
     var playersLikeYou: PlayersLikeYouResult? = null
+    var developerSummaries: List<DeveloperSummary> = emptyList()
+    var developerDetails: Map<String, DeveloperDetail> = emptyMap()
+    var publisherDetails: Map<String, DeveloperDetail> = emptyMap()
+    var developerSpotlightData: DeveloperSpotlight? = null
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1415,6 +1419,34 @@ class FakeExploreRepository : ExploreRepository {
             val result = playersLikeYou
             if (result != null) Result.success(result)
             else Result.failure(Exception("No players like you available"))
+        }
+
+    override suspend fun getDevelopers(): Result<List<DeveloperSummary>> =
+        if (shouldFail) Result.failure(Exception("Failed to load developers"))
+        else Result.success(developerSummaries)
+
+    override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load developer detail"))
+        else {
+            val detail = developerDetails[name]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Developer not found"))
+        }
+
+    override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load publisher detail"))
+        else {
+            val detail = publisherDetails[name]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Publisher not found"))
+        }
+
+    override suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight> =
+        if (shouldFail) Result.failure(Exception("Failed to load developer spotlight"))
+        else {
+            val spotlight = developerSpotlightData
+            if (spotlight != null) Result.success(spotlight)
+            else Result.failure(Exception("No developer spotlight available"))
         }
 }
 

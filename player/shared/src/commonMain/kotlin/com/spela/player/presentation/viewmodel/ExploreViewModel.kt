@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
@@ -28,6 +30,7 @@ data class ExploreState(
     val featuredSeries: List<FeaturedSeries> = emptyList(),
     val moods: List<MoodDefinition> = emptyList(),
     val forYouRows: List<ForYouRow> = emptyList(),
+    val developerSpotlight: DeveloperSpotlight? = null,
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
@@ -35,10 +38,11 @@ data class ExploreState(
     val isLoadingFeaturedSeries: Boolean = false,
     val isLoadingMoods: Boolean = false,
     val isLoadingForYou: Boolean = false,
+    val isLoadingDeveloperSpotlight: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou || isLoadingDeveloperSpotlight
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && developerSpotlight == null && !isLoading
 }
 
 data class ThemeDetailState(
@@ -65,6 +69,24 @@ data class MoodDetailState(
     val isLoading: Boolean = false,
     val error: String? = null,
 )
+
+data class DeveloperDetailState(
+    val name: String = "",
+    val detail: DeveloperDetail? = null,
+    val consoleFilter: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null,
+) {
+    val filteredGames: List<Game>
+        get() {
+            val games = detail?.games ?: return emptyList()
+            return if (consoleFilter != null) {
+                games.filter { it.consoleName.equals(consoleFilter, ignoreCase = true) }
+            } else {
+                games
+            }
+        }
+}
 
 data class SeriesDetailState(
     val seriesId: String = "",
@@ -106,6 +128,9 @@ class ExploreViewModel(
     private val _moodDetailState = MutableStateFlow(MoodDetailState())
     val moodDetailState: StateFlow<MoodDetailState> = _moodDetailState.asStateFlow()
 
+    private val _developerDetailState = MutableStateFlow(DeveloperDetailState())
+    val developerDetailState: StateFlow<DeveloperDetailState> = _developerDetailState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -117,6 +142,8 @@ class ExploreViewModel(
     private var moodsJob: Job? = null
     private var moodDetailJob: Job? = null
     private var forYouJob: Job? = null
+    private var developerSpotlightJob: Job? = null
+    private var developerDetailJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -126,6 +153,7 @@ class ExploreViewModel(
         loadFeaturedSeries()
         loadMoods()
         loadForYou()
+        loadDeveloperSpotlight()
     }
 
     fun dismissError() {
@@ -339,5 +367,62 @@ class ExploreViewModel(
 
     fun dismissMoodDetailError() {
         _moodDetailState.update { it.copy(error = null) }
+    }
+
+    private fun loadDeveloperSpotlight() {
+        if (developerSpotlightJob?.isActive == true) return
+        _state.update { it.copy(isLoadingDeveloperSpotlight = true) }
+        developerSpotlightJob = scope.launch(dispatchers.io) {
+            exploreRepository.getDeveloperSpotlight().fold(
+                onSuccess = { spotlight ->
+                    _state.update { it.copy(developerSpotlight = spotlight, isLoadingDeveloperSpotlight = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingDeveloperSpotlight = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadDeveloperDetail(name: String) {
+        developerDetailJob?.cancel()
+        _developerDetailState.update {
+            DeveloperDetailState(name = name, isLoading = true)
+        }
+        developerDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getDeveloperDetail(name).fold(
+                onSuccess = { detail ->
+                    _developerDetailState.update { it.copy(detail = detail, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _developerDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadPublisherDetail(name: String) {
+        developerDetailJob?.cancel()
+        _developerDetailState.update {
+            DeveloperDetailState(name = name, isLoading = true)
+        }
+        developerDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getPublisherDetail(name).fold(
+                onSuccess = { detail ->
+                    _developerDetailState.update { it.copy(detail = detail, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _developerDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun setDeveloperConsoleFilter(abbreviation: String?) {
+        _developerDetailState.update { it.copy(consoleFilter = abbreviation) }
+    }
+
+    fun dismissDeveloperDetailError() {
+        _developerDetailState.update { it.copy(error = null) }
     }
 }

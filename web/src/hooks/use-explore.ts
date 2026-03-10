@@ -15,6 +15,10 @@ import type {
   ForYouResponse,
   TasteProfile,
   PlayersLikeYouResponse,
+  DeveloperListResponse,
+  DeveloperDetailResponse,
+  PublisherDetailResponse,
+  DeveloperSpotlightResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -149,5 +153,42 @@ export function usePlayersLikeYou() {
     queryKey: ["explore", "players-like-you"],
     queryFn: () =>
       api.get<PlayersLikeYouResponse>("/explore/players-like-you"),
+  });
+}
+
+export function useDevelopers() {
+  return useQuery({
+    queryKey: ["explore", "developers"],
+    queryFn: () => api.get<DeveloperListResponse>("/explore/developers"),
+  });
+}
+
+export function useDeveloperDetail(name: string) {
+  return useQuery({
+    queryKey: ["explore", "developers", name],
+    queryFn: () =>
+      api.get<DeveloperDetailResponse>(
+        `/explore/developers/${encodeURIComponent(name)}`,
+      ),
+    enabled: !!name,
+  });
+}
+
+export function usePublisherDetail(name: string) {
+  return useQuery({
+    queryKey: ["explore", "publishers", name],
+    queryFn: () =>
+      api.get<PublisherDetailResponse>(
+        `/explore/publishers/${encodeURIComponent(name)}`,
+      ),
+    enabled: !!name,
+  });
+}
+
+export function useDeveloperSpotlight() {
+  return useQuery({
+    queryKey: ["explore", "developers", "spotlight"],
+    queryFn: () =>
+      api.get<DeveloperSpotlightResponse>("/explore/developers/spotlight"),
   });
 }

@@ -27,6 +27,12 @@ export type ApiGetPath = WithQuery<
   | "/explore/for-you"
   | "/explore/players-like-you"
 
+  // Developers & Publishers
+  | "/explore/developers"
+  | "/explore/developers/spotlight"
+  | `/explore/developers/${string}`
+  | `/explore/publishers/${string}`
+
   // Series
   | `/series/${string}`
 

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -15,6 +15,7 @@ vi.mock("@/hooks/use-explore", () => ({
   useMoods: vi.fn(),
   useForYou: vi.fn(),
   usePlayersLikeYou: vi.fn(),
+  useDeveloperSpotlight: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -38,7 +39,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -48,6 +49,7 @@ const mockUseFeaturedSeries = useFeaturedSeries as ReturnType<typeof vi.fn>;
 const mockUseMoods = useMoods as ReturnType<typeof vi.fn>;
 const mockUseForYou = useForYou as ReturnType<typeof vi.fn>;
 const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
+const mockUseDeveloperSpotlight = useDeveloperSpotlight as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -128,6 +130,15 @@ const mockForYou: ForYouResponse = {
 const mockPlayersLikeYou: PlayersLikeYouResponse = {
   games: [makeGame({ id: "ply1", title: "Players Pick" })],
   similarUsersCount: 5,
+};
+
+const mockDeveloperSpotlight: DeveloperSpotlightResponse = {
+  name: "Capcom",
+  gameCount: 10,
+  avgRating: 85.5,
+  consoles: ["SNES", "GBA"],
+  topGames: [makeGame({ id: "sp1", title: "Spotlight Game 1" })],
+  heroUrl: "/hero/capcom.jpg",
 };
 
 const mockRows: ExploreRowsResponse = {
@@ -219,6 +230,10 @@ describe("ExplorePage", () => {
     });
     mockUsePlayersLikeYou.mockReturnValue({
       data: mockPlayersLikeYou,
+      isLoading: false,
+    });
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: mockDeveloperSpotlight,
       isLoading: false,
     });
   });
@@ -483,5 +498,29 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("players-like-you-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the developer spotlight section", () => {
+    renderPage();
+    expect(screen.getByTestId("developer-spotlight")).toBeInTheDocument();
+    expect(screen.getByText("Spotlight Game 1")).toBeInTheDocument();
+  });
+
+  it("hides developer spotlight when no data", () => {
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("developer-spotlight")).not.toBeInTheDocument();
+  });
+
+  it("shows developer spotlight skeleton while loading", () => {
+    mockUseDeveloperSpotlight.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("developer-spotlight-skeleton")).toBeInTheDocument();
   });
 });
