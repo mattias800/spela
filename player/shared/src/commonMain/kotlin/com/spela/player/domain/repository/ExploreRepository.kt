@@ -3,12 +3,15 @@ package com.spela.player.domain.repository
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.SeriesDetail
+import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 
 interface ExploreRepository {
@@ -25,4 +28,7 @@ interface ExploreRepository {
     suspend fun getMoods(): Result<List<MoodDefinition>>
     suspend fun getMoodGames(mood: String): Result<List<Game>>
     suspend fun getSurpriseGame(): Result<Game>
+    suspend fun getForYou(): Result<List<ForYouRow>>
+    suspend fun getTasteProfile(): Result<TasteProfile>
+    suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult>
 }

@@ -5,12 +5,15 @@ import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.SeriesDetail
+import com.spela.player.domain.model.TasteProfile
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
 
@@ -117,6 +120,44 @@ class ExploreRepositoryImpl(
             coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
             heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
             logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+        )
+    }
+
+    override suspend fun getForYou(): Result<List<ForYouRow>> = runCatching {
+        apiClient.getForYou().rows.map { rowDto ->
+            rowDto.toDomain().copy(
+                sourceGame = rowDto.sourceGame?.let { sgDto ->
+                    sgDto.toDomain().copy(
+                        coverUrl = apiClient.resolveUrl(sgDto.coverUrl),
+                        heroUrl = apiClient.resolveUrl(sgDto.heroUrl),
+                        logoUrl = apiClient.resolveUrl(sgDto.logoUrl),
+                    )
+                },
+                games = rowDto.games.map { gameDto ->
+                    gameDto.toDomain().copy(
+                        coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                        heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                        logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                    )
+                },
+            )
+        }
+    }
+
+    override suspend fun getTasteProfile(): Result<TasteProfile> = runCatching {
+        apiClient.getTasteProfile().toDomain()
+    }
+
+    override suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult> = runCatching {
+        val dto = apiClient.getPlayersLikeYou()
+        dto.toDomain().copy(
+            games = dto.games.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                    logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
         )
     }
 }

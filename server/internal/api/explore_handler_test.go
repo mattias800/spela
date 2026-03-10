@@ -1452,3 +1452,495 @@ func TestGetMoodGames_AuthRequired(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+// --- For You endpoint tests ---
+
+func TestGetForYou_BecauseYouPlayed(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create an RPG that the user has played a lot
+	playedGame := createExploreGameWithGenre(t, env.database, "SNES", "Chrono Trigger", 95, "RPG", 1)
+	// Create RPGs that the user hasn't played
+	recGame1 := createExploreGameWithGenre(t, env.database, "SNES", "Final Fantasy VI", 92, "RPG", 1)
+	recGame2 := createExploreGameWithGenre(t, env.database, "SNES", "Earthbound", 88, "RPG", 1)
+	// Create an Action game (different genre, should NOT appear in this row)
+	createExploreGameWithGenre(t, env.database, "NES", "Contra", 85, "Action", 2)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// User has played Chrono Trigger for 5 hours
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     playedGame.ID,
+		PlayTime:   18000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should have a "because_you_played" row
+	var becauseRow *ForYouRowResponse
+	for i := range resp.Rows {
+		if resp.Rows[i].Type == "because_you_played" {
+			becauseRow = &resp.Rows[i]
+			break
+		}
+	}
+	require.NotNil(t, becauseRow, "should have a because_you_played row")
+	assert.Contains(t, becauseRow.Title, "Chrono Trigger")
+	assert.NotNil(t, becauseRow.SourceGame)
+	assert.Equal(t, "Chrono Trigger", becauseRow.SourceGame.Title)
+
+	// Should recommend the unplayed RPGs, NOT the played game, NOT the Action game
+	titles := make(map[string]bool)
+	for _, g := range becauseRow.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[recGame1.Title], "should recommend Final Fantasy VI")
+	assert.True(t, titles[recGame2.Title], "should recommend Earthbound")
+	assert.False(t, titles[playedGame.Title], "should not recommend the played game")
+	assert.False(t, titles["Contra"], "should not recommend different genre")
+}
+
+func TestGetForYou_MoreGenre(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// User plays RPGs mostly, Action a little
+	rpgGame := createExploreGameWithGenre(t, env.database, "SNES", "RPG Played", 85, "RPG", 1)
+	actionGame := createExploreGameWithGenre(t, env.database, "NES", "Action Played", 80, "Action", 1)
+	// Unplayed RPG (should be recommended)
+	unplayedRPG := createExploreGameWithGenre(t, env.database, "SNES", "Unplayed RPG", 90, "RPG", 1)
+	// Unplayed Action (should NOT be in this row — RPG is the top genre)
+	createExploreGameWithGenre(t, env.database, "NES", "Unplayed Action", 88, "Action", 1)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     rpgGame.ID,
+		PlayTime:   10000,
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     actionGame.ID,
+		PlayTime:   2000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	var moreGenreRow *ForYouRowResponse
+	for i := range resp.Rows {
+		if resp.Rows[i].Type == "more_genre" {
+			moreGenreRow = &resp.Rows[i]
+			break
+		}
+	}
+	require.NotNil(t, moreGenreRow, "should have a more_genre row")
+	assert.Contains(t, moreGenreRow.Title, "RPG")
+
+	titles := make(map[string]bool)
+	for _, g := range moreGenreRow.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[unplayedRPG.Title], "should recommend unplayed RPG")
+	assert.False(t, titles[rpgGame.Title], "should not include already-played RPG")
+}
+
+func TestGetForYou_UnfinishedBusiness(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Game played for 10 minutes (< 30 min), last played 10 days ago (> 7 days)
+	unfinishedGame := createExploreGame(t, env.database, "NES", "Started But Not Finished", 85)
+	// Game played for 2 hours (> 30 min, should NOT be "unfinished")
+	finishedGame := createExploreGame(t, env.database, "SNES", "Played A Lot", 90)
+	// Game played 2 minutes ago (< 7 days, should NOT be "unfinished")
+	recentGame := createExploreGame(t, env.database, "GBA", "Just Started", 80)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	tenDaysAgo := time.Now().Add(-10 * 24 * time.Hour)
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     unfinishedGame.ID,
+		PlayTime:   600, // 10 minutes
+		LastPlayed: tenDaysAgo,
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     finishedGame.ID,
+		PlayTime:   7200, // 2 hours
+		LastPlayed: tenDaysAgo,
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     recentGame.ID,
+		PlayTime:   300, // 5 minutes
+		LastPlayed: time.Now().Add(-1 * time.Hour),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	var unfinishedRow *ForYouRowResponse
+	for i := range resp.Rows {
+		if resp.Rows[i].Type == "unfinished" {
+			unfinishedRow = &resp.Rows[i]
+			break
+		}
+	}
+	require.NotNil(t, unfinishedRow, "should have an unfinished row")
+	assert.Equal(t, "Your unfinished business", unfinishedRow.Title)
+
+	titles := make(map[string]bool)
+	for _, g := range unfinishedRow.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[unfinishedGame.Title], "should include short/old game")
+	assert.False(t, titles[finishedGame.Title], "should not include game with > 30 min play time")
+	assert.False(t, titles[recentGame.Title], "should not include recently played game")
+}
+
+func TestGetForYou_ExpandHorizons(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// User has only played RPGs
+	playedRPG := createExploreGameWithGenre(t, env.database, "SNES", "RPG Game", 90, "RPG", 1)
+	// Racing games exist but user hasn't played any (rating > 70)
+	racingGame1 := createExploreGameWithGenre(t, env.database, "SNES", "Mario Kart", 88, "Racing", 2)
+	racingGame2 := createExploreGameWithGenre(t, env.database, "NES", "Excitebike", 75, "Racing", 1)
+	// Low-rated Puzzle game (rating <= 70, should not make Puzzle qualify)
+	createExploreGameWithGenre(t, env.database, "NES", "Bad Puzzle", 50, "Puzzle", 1)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     playedRPG.ID,
+		PlayTime:   5000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	var expandRow *ForYouRowResponse
+	for i := range resp.Rows {
+		if resp.Rows[i].Type == "expand_horizons" {
+			expandRow = &resp.Rows[i]
+			break
+		}
+	}
+	require.NotNil(t, expandRow, "should have an expand_horizons row")
+	assert.Contains(t, expandRow.Title, "Racing")
+	assert.Equal(t, "Racing", expandRow.Genre)
+
+	titles := make(map[string]bool)
+	for _, g := range expandRow.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[racingGame1.Title])
+	assert.True(t, titles[racingGame2.Title])
+	assert.False(t, titles["Bad Puzzle"], "low-rated puzzle should not appear")
+}
+
+func TestGetForYou_EmptyHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create some games but no play history
+	createExploreGame(t, env.database, "NES", "Game 1", 90)
+	createExploreGame(t, env.database, "SNES", "Game 2", 85)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// With no play history, all personalized rows should be empty
+	assert.Empty(t, resp.Rows, "user with no play history should have no recommendation rows")
+}
+
+func TestGetForYou_AuthRequired(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	// No auth header
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// --- Taste Profile endpoint tests ---
+
+func TestGetTasteProfile(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games in different genres and consoles
+	rpgGame := createExploreGameWithGenre(t, env.database, "SNES", "Chrono Trigger", 95, "RPG", 1)
+	actionGame := createExploreGameWithGenre(t, env.database, "NES", "Contra", 85, "Action", 2)
+	rpgGame2 := createExploreGameWithGenre(t, env.database, "SNES", "FF6", 92, "RPG", 1)
+
+	// Add themes to RPG games
+	env.database.Create(&db.GameTheme{GameID: rpgGame.ID, IGDBThemeID: 1, Name: "Fantasy"})
+	env.database.Create(&db.GameTheme{GameID: rpgGame2.ID, IGDBThemeID: 1, Name: "Fantasy"})
+	env.database.Create(&db.GameTheme{GameID: actionGame.ID, IGDBThemeID: 2, Name: "Sci-Fi"})
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// RPG: 7000 seconds, Action: 3000 seconds => total 10000
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     rpgGame.ID,
+		PlayTime:   4000,
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     rpgGame2.ID,
+		PlayTime:   3000,
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     actionGame.ID,
+		PlayTime:   3000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/taste-profile", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp TasteProfileResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, int64(10000), resp.TotalPlayTime)
+
+	// Genre breakdown
+	require.GreaterOrEqual(t, len(resp.Genres), 2)
+	// RPG should be first (70% of play time)
+	assert.Equal(t, "RPG", resp.Genres[0].Name)
+	assert.Equal(t, float64(70), resp.Genres[0].Percentage)
+	assert.Equal(t, int64(7000), resp.Genres[0].PlayTime)
+	assert.Equal(t, 2, resp.Genres[0].GameCount)
+
+	assert.Equal(t, "Action", resp.Genres[1].Name)
+	assert.Equal(t, float64(30), resp.Genres[1].Percentage)
+	assert.Equal(t, int64(3000), resp.Genres[1].PlayTime)
+	assert.Equal(t, 1, resp.Genres[1].GameCount)
+
+	// Theme breakdown
+	require.GreaterOrEqual(t, len(resp.Themes), 1)
+	// Fantasy should have the most play time (both RPG games = 7000s)
+	fantasyFound := false
+	for _, theme := range resp.Themes {
+		if theme.Name == "Fantasy" {
+			fantasyFound = true
+			assert.Equal(t, int64(7000), theme.PlayTime)
+			assert.Equal(t, 2, theme.GameCount)
+		}
+	}
+	assert.True(t, fantasyFound, "Fantasy theme should be present")
+
+	// Console breakdown
+	require.GreaterOrEqual(t, len(resp.TopConsoles), 1)
+	// SNES should be first (7000s play time)
+	snesFound := false
+	for _, con := range resp.TopConsoles {
+		if con.Abbreviation == "snes" {
+			snesFound = true
+			assert.Equal(t, int64(7000), con.PlayTime)
+			assert.Equal(t, 2, con.GameCount)
+			assert.Equal(t, "Super Nintendo", con.Name)
+		}
+	}
+	assert.True(t, snesFound, "SNES console should be in top consoles")
+}
+
+func TestGetTasteProfile_EmptyHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/taste-profile", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp TasteProfileResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, int64(0), resp.TotalPlayTime)
+	assert.Empty(t, resp.Genres)
+	assert.Empty(t, resp.Themes)
+	assert.Empty(t, resp.TopConsoles)
+}
+
+func TestGetTasteProfile_AuthRequired(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/taste-profile", nil)
+	// No auth header
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// --- Players Like You endpoint tests ---
+
+func TestGetPlayersLikeYou(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games
+	game1 := createExploreGame(t, env.database, "NES", "Mario", 90)
+	game2 := createExploreGame(t, env.database, "SNES", "Zelda", 95)
+	game3 := createExploreGame(t, env.database, "GBA", "Metroid", 88)
+	game4 := createExploreGame(t, env.database, "NES", "Castlevania", 85)
+	game5 := createExploreGame(t, env.database, "SNES", "Mega Man", 82)
+
+	// Current user (owner) favorites: Mario, Zelda
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game1.ID}) // Mario
+	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game2.ID}) // Zelda
+
+	// Create similar user2: favorites Mario, Zelda, Metroid (overlap: 2)
+	user2Token := createNonOwnerUser(t, env.router, env.token, "user2", "user2@test.com", "password123")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "user2").First(&user2).Error)
+	env.database.Create(&db.Favorite{UserID: user2.ID, GameID: game1.ID}) // Mario
+	env.database.Create(&db.Favorite{UserID: user2.ID, GameID: game2.ID}) // Zelda
+	env.database.Create(&db.Favorite{UserID: user2.ID, GameID: game3.ID}) // Metroid
+
+	// Create user3: favorites Mario, Castlevania, Mega Man (overlap: 1)
+	user3Token := createNonOwnerUser(t, env.router, env.token, "user3", "user3@test.com", "password123")
+	_ = user3Token
+	var user3 db.User
+	require.NoError(t, env.database.Where("username = ?", "user3").First(&user3).Error)
+	env.database.Create(&db.Favorite{UserID: user3.ID, GameID: game1.ID}) // Mario
+	env.database.Create(&db.Favorite{UserID: user3.ID, GameID: game4.ID}) // Castlevania
+	env.database.Create(&db.Favorite{UserID: user3.ID, GameID: game5.ID}) // Mega Man
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PlayersLikeYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 2, resp.SimilarUsersCount)
+	assert.GreaterOrEqual(t, len(resp.Games), 1, "should recommend at least 1 game")
+
+	// The recommended games should NOT include the user's own favorites (Mario, Zelda)
+	titles := make(map[string]bool)
+	for _, g := range resp.Games {
+		titles[g.Title] = true
+	}
+	assert.False(t, titles["Mario"], "should not recommend user's own favorite")
+	assert.False(t, titles["Zelda"], "should not recommend user's own favorite")
+
+	// Metroid should be recommended (favorited by user2 who has highest overlap)
+	assert.True(t, titles["Metroid"], "Metroid should be recommended (from most similar user)")
+}
+
+func TestGetPlayersLikeYou_NoSimilarUsers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create a game and favorite it — but no other users exist with favorites
+	game := createExploreGame(t, env.database, "NES", "Lonely Game", 85)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game.ID})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PlayersLikeYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 0, resp.SimilarUsersCount)
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetPlayersLikeYou_NoFavorites(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// User has no favorites at all
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PlayersLikeYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 0, resp.SimilarUsersCount)
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetPlayersLikeYou_AuthRequired(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	// No auth header
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}

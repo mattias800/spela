@@ -918,6 +918,49 @@ export interface ExploreRowsResponse {
   rows: ExploreRow[];
 }
 
+// --- For You / Personalized Recommendations ---
+
+/** GameSummary is a full Game object when returned by recommendation endpoints */
+export type GameSummary = Game;
+
+export interface ForYouRow {
+  type: "because_you_played" | "more_genre" | "unfinished" | "expand_horizons";
+  title: string;
+  source_game?: GameSummary;
+  genre?: string;
+  games: GameSummary[];
+}
+
+export interface ForYouResponse {
+  rows: ForYouRow[];
+}
+
+export interface TasteBreakdown {
+  name: string;
+  percentage: number;
+  play_time: number;
+  game_count: number;
+}
+
+export interface ConsoleBreakdown {
+  name: string;
+  abbreviation: string;
+  play_time: number;
+  game_count: number;
+}
+
+export interface TasteProfile {
+  total_play_time: number;
+  genres: TasteBreakdown[];
+  themes: TasteBreakdown[];
+  top_consoles: ConsoleBreakdown[];
+}
+
+export interface PlayersLikeYouResponse {
+  games: GameSummary[];
+  similar_users_count: number;
+}
+
 export interface StagedUpload {
   id: string;
   fileName: string;

@@ -7,6 +7,8 @@ import { ThemeGrid } from "@/features/explore/components/theme-grid";
 import { KeywordChips } from "@/features/explore/components/keyword-chips";
 import { SeriesShelf } from "@/features/explore/components/series-shelf";
 import { MoodPicker } from "@/features/explore/components/mood-picker";
+import { ForYouSection } from "@/features/explore/components/for-you-section";
+import { PlayersLikeYouShelf } from "@/features/explore/components/players-like-you-shelf";
 import {
   useExploreFeatured,
   useExploreRows,
@@ -14,6 +16,8 @@ import {
   useKeywords,
   useFeaturedSeries,
   useMoods,
+  useForYou,
+  usePlayersLikeYou,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -45,6 +49,14 @@ export function ExplorePage() {
     data: moods,
     isLoading: isMoodsLoading,
   } = useMoods();
+  const {
+    data: forYouData,
+    isLoading: isForYouLoading,
+  } = useForYou();
+  const {
+    data: playersLikeYouData,
+    isLoading: isPlayersLoading,
+  } = usePlayersLikeYou();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -103,6 +115,23 @@ export function ExplorePage() {
 
       {/* Mood Picker */}
       <MoodPicker moods={moods} isLoading={isMoodsLoading} />
+
+      {/* For You — personalized recommendations */}
+      <ForYouSection
+        rows={forYouData?.rows}
+        isLoading={isForYouLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Players Like You */}
+      <PlayersLikeYouShelf
+        games={playersLikeYouData?.games}
+        isLoading={isPlayersLoading}
+        similarUsersCount={playersLikeYouData?.similar_users_count ?? 0}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       {/* First shelf row */}
       {isRowsLoading ? (

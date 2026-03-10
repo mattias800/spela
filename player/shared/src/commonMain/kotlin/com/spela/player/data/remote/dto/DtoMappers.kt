@@ -638,3 +638,37 @@ fun MoodDefinitionDto.toDomain(): MoodDefinition = MoodDefinition(
     icon = icon,
     gradient = gradient,
 )
+
+fun ForYouRowDto.toDomain(): ForYouRow = ForYouRow(
+    type = type,
+    title = title,
+    sourceGame = sourceGame?.toDomain(),
+    genre = genre,
+    games = games.map { it.toDomain() },
+)
+
+fun TasteBreakdownDto.toDomain(): TasteBreakdown = TasteBreakdown(
+    name = name,
+    percentage = percentage,
+    playTime = playTime,
+    gameCount = gameCount,
+)
+
+fun ConsoleBreakdownDto.toDomain(): ConsoleBreakdown = ConsoleBreakdown(
+    name = name,
+    abbreviation = abbreviation,
+    playTime = playTime,
+    gameCount = gameCount,
+)
+
+fun TasteProfileDto.toDomain(): TasteProfile = TasteProfile(
+    totalPlayTime = totalPlayTime,
+    genres = genres.map { it.toDomain() },
+    themes = themes.map { it.toDomain() },
+    topConsoles = topConsoles.map { it.toDomain() },
+)
+
+fun PlayersLikeYouResponseDto.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
+    games = games.map { it.toDomain() },
+    similarUsersCount = similarUsersCount,
+)
