@@ -1339,6 +1339,8 @@ class FakeExploreRepository : ExploreRepository {
     var developerDetails: Map<String, DeveloperDetail> = emptyMap()
     var publisherDetails: Map<String, DeveloperDetail> = emptyMap()
     var developerSpotlightData: DeveloperSpotlight? = null
+    var consoleShowcases: Map<String, ConsoleShowcase> = emptyMap()
+    var consoleHighlightsList: List<ConsoleHighlight> = emptyList()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1448,6 +1450,18 @@ class FakeExploreRepository : ExploreRepository {
             if (spotlight != null) Result.success(spotlight)
             else Result.failure(Exception("No developer spotlight available"))
         }
+
+    override suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase> =
+        if (shouldFail) Result.failure(Exception("Failed to load console showcase"))
+        else {
+            val showcase = consoleShowcases[consoleId]
+            if (showcase != null) Result.success(showcase)
+            else Result.failure(Exception("Console not found"))
+        }
+
+    override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> =
+        if (shouldFail) Result.failure(Exception("Failed to load console highlights"))
+        else Result.success(consoleHighlightsList)
 }
 
 class FakeCheatRepository : CheatRepository {

@@ -2207,3 +2207,307 @@ func TestGetDeveloperSpotlight_NoHeroArt(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// --- Phase 8: Console Showcase tests ---
+
+// createExploreGameFull creates a game with developer, publisher, and genre.
+func createExploreGameFull(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, developer, publisher, genre string) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     title,
+		FileName:  title + ".rom",
+		FilePath:  consoleAbbr + "/" + title + ".rom",
+		Rating:    rating,
+		Genre:     genre,
+		Developer: developer,
+		Publisher: publisher,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+func TestGetConsoleShowcase_Success(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games on SNES
+	createExploreGameFull(t, env.database, "SNES", "Chrono Trigger", 95, "Square", "Square", "RPG")
+	createExploreGameFull(t, env.database, "SNES", "Super Mario World", 92, "Nintendo", "Nintendo", "Platformer")
+	createExploreGameFull(t, env.database, "SNES", "Zelda LTTP", 94, "Nintendo", "Nintendo", "Action RPG")
+
+	// Create a game on NES — should NOT appear in SNES showcase
+	createExploreGameFull(t, env.database, "NES", "Super Mario Bros", 90, "Nintendo", "Nintendo", "Platformer")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Console info
+	assert.Equal(t, "snes", resp.Console.ID)
+	assert.Equal(t, "Super Nintendo", resp.Console.Name)
+	assert.Equal(t, 3, resp.Console.GameCount)
+
+	// Essentials should be sorted by rating DESC and only include SNES games
+	require.Len(t, resp.Essentials, 3)
+	assert.Equal(t, "Chrono Trigger", resp.Essentials[0].Title)
+	assert.Equal(t, "Zelda LTTP", resp.Essentials[1].Title)
+	assert.Equal(t, "Super Mario World", resp.Essentials[2].Title)
+
+	// NES game should not be in essentials
+	for _, g := range resp.Essentials {
+		assert.Equal(t, "snes", g.ConsoleID)
+	}
+
+	// Genre breakdown should have 3 genres
+	assert.Len(t, resp.GenreBreakdown, 3)
+
+	// Top developers — Nintendo has 2 games, Square has 1
+	require.NotEmpty(t, resp.TopDevelopers)
+	assert.Equal(t, "Nintendo", resp.TopDevelopers[0].Name)
+	assert.Equal(t, 2, resp.TopDevelopers[0].GameCount)
+}
+
+func TestGetConsoleShowcase_GenreBreakdown(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games with various genres on SNES
+	createExploreGameWithGenre(t, env.database, "SNES", "Game A", 90, "RPG", 1)
+	createExploreGameWithGenre(t, env.database, "SNES", "Game B", 85, "RPG", 1)
+	createExploreGameWithGenre(t, env.database, "SNES", "Game C", 80, "RPG", 1)
+	createExploreGameWithGenre(t, env.database, "SNES", "Game D", 75, "Platformer", 1)
+	createExploreGameWithGenre(t, env.database, "SNES", "Game E", 70, "Platformer", 1)
+	createExploreGameWithGenre(t, env.database, "SNES", "Game F", 65, "Action", 1)
+
+	// NES game should not be counted
+	createExploreGameWithGenre(t, env.database, "NES", "NES Game", 90, "RPG", 1)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Genre breakdown sorted by count desc
+	require.Len(t, resp.GenreBreakdown, 3)
+	assert.Equal(t, "RPG", resp.GenreBreakdown[0].Name)
+	assert.Equal(t, 3, resp.GenreBreakdown[0].GameCount)
+	assert.Equal(t, "Platformer", resp.GenreBreakdown[1].Name)
+	assert.Equal(t, 2, resp.GenreBreakdown[1].GameCount)
+	assert.Equal(t, "Action", resp.GenreBreakdown[2].Name)
+	assert.Equal(t, 1, resp.GenreBreakdown[2].GameCount)
+}
+
+func TestGetConsoleShowcase_TopDevelopers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games with specific developers on SNES
+	createExploreGameWithDev(t, env.database, "SNES", "FF6", 96, "Square", "Square")
+	createExploreGameWithDev(t, env.database, "SNES", "Chrono Trigger", 95, "Square", "Square")
+	createExploreGameWithDev(t, env.database, "SNES", "Secret of Mana", 88, "Square", "Square")
+	createExploreGameWithDev(t, env.database, "SNES", "Super Mario World", 92, "Nintendo", "Nintendo")
+	createExploreGameWithDev(t, env.database, "SNES", "Donkey Kong Country", 87, "Rare", "Nintendo")
+	createExploreGameWithDev(t, env.database, "SNES", "Mega Man X", 90, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "SNES", "Street Fighter 2", 85, "Capcom", "Capcom")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Top developers sorted by game count: Square(3), Capcom(2), Nintendo(1), Rare(1)
+	require.GreaterOrEqual(t, len(resp.TopDevelopers), 4)
+	assert.Equal(t, "Square", resp.TopDevelopers[0].Name)
+	assert.Equal(t, 3, resp.TopDevelopers[0].GameCount)
+	assert.Equal(t, "Capcom", resp.TopDevelopers[1].Name)
+	assert.Equal(t, 2, resp.TopDevelopers[1].GameCount)
+
+	// All developers should list SNES as their console
+	for _, dev := range resp.TopDevelopers {
+		assert.Contains(t, dev.Consoles, "Super Nintendo")
+		assert.Greater(t, dev.AvgRating, 0.0)
+	}
+
+	// Limit to 5 developers max
+	assert.LessOrEqual(t, len(resp.TopDevelopers), 5)
+}
+
+func TestGetConsoleShowcase_NotFound(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/nonexistent/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetConsoleShowcase_RecentlyPlayed(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "Game A", 90)
+	game2 := createExploreGame(t, env.database, "SNES", "Game B", 85)
+	createExploreGame(t, env.database, "NES", "NES Game", 80) // Different console
+
+	// Get user ID
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Add play history for SNES games
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game1.ID,
+		LastPlayed: time.Now().Add(-1 * time.Hour),
+		PlayTime:   3600,
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game2.ID,
+		LastPlayed: time.Now(),
+		PlayTime:   1800,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Recently played should have 2 SNES games, ordered by last_played DESC
+	require.Len(t, resp.RecentlyPlayed, 2)
+	assert.Equal(t, "Game B", resp.RecentlyPlayed[0].Title) // played more recently
+	assert.Equal(t, "Game A", resp.RecentlyPlayed[1].Title)
+}
+
+func TestGetConsoleShowcase_CaseInsensitive(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGame(t, env.database, "SNES", "Test Game", 85)
+
+	// Use uppercase in URL — should still work
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/SNES/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "snes", resp.Console.ID)
+}
+
+func TestGetConsoleHighlights(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games across consoles
+	game1 := createExploreGame(t, env.database, "SNES", "SNES Best Game", 95)
+	createExploreGame(t, env.database, "NES", "NES Game", 88)
+	createExploreGame(t, env.database, "GBA", "GBA Game", 82)
+
+	// Add hero art for the SNES game (top game requires hero art)
+	env.database.Create(&db.GameArtwork{
+		GameID:  game1.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/snes_best.png",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/console-highlights", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleHighlightsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should have entries for consoles that have games
+	require.GreaterOrEqual(t, len(resp.Consoles), 3)
+
+	// Find the SNES entry
+	var snesEntry *ConsoleHighlight
+	for i := range resp.Consoles {
+		if resp.Consoles[i].ID == "snes" {
+			snesEntry = &resp.Consoles[i]
+			break
+		}
+	}
+	require.NotNil(t, snesEntry)
+	assert.Equal(t, "Super Nintendo", snesEntry.Name)
+	assert.Equal(t, 1, snesEntry.GameCount)
+	assert.NotEmpty(t, snesEntry.ColorTheme)
+	assert.NotEmpty(t, snesEntry.IconURL)
+	assert.NotEmpty(t, snesEntry.LogoURL)
+
+	// SNES should have a top game (it has hero art)
+	require.NotNil(t, snesEntry.TopGame)
+	assert.Equal(t, "SNES Best Game", snesEntry.TopGame.Title)
+}
+
+func TestGetConsoleHighlights_NoGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No games at all — should return empty consoles list (all skipped)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/console-highlights", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleHighlightsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Empty(t, resp.Consoles)
+}
+
+func TestGetConsoleHighlights_TopGameRequiresHeroArt(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create a game without hero art
+	createExploreGame(t, env.database, "NES", "No Art Game", 95)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/console-highlights", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleHighlightsResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// NES should appear but without a top game (no hero art)
+	var nesEntry *ConsoleHighlight
+	for i := range resp.Consoles {
+		if resp.Consoles[i].ID == "nes" {
+			nesEntry = &resp.Consoles[i]
+			break
+		}
+	}
+	require.NotNil(t, nesEntry)
+	assert.Equal(t, 1, nesEntry.GameCount)
+	assert.Nil(t, nesEntry.TopGame) // No hero art = no top game
+}

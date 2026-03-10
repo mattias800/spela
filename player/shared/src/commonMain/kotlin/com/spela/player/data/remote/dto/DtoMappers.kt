@@ -698,3 +698,29 @@ fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpot
     topGames = topGames.map { it.toDomain() },
     heroUrl = heroUrl.ifBlank { null },
 )
+
+// Console Showcase mappers
+
+fun GenreCountDto.toDomain(): GenreCount = GenreCount(
+    name = name,
+    gameCount = gameCount,
+)
+
+fun ConsoleShowcaseDto.toDomain(): ConsoleShowcase = ConsoleShowcase(
+    console = console.toDomain(),
+    essentials = essentials.map { it.toDomain() },
+    hiddenGems = hiddenGems.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toDomain() },
+    topDevelopers = topDevelopers.map { it.toDomain() },
+    recentlyPlayed = recentlyPlayed.map { it.toDomain() },
+)
+
+fun ConsoleHighlightDto.toDomain(): ConsoleHighlight = ConsoleHighlight(
+    id = id,
+    name = name,
+    colorTheme = colorTheme,
+    iconUrl = iconUrl,
+    logoUrl = logoUrl,
+    gameCount = gameCount,
+    topGame = topGame?.toDomain(),
+)

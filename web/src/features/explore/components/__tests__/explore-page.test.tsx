@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -16,6 +16,7 @@ vi.mock("@/hooks/use-explore", () => ({
   useForYou: vi.fn(),
   usePlayersLikeYou: vi.fn(),
   useDeveloperSpotlight: vi.fn(),
+  useConsoleHighlights: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -39,7 +40,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -50,6 +51,7 @@ const mockUseMoods = useMoods as ReturnType<typeof vi.fn>;
 const mockUseForYou = useForYou as ReturnType<typeof vi.fn>;
 const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
 const mockUseDeveloperSpotlight = useDeveloperSpotlight as ReturnType<typeof vi.fn>;
+const mockUseConsoleHighlights = useConsoleHighlights as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -234,6 +236,10 @@ describe("ExplorePage", () => {
     });
     mockUseDeveloperSpotlight.mockReturnValue({
       data: mockDeveloperSpotlight,
+      isLoading: false,
+    });
+    mockUseConsoleHighlights.mockReturnValue({
+      data: { consoles: [] },
       isLoading: false,
     });
   });

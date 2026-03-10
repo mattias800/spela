@@ -249,6 +249,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/developers/spotlight", exploreHandler.GetDeveloperSpotlight)
 			explore.GET("/developers/:name", exploreHandler.GetDeveloperDetail)
 			explore.GET("/publishers/:name", exploreHandler.GetPublisherDetail)
+			explore.GET("/consoles/:id/showcase", exploreHandler.GetConsoleShowcase)
+			explore.GET("/console-highlights", exploreHandler.GetConsoleHighlights)
 		}
 
 		// Games
