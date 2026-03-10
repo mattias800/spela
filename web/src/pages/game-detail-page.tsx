@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Button,
   BackButton,
@@ -36,6 +36,7 @@ import { useGameSessions } from "@/hooks/use-sessions";
 import { GameCheats } from "@/features/game-detail/components/game-cheats";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import { useGameAchievements } from "@/hooks/use-retroachievements";
+import { useGameSeries, useGameFranchises } from "@/hooks/use-explore";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
@@ -116,6 +117,8 @@ export function GameDetailPage() {
   const { data: biosData } = useBiosStatus();
   const { data: sessions } = useGameSessions(id ?? "");
   const { data: gameAchievements } = useGameAchievements(id);
+  const { data: gameSeries } = useGameSeries(id);
+  const { data: gameFranchises } = useGameFranchises(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
@@ -226,6 +229,41 @@ export function GameDetailPage() {
         open={showCollectionPicker}
         onClose={() => setShowCollectionPicker(false)}
       />
+
+      {/* Series & Franchise links */}
+      {((gameSeries && gameSeries.length > 0) ||
+        (gameFranchises && gameFranchises.length > 0)) && (
+        <div
+          className="flex flex-wrap items-center gap-3"
+          data-testid="series-franchise-links"
+        >
+          {gameSeries?.map((s) => (
+            <Link
+              key={`series-${s.id}`}
+              to={`/explore/series/${s.id}`}
+              className="inline-flex items-center gap-1.5 text-sm text-surface-300 hover:text-brand-400 transition-colors bg-surface-900/60 border border-surface-800/50 rounded-lg px-3 py-1.5 hover:border-surface-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              Part of{" "}
+              <span className="font-semibold text-surface-100">{s.name}</span>
+              <span className="text-xs text-surface-500">
+                ({s.libraryGames}/{s.totalGames} games)
+              </span>
+            </Link>
+          ))}
+          {gameFranchises?.map((f) => (
+            <span
+              key={`franchise-${f.id}`}
+              className="inline-flex items-center gap-1.5 text-sm text-surface-300 bg-surface-900/60 border border-surface-800/50 rounded-lg px-3 py-1.5"
+            >
+              Part of{" "}
+              <span className="font-semibold text-surface-100">{f.name}</span>
+              <span className="text-xs text-surface-500">
+                ({f.gameCount} games)
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
 
       <GameSessions gameId={game.id} />
 

@@ -28,6 +28,8 @@ import com.spela.player.presentation.ui.feature.explore.HeroCarousel
 import com.spela.player.presentation.ui.feature.explore.HeroCarouselSkeleton
 import com.spela.player.presentation.ui.feature.explore.KeywordChips
 import com.spela.player.presentation.ui.feature.explore.KeywordChipsSkeleton
+import com.spela.player.presentation.ui.feature.explore.SeriesShelf
+import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -40,6 +42,7 @@ fun ExploreScreen(
     onGameSelected: (String) -> Unit,
     onThemeSelected: ((themeId: String, themeName: String) -> Unit)? = null,
     onKeywordSelected: ((keywordId: String, keywordName: String) -> Unit)? = null,
+    onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -149,6 +152,34 @@ fun ExploreScreen(
                                     keywords = state.keywords,
                                     onKeywordSelected = { keywordId, keywordName ->
                                         onKeywordSelected?.invoke(keywordId, keywordName)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    // Series shelf section
+                    item {
+                        if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Series",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                SeriesShelfSkeleton()
+                            }
+                        } else if (state.featuredSeries.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Browse by Series",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_series_section"),
+                            ) {
+                                SeriesShelf(
+                                    series = state.featuredSeries,
+                                    onSeriesSelected = { seriesId, seriesName ->
+                                        onSeriesSelected?.invoke(seriesId, seriesName)
                                     },
                                 )
                             }

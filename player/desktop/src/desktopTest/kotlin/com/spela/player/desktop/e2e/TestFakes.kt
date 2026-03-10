@@ -1325,6 +1325,10 @@ class FakeExploreRepository : ExploreRepository {
     var keywords: List<Keyword> = emptyList()
     var themeGames: Map<String, List<Game>> = emptyMap()
     var keywordGames: Map<String, List<Game>> = emptyMap()
+    var featuredSeriesList: List<FeaturedSeries> = emptyList()
+    var seriesDetails: Map<String, SeriesDetail> = emptyMap()
+    var gameSeriesLinks: Map<String, List<GameSeriesLink>> = emptyMap()
+    var gameFranchiseLinks: Map<String, List<GameFranchiseLink>> = emptyMap()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1350,6 +1354,26 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getKeywordGames(keywordId: String, page: Int, pageSize: Int): Result<List<Game>> =
         if (shouldFail) Result.failure(Exception("Failed to load keyword games"))
         else Result.success(keywordGames[keywordId] ?: emptyList())
+
+    override suspend fun getFeaturedSeries(): Result<List<FeaturedSeries>> =
+        if (shouldFail) Result.failure(Exception("Failed to load featured series"))
+        else Result.success(featuredSeriesList)
+
+    override suspend fun getSeriesDetail(id: String): Result<SeriesDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load series detail"))
+        else {
+            val detail = seriesDetails[id]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Series not found"))
+        }
+
+    override suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>> =
+        if (shouldFail) Result.failure(Exception("Failed to load game series"))
+        else Result.success(gameSeriesLinks[gameId] ?: emptyList())
+
+    override suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>> =
+        if (shouldFail) Result.failure(Exception("Failed to load game franchises"))
+        else Result.success(gameFranchiseLinks[gameId] ?: emptyList())
 }
 
 class FakeCheatRepository : CheatRepository {

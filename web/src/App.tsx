@@ -36,6 +36,9 @@ import { LicensesPage } from "@/pages/licenses-page";
 import { ChallengesPage } from "@/pages/challenges-page";
 import { TopListsPage } from "@/pages/top-lists-page";
 import { ExplorePage } from "@/pages/explore-page";
+import { ExploreThemePage } from "@/pages/explore-theme-page";
+import { ExploreKeywordPage } from "@/pages/explore-keyword-page";
+import { ExploreSeriesPage } from "@/pages/explore-series-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
@@ -84,6 +87,18 @@ export function App() {
                   >
                     <Route index element={<DashboardPage />} />
                     <Route path="explore" element={<ExplorePage />} />
+                    <Route
+                      path="explore/themes/:id"
+                      element={<ExploreThemePage />}
+                    />
+                    <Route
+                      path="explore/keywords/:id"
+                      element={<ExploreKeywordPage />}
+                    />
+                    <Route
+                      path="explore/series/:id"
+                      element={<ExploreSeriesPage />}
+                    />
                     <Route element={<LibraryLayout />}>
                       <Route path="consoles" element={<ConsolesPage />} />
                       <Route path="games" element={<GamesPage />} />

@@ -832,3 +832,223 @@ func TestGetExploreFeatured_RequiresAuth(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+// --- Featured Series endpoint tests ---
+
+func TestGetExploreFeaturedSeries_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp)
+}
+
+func TestGetExploreFeaturedSeries_RequiresMinTwoLibraryGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "NES", "Mario1", 90)
+
+	series := db.GameSeries{IGDBCollectionID: 100, Name: "Super Mario"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	// Only 1 library game + 1 non-library game = should NOT appear
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game.ID, IGDBGameID: 100, Name: "Mario 1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: nil, IGDBGameID: 200, Name: "Mario 2",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp, "series with only 1 library game should not appear")
+}
+
+func TestGetExploreFeaturedSeries_WithData(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "NES", "Zelda1", 90)
+	game2 := createExploreGame(t, env.database, "SNES", "Zelda2", 95)
+	game3 := createExploreGame(t, env.database, "NES", "Mario1", 85)
+	game4 := createExploreGame(t, env.database, "NES", "Mario2", 80)
+	game5 := createExploreGame(t, env.database, "NES", "Mario3", 75)
+
+	// Zelda series: 2 library games
+	zeldaSeries := db.GameSeries{IGDBCollectionID: 100, Name: "The Legend of Zelda"}
+	require.NoError(t, env.database.Create(&zeldaSeries).Error)
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: zeldaSeries.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Zelda 1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: zeldaSeries.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "Zelda 2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: zeldaSeries.ID, GameID: nil, IGDBGameID: 300, Name: "Zelda 3",
+	})
+
+	// Mario series: 3 library games (should appear first)
+	marioSeries := db.GameSeries{IGDBCollectionID: 200, Name: "Super Mario"}
+	require.NoError(t, env.database.Create(&marioSeries).Error)
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: marioSeries.ID, GameID: &game3.ID, IGDBGameID: 400, Name: "Mario 1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: marioSeries.ID, GameID: &game4.ID, IGDBGameID: 500, Name: "Mario 2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: marioSeries.ID, GameID: &game5.ID, IGDBGameID: 600, Name: "Mario 3",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp, 2)
+
+	// Sorted by library game count DESC
+	assert.Equal(t, "Super Mario", resp[0].Name)
+	assert.Equal(t, 3, resp[0].LibraryGames)
+	assert.Equal(t, 3, resp[0].TotalGames)
+	assert.Equal(t, 1, resp[0].ConsoleCount) // All NES
+
+	assert.Equal(t, "The Legend of Zelda", resp[1].Name)
+	assert.Equal(t, 2, resp[1].LibraryGames)
+	assert.Equal(t, 3, resp[1].TotalGames)
+	assert.Equal(t, 2, resp[1].ConsoleCount) // NES + SNES
+}
+
+func TestGetExploreFeaturedSeries_HeroArt(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "NES", "LowRated", 50)
+	game2 := createExploreGame(t, env.database, "NES", "HighRated", 95)
+
+	// Both have hero art, highest rated should win
+	env.database.Create(&db.GameArtwork{
+		GameID:  game1.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/low.png",
+	})
+	env.database.Create(&db.GameArtwork{
+		GameID:  game2.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/high.png",
+	})
+
+	series := db.GameSeries{IGDBCollectionID: 100, Name: "Test Series"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "Low",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "High",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp, 1)
+	assert.Equal(t, "https://cdn.steamgriddb.com/hero/high.png", resp[0].HeroURL)
+}
+
+func TestGetExploreFeaturedSeries_ExcludesSoftDeletedGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "NES", "Alive1", 90)
+	game2 := createExploreGame(t, env.database, "NES", "Alive2", 85)
+	game3 := createExploreGame(t, env.database, "NES", "Deleted", 80)
+
+	series := db.GameSeries{IGDBCollectionID: 100, Name: "Test"}
+	require.NoError(t, env.database.Create(&series).Error)
+
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game1.ID, IGDBGameID: 100, Name: "G1",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game2.ID, IGDBGameID: 200, Name: "G2",
+	})
+	env.database.Create(&db.GameSeriesEntry{
+		SeriesID: series.ID, GameID: &game3.ID, IGDBGameID: 300, Name: "G3",
+	})
+
+	// Soft-delete one game — should drop library count to 2, still >= 2 threshold
+	env.database.Delete(&game3)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp, 1)
+	assert.Equal(t, 2, resp[0].LibraryGames)
+}
+
+func TestGetExploreFeaturedSeries_RequiresAuth(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	// No auth header
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestGetExploreFeaturedSeries_Limit20(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create 25 series, each with 2 library games
+	for i := 0; i < 25; i++ {
+		g1 := createExploreGame(t, env.database, "NES", fmt.Sprintf("Game%d_A", i), float64(90-i))
+		g2 := createExploreGame(t, env.database, "NES", fmt.Sprintf("Game%d_B", i), float64(85-i))
+
+		series := db.GameSeries{IGDBCollectionID: 1000 + i, Name: fmt.Sprintf("Series %d", i)}
+		require.NoError(t, env.database.Create(&series).Error)
+
+		env.database.Create(&db.GameSeriesEntry{
+			SeriesID: series.ID, GameID: &g1.ID, IGDBGameID: 1000 + i*2, Name: fmt.Sprintf("Game%d_A", i),
+		})
+		env.database.Create(&db.GameSeriesEntry{
+			SeriesID: series.ID, GameID: &g2.ID, IGDBGameID: 1001 + i*2, Name: fmt.Sprintf("Game%d_B", i),
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/series/featured", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []FeaturedSeriesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Len(t, resp, 20, "should be limited to 20 series")
+}

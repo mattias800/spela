@@ -66,6 +66,7 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameSharedSessionsSection
+import com.spela.player.presentation.ui.feature.gamedetail.SeriesFranchiseSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SessionsSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
@@ -112,6 +113,7 @@ fun GameDetailScreen(
     onNavigateToSharedSession: ((sharedSessionId: String) -> Unit)? = null,
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
     onNavigateToUser: ((userId: String) -> Unit)? = null,
+    onNavigateToSeries: ((seriesId: String, seriesName: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
@@ -217,6 +219,15 @@ fun GameDetailScreen(
                         onPlayWithLocalSave = onPlayWithLocalSave,
                         onCancelLaunch = onCancelLaunch,
                     )
+
+                    // Series & Franchise links
+                    if (state.gameSeries.isNotEmpty() || state.gameFranchises.isNotEmpty()) {
+                        SeriesFranchiseSection(
+                            series = state.gameSeries,
+                            franchises = state.gameFranchises,
+                            onSeriesSelected = onNavigateToSeries,
+                        )
+                    }
                 }
 
             },

@@ -239,6 +239,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		{
 			explore.GET("/featured", exploreHandler.GetExploreFeatured)
 			explore.GET("/rows", exploreHandler.GetExploreRows)
+			explore.GET("/series/featured", exploreHandler.GetExploreFeaturedSeries)
 		}
 
 		// Games
@@ -254,6 +255,8 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games/:id/artwork", artworkHandler.GetGameArtwork)
 		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
 		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
+		api.GET("/games/:id/series", enrichmentHandler.GetGameSeries)
+		api.GET("/games/:id/franchises", enrichmentHandler.GetGameFranchises)
 
 		// Game Sessions
 		api.POST("/games/:id/sessions", sessionHandler.CreateSession)

@@ -9,7 +9,9 @@ import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.GameCollection
 import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameRating
+import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.SharedSession
@@ -80,4 +82,8 @@ data class GameDetailState(
     val isLoadingSessions: Boolean = false,
     val isPlayingFromSharedSave: Boolean = false,
     val playFromSharedSaveSessionId: String? = null,
+
+    // Series & Franchise links
+    val gameSeries: List<GameSeriesLink> = emptyList(),
+    val gameFranchises: List<GameFranchiseLink> = emptyList(),
 )

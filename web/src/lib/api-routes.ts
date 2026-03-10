@@ -20,6 +20,10 @@ export type ApiGetPath = WithQuery<
   // Explore
   | "/explore/featured"
   | "/explore/rows"
+  | "/explore/series/featured"
+
+  // Series
+  | `/series/${string}`
 
   // Themes & Keywords
   | "/themes"
@@ -45,6 +49,8 @@ export type ApiGetPath = WithQuery<
   | `/games/${string}/core`
   | `/games/${string}/shared-sessions`
   | `/games/${string}/challenges`
+  | `/games/${string}/series`
+  | `/games/${string}/franchises`
 
   // Game sessions
   | `/games/${string}/sessions`

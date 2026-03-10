@@ -5,11 +5,13 @@ import { HeroCarousel } from "@/features/explore/components/hero-carousel";
 import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
 import { KeywordChips } from "@/features/explore/components/keyword-chips";
+import { SeriesShelf } from "@/features/explore/components/series-shelf";
 import {
   useExploreFeatured,
   useExploreRows,
   useThemes,
   useKeywords,
+  useFeaturedSeries,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -33,6 +35,10 @@ export function ExplorePage() {
     data: keywords,
     isLoading: isKeywordsLoading,
   } = useKeywords(30);
+  const {
+    data: featuredSeries,
+    isLoading: isSeriesLoading,
+  } = useFeaturedSeries();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -113,6 +119,9 @@ export function ExplorePage() {
       {/* Keyword Chips */}
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
 
+      {/* Series shelf */}
+      <SeriesShelf series={featuredSeries} isLoading={isSeriesLoading} />
+
       {/* Remaining shelf rows */}
       {isRowsLoading ? (
         <GameShelf
@@ -132,6 +141,7 @@ export function ExplorePage() {
           />
         ))
       )}
+
     </div>
   );
 }

@@ -829,6 +829,60 @@ export interface Keyword {
   gameCount: number;
 }
 
+// --- Series & Franchises ---
+
+export interface FeaturedSeries {
+  id: string;
+  name: string;
+  libraryGames: number;
+  totalGames: number;
+  consoleCount: number;
+  heroUrl: string;
+}
+
+export interface SeriesConsole {
+  abbreviation: string;
+  name: string;
+  color: string;
+  gameCount: number;
+}
+
+export interface SeriesGame {
+  igdbGameId: number;
+  name: string;
+  inLibrary: boolean;
+  localGameId: string | null;
+  coverUrl: string | null;
+  releaseDate: string | null;
+  rating: number;
+  consoleAbbreviation: string;
+  consoleName: string;
+  consoleColor: string;
+}
+
+export interface SeriesDetail {
+  id: string;
+  name: string;
+  heroUrl: string;
+  consoles: SeriesConsole[];
+  libraryGames: number;
+  totalGames: number;
+  games: SeriesGame[];
+}
+
+export interface GameSeriesLink {
+  id: string;
+  name: string;
+  totalGames: number;
+  libraryGames: number;
+}
+
+export interface GameFranchiseLink {
+  id: string;
+  name: string;
+  gameCount: number;
+}
+
 // --- Explore ---
 
 export interface FeaturedGame {

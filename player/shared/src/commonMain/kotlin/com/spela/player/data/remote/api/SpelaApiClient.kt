@@ -274,6 +274,26 @@ class SpelaApiClient(
         }.body()
     }
 
+    /** Returns featured series for the Explore page */
+    suspend fun getFeaturedSeries(): List<FeaturedSeriesDto> {
+        return client.get("$baseUrl/api/explore/series/featured").body()
+    }
+
+    /** Returns detail for a specific series */
+    suspend fun getSeriesDetail(id: String): SeriesDetailDto {
+        return client.get("$baseUrl/api/series/$id").body()
+    }
+
+    /** Returns series links for a game */
+    suspend fun getGameSeries(gameId: String): List<GameSeriesLinkDto> {
+        return client.get("$baseUrl/api/games/$gameId/series").body()
+    }
+
+    /** Returns franchise links for a game */
+    suspend fun getGameFranchises(gameId: String): List<GameFranchiseLinkDto> {
+        return client.get("$baseUrl/api/games/$gameId/franchises").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()
