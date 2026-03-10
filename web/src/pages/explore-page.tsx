@@ -259,14 +259,13 @@ export function ExplorePage() {
       <WildFeaturesSection />
 
       {/* Personalized & Social Discovery — lazy-loaded */}
-      <div ref={social.ref}>
-        <ForYouSection
-          rows={forYouData?.rows}
-          isLoading={isForYouLoading}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      </div>
+      <div ref={social.ref} />
+      <ForYouSection
+        rows={forYouData?.rows}
+        isLoading={isForYouLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       {/* Players Like You */}
       <PlayersLikeYouShelf
@@ -313,14 +312,13 @@ export function ExplorePage() {
       />
 
       {/* Temporal Discovery — lazy-loaded */}
-      <div ref={temporal.ref}>
-        <OnThisDayShelf
-          data={onThisDayData}
-          isLoading={isOnThisDayLoading}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      </div>
+      <div ref={temporal.ref} />
+      <OnThisDayShelf
+        data={onThisDayData}
+        isLoading={isOnThisDayLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       <AnniversariesShelf
         anniversaries={anniversariesData?.anniversaries}
@@ -346,14 +344,13 @@ export function ExplorePage() {
       />
 
       {/* Achievement & Challenge Discovery — lazy-loaded */}
-      <div ref={achievements.ref}>
-        <EasyToCompleteShelf
-          data={easyToCompleteData}
-          isLoading={isEasyToCompleteLoading}
-          onToggleFavorite={handleToggleFavorite}
-          onTogglePlayLater={handleTogglePlayLater}
-        />
-      </div>
+      <div ref={achievements.ref} />
+      <EasyToCompleteShelf
+        data={easyToCompleteData}
+        isLoading={isEasyToCompleteLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       <HardestGamesShelf
         data={hardestGamesData}
@@ -400,9 +397,8 @@ export function ExplorePage() {
       ) : null}
 
       {/* Catalog bottom — lazy-loaded */}
-      <div ref={catalogBottom.ref}>
-        <ThemeGrid themes={themes} isLoading={isThemesLoading} />
-      </div>
+      <div ref={catalogBottom.ref} />
+      <ThemeGrid themes={themes} isLoading={isThemesLoading} />
 
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
 
