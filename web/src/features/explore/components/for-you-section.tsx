@@ -85,10 +85,10 @@ function ForYouShelf({
     <section data-testid={testId} className="group/shelf relative">
       <div className="flex items-center gap-3 mb-5">
         {/* Show source game thumbnail for "because_you_played" rows */}
-        {row.type === "because_you_played" && row.source_game?.coverUrl && (
+        {row.type === "because_you_played" && row.sourceGame?.coverUrl && (
           <img
-            src={row.source_game.coverUrl}
-            alt={row.source_game.title}
+            src={row.sourceGame.coverUrl}
+            alt={row.sourceGame.title}
             className="h-8 w-6 rounded object-cover flex-shrink-0"
             data-testid="source-game-cover"
           />

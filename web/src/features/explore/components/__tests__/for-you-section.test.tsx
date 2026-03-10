@@ -52,7 +52,7 @@ describe("ForYouSection", () => {
       {
         type: "because_you_played",
         title: "Because you played Chrono Trigger",
-        source_game: makeGame({
+        sourceGame: makeGame({
           id: "source-1",
           title: "Chrono Trigger",
           coverUrl: "/covers/chrono.jpg",

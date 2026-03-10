@@ -926,7 +926,7 @@ export type GameSummary = Game;
 export interface ForYouRow {
   type: "because_you_played" | "more_genre" | "unfinished" | "expand_horizons";
   title: string;
-  source_game?: GameSummary;
+  sourceGame?: GameSummary;
   genre?: string;
   games: GameSummary[];
 }
@@ -938,27 +938,27 @@ export interface ForYouResponse {
 export interface TasteBreakdown {
   name: string;
   percentage: number;
-  play_time: number;
-  game_count: number;
+  playTime: number;
+  gameCount: number;
 }
 
 export interface ConsoleBreakdown {
   name: string;
   abbreviation: string;
-  play_time: number;
-  game_count: number;
+  playTime: number;
+  gameCount: number;
 }
 
 export interface TasteProfile {
-  total_play_time: number;
+  totalPlayTime: number;
   genres: TasteBreakdown[];
   themes: TasteBreakdown[];
-  top_consoles: ConsoleBreakdown[];
+  topConsoles: ConsoleBreakdown[];
 }
 
 export interface PlayersLikeYouResponse {
   games: GameSummary[];
-  similar_users_count: number;
+  similarUsersCount: number;
 }
 
 export interface StagedUpload {

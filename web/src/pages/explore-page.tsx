@@ -128,7 +128,7 @@ export function ExplorePage() {
       <PlayersLikeYouShelf
         games={playersLikeYouData?.games}
         isLoading={isPlayersLoading}
-        similarUsersCount={playersLikeYouData?.similar_users_count ?? 0}
+        similarUsersCount={playersLikeYouData?.similarUsersCount ?? 0}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
       />
