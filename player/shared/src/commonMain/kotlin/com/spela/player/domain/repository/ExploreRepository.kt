@@ -1,5 +1,8 @@
 package com.spela.player.domain.repository
 
+import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.DeveloperSpotlight
+import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
@@ -31,4 +34,8 @@ interface ExploreRepository {
     suspend fun getForYou(): Result<List<ForYouRow>>
     suspend fun getTasteProfile(): Result<TasteProfile>
     suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult>
+    suspend fun getDevelopers(): Result<List<DeveloperSummary>>
+    suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail>
+    suspend fun getPublisherDetail(name: String): Result<DeveloperDetail>
+    suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight>
 }

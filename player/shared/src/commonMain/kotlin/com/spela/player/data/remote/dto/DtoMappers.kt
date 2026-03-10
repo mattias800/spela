@@ -672,3 +672,29 @@ fun PlayersLikeYouResponseDto.toDomain(): PlayersLikeYouResult = PlayersLikeYouR
     games = games.map { it.toDomain() },
     similarUsersCount = similarUsersCount,
 )
+
+// Developer / Publisher mappers
+
+fun DeveloperSummaryDto.toDomain(): DeveloperSummary = DeveloperSummary(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+)
+
+fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+    games = games.map { it.toDomain() },
+)
+
+fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+    consoles = consoles,
+    topGames = topGames.map { it.toDomain() },
+    heroUrl = heroUrl.ifBlank { null },
+)

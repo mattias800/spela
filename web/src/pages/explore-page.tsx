@@ -6,6 +6,7 @@ import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
 import { KeywordChips } from "@/features/explore/components/keyword-chips";
 import { SeriesShelf } from "@/features/explore/components/series-shelf";
+import { DeveloperSpotlight } from "@/features/explore/components/developer-spotlight";
 import { MoodPicker } from "@/features/explore/components/mood-picker";
 import { ForYouSection } from "@/features/explore/components/for-you-section";
 import { PlayersLikeYouShelf } from "@/features/explore/components/players-like-you-shelf";
@@ -18,6 +19,7 @@ import {
   useMoods,
   useForYou,
   usePlayersLikeYou,
+  useDeveloperSpotlight,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -57,6 +59,10 @@ export function ExplorePage() {
     data: playersLikeYouData,
     isLoading: isPlayersLoading,
   } = usePlayersLikeYou();
+  const {
+    data: spotlightData,
+    isLoading: isSpotlightLoading,
+  } = useDeveloperSpotlight();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -159,6 +165,14 @@ export function ExplorePage() {
 
       {/* Series shelf */}
       <SeriesShelf series={featuredSeries} isLoading={isSeriesLoading} />
+
+      {/* Developer Spotlight */}
+      <DeveloperSpotlight
+        spotlight={spotlightData}
+        isLoading={isSpotlightLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
 
       {/* Remaining shelf rows */}
       {isRowsLoading ? (

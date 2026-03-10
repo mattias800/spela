@@ -2,6 +2,9 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.DeveloperSpotlight
+import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
@@ -156,6 +159,44 @@ class ExploreRepositoryImpl(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
+        )
+    }
+
+    override suspend fun getDevelopers(): Result<List<DeveloperSummary>> = runCatching {
+        apiClient.getDevelopers().developers.map { it.toDomain() }
+    }
+
+    override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> = runCatching {
+        val dto = apiClient.getDeveloperDetail(name)
+        dto.toDomain().copy(
+            games = dto.games.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+        )
+    }
+
+    override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> = runCatching {
+        val dto = apiClient.getPublisherDetail(name)
+        dto.toDomain().copy(
+            games = dto.games.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+        )
+    }
+
+    override suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight> = runCatching {
+        val dto = apiClient.getDeveloperSpotlight()
+        dto.toDomain().copy(
+            heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            topGames = dto.topGames.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
             },
         )

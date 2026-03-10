@@ -124,3 +124,27 @@ data class PlayersLikeYouResult(
     val games: List<Game>,
     val similarUsersCount: Int,
 )
+
+data class DeveloperSummary(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+)
+
+data class DeveloperDetail(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val games: List<Game>,
+)
+
+data class DeveloperSpotlight(
+    val name: String,
+    val gameCount: Int,
+    val avgRating: Double,
+    val consoles: List<String>,
+    val topGames: List<Game>,
+    val heroUrl: String?,
+)

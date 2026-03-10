@@ -1944,3 +1944,266 @@ func TestGetPlayersLikeYou_AuthRequired(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+// --- Phase 7: Developer & Publisher Spotlight tests ---
+
+// createExploreGameWithDev creates a game with developer and publisher fields set.
+func createExploreGameWithDev(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, developer, publisher string) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     title,
+		FileName:  title + ".rom",
+		FilePath:  consoleAbbr + "/" + title + ".rom",
+		Rating:    rating,
+		Genre:     "Action",
+		Developer: developer,
+		Publisher: publisher,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+func TestGetDevelopers_SortedByGameCount(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games with different developers
+	createExploreGameWithDev(t, env.database, "NES", "Game A", 90, "Nintendo", "Nintendo")
+	createExploreGameWithDev(t, env.database, "SNES", "Game B", 80, "Nintendo", "Nintendo")
+	createExploreGameWithDev(t, env.database, "NES", "Game C", 85, "Nintendo", "Capcom")
+	createExploreGameWithDev(t, env.database, "GBA", "Game D", 70, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "SNES", "Game E", 60, "Square", "Square")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.GreaterOrEqual(t, len(resp.Developers), 3)
+
+	// Nintendo has 3 games, should be first
+	assert.Equal(t, "Nintendo", resp.Developers[0].Name)
+	assert.Equal(t, 3, resp.Developers[0].GameCount)
+	assert.Greater(t, resp.Developers[0].AvgRating, 0.0)
+	assert.NotEmpty(t, resp.Developers[0].Consoles)
+
+	// Capcom has 1, Square has 1 — both after Nintendo
+	assert.Equal(t, 1, resp.Developers[1].GameCount)
+	assert.Equal(t, 1, resp.Developers[2].GameCount)
+}
+
+func TestGetDevelopers_EmptyDevelopersExcluded(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create a game with empty developer — should not appear
+	createExploreGameWithDev(t, env.database, "NES", "No Dev Game", 90, "", "SomePub")
+	createExploreGameWithDev(t, env.database, "NES", "Has Dev Game", 80, "Nintendo", "Nintendo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Only "Nintendo" should appear, not the empty developer
+	for _, d := range resp.Developers {
+		assert.NotEmpty(t, d.Name, "developer name should not be empty")
+	}
+}
+
+func TestGetDeveloperDetail_ReturnsGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "NES", "Mega Man 2", 92, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "SNES", "Mega Man X", 90, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "GBA", "Zelda LTTP", 95, "Nintendo", "Nintendo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Capcom", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Capcom", resp.Name)
+	assert.Equal(t, 2, resp.GameCount)
+	assert.Greater(t, resp.AvgRating, 0.0)
+	assert.Len(t, resp.Games, 2)
+	assert.NotEmpty(t, resp.Consoles)
+
+	// Games should be sorted by rating DESC
+	assert.Equal(t, "Mega Man 2", resp.Games[0].Title)
+	assert.Equal(t, "Mega Man X", resp.Games[1].Title)
+}
+
+func TestGetDeveloperDetail_CaseInsensitive(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "NES", "Game A", 85, "Capcom", "Capcom")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/capcom", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Capcom", resp.Name) // canonical casing from game data
+	assert.Equal(t, 1, resp.GameCount)
+	assert.Len(t, resp.Games, 1)
+}
+
+func TestGetDeveloperDetail_URLEncodedName(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "SNES", "Final Fantasy VI", 96, "Square Enix", "Square Enix")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Square%20Enix", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Square Enix", resp.Name)
+	assert.Equal(t, 1, resp.GameCount)
+	assert.Len(t, resp.Games, 1)
+	assert.Equal(t, "Final Fantasy VI", resp.Games[0].Title)
+}
+
+func TestGetDeveloperDetail_NonExistentDeveloper(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NonExistentDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "NonExistentDev", resp.Name)
+	assert.Equal(t, 0, resp.GameCount)
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetPublisherDetail_ReturnsGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "NES", "Castlevania", 88, "Konami", "Konami")
+	createExploreGameWithDev(t, env.database, "SNES", "Contra III", 85, "Konami", "Konami")
+	createExploreGameWithDev(t, env.database, "GBA", "Metroid Fusion", 92, "Nintendo R&D1", "Nintendo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/Konami", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Konami", resp.Name)
+	assert.Equal(t, 2, resp.GameCount)
+	assert.Greater(t, resp.AvgRating, 0.0)
+	assert.Len(t, resp.Games, 2)
+	assert.NotEmpty(t, resp.Consoles)
+
+	// Games sorted by rating DESC
+	assert.Equal(t, "Castlevania", resp.Games[0].Title)
+	assert.Equal(t, "Contra III", resp.Games[1].Title)
+}
+
+func TestGetPublisherDetail_CaseInsensitive(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "NES", "Game A", 85, "Dev", "Konami")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/konami", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Konami", resp.Name) // canonical casing from game data
+	assert.Equal(t, 1, resp.GameCount)
+	assert.Len(t, resp.Games, 1)
+}
+
+func TestGetDeveloperSpotlight_ReturnsSpotlight(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games for a developer with hero art
+	game1 := createExploreGameWithDev(t, env.database, "NES", "Mega Man 2", 92, "Capcom", "Capcom")
+	game2 := createExploreGameWithDev(t, env.database, "SNES", "Mega Man X", 90, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "GBA", "Street Fighter", 85, "Capcom", "Capcom")
+
+	// Add hero art to some games
+	env.database.Create(&db.GameArtwork{
+		GameID:  game1.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/megaman2.png",
+	})
+	env.database.Create(&db.GameArtwork{
+		GameID:  game2.ID,
+		HeroURL: "https://cdn.steamgriddb.com/hero/megamanx.png",
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/spotlight", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperSpotlightResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.NotEmpty(t, resp.Name)
+	assert.Greater(t, resp.GameCount, 0)
+	assert.Greater(t, resp.AvgRating, 0.0)
+	assert.NotEmpty(t, resp.Consoles)
+	assert.NotEmpty(t, resp.TopGames)
+	assert.NotEmpty(t, resp.HeroURL)
+	assert.LessOrEqual(t, len(resp.TopGames), 8)
+}
+
+func TestGetDeveloperSpotlight_NoHeroArt(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games without hero art
+	createExploreGameWithDev(t, env.database, "NES", "Game A", 90, "Nintendo", "Nintendo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/spotlight", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}

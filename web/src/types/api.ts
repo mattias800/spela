@@ -961,6 +961,44 @@ export interface PlayersLikeYouResponse {
   similarUsersCount: number;
 }
 
+// --- Developers & Publishers ---
+
+export interface DeveloperSummary {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+}
+
+export interface DeveloperListResponse {
+  developers: DeveloperSummary[];
+}
+
+export interface DeveloperDetailResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  games: Game[];
+}
+
+export interface PublisherDetailResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  games: Game[];
+}
+
+export interface DeveloperSpotlightResponse {
+  name: string;
+  gameCount: number;
+  avgRating: number;
+  consoles: string[];
+  topGames: Game[];
+  heroUrl: string;
+}
+
 export interface StagedUpload {
   id: string;
   fileName: string;
