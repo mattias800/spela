@@ -243,6 +243,8 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/moods", exploreHandler.GetExploreMoods)
 			explore.GET("/mood/:mood", exploreHandler.GetMoodGames)
 			explore.GET("/surprise", exploreHandler.GetSurpriseGame)
+			explore.GET("/for-you", exploreHandler.GetForYou)
+			explore.GET("/players-like-you", exploreHandler.GetPlayersLikeYou)
 		}
 
 		// Games
@@ -321,6 +323,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/user/stats", userHandler.GetUserStats)
 		api.GET("/user/play-stats", userHandler.GetPlayStats)
 		api.GET("/user/play-heatmap", statsHandler.GetPlayHeatmap)
+		api.GET("/user/taste-profile", exploreHandler.GetTasteProfile)
 		api.GET("/user/recent", userHandler.GetRecentGames)
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)

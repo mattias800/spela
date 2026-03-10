@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
+import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
@@ -26,16 +27,18 @@ data class ExploreState(
     val keywords: List<Keyword> = emptyList(),
     val featuredSeries: List<FeaturedSeries> = emptyList(),
     val moods: List<MoodDefinition> = emptyList(),
+    val forYouRows: List<ForYouRow> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
     val isLoadingKeywords: Boolean = false,
     val isLoadingFeaturedSeries: Boolean = false,
     val isLoadingMoods: Boolean = false,
+    val isLoadingForYou: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods || isLoadingForYou
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && forYouRows.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -113,6 +116,7 @@ class ExploreViewModel(
     private var seriesDetailJob: Job? = null
     private var moodsJob: Job? = null
     private var moodDetailJob: Job? = null
+    private var forYouJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -121,6 +125,7 @@ class ExploreViewModel(
         loadKeywords()
         loadFeaturedSeries()
         loadMoods()
+        loadForYou()
     }
 
     fun dismissError() {
@@ -279,6 +284,21 @@ class ExploreViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoadingMoods = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun loadForYou() {
+        if (forYouJob?.isActive == true) return
+        _state.update { it.copy(isLoadingForYou = true) }
+        forYouJob = scope.launch(dispatchers.io) {
+            exploreRepository.getForYou().fold(
+                onSuccess = { rows ->
+                    _state.update { it.copy(forYouRows = rows, isLoadingForYou = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingForYou = false, error = error.message) }
                 },
             )
         }

@@ -90,3 +90,37 @@ data class MoodDefinition(
     val icon: String,
     val gradient: List<String>,
 )
+
+data class ForYouRow(
+    val type: String,  // "because_you_played", "more_genre", "unfinished", "expand_horizons"
+    val title: String,
+    val sourceGame: Game?,  // only for because_you_played
+    val genre: String?,     // only for expand_horizons
+    val games: List<Game>,
+)
+
+data class TasteBreakdown(
+    val name: String,
+    val percentage: Double,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+data class ConsoleBreakdown(
+    val name: String,
+    val abbreviation: String,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+data class TasteProfile(
+    val totalPlayTime: Long,
+    val genres: List<TasteBreakdown>,
+    val themes: List<TasteBreakdown>,
+    val topConsoles: List<ConsoleBreakdown>,
+)
+
+data class PlayersLikeYouResult(
+    val games: List<Game>,
+    val similarUsersCount: Int,
+)

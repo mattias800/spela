@@ -309,6 +309,21 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/explore/surprise").body()
     }
 
+    /** Returns personalized "For You" recommendation rows */
+    suspend fun getForYou(): ForYouResponseDto {
+        return client.get("$baseUrl/api/explore/for-you").body()
+    }
+
+    /** Returns the user's taste profile (genre/theme/console breakdown) */
+    suspend fun getTasteProfile(): TasteProfileDto {
+        return client.get("$baseUrl/api/user/taste-profile").body()
+    }
+
+    /** Returns collaborative filtering recommendations */
+    suspend fun getPlayersLikeYou(): PlayersLikeYouResponseDto {
+        return client.get("$baseUrl/api/explore/players-like-you").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

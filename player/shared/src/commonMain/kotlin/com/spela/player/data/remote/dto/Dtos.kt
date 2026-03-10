@@ -1116,3 +1116,49 @@ data class MoodDefinitionDto(
     val icon: String,
     val gradient: List<String>,
 )
+
+// For You (Personalized Recommendations)
+
+@Serializable
+data class ForYouRowDto(
+    val type: String,
+    val title: String,
+    val sourceGame: GameDto? = null,
+    val genre: String? = null,
+    val games: List<GameDto>,
+)
+
+@Serializable
+data class ForYouResponseDto(
+    val rows: List<ForYouRowDto>,
+)
+
+@Serializable
+data class TasteBreakdownDto(
+    val name: String,
+    val percentage: Double,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+@Serializable
+data class ConsoleBreakdownDto(
+    val name: String,
+    val abbreviation: String,
+    val playTime: Long,
+    val gameCount: Int,
+)
+
+@Serializable
+data class TasteProfileDto(
+    val totalPlayTime: Long,
+    val genres: List<TasteBreakdownDto>,
+    val themes: List<TasteBreakdownDto>,
+    val topConsoles: List<ConsoleBreakdownDto>,
+)
+
+@Serializable
+data class PlayersLikeYouResponseDto(
+    val games: List<GameDto>,
+    val similarUsersCount: Int,
+)

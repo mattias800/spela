@@ -12,6 +12,9 @@ import type {
   GamesResponse,
   MoodDefinition,
   Game,
+  ForYouResponse,
+  TasteProfile,
+  PlayersLikeYouResponse,
 } from "@/types/api";
 
 export function useExploreFeatured() {
@@ -124,5 +127,27 @@ export function useSurpriseGame() {
     queryKey: ["explore", "surprise"],
     queryFn: () => api.get<Game>("/explore/surprise"),
     enabled: false,
+  });
+}
+
+export function useForYou() {
+  return useQuery({
+    queryKey: ["explore", "for-you"],
+    queryFn: () => api.get<ForYouResponse>("/explore/for-you"),
+  });
+}
+
+export function useTasteProfile() {
+  return useQuery({
+    queryKey: ["user", "taste-profile"],
+    queryFn: () => api.get<TasteProfile>("/user/taste-profile"),
+  });
+}
+
+export function usePlayersLikeYou() {
+  return useQuery({
+    queryKey: ["explore", "players-like-you"],
+    queryFn: () =>
+      api.get<PlayersLikeYouResponse>("/explore/players-like-you"),
   });
 }

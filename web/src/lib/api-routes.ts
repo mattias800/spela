@@ -24,6 +24,8 @@ export type ApiGetPath = WithQuery<
   | "/explore/moods"
   | `/explore/mood/${string}`
   | "/explore/surprise"
+  | "/explore/for-you"
+  | "/explore/players-like-you"
 
   // Series
   | `/series/${string}`
@@ -102,6 +104,7 @@ export type ApiGetPath = WithQuery<
   | "/user/shared-session-invites/count"
   | "/user/ra/status"
   | "/user/ra/token"
+  | "/user/taste-profile"
   | "/user/achievements/recent"
 
   // Shared Sessions

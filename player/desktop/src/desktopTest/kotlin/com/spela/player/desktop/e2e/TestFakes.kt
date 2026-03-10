@@ -1332,6 +1332,9 @@ class FakeExploreRepository : ExploreRepository {
     var moodsList: List<MoodDefinition> = emptyList()
     var moodGames: Map<String, List<Game>> = emptyMap()
     var surpriseGame: Game? = null
+    var forYouRows: List<ForYouRow> = emptyList()
+    var tasteProfile: TasteProfile? = null
+    var playersLikeYou: PlayersLikeYouResult? = null
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1392,6 +1395,26 @@ class FakeExploreRepository : ExploreRepository {
             val game = surpriseGame
             if (game != null) Result.success(game)
             else Result.failure(Exception("No surprise game available"))
+        }
+
+    override suspend fun getForYou(): Result<List<ForYouRow>> =
+        if (shouldFail) Result.failure(Exception("Failed to load for-you rows"))
+        else Result.success(forYouRows)
+
+    override suspend fun getTasteProfile(): Result<TasteProfile> =
+        if (shouldFail) Result.failure(Exception("Failed to load taste profile"))
+        else {
+            val profile = tasteProfile
+            if (profile != null) Result.success(profile)
+            else Result.failure(Exception("No taste profile available"))
+        }
+
+    override suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult> =
+        if (shouldFail) Result.failure(Exception("Failed to load players like you"))
+        else {
+            val result = playersLikeYou
+            if (result != null) Result.success(result)
+            else Result.failure(Exception("No players like you available"))
         }
 }
 

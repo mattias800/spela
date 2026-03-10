@@ -22,6 +22,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.feature.explore.ForYouSection
+import com.spela.player.presentation.ui.feature.explore.ForYouSkeleton
 import com.spela.player.presentation.ui.feature.explore.GameShelf
 import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.HeroCarousel
@@ -132,6 +134,32 @@ fun ExploreScreen(
                                     onSurpriseMe = {
                                         onSurpriseMe?.invoke()
                                     },
+                                )
+                            }
+                        }
+                    }
+
+                    // For You section (personalized recommendations)
+                    item {
+                        if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
+                            SpTitledSection(
+                                title = "For You",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                ForYouSkeleton()
+                            }
+                        } else if (state.forYouRows.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "For You",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_for_you_section"),
+                            ) {
+                                ForYouSection(
+                                    rows = state.forYouRows,
+                                    onGameSelected = onGameSelected,
                                 )
                             }
                         }

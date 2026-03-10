@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -13,6 +13,8 @@ vi.mock("@/hooks/use-explore", () => ({
   useKeywords: vi.fn(),
   useFeaturedSeries: vi.fn(),
   useMoods: vi.fn(),
+  useForYou: vi.fn(),
+  usePlayersLikeYou: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -36,7 +38,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -44,6 +46,8 @@ const mockUseThemes = useThemes as ReturnType<typeof vi.fn>;
 const mockUseKeywords = useKeywords as ReturnType<typeof vi.fn>;
 const mockUseFeaturedSeries = useFeaturedSeries as ReturnType<typeof vi.fn>;
 const mockUseMoods = useMoods as ReturnType<typeof vi.fn>;
+const mockUseForYou = useForYou as ReturnType<typeof vi.fn>;
+const mockUsePlayersLikeYou = usePlayersLikeYou as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -109,6 +113,22 @@ const mockMoods: MoodDefinition[] = [
   { id: "chill", name: "Chill", description: "Relaxing games", icon: "😌", gradient: ["#1a237e", "#4a148c"] },
   { id: "intense", name: "Intense", description: "Heart-pounding action", icon: "🔥", gradient: ["#b71c1c", "#ff6f00"] },
 ];
+
+const mockForYou: ForYouResponse = {
+  rows: [
+    {
+      type: "because_you_played",
+      title: "Because you played Chrono Trigger",
+      source_game: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
+      games: [makeGame({ id: "fy1", title: "For You Game 1" })],
+    },
+  ],
+};
+
+const mockPlayersLikeYou: PlayersLikeYouResponse = {
+  games: [makeGame({ id: "ply1", title: "Players Pick" })],
+  similar_users_count: 5,
+};
 
 const mockRows: ExploreRowsResponse = {
   rows: [
@@ -191,6 +211,14 @@ describe("ExplorePage", () => {
     });
     mockUseMoods.mockReturnValue({
       data: mockMoods,
+      isLoading: false,
+    });
+    mockUseForYou.mockReturnValue({
+      data: mockForYou,
+      isLoading: false,
+    });
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: mockPlayersLikeYou,
       isLoading: false,
     });
   });
@@ -407,5 +435,53 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("mood-picker-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the For You section", () => {
+    renderPage();
+    expect(screen.getByTestId("for-you-section")).toBeInTheDocument();
+    expect(screen.getByText("For You Game 1")).toBeInTheDocument();
+  });
+
+  it("renders the Players Like You shelf", () => {
+    renderPage();
+    expect(screen.getByTestId("players-like-you-shelf")).toBeInTheDocument();
+    expect(screen.getByText("Players Pick")).toBeInTheDocument();
+  });
+
+  it("hides For You section when no data", () => {
+    mockUseForYou.mockReturnValue({
+      data: { rows: [] },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("for-you-section")).not.toBeInTheDocument();
+  });
+
+  it("hides Players Like You shelf when no data", () => {
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: { games: [], similar_users_count: 0 },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("players-like-you-shelf")).not.toBeInTheDocument();
+  });
+
+  it("shows For You skeleton while loading", () => {
+    mockUseForYou.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("for-you-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows Players Like You skeleton while loading", () => {
+    mockUsePlayersLikeYou.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("players-like-you-skeleton")).toBeInTheDocument();
   });
 });
