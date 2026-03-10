@@ -480,6 +480,14 @@ end, not a per-agent step during parallel test writing.
 5. **Web QA**, **Android QA**, and **macOS QA** run the FULL test suite and verify zero regressions
 6. **Product Owner** does final acceptance review
 
+## Continuous Improvement
+
+Every agent must watch for potential improvements while working — see `AGENTS.md`
+"Continuous Improvement" section for the full policy. When you spot something
+that can be improved (refactoring, tech debt, UX issue, missing shared component,
+etc.), append it to `IMPROVEMENTS.md`. This applies to all roles: developers,
+reviewers, QA engineers, the UI agent, and the product owner.
+
 ## Agent Spawn Configuration
 
 When creating a team, spawn agents with these types:
