@@ -94,8 +94,8 @@ const mockKeywords: Keyword[] = [
 ];
 
 const mockFeaturedSeries: FeaturedSeries[] = [
-  { id: 1, name: "Super Mario", libraryGames: 5, totalGames: 12, consoleCount: 3, heroUrl: "/hero/mario.jpg" },
-  { id: 2, name: "The Legend of Zelda", libraryGames: 4, totalGames: 10, consoleCount: 2, heroUrl: "/hero/zelda.jpg" },
+  { id: "1", name: "Super Mario", libraryGames: 5, totalGames: 12, consoleCount: 3, heroUrl: "/hero/mario.jpg" },
+  { id: "2", name: "The Legend of Zelda", libraryGames: 4, totalGames: 10, consoleCount: 2, heroUrl: "/hero/zelda.jpg" },
 ];
 
 const mockRows: ExploreRowsResponse = {
