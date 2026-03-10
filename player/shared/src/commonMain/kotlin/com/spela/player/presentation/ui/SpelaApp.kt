@@ -99,6 +99,7 @@ import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreMoodScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
 import com.spela.player.presentation.ui.screen.ExploreSeriesScreen
+import com.spela.player.presentation.ui.screen.ExploreSearchScreen
 import com.spela.player.presentation.ui.screen.ExploreThemeScreen
 import com.spela.player.presentation.ui.screen.TopListsScreen
 import com.spela.player.presentation.ui.screen.UserProfileScreen
@@ -506,6 +507,11 @@ fun SpelaApp(
                                                 )
                                             }
                                         },
+                                        onSearchSelected = {
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreSearch)
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -643,6 +649,22 @@ fun SpelaApp(
                             is SpScreen.ExploreGallery -> {
                                 if (exploreViewModel != null) {
                                     ExploreGalleryScreen(
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreSearch -> {
+                                if (exploreViewModel != null) {
+                                    ExploreSearchScreen(
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(

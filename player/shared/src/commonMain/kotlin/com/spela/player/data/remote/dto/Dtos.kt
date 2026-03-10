@@ -1438,3 +1438,19 @@ data class ExploreChallengeDto(
 data class ActiveChallengesResponseDto(
     val challenges: List<ExploreChallengeDto>,
 )
+
+// --- Phase 13: Advanced Search & Saved Searches ---
+
+@Serializable
+data class SavedSearchDto(
+    val id: String,
+    val name: String,
+    val filters: Map<String, String> = emptyMap(),
+    val createdAt: String = "",
+)
+
+@Serializable
+data class CreateSavedSearchRequest(
+    val name: String,
+    val filters: Map<String, String>,
+)

@@ -139,6 +139,7 @@ export type ApiGetPath = WithQuery<
   | "/user/ra/token"
   | "/user/taste-profile"
   | "/user/achievements/recent"
+  | "/user/saved-searches"
 
   // Shared Sessions
   | "/shared-sessions"
@@ -236,6 +237,7 @@ export type ApiPostPath = WithQuery<
   | "/user/ra/link"
   | `/user/shared-session-invites/${string}/accept`
   | `/user/shared-session-invites/${string}/decline`
+  | "/user/saved-searches"
 
   // Collections
   | "/collections"
@@ -344,6 +346,7 @@ export type ApiDeletePath = WithQuery<
   | `/user/devices/${string}`
   | "/user/ra/link"
   | `/user/games/${string}/keymapping`
+  | `/user/saved-searches/${string}`
 
   // Collections
   | `/collections/${string}`

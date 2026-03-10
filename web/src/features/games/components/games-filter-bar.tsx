@@ -32,8 +32,9 @@ export function GamesFilterBar({
   const sortOptions = [
     { value: "title", label: "Title" },
     { value: "created_at", label: "Recently Added" },
-    { value: "file_size", label: "File Size" },
+    { value: "release_date", label: "Release Date" },
     { value: "rating", label: "Rating" },
+    { value: "file_size", label: "File Size" },
   ];
 
   return (

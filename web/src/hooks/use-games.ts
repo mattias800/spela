@@ -7,6 +7,22 @@ export function useGames(filters?: GameFilters) {
   if (filters?.search) params.set("search", filters.search);
   if (filters?.consoleId) params.set("consoleId", filters.consoleId);
   if (filters?.genre) params.set("genre", filters.genre);
+  // Multi-select filters
+  if (filters?.consoles?.length) params.set("consoles", filters.consoles.join(","));
+  if (filters?.genres?.length) params.set("genres", filters.genres.join(","));
+  if (filters?.themes?.length) params.set("themes", filters.themes.join(","));
+  if (filters?.keywords?.length) params.set("keywords", filters.keywords.join(","));
+  if (filters?.perspectives?.length) params.set("perspectives", filters.perspectives.join(","));
+  // Text filters
+  if (filters?.developer) params.set("developer", filters.developer);
+  if (filters?.publisher) params.set("publisher", filters.publisher);
+  // Range filters
+  if (filters?.yearMin != null) params.set("yearMin", String(filters.yearMin));
+  if (filters?.yearMax != null) params.set("yearMax", String(filters.yearMax));
+  if (filters?.ratingMin != null) params.set("ratingMin", String(filters.ratingMin));
+  if (filters?.ratingMax != null) params.set("ratingMax", String(filters.ratingMax));
+  // Play status
+  if (filters?.playStatus) params.set("playStatus", filters.playStatus);
   if (filters?.sortBy) params.set("sortBy", filters.sortBy);
   if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
   if (filters?.page) params.set("page", String(filters.page));

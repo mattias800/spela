@@ -113,10 +113,33 @@ export interface GameFilters {
   search?: string;
   consoleId?: string;
   genre?: string;
-  sortBy?: "title" | "created_at" | "file_size" | "rating";
+  // Multi-select filters (comma-separated when sent to API)
+  consoles?: string[];
+  genres?: string[];
+  themes?: string[];
+  keywords?: string[];
+  perspectives?: string[];
+  // Text search filters
+  developer?: string;
+  publisher?: string;
+  // Range filters
+  yearMin?: number;
+  yearMax?: number;
+  ratingMin?: number;
+  ratingMax?: number;
+  // Play status
+  playStatus?: "unplayed" | "played" | "favorited" | "play-later";
+  sortBy?: "title" | "created_at" | "file_size" | "rating" | "release_date";
   sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+}
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  filters: Record<string, string | number>;
+  createdAt: string;
 }
 
 export interface MetadataMatchesResponse {

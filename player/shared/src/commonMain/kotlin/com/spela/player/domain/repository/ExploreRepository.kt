@@ -25,6 +25,7 @@ import com.spela.player.domain.model.Keyword
 import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.PlayersLikeYouResult
 import com.spela.player.domain.model.RecentReviewItem
+import com.spela.player.domain.model.SavedSearch
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.TasteProfile
@@ -70,4 +71,8 @@ interface ExploreRepository {
     suspend fun getAlmostDone(): Result<List<AlmostDoneGame>>
     suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>>
     suspend fun getActiveChallenges(): Result<List<ExploreChallenge>>
+    suspend fun getFilteredGames(filters: Map<String, String>, page: Int = 1, pageSize: Int = 20): Result<List<Game>>
+    suspend fun getSavedSearches(): Result<List<SavedSearch>>
+    suspend fun createSavedSearch(name: String, filters: Map<String, String>): Result<SavedSearch>
+    suspend fun deleteSavedSearch(id: String): Result<Unit>
 }

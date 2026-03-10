@@ -4,19 +4,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -58,6 +63,7 @@ import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
 import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.TrendingSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
@@ -74,6 +80,7 @@ fun ExploreScreen(
     onChallengeSelected: ((challengeId: String) -> Unit)? = null,
     onGallerySelected: (() -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
+    onSearchSelected: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -131,6 +138,28 @@ fun ExploreScreen(
                                 ),
                             )
                         }
+                    }
+
+                    // Advanced search entry point
+                    item {
+                        SpChip(
+                            text = "Advanced Search & Filters",
+                            onClick = { onSearchSelected?.invoke() },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = null,
+                                    tint = SpColor.OnBackgroundSecondary,
+                                    modifier = Modifier.height(16.dp),
+                                )
+                            },
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = SpSpacing.ScreenHorizontal,
+                                    vertical = SpSpacing.Small,
+                                )
+                                .testTag("explore_search_chip"),
+                        )
                     }
 
                     // Console quick-jump section
