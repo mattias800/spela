@@ -251,16 +251,17 @@ export function GameDetailPage() {
             </Link>
           ))}
           {gameFranchises?.map((f) => (
-            <span
+            <Link
               key={`franchise-${f.id}`}
-              className="inline-flex items-center gap-1.5 text-sm text-surface-300 bg-surface-900/60 border border-surface-800/50 rounded-lg px-3 py-1.5"
+              to={`/explore/franchise/${f.id}`}
+              className="inline-flex items-center gap-1.5 text-sm text-surface-300 hover:text-brand-400 transition-colors bg-surface-900/60 border border-surface-800/50 rounded-lg px-3 py-1.5 hover:border-surface-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               Part of{" "}
               <span className="font-semibold text-surface-100">{f.name}</span>
               <span className="text-xs text-surface-500">
-                ({f.gameCount} games)
+                ({f.libraryGames}/{f.totalGames} games)
               </span>
-            </span>
+            </Link>
           ))}
         </div>
       )}

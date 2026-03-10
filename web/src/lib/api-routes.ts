@@ -25,6 +25,9 @@ export type ApiGetPath = WithQuery<
   // Series
   | `/series/${string}`
 
+  // Franchises
+  | `/franchises/${string}`
+
   // Themes & Keywords
   | "/themes"
   | `/themes/${string}/games`

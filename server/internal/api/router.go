@@ -428,6 +428,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/series", enrichmentHandler.ListSeries)
 		api.GET("/series/:id", enrichmentHandler.GetSeriesDetail)
 		api.GET("/franchises", enrichmentHandler.ListFranchises)
+		api.GET("/franchises/:id", enrichmentHandler.GetFranchiseDetail)
 		api.GET("/franchises/:id/games", enrichmentHandler.ListFranchiseGames)
 
 		// RetroAchievements

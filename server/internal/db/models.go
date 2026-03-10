@@ -697,6 +697,29 @@ type GameSeriesEntry struct {
 	CoverImageID string    `gorm:"size:255" json:"coverImageId"`
 }
 
+// GameFranchiseGroup represents an IGDB franchise (broader brand like "Mario", "Zelda").
+// Analogous to GameSeries but for franchises.
+type GameFranchiseGroup struct {
+	ID              uint                 `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time            `json:"createdAt"`
+	UpdatedAt       time.Time            `json:"updatedAt"`
+	IGDBFranchiseID int                  `gorm:"uniqueIndex;not null" json:"igdbFranchiseId"`
+	Name            string               `gorm:"size:255;not null" json:"name"`
+	Entries         []GameFranchiseEntry `gorm:"foreignKey:FranchiseGroupID" json:"entries,omitempty"`
+}
+
+// GameFranchiseEntry represents a game within a franchise. GameID is nullable because
+// the game may not be in the local library (supports "You own 8 of 15 games" display).
+type GameFranchiseEntry struct {
+	ID               uint      `gorm:"primarykey" json:"id"`
+	CreatedAt        time.Time `json:"createdAt"`
+	FranchiseGroupID uint      `gorm:"uniqueIndex:idx_franchise_igdb_game;not null" json:"franchiseGroupId"`
+	GameID           *uint     `gorm:"index" json:"gameId"`
+	IGDBGameID       int       `gorm:"uniqueIndex:idx_franchise_igdb_game;not null" json:"igdbGameId"`
+	Name             string    `gorm:"size:255;not null" json:"name"`
+	CoverImageID     string    `gorm:"size:255" json:"coverImageId"`
+}
+
 // GameArtworkImage stores IGDB promotional artwork (distinct from SteamGridDB GameArtwork).
 type GameArtworkImage struct {
 	ID          uint      `gorm:"primarykey" json:"id"`

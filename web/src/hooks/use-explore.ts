@@ -4,6 +4,7 @@ import type {
   FeaturedGame,
   FeaturedSeries,
   SeriesDetail,
+  FranchiseDetail,
   GameSeriesLink,
   GameFranchiseLink,
   ExploreRowsResponse,
@@ -82,6 +83,15 @@ export function useSeriesDetail(id: string | undefined) {
     queryKey: ["series", id],
     queryFn: () => api.get<SeriesDetail>(`/series/${id}`),
     enabled: !!id,
+  });
+}
+
+export function useFranchiseDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ["franchises", id],
+    queryFn: () => api.get<FranchiseDetail>(`/franchises/${id}`),
+    enabled: !!id,
+    staleTime: STALE_LONG,
   });
 }
 
