@@ -6,12 +6,14 @@ import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
 import { KeywordChips } from "@/features/explore/components/keyword-chips";
 import { SeriesShelf } from "@/features/explore/components/series-shelf";
+import { MoodPicker } from "@/features/explore/components/mood-picker";
 import {
   useExploreFeatured,
   useExploreRows,
   useThemes,
   useKeywords,
   useFeaturedSeries,
+  useMoods,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -39,6 +41,10 @@ export function ExplorePage() {
     data: featuredSeries,
     isLoading: isSeriesLoading,
   } = useFeaturedSeries();
+  const {
+    data: moods,
+    isLoading: isMoodsLoading,
+  } = useMoods();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -94,6 +100,9 @@ export function ExplorePage() {
 
       {/* Hero Carousel */}
       <HeroCarousel games={featuredGames} isLoading={isFeaturedLoading} />
+
+      {/* Mood Picker */}
+      <MoodPicker moods={moods} isLoading={isMoodsLoading} />
 
       {/* First shelf row */}
       {isRowsLoading ? (

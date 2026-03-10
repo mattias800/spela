@@ -7,6 +7,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameFranchiseLink
 import com.spela.player.domain.model.GameSeriesLink
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 
@@ -21,4 +22,7 @@ interface ExploreRepository {
     suspend fun getSeriesDetail(id: String): Result<SeriesDetail>
     suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>>
     suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>>
+    suspend fun getMoods(): Result<List<MoodDefinition>>
+    suspend fun getMoodGames(mood: String): Result<List<Game>>
+    suspend fun getSurpriseGame(): Result<Game>
 }

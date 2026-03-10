@@ -240,6 +240,9 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/featured", exploreHandler.GetExploreFeatured)
 			explore.GET("/rows", exploreHandler.GetExploreRows)
 			explore.GET("/series/featured", exploreHandler.GetExploreFeaturedSeries)
+			explore.GET("/moods", exploreHandler.GetExploreMoods)
+			explore.GET("/mood/:mood", exploreHandler.GetMoodGames)
+			explore.GET("/surprise", exploreHandler.GetSurpriseGame)
 		}
 
 		// Games

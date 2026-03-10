@@ -883,6 +883,16 @@ export interface GameFranchiseLink {
   gameCount: number;
 }
 
+// --- Moods ---
+
+export interface MoodDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  gradient: string[];
+}
+
 // --- Explore ---
 
 export interface FeaturedGame {

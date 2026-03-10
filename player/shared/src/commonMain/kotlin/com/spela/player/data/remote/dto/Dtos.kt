@@ -1107,3 +1107,12 @@ data class GameFranchiseLinkDto(
     val name: String,
     val gameCount: Int = 0,
 )
+
+@Serializable
+data class MoodDefinitionDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: String,
+    val gradient: List<String>,
+)

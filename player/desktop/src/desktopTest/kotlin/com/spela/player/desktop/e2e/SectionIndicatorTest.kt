@@ -133,6 +133,6 @@ class SectionIndicatorTest {
 
         // Indicator should show new active section
         onNodeWithContentDescription("Section indicator").assertExists()
-        onNodeWithContentDescription("Section: Consoles, active").assertExists()
+        onNodeWithContentDescription("Section: Explore, active").assertExists()
     }
 }

@@ -5,6 +5,7 @@ import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.Keyword
+import com.spela.player.domain.model.MoodDefinition
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.Theme
 import com.spela.player.domain.repository.ExploreRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ExploreState(
     val featuredGames: List<FeaturedGame> = emptyList(),
@@ -23,15 +25,17 @@ data class ExploreState(
     val themes: List<Theme> = emptyList(),
     val keywords: List<Keyword> = emptyList(),
     val featuredSeries: List<FeaturedSeries> = emptyList(),
+    val moods: List<MoodDefinition> = emptyList(),
     val isLoadingFeatured: Boolean = false,
     val isLoadingRows: Boolean = false,
     val isLoadingThemes: Boolean = false,
     val isLoadingKeywords: Boolean = false,
     val isLoadingFeaturedSeries: Boolean = false,
+    val isLoadingMoods: Boolean = false,
     val error: String? = null,
 ) {
-    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries
-    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && !isLoading
+    val isLoading: Boolean get() = isLoadingFeatured || isLoadingRows || isLoadingThemes || isLoadingKeywords || isLoadingFeaturedSeries || isLoadingMoods
+    val isEmpty: Boolean get() = featuredGames.isEmpty() && rows.isEmpty() && themes.isEmpty() && keywords.isEmpty() && featuredSeries.isEmpty() && moods.isEmpty() && !isLoading
 }
 
 data class ThemeDetailState(
@@ -45,6 +49,15 @@ data class ThemeDetailState(
 data class KeywordDetailState(
     val keywordId: String = "",
     val keywordName: String = "",
+    val games: List<Game> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+)
+
+data class MoodDetailState(
+    val moodId: String = "",
+    val moodName: String = "",
+    val mood: MoodDefinition? = null,
     val games: List<Game> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -87,6 +100,9 @@ class ExploreViewModel(
     private val _seriesDetailState = MutableStateFlow(SeriesDetailState())
     val seriesDetailState: StateFlow<SeriesDetailState> = _seriesDetailState.asStateFlow()
 
+    private val _moodDetailState = MutableStateFlow(MoodDetailState())
+    val moodDetailState: StateFlow<MoodDetailState> = _moodDetailState.asStateFlow()
+
     private var featuredJob: Job? = null
     private var rowsJob: Job? = null
     private var themesJob: Job? = null
@@ -95,6 +111,8 @@ class ExploreViewModel(
     private var keywordDetailJob: Job? = null
     private var featuredSeriesJob: Job? = null
     private var seriesDetailJob: Job? = null
+    private var moodsJob: Job? = null
+    private var moodDetailJob: Job? = null
 
     fun load() {
         loadFeatured()
@@ -102,6 +120,7 @@ class ExploreViewModel(
         loadThemes()
         loadKeywords()
         loadFeaturedSeries()
+        loadMoods()
     }
 
     fun dismissError() {
@@ -248,5 +267,57 @@ class ExploreViewModel(
                 },
             )
         }
+    }
+
+    private fun loadMoods() {
+        if (moodsJob?.isActive == true) return
+        _state.update { it.copy(isLoadingMoods = true) }
+        moodsJob = scope.launch(dispatchers.io) {
+            exploreRepository.getMoods().fold(
+                onSuccess = { moods ->
+                    _state.update { it.copy(moods = moods, isLoadingMoods = false) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoadingMoods = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadMoodGames(moodId: String, moodName: String) {
+        moodDetailJob?.cancel()
+        val mood = _state.value.moods.find { it.id == moodId }
+        _moodDetailState.update {
+            MoodDetailState(moodId = moodId, moodName = moodName, mood = mood, isLoading = true)
+        }
+        moodDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getMoodGames(moodId).fold(
+                onSuccess = { games ->
+                    _moodDetailState.update { it.copy(games = games, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _moodDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun loadSurpriseGame(onGameSelected: (String) -> Unit) {
+        scope.launch(dispatchers.io) {
+            exploreRepository.getSurpriseGame().fold(
+                onSuccess = { game ->
+                    withContext(dispatchers.main) {
+                        onGameSelected(game.id)
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun dismissMoodDetailError() {
+        _moodDetailState.update { it.copy(error = null) }
     }
 }

@@ -93,6 +93,7 @@ import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
+import com.spela.player.presentation.ui.screen.ExploreMoodScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
 import com.spela.player.presentation.ui.screen.ExploreSeriesScreen
 import com.spela.player.presentation.ui.screen.ExploreThemeScreen
@@ -470,6 +471,18 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreSeries(seriesId, seriesName))
                                             )
                                         },
+                                        onMoodSelected = { moodId, moodName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreMood(moodId, moodName))
+                                            )
+                                        },
+                                        onSurpriseMe = {
+                                            exploreViewModel.loadSurpriseGame { gameId ->
+                                                navigationViewModel.onIntent(
+                                                    NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                             }
@@ -515,6 +528,24 @@ fun SpelaApp(
                                     ExploreSeriesScreen(
                                         seriesId = screen.seriesId,
                                         seriesName = screen.seriesName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.ExploreMood -> {
+                                if (exploreViewModel != null) {
+                                    ExploreMoodScreen(
+                                        moodId = screen.moodId,
+                                        moodName = screen.moodName,
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(

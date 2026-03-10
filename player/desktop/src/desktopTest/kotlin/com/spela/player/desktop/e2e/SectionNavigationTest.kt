@@ -55,13 +55,14 @@ class SectionNavigationTest {
     }
 
     @Test
-    fun bottomNavShowsFiveTabs() = runComposeUiTest {
+    fun bottomNavShowsSixTabs() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
         onNodeWithText("Home").assertIsDisplayed()
+        onNodeWithText("Explore").assertIsDisplayed()
         onNodeWithText("Consoles").assertIsDisplayed()
         onNodeWithText("Collections").assertIsDisplayed()
         onNodeWithText("Activity").assertIsDisplayed()
@@ -77,6 +78,10 @@ class SectionNavigationTest {
 
         // Start at Home
         assertEquals(SpScreen.Home, harness.navigationViewModel.state.value.currentScreen)
+
+        // NextSection → Explore
+        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.Explore, harness.navigationViewModel.state.value.currentScreen)
 
         // NextSection → Consoles
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
@@ -125,6 +130,10 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
+        // PreviousSection → Explore
+        harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
+        assertEquals(SpScreen.Explore, harness.navigationViewModel.state.value.currentScreen)
+
         // PreviousSection → Home
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
         assertEquals(SpScreen.Home, harness.navigationViewModel.state.value.currentScreen)
@@ -156,7 +165,8 @@ class SectionNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Navigate to Consoles via section cycling (empty backstack)
+        // Navigate to Consoles via section cycling (Home → Explore → Consoles)
+        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
@@ -172,7 +182,8 @@ class SectionNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Navigate to Collections via section cycling
+        // Navigate to Collections via section cycling (Home → Explore → Consoles → Collections)
+        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)

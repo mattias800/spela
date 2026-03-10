@@ -39,6 +39,7 @@ import { ExplorePage } from "@/pages/explore-page";
 import { ExploreThemePage } from "@/pages/explore-theme-page";
 import { ExploreKeywordPage } from "@/pages/explore-keyword-page";
 import { ExploreSeriesPage } from "@/pages/explore-series-page";
+import { ExploreMoodPage } from "@/pages/explore-mood-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
@@ -98,6 +99,10 @@ export function App() {
                     <Route
                       path="explore/series/:id"
                       element={<ExploreSeriesPage />}
+                    />
+                    <Route
+                      path="explore/mood/:mood"
+                      element={<ExploreMoodPage />}
                     />
                     <Route element={<LibraryLayout />}>
                       <Route path="consoles" element={<ConsolesPage />} />

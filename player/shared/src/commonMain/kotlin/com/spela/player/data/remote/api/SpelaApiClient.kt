@@ -294,6 +294,21 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/franchises").body()
     }
 
+    /** Returns available mood definitions for the mood picker */
+    suspend fun getMoods(): List<MoodDefinitionDto> {
+        return client.get("$baseUrl/api/explore/moods").body()
+    }
+
+    /** Returns games matching a mood */
+    suspend fun getMoodGames(mood: String): List<GameDto> {
+        return client.get("$baseUrl/api/explore/mood/$mood").body()
+    }
+
+    /** Returns a single random surprise game */
+    suspend fun getSurpriseGame(): GameDto {
+        return client.get("$baseUrl/api/explore/surprise").body()
+    }
+
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<GameDto> {
         return client.get("$baseUrl/api/user/recent").body()

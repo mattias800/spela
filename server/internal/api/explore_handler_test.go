@@ -1052,3 +1052,403 @@ func TestGetExploreFeaturedSeries_Limit20(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Len(t, resp, 20, "should be limited to 20 series")
 }
+
+// --- Helper: create game with custom genre and players ---
+
+func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, genre string, players int) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     title,
+		FileName:  title + ".rom",
+		FilePath:  consoleAbbr + "/" + title + ".rom",
+		Rating:    rating,
+		Genre:     genre,
+		Players:   players,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+// createExploreGameWithCover creates a game with cover art for surprise endpoint testing.
+func createExploreGameWithCover(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     title,
+		FileName:  title + ".rom",
+		FilePath:  consoleAbbr + "/" + title + ".rom",
+		Rating:    rating,
+		Genre:     "Action",
+		CoverURL:  "https://images.igdb.com/cover/" + title + ".jpg",
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+// --- Mood endpoint tests ---
+
+func TestGetExploreMoods(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/moods", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []MoodResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Len(t, resp, 6)
+
+	// Verify all mood IDs are present
+	ids := make(map[string]bool)
+	for _, m := range resp {
+		ids[m.ID] = true
+		assert.NotEmpty(t, m.Name)
+		assert.NotEmpty(t, m.Description)
+		assert.NotEmpty(t, m.Icon)
+		assert.Len(t, m.Gradient, 2)
+	}
+	assert.True(t, ids["chill"])
+	assert.True(t, ids["challenge"])
+	assert.True(t, ids["nostalgia"])
+	assert.True(t, ids["something-new"])
+	assert.True(t, ids["quick"])
+	assert.True(t, ids["together"])
+}
+
+func TestGetMoodGames_Chill(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create games matching chill criteria
+	puzzleGame := createExploreGameWithGenre(t, env.database, "NES", "Puzzle Paradise", 80, "Puzzle", 1)
+	simGame := createExploreGameWithGenre(t, env.database, "SNES", "SimCity", 75, "Simulation", 1)
+
+	// Create a game with Fantasy theme
+	fantasyGame := createExploreGame(t, env.database, "GBA", "Fantasy Quest", 85)
+	env.database.Create(&db.GameTheme{GameID: fantasyGame.ID, IGDBThemeID: 1, Name: "Fantasy"})
+
+	// Create a game with "casual" keyword
+	casualGame := createExploreGame(t, env.database, "NES", "Casual Fun", 70)
+	env.database.Create(&db.GameKeyword{GameID: casualGame.ID, IGDBKeywordID: 1, Name: "casual"})
+
+	// Create a game that does NOT match chill criteria
+	createExploreGame(t, env.database, "NES", "Dark Shooter", 90)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/chill", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should have the 4 matching games
+	assert.Len(t, resp, 4)
+
+	// Collect returned titles
+	titles := make(map[string]bool)
+	for _, g := range resp {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[puzzleGame.Title], "puzzle game should be included")
+	assert.True(t, titles[simGame.Title], "simulation game should be included")
+	assert.True(t, titles[fantasyGame.Title], "fantasy theme game should be included")
+	assert.True(t, titles[casualGame.Title], "casual keyword game should be included")
+	assert.False(t, titles["Dark Shooter"], "non-chill game should not be included")
+}
+
+func TestGetMoodGames_Challenge(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Game with Horror theme
+	horrorGame := createExploreGame(t, env.database, "NES", "Resident Evil", 85)
+	env.database.Create(&db.GameTheme{GameID: horrorGame.ID, IGDBThemeID: 2, Name: "Horror"})
+
+	// Game with Survival theme
+	survivalGame := createExploreGame(t, env.database, "SNES", "Survival Island", 80)
+	env.database.Create(&db.GameTheme{GameID: survivalGame.ID, IGDBThemeID: 3, Name: "Survival"})
+
+	// Game with "difficult" keyword
+	hardGame := createExploreGame(t, env.database, "GBA", "Super Hard Game", 75)
+	env.database.Create(&db.GameKeyword{GameID: hardGame.ID, IGDBKeywordID: 2, Name: "difficult"})
+
+	// Non-matching game
+	createExploreGame(t, env.database, "NES", "Easy Game", 90)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/challenge", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Len(t, resp, 3)
+
+	titles := make(map[string]bool)
+	for _, g := range resp {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles["Resident Evil"])
+	assert.True(t, titles["Survival Island"])
+	assert.True(t, titles["Super Hard Game"])
+	assert.False(t, titles["Easy Game"])
+}
+
+func TestGetMoodGames_Nostalgia(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "NES", "Most Played Classic", 90)
+	game2 := createExploreGame(t, env.database, "SNES", "Second Most Played", 85)
+	createExploreGame(t, env.database, "GBA", "Never Played", 80)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Add play history for user
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game1.ID,
+		PlayTime:   5000,
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game2.ID,
+		PlayTime:   2000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/nostalgia", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should return only played games, sorted by play time DESC
+	assert.Len(t, resp, 2)
+	assert.Equal(t, "Most Played Classic", resp[0].Title)
+	assert.Equal(t, "Second Most Played", resp[1].Title)
+}
+
+func TestGetMoodGames_SomethingNew(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	playedGame := createExploreGame(t, env.database, "NES", "Already Played", 90)
+	unplayedGame1 := createExploreGame(t, env.database, "SNES", "Brand New 1", 85)
+	unplayedGame2 := createExploreGame(t, env.database, "GBA", "Brand New 2", 80)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// User has played one game
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     playedGame.ID,
+		PlayTime:   3000,
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/something-new", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should return only unplayed games, sorted by rating DESC
+	assert.Len(t, resp, 2)
+	titles := make(map[string]bool)
+	for _, g := range resp {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[unplayedGame1.Title])
+	assert.True(t, titles[unplayedGame2.Title])
+	assert.False(t, titles[playedGame.Title])
+}
+
+func TestGetMoodGames_Quick(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	quickGame := createExploreGame(t, env.database, "NES", "Quick Game", 80)
+	longGame := createExploreGame(t, env.database, "SNES", "Long Game", 85)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Quick game: avg session time < 900 seconds (short sessions)
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     quickGame.ID,
+		PlayTime:   300, // 5 minutes
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     quickGame.ID,
+		PlayTime:   400, // ~6.7 minutes
+		LastPlayed: time.Now(),
+	})
+
+	// Long game: avg session time > 900 seconds
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     longGame.ID,
+		PlayTime:   3600, // 1 hour
+		LastPlayed: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/quick", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Should only return the quick game
+	assert.Len(t, resp, 1)
+	assert.Equal(t, "Quick Game", resp[0].Title)
+}
+
+func TestGetMoodGames_Together(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Multiplayer game
+	multiGame := createExploreGameWithGenre(t, env.database, "NES", "Mario Kart", 90, "Racing", 4)
+	// Another multiplayer
+	coopGame := createExploreGameWithGenre(t, env.database, "SNES", "Contra", 85, "Action", 2)
+	// Single player only
+	createExploreGameWithGenre(t, env.database, "GBA", "Solo RPG", 80, "RPG", 1)
+	// Players = 0 (unset, should not match)
+	createExploreGame(t, env.database, "NES", "Unknown Players", 75)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/together", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Len(t, resp, 2)
+	titles := make(map[string]bool)
+	for _, g := range resp {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles[multiGame.Title])
+	assert.True(t, titles[coopGame.Title])
+}
+
+func TestGetMoodGames_InvalidMood(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/nonexistent", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetMoodGames_Empty(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No games with Horror/Survival themes or difficult/hardcore keywords exist
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/challenge", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp)
+
+	// Verify JSON is empty array, not null
+	assert.Contains(t, w.Body.String(), "[]")
+}
+
+// --- Surprise endpoint tests ---
+
+func TestGetSurpriseGame(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create eligible games (rating > 70 with cover art)
+	createExploreGameWithCover(t, env.database, "NES", "Great Game 1", 80)
+	createExploreGameWithCover(t, env.database, "SNES", "Great Game 2", 85)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.NotEmpty(t, resp.ID)
+	assert.NotEmpty(t, resp.Title)
+	assert.Greater(t, resp.Rating, 70.0)
+	assert.NotEmpty(t, resp.CoverURL)
+}
+
+func TestGetSurpriseGame_NoGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// No games with rating > 70 and cover art
+	createExploreGame(t, env.database, "NES", "Low Rated", 50)          // low rating
+	createExploreGame(t, env.database, "NES", "High Rated No Cover", 90) // no cover
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/surprise", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetMoodGames_AuthRequired(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Test mood endpoint without auth
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/mood/chill", nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// Test moods list without auth
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/explore/moods", nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// Test surprise without auth
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/explore/surprise", nil)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
