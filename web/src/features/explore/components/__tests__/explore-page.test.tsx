@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse, ArtworkGalleryResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse, ConsoleHighlightsResponse, ArtworkGalleryResponse, OnThisDayResponse, BestOfYearResponse, YourAnniversariesResponse, DecadeResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -23,6 +23,10 @@ vi.mock("@/hooks/use-explore", () => ({
   useCultClassics: vi.fn(),
   useRecentlyReviewed: vi.fn(),
   useActiveNow: vi.fn(),
+  useOnThisDay: vi.fn(),
+  useBestOfYear: vi.fn(),
+  useYourAnniversaries: vi.fn(),
+  useDecade: vi.fn(),
   useSurpriseGame: vi.fn(() => ({
     data: undefined,
     refetch: vi.fn(),
@@ -46,7 +50,7 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow } from "@/hooks/use-explore";
+import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade } from "@/hooks/use-explore";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -64,6 +68,10 @@ const mockUseCommunityTop = useCommunityTop as ReturnType<typeof vi.fn>;
 const mockUseCultClassics = useCultClassics as ReturnType<typeof vi.fn>;
 const mockUseRecentlyReviewed = useRecentlyReviewed as ReturnType<typeof vi.fn>;
 const mockUseActiveNow = useActiveNow as ReturnType<typeof vi.fn>;
+const mockUseOnThisDay = useOnThisDay as ReturnType<typeof vi.fn>;
+const mockUseBestOfYear = useBestOfYear as ReturnType<typeof vi.fn>;
+const mockUseYourAnniversaries = useYourAnniversaries as ReturnType<typeof vi.fn>;
+const mockUseDecade = useDecade as ReturnType<typeof vi.fn>;
 
 function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   return {
@@ -275,6 +283,22 @@ describe("ExplorePage", () => {
       isLoading: false,
     });
     mockUseActiveNow.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseOnThisDay.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseBestOfYear.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseYourAnniversaries.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    mockUseDecade.mockReturnValue({
       data: undefined,
       isLoading: false,
     });

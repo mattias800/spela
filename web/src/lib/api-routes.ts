@@ -34,6 +34,12 @@ export type ApiGetPath = WithQuery<
   | `/explore/consoles/${string}/showcase`
   | "/explore/console-highlights"
 
+  // Temporal Discovery
+  | "/explore/on-this-day"
+  | `/explore/best-of-year/${string}`
+  | `/explore/decades/${string}`
+  | "/explore/your-anniversaries"
+
   // Social & Community Discovery
   | "/explore/trending"
   | "/explore/community-top"

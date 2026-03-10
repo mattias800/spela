@@ -3003,3 +3003,474 @@ func TestGetActiveNow_ReturnsMergedSessions(t *testing.T) {
 	assert.Equal(t, 1, resp.Games[0].ActiveSessions)
 	assert.Equal(t, 1, resp.Games[0].ActiveChallenges)
 }
+
+// --- Phase 11: Temporal Discovery tests ---
+
+// createExploreGameWithRelease creates a game with a specific release date and rating.
+func createExploreGameWithRelease(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, releaseDate string) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID:   console.ID,
+		Title:       title,
+		FileName:    title + ".rom",
+		FilePath:    consoleAbbr + "/" + title + ".rom",
+		Rating:      rating,
+		Genre:       "Action",
+		ReleaseDate: releaseDate,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+// --- On This Day tests ---
+
+func TestGetOnThisDay_NoGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/on-this-day", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp OnThisDayResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.NotEmpty(t, resp.Date) // e.g. "March 10"
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetOnThisDay_MatchesToday(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	now := time.Now()
+	todayISO := now.Format("2006-01-02")
+	otherDate := fmt.Sprintf("1995-%02d-%02d", (now.Month()%12)+1, 15) // Different month
+
+	// Game matching today's date
+	createExploreGameWithRelease(t, env.database, "SNES", "Birthday Game", 90.0, todayISO)
+	// Game on a different date — should NOT appear
+	createExploreGameWithRelease(t, env.database, "NES", "Other Game", 85.0, otherDate)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/on-this-day", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp OnThisDayResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Birthday Game", resp.Games[0].Title)
+}
+
+func TestGetOnThisDay_MultipleYearsSortedOldestFirst(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	now := time.Now()
+	todayMD := now.Format("01-02") // MM-DD
+
+	// Games released on today's date in different years
+	createExploreGameWithRelease(t, env.database, "SNES", "Newer Game", 80.0, "2005-"+todayMD)
+	createExploreGameWithRelease(t, env.database, "NES", "Older Game", 70.0, "1990-"+todayMD)
+	createExploreGameWithRelease(t, env.database, "GBA", "Mid Game", 75.0, "1998-"+todayMD)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/on-this-day", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp OnThisDayResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 3)
+	// Sorted oldest first
+	assert.Equal(t, "Older Game", resp.Games[0].Title)
+	assert.Equal(t, "Mid Game", resp.Games[1].Title)
+	assert.Equal(t, "Newer Game", resp.Games[2].Title)
+}
+
+func TestGetOnThisDay_TextDateFormat(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	now := time.Now()
+	// Use "January 2, 2006" text format for today's date
+	textDate := now.Format("January 2, 2006")
+	// Use ISO format for a different day
+	otherDate := fmt.Sprintf("2000-%02d-%02d", (now.Month()%12)+1, 15)
+
+	createExploreGameWithRelease(t, env.database, "SNES", "Text Date Game", 88.0, textDate)
+	createExploreGameWithRelease(t, env.database, "NES", "Wrong Date Game", 85.0, otherDate)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/on-this-day", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp OnThisDayResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Text Date Game", resp.Games[0].Title)
+}
+
+// --- Best of Year tests ---
+
+func TestGetBestOfYear_InvalidYear(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/best-of-year/abc", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetBestOfYear_NoGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/best-of-year/1995", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp BestOfYearResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 1995, resp.Year)
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetBestOfYear_ReturnsSortedByRating(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithRelease(t, env.database, "SNES", "Top Game 1995", 95.0, "1995-06-15")
+	createExploreGameWithRelease(t, env.database, "NES", "Mid Game 1995", 80.0, "1995-03-01")
+	createExploreGameWithRelease(t, env.database, "GBA", "Low Game 1995", 70.0, "1995-12-25")
+	// Different year — should NOT appear
+	createExploreGameWithRelease(t, env.database, "SNES", "Game 1996", 99.0, "1996-01-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/best-of-year/1995", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp BestOfYearResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 1995, resp.Year)
+	require.Len(t, resp.Games, 3)
+	assert.Equal(t, "Top Game 1995", resp.Games[0].Title)
+	assert.Equal(t, "Mid Game 1995", resp.Games[1].Title)
+	assert.Equal(t, "Low Game 1995", resp.Games[2].Title)
+}
+
+func TestGetBestOfYear_ExcludesZeroRating(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithRelease(t, env.database, "SNES", "Rated Game", 85.0, "2000-05-10")
+	createExploreGameWithRelease(t, env.database, "NES", "Unrated Game", 0.0, "2000-08-20")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/best-of-year/2000", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp BestOfYearResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Rated Game", resp.Games[0].Title)
+}
+
+// --- Your Anniversaries tests ---
+
+func TestGetYourAnniversaries_NoHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/your-anniversaries", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AnniversariesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Anniversaries)
+}
+
+func TestGetYourAnniversaries_FindsAnniversary(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Anniversary Game", 90.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create play history exactly 1 year ago
+	oneYearAgo := time.Now().AddDate(-1, 0, 0)
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game.ID,
+		LastPlayed: oneYearAgo,
+		PlayTime:   3600,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/your-anniversaries", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AnniversariesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Anniversaries, 1)
+	assert.Equal(t, "Anniversary Game", resp.Anniversaries[0].Game.Title)
+	assert.Equal(t, 1, resp.Anniversaries[0].YearsAgo)
+}
+
+func TestGetYourAnniversaries_WithinWindow(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Window Game", 85.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create play history 2 years ago + 2 days (within 3-day window)
+	twoYearsAgoPlus2 := time.Now().AddDate(-2, 0, 2)
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game.ID,
+		LastPlayed: twoYearsAgoPlus2,
+		PlayTime:   1800,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/your-anniversaries", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AnniversariesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Anniversaries, 1)
+	assert.Equal(t, "Window Game", resp.Anniversaries[0].Game.Title)
+	assert.Equal(t, 2, resp.Anniversaries[0].YearsAgo)
+}
+
+func TestGetYourAnniversaries_OutsideWindow(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game := createExploreGame(t, env.database, "SNES", "Far Game", 85.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create play history 1 year ago + 5 days (outside 3-day window)
+	oneYearAgoPlus5 := time.Now().AddDate(-1, 0, 5)
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game.ID,
+		LastPlayed: oneYearAgoPlus5,
+		PlayTime:   1800,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/your-anniversaries", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AnniversariesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Anniversaries)
+}
+
+func TestGetYourAnniversaries_MultipleYears(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGame(t, env.database, "SNES", "One Year Game", 90.0)
+	game2 := createExploreGame(t, env.database, "NES", "Three Year Game", 85.0)
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game1.ID,
+		LastPlayed: time.Now().AddDate(-1, 0, 0),
+		PlayTime:   3600,
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game2.ID,
+		LastPlayed: time.Now().AddDate(-3, 0, 1),
+		PlayTime:   7200,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/your-anniversaries", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp AnniversariesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Anniversaries, 2)
+	// Sorted by yearsAgo ascending
+	assert.Equal(t, 1, resp.Anniversaries[0].YearsAgo)
+	assert.Equal(t, "One Year Game", resp.Anniversaries[0].Game.Title)
+	assert.Equal(t, 3, resp.Anniversaries[1].YearsAgo)
+	assert.Equal(t, "Three Year Game", resp.Anniversaries[1].Game.Title)
+}
+
+// --- Decades tests ---
+
+func TestGetDecades_InvalidDecade(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/decades/70s", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetDecades_NoGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/decades/80s", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp DecadesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "80s", resp.Decade)
+	assert.Equal(t, "The 80s", resp.Label)
+	assert.Empty(t, resp.Games)
+}
+
+func TestGetDecades_Returns90sGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithRelease(t, env.database, "SNES", "90s Best", 95.0, "1995-06-15")
+	createExploreGameWithRelease(t, env.database, "NES", "90s Good", 80.0, "1990-01-01")
+	createExploreGameWithRelease(t, env.database, "GBA", "90s End", 85.0, "1999-12-31")
+	// 80s game — should NOT appear
+	createExploreGameWithRelease(t, env.database, "NES", "80s Game", 99.0, "1989-05-01")
+	// 00s game — should NOT appear
+	createExploreGameWithRelease(t, env.database, "GBA", "00s Game", 99.0, "2000-01-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/decades/90s", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp DecadesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "90s", resp.Decade)
+	assert.Equal(t, "The 90s", resp.Label)
+	require.Len(t, resp.Games, 3)
+	// Sorted by rating DESC
+	assert.Equal(t, "90s Best", resp.Games[0].Title)
+	assert.Equal(t, "90s End", resp.Games[1].Title)
+	assert.Equal(t, "90s Good", resp.Games[2].Title)
+}
+
+func TestGetDecades_00s(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithRelease(t, env.database, "GBA", "GBA Classic", 88.0, "2004-11-15")
+	createExploreGameWithRelease(t, env.database, "GBA", "GBA Gem", 82.0, "2009-06-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/decades/00s", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp DecadesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "00s", resp.Decade)
+	assert.Equal(t, "The 00s", resp.Label)
+	require.Len(t, resp.Games, 2)
+	assert.Equal(t, "GBA Classic", resp.Games[0].Title)
+	assert.Equal(t, "GBA Gem", resp.Games[1].Title)
+}
+
+func TestGetDecades_ExcludesZeroRating(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithRelease(t, env.database, "SNES", "Rated 90s", 85.0, "1995-06-15")
+	createExploreGameWithRelease(t, env.database, "NES", "Unrated 90s", 0.0, "1993-03-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/decades/90s", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp DecadesResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Games, 1)
+	assert.Equal(t, "Rated 90s", resp.Games[0].Title)
+}
+
+// --- parseReleaseDateMonthDay unit tests ---
+
+func TestParseReleaseDateMonthDay_ISOFormat(t *testing.T) {
+	month, day, ok := parseReleaseDateMonthDay("2000-03-10")
+	assert.True(t, ok)
+	assert.Equal(t, time.March, month)
+	assert.Equal(t, 10, day)
+}
+
+func TestParseReleaseDateMonthDay_TextFormat(t *testing.T) {
+	month, day, ok := parseReleaseDateMonthDay("March 10, 2000")
+	assert.True(t, ok)
+	assert.Equal(t, time.March, month)
+	assert.Equal(t, 10, day)
+}
+
+func TestParseReleaseDateMonthDay_ShortTextFormat(t *testing.T) {
+	month, day, ok := parseReleaseDateMonthDay("Jan 5, 1999")
+	assert.True(t, ok)
+	assert.Equal(t, time.January, month)
+	assert.Equal(t, 5, day)
+}
+
+func TestParseReleaseDateMonthDay_YearOnly(t *testing.T) {
+	_, _, ok := parseReleaseDateMonthDay("1996")
+	assert.False(t, ok)
+}
+
+func TestParseReleaseDateMonthDay_Empty(t *testing.T) {
+	_, _, ok := parseReleaseDateMonthDay("")
+	assert.False(t, ok)
+}
+
+func TestParseReleaseDateYear_ISOFormat(t *testing.T) {
+	year, ok := parseReleaseDateYear("1995-06-15")
+	assert.True(t, ok)
+	assert.Equal(t, 1995, year)
+}
+
+func TestParseReleaseDateYear_TextFormat(t *testing.T) {
+	year, ok := parseReleaseDateYear("March 10, 2000")
+	assert.True(t, ok)
+	assert.Equal(t, 2000, year)
+}
+
+func TestParseReleaseDateYear_PlainYear(t *testing.T) {
+	year, ok := parseReleaseDateYear("1996")
+	assert.True(t, ok)
+	assert.Equal(t, 1996, year)
+}
+
+func TestParseReleaseDateYear_Empty(t *testing.T) {
+	_, ok := parseReleaseDateYear("")
+	assert.False(t, ok)
+}

@@ -778,3 +778,11 @@ fun ActiveNowItemDto.toDomain(): ActiveNowItem = ActiveNowItem(
     activeSessions = activeSessions,
     activeChallenges = activeChallenges,
 )
+
+// --- Phase 11: Temporal Discovery ---
+
+fun AnniversaryItemDto.toDomain(): AnniversaryItem = AnniversaryItem(
+    game = game.toDomain(),
+    yearsAgo = yearsAgo,
+    playedAt = playedAt,
+)

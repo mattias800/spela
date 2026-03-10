@@ -4,6 +4,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ActiveNowItem
+import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.ConsoleHighlight
@@ -307,6 +308,36 @@ class ExploreRepositoryImpl(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
         }
+    }
+
+    override suspend fun getOnThisDay(): Result<Pair<String, List<Game>>> = runCatching {
+        val dto = apiClient.getOnThisDay()
+        val games = dto.games.map { gameDto ->
+            resolveGameCovers(gameDto.toDomain(), gameDto)
+        }
+        Pair(dto.date, games)
+    }
+
+    override suspend fun getBestOfYear(year: Int): Result<List<Game>> = runCatching {
+        apiClient.getBestOfYear(year).games.map { gameDto ->
+            resolveGameCovers(gameDto.toDomain(), gameDto)
+        }
+    }
+
+    override suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>> = runCatching {
+        apiClient.getYourAnniversaries().anniversaries.map { dto ->
+            dto.toDomain().copy(
+                game = resolveGameCovers(dto.game.toDomain(), dto.game),
+            )
+        }
+    }
+
+    override suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>> = runCatching {
+        val dto = apiClient.getDecade(decade)
+        val games = dto.games.map { gameDto ->
+            resolveGameCovers(gameDto.toDomain(), gameDto)
+        }
+        Pair(dto.label, games)
     }
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(

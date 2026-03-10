@@ -226,3 +226,11 @@ data class ActiveNowItem(
     val activeSessions: Int,
     val activeChallenges: Int,
 )
+
+// --- Phase 11: Temporal Discovery ---
+
+data class AnniversaryItem(
+    val game: Game,
+    val yearsAgo: Int,
+    val playedAt: String,
+)

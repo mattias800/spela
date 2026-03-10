@@ -1348,6 +1348,11 @@ class FakeExploreRepository : ExploreRepository {
     var cultClassicsList: List<CultClassicGame> = emptyList()
     var recentReviews: List<RecentReviewItem> = emptyList()
     var activeNowGames: List<ActiveNowItem> = emptyList()
+    var onThisDayDate: String = ""
+    var onThisDayGames: List<Game> = emptyList()
+    var bestOfYearGames: Map<Int, List<Game>> = emptyMap()
+    var anniversariesList: List<AnniversaryItem> = emptyList()
+    var decadeResults: Map<String, Pair<String, List<Game>>> = emptyMap()
     var shouldFail: Boolean = false
 
     override suspend fun getFeaturedGames(): Result<List<FeaturedGame>> =
@@ -1497,6 +1502,26 @@ class FakeExploreRepository : ExploreRepository {
     override suspend fun getActiveNow(): Result<List<ActiveNowItem>> =
         if (shouldFail) Result.failure(Exception("Failed to load active now"))
         else Result.success(activeNowGames)
+
+    override suspend fun getOnThisDay(): Result<Pair<String, List<Game>>> =
+        if (shouldFail) Result.failure(Exception("Failed to load on this day"))
+        else Result.success(Pair(onThisDayDate, onThisDayGames))
+
+    override suspend fun getBestOfYear(year: Int): Result<List<Game>> =
+        if (shouldFail) Result.failure(Exception("Failed to load best of year"))
+        else Result.success(bestOfYearGames[year] ?: emptyList())
+
+    override suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>> =
+        if (shouldFail) Result.failure(Exception("Failed to load anniversaries"))
+        else Result.success(anniversariesList)
+
+    override suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>> =
+        if (shouldFail) Result.failure(Exception("Failed to load decade"))
+        else {
+            val result = decadeResults[decade]
+            if (result != null) Result.success(result)
+            else Result.success(Pair("", emptyList()))
+        }
 }
 
 class FakeCheatRepository : CheatRepository {

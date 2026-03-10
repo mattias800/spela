@@ -259,6 +259,10 @@ func NewRouter(cfg Config) *gin.Engine {
 			explore.GET("/cult-classics", exploreHandler.GetCultClassics)
 			explore.GET("/recently-reviewed", exploreHandler.GetRecentlyReviewed)
 			explore.GET("/active-now", exploreHandler.GetActiveNow)
+			explore.GET("/on-this-day", exploreHandler.GetOnThisDay)
+			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
+			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
+			explore.GET("/decades/:decade", exploreHandler.GetDecades)
 		}
 
 		// Games

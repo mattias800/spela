@@ -47,6 +47,9 @@ import com.spela.player.presentation.ui.feature.explore.SeriesShelfSkeleton
 import com.spela.player.presentation.ui.feature.explore.SocialSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.ThemeGrid
 import com.spela.player.presentation.ui.feature.explore.ThemeGridSkeleton
+import com.spela.player.presentation.ui.feature.explore.AnniversariesSection
+import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
+import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.TrendingSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -473,6 +476,63 @@ fun ExploreScreen(
                             ) {
                                 RecentlyReviewedSection(
                                     reviews = state.recentReviews,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Temporal Discovery: On This Day
+                    item {
+                        if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
+                            SpTitledSection(
+                                title = "On This Day",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                TemporalSectionSkeleton()
+                            }
+                        } else if (state.onThisDayGames.isNotEmpty()) {
+                            val title = if (state.onThisDayDate.isNotEmpty()) {
+                                "On This Day (${state.onThisDayDate})"
+                            } else {
+                                "On This Day"
+                            }
+                            SpTitledSection(
+                                title = title,
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_on_this_day_section"),
+                            ) {
+                                OnThisDaySection(
+                                    games = state.onThisDayGames,
+                                    onGameSelected = onGameSelected,
+                                )
+                            }
+                        }
+                    }
+
+                    // Temporal Discovery: Your Anniversaries
+                    item {
+                        if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
+                            SpTitledSection(
+                                title = "Your Anniversaries",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            ) {
+                                TemporalSectionSkeleton()
+                            }
+                        } else if (state.anniversaries.isNotEmpty()) {
+                            SpTitledSection(
+                                title = "Your Anniversaries",
+                                edgeToEdgeContent = true,
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .testTag("explore_anniversaries_section"),
+                            ) {
+                                AnniversariesSection(
+                                    anniversaries = state.anniversaries,
                                     onGameSelected = onGameSelected,
                                 )
                             }

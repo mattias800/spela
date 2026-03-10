@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Library } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState, Button } from "@/components/ui";
@@ -20,6 +21,13 @@ import {
   ActiveNowShelf,
 } from "@/features/explore/components/social-shelves";
 import {
+  OnThisDayShelf,
+  BestOfYearSection,
+  AnniversariesShelf,
+  DecadeSpotlight,
+  DEFAULT_YEAR,
+} from "@/features/explore/components/temporal-shelves";
+import {
   useExploreFeatured,
   useExploreRows,
   useThemes,
@@ -36,6 +44,10 @@ import {
   useCultClassics,
   useRecentlyReviewed,
   useActiveNow,
+  useOnThisDay,
+  useBestOfYear,
+  useYourAnniversaries,
+  useDecade,
 } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -43,6 +55,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export function ExplorePage() {
   const { isAdmin } = useAuth();
+  const [bestOfYear, setBestOfYear] = useState(DEFAULT_YEAR);
   const {
     data: featuredGames,
     isLoading: isFeaturedLoading,
@@ -107,6 +120,22 @@ export function ExplorePage() {
     data: activeNowData,
     isLoading: isActiveNowLoading,
   } = useActiveNow();
+  const {
+    data: onThisDayData,
+    isLoading: isOnThisDayLoading,
+  } = useOnThisDay();
+  const {
+    data: bestOfYearData,
+    isLoading: isBestOfYearLoading,
+  } = useBestOfYear(bestOfYear);
+  const {
+    data: anniversariesData,
+    isLoading: isAnniversariesLoading,
+  } = useYourAnniversaries();
+  const {
+    data: decadeData,
+    isLoading: isDecadeLoading,
+  } = useDecade("90s");
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -225,6 +254,37 @@ export function ExplorePage() {
       <RecentlyReviewedShelf
         reviews={recentlyReviewedData?.reviews}
         isLoading={isRecentlyReviewedLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      {/* Temporal Discovery */}
+      <OnThisDayShelf
+        data={onThisDayData}
+        isLoading={isOnThisDayLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <AnniversariesShelf
+        anniversaries={anniversariesData?.anniversaries}
+        isLoading={isAnniversariesLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <BestOfYearSection
+        year={bestOfYear}
+        onYearChange={setBestOfYear}
+        data={bestOfYearData}
+        isLoading={isBestOfYearLoading}
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+
+      <DecadeSpotlight
+        data={decadeData}
+        isLoading={isDecadeLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
       />
