@@ -131,7 +131,7 @@ describe("UploadRomsPage", () => {
       screen.getByText(/Game library directory is read-only/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Contact your server administrator/),
+      screen.getByText(/Check that the game library directory/),
     ).toBeInTheDocument();
   });
 

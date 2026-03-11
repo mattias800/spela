@@ -218,15 +218,18 @@ export function UploadRomsPage() {
 
       {isReadonly && (
         <div
-          className="flex items-start gap-3 rounded-xl border border-warning-700/50 bg-warning-900/30 p-4"
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-warning-500/30 bg-warning-500/10 p-4"
           data-testid="readonly-warning"
         >
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-300" />
-          <div className="text-sm text-warning-300">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-400" />
+          <div className="text-sm text-warning-400">
             <p className="font-medium">Uploads unavailable</p>
-            <p className="mt-1">
-              Game library directory is read-only. Contact your server
-              administrator to fix directory permissions.
+            <p className="mt-1 text-warning-500">
+              {writable?.reason ||
+                "Game library directory is read-only."}{" "}
+              Check that the game library directory exists and has write
+              permissions.
             </p>
           </div>
         </div>
