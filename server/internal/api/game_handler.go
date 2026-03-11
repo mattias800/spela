@@ -476,7 +476,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
 			if h.Scraper.TryStartScrape() {
 				h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
-				count, total, scrapeErr := h.Scraper.ScrapeAll("new", func(p scraper.ScrapeProgress) {
+				count, total, scrapeErr := h.Scraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
 					h.Scraper.SetScrapeProgress(&p)
 					h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 				})

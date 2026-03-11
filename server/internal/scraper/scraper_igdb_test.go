@@ -638,7 +638,7 @@ func TestScrapeAll_DefaultOnlyUnscraped(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll("", nil)
+	successes, total, err := s.ScrapeAll("", 0, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt the unscraped game")
 	assert.Equal(t, 1, successes)
@@ -668,10 +668,106 @@ func TestScrapeAll_ForceScrapesAll(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll("all", nil)
+	successes, total, err := s.ScrapeAll("all", 0, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 2, total, "force should attempt all games")
 	assert.Equal(t, 2, successes)
+}
+
+func TestScrapeAll_ConsoleFilter(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	c1 := db.Console{Abbreviation: "snes", Name: "SNES"}
+	c2 := db.Console{Abbreviation: "nes", Name: "NES"}
+	require.NoError(t, database.Create(&c1).Error)
+	require.NoError(t, database.Create(&c2).Error)
+
+	romDir := t.TempDir()
+
+	// One unscraped game per console
+	g1 := db.Game{ConsoleID: c1.ID, Console: c1, Title: "SNES Game", FileName: "snes.rom", FilePath: filepath.Join(romDir, "snes.rom")}
+	g2 := db.Game{ConsoleID: c2.ID, Console: c2, Title: "NES Game", FileName: "nes.rom", FilePath: filepath.Join(romDir, "nes.rom")}
+	require.NoError(t, database.Create(&g1).Error)
+	require.NoError(t, database.Create(&g2).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	// Scrape only SNES games
+	successes, total, err := s.ScrapeAll("", c1.ID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total, "should only attempt SNES games")
+	assert.Equal(t, 1, successes)
+}
+
+func TestScrapeAll_ConsoleFilter_AllMode(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	c1 := db.Console{Abbreviation: "snes", Name: "SNES"}
+	c2 := db.Console{Abbreviation: "nes", Name: "NES"}
+	require.NoError(t, database.Create(&c1).Error)
+	require.NoError(t, database.Create(&c2).Error)
+
+	romDir := t.TempDir()
+
+	// Both games already scraped
+	g1 := db.Game{ConsoleID: c1.ID, Console: c1, Title: "SNES Game", FileName: "snes.rom", FilePath: filepath.Join(romDir, "snes.rom"), ScraperID: "igdb:1"}
+	g2 := db.Game{ConsoleID: c2.ID, Console: c2, Title: "NES Game", FileName: "nes.rom", FilePath: filepath.Join(romDir, "nes.rom"), ScraperID: "igdb:2"}
+	require.NoError(t, database.Create(&g1).Error)
+	require.NoError(t, database.Create(&g2).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	// Scrape all mode but only SNES
+	successes, total, err := s.ScrapeAll("all", c1.ID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total, "should only attempt SNES games in all mode")
+	assert.Equal(t, 1, successes)
+}
+
+func TestScrapeAll_ConsoleFilter_FallbackMode(t *testing.T) {
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	c1 := db.Console{Abbreviation: "snes", Name: "SNES"}
+	c2 := db.Console{Abbreviation: "nes", Name: "NES"}
+	require.NoError(t, database.Create(&c1).Error)
+	require.NoError(t, database.Create(&c2).Error)
+
+	romDir := t.TempDir()
+
+	// SNES game with libretro fallback, NES game with libretro fallback
+	g1 := db.Game{ConsoleID: c1.ID, Console: c1, Title: "SNES Game", FileName: "snes.rom", FilePath: filepath.Join(romDir, "snes.rom"), ScraperID: "libretro"}
+	g2 := db.Game{ConsoleID: c2.ID, Console: c2, Title: "NES Game", FileName: "nes.rom", FilePath: filepath.Join(romDir, "nes.rom"), ScraperID: "libretro"}
+	require.NoError(t, database.Create(&g1).Error)
+	require.NoError(t, database.Create(&g2).Error)
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	// Fallback mode but only NES
+	successes, total, err := s.ScrapeAll("fallback", c2.ID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, total, "should only attempt NES fallback games")
+	assert.Equal(t, 1, successes)
 }
 
 func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {

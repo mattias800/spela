@@ -17,6 +17,7 @@ import (
 // Only one scrape can run at a time; concurrent requests are rejected.
 // Pass ?mode=all to re-scrape all games, ?mode=fallback to re-scrape
 // games that only have LibRetro metadata. Default scrapes unscraped games only.
+// Pass ?console=<abbreviation> to scrape only games for a specific console.
 // Legacy ?force=true is equivalent to ?mode=all.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.tryConfigureIGDB()
@@ -27,6 +28,17 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		mode = "all"
 	}
 
+	// Resolve optional console filter
+	var consoleID uint
+	if abbr := c.Query("console"); abbr != "" {
+		var console db.Console
+		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", abbr).First(&console).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console: " + abbr})
+			return
+		}
+		consoleID = console.ID
+	}
+
 	if !h.Scraper.TryStartScrape() {
 		c.JSON(http.StatusConflict, gin.H{"error": "a scrape operation is already in progress"})
 		return
@@ -35,13 +47,17 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	// Count matching games before launching the goroutine so we can
 	// return the total in the HTTP response for immediate user feedback.
 	var total int64
+	q := h.DB.Model(&db.Game{})
+	if consoleID > 0 {
+		q = q.Where("console_id = ?", consoleID)
+	}
 	switch mode {
 	case "all":
-		h.DB.Model(&db.Game{}).Count(&total)
+		q.Count(&total)
 	case "fallback":
-		h.DB.Model(&db.Game{}).Where("scraper_id = 'libretro'").Count(&total)
+		q.Where("scraper_id = 'libretro'").Count(&total)
 	default:
-		h.DB.Model(&db.Game{}).Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
+		q.Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
 	}
 
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
@@ -49,7 +65,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	go func() {
 		defer h.Scraper.FinishScrape()
 
-		count, total, err := h.Scraper.ScrapeAll(mode, func(p scraper.ScrapeProgress) {
+		count, total, err := h.Scraper.ScrapeAll(mode, consoleID, func(p scraper.ScrapeProgress) {
 			h.Scraper.SetScrapeProgress(&p)
 			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 		})
@@ -62,7 +78,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	}()
 
 	adminID, _ := c.Get("userId")
-	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode)
+	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode, "console_id", consoleID)
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background", "total": total})
 }
 

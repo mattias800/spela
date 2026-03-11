@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ScanSearch,
   FolderSearch,
@@ -12,6 +13,7 @@ import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
+import { useConsoles } from "@/hooks/use-consoles";
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -175,10 +177,14 @@ function ScrapeCard() {
   const scrapeMetadata = useScrapeMetadata();
   const scrape = useScrapeProgress();
   const { toast } = useToast();
+  const { data: consoles } = useConsoles();
+  const [selectedConsole, setSelectedConsole] = useState("");
 
   const isActive = scrape.phase === "active";
   const isComplete = scrape.phase === "complete";
   const isError = scrape.phase === "error";
+
+  const consoleParam = selectedConsole || undefined;
 
   return (
     <Card>
@@ -193,6 +199,32 @@ function ScrapeCard() {
           Fetch cover art, descriptions, and other metadata for games that are
           missing information.
         </p>
+
+        <div>
+          <label
+            htmlFor="console-filter"
+            className="block text-xs font-medium text-surface-400 mb-1"
+          >
+            Console filter
+          </label>
+          <select
+            id="console-filter"
+            value={selectedConsole}
+            onChange={(e) => setSelectedConsole(e.target.value)}
+            disabled={isActive}
+            className="w-full rounded-lg border border-surface-600 bg-surface-800 px-3 py-2 text-sm text-surface-200 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+          >
+            <option value="">All consoles</option>
+            {consoles
+              ?.slice()
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <option key={c.abbreviation} value={c.abbreviation}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </div>
 
         {isActive && (
           <div className="rounded-xl bg-surface-800/50 p-4 space-y-3">
@@ -277,22 +309,25 @@ function ScrapeCard() {
         <div className="flex flex-col gap-2">
           <Button
             onClick={() =>
-              scrapeMetadata.mutate("new", {
-                onSuccess: (data) => {
-                  const n = data.total;
-                  toast(
-                    n === 0 ? "info" : "success",
-                    n === 0
-                      ? "No unscraped games found"
-                      : `Scraping ${n} game${n === 1 ? "" : "s"}...`,
-                  );
+              scrapeMetadata.mutate(
+                { mode: "new", console: consoleParam },
+                {
+                  onSuccess: (data) => {
+                    const n = data.total;
+                    toast(
+                      n === 0 ? "info" : "success",
+                      n === 0
+                        ? "No unscraped games found"
+                        : `Scraping ${n} game${n === 1 ? "" : "s"}...`,
+                    );
+                  },
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
                 },
-                onError: (err) =>
-                  toast(
-                    "error",
-                    err instanceof Error ? err.message : "Scrape failed",
-                  ),
-              })
+              )
             }
             loading={scrapeMetadata.isPending}
             disabled={isActive}
@@ -304,22 +339,25 @@ function ScrapeCard() {
           </Button>
           <Button
             onClick={() =>
-              scrapeMetadata.mutate("fallback", {
-                onSuccess: (data) => {
-                  const n = data.total;
-                  toast(
-                    n === 0 ? "info" : "success",
-                    n === 0
-                      ? "No fallback-only games found"
-                      : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
-                  );
+              scrapeMetadata.mutate(
+                { mode: "fallback", console: consoleParam },
+                {
+                  onSuccess: (data) => {
+                    const n = data.total;
+                    toast(
+                      n === 0 ? "info" : "success",
+                      n === 0
+                        ? "No fallback-only games found"
+                        : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
+                    );
+                  },
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
                 },
-                onError: (err) =>
-                  toast(
-                    "error",
-                    err instanceof Error ? err.message : "Scrape failed",
-                  ),
-              })
+              )
             }
             loading={scrapeMetadata.isPending}
             disabled={isActive}
@@ -331,22 +369,25 @@ function ScrapeCard() {
           </Button>
           <Button
             onClick={() =>
-              scrapeMetadata.mutate("all", {
-                onSuccess: (data) => {
-                  const n = data.total;
-                  toast(
-                    n === 0 ? "info" : "success",
-                    n === 0
-                      ? "No games found to scrape"
-                      : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
-                  );
+              scrapeMetadata.mutate(
+                { mode: "all", console: consoleParam },
+                {
+                  onSuccess: (data) => {
+                    const n = data.total;
+                    toast(
+                      n === 0 ? "info" : "success",
+                      n === 0
+                        ? "No games found to scrape"
+                        : `Re-scraping ${n} game${n === 1 ? "" : "s"}...`,
+                    );
+                  },
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
                 },
-                onError: (err) =>
-                  toast(
-                    "error",
-                    err instanceof Error ? err.message : "Scrape failed",
-                  ),
-              })
+              )
             }
             loading={scrapeMetadata.isPending}
             disabled={isActive}

@@ -23,6 +23,10 @@ vi.mock("@/hooks/use-scan-progress", () => ({
   useScanProgress: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-consoles", () => ({
+  useConsoles: vi.fn(),
+}));
+
 vi.mock("@/components/ui", async () => {
   const actual =
     await vi.importActual<Record<string, unknown>>("@/components/ui");
@@ -35,11 +39,13 @@ vi.mock("@/components/ui", async () => {
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
+import { useConsoles } from "@/hooks/use-consoles";
 
 const mockUseScanLibrary = useScanLibrary as ReturnType<typeof vi.fn>;
 const mockUseScrapeMetadata = useScrapeMetadata as ReturnType<typeof vi.fn>;
 const mockUseScrapeProgress = useScrapeProgress as ReturnType<typeof vi.fn>;
 const mockUseScanProgress = useScanProgress as ReturnType<typeof vi.fn>;
+const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -83,6 +89,13 @@ beforeEach(() => {
     failures: 0,
     error: null,
     dismiss: mockScrapeDismiss,
+  });
+  mockUseConsoles.mockReturnValue({
+    data: [
+      { id: 1, name: "Super Nintendo", abbreviation: "snes" },
+      { id: 2, name: "Nintendo Entertainment System", abbreviation: "nes" },
+      { id: 3, name: "Game Boy Advance", abbreviation: "gba" },
+    ],
   });
 });
 
@@ -132,7 +145,7 @@ describe("AdminScanPage", () => {
       screen.getByRole("button", { name: /Scrape New Games/ }),
     );
     expect(mockScrapeMutate).toHaveBeenCalledWith(
-      "new",
+      { mode: "new", console: undefined },
       expect.any(Object),
     );
   });
@@ -143,7 +156,7 @@ describe("AdminScanPage", () => {
       screen.getByRole("button", { name: /Rescrape Fallback Only/ }),
     );
     expect(mockScrapeMutate).toHaveBeenCalledWith(
-      "fallback",
+      { mode: "fallback", console: undefined },
       expect.any(Object),
     );
   });
@@ -154,7 +167,7 @@ describe("AdminScanPage", () => {
       screen.getByRole("button", { name: /Rescrape All Games/ }),
     );
     expect(mockScrapeMutate).toHaveBeenCalledWith(
-      "all",
+      { mode: "all", console: undefined },
       expect.any(Object),
     );
   });
@@ -376,5 +389,46 @@ describe("AdminScanPage", () => {
     renderPage();
     expect(screen.getByText("No unscraped games found")).toBeInTheDocument();
     expect(screen.queryByText(/\d+ scraped/)).not.toBeInTheDocument();
+  });
+
+  it("renders console filter dropdown with sorted consoles", () => {
+    renderPage();
+    const select = screen.getByLabelText("Console filter");
+    expect(select).toBeInTheDocument();
+    const options = select.querySelectorAll("option");
+    // "All consoles" + 3 consoles
+    expect(options).toHaveLength(4);
+    // Sorted alphabetically: GBA, NES, SNES
+    expect(options[1].textContent).toBe("Game Boy Advance");
+    expect(options[2].textContent).toBe("Nintendo Entertainment System");
+    expect(options[3].textContent).toBe("Super Nintendo");
+  });
+
+  it("passes selected console to scrape mutation", async () => {
+    renderPage();
+    const select = screen.getByLabelText("Console filter");
+    await userEvent.selectOptions(select, "snes");
+    await userEvent.click(
+      screen.getByRole("button", { name: /Scrape New Games/ }),
+    );
+    expect(mockScrapeMutate).toHaveBeenCalledWith(
+      { mode: "new", console: "snes" },
+      expect.any(Object),
+    );
+  });
+
+  it("disables console filter when scrape is active", () => {
+    mockUseScrapeProgress.mockReturnValue({
+      phase: "active",
+      current: 1,
+      total: 5,
+      gameName: "Test Game",
+      successes: 0,
+      failures: 0,
+      error: null,
+      dismiss: mockScrapeDismiss,
+    });
+    renderPage();
+    expect(screen.getByLabelText("Console filter")).toBeDisabled();
   });
 });
