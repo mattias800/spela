@@ -118,17 +118,23 @@ data class DeveloperDetailState(
     val name: String = "",
     val detail: DeveloperDetail? = null,
     val consoleFilter: String? = null,
+    val genreFilter: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
 ) {
     val filteredGames: List<Game>
         get() {
             val games = detail?.games ?: return emptyList()
-            return if (consoleFilter != null) {
-                games.filter { it.consoleName.equals(consoleFilter, ignoreCase = true) }
-            } else {
-                games
+            var result = games
+            if (consoleFilter != null) {
+                result = result.filter { it.consoleName.equals(consoleFilter, ignoreCase = true) }
             }
+            if (genreFilter != null) {
+                result = result.filter { game ->
+                    game.genre?.split(",")?.map { it.trim() }?.any { it.equals(genreFilter, ignoreCase = true) } == true
+                }
+            }
+            return result
         }
 }
 
@@ -551,6 +557,10 @@ class ExploreViewModel(
 
     fun setDeveloperConsoleFilter(abbreviation: String?) {
         _developerDetailState.update { it.copy(consoleFilter = abbreviation) }
+    }
+
+    fun setDeveloperGenreFilter(genre: String?) {
+        _developerDetailState.update { it.copy(genreFilter = genre) }
     }
 
     fun dismissDeveloperDetailError() {

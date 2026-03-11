@@ -53,14 +53,32 @@ function makeGame(overrides: Partial<Game> = {}): Game {
 
 const mockPublisherDetail: PublisherDetailResponse = {
   name: "Nintendo",
-  gameCount: 4,
+  gameCount: 5,
   avgRating: 92.3,
   consoles: ["NES", "SNES"],
   games: [
-    makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", publisher: "Nintendo" }),
-    makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", publisher: "Nintendo" }),
-    makeGame({ id: "3", title: "Super Mario Bros.", consoleName: "NES", publisher: "Nintendo" }),
-    makeGame({ id: "4", title: "Metroid", consoleName: "NES", publisher: "Nintendo" }),
+    makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", genre: "Platformer", publisher: "Nintendo" }),
+    makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", genre: "RPG", publisher: "Nintendo" }),
+    makeGame({ id: "3", title: "Super Mario Bros.", consoleName: "NES", genre: "Platformer", publisher: "Nintendo" }),
+    makeGame({ id: "4", title: "Metroid", consoleName: "NES", genre: "Action", publisher: "Nintendo" }),
+    makeGame({ id: "5", title: "Kirby's Adventure", consoleName: "NES", genre: "Platformer", publisher: "Nintendo" }),
+  ],
+  topGames: [
+    makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", rating: 96 }),
+    makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", rating: 95 }),
+  ],
+  genreBreakdown: [
+    { name: "Platformer", gameCount: 3 },
+    { name: "RPG", gameCount: 1 },
+    { name: "Action", gameCount: 1 },
+  ],
+  platformBreakdown: [
+    { consoleName: "NES", consoleId: "nes", count: 3 },
+    { consoleName: "SNES", consoleId: "snes", count: 2 },
+  ],
+  developers: [
+    { name: "Nintendo EAD", count: 3 },
+    { name: "Intelligent Systems", count: 1 },
   ],
 };
 
@@ -98,7 +116,7 @@ describe("PublisherDetailPage", () => {
     expect(screen.getByTestId("publisher-detail-page")).toBeInTheDocument();
   });
 
-  it("renders publisher name as heading", () => {
+  it("renders publisher name in hero banner heading", () => {
     renderPage();
     expect(
       screen.getByRole("heading", { name: "Nintendo", level: 1 }),
@@ -112,12 +130,20 @@ describe("PublisherDetailPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders stats row with game count and avg rating", () => {
+  it("renders hero banner with stats", () => {
     renderPage();
-    const stats = screen.getByTestId("publisher-stats");
-    expect(stats).toHaveTextContent("4 games");
-    expect(stats).toHaveTextContent("Avg rating: 92.3");
-    expect(stats).toHaveTextContent("Consoles: NES, SNES");
+    const banner = screen.getByTestId("developer-hero-banner");
+    expect(banner).toBeInTheDocument();
+    const stats = screen.getByTestId("developer-stats");
+    expect(stats).toHaveTextContent("5 games");
+    expect(stats).toHaveTextContent("92.3");
+    expect(stats).toHaveTextContent("2 platforms");
+  });
+
+  it("renders hero banner avatar with first letter", () => {
+    renderPage();
+    const avatar = screen.getByTestId("developer-avatar");
+    expect(avatar).toHaveTextContent("N");
   });
 
   it("renders console filter chips", () => {
@@ -130,12 +156,13 @@ describe("PublisherDetailPage", () => {
     expect(buttonTexts).toContainEqual(expect.stringContaining("SNES"));
   });
 
-  it("renders all games in grid", () => {
+  it("renders all games somewhere on page", () => {
     renderPage();
-    expect(screen.getByText("Super Mario World")).toBeInTheDocument();
-    expect(screen.getByText("Zelda: ALTTP")).toBeInTheDocument();
+    expect(screen.getAllByText("Super Mario World").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Zelda: ALTTP").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Super Mario Bros.")).toBeInTheDocument();
     expect(screen.getByText("Metroid")).toBeInTheDocument();
+    expect(screen.getByText("Kirby's Adventure")).toBeInTheDocument();
   });
 
   it("filters games by console", async () => {
@@ -144,18 +171,20 @@ describe("PublisherDetailPage", () => {
 
     const filters = screen.getByTestId("publisher-console-filters");
     const buttons = within(filters).getAllByRole("button");
-    const nesButton = buttons.find(
-      (b) => b.textContent?.trim().startsWith("NES"),
+    const snesButton = buttons.find(
+      (b) => b.textContent?.trim().startsWith("SNES"),
     );
-    expect(nesButton).toBeDefined();
-    await user.click(nesButton!);
+    expect(snesButton).toBeDefined();
+    await user.click(snesButton!);
 
+    // When filtering by console, falls back to grid view
     const grid = screen.getByTestId("publisher-game-grid");
     const gameLinks = within(grid).getAllByRole("link");
     expect(gameLinks).toHaveLength(2);
-    expect(screen.getByText("Super Mario Bros.")).toBeInTheDocument();
-    expect(screen.getByText("Metroid")).toBeInTheDocument();
-    expect(screen.queryByText("Super Mario World")).not.toBeInTheDocument();
+    expect(within(grid).getByText("Super Mario World")).toBeInTheDocument();
+    expect(within(grid).getByText("Zelda: ALTTP")).toBeInTheDocument();
+    // NES games should not be in the grid
+    expect(within(grid).queryByText("Super Mario Bros.")).not.toBeInTheDocument();
   });
 
   it("shows loading skeleton while loading", () => {
@@ -204,7 +233,7 @@ describe("PublisherDetailPage", () => {
       isLoading: false,
     });
     renderPage();
-    const stats = screen.getByTestId("publisher-stats");
+    const stats = screen.getByTestId("developer-stats");
     expect(stats).toHaveTextContent("1 game");
   });
 
@@ -217,7 +246,171 @@ describe("PublisherDetailPage", () => {
       isLoading: false,
     });
     renderPage();
-    const stats = screen.getByTestId("publisher-stats");
-    expect(stats).not.toHaveTextContent("Avg rating");
+    const stats = screen.getByTestId("developer-stats");
+    expect(stats).not.toHaveTextContent("92.3");
+  });
+
+  // --- Top Rated section ---
+
+  it("shows top rated shelf when >4 games and topGames present", () => {
+    renderPage();
+    expect(screen.getByTestId("shelf-Top Rated")).toBeInTheDocument();
+  });
+
+  it("hides top rated shelf when 4 or fewer games", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        gameCount: 4,
+        topGames: [makeGame({ id: "1", title: "Test" })],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("shelf-Top Rated")).not.toBeInTheDocument();
+  });
+
+  // --- Genre Breakdown section ---
+
+  it("shows genre breakdown chips when 2+ genres", () => {
+    renderPage();
+    const section = screen.getByTestId("publisher-genre-breakdown");
+    expect(section).toBeInTheDocument();
+    expect(within(section).getByText(/Platformer \(3\)/)).toBeInTheDocument();
+    expect(within(section).getByText(/RPG \(1\)/)).toBeInTheDocument();
+    expect(within(section).getByText(/Action \(1\)/)).toBeInTheDocument();
+  });
+
+  it("hides genre breakdown when fewer than 2 genres", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        genreBreakdown: [{ name: "Platformer", gameCount: 5 }],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("publisher-genre-breakdown"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("filters games when clicking a genre chip", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const section = screen.getByTestId("publisher-genre-breakdown");
+    const platformerBtn = within(section).getByText(/Platformer \(3\)/);
+    await user.click(platformerBtn);
+
+    // After genre filter, platformer games are on NES and SNES, so we get platform grouping
+    // Games may also appear in the top rated shelf, so use getAllByText
+    expect(screen.getAllByText("Super Mario World").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Super Mario Bros.")).toBeInTheDocument();
+    expect(screen.getByText("Kirby's Adventure")).toBeInTheDocument();
+    // Non-platformer games should be gone from the main section
+    // (Zelda:ALTTP is in top rated shelf but not in filtered platform sections)
+    expect(screen.queryByText("Metroid")).not.toBeInTheDocument();
+  });
+
+  // --- Platform sections ---
+
+  it("groups games by platform when multiple platforms present", () => {
+    renderPage();
+    const sections = screen.getByTestId("publisher-platform-sections");
+    expect(sections).toBeInTheDocument();
+    expect(
+      screen.getByTestId("platform-section-NES"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("platform-section-SNES"),
+    ).toBeInTheDocument();
+  });
+
+  it("orders platform sections by count descending", () => {
+    renderPage();
+    const sections = screen.getByTestId("publisher-platform-sections");
+    const sectionHeaders = within(sections)
+      .getAllByRole("heading", { level: 2 })
+      .map((h) => h.textContent);
+    // NES has 3 games, should come first
+    expect(sectionHeaders[0]).toBe("NES");
+    expect(sectionHeaders[1]).toBe("SNES");
+  });
+
+  // --- Developers section ---
+
+  it("shows developers section with clickable chips", () => {
+    renderPage();
+    const section = screen.getByTestId("publisher-developers");
+    expect(section).toBeInTheDocument();
+    const links = within(section).getAllByRole("link");
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveTextContent("Nintendo EAD");
+    expect(links[1]).toHaveTextContent("Intelligent Systems");
+  });
+
+  it("hides developers section when no developers", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        developers: [],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("publisher-developers"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides developers section when developers is undefined", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        developers: undefined,
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("publisher-developers"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- User Stats section ---
+
+  it("shows user stats card when userStats is present", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        userStats: {
+          totalPlayTime: 14400,
+          gamesPlayed: 3,
+          favoriteCount: 2,
+          mostPlayedGame: makeGame({
+            id: "1",
+            title: "Super Mario World",
+            coverUrl: "/covers/smw.jpg",
+            totalPlayTime: 7200,
+          }),
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("developer-user-stats");
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveTextContent("Your Stats");
+    expect(card).toHaveTextContent("4h 0m");
+    expect(card).toHaveTextContent("3/5");
+    expect(card).toHaveTextContent("2");
+  });
+
+  it("hides user stats card when userStats is absent", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("developer-user-stats"),
+    ).not.toBeInTheDocument();
   });
 });

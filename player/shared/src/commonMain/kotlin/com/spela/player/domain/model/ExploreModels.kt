@@ -133,11 +133,40 @@ data class DeveloperSummary(
     val consoles: List<String>,
 )
 
+data class DeveloperDetailGenreBreakdown(
+    val name: String,
+    val gameCount: Int,
+)
+
+data class DeveloperDetailPlatformBreakdown(
+    val consoleName: String,
+    val consoleId: String,
+    val count: Int,
+)
+
+data class DeveloperDetailUserStats(
+    val totalPlayTime: Long,
+    val gamesPlayed: Int,
+    val favoriteCount: Int,
+    val mostPlayedGame: Game?,
+)
+
+data class DeveloperDetailPublisher(
+    val name: String,
+    val count: Int,
+)
+
 data class DeveloperDetail(
     val name: String,
     val gameCount: Int,
     val avgRating: Double,
     val consoles: List<String>,
+    val heroUrl: String? = null,
+    val topGames: List<Game> = emptyList(),
+    val genreBreakdown: List<DeveloperDetailGenreBreakdown> = emptyList(),
+    val platformBreakdown: List<DeveloperDetailPlatformBreakdown> = emptyList(),
+    val userStats: DeveloperDetailUserStats? = null,
+    val publishers: List<DeveloperDetailPublisher> = emptyList(),
     val games: List<Game>,
 )
 

@@ -1093,12 +1093,36 @@ export interface DeveloperListResponse {
   developers: DeveloperSummary[];
 }
 
+export interface PlatformCount {
+  consoleName: string;
+  consoleId: string;
+  count: number;
+}
+
+export interface NameCount {
+  name: string;
+  count: number;
+}
+
+export interface EntityUserStats {
+  totalPlayTime: number;
+  gamesPlayed: number;
+  favoriteCount: number;
+  mostPlayedGame: Game | null;
+}
+
 export interface DeveloperDetailResponse {
   name: string;
   gameCount: number;
   avgRating: number;
   consoles: string[];
   games: Game[];
+  heroUrl?: string;
+  topGames?: Game[];
+  genreBreakdown?: GenreCount[];
+  platformBreakdown?: PlatformCount[];
+  userStats?: EntityUserStats;
+  publishers?: NameCount[];
 }
 
 export interface PublisherDetailResponse {
@@ -1107,6 +1131,12 @@ export interface PublisherDetailResponse {
   avgRating: number;
   consoles: string[];
   games: Game[];
+  heroUrl?: string;
+  topGames?: Game[];
+  genreBreakdown?: GenreCount[];
+  platformBreakdown?: PlatformCount[];
+  userStats?: EntityUserStats;
+  developers?: NameCount[];
 }
 
 export interface DeveloperSpotlightResponse {

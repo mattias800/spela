@@ -13,48 +13,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.PlatformBackHandler
-import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
-import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.explore.DeveloperGameItem
+import com.spela.player.presentation.ui.feature.explore.DeveloperGenreBreakdown
+import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
+import com.spela.player.presentation.ui.feature.explore.DeveloperPublishersSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
+import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
-import com.spela.player.util.formatRating
+import androidx.compose.material3.Text
 
 @Composable
 fun ExploreDeveloperScreen(
@@ -62,6 +54,7 @@ fun ExploreDeveloperScreen(
     isDeveloper: Boolean = true,
     viewModel: ExploreViewModel,
     onGameSelected: (String) -> Unit,
+    onPublisherSelected: (String) -> Unit = {},
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
@@ -110,90 +103,58 @@ fun ExploreDeveloperScreen(
                 state.detail != null -> {
                     val detail = state.detail!!
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                         contentPadding = PaddingValues(bottom = SpSpacing.XXLarge),
                     ) {
-                        // Stats banner
+                        // (a) Hero Banner
                         item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(120.dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                SpColor.Primary.copy(alpha = 0.3f),
-                                                SpColor.Background,
-                                            ),
-                                        ),
-                                    )
-                                    .testTag("developer_stats_banner"),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Text(
-                                        text = detail.name,
-                                        style = SpTypography.DisplaySmall,
-                                        color = SpColor.OnBackground,
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Small))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                                    ) {
-                                        Text(
-                                            text = "${detail.gameCount} games",
-                                            style = SpTypography.BodyMedium,
-                                            color = SpColor.OnBackgroundSecondary,
-                                            modifier = Modifier.testTag("developer_game_count"),
-                                        )
-                                        if (detail.avgRating > 0) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Star,
-                                                    contentDescription = null,
-                                                    tint = SpColor.Rating,
-                                                    modifier = Modifier.size(14.dp),
-                                                )
-                                                Text(
-                                                    text = formatRating(detail.avgRating),
-                                                    style = SpTypography.BodyMedium,
-                                                    color = SpColor.OnBackgroundSecondary,
-                                                    modifier = Modifier.testTag("developer_avg_rating"),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                            DeveloperHeroBanner(
+                                detail = detail,
+                                modifier = Modifier.testTag("developer_hero_banner"),
+                            )
+                        }
+
+                        // (b) Top Rated Row
+                        if (detail.topGames.isNotEmpty() && detail.gameCount >= 5) {
+                            item {
+                                DeveloperTopRatedRow(
+                                    topGames = detail.topGames,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_top_rated_section"),
+                                )
                             }
                         }
 
-                        // Console filter chips
-                        if (detail.consoles.isNotEmpty()) {
+                        // (c) Genre Breakdown
+                        if (detail.genreBreakdown.size >= 2) {
                             item {
-                                DeveloperConsoleFilterRow(
-                                    consoles = detail.consoles,
+                                DeveloperGenreBreakdown(
+                                    genres = detail.genreBreakdown.map { it.name to it.gameCount },
                                     totalGames = detail.gameCount,
-                                    selectedConsole = state.consoleFilter,
-                                    onConsoleSelected = { console ->
-                                        viewModel.setDeveloperConsoleFilter(
-                                            if (console != null && state.consoleFilter == console) null else console,
+                                    selectedGenre = state.genreFilter,
+                                    onGenreSelected = { genre ->
+                                        viewModel.setDeveloperGenreFilter(
+                                            if (genre != null && state.genreFilter == genre) null else genre,
                                         )
                                     },
-                                    modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .testTag("developer_console_filters"),
+                                    modifier = Modifier.testTag("developer_genre_breakdown"),
                                 )
-                                Spacer(Modifier.height(SpSpacing.Large))
                             }
                         }
 
-                        // Games grid
+                        // (d) User Stats Card
+                        if (detail.userStats != null) {
+                            item {
+                                DeveloperUserStatsCard(
+                                    userStats = detail.userStats,
+                                    totalGames = detail.gameCount,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_user_stats"),
+                                )
+                            }
+                        }
+
+                        // (e) Games Grouped by Platform
                         val filteredGames = state.filteredGames
                         if (filteredGames.isEmpty() && !state.isLoading) {
                             item {
@@ -212,13 +173,96 @@ fun ExploreDeveloperScreen(
                                 }
                             }
                         } else {
-                            items(
-                                items = filteredGames,
-                                key = { it.id },
-                            ) { game ->
-                                DeveloperGameItem(
-                                    game = game,
-                                    onClick = { onGameSelected(game.id) },
+                            // Group games by platform, ordered by count descending
+                            val platformBreakdown = detail.platformBreakdown
+                                .sortedByDescending { it.count }
+
+                            if (platformBreakdown.isNotEmpty()) {
+                                platformBreakdown.forEach { platform ->
+                                    val platformGames = filteredGames.filter {
+                                        it.consoleName.equals(platform.consoleName, ignoreCase = true)
+                                    }
+                                    if (platformGames.isNotEmpty()) {
+                                        item(key = "platform_header_${platform.consoleId}") {
+                                            DeveloperPlatformHeader(
+                                                consoleName = platform.consoleName,
+                                                gameCount = platformGames.size,
+                                                modifier = Modifier.testTag("developer_platform_header_${platform.consoleId}"),
+                                            )
+                                        }
+                                        items(
+                                            items = platformGames,
+                                            key = { it.id },
+                                        ) { game ->
+                                            DeveloperGameItem(
+                                                game = game,
+                                                onClick = { onGameSelected(game.id) },
+                                            )
+                                        }
+                                    }
+                                }
+                                // Also show games that don't match any platform in breakdown
+                                val knownPlatforms = platformBreakdown.map { it.consoleName.lowercase() }.toSet()
+                                val uncategorized = filteredGames.filter {
+                                    it.consoleName.lowercase() !in knownPlatforms
+                                }
+                                if (uncategorized.isNotEmpty()) {
+                                    item(key = "platform_header_other") {
+                                        DeveloperPlatformHeader(
+                                            consoleName = "Other",
+                                            gameCount = uncategorized.size,
+                                            modifier = Modifier.testTag("developer_platform_header_other"),
+                                        )
+                                    }
+                                    items(
+                                        items = uncategorized,
+                                        key = { "other_${it.id}" },
+                                    ) { game ->
+                                        DeveloperGameItem(
+                                            game = game,
+                                            onClick = { onGameSelected(game.id) },
+                                        )
+                                    }
+                                }
+                            } else {
+                                // Fallback: no platform breakdown, show flat list with console filter
+                                if (detail.consoles.isNotEmpty()) {
+                                    item {
+                                        DeveloperConsoleFilterRow(
+                                            consoles = detail.consoles,
+                                            totalGames = detail.gameCount,
+                                            selectedConsole = state.consoleFilter,
+                                            onConsoleSelected = { console ->
+                                                viewModel.setDeveloperConsoleFilter(
+                                                    if (console != null && state.consoleFilter == console) null else console,
+                                                )
+                                            },
+                                            modifier = Modifier
+                                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                                .testTag("developer_console_filters"),
+                                        )
+                                        Spacer(Modifier.height(SpSpacing.Large))
+                                    }
+                                }
+                                items(
+                                    items = filteredGames,
+                                    key = { it.id },
+                                ) { game ->
+                                    DeveloperGameItem(
+                                        game = game,
+                                        onClick = { onGameSelected(game.id) },
+                                    )
+                                }
+                            }
+                        }
+
+                        // (f) Publishers Section
+                        if (detail.publishers.isNotEmpty()) {
+                            item {
+                                DeveloperPublishersSection(
+                                    publishers = detail.publishers,
+                                    onPublisherSelected = onPublisherSelected,
+                                    modifier = Modifier.testTag("developer_publishers_section"),
                                 )
                             }
                         }
@@ -255,6 +299,39 @@ fun ExploreDeveloperScreen(
         )
     }
 }
+
+// --- (e) Platform Group Header ---
+
+@Composable
+private fun DeveloperPlatformHeader(
+    consoleName: String,
+    gameCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = SpSpacing.ScreenHorizontal,
+                vertical = SpSpacing.Medium,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = consoleName,
+            style = SpTypography.HeadlineSmall,
+            color = SpColor.OnBackground,
+        )
+        Text(
+            text = "$gameCount games",
+            style = SpTypography.BodySmall,
+            color = SpColor.OnBackgroundTertiary,
+        )
+    }
+}
+
+// --- Console Filter Row (fallback when no platform breakdown) ---
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -297,84 +374,6 @@ private fun DeveloperConsoleFilterRow(
                         role = Role.Button
                     },
             )
-        }
-    }
-}
-
-@Composable
-private fun DeveloperGameItem(
-    game: Game,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.XSmall,
-            )
-            .testTag("developer_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(64.dp)
-                    .clip(RoundedCornerShape(SpSpacing.RadiusSmall)),
-                aspectRatio = 0.75f,
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    Text(
-                        text = game.consoleName,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-
-                    if (game.rating > 0) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(10.dp),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-            }
         }
     }
 }

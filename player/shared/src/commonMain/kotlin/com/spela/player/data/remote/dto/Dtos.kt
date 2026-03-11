@@ -1181,11 +1181,38 @@ data class DeveloperListResponseDto(
 )
 
 @Serializable
+data class DeveloperDetailPlatformBreakdownDto(
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val count: Int = 0,
+)
+
+@Serializable
+data class DeveloperDetailUserStatsDto(
+    val totalPlayTime: Long = 0,
+    val gamesPlayed: Int = 0,
+    val favoriteCount: Int = 0,
+    val mostPlayedGame: GameDto? = null,
+)
+
+@Serializable
+data class DeveloperDetailPublisherDto(
+    val name: String = "",
+    val count: Int = 0,
+)
+
+@Serializable
 data class DeveloperDetailResponseDto(
     val name: String,
     val gameCount: Int,
     val avgRating: Double,
     val consoles: List<String>,
+    val heroUrl: String? = null,
+    val topGames: List<GameDto> = emptyList(),
+    val genreBreakdown: List<GenreCountDto> = emptyList(),
+    val platformBreakdown: List<DeveloperDetailPlatformBreakdownDto> = emptyList(),
+    val userStats: DeveloperDetailUserStatsDto? = null,
+    val publishers: List<DeveloperDetailPublisherDto> = emptyList(),
     val games: List<GameDto>,
 )
 

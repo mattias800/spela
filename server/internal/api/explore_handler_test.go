@@ -4257,3 +4257,403 @@ func TestGetCompletionistMap_Unauthenticated(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+// --- Developer/Publisher Detail enrichment tests ---
+
+func TestGetDeveloperDetail_HeroURL(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGameWithDev(t, env.database, "NES", "Mega Man 2", 92, "Capcom", "Capcom")
+	game2 := createExploreGameWithDev(t, env.database, "SNES", "Mega Man X", 95, "Capcom", "Capcom")
+
+	// Add hero art to the lower-rated game only
+	env.database.Create(&db.GameArtwork{GameID: game1.ID, HeroURL: "http://hero1.jpg"})
+	// Add hero art to the higher-rated game
+	env.database.Create(&db.GameArtwork{GameID: game2.ID, HeroURL: "http://hero2.jpg"})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Capcom", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// heroUrl should be from the highest-rated game with hero art
+	assert.Equal(t, "http://hero2.jpg", resp.HeroURL)
+}
+
+func TestGetDeveloperDetail_HeroURL_NoArt(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameWithDev(t, env.database, "NES", "Game A", 85, "DevCo", "PubCo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/DevCo", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Empty(t, resp.HeroURL)
+}
+
+func TestGetDeveloperDetail_TopGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Create 10 games, only 8 with rating > 0
+	for i := 0; i < 8; i++ {
+		createExploreGameFull(t, env.database, "NES", fmt.Sprintf("Rated Game %d", i), float64(90-i), "DevTop", "Pub", "Action")
+	}
+	// 2 games with no rating
+	createExploreGameFull(t, env.database, "SNES", "Unrated A", 0, "DevTop", "Pub", "RPG")
+	createExploreGameFull(t, env.database, "SNES", "Unrated B", 0, "DevTop", "Pub", "RPG")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/DevTop", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// topGames should include exactly 8 rated games
+	assert.Len(t, resp.TopGames, 8)
+	// All topGames should have rating > 0
+	for _, g := range resp.TopGames {
+		assert.Greater(t, g.Rating, 0.0)
+	}
+	// games should include all 10
+	assert.Len(t, resp.Games, 10)
+}
+
+func TestGetDeveloperDetail_TopGames_LessThan8(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Only Rated", 85, "SmallDev", "Pub", "Action")
+	createExploreGameFull(t, env.database, "SNES", "Unrated", 0, "SmallDev", "Pub", "RPG")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/SmallDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Len(t, resp.TopGames, 1)
+	assert.Equal(t, "Only Rated", resp.TopGames[0].Title)
+}
+
+func TestGetDeveloperDetail_TopGames_NoRated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Unrated Only", 0, "NoRateDev", "Pub", "Action")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoRateDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Empty(t, resp.TopGames)
+}
+
+func TestGetDeveloperDetail_GenreBreakdown(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Action 1", 85, "GenreDev", "Pub", "Action")
+	createExploreGameFull(t, env.database, "NES", "Action 2", 80, "GenreDev", "Pub", "Action")
+	createExploreGameFull(t, env.database, "SNES", "RPG 1", 90, "GenreDev", "Pub", "RPG")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/GenreDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.GenreBreakdown, 2)
+	// Sorted by count DESC
+	assert.Equal(t, "Action", resp.GenreBreakdown[0].Name)
+	assert.Equal(t, 2, resp.GenreBreakdown[0].GameCount)
+	assert.Equal(t, "RPG", resp.GenreBreakdown[1].Name)
+	assert.Equal(t, 1, resp.GenreBreakdown[1].GameCount)
+}
+
+func TestGetDeveloperDetail_GenreBreakdown_CommaSeparated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Multi Genre", 85, "CSVDev", "Pub", "Action, RPG")
+	createExploreGameFull(t, env.database, "SNES", "Pure Action", 80, "CSVDev", "Pub", "Action")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/CSVDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.GenreBreakdown, 2)
+	// Action appears in both games
+	assert.Equal(t, "Action", resp.GenreBreakdown[0].Name)
+	assert.Equal(t, 2, resp.GenreBreakdown[0].GameCount)
+	// RPG appears in one game (from comma-separated value)
+	assert.Equal(t, "RPG", resp.GenreBreakdown[1].Name)
+	assert.Equal(t, 1, resp.GenreBreakdown[1].GameCount)
+}
+
+func TestGetDeveloperDetail_GenreBreakdown_EmptyGenres(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "No Genre", 85, "NoGenreDev", "Pub", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoGenreDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Empty(t, resp.GenreBreakdown)
+}
+
+func TestGetDeveloperDetail_PlatformBreakdown(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "NES Game 1", 85, "PlatDev", "Pub", "Action")
+	createExploreGameFull(t, env.database, "NES", "NES Game 2", 80, "PlatDev", "Pub", "Action")
+	createExploreGameFull(t, env.database, "SNES", "SNES Game 1", 90, "PlatDev", "Pub", "RPG")
+	createExploreGameFull(t, env.database, "GBA", "GBA Game 1", 75, "PlatDev", "Pub", "Puzzle")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/PlatDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.PlatformBreakdown, 3)
+	// Sorted by count DESC
+	assert.Equal(t, "nes", resp.PlatformBreakdown[0].ConsoleID)
+	assert.Equal(t, 2, resp.PlatformBreakdown[0].Count)
+	assert.NotEmpty(t, resp.PlatformBreakdown[0].ConsoleName)
+}
+
+func TestGetDeveloperDetail_Publishers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Game A", 85, "MultiPubDev", "Nintendo", "Action")
+	createExploreGameFull(t, env.database, "SNES", "Game B", 80, "MultiPubDev", "Nintendo", "RPG")
+	createExploreGameFull(t, env.database, "GBA", "Game C", 75, "MultiPubDev", "Capcom", "Action")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/MultiPubDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.Publishers, 2)
+	// Sorted by count DESC
+	assert.Equal(t, "Nintendo", resp.Publishers[0].Name)
+	assert.Equal(t, 2, resp.Publishers[0].Count)
+	assert.Equal(t, "Capcom", resp.Publishers[1].Name)
+	assert.Equal(t, 1, resp.Publishers[1].Count)
+}
+
+func TestGetDeveloperDetail_UserStats(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGameFull(t, env.database, "NES", "Played Game 1", 85, "StatDev", "Pub", "Action")
+	game2 := createExploreGameFull(t, env.database, "SNES", "Played Game 2", 90, "StatDev", "Pub", "RPG")
+	createExploreGameFull(t, env.database, "GBA", "Unplayed Game", 75, "StatDev", "Pub", "Puzzle")
+
+	// Get the user
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+
+	// Create play history
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game1.ID,
+		PlayTime:   3600,
+		LastPlayed: time.Now(),
+	})
+	env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     game2.ID,
+		PlayTime:   7200,
+		LastPlayed: time.Now(),
+	})
+
+	// Favorite one game
+	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game1.ID})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/StatDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.UserStats)
+	assert.Equal(t, int64(10800), resp.UserStats.TotalPlayTime) // 3600 + 7200
+	assert.Equal(t, 2, resp.UserStats.GamesPlayed)
+	assert.Equal(t, 1, resp.UserStats.FavoriteCount)
+	require.NotNil(t, resp.UserStats.MostPlayedGame)
+	assert.Equal(t, "Played Game 2", resp.UserStats.MostPlayedGame.Title) // 7200s > 3600s
+}
+
+func TestGetDeveloperDetail_UserStats_NoPlayHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Game A", 85, "NoPlayDev", "Pub", "Action")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoPlayDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// userStats should be nil/omitted when no play history
+	assert.Nil(t, resp.UserStats)
+}
+
+func TestGetDeveloperDetail_NonExistent_EmptyArrays(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/GhostDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "GhostDev", resp.Name)
+	assert.Equal(t, 0, resp.GameCount)
+	assert.Empty(t, resp.Games)
+	assert.Empty(t, resp.TopGames)
+	assert.Empty(t, resp.GenreBreakdown)
+	assert.Empty(t, resp.PlatformBreakdown)
+	assert.Empty(t, resp.Publishers)
+	assert.Nil(t, resp.UserStats)
+	assert.Empty(t, resp.HeroURL)
+}
+
+// --- Publisher Detail enrichment tests ---
+
+func TestGetPublisherDetail_Enriched(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	game1 := createExploreGameFull(t, env.database, "NES", "Pub Game 1", 85, "Dev A", "EnrichPub", "Action")
+	game2 := createExploreGameFull(t, env.database, "SNES", "Pub Game 2", 92, "Dev A", "EnrichPub", "RPG")
+	createExploreGameFull(t, env.database, "GBA", "Pub Game 3", 78, "Dev B", "EnrichPub", "Puzzle")
+
+	// Add hero art to highest-rated
+	env.database.Create(&db.GameArtwork{GameID: game2.ID, HeroURL: "http://pub-hero.jpg"})
+
+	// Get user, add play history
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	env.database.Create(&db.PlayHistory{UserID: user.ID, GameID: game1.ID, PlayTime: 1800, LastPlayed: time.Now()})
+	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game2.ID})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/EnrichPub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Basic fields
+	assert.Equal(t, "EnrichPub", resp.Name)
+	assert.Equal(t, 3, resp.GameCount)
+	assert.Len(t, resp.Games, 3)
+
+	// Hero URL
+	assert.Equal(t, "http://pub-hero.jpg", resp.HeroURL)
+
+	// Top games (all 3 have rating > 0)
+	assert.Len(t, resp.TopGames, 3)
+
+	// Genre breakdown
+	require.Len(t, resp.GenreBreakdown, 3)
+
+	// Platform breakdown
+	require.Len(t, resp.PlatformBreakdown, 3)
+
+	// Developers (publisher detail shows developers)
+	require.Len(t, resp.Developers, 2)
+	assert.Equal(t, "Dev A", resp.Developers[0].Name)
+	assert.Equal(t, 2, resp.Developers[0].Count)
+	assert.Equal(t, "Dev B", resp.Developers[1].Name)
+	assert.Equal(t, 1, resp.Developers[1].Count)
+
+	// User stats
+	require.NotNil(t, resp.UserStats)
+	assert.Equal(t, int64(1800), resp.UserStats.TotalPlayTime)
+	assert.Equal(t, 1, resp.UserStats.GamesPlayed)
+	assert.Equal(t, 1, resp.UserStats.FavoriteCount)
+	require.NotNil(t, resp.UserStats.MostPlayedGame)
+	assert.Equal(t, "Pub Game 1", resp.UserStats.MostPlayedGame.Title)
+}
+
+func TestGetPublisherDetail_NoPlayHistory(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameFull(t, env.database, "NES", "Pub No Play", 85, "Dev", "NoPlayPub", "Action")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/NoPlayPub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.UserStats)
+}

@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -117,13 +118,42 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		canonicalName = games[0].Developer
 	}
 
+	gameResponses := ToGameResponses(games, h.DB, userID)
+
+	// Hero URL from highest-rated game with hero artwork
+	heroURL := h.findHeroURL(games)
+
+	// Top 8 highest-rated games (only those with rating > 0)
+	topGames := buildTopGames(gameResponses, 8)
+
+	// Genre breakdown
+	genreBreakdown := buildGenreBreakdownFromGames(games)
+
+	// Platform breakdown
+	platformBreakdown := buildPlatformBreakdown(games)
+
+	// Publishers breakdown
+	publishers := buildNameCountBreakdown(games, func(g db.Game) string { return g.Publisher })
+
+	// User stats
+	var userStats *EntityUserStats
+	if userID > 0 {
+		userStats = h.buildEntityUserStats(userID, games, gameResponses)
+	}
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperDetailResponse{
-		Name:      canonicalName,
-		GameCount: len(games),
-		AvgRating: avgRating,
-		Consoles:  consoles,
-		Games:     ToGameResponses(games, h.DB, userID),
+		Name:              canonicalName,
+		GameCount:         len(games),
+		AvgRating:         avgRating,
+		Consoles:          consoles,
+		Games:             gameResponses,
+		HeroURL:           heroURL,
+		TopGames:          topGames,
+		GenreBreakdown:    genreBreakdown,
+		PlatformBreakdown: platformBreakdown,
+		UserStats:         userStats,
+		Publishers:        publishers,
 	})
 }
 
@@ -152,14 +182,244 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		canonicalName = games[0].Publisher
 	}
 
+	gameResponses := ToGameResponses(games, h.DB, userID)
+
+	// Hero URL from highest-rated game with hero artwork
+	heroURL := h.findHeroURL(games)
+
+	// Top 8 highest-rated games (only those with rating > 0)
+	topGames := buildTopGames(gameResponses, 8)
+
+	// Genre breakdown
+	genreBreakdown := buildGenreBreakdownFromGames(games)
+
+	// Platform breakdown
+	platformBreakdown := buildPlatformBreakdown(games)
+
+	// Developers breakdown
+	developers := buildNameCountBreakdown(games, func(g db.Game) string { return g.Developer })
+
+	// User stats
+	var userStats *EntityUserStats
+	if userID > 0 {
+		userStats = h.buildEntityUserStats(userID, games, gameResponses)
+	}
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, PublisherDetailResponse{
-		Name:      canonicalName,
-		GameCount: len(games),
-		AvgRating: avgRating,
-		Consoles:  consoles,
-		Games:     ToGameResponses(games, h.DB, userID),
+		Name:              canonicalName,
+		GameCount:         len(games),
+		AvgRating:         avgRating,
+		Consoles:          consoles,
+		Games:             gameResponses,
+		HeroURL:           heroURL,
+		TopGames:          topGames,
+		GenreBreakdown:    genreBreakdown,
+		PlatformBreakdown: platformBreakdown,
+		UserStats:         userStats,
+		Developers:        developers,
 	})
+}
+
+// findHeroURL returns the hero artwork URL from the highest-rated game that has hero artwork.
+// Games are expected to be sorted by rating DESC already.
+func (h *ExploreHandler) findHeroURL(games []db.Game) string {
+	if len(games) == 0 {
+		return ""
+	}
+	gameIDs := make([]uint, len(games))
+	for i, g := range games {
+		gameIDs[i] = g.ID
+	}
+	var artwork db.GameArtwork
+	if err := h.DB.
+		Joins("JOIN games ON games.id = game_artworks.game_id").
+		Where("game_artworks.game_id IN ? AND game_artworks.hero_url != ''", gameIDs).
+		Order("games.rating DESC").
+		First(&artwork).Error; err == nil {
+		return artwork.HeroURL
+	}
+	return ""
+}
+
+// buildTopGames returns up to limit highest-rated games (only those with rating > 0).
+// gameResponses is expected to be sorted by rating DESC already.
+func buildTopGames(gameResponses []GameResponse, limit int) []GameResponse {
+	var top []GameResponse
+	for _, gr := range gameResponses {
+		if gr.Rating > 0 {
+			top = append(top, gr)
+			if len(top) >= limit {
+				break
+			}
+		}
+	}
+	if top == nil {
+		top = []GameResponse{}
+	}
+	return top
+}
+
+// buildGenreBreakdownFromGames computes genre distribution from a slice of games.
+// Handles comma-separated genre values by splitting and trimming each part.
+func buildGenreBreakdownFromGames(games []db.Game) []GenreCount {
+	genreCounts := make(map[string]int)
+	for _, g := range games {
+		if g.Genre == "" {
+			continue
+		}
+		// Handle comma-separated genres
+		parts := strings.Split(g.Genre, ",")
+		for _, part := range parts {
+			genre := strings.TrimSpace(part)
+			if genre != "" {
+				genreCounts[genre]++
+			}
+		}
+	}
+
+	result := make([]GenreCount, 0, len(genreCounts))
+	for name, count := range genreCounts {
+		result = append(result, GenreCount{Name: name, GameCount: count})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].GameCount != result[j].GameCount {
+			return result[i].GameCount > result[j].GameCount
+		}
+		return result[i].Name < result[j].Name
+	})
+	return result
+}
+
+// buildPlatformBreakdown computes games-per-console from a slice of games.
+func buildPlatformBreakdown(games []db.Game) []PlatformCount {
+	type platformInfo struct {
+		name  string
+		abbr  string
+		count int
+	}
+	platformMap := make(map[uint]*platformInfo)
+	for _, g := range games {
+		if g.Console.ID == 0 {
+			continue
+		}
+		if pi, ok := platformMap[g.Console.ID]; ok {
+			pi.count++
+		} else {
+			platformMap[g.Console.ID] = &platformInfo{
+				name:  g.Console.Name,
+				abbr:  strings.ToLower(g.Console.Abbreviation),
+				count: 1,
+			}
+		}
+	}
+
+	result := make([]PlatformCount, 0, len(platformMap))
+	for _, pi := range platformMap {
+		result = append(result, PlatformCount{
+			ConsoleName: pi.name,
+			ConsoleID:   pi.abbr,
+			Count:       pi.count,
+		})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Count != result[j].Count {
+			return result[i].Count > result[j].Count
+		}
+		return result[i].ConsoleName < result[j].ConsoleName
+	})
+	return result
+}
+
+// buildNameCountBreakdown computes a name-count breakdown using a field extractor function.
+func buildNameCountBreakdown(games []db.Game, extractField func(db.Game) string) []NameCount {
+	counts := make(map[string]int)
+	for _, g := range games {
+		name := extractField(g)
+		if name != "" {
+			counts[name]++
+		}
+	}
+
+	result := make([]NameCount, 0, len(counts))
+	for name, count := range counts {
+		result = append(result, NameCount{Name: name, Count: count})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Count != result[j].Count {
+			return result[i].Count > result[j].Count
+		}
+		return result[i].Name < result[j].Name
+	})
+	return result
+}
+
+// buildEntityUserStats computes user-specific stats for a set of games.
+// Returns nil if the user has no play history for any of the games.
+func (h *ExploreHandler) buildEntityUserStats(userID uint, games []db.Game, gameResponses []GameResponse) *EntityUserStats {
+	if len(games) == 0 {
+		return nil
+	}
+
+	gameIDs := make([]uint, len(games))
+	for i, g := range games {
+		gameIDs[i] = g.ID
+	}
+
+	// Get play history for this user across these games
+	var playHistories []db.PlayHistory
+	if err := h.DB.
+		Where("user_id = ? AND game_id IN ? AND deleted_at IS NULL", userID, gameIDs).
+		Find(&playHistories).Error; err != nil {
+		slog.Error("failed to fetch play history for entity stats", "error", err)
+		return nil
+	}
+
+	if len(playHistories) == 0 {
+		return nil
+	}
+
+	// Compute total play time, games played, most played
+	var totalPlayTime int64
+	var mostPlayedGameID uint
+	var mostPlayedTime int64
+	playedGameIDs := make(map[uint]bool)
+
+	for _, ph := range playHistories {
+		totalPlayTime += ph.PlayTime
+		playedGameIDs[ph.GameID] = true
+		if ph.PlayTime > mostPlayedTime {
+			mostPlayedTime = ph.PlayTime
+			mostPlayedGameID = ph.GameID
+		}
+	}
+
+	// Count favorites
+	var favoriteCount int64
+	if err := h.DB.Model(&db.Favorite{}).
+		Where("user_id = ? AND game_id IN ? AND deleted_at IS NULL", userID, gameIDs).
+		Count(&favoriteCount).Error; err != nil {
+		slog.Error("failed to count favorites for entity stats", "error", err)
+	}
+
+	// Find the most-played game response
+	var mostPlayedGame *GameResponse
+	if mostPlayedGameID > 0 {
+		mostPlayedIDStr := strconv.FormatUint(uint64(mostPlayedGameID), 10)
+		for i := range gameResponses {
+			if gameResponses[i].ID == mostPlayedIDStr {
+				mostPlayedGame = &gameResponses[i]
+				break
+			}
+		}
+	}
+
+	return &EntityUserStats{
+		TotalPlayTime:  totalPlayTime,
+		GamesPlayed:    len(playedGameIDs),
+		FavoriteCount:  int(favoriteCount),
+		MostPlayedGame: mostPlayedGame,
+	}
 }
 
 // GetDeveloperSpotlight returns a featured developer with top games and hero art.

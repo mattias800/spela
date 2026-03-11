@@ -1,6 +1,7 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.dto.DeveloperDetailResponseDto
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.AchievementGameItem
@@ -191,25 +192,11 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> = runCatching {
-        val dto = apiClient.getDeveloperDetail(name)
-        dto.toDomain().copy(
-            games = dto.games.map { gameDto ->
-                gameDto.toDomain().copy(
-                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                )
-            },
-        )
+        resolveEntityDetail(apiClient.getDeveloperDetail(name))
     }
 
     override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> = runCatching {
-        val dto = apiClient.getPublisherDetail(name)
-        dto.toDomain().copy(
-            games = dto.games.map { gameDto ->
-                gameDto.toDomain().copy(
-                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                )
-            },
-        )
+        resolveEntityDetail(apiClient.getPublisherDetail(name))
     }
 
     override suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight> = runCatching {
@@ -431,6 +418,30 @@ class ExploreRepositoryImpl(
     override suspend fun getCompletionistMap(): Result<CompletionistMap> = runCatching {
         apiClient.getCompletionistMap().toDomain()
     }
+
+    private fun resolveEntityDetail(dto: DeveloperDetailResponseDto): DeveloperDetail =
+        dto.toDomain().copy(
+            heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            topGames = dto.topGames.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+            userStats = dto.userStats?.let { stats ->
+                stats.toDomain().copy(
+                    mostPlayedGame = stats.mostPlayedGame?.let { gameDto ->
+                        gameDto.toDomain().copy(
+                            coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                        )
+                    },
+                )
+            },
+            games = dto.games.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+        )
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(
         coverUrl = apiClient.resolveUrl(dto.coverUrl),
