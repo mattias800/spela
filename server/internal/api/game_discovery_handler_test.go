@@ -24,7 +24,7 @@ func setupDiscoveryTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 	require.NoError(t, err)
 
 	err = database.AutoMigrate(
-		&db.Console{}, &db.Game{}, &db.SimilarGame{},
+		&db.Console{}, &db.Game{}, &db.SimilarGame{}, &db.GameReleaseDate{},
 	)
 	require.NoError(t, err)
 

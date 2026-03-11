@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,8 +45,9 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScreenshotURL = ""
 		game.LibRetroCoverURL = ""
 		game.IGDBCoverURL = ""
-		// Delete old normalized screenshots
+		// Delete old normalized screenshots and release dates
 		s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
+		s.DB.Where("game_id = ?", game.ID).Delete(&db.GameReleaseDate{})
 	}
 
 	// Mark disc-based systems as not applicable for CRC verification
@@ -286,9 +288,22 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		}
 	}
 
-	// Genre (first genre)
+	// Genre (all genres, comma-separated)
 	if len(match.Genres) > 0 && game.Genre == "" {
-		game.Genre = match.Genres[0].Name
+		names := make([]string, len(match.Genres))
+		for i, g := range match.Genres {
+			names[i] = g.Name
+		}
+		game.Genre = strings.Join(names, ", ")
+	}
+
+	// Game modes (all modes, comma-separated)
+	if len(match.GameModes) > 0 && game.GameModes == "" {
+		modeNames := make([]string, len(match.GameModes))
+		for i, mode := range match.GameModes {
+			modeNames[i] = mode.Name
+		}
+		game.GameModes = strings.Join(modeNames, ", ")
 	}
 
 	// Players: 1 if only single-player, 2 if any multiplayer mode exists
@@ -299,6 +314,30 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 				game.Players = 2
 				break
 			}
+		}
+	}
+
+	// Regional release dates
+	if len(match.ReleaseDates) > 0 {
+		for _, rd := range match.ReleaseDates {
+			regionName := igdb.RegionName(rd.Region)
+			if regionName == "" || rd.Date == 0 {
+				continue
+			}
+			t := time.Unix(rd.Date, 0)
+			platformName := ""
+			if rd.Platform != nil {
+				platformName = rd.Platform.Name
+			}
+			releaseDate := db.GameReleaseDate{
+				GameID:   game.ID,
+				Region:   regionName,
+				Date:     t.Format("2006-01-02"),
+				Platform: platformName,
+			}
+			s.DB.Where("game_id = ? AND region = ?", game.ID, regionName).
+				Assign(releaseDate).
+				FirstOrCreate(&releaseDate)
 		}
 	}
 
@@ -388,11 +427,13 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	game.Developer = ""
 	game.Publisher = ""
 	game.Genre = ""
+	game.GameModes = ""
 	game.Rating = 0
 	game.Players = 0
 	game.ReleaseDate = ""
-	// Delete old IGDB screenshots
+	// Delete old IGDB screenshots and release dates
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameReleaseDate{})
 
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 

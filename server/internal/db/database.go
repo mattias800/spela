@@ -166,6 +166,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameFranchiseGroup{},
 		&GameFranchiseEntry{},
 		&GameArtworkImage{},
+		// Regional release dates
+		&GameReleaseDate{},
 		// Phase 13: Saved Searches
 		&SavedSearch{},
 	)
@@ -532,6 +534,19 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 		}
 	}
 
+	// GameReleaseDate — move, skip if keeper already has same region
+	var dupReleaseDates []GameReleaseDate
+	database.Where("game_id = ?", dupID).Find(&dupReleaseDates)
+	for _, rd := range dupReleaseDates {
+		var count int64
+		database.Model(&GameReleaseDate{}).Where("game_id = ? AND region = ?", keeperID, rd.Region).Count(&count)
+		if count == 0 {
+			database.Model(&rd).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&rd)
+		}
+	}
+
 	// GameSeriesEntry — update any entries pointing to the duplicate game
 	database.Model(&GameSeriesEntry{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
@@ -584,6 +599,9 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 	}
 	if keeper.Genre == "" && dup.Genre != "" {
 		updates["genre"] = dup.Genre
+	}
+	if keeper.GameModes == "" && dup.GameModes != "" {
+		updates["game_modes"] = dup.GameModes
 	}
 	if keeper.ReleaseDate == "" && dup.ReleaseDate != "" {
 		updates["release_date"] = dup.ReleaseDate

@@ -35,7 +35,7 @@ type GameHandler struct {
 // ListGames returns all games with optional filtering.
 func (h *GameHandler) ListGames(c *gin.Context) {
 	var games []db.Game
-	query := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots")
+	query := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").Preload("ReleaseDates")
 	countQuery := h.DB.Model(&db.Game{})
 
 	userID := getUserID(c)
@@ -262,7 +262,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 func (h *GameHandler) GetGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
-	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").First(&game, id).Error; err != nil {
+	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").Preload("ReleaseDates").First(&game, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}
@@ -399,7 +399,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		return
 	}
 
-	h.DB.Preload("Console").Preload("Screenshots").First(&game, game.ID)
+	h.DB.Preload("Console").Preload("Screenshots").Preload("ReleaseDates").First(&game, game.ID)
 	userID := getUserID(c)
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }

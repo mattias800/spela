@@ -35,7 +35,7 @@ func setupIGDBMatchTestEnv(t *testing.T, tokenServerURL, igdbServerURL string) (
 	require.NoError(t, database.AutoMigrate(
 		&db.User{}, &db.Console{}, &db.Game{}, &db.GameScreenshot{},
 		&db.GameDisc{}, &db.Favorite{}, &db.PlayHistory{}, &db.ServerSetting{},
-		&db.GameRating{}, &db.PlayLaterItem{},
+		&db.GameRating{}, &db.PlayLaterItem{}, &db.GameReleaseDate{},
 	))
 
 	if tokenServerURL != "" {
