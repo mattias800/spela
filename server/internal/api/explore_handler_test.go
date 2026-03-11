@@ -4657,3 +4657,497 @@ func TestGetPublisherDetail_NoPlayHistory(t *testing.T) {
 
 	assert.Nil(t, resp.UserStats)
 }
+
+// --- Phase 3: Statistics Fields tests ---
+
+// createExploreGameComplete creates a game with developer, publisher, genre, rating, and release date.
+func createExploreGameComplete(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, developer, publisher, genre, releaseDate string) db.Game {
+	t.Helper()
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
+	game := db.Game{
+		ConsoleID:   console.ID,
+		Title:       title,
+		FileName:    title + ".rom",
+		FilePath:    consoleAbbr + "/" + title + ".rom",
+		Rating:      rating,
+		Genre:       genre,
+		Developer:   developer,
+		Publisher:   publisher,
+		ReleaseDate: releaseDate,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	return game
+}
+
+// --- ActiveYears tests ---
+
+func TestGetDeveloperDetail_ActiveYears(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Early Game", 80, "YearsDev", "Pub", "Action", "1987-03-15")
+	createExploreGameComplete(t, env.database, "SNES", "Mid Game", 85, "YearsDev", "Pub", "Action", "1995-06-20")
+	createExploreGameComplete(t, env.database, "GBA", "Late Game", 90, "YearsDev", "Pub", "Action", "2003-11-10")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/YearsDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.ActiveYears)
+	assert.Equal(t, 1987, resp.ActiveYears.First)
+	assert.Equal(t, 2003, resp.ActiveYears.Last)
+}
+
+func TestGetDeveloperDetail_ActiveYears_SingleGame(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Only Game", 80, "SingleYearDev", "Pub", "Action", "1991-08-12")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/SingleYearDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.ActiveYears)
+	assert.Equal(t, 1991, resp.ActiveYears.First)
+	assert.Equal(t, 1991, resp.ActiveYears.Last)
+}
+
+func TestGetDeveloperDetail_ActiveYears_NoDates(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "No Date Game", 80, "NoDateDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoDateDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.ActiveYears)
+}
+
+func TestGetDeveloperDetail_ActiveYears_MixedDates(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Dated Game", 80, "MixDateDev", "Pub", "Action", "1993-05-01")
+	createExploreGameComplete(t, env.database, "SNES", "Undated Game", 85, "MixDateDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/MixDateDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.ActiveYears)
+	assert.Equal(t, 1993, resp.ActiveYears.First)
+	assert.Equal(t, 1993, resp.ActiveYears.Last)
+}
+
+// --- RatingDistribution tests ---
+
+func TestGetDeveloperDetail_RatingDistribution(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Excellent Game", 95, "RatingDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "NES", "Good Game 1", 80, "RatingDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "Good Game 2", 75, "RatingDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "Average Game", 60, "RatingDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "GBA", "Poor Game", 30, "RatingDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "GBA", "Unrated Game", 0, "RatingDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/RatingDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 1, resp.RatingDistribution.Excellent)
+	assert.Equal(t, 2, resp.RatingDistribution.Good)
+	assert.Equal(t, 1, resp.RatingDistribution.Average)
+	assert.Equal(t, 1, resp.RatingDistribution.Poor)
+	assert.Equal(t, 1, resp.RatingDistribution.Unrated)
+}
+
+func TestGetDeveloperDetail_RatingDistribution_AllUnrated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Unrated 1", 0, "AllUnratedDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "Unrated 2", 0, "AllUnratedDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/AllUnratedDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 0, resp.RatingDistribution.Excellent)
+	assert.Equal(t, 0, resp.RatingDistribution.Good)
+	assert.Equal(t, 0, resp.RatingDistribution.Average)
+	assert.Equal(t, 0, resp.RatingDistribution.Poor)
+	assert.Equal(t, 2, resp.RatingDistribution.Unrated)
+}
+
+func TestGetDeveloperDetail_RatingDistribution_BoundaryValues(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Boundary 90", 90, "BoundaryDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "NES", "Boundary 70", 70, "BoundaryDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "Boundary 50", 50, "BoundaryDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "GBA", "Boundary 49", 49, "BoundaryDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/BoundaryDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 1, resp.RatingDistribution.Excellent) // 90 is in excellent
+	assert.Equal(t, 1, resp.RatingDistribution.Good)      // 70 is in good
+	assert.Equal(t, 1, resp.RatingDistribution.Average)    // 50 is in average
+	assert.Equal(t, 1, resp.RatingDistribution.Poor)       // 49 is in poor
+	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
+}
+
+// --- PrimaryGenre tests ---
+
+func TestGetDeveloperDetail_PrimaryGenre(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Action 1", 85, "PGenreDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "NES", "Action 2", 80, "PGenreDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "RPG 1", 90, "PGenreDev", "Pub", "RPG", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/PGenreDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Action", resp.PrimaryGenre)
+}
+
+func TestGetDeveloperDetail_PrimaryGenre_CommaSeparated(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Multi 1", 85, "CSVGenreDev", "Pub", "Action, RPG", "")
+	createExploreGameComplete(t, env.database, "SNES", "Multi 2", 80, "CSVGenreDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/CSVGenreDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Action", resp.PrimaryGenre)
+}
+
+func TestGetDeveloperDetail_PrimaryGenre_NoGenres(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "No Genre", 85, "NoGenrePDev", "Pub", "", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoGenrePDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Empty(t, resp.PrimaryGenre)
+}
+
+func TestGetDeveloperDetail_PrimaryGenre_Tie(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Action Game", 85, "TieGenreDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "RPG Game", 80, "TieGenreDev", "Pub", "RPG", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/TieGenreDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// On a tie, alphabetically first genre wins
+	assert.Equal(t, "Action", resp.PrimaryGenre)
+}
+
+// --- Timeline tests ---
+
+func TestGetDeveloperDetail_Timeline(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Game 1991a", 80, "TimelineDev", "Pub", "Action", "1991-03-15")
+	createExploreGameComplete(t, env.database, "NES", "Game 1991b", 85, "TimelineDev", "Pub", "Action", "1991-11-20")
+	createExploreGameComplete(t, env.database, "SNES", "Game 1995", 90, "TimelineDev", "Pub", "RPG", "1995-06-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/TimelineDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.Timeline, 2)
+	// Sorted by year ascending
+	assert.Equal(t, 1991, resp.Timeline[0].Year)
+	assert.Len(t, resp.Timeline[0].Games, 2)
+	assert.Equal(t, 1995, resp.Timeline[1].Year)
+	assert.Len(t, resp.Timeline[1].Games, 1)
+
+	// Check timeline game fields
+	game := resp.Timeline[1].Games[0]
+	assert.NotEmpty(t, game.ID)
+	assert.Equal(t, "Game 1995", game.Title)
+	assert.Equal(t, 90.0, game.Rating)
+}
+
+func TestGetDeveloperDetail_Timeline_TooFewGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Only 2 games with dates — needs at least 3 for timeline
+	createExploreGameComplete(t, env.database, "NES", "Game A", 80, "FewTimelineDev", "Pub", "Action", "1991-01-01")
+	createExploreGameComplete(t, env.database, "SNES", "Game B", 85, "FewTimelineDev", "Pub", "Action", "1995-01-01")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/FewTimelineDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.Timeline)
+}
+
+func TestGetDeveloperDetail_Timeline_SingleYear(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// 3 games but all same year — needs at least 2 distinct years
+	createExploreGameComplete(t, env.database, "NES", "Game X1", 80, "OneYearDev", "Pub", "Action", "1991-01-01")
+	createExploreGameComplete(t, env.database, "NES", "Game X2", 85, "OneYearDev", "Pub", "Action", "1991-06-15")
+	createExploreGameComplete(t, env.database, "SNES", "Game X3", 90, "OneYearDev", "Pub", "Action", "1991-12-25")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/OneYearDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.Timeline)
+}
+
+func TestGetDeveloperDetail_Timeline_NoDates(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "No Date A", 80, "NoDateTimeDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "No Date B", 85, "NoDateTimeDev", "Pub", "Action", "")
+	createExploreGameComplete(t, env.database, "GBA", "No Date C", 90, "NoDateTimeDev", "Pub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/NoDateTimeDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.Timeline)
+}
+
+// --- Publisher statistics fields tests ---
+
+func TestGetPublisherDetail_ActiveYears(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Early Pub Game", 80, "Dev", "YearsPub", "Action", "1989-01-20")
+	createExploreGameComplete(t, env.database, "SNES", "Late Pub Game", 90, "Dev", "YearsPub", "RPG", "2001-07-15")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/YearsPub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.ActiveYears)
+	assert.Equal(t, 1989, resp.ActiveYears.First)
+	assert.Equal(t, 2001, resp.ActiveYears.Last)
+}
+
+func TestGetPublisherDetail_RatingDistribution(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Pub Ex", 92, "Dev", "DistPub", "Action", "")
+	createExploreGameComplete(t, env.database, "SNES", "Pub Good", 75, "Dev", "DistPub", "Action", "")
+	createExploreGameComplete(t, env.database, "GBA", "Pub Unrated", 0, "Dev", "DistPub", "Action", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/DistPub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 1, resp.RatingDistribution.Excellent)
+	assert.Equal(t, 1, resp.RatingDistribution.Good)
+	assert.Equal(t, 0, resp.RatingDistribution.Average)
+	assert.Equal(t, 0, resp.RatingDistribution.Poor)
+	assert.Equal(t, 1, resp.RatingDistribution.Unrated)
+}
+
+func TestGetPublisherDetail_PrimaryGenre(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Pub Plat 1", 80, "Dev", "PGenrePub", "Platformer", "")
+	createExploreGameComplete(t, env.database, "NES", "Pub Plat 2", 85, "Dev", "PGenrePub", "Platformer", "")
+	createExploreGameComplete(t, env.database, "SNES", "Pub RPG", 90, "Dev", "PGenrePub", "RPG", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/PGenrePub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, "Platformer", resp.PrimaryGenre)
+}
+
+func TestGetPublisherDetail_Timeline(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	createExploreGameComplete(t, env.database, "NES", "Pub TL 1a", 80, "Dev", "TimelinePub", "Action", "1990-01-01")
+	createExploreGameComplete(t, env.database, "NES", "Pub TL 1b", 85, "Dev", "TimelinePub", "Action", "1990-06-01")
+	createExploreGameComplete(t, env.database, "SNES", "Pub TL 2", 90, "Dev", "TimelinePub", "RPG", "1997-03-15")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/TimelinePub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.Len(t, resp.Timeline, 2)
+	assert.Equal(t, 1990, resp.Timeline[0].Year)
+	assert.Len(t, resp.Timeline[0].Games, 2)
+	assert.Equal(t, 1997, resp.Timeline[1].Year)
+	assert.Len(t, resp.Timeline[1].Games, 1)
+}
+
+// --- Non-existent developer/publisher should have sensible defaults ---
+
+func TestGetDeveloperDetail_NonExistent_StatisticsDefaults(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/GhostDev", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.ActiveYears)
+	assert.Equal(t, 0, resp.RatingDistribution.Excellent)
+	assert.Equal(t, 0, resp.RatingDistribution.Good)
+	assert.Equal(t, 0, resp.RatingDistribution.Average)
+	assert.Equal(t, 0, resp.RatingDistribution.Poor)
+	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
+	assert.Empty(t, resp.PrimaryGenre)
+	assert.Nil(t, resp.Timeline)
+}
+
+func TestGetPublisherDetail_NonExistent_StatisticsDefaults(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/GhostPub", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.ActiveYears)
+	assert.Equal(t, 0, resp.RatingDistribution.Excellent)
+	assert.Equal(t, 0, resp.RatingDistribution.Good)
+	assert.Equal(t, 0, resp.RatingDistribution.Average)
+	assert.Equal(t, 0, resp.RatingDistribution.Poor)
+	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
+	assert.Empty(t, resp.PrimaryGenre)
+	assert.Nil(t, resp.Timeline)
+}

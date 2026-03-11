@@ -458,4 +458,149 @@ describe("PublisherDetailPage", () => {
     expect(logo).toHaveAttribute("src", "/images/companies/nintendo-logo.png");
     expect(screen.queryByTestId("developer-avatar")).not.toBeInTheDocument();
   });
+
+  // --- At a Glance section ---
+
+  it("renders at-a-glance row with basic stats", () => {
+    renderPage();
+    const row = screen.getByTestId("at-a-glance-row");
+    expect(row).toBeInTheDocument();
+    expect(screen.getByTestId("glance-total-games")).toHaveTextContent("5");
+    expect(screen.getByTestId("glance-platforms")).toHaveTextContent("2");
+    expect(screen.getByTestId("glance-avg-rating")).toHaveTextContent("92.3");
+  });
+
+  it("renders at-a-glance with active years when provided", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        activeYears: { first: 1983, last: 2020 },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const pill = screen.getByTestId("glance-active-years");
+    expect(pill).toHaveTextContent("1983");
+    expect(pill).toHaveTextContent("2020");
+  });
+
+  it("renders at-a-glance with primary genre when provided", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        primaryGenre: "Platformer",
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("glance-primary-genre")).toHaveTextContent(
+      "Platformer",
+    );
+  });
+
+  it("hides active years pill when not provided", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("glance-active-years"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- Release Timeline section ---
+
+  it("renders release timeline when timeline data is provided", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        timeline: [
+          {
+            year: 1985,
+            games: [
+              { id: "g1", title: "Super Mario Bros.", coverUrl: "/covers/smb.jpg", rating: 93 },
+            ],
+          },
+          {
+            year: 1991,
+            games: [
+              { id: "g2", title: "Super Mario World", coverUrl: "/covers/smw.jpg", rating: 96 },
+            ],
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("release-timeline")).toBeInTheDocument();
+    expect(screen.getByText("1985")).toBeInTheDocument();
+    expect(screen.getByText("1991")).toBeInTheDocument();
+  });
+
+  it("hides release timeline when no timeline data", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("release-timeline"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides release timeline when timeline is empty", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        timeline: [],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("release-timeline"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- Rating Distribution section ---
+
+  it("renders rating distribution when data is provided with 5+ rated games", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        ratingDistribution: {
+          excellent: 4,
+          good: 3,
+          average: 1,
+          poor: 0,
+          unrated: 1,
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("rating-distribution")).toBeInTheDocument();
+    expect(screen.getByTestId("rating-bar-excellent")).toHaveTextContent("4");
+    expect(screen.getByTestId("rating-bar-good")).toHaveTextContent("3");
+  });
+
+  it("hides rating distribution when not provided", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("rating-distribution"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides rating distribution when fewer than 5 rated games", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        ratingDistribution: {
+          excellent: 1,
+          good: 2,
+          average: 0,
+          poor: 0,
+          unrated: 15,
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("rating-distribution"),
+    ).not.toBeInTheDocument();
+  });
 });

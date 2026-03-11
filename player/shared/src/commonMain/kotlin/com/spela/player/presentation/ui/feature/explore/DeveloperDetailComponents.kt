@@ -3,11 +3,13 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,14 +21,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
@@ -38,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -49,11 +58,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
+import com.spela.player.domain.model.ActiveYears
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.RatingDistribution
+import com.spela.player.domain.model.TimelineEntry
+import com.spela.player.domain.model.TimelineGame
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -720,5 +733,343 @@ internal fun DeveloperCompanyDescription(
         }
 
         Spacer(Modifier.height(SpSpacing.Large))
+    }
+}
+
+// --- At a Glance Stats Row ---
+
+@Composable
+internal fun DeveloperAtAGlance(
+    detail: DeveloperDetail,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .padding(horizontal = SpSpacing.ScreenHorizontal)
+            .padding(top = SpSpacing.Large),
+    ) {
+        Text(
+            text = "At a Glance",
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier.testTag("developer_at_a_glance_header"),
+        )
+        Spacer(Modifier.height(SpSpacing.Medium))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .testTag("developer_at_a_glance_row"),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            GlanceStatItem(
+                icon = Icons.Filled.Gamepad,
+                value = "${detail.gameCount}",
+                label = "Games",
+                modifier = Modifier.testTag("developer_glance_games"),
+            )
+
+            val activeYears = detail.activeYears
+            if (activeYears != null && activeYears.first > 0) {
+                val yearRange = if (activeYears.first == activeYears.last) {
+                    "${activeYears.first}"
+                } else {
+                    "${activeYears.first}-${activeYears.last}"
+                }
+                GlanceStatItem(
+                    icon = Icons.Filled.CalendarMonth,
+                    value = yearRange,
+                    label = "Active",
+                    modifier = Modifier.testTag("developer_glance_active_years"),
+                )
+            }
+
+            val primaryGenre = detail.primaryGenre
+            if (!primaryGenre.isNullOrBlank()) {
+                GlanceStatItem(
+                    icon = Icons.Filled.Category,
+                    value = primaryGenre,
+                    label = "Primary genre",
+                    modifier = Modifier.testTag("developer_glance_primary_genre"),
+                )
+            }
+
+            if (detail.consoles.isNotEmpty()) {
+                GlanceStatItem(
+                    icon = Icons.Filled.SportsEsports,
+                    value = "${detail.consoles.size}",
+                    label = "Platforms",
+                    modifier = Modifier.testTag("developer_glance_platforms"),
+                )
+            }
+
+            if (detail.avgRating > 0) {
+                GlanceStatItem(
+                    icon = Icons.Filled.Star,
+                    value = formatRating(detail.avgRating),
+                    label = "Avg rating",
+                    modifier = Modifier.testTag("developer_glance_avg_rating"),
+                )
+            }
+        }
+        Spacer(Modifier.height(SpSpacing.Large))
+    }
+}
+
+@Composable
+private fun GlanceStatItem(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    SpCard(
+        modifier = modifier.width(IntrinsicSize.Min),
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                horizontal = SpSpacing.Medium,
+                vertical = SpSpacing.Small,
+            ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = SpColor.Primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.height(SpSpacing.XXSmall))
+            Text(
+                text = value,
+                style = SpTypography.TitleSmall,
+                color = SpColor.OnBackground,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = label,
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnBackgroundTertiary,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+// --- Release Timeline ---
+
+@Composable
+internal fun DeveloperTimeline(
+    timeline: List<TimelineEntry>,
+    onGameSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(top = SpSpacing.Large)) {
+        Text(
+            text = "Release Timeline",
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier
+                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                .testTag("developer_timeline_header"),
+        )
+        Spacer(Modifier.height(SpSpacing.Medium))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+            modifier = Modifier.testTag("developer_timeline_row"),
+        ) {
+            items(
+                items = timeline,
+                key = { "timeline_${it.year}" },
+            ) { entry ->
+                TimelineYearColumn(
+                    entry = entry,
+                    onGameSelected = onGameSelected,
+                )
+            }
+        }
+        Spacer(Modifier.height(SpSpacing.Large))
+    }
+}
+
+@Composable
+private fun TimelineYearColumn(
+    entry: TimelineEntry,
+    onGameSelected: (String) -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.testTag("developer_timeline_year_${entry.year}"),
+    ) {
+        Text(
+            text = "${entry.year}",
+            style = SpTypography.TitleSmall,
+            color = SpColor.Primary,
+        )
+        Spacer(Modifier.height(SpSpacing.Small))
+        entry.games.forEach { game ->
+            TimelineGameThumb(
+                game = game,
+                onClick = { onGameSelected(game.id) },
+            )
+            Spacer(Modifier.height(SpSpacing.XSmall))
+        }
+    }
+}
+
+@Composable
+private fun TimelineGameThumb(
+    game: TimelineGame,
+    onClick: () -> Unit,
+) {
+    SpCard(
+        modifier = Modifier
+            .width(SpSpacing.CoverSmallWidth)
+            .testTag("developer_timeline_game_${game.id}")
+            .semantics {
+                contentDescription = "${game.title}, ${game.rating.toInt()}"
+                role = Role.Button
+            },
+        onClick = onClick,
+    ) {
+        Column {
+            SpCoverArt(
+                imageUrl = game.coverUrl,
+                contentDescription = "${game.title} cover",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = SpSpacing.RadiusSmall, topEnd = SpSpacing.RadiusSmall)),
+                cornerRadius = 0.dp,
+            )
+            Text(
+                text = game.title,
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnCard,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(SpSpacing.XXSmall),
+            )
+        }
+    }
+}
+
+// --- Rating Distribution ---
+
+@Composable
+internal fun DeveloperRatingDistribution(
+    distribution: RatingDistribution,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .padding(horizontal = SpSpacing.ScreenHorizontal)
+            .padding(top = SpSpacing.Large),
+    ) {
+        Text(
+            text = "Rating Distribution",
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier.testTag("developer_rating_distribution_header"),
+        )
+        Spacer(Modifier.height(SpSpacing.Medium))
+
+        SpCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("developer_rating_distribution_card"),
+        ) {
+            Column(
+                modifier = Modifier.padding(SpSpacing.Default),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                val maxCount = maxOf(
+                    distribution.excellent,
+                    distribution.good,
+                    distribution.average,
+                    distribution.poor,
+                    distribution.unrated,
+                    1,
+                )
+                RatingBar(
+                    label = "Excellent",
+                    count = distribution.excellent,
+                    maxCount = maxCount,
+                    color = SpColor.Success,
+                    testTag = "developer_rating_bar_excellent",
+                )
+                RatingBar(
+                    label = "Good",
+                    count = distribution.good,
+                    maxCount = maxCount,
+                    color = SpColor.Rating,
+                    testTag = "developer_rating_bar_good",
+                )
+                RatingBar(
+                    label = "Average",
+                    count = distribution.average,
+                    maxCount = maxCount,
+                    color = SpColor.Warning,
+                    testTag = "developer_rating_bar_average",
+                )
+                RatingBar(
+                    label = "Poor",
+                    count = distribution.poor,
+                    maxCount = maxCount,
+                    color = SpColor.Error,
+                    testTag = "developer_rating_bar_poor",
+                )
+                RatingBar(
+                    label = "Unrated",
+                    count = distribution.unrated,
+                    maxCount = maxCount,
+                    color = SpColor.OnBackgroundTertiary,
+                    testTag = "developer_rating_bar_unrated",
+                )
+            }
+        }
+        Spacer(Modifier.height(SpSpacing.Large))
+    }
+}
+
+@Composable
+private fun RatingBar(
+    label: String,
+    count: Int,
+    maxCount: Int,
+    color: Color,
+    testTag: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        Text(
+            text = label,
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundSecondary,
+            modifier = Modifier.width(72.dp),
+        )
+        LinearProgressIndicator(
+            progress = { if (maxCount > 0) count.toFloat() / maxCount else 0f },
+            modifier = Modifier
+                .weight(1f)
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = color,
+            trackColor = SpColor.SurfaceVariant,
+        )
+        Text(
+            text = "$count",
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundTertiary,
+            modifier = Modifier.width(28.dp),
+            textAlign = TextAlign.End,
+        )
     }
 }

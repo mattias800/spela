@@ -144,20 +144,30 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 	// Look up company metadata (lazy-fetched from IGDB)
 	companyInfo := h.lookupCompanyInfo(canonicalName)
 
+	// Statistics fields
+	activeYears := buildActiveYears(games)
+	ratingDist := buildRatingDistribution(games)
+	primaryGenre := buildPrimaryGenre(games)
+	timeline := buildTimeline(games)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperDetailResponse{
-		Name:              canonicalName,
-		GameCount:         len(games),
-		AvgRating:         avgRating,
-		Consoles:          consoles,
-		Games:             gameResponses,
-		HeroURL:           heroURL,
-		TopGames:          topGames,
-		GenreBreakdown:    genreBreakdown,
-		PlatformBreakdown: platformBreakdown,
-		UserStats:         userStats,
-		Publishers:        publishers,
-		CompanyInfo:       companyInfo,
+		Name:               canonicalName,
+		GameCount:          len(games),
+		AvgRating:          avgRating,
+		Consoles:           consoles,
+		Games:              gameResponses,
+		HeroURL:            heroURL,
+		TopGames:           topGames,
+		GenreBreakdown:     genreBreakdown,
+		PlatformBreakdown:  platformBreakdown,
+		UserStats:          userStats,
+		Publishers:         publishers,
+		CompanyInfo:        companyInfo,
+		ActiveYears:        activeYears,
+		RatingDistribution: ratingDist,
+		PrimaryGenre:       primaryGenre,
+		Timeline:           timeline,
 	})
 }
 
@@ -212,20 +222,30 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 	// Look up company metadata (lazy-fetched from IGDB)
 	companyInfo := h.lookupCompanyInfo(canonicalName)
 
+	// Statistics fields
+	activeYears := buildActiveYears(games)
+	ratingDist := buildRatingDistribution(games)
+	primaryGenre := buildPrimaryGenre(games)
+	timeline := buildTimeline(games)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, PublisherDetailResponse{
-		Name:              canonicalName,
-		GameCount:         len(games),
-		AvgRating:         avgRating,
-		Consoles:          consoles,
-		Games:             gameResponses,
-		HeroURL:           heroURL,
-		TopGames:          topGames,
-		GenreBreakdown:    genreBreakdown,
-		PlatformBreakdown: platformBreakdown,
-		UserStats:         userStats,
-		Developers:        developers,
-		CompanyInfo:       companyInfo,
+		Name:               canonicalName,
+		GameCount:          len(games),
+		AvgRating:          avgRating,
+		Consoles:           consoles,
+		Games:              gameResponses,
+		HeroURL:            heroURL,
+		TopGames:           topGames,
+		GenreBreakdown:     genreBreakdown,
+		PlatformBreakdown:  platformBreakdown,
+		UserStats:          userStats,
+		Developers:         developers,
+		CompanyInfo:        companyInfo,
+		ActiveYears:        activeYears,
+		RatingDistribution: ratingDist,
+		PrimaryGenre:       primaryGenre,
+		Timeline:           timeline,
 	})
 }
 
@@ -516,6 +536,129 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 		TopGames:  ToGameResponses(topGames, h.DB, userID),
 		HeroURL:   heroURL,
 	})
+}
+
+// parseReleaseYear extracts the year from a release date string (format "2006-01-02").
+// Returns 0 if the string is empty or cannot be parsed.
+func parseReleaseYear(releaseDate string) int {
+	if releaseDate == "" {
+		return 0
+	}
+	t, err := time.Parse("2006-01-02", releaseDate)
+	if err != nil {
+		return 0
+	}
+	return t.Year()
+}
+
+// buildActiveYears computes the first and last release years from a slice of games.
+// Returns nil if no games have valid release dates.
+func buildActiveYears(games []db.Game) *ActiveYears {
+	first := 0
+	last := 0
+	for _, g := range games {
+		year := parseReleaseYear(g.ReleaseDate)
+		if year == 0 {
+			continue
+		}
+		if first == 0 || year < first {
+			first = year
+		}
+		if year > last {
+			last = year
+		}
+	}
+	if first == 0 {
+		return nil
+	}
+	return &ActiveYears{First: first, Last: last}
+}
+
+// buildRatingDistribution computes rating bucket counts from a slice of games.
+// Buckets: excellent (90-100), good (70-89), average (50-69), poor (0-49 excluding 0), unrated (0/no rating).
+func buildRatingDistribution(games []db.Game) RatingDistribution {
+	var dist RatingDistribution
+	for _, g := range games {
+		r := g.Rating
+		switch {
+		case r == 0:
+			dist.Unrated++
+		case r >= 90:
+			dist.Excellent++
+		case r >= 70:
+			dist.Good++
+		case r >= 50:
+			dist.Average++
+		default:
+			dist.Poor++
+		}
+	}
+	return dist
+}
+
+// buildPrimaryGenre returns the genre with the most games, or "" if no games have genre data.
+// Handles comma-separated genre values by splitting and trimming each part.
+func buildPrimaryGenre(games []db.Game) string {
+	genreCounts := make(map[string]int)
+	for _, g := range games {
+		if g.Genre == "" {
+			continue
+		}
+		parts := strings.Split(g.Genre, ",")
+		for _, part := range parts {
+			genre := strings.TrimSpace(part)
+			if genre != "" {
+				genreCounts[genre]++
+			}
+		}
+	}
+	if len(genreCounts) == 0 {
+		return ""
+	}
+	bestGenre := ""
+	bestCount := 0
+	for genre, count := range genreCounts {
+		if count > bestCount || (count == bestCount && genre < bestGenre) {
+			bestGenre = genre
+			bestCount = count
+		}
+	}
+	return bestGenre
+}
+
+// buildTimeline groups games by release year for timeline visualization.
+// Returns nil if fewer than 3 games have release dates or fewer than 2 distinct years.
+func buildTimeline(games []db.Game) []TimelineEntry {
+	yearGames := make(map[int][]TimelineGame)
+	datedCount := 0
+	for _, g := range games {
+		year := parseReleaseYear(g.ReleaseDate)
+		if year == 0 {
+			continue
+		}
+		datedCount++
+		yearGames[year] = append(yearGames[year], TimelineGame{
+			ID:       strconv.FormatUint(uint64(g.ID), 10),
+			Title:    g.Title,
+			CoverURL: g.CoverURL,
+			Rating:   g.Rating,
+		})
+	}
+	if datedCount < 3 || len(yearGames) < 2 {
+		return nil
+	}
+
+	years := make([]int, 0, len(yearGames))
+	for y := range yearGames {
+		years = append(years, y)
+	}
+	sort.Ints(years)
+
+	timeline := make([]TimelineEntry, len(years))
+	for i, y := range years {
+		timeline[i] = TimelineEntry{Year: y, Games: yearGames[y]}
+	}
+	return timeline
 }
 
 // calcRatingAndConsoles computes the average rating and distinct console display names

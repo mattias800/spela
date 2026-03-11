@@ -7,6 +7,9 @@ import { GameShelf } from "@/features/explore/components/game-shelf";
 import { DeveloperHeroBanner } from "@/features/explore/components/developer-hero-banner";
 import { DeveloperStatsCard } from "@/features/explore/components/developer-stats-card";
 import { CompanyInfoSection } from "@/features/explore/components/company-info-section";
+import { AtAGlanceRow } from "@/features/explore/components/at-a-glance-row";
+import { ReleaseTimeline } from "@/features/explore/components/release-timeline";
+import { RatingDistribution } from "@/features/explore/components/rating-distribution";
 import { useDeveloperDetail } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -156,6 +159,15 @@ export function DeveloperDetailPage() {
         <CompanyInfoSection companyInfo={developer.companyInfo} />
       )}
 
+      {/* At a Glance Stats Row */}
+      <AtAGlanceRow
+        gameCount={developer.gameCount}
+        activeYears={developer.activeYears}
+        primaryGenre={developer.primaryGenre}
+        platformCount={developer.consoles.length}
+        avgRating={developer.avgRating}
+      />
+
       {/* Top Rated Row */}
       {showTopRated && (
         <GameShelf
@@ -165,6 +177,16 @@ export function DeveloperDetailPage() {
           onToggleFavorite={handleToggleFavorite}
           onTogglePlayLater={handleTogglePlayLater}
         />
+      )}
+
+      {/* Release Timeline */}
+      {developer.timeline && developer.timeline.length > 0 && (
+        <ReleaseTimeline timeline={developer.timeline} />
+      )}
+
+      {/* Rating Distribution */}
+      {developer.ratingDistribution && (
+        <RatingDistribution distribution={developer.ratingDistribution} />
       )}
 
       {/* Genre Breakdown (filter chips) */}

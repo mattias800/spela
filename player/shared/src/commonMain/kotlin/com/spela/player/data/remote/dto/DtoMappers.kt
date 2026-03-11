@@ -715,6 +715,31 @@ fun CompanyInfoDto.toDomain(): CompanyInfo = CompanyInfo(
     wikipediaUrl = wikipediaUrl,
 )
 
+fun ActiveYearsDto.toDomain(): ActiveYears = ActiveYears(
+    first = first,
+    last = last,
+)
+
+fun RatingDistributionDto.toDomain(): RatingDistribution = RatingDistribution(
+    excellent = excellent,
+    good = good,
+    average = average,
+    poor = poor,
+    unrated = unrated,
+)
+
+fun TimelineGameDto.toDomain(): TimelineGame = TimelineGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+    rating = rating,
+)
+
+fun TimelineEntryDto.toDomain(): TimelineEntry = TimelineEntry(
+    year = year,
+    games = games.map { it.toDomain() },
+)
+
 fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount,
@@ -728,6 +753,10 @@ fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     userStats = userStats?.toDomain(),
     publishers = publishers.map { it.toDomain() },
     games = games.map { it.toDomain() },
+    activeYears = activeYears?.toDomain(),
+    ratingDistribution = ratingDistribution?.toDomain(),
+    primaryGenre = primaryGenre,
+    timeline = timeline.map { it.toDomain() },
 )
 
 fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpotlight(

@@ -36,11 +36,14 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.explore.DeveloperAtAGlance
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperGameItem
 import com.spela.player.presentation.ui.feature.explore.DeveloperGenreBreakdown
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperPublishersSection
+import com.spela.player.presentation.ui.feature.explore.DeveloperRatingDistribution
+import com.spela.player.presentation.ui.feature.explore.DeveloperTimeline
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.theme.SpColor
@@ -107,7 +110,7 @@ fun ExploreDeveloperScreen(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                         contentPadding = PaddingValues(bottom = SpSpacing.XXLarge),
                     ) {
-                        // (a) Hero Banner
+                        // 1. Hero Banner
                         item {
                             DeveloperHeroBanner(
                                 detail = detail,
@@ -115,7 +118,7 @@ fun ExploreDeveloperScreen(
                             )
                         }
 
-                        // Company Description (below hero banner)
+                        // 2. Company Description (below hero banner)
                         val companyInfo = detail.companyInfo
                         if (companyInfo?.description != null) {
                             item {
@@ -127,7 +130,15 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // (b) Top Rated Row
+                        // 3. At a Glance stats row
+                        item {
+                            DeveloperAtAGlance(
+                                detail = detail,
+                                modifier = Modifier.testTag("developer_at_a_glance_section"),
+                            )
+                        }
+
+                        // 4. Top Rated Row
                         if (detail.topGames.isNotEmpty() && detail.gameCount >= 5) {
                             item {
                                 DeveloperTopRatedRow(
@@ -138,7 +149,29 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // (c) Genre Breakdown
+                        // 5. Release Timeline
+                        if (detail.timeline.isNotEmpty()) {
+                            item {
+                                DeveloperTimeline(
+                                    timeline = detail.timeline,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_timeline_section"),
+                                )
+                            }
+                        }
+
+                        // 6. Rating Distribution (only shown when 5+ rated games)
+                        val ratingDist = detail.ratingDistribution
+                        if (ratingDist != null && ratingDist.totalRated >= 5) {
+                            item {
+                                DeveloperRatingDistribution(
+                                    distribution = ratingDist,
+                                    modifier = Modifier.testTag("developer_rating_distribution_section"),
+                                )
+                            }
+                        }
+
+                        // 7. Genre Breakdown
                         if (detail.genreBreakdown.size >= 2) {
                             item {
                                 DeveloperGenreBreakdown(
@@ -155,7 +188,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // (d) User Stats Card
+                        // 8. User Stats Card
                         if (detail.userStats != null) {
                             item {
                                 DeveloperUserStatsCard(
@@ -167,7 +200,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // (e) Games Grouped by Platform
+                        // 9. Games Grouped by Platform
                         val filteredGames = state.filteredGames
                         if (filteredGames.isEmpty() && !state.isLoading) {
                             item {
@@ -269,7 +302,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // (f) Publishers Section
+                        // 10. Publishers Section
                         if (detail.publishers.isNotEmpty()) {
                             item {
                                 DeveloperPublishersSection(
