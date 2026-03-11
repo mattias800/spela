@@ -546,8 +546,18 @@ func (s *Scanner) Scan(onProgress ProgressFunc) (*ScanResult, error) {
 	})
 
 	// Pass 2: Normal single-disc scan, skipping claimed paths
+	filesProcessed := 0
 	for _, dir := range s.GameDirs {
-		if err := s.scanDirectory(dir, consoleMap, foundPaths, claimedPaths, result); err != nil {
+		if err := s.scanDirectory(dir, consoleMap, foundPaths, claimedPaths, result, func() {
+			filesProcessed++
+			if filesProcessed%50 == 0 {
+				report(ScanProgress{
+					Phase:   "discovering",
+					Current: result.NewGames,
+					Message: fmt.Sprintf("Scanning game directories... (%d new so far, %d files checked)", result.NewGames, filesProcessed),
+				})
+			}
+		}); err != nil {
 			slog.Warn("error scanning directory", "dir", dir, "error", err)
 		}
 	}
@@ -1020,7 +1030,7 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 	s.removeOldDiscGames(discFiles, m3uPath, result)
 }
 
-func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult) error {
+func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult, onFile func()) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // skip errors
@@ -1030,6 +1040,10 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 				return filepath.SkipDir
 			}
 			return nil
+		}
+
+		if onFile != nil {
+			onFile()
 		}
 
 		// Skip paths already claimed by multi-disc games
