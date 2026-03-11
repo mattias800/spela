@@ -104,10 +104,21 @@ export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (mode: ScrapeMode = "new") =>
-      api.post<ScrapeStartResponse>(
-        mode !== "new" ? `/admin/scrape?mode=${mode}` : "/admin/scrape",
-      ),
+    mutationFn: ({
+      mode = "new",
+      console,
+    }: {
+      mode?: ScrapeMode;
+      console?: string;
+    }) => {
+      const params = new URLSearchParams();
+      if (mode !== "new") params.set("mode", mode);
+      if (console) params.set("console", console);
+      const qs = params.toString();
+      return api.post<ScrapeStartResponse>(
+        qs ? `/admin/scrape?${qs}` : "/admin/scrape",
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });

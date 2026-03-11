@@ -188,21 +188,26 @@ type ScrapeProgress struct {
 //   - "all": re-scrape every game
 //   - "fallback": re-scrape games that were only scraped via LibRetro fallback (no IGDB match)
 //
+// If consoleID is non-zero, only games belonging to that console are scraped.
 // If onProgress is non-nil, it is called after each game attempt with the current progress.
 // Returns the number of successes, the total number of games attempted, and any error.
-func (s *Scraper) ScrapeAll(mode string, onProgress func(ScrapeProgress)) (int, int, error) {
+func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
 	var games []db.Game
+	q := s.DB
+	if consoleID > 0 {
+		q = q.Where("console_id = ?", consoleID)
+	}
 	switch mode {
 	case "all":
-		if err := s.DB.Find(&games).Error; err != nil {
+		if err := q.Find(&games).Error; err != nil {
 			return 0, 0, fmt.Errorf("loading all games: %w", err)
 		}
 	case "fallback":
-		if err := s.DB.Where("scraper_id = 'libretro'").Find(&games).Error; err != nil {
+		if err := q.Where("scraper_id = 'libretro'").Find(&games).Error; err != nil {
 			return 0, 0, fmt.Errorf("loading fallback-scraped games: %w", err)
 		}
 	default:
-		if err := s.DB.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
+		if err := q.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
 			return 0, 0, fmt.Errorf("loading unscraped games: %w", err)
 		}
 	}
