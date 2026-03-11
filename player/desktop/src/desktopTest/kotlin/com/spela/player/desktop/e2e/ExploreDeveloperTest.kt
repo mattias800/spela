@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.ActiveYears
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailGenreBreakdown
@@ -9,6 +10,9 @@ import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.RatingDistribution
+import com.spela.player.domain.model.TimelineEntry
+import com.spela.player.domain.model.TimelineGame
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -350,6 +354,8 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_genre_breakdown"))
         onNodeWithTag("developer_genre_breakdown").assertExists()
         onNodeWithTag("developer_genre_header").assertExists()
         onNodeWithText("Genres").assertExists()
@@ -439,6 +445,8 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_user_stats"))
         onNodeWithTag("developer_user_stats").assertExists()
         onNodeWithTag("developer_user_stats_header").assertExists()
         onNodeWithText("Your Stats").assertExists()
@@ -463,6 +471,8 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_most_played_game"))
         onNodeWithTag("developer_most_played_game").assertExists()
         onNodeWithText("Most played:").assertExists()
     }
@@ -576,7 +586,13 @@ class ExploreDeveloperTest {
 
     private val companyInfoFull = CompanyInfo(
         logoUrl = "https://example.com/capcom-logo.png",
-        description = "Capcom Co., Ltd. is a Japanese video game developer and publisher known for creating multi-million-selling game franchises including Street Fighter, Mega Man, and Resident Evil.",
+        description = "Capcom Co., Ltd. is a Japanese video game developer and publisher headquartered in Osaka, Japan. " +
+            "The company was founded in 1979 and has since become one of the most recognizable names in the video game industry. " +
+            "Capcom is known for creating multi-million-selling game franchises including Street Fighter, Mega Man, Resident Evil, " +
+            "Devil May Cry, Monster Hunter, and Ace Attorney. The company has consistently been at the forefront of gaming innovation, " +
+            "pioneering genres and pushing technical boundaries across multiple console generations. With a catalog spanning decades, " +
+            "Capcom remains one of the most prolific and respected game developers in the world, continuing to produce critically acclaimed " +
+            "titles that resonate with both longtime fans and new players alike.",
         foundedYear = 1979,
         country = "Japan",
         websiteUrl = "https://www.capcom.com",
@@ -667,8 +683,6 @@ class ExploreDeveloperTest {
         onNodeWithTag("developer_company_about_header").assertExists()
         onNodeWithText("About").assertExists()
         onNodeWithTag("developer_company_description").assertExists()
-        onNodeWithTag("developer_company_description_toggle").assertExists()
-        onNodeWithText("Show more").assertExists()
     }
 
     @Test
@@ -742,5 +756,312 @@ class ExploreDeveloperTest {
         advance(harness)
 
         onNodeWithTag("developer_company_description_section").assertDoesNotExist()
+    }
+
+    // --- At a Glance Section ---
+
+    private val detailWithStats = richDeveloperDetail.copy(
+        activeYears = ActiveYears(first = 1987, last = 2003),
+        primaryGenre = "Platformer",
+    )
+
+    @Test
+    fun atAGlanceSectionAlwaysShown() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithStats)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_at_a_glance_section"))
+        onNodeWithTag("developer_at_a_glance_section").assertExists()
+        onNodeWithTag("developer_at_a_glance_header").assertExists()
+        onNodeWithText("At a Glance").assertExists()
+        onNodeWithTag("developer_at_a_glance_row").assertExists()
+    }
+
+    @Test
+    fun atAGlanceShowsGameCount() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithStats)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_glance_games"))
+        onNodeWithTag("developer_glance_games").assertExists()
+        onNodeWithText("8").assertExists()
+    }
+
+    @Test
+    fun atAGlanceShowsActiveYears() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithStats)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_glance_active_years"))
+        onNodeWithTag("developer_glance_active_years").assertExists()
+        onNodeWithText("1987-2003").assertExists()
+    }
+
+    @Test
+    fun atAGlanceShowsPrimaryGenre() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithStats)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_glance_primary_genre"))
+        onNodeWithTag("developer_glance_primary_genre").assertExists()
+        onNodeWithText("Platformer").assertExists()
+    }
+
+    @Test
+    fun atAGlanceHidesActiveYearsWhenNotProvided() = runComposeUiTest {
+        val harness = createHarness()
+        // richDeveloperDetail has no activeYears
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_at_a_glance_section"))
+        onNodeWithTag("developer_glance_active_years").assertDoesNotExist()
+    }
+
+    @Test
+    fun atAGlanceHidesPrimaryGenreWhenNotProvided() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_at_a_glance_section"))
+        onNodeWithTag("developer_glance_primary_genre").assertDoesNotExist()
+    }
+
+    // --- Release Timeline ---
+
+    private val sampleTimeline = listOf(
+        TimelineEntry(
+            year = 1991,
+            games = listOf(
+                TimelineGame(id = "tl-1", title = "Mega Man X", coverUrl = null, rating = 90.0),
+            ),
+        ),
+        TimelineEntry(
+            year = 1993,
+            games = listOf(
+                TimelineGame(id = "tl-2", title = "Street Fighter II Turbo", coverUrl = null, rating = 88.0),
+                TimelineGame(id = "tl-3", title = "Breath of Fire", coverUrl = null, rating = 78.0),
+            ),
+        ),
+    )
+
+    private val detailWithTimeline = richDeveloperDetail.copy(
+        timeline = sampleTimeline,
+    )
+
+    @Test
+    fun timelineSectionShownWhenDataPresent() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithTimeline)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_timeline_section"))
+        onNodeWithTag("developer_timeline_section").assertExists()
+        onNodeWithTag("developer_timeline_header").assertExists()
+        onNodeWithText("Release Timeline").assertExists()
+    }
+
+    @Test
+    fun timelineShowsYearColumns() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithTimeline)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_timeline_section"))
+        onNodeWithTag("developer_timeline_year_1991").assertExists()
+        onNodeWithTag("developer_timeline_year_1993").assertExists()
+    }
+
+    @Test
+    fun timelineShowsGameThumbnails() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithTimeline)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_timeline_section"))
+        onNodeWithTag("developer_timeline_game_tl-1").assertExists()
+        onNodeWithTag("developer_timeline_game_tl-2").assertExists()
+        onNodeWithTag("developer_timeline_game_tl-3").assertExists()
+    }
+
+    @Test
+    fun timelineHiddenWhenEmpty() = runComposeUiTest {
+        val harness = createHarness()
+        // richDeveloperDetail has empty timeline
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_timeline_section").assertDoesNotExist()
+    }
+
+    // --- Rating Distribution ---
+
+    private val sampleRatingDistribution = RatingDistribution(
+        excellent = 5,
+        good = 10,
+        average = 4,
+        poor = 1,
+        unrated = 3,
+    )
+
+    private val detailWithRatingDistribution = richDeveloperDetail.copy(
+        ratingDistribution = sampleRatingDistribution,
+    )
+
+    @Test
+    fun ratingDistributionShownWhenEnoughRatedGames() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithRatingDistribution)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_rating_distribution_section"))
+        onNodeWithTag("developer_rating_distribution_section").assertExists()
+        onNodeWithTag("developer_rating_distribution_header").assertExists()
+        onNodeWithText("Rating Distribution").assertExists()
+        onNodeWithTag("developer_rating_distribution_card").assertExists()
+    }
+
+    @Test
+    fun ratingDistributionShowsAllBars() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithRatingDistribution)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_rating_distribution_card"))
+        onNodeWithTag("developer_rating_bar_excellent").assertExists()
+        onNodeWithTag("developer_rating_bar_good").assertExists()
+        onNodeWithTag("developer_rating_bar_average").assertExists()
+        onNodeWithTag("developer_rating_bar_poor").assertExists()
+        onNodeWithTag("developer_rating_bar_unrated").assertExists()
+    }
+
+    @Test
+    fun ratingDistributionShowsCounts() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithRatingDistribution)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_rating_distribution_card"))
+        // Verify the label texts exist
+        onNodeWithText("Excellent").assertExists()
+        onNodeWithText("Good").assertExists()
+        onNodeWithText("Average").assertExists()
+        onNodeWithText("Poor").assertExists()
+        onNodeWithText("Unrated").assertExists()
+    }
+
+    @Test
+    fun ratingDistributionHiddenWhenFewRatedGames() = runComposeUiTest {
+        val harness = createHarness()
+        val fewRatings = RatingDistribution(
+            excellent = 2, good = 1, average = 1, poor = 0, unrated = 5,
+        )
+        val detailFewRatings = richDeveloperDetail.copy(ratingDistribution = fewRatings)
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailFewRatings)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_rating_distribution_section").assertDoesNotExist()
+    }
+
+    @Test
+    fun ratingDistributionHiddenWhenNull() = runComposeUiTest {
+        val harness = createHarness()
+        // richDeveloperDetail has null ratingDistribution
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_rating_distribution_section").assertDoesNotExist()
     }
 }

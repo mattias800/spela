@@ -1120,6 +1120,31 @@ export interface CompanyInfo {
   wikipediaUrl?: string;
 }
 
+export interface ActiveYears {
+  first: number;
+  last: number;
+}
+
+export interface RatingDistribution {
+  excellent: number;
+  good: number;
+  average: number;
+  poor: number;
+  unrated: number;
+}
+
+export interface TimelineGame {
+  id: string;
+  title: string;
+  coverUrl: string;
+  rating: number;
+}
+
+export interface TimelineEntry {
+  year: number;
+  games: TimelineGame[];
+}
+
 export interface DeveloperDetailResponse {
   name: string;
   gameCount: number;
@@ -1133,6 +1158,10 @@ export interface DeveloperDetailResponse {
   userStats?: EntityUserStats;
   publishers?: NameCount[];
   companyInfo?: CompanyInfo;
+  activeYears?: ActiveYears;
+  ratingDistribution?: RatingDistribution;
+  primaryGenre?: string;
+  timeline?: TimelineEntry[];
 }
 
 export interface PublisherDetailResponse {
@@ -1148,6 +1177,10 @@ export interface PublisherDetailResponse {
   userStats?: EntityUserStats;
   developers?: NameCount[];
   companyInfo?: CompanyInfo;
+  activeYears?: ActiveYears;
+  ratingDistribution?: RatingDistribution;
+  primaryGenre?: string;
+  timeline?: TimelineEntry[];
 }
 
 export interface DeveloperSpotlightResponse {

@@ -1212,6 +1212,35 @@ data class DeveloperDetailPublisherDto(
 )
 
 @Serializable
+data class ActiveYearsDto(
+    val first: Int = 0,
+    val last: Int = 0,
+)
+
+@Serializable
+data class RatingDistributionDto(
+    val excellent: Int = 0,
+    val good: Int = 0,
+    val average: Int = 0,
+    val poor: Int = 0,
+    val unrated: Int = 0,
+)
+
+@Serializable
+data class TimelineGameDto(
+    val id: String = "",
+    val title: String = "",
+    val coverUrl: String? = null,
+    val rating: Double = 0.0,
+)
+
+@Serializable
+data class TimelineEntryDto(
+    val year: Int = 0,
+    val games: List<TimelineGameDto> = emptyList(),
+)
+
+@Serializable
 data class DeveloperDetailResponseDto(
     val name: String,
     val gameCount: Int,
@@ -1225,6 +1254,10 @@ data class DeveloperDetailResponseDto(
     val userStats: DeveloperDetailUserStatsDto? = null,
     val publishers: List<DeveloperDetailPublisherDto> = emptyList(),
     val games: List<GameDto>,
+    val activeYears: ActiveYearsDto? = null,
+    val ratingDistribution: RatingDistributionDto? = null,
+    val primaryGenre: String? = null,
+    val timeline: List<TimelineEntryDto> = emptyList(),
 )
 
 @Serializable

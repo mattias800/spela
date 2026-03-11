@@ -165,6 +165,33 @@ data class CompanyInfo(
     val wikipediaUrl: String? = null,
 )
 
+data class ActiveYears(
+    val first: Int,
+    val last: Int,
+)
+
+data class RatingDistribution(
+    val excellent: Int,
+    val good: Int,
+    val average: Int,
+    val poor: Int,
+    val unrated: Int,
+) {
+    val totalRated: Int get() = excellent + good + average + poor
+}
+
+data class TimelineGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String?,
+    val rating: Double,
+)
+
+data class TimelineEntry(
+    val year: Int,
+    val games: List<TimelineGame>,
+)
+
 data class DeveloperDetail(
     val name: String,
     val gameCount: Int,
@@ -178,6 +205,10 @@ data class DeveloperDetail(
     val userStats: DeveloperDetailUserStats? = null,
     val publishers: List<DeveloperDetailPublisher> = emptyList(),
     val games: List<Game>,
+    val activeYears: ActiveYears? = null,
+    val ratingDistribution: RatingDistribution? = null,
+    val primaryGenre: String? = null,
+    val timeline: List<TimelineEntry> = emptyList(),
 )
 
 data class DeveloperSpotlight(

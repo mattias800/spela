@@ -476,4 +476,149 @@ describe("DeveloperDetailPage", () => {
     expect(logo).toHaveAttribute("src", "/images/companies/capcom-logo.png");
     expect(screen.queryByTestId("developer-avatar")).not.toBeInTheDocument();
   });
+
+  // --- At a Glance section ---
+
+  it("renders at-a-glance row with basic stats", () => {
+    renderPage();
+    const row = screen.getByTestId("at-a-glance-row");
+    expect(row).toBeInTheDocument();
+    expect(screen.getByTestId("glance-total-games")).toHaveTextContent("5");
+    expect(screen.getByTestId("glance-platforms")).toHaveTextContent("2");
+    expect(screen.getByTestId("glance-avg-rating")).toHaveTextContent("88.5");
+  });
+
+  it("renders at-a-glance with active years when provided", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        activeYears: { first: 1987, last: 2003 },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const pill = screen.getByTestId("glance-active-years");
+    expect(pill).toHaveTextContent("1987");
+    expect(pill).toHaveTextContent("2003");
+  });
+
+  it("renders at-a-glance with primary genre when provided", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        primaryGenre: "Platformer",
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("glance-primary-genre")).toHaveTextContent(
+      "Platformer",
+    );
+  });
+
+  it("hides active years pill when not provided", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("glance-active-years"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- Release Timeline section ---
+
+  it("renders release timeline when timeline data is provided", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        timeline: [
+          {
+            year: 1992,
+            games: [
+              { id: "g1", title: "Mega Man X", coverUrl: "/covers/mmx.jpg", rating: 95 },
+            ],
+          },
+          {
+            year: 1994,
+            games: [
+              { id: "g2", title: "Mega Man X2", coverUrl: "/covers/mmx2.jpg", rating: 88 },
+            ],
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("release-timeline")).toBeInTheDocument();
+    expect(screen.getByText("1992")).toBeInTheDocument();
+    expect(screen.getByText("1994")).toBeInTheDocument();
+  });
+
+  it("hides release timeline when no timeline data", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("release-timeline"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides release timeline when timeline is empty", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        timeline: [],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("release-timeline"),
+    ).not.toBeInTheDocument();
+  });
+
+  // --- Rating Distribution section ---
+
+  it("renders rating distribution when data is provided with 5+ rated games", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        ratingDistribution: {
+          excellent: 3,
+          good: 2,
+          average: 1,
+          poor: 1,
+          unrated: 0,
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("rating-distribution")).toBeInTheDocument();
+    expect(screen.getByTestId("rating-bar-excellent")).toHaveTextContent("3");
+    expect(screen.getByTestId("rating-bar-good")).toHaveTextContent("2");
+  });
+
+  it("hides rating distribution when not provided", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("rating-distribution"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides rating distribution when fewer than 5 rated games", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        ratingDistribution: {
+          excellent: 2,
+          good: 1,
+          average: 0,
+          poor: 0,
+          unrated: 10,
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(
+      screen.queryByTestId("rating-distribution"),
+    ).not.toBeInTheDocument();
+  });
 });
