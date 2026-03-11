@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Game, GamesResponse, GameFilters } from "@/types/api";
+import type { Game, GamesResponse, GameFilters, ReplaceROMResponse } from "@/types/api";
 
 export function useGames(filters?: GameFilters) {
   const params = new URLSearchParams();
@@ -92,6 +92,25 @@ export function useScrapeIfNeeded() {
   return useMutation({
     mutationFn: (gameId: string) =>
       api.post(`/games/${gameId}/scrape-if-needed`),
+  });
+}
+
+export function useReplaceRom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ gameId, file }: { gameId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.uploadPut<ReplaceROMResponse>(
+        `/admin/games/${gameId}/replace-rom`,
+        formData,
+      );
+    },
+    onSuccess: (_data, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+    },
   });
 }
 

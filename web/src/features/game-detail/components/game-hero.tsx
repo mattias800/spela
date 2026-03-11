@@ -16,6 +16,7 @@ import {
   Search,
   Download,
   Monitor,
+  Replace,
 } from "lucide-react";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
@@ -48,6 +49,7 @@ interface GameHeroProps {
   onAddToCollection?: () => void;
   onFixMatch?: () => void;
   onDownloadRom?: () => void;
+  onReplaceRom?: () => void;
 }
 
 export function GameHero({
@@ -68,6 +70,7 @@ export function GameHero({
   onAddToCollection,
   onFixMatch,
   onDownloadRom,
+  onReplaceRom,
 }: GameHeroProps) {
   const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
@@ -123,6 +126,15 @@ export function GameHero({
             label: "Fix Match",
             icon: <Search className="h-4 w-4" />,
             onClick: onFixMatch,
+          },
+        ]
+      : []),
+    ...(onReplaceRom
+      ? [
+          {
+            label: "Replace ROM",
+            icon: <Replace className="h-4 w-4" />,
+            onClick: onReplaceRom,
           },
         ]
       : []),

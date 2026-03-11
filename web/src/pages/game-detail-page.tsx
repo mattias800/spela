@@ -39,6 +39,7 @@ import { useGameSeries, useGameFranchises } from "@/hooks/use-explore";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
+import { ReplaceRomModal } from "@/features/game-detail/components/replace-rom-modal";
 import { api } from "@/lib/api-client";
 import type { Collection } from "@/types/api";
 
@@ -123,6 +124,7 @@ export function GameDetailPage() {
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
+  const [showReplaceRom, setShowReplaceRom] = useState(false);
 
   useEffect(() => {
     if (game && game.scrapeAttempts === 0) {
@@ -212,6 +214,11 @@ export function GameDetailPage() {
             : undefined
         }
         onDownloadRom={!isPlayable ? handleDownloadRom : undefined}
+        onReplaceRom={
+          isAdmin && game.verificationStatus !== "verified"
+            ? () => setShowReplaceRom(true)
+            : undefined
+        }
       />
 
       <ScrapeMatchModal
@@ -221,6 +228,12 @@ export function GameDetailPage() {
         currentScraperId={game.scraperId}
         open={showScrapeMatch}
         onClose={() => setShowScrapeMatch(false)}
+      />
+
+      <ReplaceRomModal
+        gameId={game.id}
+        open={showReplaceRom}
+        onClose={() => setShowReplaceRom(false)}
       />
 
       <CollectionPickerModal

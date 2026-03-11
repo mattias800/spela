@@ -335,6 +335,7 @@ export type ApiPutPath = WithQuery<
   | "/admin/settings"
   | `/admin/games/${string}/covers`
   | `/admin/games/${string}/verification-tag`
+  | `/admin/games/${string}/replace-rom`
 >;
 
 // ── DELETE ────────────────────────────────────────────────────────────────────

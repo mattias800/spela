@@ -140,6 +140,9 @@ export const api = {
   upload: <T>(path: ApiPostPath, formData: FormData) =>
     request<T>(path, { method: "POST", body: formData }),
 
+  uploadPut: <T>(path: ApiPutPath, formData: FormData) =>
+    request<T>(path, { method: "PUT", body: formData }),
+
   setTokens,
   clearTokens,
   getAccessToken,
