@@ -121,6 +121,21 @@ var ConsoleExtMap = map[string]string{
 	".xci":  "NSW",
 	".mx1":  "MSX1",
 	".mx2":  "MSX2",
+	".gg":   "GG",
+	".vb":   "VB",
+	".vboy": "VB",
+	".lnx":  "LYNX",
+	".ngp":  "NGP",
+	".ngc":  "NGP",
+	".ws":   "WS",
+	".wsc":  "WS",
+	".col":  "CV",
+	".min":  "PKMN",
+	".j64":  "JAG",
+	".jag":  "JAG",
+	".32x":  "32X",
+	".a52":  "A52",
+	".a78":  "A78",
 }
 
 // RomExtensions is the set of file extensions recognized as ROM/disc files.
@@ -262,13 +277,15 @@ var consoleNotes = map[string]string{
 func ConsoleReadmeContent(c db.Console) string {
 	var b strings.Builder
 	b.WriteString(c.Name)
+	headerLen := len(c.Name)
 	if c.Abbreviation != "" {
 		b.WriteString(" (")
 		b.WriteString(c.Abbreviation)
 		b.WriteString(")")
+		headerLen += len(c.Abbreviation) + 3 // " (" + ")"
 	}
 	b.WriteString("\n")
-	b.WriteString(strings.Repeat("=", len(c.Name)+len(c.Abbreviation)+3))
+	b.WriteString(strings.Repeat("=", headerLen))
 	b.WriteString("\n\n")
 
 	if c.Extensions != "" {
