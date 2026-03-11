@@ -91,7 +91,8 @@ type Game struct {
 	Developer     string         `gorm:"size:255" json:"developer,omitempty"`
 	Publisher     string         `gorm:"size:255" json:"publisher,omitempty"`
 	ReleaseDate   string         `gorm:"size:32" json:"releaseDate,omitempty"`
-	Genre         string         `gorm:"size:128" json:"genre,omitempty"`
+	Genre         string         `gorm:"size:512" json:"genre,omitempty"`
+	GameModes     string         `gorm:"size:255" json:"gameModes,omitempty"`
 	Players       int            `json:"players,omitempty"`
 	Rating        float64        `json:"rating,omitempty"`
 	CoreOverride        string         `gorm:"size:128" json:"coreOverride,omitempty"`
@@ -105,7 +106,17 @@ type Game struct {
 	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
 	Region              string         `gorm:"size:128" json:"region,omitempty"`
 	CRC32               string         `gorm:"size:16" json:"-"`
-	Screenshots         []GameScreenshot `gorm:"foreignKey:GameID" json:"-"`
+	Screenshots         []GameScreenshot  `gorm:"foreignKey:GameID" json:"-"`
+	ReleaseDates        []GameReleaseDate `gorm:"foreignKey:GameID" json:"-"`
+}
+
+// GameReleaseDate represents a regional release date for a game.
+type GameReleaseDate struct {
+	ID       uint   `gorm:"primarykey" json:"id"`
+	GameID   uint   `gorm:"uniqueIndex:idx_game_release_region;not null" json:"gameId"`
+	Region   string `gorm:"uniqueIndex:idx_game_release_region;size:64;not null" json:"region"`
+	Date     string `gorm:"size:32" json:"date"`
+	Platform string `gorm:"size:128" json:"platform,omitempty"`
 }
 
 // GameScreenshot represents a single screenshot image for a game.

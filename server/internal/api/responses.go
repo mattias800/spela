@@ -57,9 +57,11 @@ type GameResponse struct {
 	Developer      string         `json:"developer"`
 	Publisher      string         `json:"publisher"`
 	ReleaseDate    string         `json:"releaseDate"`
-	Genre          string         `json:"genre"`
-	Players        int            `json:"players"`
-	Rating         float64        `json:"rating"`
+	Genre          string                `json:"genre"`
+	GameModes      string                `json:"gameModes,omitempty"`
+	Players        int                   `json:"players"`
+	Rating         float64               `json:"rating"`
+	ReleaseDates   []ReleaseDateResponse `json:"releaseDates,omitempty"`
 	Playable            bool           `json:"playable"`
 	CoreOverride        string         `json:"coreOverride,omitempty"`
 	ScraperID           string         `json:"scraperId,omitempty"`
@@ -78,6 +80,13 @@ type GameResponse struct {
 	AverageRating  float64        `json:"averageRating"`
 	RatingCount    int64          `json:"ratingCount"`
 	UserRating     *int           `json:"userRating,omitempty"`
+}
+
+// ReleaseDateResponse represents a regional release date in the API response.
+type ReleaseDateResponse struct {
+	Region   string `json:"region"`
+	Date     string `json:"date"`
+	Platform string `json:"platform,omitempty"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.
@@ -278,6 +287,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Publisher:       g.Publisher,
 		ReleaseDate:    g.ReleaseDate,
 		Genre:          g.Genre,
+		GameModes:      g.GameModes,
 		Players:        g.Players,
 		Rating:         g.Rating,
 		Playable:            g.Console.Playable,
@@ -288,6 +298,18 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		VerificationStatus:  g.VerificationStatus,
 		VerificationTag:     g.VerificationTag,
 		Region:              g.Region,
+	}
+
+	// Map release dates
+	if len(g.ReleaseDates) > 0 {
+		resp.ReleaseDates = make([]ReleaseDateResponse, len(g.ReleaseDates))
+		for i, rd := range g.ReleaseDates {
+			resp.ReleaseDates[i] = ReleaseDateResponse{
+				Region:   rd.Region,
+				Date:     rd.Date,
+				Platform: rd.Platform,
+			}
+		}
 	}
 
 	if data != nil {

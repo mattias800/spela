@@ -75,6 +75,8 @@ export interface Game {
   publisher?: string;
   releaseDate?: string;
   genre?: string;
+  gameModes?: string;
+  releaseDates?: ReleaseDateInfo[];
   players?: number;
   rating?: number;
   coreOverride?: string;
@@ -96,6 +98,12 @@ export interface Game {
   totalPlayTime: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReleaseDateInfo {
+  region: string;
+  date: string;
+  platform?: string;
 }
 
 // Backend stores settings as flat key-value pairs

@@ -200,6 +200,51 @@ type Game struct {
 	FirstReleaseDate  int64            `json:"first_release_date"`
 	AggregatedRating  float64          `json:"aggregated_rating"`
 	GameModes         []GameMode       `json:"game_modes"`
+	ReleaseDates      []ReleaseDate    `json:"release_dates"`
+}
+
+// ReleaseDate represents an IGDB release date with region info.
+type ReleaseDate struct {
+	ID       int           `json:"id"`
+	Date     int64         `json:"date"`
+	Region   int           `json:"region"`
+	Human    string        `json:"human"`
+	Platform *ReleasePlatform `json:"platform"`
+}
+
+// ReleasePlatform is the platform info within a release date.
+type ReleasePlatform struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// RegionName maps IGDB release date region codes to human-readable names.
+// See https://api-docs.igdb.com/#region
+func RegionName(regionCode int) string {
+	switch regionCode {
+	case 1:
+		return "Europe"
+	case 2:
+		return "North America"
+	case 3:
+		return "Australia"
+	case 4:
+		return "New Zealand"
+	case 5:
+		return "Japan"
+	case 6:
+		return "China"
+	case 7:
+		return "Asia"
+	case 8:
+		return "Worldwide"
+	case 9:
+		return "Korea"
+	case 10:
+		return "Brazil"
+	default:
+		return ""
+	}
 }
 
 // Image represents an IGDB image with an image_id for URL construction.
@@ -249,7 +294,7 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`search "%s"; fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name; where platforms = (%d); limit 5;`,
+		`search "%s"; fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -309,7 +354,7 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 
 	// Case-insensitive exact match using ~ operator
 	query := fmt.Sprintf(
-		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name; where name ~ "%s" & platforms = (%d); limit 5;`,
+		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -367,7 +412,7 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name; where id = %d; limit 1;`,
+		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where id = %d; limit 1;`,
 		igdbID,
 	)
 
