@@ -45,6 +45,15 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScreenshotURL = ""
 		game.LibRetroCoverURL = ""
 		game.IGDBCoverURL = ""
+		// Clear IGDB-sourced scalar metadata so new match can overwrite
+		game.Storyline = ""
+		game.TotalRating = 0
+		game.TotalRatingCount = 0
+		game.IGDBUserRating = 0
+		game.IGDBUserRatingCount = 0
+		game.TimeToBeatHastily = 0
+		game.TimeToBeatNormally = 0
+		game.TimeToBeatCompletely = 0
 		// Delete old normalized screenshots and release dates
 		s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
 		s.DB.Where("game_id = ?", game.ID).Delete(&db.GameReleaseDate{})
@@ -270,21 +279,57 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	if match.Summary != "" {
 		game.Description = match.Summary
 	}
+	if match.Storyline != "" && game.Storyline == "" {
+		game.Storyline = match.Storyline
+	}
 	if match.AggregatedRating > 0 {
 		game.Rating = match.AggregatedRating
+	}
+	if match.TotalRating > 0 && game.TotalRating == 0 {
+		game.TotalRating = match.TotalRating
+	}
+	if match.TotalRatingCount > 0 && game.TotalRatingCount == 0 {
+		game.TotalRatingCount = match.TotalRatingCount
+	}
+	if match.IGDBRating > 0 && game.IGDBUserRating == 0 {
+		game.IGDBUserRating = match.IGDBRating
+	}
+	if match.IGDBRatingCount > 0 && game.IGDBUserRatingCount == 0 {
+		game.IGDBUserRatingCount = match.IGDBRatingCount
+	}
+	if match.TimeToBeat != nil {
+		if match.TimeToBeat.Hastily > 0 && game.TimeToBeatHastily == 0 {
+			game.TimeToBeatHastily = match.TimeToBeat.Hastily
+		}
+		if match.TimeToBeat.Normally > 0 && game.TimeToBeatNormally == 0 {
+			game.TimeToBeatNormally = match.TimeToBeat.Normally
+		}
+		if match.TimeToBeat.Completely > 0 && game.TimeToBeatCompletely == 0 {
+			game.TimeToBeatCompletely = match.TimeToBeat.Completely
+		}
 	}
 	if match.FirstReleaseDate > 0 {
 		t := time.Unix(match.FirstReleaseDate, 0)
 		game.ReleaseDate = t.Format("2006-01-02")
 	}
 
-	// Extract developer and publisher
+	// Extract developer and publisher, store company logos
 	for _, ic := range match.InvolvedCompanies {
 		if ic.Developer && game.Developer == "" {
 			game.Developer = ic.Company.Name
 		}
 		if ic.Publisher && game.Publisher == "" {
 			game.Publisher = ic.Company.Name
+		}
+		// Store company logo if available
+		if ic.Company.Logo != nil && ic.Company.Logo.ImageID != "" {
+			logoURL := igdb.CompanyLogoURL(ic.Company.Logo.ImageID)
+			var existing db.Company
+			if err := s.DB.Where("igdb_company_id = ?", ic.Company.ID).First(&existing).Error; err == nil {
+				if existing.LogoURL == "" {
+					s.DB.Model(&existing).Update("logo_url", logoURL)
+				}
+			}
 		}
 	}
 
@@ -428,12 +473,23 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	game.Publisher = ""
 	game.Genre = ""
 	game.GameModes = ""
+	game.Storyline = ""
 	game.Rating = 0
+	game.TotalRating = 0
+	game.TotalRatingCount = 0
+	game.IGDBUserRating = 0
+	game.IGDBUserRatingCount = 0
+	game.TimeToBeatHastily = 0
+	game.TimeToBeatNormally = 0
+	game.TimeToBeatCompletely = 0
 	game.Players = 0
 	game.ReleaseDate = ""
-	// Delete old IGDB screenshots and release dates
+	// Delete old IGDB screenshots, release dates, videos, language supports, age ratings
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameScreenshot{})
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameReleaseDate{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameVideo{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameLanguageSupport{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameAgeRating{})
 
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 

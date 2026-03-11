@@ -45,7 +45,7 @@ func setupBiosTestEnv(t *testing.T) (*storage.Storage, *gorm.DB, *gin.Engine) {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameReleaseDate{}))
+	require.NoError(t, database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{}))
 	require.NoError(t, db.SeedConsoles(database))
 
 	gin.SetMode(gin.TestMode)

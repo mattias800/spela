@@ -33,6 +33,9 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GamePlayerPerspective{})
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameFranchise{})
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameArtworkImage{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameVideo{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameLanguageSupport{})
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameAgeRating{})
 
 	// Store themes
 	for _, t := range enrichment.Themes {
@@ -104,6 +107,44 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 			IGDBImageID: a.ImageID,
 			Width:       a.Width,
 			Height:      a.Height,
+		})
+	}
+
+	// Store videos
+	for _, v := range enrichment.Videos {
+		if v.VideoID == "" {
+			continue
+		}
+		s.DB.Create(&db.GameVideo{
+			GameID:  game.ID,
+			VideoID: v.VideoID,
+			Name:    v.Name,
+		})
+	}
+
+	// Store language supports
+	for _, ls := range enrichment.LanguageSupports {
+		if ls.Language.Name == "" || ls.LanguageSupportType.Name == "" {
+			continue
+		}
+		s.DB.Create(&db.GameLanguageSupport{
+			GameID:      game.ID,
+			Language:    ls.Language.Name,
+			SupportType: ls.LanguageSupportType.Name,
+		})
+	}
+
+	// Store age ratings
+	for _, ar := range enrichment.AgeRatings {
+		categoryName := igdb.AgeRatingCategoryName(ar.Category)
+		label := igdb.AgeRatingLabel(ar.Category, ar.Rating)
+		if categoryName == "" || label == "" {
+			continue
+		}
+		s.DB.Create(&db.GameAgeRating{
+			GameID:   game.ID,
+			Category: categoryName,
+			Rating:   label,
 		})
 	}
 

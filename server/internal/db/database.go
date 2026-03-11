@@ -168,6 +168,10 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameArtworkImage{},
 		// Regional release dates
 		&GameReleaseDate{},
+		// Videos, language supports, age ratings
+		&GameVideo{},
+		&GameLanguageSupport{},
+		&GameAgeRating{},
 		// Phase 13: Saved Searches
 		&SavedSearch{},
 	)
@@ -547,6 +551,45 @@ func mergeGameData(database *gorm.DB, keeperID, dupID uint) {
 		}
 	}
 
+	// GameVideo — move, skip if keeper already has same video
+	var dupVideos []GameVideo
+	database.Where("game_id = ?", dupID).Find(&dupVideos)
+	for _, v := range dupVideos {
+		var count int64
+		database.Model(&GameVideo{}).Where("game_id = ? AND video_id = ?", keeperID, v.VideoID).Count(&count)
+		if count == 0 {
+			database.Model(&v).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&v)
+		}
+	}
+
+	// GameLanguageSupport — move, skip if keeper already has same entry
+	var dupLangSupports []GameLanguageSupport
+	database.Where("game_id = ?", dupID).Find(&dupLangSupports)
+	for _, ls := range dupLangSupports {
+		var count int64
+		database.Model(&GameLanguageSupport{}).Where("game_id = ? AND language = ? AND support_type = ?", keeperID, ls.Language, ls.SupportType).Count(&count)
+		if count == 0 {
+			database.Model(&ls).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&ls)
+		}
+	}
+
+	// GameAgeRating — move, skip if keeper already has same category
+	var dupAgeRatings []GameAgeRating
+	database.Where("game_id = ?", dupID).Find(&dupAgeRatings)
+	for _, ar := range dupAgeRatings {
+		var count int64
+		database.Model(&GameAgeRating{}).Where("game_id = ? AND category = ?", keeperID, ar.Category).Count(&count)
+		if count == 0 {
+			database.Model(&ar).Update("game_id", keeperID)
+		} else {
+			database.Unscoped().Delete(&ar)
+		}
+	}
+
 	// GameSeriesEntry — update any entries pointing to the duplicate game
 	database.Model(&GameSeriesEntry{}).Where("game_id = ?", dupID).Update("game_id", keeperID)
 
@@ -602,6 +645,30 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 	}
 	if keeper.GameModes == "" && dup.GameModes != "" {
 		updates["game_modes"] = dup.GameModes
+	}
+	if keeper.Storyline == "" && dup.Storyline != "" {
+		updates["storyline"] = dup.Storyline
+	}
+	if keeper.TotalRating == 0 && dup.TotalRating > 0 {
+		updates["total_rating"] = dup.TotalRating
+	}
+	if keeper.TotalRatingCount == 0 && dup.TotalRatingCount > 0 {
+		updates["total_rating_count"] = dup.TotalRatingCount
+	}
+	if keeper.IGDBUserRating == 0 && dup.IGDBUserRating > 0 {
+		updates["igdb_user_rating"] = dup.IGDBUserRating
+	}
+	if keeper.IGDBUserRatingCount == 0 && dup.IGDBUserRatingCount > 0 {
+		updates["igdb_user_rating_count"] = dup.IGDBUserRatingCount
+	}
+	if keeper.TimeToBeatHastily == 0 && dup.TimeToBeatHastily > 0 {
+		updates["time_to_beat_hastily"] = dup.TimeToBeatHastily
+	}
+	if keeper.TimeToBeatNormally == 0 && dup.TimeToBeatNormally > 0 {
+		updates["time_to_beat_normally"] = dup.TimeToBeatNormally
+	}
+	if keeper.TimeToBeatCompletely == 0 && dup.TimeToBeatCompletely > 0 {
+		updates["time_to_beat_completely"] = dup.TimeToBeatCompletely
 	}
 	if keeper.ReleaseDate == "" && dup.ReleaseDate != "" {
 		updates["release_date"] = dup.ReleaseDate

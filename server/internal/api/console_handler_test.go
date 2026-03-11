@@ -31,7 +31,7 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 	})
 	require.NoError(t, err)
 
-	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{})
+	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
 	require.NoError(t, err)
 
 	err = db.SeedConsoles(database)
@@ -244,7 +244,7 @@ func setupTopListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 	})
 	require.NoError(t, err)
 
-	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{})
+	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
 	require.NoError(t, err)
 
 	err = db.SeedConsoles(database)

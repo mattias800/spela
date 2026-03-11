@@ -92,10 +92,18 @@ type Game struct {
 	Publisher     string         `gorm:"size:255" json:"publisher,omitempty"`
 	ReleaseDate   string         `gorm:"size:32" json:"releaseDate,omitempty"`
 	Genre         string         `gorm:"size:512" json:"genre,omitempty"`
-	GameModes     string         `gorm:"size:255" json:"gameModes,omitempty"`
-	Players       int            `json:"players,omitempty"`
-	Rating        float64        `json:"rating,omitempty"`
-	CoreOverride        string         `gorm:"size:128" json:"coreOverride,omitempty"`
+	GameModes            string  `gorm:"size:255" json:"gameModes,omitempty"`
+	Storyline            string  `gorm:"type:text" json:"storyline,omitempty"`
+	TotalRating          float64 `json:"totalRating,omitempty"`
+	TotalRatingCount     int     `json:"totalRatingCount,omitempty"`
+	IGDBUserRating       float64 `json:"igdbUserRating,omitempty"`
+	IGDBUserRatingCount  int     `json:"igdbUserRatingCount,omitempty"`
+	TimeToBeatHastily    int     `json:"timeToBeatHastily,omitempty"`
+	TimeToBeatNormally   int     `json:"timeToBeatNormally,omitempty"`
+	TimeToBeatCompletely int     `json:"timeToBeatCompletely,omitempty"`
+	Players              int     `json:"players,omitempty"`
+	Rating               float64 `json:"rating,omitempty"`
+	CoreOverride         string  `gorm:"size:128" json:"coreOverride,omitempty"`
 	LibRetroCoverURL    string         `gorm:"size:512" json:"-"`
 	IGDBCoverURL        string         `gorm:"size:512" json:"-"`
 	CoverManuallySet    bool           `gorm:"default:false" json:"-"`
@@ -106,8 +114,11 @@ type Game struct {
 	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
 	Region              string         `gorm:"size:128" json:"region,omitempty"`
 	CRC32               string         `gorm:"size:16" json:"-"`
-	Screenshots         []GameScreenshot  `gorm:"foreignKey:GameID" json:"-"`
-	ReleaseDates        []GameReleaseDate `gorm:"foreignKey:GameID" json:"-"`
+	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
+	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`
+	Videos           []GameVideo           `gorm:"foreignKey:GameID" json:"-"`
+	LanguageSupports []GameLanguageSupport `gorm:"foreignKey:GameID" json:"-"`
+	AgeRatings       []GameAgeRating       `gorm:"foreignKey:GameID" json:"-"`
 }
 
 // GameReleaseDate represents a regional release date for a game.
@@ -117,6 +128,30 @@ type GameReleaseDate struct {
 	Region   string `gorm:"uniqueIndex:idx_game_release_region;size:64;not null" json:"region"`
 	Date     string `gorm:"size:32" json:"date"`
 	Platform string `gorm:"size:128" json:"platform,omitempty"`
+}
+
+// GameVideo stores a video associated with a game (typically YouTube).
+type GameVideo struct {
+	ID      uint   `gorm:"primarykey" json:"id"`
+	GameID  uint   `gorm:"uniqueIndex:idx_game_video;not null" json:"gameId"`
+	VideoID string `gorm:"uniqueIndex:idx_game_video;size:32;not null" json:"videoId"`
+	Name    string `gorm:"size:512" json:"name"`
+}
+
+// GameLanguageSupport stores a language support entry for a game.
+type GameLanguageSupport struct {
+	ID          uint   `gorm:"primarykey" json:"id"`
+	GameID      uint   `gorm:"uniqueIndex:idx_game_lang_support;not null" json:"gameId"`
+	Language    string `gorm:"uniqueIndex:idx_game_lang_support;size:128;not null" json:"language"`
+	SupportType string `gorm:"uniqueIndex:idx_game_lang_support;size:64;not null" json:"supportType"`
+}
+
+// GameAgeRating stores an age rating classification for a game.
+type GameAgeRating struct {
+	ID       uint   `gorm:"primarykey" json:"id"`
+	GameID   uint   `gorm:"uniqueIndex:idx_game_age_rating;not null" json:"gameId"`
+	Category string `gorm:"uniqueIndex:idx_game_age_rating;size:16;not null" json:"category"`
+	Rating   string `gorm:"size:32;not null" json:"rating"`
 }
 
 // GameScreenshot represents a single screenshot image for a game.

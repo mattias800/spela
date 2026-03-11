@@ -36,6 +36,7 @@ func setupIGDBMatchTestEnv(t *testing.T, tokenServerURL, igdbServerURL string) (
 		&db.User{}, &db.Console{}, &db.Game{}, &db.GameScreenshot{},
 		&db.GameDisc{}, &db.Favorite{}, &db.PlayHistory{}, &db.ServerSetting{},
 		&db.GameRating{}, &db.PlayLaterItem{}, &db.GameReleaseDate{},
+		&db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{},
 	))
 
 	if tokenServerURL != "" {
