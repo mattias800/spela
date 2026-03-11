@@ -262,7 +262,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 func (h *GameHandler) GetGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
-	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").Preload("ReleaseDates").First(&game, id).Error; err != nil {
+	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").Preload("ReleaseDates").Preload("Videos").Preload("LanguageSupports").Preload("AgeRatings").First(&game, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}

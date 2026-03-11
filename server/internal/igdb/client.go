@@ -193,14 +193,27 @@ type Game struct {
 	ID                int              `json:"id"`
 	Name              string           `json:"name"`
 	Summary           string           `json:"summary"`
+	Storyline         string           `json:"storyline"`
 	Cover             *Image           `json:"cover"`
 	Screenshots       []Image          `json:"screenshots"`
 	Genres            []Genre          `json:"genres"`
 	InvolvedCompanies []InvolvedCompany `json:"involved_companies"`
 	FirstReleaseDate  int64            `json:"first_release_date"`
 	AggregatedRating  float64          `json:"aggregated_rating"`
+	TotalRating       float64          `json:"total_rating"`
+	TotalRatingCount  int              `json:"total_rating_count"`
+	IGDBRating        float64          `json:"rating"`
+	IGDBRatingCount   int              `json:"rating_count"`
 	GameModes         []GameMode       `json:"game_modes"`
 	ReleaseDates      []ReleaseDate    `json:"release_dates"`
+	TimeToBeat        *TimeToBeat      `json:"time_to_beat"`
+}
+
+// TimeToBeat represents IGDB time-to-beat data in seconds.
+type TimeToBeat struct {
+	Hastily    int `json:"hastily"`
+	Normally   int `json:"normally"`
+	Completely int `json:"completely"`
 }
 
 // ReleaseDate represents an IGDB release date with region info.
@@ -270,6 +283,7 @@ type InvolvedCompany struct {
 type Company struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+	Logo *Image `json:"logo"`
 }
 
 // GameMode represents an IGDB game mode.
@@ -294,7 +308,7 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`search "%s"; fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = (%d); limit 5;`,
+		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -354,7 +368,7 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 
 	// Case-insensitive exact match using ~ operator
 	query := fmt.Sprintf(
-		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = (%d); limit 5;`,
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where name ~ "%s" & platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -412,7 +426,7 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name,summary,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where id = %d; limit 1;`,
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where id = %d; limit 1;`,
 		igdbID,
 	)
 
@@ -865,7 +879,84 @@ type GameEnrichment struct {
 	Franchises         []int                 `json:"franchises"`       // raw franchise IDs
 	CollectionID       *int                  `json:"collection_id"`    // IGDB collection (series) ID, nil if none
 	Artworks           []ArtworkData         `json:"artworks"`
+	Videos             []VideoData           `json:"videos"`
+	LanguageSupports   []LanguageSupportData `json:"language_supports"`
+	AgeRatings         []AgeRatingData       `json:"age_ratings"`
 }
+
+// VideoData holds an IGDB video entry (typically YouTube).
+type VideoData struct {
+	VideoID string `json:"video_id"`
+	Name    string `json:"name"`
+}
+
+// LanguageSupportData holds an IGDB language support entry.
+type LanguageSupportData struct {
+	Language            NameWrapper `json:"language"`
+	LanguageSupportType NameWrapper `json:"language_support_type"`
+}
+
+// NameWrapper is a simple struct for IGDB nested name fields.
+type NameWrapper struct {
+	Name string `json:"name"`
+}
+
+// AgeRatingData holds an IGDB age rating entry.
+type AgeRatingData struct {
+	Category int `json:"category"` // 1=ESRB, 2=PEGI
+	Rating   int `json:"rating"`   // IGDB enum value
+}
+
+// AgeRatingLabel returns a human-readable label for an IGDB age rating.
+func AgeRatingLabel(category, rating int) string {
+	if category == 1 { // ESRB
+		switch rating {
+		case 6:
+			return "RP"
+		case 7:
+			return "EC"
+		case 8:
+			return "E"
+		case 9:
+			return "E10+"
+		case 10:
+			return "T"
+		case 11:
+			return "M"
+		case 12:
+			return "AO"
+		}
+	}
+	if category == 2 { // PEGI
+		switch rating {
+		case 1:
+			return "PEGI 3"
+		case 2:
+			return "PEGI 7"
+		case 3:
+			return "PEGI 12"
+		case 4:
+			return "PEGI 16"
+		case 5:
+			return "PEGI 18"
+		}
+	}
+	return ""
+}
+
+// AgeRatingCategoryName returns the human-readable category name.
+func AgeRatingCategoryName(category int) string {
+	switch category {
+	case 1:
+		return "ESRB"
+	case 2:
+		return "PEGI"
+	default:
+		return ""
+	}
+}
+
+
 
 // EnrichmentNamedItem holds an IGDB entity with an ID and name.
 type EnrichmentNamedItem struct {
@@ -912,7 +1003,7 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields themes.name,keywords.name,player_perspectives.name,franchises,collection,artworks.image_id,artworks.width,artworks.height; where id = %d; limit 1;`,
+		`fields themes.name,keywords.name,player_perspectives.name,franchises,collection,artworks.image_id,artworks.width,artworks.height,videos.video_id,videos.name,language_supports.language.name,language_supports.language_support_type.name,age_ratings.category,age_ratings.rating; where id = %d; limit 1;`,
 		igdbID,
 	)
 
@@ -955,6 +1046,18 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 			Width   int    `json:"width"`
 			Height  int    `json:"height"`
 		} `json:"artworks"`
+		Videos []struct {
+			VideoID string `json:"video_id"`
+			Name    string `json:"name"`
+		} `json:"videos"`
+		LanguageSupports []struct {
+			Language            NameWrapper `json:"language"`
+			LanguageSupportType NameWrapper `json:"language_support_type"`
+		} `json:"language_supports"`
+		AgeRatings []struct {
+			Category int `json:"category"`
+			Rating   int `json:"rating"`
+		} `json:"age_ratings"`
 	}
 	if err := json.Unmarshal(body, &results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB enrichment response: %w", err)
@@ -981,12 +1084,33 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 			Height:  a.Height,
 		})
 	}
+	for _, v := range r.Videos {
+		enrichment.Videos = append(enrichment.Videos, VideoData{
+			VideoID: v.VideoID,
+			Name:    v.Name,
+		})
+	}
+	for _, ls := range r.LanguageSupports {
+		enrichment.LanguageSupports = append(enrichment.LanguageSupports, LanguageSupportData{
+			Language:            ls.Language,
+			LanguageSupportType: ls.LanguageSupportType,
+		})
+	}
+	for _, ar := range r.AgeRatings {
+		enrichment.AgeRatings = append(enrichment.AgeRatings, AgeRatingData{
+			Category: ar.Category,
+			Rating:   ar.Rating,
+		})
+	}
 
 	slog.Info("IGDB get game enrichment response", "igdbID", igdbID,
 		"themes", len(enrichment.Themes), "keywords", len(enrichment.Keywords),
 		"perspectives", len(enrichment.PlayerPerspectives),
 		"franchises", len(enrichment.Franchises),
-		"artworks", len(enrichment.Artworks))
+		"artworks", len(enrichment.Artworks),
+		"videos", len(enrichment.Videos),
+		"languageSupports", len(enrichment.LanguageSupports),
+		"ageRatings", len(enrichment.AgeRatings))
 
 	return enrichment, nil
 }

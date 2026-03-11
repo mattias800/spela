@@ -34,6 +34,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&db.GameTheme{}, &db.GameKeyword{}, &db.GamePlayerPerspective{},
 		&db.GameFranchise{}, &db.GameSeries{}, &db.GameSeriesEntry{},
 		&db.GameArtworkImage{}, &db.GameReleaseDate{},
+		&db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{},
 	))
 	return database
 }

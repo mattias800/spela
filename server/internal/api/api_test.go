@@ -83,6 +83,9 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.SavedSearch{},
 		&db.Company{},
 		&db.GameReleaseDate{},
+		&db.GameVideo{},
+		&db.GameLanguageSupport{},
+		&db.GameAgeRating{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)

@@ -25,6 +25,11 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&GameCollection{}, &CollectionItem{}, &PlayLaterItem{},
 		&SharedSession{}, &NetplaySession{}, &Challenge{},
 		&GameKeyMappingPreference{},
+		&GameTheme{}, &GameKeyword{}, &GamePlayerPerspective{},
+		&GameFranchise{}, &GameArtworkImage{}, &GameReleaseDate{},
+		&GameVideo{}, &GameLanguageSupport{}, &GameAgeRating{},
+		&GameSeries{}, &GameSeriesEntry{},
+		&GameFranchiseGroup{}, &GameFranchiseEntry{},
 	)
 	require.NoError(t, err)
 

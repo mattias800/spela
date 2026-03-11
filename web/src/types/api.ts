@@ -76,7 +76,18 @@ export interface Game {
   releaseDate?: string;
   genre?: string;
   gameModes?: string;
+  storyline?: string;
+  totalRating?: number;
+  totalRatingCount?: number;
+  igdbUserRating?: number;
+  igdbUserRatingCount?: number;
+  timeToBeatHastily?: number;
+  timeToBeatNormally?: number;
+  timeToBeatCompletely?: number;
   releaseDates?: ReleaseDateInfo[];
+  videos?: VideoInfo[];
+  languageSupports?: LanguageSupportInfo[];
+  ageRatings?: AgeRatingInfo[];
   players?: number;
   rating?: number;
   coreOverride?: string;
@@ -104,6 +115,21 @@ export interface ReleaseDateInfo {
   region: string;
   date: string;
   platform?: string;
+}
+
+export interface VideoInfo {
+  videoId: string;
+  name?: string;
+}
+
+export interface LanguageSupportInfo {
+  language: string;
+  supportType: string;
+}
+
+export interface AgeRatingInfo {
+  category: string;
+  rating: string;
 }
 
 // Backend stores settings as flat key-value pairs

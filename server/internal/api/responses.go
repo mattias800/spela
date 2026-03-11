@@ -58,10 +58,21 @@ type GameResponse struct {
 	Publisher      string         `json:"publisher"`
 	ReleaseDate    string         `json:"releaseDate"`
 	Genre          string                `json:"genre"`
-	GameModes      string                `json:"gameModes,omitempty"`
-	Players        int                   `json:"players"`
-	Rating         float64               `json:"rating"`
-	ReleaseDates   []ReleaseDateResponse `json:"releaseDates,omitempty"`
+	GameModes            string                      `json:"gameModes,omitempty"`
+	Storyline            string                      `json:"storyline,omitempty"`
+	TotalRating          float64                     `json:"totalRating,omitempty"`
+	TotalRatingCount     int                         `json:"totalRatingCount,omitempty"`
+	IGDBUserRating       float64                     `json:"igdbUserRating,omitempty"`
+	IGDBUserRatingCount  int                         `json:"igdbUserRatingCount,omitempty"`
+	TimeToBeatHastily    int                         `json:"timeToBeatHastily,omitempty"`
+	TimeToBeatNormally   int                         `json:"timeToBeatNormally,omitempty"`
+	TimeToBeatCompletely int                         `json:"timeToBeatCompletely,omitempty"`
+	Players              int                         `json:"players"`
+	Rating               float64                     `json:"rating"`
+	ReleaseDates         []ReleaseDateResponse       `json:"releaseDates,omitempty"`
+	Videos               []VideoResponse             `json:"videos,omitempty"`
+	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports,omitempty"`
+	AgeRatings           []AgeRatingResponse         `json:"ageRatings,omitempty"`
 	Playable            bool           `json:"playable"`
 	CoreOverride        string         `json:"coreOverride,omitempty"`
 	ScraperID           string         `json:"scraperId,omitempty"`
@@ -87,6 +98,24 @@ type ReleaseDateResponse struct {
 	Region   string `json:"region"`
 	Date     string `json:"date"`
 	Platform string `json:"platform,omitempty"`
+}
+
+// VideoResponse represents a video in the API response.
+type VideoResponse struct {
+	VideoID string `json:"videoId"`
+	Name    string `json:"name,omitempty"`
+}
+
+// LanguageSupportResponse represents a language support entry in the API response.
+type LanguageSupportResponse struct {
+	Language    string `json:"language"`
+	SupportType string `json:"supportType"`
+}
+
+// AgeRatingResponse represents an age rating in the API response.
+type AgeRatingResponse struct {
+	Category string `json:"category"`
+	Rating   string `json:"rating"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.
@@ -287,9 +316,17 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Publisher:       g.Publisher,
 		ReleaseDate:    g.ReleaseDate,
 		Genre:          g.Genre,
-		GameModes:      g.GameModes,
-		Players:        g.Players,
-		Rating:         g.Rating,
+		GameModes:            g.GameModes,
+		Storyline:            g.Storyline,
+		TotalRating:          g.TotalRating,
+		TotalRatingCount:     g.TotalRatingCount,
+		IGDBUserRating:       g.IGDBUserRating,
+		IGDBUserRatingCount:  g.IGDBUserRatingCount,
+		TimeToBeatHastily:    g.TimeToBeatHastily,
+		TimeToBeatNormally:   g.TimeToBeatNormally,
+		TimeToBeatCompletely: g.TimeToBeatCompletely,
+		Players:              g.Players,
+		Rating:               g.Rating,
 		Playable:            g.Console.Playable,
 		CoreOverride:        g.CoreOverride,
 		ScraperID:           g.ScraperID,
@@ -309,6 +346,30 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 				Date:     rd.Date,
 				Platform: rd.Platform,
 			}
+		}
+	}
+
+	// Map videos
+	if len(g.Videos) > 0 {
+		resp.Videos = make([]VideoResponse, len(g.Videos))
+		for i, v := range g.Videos {
+			resp.Videos[i] = VideoResponse{VideoID: v.VideoID, Name: v.Name}
+		}
+	}
+
+	// Map language supports
+	if len(g.LanguageSupports) > 0 {
+		resp.LanguageSupports = make([]LanguageSupportResponse, len(g.LanguageSupports))
+		for i, ls := range g.LanguageSupports {
+			resp.LanguageSupports[i] = LanguageSupportResponse{Language: ls.Language, SupportType: ls.SupportType}
+		}
+	}
+
+	// Map age ratings
+	if len(g.AgeRatings) > 0 {
+		resp.AgeRatings = make([]AgeRatingResponse, len(g.AgeRatings))
+		for i, ar := range g.AgeRatings {
+			resp.AgeRatings[i] = AgeRatingResponse{Category: ar.Category, Rating: ar.Rating}
 		}
 	}
 
