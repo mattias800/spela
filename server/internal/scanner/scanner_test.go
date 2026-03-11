@@ -204,6 +204,7 @@ func TestCreateConsoleFolders_CreatesExpectedDirs(t *testing.T) {
 		"nes", "snes", "gb", "gbc", "gba", "n64", "nds",
 		"mastersystem", "genesis", "saturn", "psx", "psp",
 		"neogeo", "arcade", "tg16", "atari2600",
+		"msx1", "msx2",
 	}
 	for _, folder := range expectedFolders {
 		info, err := os.Stat(filepath.Join(dir, folder))
@@ -1338,4 +1339,192 @@ func TestScan_NonPlayableConsoles(t *testing.T) {
 	verifyConsole("NSW", 1)
 	verifyConsole("WII", 1)
 	verifyConsole("X360", 1)
+}
+
+func TestIdentifyConsole_MSXExtensions(t *testing.T) {
+	s := &Scanner{}
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{"MSX1 by .mx1 extension", "/games/some/game.mx1", ".mx1", "MSX1"},
+		{"MSX2 by .mx2 extension", "/games/some/game.mx2", ".mx2", "MSX2"},
+		{"MSX1 by directory", "/games/msx1/game.rom", ".rom", "MSX1"},
+		{"MSX1 by msx directory", "/games/msx/game.rom", ".rom", "MSX1"},
+		{"MSX2 by directory", "/games/msx2/game.rom", ".rom", "MSX2"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.identifyConsole(tt.path, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestIdentifyConsole_NewDirectoryMappings(t *testing.T) {
+	s := &Scanner{}
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{"32x by sega32x dir", "/games/sega32x/game.bin", ".bin", "32X"},
+		{"32x by 32x dir", "/games/32x/game.bin", ".bin", "32X"},
+		{"Game Gear by gamegear dir", "/games/gamegear/game.gg", ".gg", "GG"},
+		{"Game Gear by gg dir", "/games/gg/game.gg", ".gg", "GG"},
+		{"Virtual Boy by virtualboy dir", "/games/virtualboy/game.vb", ".vb", "VB"},
+		{"Virtual Boy by vb dir", "/games/vb/game.vb", ".vb", "VB"},
+		{"Lynx by atarilynx dir", "/games/atarilynx/game.lnx", ".lnx", "LYNX"},
+		{"Lynx by lynx dir", "/games/lynx/game.lnx", ".lnx", "LYNX"},
+		{"NGP by ngp dir", "/games/ngp/game.ngp", ".ngp", "NGP"},
+		{"WonderSwan by wonderswan dir", "/games/wonderswan/game.ws", ".ws", "WS"},
+		{"WonderSwan by ws dir", "/games/ws/game.ws", ".ws", "WS"},
+		{"ColecoVision by colecovision dir", "/games/colecovision/game.col", ".col", "CV"},
+		{"C64 by c64 dir", "/games/c64/game.d64", ".d64", "C64"},
+		{"DOS by dos dir", "/games/dos/game.exe", ".exe", "DOS"},
+		{"Amiga by amiga dir", "/games/amiga/game.adf", ".adf", "AMIGA"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.identifyConsole(tt.path, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestCreateConsoleFolders_WritesREADME(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	// Check that README.txt exists in the NES folder
+	readmePath := filepath.Join(dir, "nes", "README.txt")
+	data, err := os.ReadFile(readmePath)
+	require.NoError(t, err, "README.txt should exist in nes folder")
+	content := string(data)
+
+	assert.Contains(t, content, "Nintendo Entertainment System")
+	assert.Contains(t, content, ".nes")
+	assert.Contains(t, content, "Place your ROM files in this folder")
+}
+
+func TestCreateConsoleFolders_READMEIncludesNotes(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	// Neo Geo should have a note about Neo Geo Pocket
+	data, err := os.ReadFile(filepath.Join(dir, "neogeo", "README.txt"))
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, "Neo Geo Pocket")
+	assert.Contains(t, content, "ngp")
+
+	// WonderSwan should mention WonderSwan Color
+	data, err = os.ReadFile(filepath.Join(dir, "wonderswan", "README.txt"))
+	require.NoError(t, err)
+	content = string(data)
+	assert.Contains(t, content, "WonderSwan Color")
+
+	// TG16 should clarify it's not PC-FX
+	data, err = os.ReadFile(filepath.Join(dir, "tg16", "README.txt"))
+	require.NoError(t, err)
+	content = string(data)
+	assert.Contains(t, content, "NOT the same system as PC-FX")
+}
+
+func TestCreateConsoleFolders_PreservesExistingROMs(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	// Pre-create a folder with a ROM and a custom README
+	nesDir := filepath.Join(dir, "nes")
+	require.NoError(t, os.MkdirAll(nesDir, 0755))
+	romPath := filepath.Join(nesDir, "Mario.nes")
+	require.NoError(t, os.WriteFile(romPath, []byte("fake rom"), 0644))
+
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	// ROM should be untouched
+	data, err := os.ReadFile(romPath)
+	require.NoError(t, err)
+	assert.Equal(t, "fake rom", string(data))
+
+	// README.txt should have been written
+	readmeData, err := os.ReadFile(filepath.Join(nesDir, "README.txt"))
+	require.NoError(t, err)
+	assert.Contains(t, string(readmeData), "Nintendo Entertainment System")
+}
+
+func TestConsoleReadmeContent(t *testing.T) {
+	tests := []struct {
+		name    string
+		console db.Console
+		want    []string
+	}{
+		{
+			name:    "basic console",
+			console: db.Console{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds"},
+			want:    []string{"Nintendo Entertainment System (NES)", ".nes,.fds", "Place your ROM files"},
+		},
+		{
+			name:    "console with notes",
+			console: db.Console{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip"},
+			want:    []string{"Neo Geo (NEOGEO)", "Neo Geo Pocket", "ngp"},
+		},
+		{
+			name:    "MSX1 with notes",
+			console: db.Console{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas"},
+			want:    []string{"MSX (MSX1)", "msx2", ".mx1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := ConsoleReadmeContent(tt.console)
+			for _, w := range tt.want {
+				assert.Contains(t, content, w)
+			}
+		})
+	}
+}
+
+func TestScan_DetectsMSXGames(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	msx1Dir := filepath.Join(dir, "msx1")
+	require.NoError(t, os.MkdirAll(msx1Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(msx1Dir, "Penguin Adventure.mx1"), []byte("rom"), 0644))
+
+	msx2Dir := filepath.Join(dir, "msx2")
+	require.NoError(t, os.MkdirAll(msx2Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(msx2Dir, "Space Manbow.mx2"), []byte("rom"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, result.NewGames)
+
+	var msx1Console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "MSX1").First(&msx1Console).Error)
+	var msx1Count int64
+	database.Model(&db.Game{}).Where("console_id = ?", msx1Console.ID).Count(&msx1Count)
+	assert.Equal(t, int64(1), msx1Count)
+
+	var msx2Console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "MSX2").First(&msx2Console).Error)
+	var msx2Count int64
+	database.Model(&db.Game{}).Where("console_id = ?", msx2Console.ID).Count(&msx2Count)
+	assert.Equal(t, int64(1), msx2Count)
 }

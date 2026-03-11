@@ -804,6 +804,8 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
 		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", SaveStateSupport: true, Playable: true},
 		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha", DefaultCore: "puae", EmulatorJSCore: "", FolderName: "amiga", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
+		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", SaveStateSupport: true, Playable: true},
+		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", SaveStateSupport: true, Playable: true},
 		// Non-playable consoles (external emulators only)
 		{Name: "PlayStation 3", Abbreviation: "PS3", Extensions: ".iso,.bin,.pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps3", ColorTheme: "#003087", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
 		{Name: "PlayStation 4", Abbreviation: "PS4", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps4", ColorTheme: "#003087", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},

@@ -119,6 +119,23 @@ var ConsoleExtMap = map[string]string{
 	".wux":  "WIIU",
 	".nsp":  "NSW",
 	".xci":  "NSW",
+	".mx1":  "MSX1",
+	".mx2":  "MSX2",
+	".gg":   "GG",
+	".vb":   "VB",
+	".vboy": "VB",
+	".lnx":  "LYNX",
+	".ngp":  "NGP",
+	".ngc":  "NGP",
+	".ws":   "WS",
+	".wsc":  "WS",
+	".col":  "CV",
+	".min":  "PKMN",
+	".j64":  "JAG",
+	".jag":  "JAG",
+	".32x":  "32X",
+	".a52":  "A52",
+	".a78":  "A78",
 }
 
 // RomExtensions is the set of file extensions recognized as ROM/disc files.
@@ -144,6 +161,19 @@ var RomExtensions = map[string]bool{
 	".pkg": true, ".xex": true, ".god": true, ".wbfs": true,
 	".rpx": true, ".wud": true, ".wux": true,
 	".nsp": true, ".xci": true, ".xvd": true,
+	".mx1": true, ".mx2": true, ".cas": true,
+	".rom": true, ".dsk": true,
+	".vb": true, ".vboy": true,
+	".lnx": true,
+	".ngp": true, ".ngc": true,
+	".ws": true, ".wsc": true,
+	".col": true,
+	".d64": true, ".t64": true, ".prg": true, ".crt": true,
+	".exe": true, ".com": true, ".bat": true, ".conf": true,
+	".adf": true, ".hdf": true, ".lha": true,
+	".min": true,
+	".j64": true, ".jag": true,
+	".32x": true,
 }
 
 // directoryConsoleMap maps directory names to console abbreviations.
@@ -193,14 +223,98 @@ var directoryConsoleMap = map[string]string{
 	"wii":          "WII",
 	"wiiu":         "WIIU",
 	"switch":       "NSW",
+	"msx1":         "MSX1",
+	"msx":          "MSX1",
+	"msx2":         "MSX2",
+	"sega32x":      "32X",
+	"32x":          "32X",
+	"gamegear":     "GG",
+	"gg":           "GG",
+	"virtualboy":   "VB",
+	"vb":           "VB",
+	"atari5200":    "A52",
+	"a52":          "A52",
+	"atari7800":    "A78",
+	"a78":          "A78",
+	"atarilynx":    "LYNX",
+	"lynx":         "LYNX",
+	"atarijaguar":  "JAG",
+	"jag":          "JAG",
+	"ngp":          "NGP",
+	"wonderswan":   "WS",
+	"ws":           "WS",
+	"colecovision": "CV",
+	"pokemonmini":  "PKMN",
+	"c64":          "C64",
+	"dos":          "DOS",
+	"amiga":        "AMIGA",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
 var discPattern = regexp.MustCompile(`(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)\s*[\)\]]`)
 
+// consoleNotes contains helpful guidance for console folders where the
+// purpose or correct usage may be ambiguous. These are included in the
+// README.txt files generated inside each console folder.
+var consoleNotes = map[string]string{
+	"NEOGEO": "This is for Neo Geo AES/MVS arcade ROMs (not Neo Geo Pocket).\nNeo Geo Pocket ROMs go in the 'ngp' folder.",
+	"NGP":    "This is for both Neo Geo Pocket AND Neo Geo Pocket Color ROMs.\nFile extensions: .ngp (Neo Geo Pocket), .ngc (Neo Geo Pocket Color).",
+	"WS":     "This is for both WonderSwan AND WonderSwan Color ROMs.\nFile extensions: .ws (WonderSwan), .wsc (WonderSwan Color).",
+	"PCE":    "This is for TurboGrafx-16 / PC Engine ROMs.\nThis is NOT the same system as PC-FX (which has its own 'pcfx' folder).",
+	"PCFX":   "This is for NEC PC-FX disc images.\nThis is NOT the same system as TurboGrafx-16/PC Engine (which uses the 'tg16' folder).",
+	"A78":    "Prefer .a78 files over .bin when both are available.\nThe .a78 format includes a header that helps the emulator identify the game correctly.",
+	"A26":    "Prefer .a26 files over .bin when both are available.",
+	"A52":    "Prefer .a52 files over .bin when both are available.",
+	"GEN":    "Prefer .md or .gen files over .bin when both are available.\nThe .bin format is ambiguous and could be mistaken for other systems.",
+	"MSX1":   "This is for MSX (first generation) ROMs.\nMSX2 ROMs go in the 'msx2' folder.\nUse .mx1 for MSX1-specific ROMs, or .rom/.dsk for generic MSX media.",
+	"MSX2":   "This is for MSX2 (and MSX2+) ROMs.\nOriginal MSX ROMs go in the 'msx1' folder.\nUse .mx2 for MSX2-specific ROMs, or .rom/.dsk for generic MSX media.",
+	"GB":     "This is for original Game Boy ROMs only (.gb).\nGame Boy Color ROMs go in the 'gbc' folder.",
+	"GBC":    "This is for Game Boy Color ROMs (.gbc).\nOriginal Game Boy ROMs go in the 'gb' folder.",
+}
+
+// ConsoleReadmeContent generates the content for a README.txt file
+// placed inside a console folder to help users understand what ROMs belong there.
+func ConsoleReadmeContent(c db.Console) string {
+	var b strings.Builder
+	b.WriteString(c.Name)
+	headerLen := len(c.Name)
+	if c.Abbreviation != "" {
+		b.WriteString(" (")
+		b.WriteString(c.Abbreviation)
+		b.WriteString(")")
+		headerLen += len(c.Abbreviation) + 3 // " (" + ")"
+	}
+	b.WriteString("\n")
+	b.WriteString(strings.Repeat("=", headerLen))
+	b.WriteString("\n\n")
+
+	if c.Extensions != "" {
+		b.WriteString("Supported file extensions: ")
+		b.WriteString(c.Extensions)
+		b.WriteString("\n\n")
+	}
+
+	if note, ok := consoleNotes[c.Abbreviation]; ok {
+		b.WriteString("Notes:\n")
+		for _, line := range strings.Split(note, "\n") {
+			b.WriteString("  ")
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("Place your ROM files in this folder. They will be detected\n")
+	b.WriteString("automatically when you run a library scan.\n")
+
+	return b.String()
+}
+
 // CreateConsoleFolders creates ES-DE standard console subdirectories in each game directory.
 // It loads console definitions from the DB and creates a subfolder per console using FolderName.
-// The operation is idempotent — existing directories and files are not affected.
+// Each folder gets a README.txt explaining what ROMs belong there.
+// The operation is idempotent — existing directories are not affected, but README.txt
+// files are updated on every run to keep them current.
 func CreateConsoleFolders(database *gorm.DB, gameDirs []string) error {
 	var consoles []db.Console
 	if err := database.Find(&consoles).Error; err != nil {
@@ -216,6 +330,13 @@ func CreateConsoleFolders(database *gorm.DB, gameDirs []string) error {
 			if err := os.MkdirAll(path, 0755); err != nil {
 				return fmt.Errorf("creating folder %s: %w", path, err)
 			}
+
+			readmePath := filepath.Join(path, "README.txt")
+			content := ConsoleReadmeContent(c)
+			if err := os.WriteFile(readmePath, []byte(content), 0644); err != nil {
+				slog.Warn("failed to write README.txt", "path", readmePath, "error", err)
+			}
+
 			slog.Info("ensured console folder", "path", path)
 		}
 	}
