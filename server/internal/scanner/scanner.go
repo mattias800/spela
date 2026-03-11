@@ -9,16 +9,29 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
+// ScanProgress holds the current state of an in-progress scan.
+type ScanProgress struct {
+	Phase   string `json:"phase"`   // "discovering" or "checking_removed"
+	Current int    `json:"current"` // files/games processed so far
+	Total   int    `json:"total"`   // total expected (0 if unknown)
+	Message string `json:"message"` // human-readable status
+}
+
 // Scanner detects ROMs in configured directories and maps them to consoles.
 type Scanner struct {
 	DB       *gorm.DB
 	GameDirs []string
+
+	mu       sync.Mutex
+	scanning bool
+	progress *ScanProgress
 }
 
 // NewScanner creates a new game scanner.
@@ -27,6 +40,45 @@ func NewScanner(database *gorm.DB, gameDirs []string) *Scanner {
 		DB:       database,
 		GameDirs: gameDirs,
 	}
+}
+
+// TryStartScan attempts to acquire the scan lock.
+// Returns true if acquired (caller must call FinishScan when done).
+func (s *Scanner) TryStartScan() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.scanning {
+		return false
+	}
+	s.scanning = true
+	s.progress = nil
+	return true
+}
+
+// FinishScan releases the scan lock and clears progress.
+func (s *Scanner) FinishScan() {
+	s.mu.Lock()
+	s.scanning = false
+	s.progress = nil
+	s.mu.Unlock()
+}
+
+// SetScanProgress updates the current scan progress.
+func (s *Scanner) SetScanProgress(p *ScanProgress) {
+	s.mu.Lock()
+	s.progress = p
+	s.mu.Unlock()
+}
+
+// GetScanStatus returns whether a scan is active and the current progress.
+func (s *Scanner) GetScanStatus() (bool, *ScanProgress) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.progress == nil {
+		return s.scanning, nil
+	}
+	p := *s.progress
+	return s.scanning, &p
 }
 
 // ConsoleExtMap maps file extensions to console abbreviations.
@@ -325,10 +377,22 @@ type discGroupKey struct {
 	Title string
 }
 
+// ProgressFunc is a callback for reporting scan progress.
+type ProgressFunc func(ScanProgress)
+
 // Scan walks all configured directories and detects ROMs.
 // Uses a two-pass algorithm: first discovers multi-disc games, then scans remaining files.
-func (s *Scanner) Scan() (*ScanResult, error) {
+// The optional onProgress callback is called at key points to report progress.
+func (s *Scanner) Scan(onProgress ProgressFunc) (*ScanResult, error) {
 	result := &ScanResult{}
+
+	report := func(p ScanProgress) {
+		if onProgress != nil {
+			onProgress(p)
+		}
+	}
+
+	report(ScanProgress{Phase: "discovering", Message: "Loading console definitions..."})
 
 	// Load all consoles into a map by abbreviation
 	var consoles []db.Console
@@ -347,11 +411,18 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 	claimedPaths := make(map[string]bool)
 
 	// Pass 1: Multi-disc discovery
+	report(ScanProgress{Phase: "discovering", Message: "Scanning for multi-disc games..."})
 	for _, dir := range s.GameDirs {
 		if err := s.scanMultiDisc(dir, consoleMap, foundPaths, claimedPaths, result); err != nil {
 			slog.Warn("error in multi-disc scan", "dir", dir, "error", err)
 		}
 	}
+
+	report(ScanProgress{
+		Phase:   "discovering",
+		Current: result.NewGames,
+		Message: fmt.Sprintf("Scanning game directories... (%d new so far)", result.NewGames),
+	})
 
 	// Pass 2: Normal single-disc scan, skipping claimed paths
 	for _, dir := range s.GameDirs {
@@ -359,6 +430,12 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 			slog.Warn("error scanning directory", "dir", dir, "error", err)
 		}
 	}
+
+	report(ScanProgress{
+		Phase:   "checking_removed",
+		Current: result.NewGames,
+		Message: "Checking for removed games...",
+	})
 
 	// Remove games whose files no longer exist.
 	// Use Unscoped to include soft-deleted games — if a game was previously
@@ -368,7 +445,7 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 	if err := s.DB.Unscoped().Find(&allGames).Error; err != nil {
 		return nil, fmt.Errorf("loading existing games: %w", err)
 	}
-	for _, g := range allGames {
+	for i, g := range allGames {
 		if !foundPaths[g.FilePath] {
 			// Resolve relative path to absolute for filesystem check
 			absPath, resolveErr := storage.ResolveGamePath(g.FilePath, s.GameDirs)
@@ -382,6 +459,14 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 				s.DB.Unscoped().Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
 				s.DB.Unscoped().Delete(&g)
 			}
+		}
+		if i%100 == 0 {
+			report(ScanProgress{
+				Phase:   "checking_removed",
+				Current: i,
+				Total:   len(allGames),
+				Message: fmt.Sprintf("Checking for removed games... (%d/%d)", i, len(allGames)),
+			})
 		}
 	}
 

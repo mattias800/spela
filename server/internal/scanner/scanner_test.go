@@ -79,7 +79,7 @@ func TestScan_EmptyDirectory(t *testing.T) {
 	dir := t.TempDir()
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 0, result.NewGames)
 	assert.Equal(t, 0, result.TotalGames)
@@ -100,7 +100,7 @@ func TestScan_DetectsROMs(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(snesDir, "Chrono Trigger.sfc"), []byte("fake snes rom"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 3, result.NewGames)
 	assert.Equal(t, 3, result.TotalGames)
@@ -128,11 +128,11 @@ func TestScan_RescanDoesNotDuplicate(t *testing.T) {
 
 	s := NewScanner(database, []string{dir})
 
-	result1, err := s.Scan()
+	result1, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result1.NewGames)
 
-	result2, err := s.Scan()
+	result2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 0, result2.NewGames)
 	assert.Equal(t, 1, result2.TotalGames)
@@ -187,7 +187,7 @@ func TestScan_IgnoresNonROMFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "game.nfo"), []byte("info"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 	assert.Equal(t, 1, result.TotalGames)
@@ -266,13 +266,13 @@ func TestScan_RemovesMissingGames(t *testing.T) {
 	require.NoError(t, os.WriteFile(romPath, []byte("rom"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	_, err := s.Scan()
+	_, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Delete the ROM file
 	require.NoError(t, os.Remove(romPath))
 
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.RemovedGames)
 	assert.Equal(t, 0, result.TotalGames)
@@ -301,7 +301,7 @@ func TestScanSkipsBiosDirectory(t *testing.T) {
 	}
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Only the NES ROM should be detected, not BIOS files
@@ -325,7 +325,7 @@ func TestScanRejectsWrongExtensionInConsoleDir(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(nesDir, "wrong.bin"), []byte("not nes"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Only .nes and .fds should be detected, not .bin
@@ -443,7 +443,7 @@ func TestScan_M3UMultiDisc(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Final Fantasy VII.m3u"), []byte(m3uContent), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game")
@@ -478,7 +478,7 @@ func TestScan_PatternMultiDisc(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Game (Disc 2).cue"), []byte("FILE \"game_d2.bin\" BINARY\n"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, result.NewGames, "should create exactly 1 game from disc pattern")
@@ -506,7 +506,7 @@ func TestScan_SingleDiscNotGrouped(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Crash Bandicoot.iso"), []byte("iso data"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	var games []db.Game
@@ -539,7 +539,7 @@ func TestScan_M3UClaimsFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "MyGame.m3u"), []byte(m3uContent), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// The .cue files should be claimed by the .m3u, not creating separate games
@@ -592,7 +592,7 @@ func TestScan_RescanUpgradesOldEntries(t *testing.T) {
 	// Now scan — disc pattern detects the group, creates multi-disc game,
 	// and should remove the old standalone entries
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	var games []db.Game
@@ -617,7 +617,7 @@ func TestScan_PSPCHDSetsAchievementsWarning(t *testing.T) {
 	})
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 
@@ -640,7 +640,7 @@ func TestScan_PSPCHDCreateCDNoWarning(t *testing.T) {
 	})
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 
@@ -659,7 +659,7 @@ func TestScan_PSPISONoWarning(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "Crisis Core.iso"), []byte("fake iso"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 
@@ -678,7 +678,7 @@ func TestScan_PSPCSOSetsWarning(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "Patapon.cso"), []byte("fake cso"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 
@@ -705,7 +705,7 @@ func TestScan_NonPSPCHDNoWarning(t *testing.T) {
 	})
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.NewGames)
 
@@ -759,7 +759,7 @@ func TestScan_RescanCreatesDiscRecordsForExistingGame(t *testing.T) {
 
 	// Scan — should detect the existing game and backfill disc records
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, result.NewGames, "should not create a new game")
@@ -781,7 +781,7 @@ func TestScan_RescanCreatesDiscRecordsForExistingGame(t *testing.T) {
 	assert.Greater(t, updatedGame.FileSize, int64(0), "file size should be updated")
 
 	// Rescan should be idempotent — no duplicate disc records
-	_, err = s.Scan()
+	_, err = s.Scan(nil)
 	require.NoError(t, err)
 
 	var discsAfterRescan []db.GameDisc
@@ -804,7 +804,7 @@ func TestScan_Deterministic_RemoveAndRestore(t *testing.T) {
 	s := NewScanner(database, []string{dir})
 
 	// Scan 1: game appears
-	r1, err := s.Scan()
+	r1, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r1.NewGames)
 	assert.Equal(t, 1, r1.TotalGames)
@@ -816,7 +816,7 @@ func TestScan_Deterministic_RemoveAndRestore(t *testing.T) {
 	require.NoError(t, os.Remove(romPath))
 
 	// Scan 2: game is removed
-	r2, err := s.Scan()
+	r2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r2.RemovedGames)
 	assert.Equal(t, 0, r2.TotalGames)
@@ -830,7 +830,7 @@ func TestScan_Deterministic_RemoveAndRestore(t *testing.T) {
 	require.NoError(t, os.WriteFile(romPath, []byte("rom data"), 0644))
 
 	// Scan 3: game reappears as new
-	r3, err := s.Scan()
+	r3, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r3.NewGames)
 	assert.Equal(t, 1, r3.TotalGames)
@@ -874,7 +874,7 @@ func TestScan_Deterministic_MultiDisc_RemoveAndRestore(t *testing.T) {
 	s := NewScanner(database, []string{dir})
 
 	// Scan 1: game + discs created
-	r1, err := s.Scan()
+	r1, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r1.NewGames)
 
@@ -888,7 +888,7 @@ func TestScan_Deterministic_MultiDisc_RemoveAndRestore(t *testing.T) {
 	removeDiscFiles()
 
 	// Scan 2: game removed
-	r2, err := s.Scan()
+	r2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r2.RemovedGames)
 	assert.Equal(t, 0, r2.TotalGames)
@@ -904,7 +904,7 @@ func TestScan_Deterministic_MultiDisc_RemoveAndRestore(t *testing.T) {
 	writeDiscFiles()
 
 	// Scan 3: game + discs recreated
-	r3, err := s.Scan()
+	r3, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, r3.NewGames)
 	assert.Equal(t, 1, r3.TotalGames)
@@ -937,12 +937,12 @@ func TestScan_RescanIdempotent_MultiDisc(t *testing.T) {
 
 	s := NewScanner(database, []string{dir})
 
-	result1, err := s.Scan()
+	result1, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, result1.NewGames)
 	assert.Equal(t, 1, result1.TotalGames)
 
-	result2, err := s.Scan()
+	result2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
 	assert.Equal(t, 1, result2.TotalGames)
@@ -971,7 +971,7 @@ func TestScan_StandaloneCueBin(t *testing.T) {
 	require.NoError(t, os.WriteFile(cuePath, []byte(cueContent), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Should create exactly 1 game (the .cue), NOT 2 (one for .cue, one for .bin)
@@ -993,7 +993,7 @@ func TestScan_StandaloneCueBin(t *testing.T) {
 	assert.Equal(t, "Crash Bandicoot.cue", discs[0].FileName)
 
 	// Rescan should be idempotent
-	result2, err := s.Scan()
+	result2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
 	assert.Equal(t, 1, result2.TotalGames)
@@ -1034,7 +1034,7 @@ func TestScan_StandaloneCueBin_CleansUpOldBinEntry(t *testing.T) {
 	require.Equal(t, int64(1), countBefore)
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// The old .bin entry should be removed and replaced by the .cue entry
@@ -1090,7 +1090,7 @@ func TestScan_StandaloneCueBin_CleansUpBinWhenCueExists(t *testing.T) {
 	require.Equal(t, int64(2), countBefore)
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Only the .cue game should remain; the .bin entry should be cleaned up
@@ -1133,7 +1133,7 @@ func TestScan_StandaloneCueBin_BackfillDiscRecord(t *testing.T) {
 	require.NoError(t, database.Create(&existingGame).Error)
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, result.NewGames, "should not create a new game")
@@ -1204,7 +1204,7 @@ func TestScan_StandaloneGdiBin(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dcDir, "Sonic Adventure.gdi"), []byte(gdiContent), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 
 	// Should create exactly 1 game — the .gdi — not separate entries for track files
@@ -1232,7 +1232,7 @@ func TestScan_StandaloneGdiBin(t *testing.T) {
 	assert.Equal(t, "Sonic Adventure.gdi", discs[0].FileName)
 
 	// Rescan should be idempotent
-	result2, err := s.Scan()
+	result2, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 0, result2.NewGames, "rescan should not create duplicates")
 	assert.Equal(t, 1, result2.TotalGames)
@@ -1320,7 +1320,7 @@ func TestScan_NonPlayableConsoles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(x360Dir, "Halo 3.xex"), []byte("fake xex"), 0644))
 
 	s := NewScanner(database, []string{dir})
-	result, err := s.Scan()
+	result, err := s.Scan(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 4, result.NewGames)
 	assert.Equal(t, 4, result.TotalGames)

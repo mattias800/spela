@@ -210,6 +210,21 @@ export function useScrapeStatus() {
   });
 }
 
+export interface ScanStatus {
+  active: boolean;
+  phase?: string;
+  current?: number;
+  total?: number;
+  message?: string;
+}
+
+export function useScanStatus() {
+  return useQuery({
+    queryKey: ["admin", "scan-status"],
+    queryFn: () => api.get<ScanStatus>("/admin/games/scan/status"),
+  });
+}
+
 export interface CoverOption {
   source: "libretro" | "igdb" | "custom" | "libretro-regional";
   url: string;

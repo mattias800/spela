@@ -7,7 +7,8 @@ import { AdminScanPage } from "../scan-page";
 
 const mockScanMutate = vi.fn();
 const mockScrapeMutate = vi.fn();
-const mockDismiss = vi.fn();
+const mockScanDismiss = vi.fn();
+const mockScrapeDismiss = vi.fn();
 
 vi.mock("@/hooks/use-admin", () => ({
   useScanLibrary: vi.fn(),
@@ -16,6 +17,10 @@ vi.mock("@/hooks/use-admin", () => ({
 
 vi.mock("@/hooks/use-scrape-progress", () => ({
   useScrapeProgress: vi.fn(),
+}));
+
+vi.mock("@/hooks/use-scan-progress", () => ({
+  useScanProgress: vi.fn(),
 }));
 
 vi.mock("@/components/ui", async () => {
@@ -29,10 +34,12 @@ vi.mock("@/components/ui", async () => {
 
 import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
+import { useScanProgress } from "@/hooks/use-scan-progress";
 
 const mockUseScanLibrary = useScanLibrary as ReturnType<typeof vi.fn>;
 const mockUseScrapeMetadata = useScrapeMetadata as ReturnType<typeof vi.fn>;
 const mockUseScrapeProgress = useScrapeProgress as ReturnType<typeof vi.fn>;
+const mockUseScanProgress = useScanProgress as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -58,6 +65,15 @@ beforeEach(() => {
     mutate: mockScrapeMutate,
     isPending: false,
   });
+  mockUseScanProgress.mockReturnValue({
+    phase: "idle",
+    message: "",
+    current: 0,
+    total: 0,
+    result: null,
+    error: null,
+    dismiss: mockScanDismiss,
+  });
   mockUseScrapeProgress.mockReturnValue({
     phase: "idle",
     current: 0,
@@ -66,7 +82,7 @@ beforeEach(() => {
     successes: 0,
     failures: 0,
     error: null,
-    dismiss: mockDismiss,
+    dismiss: mockScrapeDismiss,
   });
 });
 
@@ -143,23 +159,47 @@ describe("AdminScanPage", () => {
     );
   });
 
-  it("shows scanning indicator when scan is pending", () => {
-    mockUseScanLibrary.mockReturnValue({
-      mutate: mockScanMutate,
-      isPending: true,
-      data: undefined,
+  it("shows scanning progress when scan is active", () => {
+    mockUseScanProgress.mockReturnValue({
+      phase: "active",
+      message: "Scanning game directories... (12 new so far)",
+      current: 12,
+      total: 0,
+      result: null,
+      error: null,
+      dismiss: mockScanDismiss,
     });
     renderPage();
     expect(
-      screen.getByText("Scanning game directories..."),
+      screen.getByText("Scanning game directories... (12 new so far)"),
     ).toBeInTheDocument();
   });
 
+  it("disables Start Scan button when scan is active", () => {
+    mockUseScanProgress.mockReturnValue({
+      phase: "active",
+      message: "Scanning...",
+      current: 0,
+      total: 0,
+      result: null,
+      error: null,
+      dismiss: mockScanDismiss,
+    });
+    renderPage();
+    expect(
+      screen.getByRole("button", { name: /Start Scan/ }),
+    ).toBeDisabled();
+  });
+
   it("shows scan results when scan completes", () => {
-    mockUseScanLibrary.mockReturnValue({
-      mutate: mockScanMutate,
-      isPending: false,
-      data: { totalGames: 42, newGames: 5, updatedGames: 3, removedGames: 1 },
+    mockUseScanProgress.mockReturnValue({
+      phase: "complete",
+      message: "",
+      current: 0,
+      total: 0,
+      result: { totalGames: 42, newGames: 5, updatedGames: 3, removedGames: 1 },
+      error: null,
+      dismiss: mockScanDismiss,
     });
     renderPage();
     expect(screen.getByText("Scan complete")).toBeInTheDocument();
@@ -167,6 +207,21 @@ describe("AdminScanPage", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("shows scan error state", () => {
+    mockUseScanProgress.mockReturnValue({
+      phase: "error",
+      message: "",
+      current: 0,
+      total: 0,
+      result: null,
+      error: "library scan failed",
+      dismiss: mockScanDismiss,
+    });
+    renderPage();
+    expect(screen.getByText("Scan failed")).toBeInTheDocument();
+    expect(screen.getByText("library scan failed")).toBeInTheDocument();
   });
 
   it("shows active scrape progress panel", () => {
@@ -178,7 +233,7 @@ describe("AdminScanPage", () => {
       successes: 2,
       failures: 1,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText(/Scraping game 3 of 10/)).toBeInTheDocument();
@@ -196,7 +251,7 @@ describe("AdminScanPage", () => {
       successes: 0,
       failures: 0,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(
@@ -216,7 +271,7 @@ describe("AdminScanPage", () => {
       successes: 8,
       failures: 2,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText("Scraping complete")).toBeInTheDocument();
@@ -224,7 +279,7 @@ describe("AdminScanPage", () => {
     expect(screen.getByText("2 failed")).toBeInTheDocument();
   });
 
-  it("shows dismiss button on completion and calls dismiss", async () => {
+  it("shows dismiss button on scrape completion and calls dismiss", async () => {
     mockUseScrapeProgress.mockReturnValue({
       phase: "complete",
       current: 10,
@@ -233,16 +288,16 @@ describe("AdminScanPage", () => {
       successes: 10,
       failures: 0,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
-    const dismissButton = screen.getByRole("button", { name: /Dismiss/ });
-    expect(dismissButton).toBeInTheDocument();
-    await userEvent.click(dismissButton);
-    expect(mockDismiss).toHaveBeenCalled();
+    const dismissButtons = screen.getAllByRole("button", { name: /Dismiss/ });
+    expect(dismissButtons.length).toBeGreaterThan(0);
+    await userEvent.click(dismissButtons[0]);
+    expect(mockScrapeDismiss).toHaveBeenCalled();
   });
 
-  it("shows error state with error message", () => {
+  it("shows scrape error state with error message", () => {
     mockUseScrapeProgress.mockReturnValue({
       phase: "error",
       current: 0,
@@ -251,14 +306,14 @@ describe("AdminScanPage", () => {
       successes: 0,
       failures: 0,
       error: "IGDB rate limit exceeded",
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText("Scraping failed")).toBeInTheDocument();
     expect(screen.getByText("IGDB rate limit exceeded")).toBeInTheDocument();
   });
 
-  it("shows dismiss button on error and calls dismiss", async () => {
+  it("shows dismiss button on scrape error and calls dismiss", async () => {
     mockUseScrapeProgress.mockReturnValue({
       phase: "error",
       current: 0,
@@ -267,12 +322,12 @@ describe("AdminScanPage", () => {
       successes: 0,
       failures: 0,
       error: "Some error",
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
-    const dismissButton = screen.getByRole("button", { name: /Dismiss/ });
-    await userEvent.click(dismissButton);
-    expect(mockDismiss).toHaveBeenCalled();
+    const dismissButtons = screen.getAllByRole("button", { name: /Dismiss/ });
+    await userEvent.click(dismissButtons[0]);
+    expect(mockScrapeDismiss).toHaveBeenCalled();
   });
 
   it("does not show failures count when there are zero failures during active scrape", () => {
@@ -284,7 +339,7 @@ describe("AdminScanPage", () => {
       successes: 3,
       failures: 0,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText("3 succeeded")).toBeInTheDocument();
@@ -300,7 +355,7 @@ describe("AdminScanPage", () => {
       successes: 10,
       failures: 0,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText("10 scraped")).toBeInTheDocument();
@@ -316,7 +371,7 @@ describe("AdminScanPage", () => {
       successes: 0,
       failures: 0,
       error: null,
-      dismiss: mockDismiss,
+      dismiss: mockScrapeDismiss,
     });
     renderPage();
     expect(screen.getByText("No unscraped games found")).toBeInTheDocument();

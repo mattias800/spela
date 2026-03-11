@@ -493,6 +493,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		{
 			admin.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 			admin.POST("/games/scan", gameHandler.ScanGames)
+			admin.GET("/games/scan/status", gameHandler.ScanStatus)
 			admin.GET("/users", adminHandler.ListUsers)
 			admin.POST("/users", adminHandler.CreateUser)
 			admin.PUT("/users/:id", adminHandler.UpdateUser)
