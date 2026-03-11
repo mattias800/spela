@@ -62,20 +62,53 @@ type DeveloperListResponse struct {
 
 // DeveloperDetailResponse is the API response for a developer detail page.
 type DeveloperDetailResponse struct {
-	Name      string         `json:"name"`
-	GameCount int            `json:"gameCount"`
-	AvgRating float64        `json:"avgRating"`
-	Consoles  []string       `json:"consoles"`
-	Games     []GameResponse `json:"games"`
+	Name              string              `json:"name"`
+	GameCount         int                 `json:"gameCount"`
+	AvgRating         float64             `json:"avgRating"`
+	Consoles          []string            `json:"consoles"`
+	Games             []GameResponse      `json:"games"`
+	HeroURL           string              `json:"heroUrl,omitempty"`
+	TopGames          []GameResponse      `json:"topGames"`
+	GenreBreakdown    []GenreCount        `json:"genreBreakdown"`
+	PlatformBreakdown []PlatformCount     `json:"platformBreakdown"`
+	UserStats         *EntityUserStats    `json:"userStats,omitempty"`
+	Publishers        []NameCount         `json:"publishers"`
 }
 
 // PublisherDetailResponse is the API response for a publisher detail page.
 type PublisherDetailResponse struct {
-	Name      string         `json:"name"`
-	GameCount int            `json:"gameCount"`
-	AvgRating float64        `json:"avgRating"`
-	Consoles  []string       `json:"consoles"`
-	Games     []GameResponse `json:"games"`
+	Name              string              `json:"name"`
+	GameCount         int                 `json:"gameCount"`
+	AvgRating         float64             `json:"avgRating"`
+	Consoles          []string            `json:"consoles"`
+	Games             []GameResponse      `json:"games"`
+	HeroURL           string              `json:"heroUrl,omitempty"`
+	TopGames          []GameResponse      `json:"topGames"`
+	GenreBreakdown    []GenreCount        `json:"genreBreakdown"`
+	PlatformBreakdown []PlatformCount     `json:"platformBreakdown"`
+	UserStats         *EntityUserStats    `json:"userStats,omitempty"`
+	Developers        []NameCount         `json:"developers"`
+}
+
+// PlatformCount holds a console name/ID and the number of games on that platform.
+type PlatformCount struct {
+	ConsoleName string `json:"consoleName"`
+	ConsoleID   string `json:"consoleId"`
+	Count       int    `json:"count"`
+}
+
+// NameCount holds a name and a count, used for publishers and developers breakdowns.
+type NameCount struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// EntityUserStats holds user-specific stats for a developer or publisher.
+type EntityUserStats struct {
+	TotalPlayTime  int64         `json:"totalPlayTime"`
+	GamesPlayed    int           `json:"gamesPlayed"`
+	FavoriteCount  int           `json:"favoriteCount"`
+	MostPlayedGame *GameResponse `json:"mostPlayedGame"`
 }
 
 // DeveloperSpotlightResponse is the API response for the featured developer spotlight.

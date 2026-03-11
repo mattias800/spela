@@ -605,6 +605,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
+                                        onPublisherSelected = { publisherName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(publisherName))
+                                            )
+                                        },
                                         onBack = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
@@ -621,6 +626,11 @@ fun SpelaApp(
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onPublisherSelected = { publisherName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(publisherName))
                                             )
                                         },
                                         onBack = {

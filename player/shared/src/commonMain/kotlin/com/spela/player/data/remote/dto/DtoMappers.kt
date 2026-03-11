@@ -683,11 +683,40 @@ fun DeveloperSummaryDto.toDomain(): DeveloperSummary = DeveloperSummary(
     consoles = consoles,
 )
 
+fun GenreCountDto.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown = DeveloperDetailGenreBreakdown(
+    name = name,
+    gameCount = gameCount,
+)
+
+fun DeveloperDetailPlatformBreakdownDto.toDomain(): DeveloperDetailPlatformBreakdown = DeveloperDetailPlatformBreakdown(
+    consoleName = consoleName,
+    consoleId = consoleId,
+    count = count,
+)
+
+fun DeveloperDetailUserStatsDto.toDomain(): DeveloperDetailUserStats = DeveloperDetailUserStats(
+    totalPlayTime = totalPlayTime,
+    gamesPlayed = gamesPlayed,
+    favoriteCount = favoriteCount,
+    mostPlayedGame = mostPlayedGame?.toDomain(),
+)
+
+fun DeveloperDetailPublisherDto.toDomain(): DeveloperDetailPublisher = DeveloperDetailPublisher(
+    name = name,
+    count = count,
+)
+
 fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount,
     avgRating = avgRating,
     consoles = consoles,
+    heroUrl = heroUrl,
+    topGames = topGames.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toDeveloperGenreBreakdown() },
+    platformBreakdown = platformBreakdown.map { it.toDomain() },
+    userStats = userStats?.toDomain(),
+    publishers = publishers.map { it.toDomain() },
     games = games.map { it.toDomain() },
 )
 
