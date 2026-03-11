@@ -33,7 +33,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if abbr := c.Query("console"); abbr != "" {
 		var console db.Console
 		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", abbr).First(&console).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console: " + abbr})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console"})
 			return
 		}
 		consoleID = console.ID
