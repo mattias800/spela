@@ -14,6 +14,7 @@ export function DropZone({ onFiles, isUploading }: DropZoneProps) {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragOver(false);
+    if (isUploading) return;
     if (e.dataTransfer.files.length > 0) {
       onFiles(Array.from(e.dataTransfer.files));
     }
@@ -29,6 +30,7 @@ export function DropZone({ onFiles, isUploading }: DropZoneProps) {
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (isUploading) return;
     if (e.target.files && e.target.files.length > 0) {
       onFiles(Array.from(e.target.files));
       e.target.value = "";

@@ -185,7 +185,7 @@ func (h *UploadHandler) CheckWritable(c *gin.Context) {
 		return
 	}
 	f.Close()
-	os.Remove(tmpPath)
+	defer os.Remove(tmpPath)
 	c.JSON(http.StatusOK, gin.H{"writable": true})
 }
 
