@@ -171,6 +171,13 @@ export function ConsoleDetailPage() {
       <ConsoleTopDevelopers consoleId={id!} />
       <ConsoleRecentlyPlayed consoleId={id!} />
 
+      {/* Games heading */}
+      {!isLoading && games.length > 0 && (
+        <h2 className="text-lg font-bold text-surface-100">
+          {totalGames} {totalGames === 1 ? "game" : "games"}
+        </h2>
+      )}
+
       {/* Games grid */}
       {isLoading ? (
         <GameGrid>
