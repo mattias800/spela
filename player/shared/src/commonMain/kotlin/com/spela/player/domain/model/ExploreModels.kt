@@ -156,12 +156,22 @@ data class DeveloperDetailPublisher(
     val count: Int,
 )
 
+data class CompanyInfo(
+    val logoUrl: String? = null,
+    val description: String? = null,
+    val foundedYear: Int? = null,
+    val country: String? = null,
+    val websiteUrl: String? = null,
+    val wikipediaUrl: String? = null,
+)
+
 data class DeveloperDetail(
     val name: String,
     val gameCount: Int,
     val avgRating: Double,
     val consoles: List<String>,
     val heroUrl: String? = null,
+    val companyInfo: CompanyInfo? = null,
     val topGames: List<Game> = emptyList(),
     val genreBreakdown: List<DeveloperDetailGenreBreakdown> = emptyList(),
     val platformBreakdown: List<DeveloperDetailPlatformBreakdown> = emptyList(),

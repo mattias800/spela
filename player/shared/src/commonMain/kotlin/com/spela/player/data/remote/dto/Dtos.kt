@@ -1168,6 +1168,16 @@ data class PlayersLikeYouResponseDto(
 // Developer / Publisher
 
 @Serializable
+data class CompanyInfoDto(
+    val logoUrl: String? = null,
+    val description: String? = null,
+    val foundedYear: Int? = null,
+    val country: String? = null,
+    val websiteUrl: String? = null,
+    val wikipediaUrl: String? = null,
+)
+
+@Serializable
 data class DeveloperSummaryDto(
     val name: String,
     val gameCount: Int,
@@ -1208,6 +1218,7 @@ data class DeveloperDetailResponseDto(
     val avgRating: Double,
     val consoles: List<String>,
     val heroUrl: String? = null,
+    val companyInfo: CompanyInfoDto? = null,
     val topGames: List<GameDto> = emptyList(),
     val genreBreakdown: List<GenreCountDto> = emptyList(),
     val platformBreakdown: List<DeveloperDetailPlatformBreakdownDto> = emptyList(),

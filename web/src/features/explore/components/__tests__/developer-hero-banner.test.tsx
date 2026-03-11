@@ -146,4 +146,34 @@ describe("DeveloperHeroBanner", () => {
     );
     expect(container.querySelector("img")).not.toBeInTheDocument();
   });
+
+  it("renders company logo instead of letter avatar when logoUrl provided", () => {
+    render(
+      <DeveloperHeroBanner
+        name="Capcom"
+        gameCount={5}
+        avgRating={0}
+        consoleCount={1}
+        logoUrl="/images/companies/capcom-logo.png"
+      />,
+    );
+    const logo = screen.getByTestId("developer-logo");
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute("src", "/images/companies/capcom-logo.png");
+    expect(logo).toHaveAttribute("alt", "Capcom logo");
+    expect(screen.queryByTestId("developer-avatar")).not.toBeInTheDocument();
+  });
+
+  it("renders letter avatar when logoUrl is not provided", () => {
+    render(
+      <DeveloperHeroBanner
+        name="Capcom"
+        gameCount={5}
+        avgRating={0}
+        consoleCount={1}
+      />,
+    );
+    expect(screen.getByTestId("developer-avatar")).toBeInTheDocument();
+    expect(screen.queryByTestId("developer-logo")).not.toBeInTheDocument();
+  });
 });

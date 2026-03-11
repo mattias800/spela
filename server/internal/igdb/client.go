@@ -590,6 +590,226 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	return games, nil
 }
 
+// CompanyDetail holds extended metadata about a company from IGDB.
+type CompanyDetail struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	LogoImageID  string `json:"logo_image_id"`
+	Country      int    `json:"country"`
+	StartDate    int64  `json:"start_date"`     // Unix timestamp
+	WebsiteURL   string `json:"website_url"`    // official website
+	WikipediaURL string `json:"wikipedia_url"`
+}
+
+// CompanyLogoURL constructs a full logo URL from an image_id.
+func CompanyLogoURL(imageID string) string {
+	if imageID == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/t_logo_med/%s.png", igdbImageBase, imageID)
+}
+
+// GetCompanyByID fetches detailed company information from IGDB by company ID.
+// Returns name, description, logo, country, founding date, and websites.
+// Returns nil, nil if the company is not found.
+func (c *Client) GetCompanyByID(igdbID int) (*CompanyDetail, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name,description,logo.image_id,country,start_date,websites.url,websites.category; where id = %d; limit 1;`,
+		igdbID,
+	)
+
+	slog.Info("IGDB get company request", "igdbID", igdbID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/companies", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB company request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for company: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB company response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Logo        *struct {
+			ImageID string `json:"image_id"`
+		} `json:"logo"`
+		Country   int   `json:"country"`
+		StartDate int64 `json:"start_date"`
+		Websites  []struct {
+			URL      string `json:"url"`
+			Category int    `json:"category"`
+		} `json:"websites"`
+	}
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB company response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB get company: not found", "igdbID", igdbID)
+		return nil, nil
+	}
+
+	r := results[0]
+	detail := &CompanyDetail{
+		ID:          r.ID,
+		Name:        r.Name,
+		Description: r.Description,
+		Country:     r.Country,
+		StartDate:   r.StartDate,
+	}
+
+	if r.Logo != nil {
+		detail.LogoImageID = r.Logo.ImageID
+	}
+
+	// Extract official website (category 1) and Wikipedia (category 3)
+	for _, w := range r.Websites {
+		switch w.Category {
+		case 1:
+			if detail.WebsiteURL == "" {
+				detail.WebsiteURL = w.URL
+			}
+		case 3:
+			if detail.WikipediaURL == "" {
+				detail.WikipediaURL = w.URL
+			}
+		}
+	}
+
+	slog.Info("IGDB get company response", "igdbID", igdbID, "name", detail.Name)
+	return detail, nil
+}
+
+// SearchCompanyByName searches IGDB for companies matching the given name.
+// Returns the first exact match (case-insensitive) or nil if not found.
+func (c *Client) SearchCompanyByName(name string) (*CompanyDetail, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields name,description,logo.image_id,country,start_date,websites.url,websites.category; where name ~ "%s"; limit 5;`,
+		escapeQuery(name),
+	)
+
+	slog.Info("IGDB search company by name request", "name", name)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/companies", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB company search request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for company search: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB company search response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Logo        *struct {
+			ImageID string `json:"image_id"`
+		} `json:"logo"`
+		Country   int   `json:"country"`
+		StartDate int64 `json:"start_date"`
+		Websites  []struct {
+			URL      string `json:"url"`
+			Category int    `json:"category"`
+		} `json:"websites"`
+	}
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB company search response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB search company by name: not found", "name", name)
+		return nil, nil
+	}
+
+	// Pick the first result (case-insensitive exact match preferred)
+	r := results[0]
+	for _, candidate := range results {
+		if strings.EqualFold(candidate.Name, name) {
+			r = candidate
+			break
+		}
+	}
+
+	detail := &CompanyDetail{
+		ID:          r.ID,
+		Name:        r.Name,
+		Description: r.Description,
+		Country:     r.Country,
+		StartDate:   r.StartDate,
+	}
+
+	if r.Logo != nil {
+		detail.LogoImageID = r.Logo.ImageID
+	}
+
+	for _, w := range r.Websites {
+		switch w.Category {
+		case 1:
+			if detail.WebsiteURL == "" {
+				detail.WebsiteURL = w.URL
+			}
+		case 3:
+			if detail.WikipediaURL == "" {
+				detail.WikipediaURL = w.URL
+			}
+		}
+	}
+
+	slog.Info("IGDB search company by name response", "name", name, "matchedName", detail.Name, "igdbID", detail.ID)
+	return detail, nil
+}
+
 // --- Enrichment types for Phase 2 Explore ---
 
 // GameEnrichment holds extended metadata fetched from IGDB for a single game.

@@ -6,6 +6,7 @@ import { GameCardSkeleton } from "@/components/ui";
 import { GameShelf } from "@/features/explore/components/game-shelf";
 import { DeveloperHeroBanner } from "@/features/explore/components/developer-hero-banner";
 import { DeveloperStatsCard } from "@/features/explore/components/developer-stats-card";
+import { CompanyInfoSection } from "@/features/explore/components/company-info-section";
 import { usePublisherDetail } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -156,7 +157,13 @@ export function PublisherDetailPage() {
         avgRating={publisher.avgRating}
         consoleCount={publisher.consoles.length}
         heroUrl={publisher.heroUrl}
+        logoUrl={publisher.companyInfo?.logoUrl}
       />
+
+      {/* Company Info */}
+      {publisher.companyInfo && (
+        <CompanyInfoSection companyInfo={publisher.companyInfo} />
+      )}
 
       {/* Top Rated Row */}
       {showTopRated && (

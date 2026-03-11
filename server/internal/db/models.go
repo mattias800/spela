@@ -636,6 +636,21 @@ type GameArtwork struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
+// Company represents an IGDB game development/publishing company with metadata.
+type Company struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	IGDBCompanyID int       `gorm:"uniqueIndex" json:"igdbCompanyId"`
+	Name          string    `gorm:"index" json:"name"`
+	Description   string    `gorm:"type:text" json:"description,omitempty"`
+	LogoURL       string    `gorm:"size:512" json:"logoUrl,omitempty"`
+	Country       int       `json:"country,omitempty"`
+	FoundedYear   int       `json:"foundedYear,omitempty"`
+	WebsiteURL    string    `gorm:"size:512" json:"websiteUrl,omitempty"`
+	WikipediaURL  string    `gorm:"size:512" json:"wikipediaUrl,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
 // --- Phase 2 Explore: IGDB Enrichment models ---
 
 // GameTheme stores an IGDB theme associated with a game (e.g., "Fantasy", "Sci-Fi").

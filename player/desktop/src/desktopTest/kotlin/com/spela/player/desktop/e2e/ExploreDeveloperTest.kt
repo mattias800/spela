@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailGenreBreakdown
 import com.spela.player.domain.model.DeveloperDetailPlatformBreakdown
@@ -569,5 +570,177 @@ class ExploreDeveloperTest {
         advance(harness)
 
         onNodeWithTag("developer_publishers_section").assertDoesNotExist()
+    }
+
+    // --- Company Info: Logo ---
+
+    private val companyInfoFull = CompanyInfo(
+        logoUrl = "https://example.com/capcom-logo.png",
+        description = "Capcom Co., Ltd. is a Japanese video game developer and publisher known for creating multi-million-selling game franchises including Street Fighter, Mega Man, and Resident Evil.",
+        foundedYear = 1979,
+        country = "Japan",
+        websiteUrl = "https://www.capcom.com",
+        wikipediaUrl = "https://en.wikipedia.org/wiki/Capcom",
+    )
+
+    private val detailWithCompanyInfo = richDeveloperDetail.copy(
+        companyInfo = companyInfoFull,
+    )
+
+    private val detailWithLogoOnly = sampleDeveloperDetail.copy(
+        companyInfo = CompanyInfo(
+            logoUrl = "https://example.com/square-logo.png",
+        ),
+    )
+
+    private val detailWithDescriptionOnly = sampleDeveloperDetail.copy(
+        companyInfo = CompanyInfo(
+            description = "Square was a Japanese video game company.",
+            foundedYear = 1986,
+            country = "Japan",
+        ),
+    )
+
+    @Test
+    fun companyLogoShownWhenAvailable() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_hero_banner").assertExists()
+        onNodeWithTag("developer_company_logo").assertExists()
+        onNodeWithTag("developer_letter_avatar").assertDoesNotExist()
+    }
+
+    @Test
+    fun letterAvatarFallbackWhenNoLogo() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_hero_banner").assertExists()
+        onNodeWithTag("developer_letter_avatar").assertExists()
+        onNodeWithTag("developer_company_logo").assertDoesNotExist()
+    }
+
+    @Test
+    fun letterAvatarShownWhenCompanyInfoHasNoLogo() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Square" to detailWithDescriptionOnly)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_letter_avatar").assertExists()
+        onNodeWithTag("developer_company_logo").assertDoesNotExist()
+    }
+
+    // --- Company Info: Description Section ---
+
+    @Test
+    fun companyDescriptionSectionShown() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_company_description_section"))
+        onNodeWithTag("developer_company_description_section").assertExists()
+        onNodeWithTag("developer_company_about_header").assertExists()
+        onNodeWithText("About").assertExists()
+        onNodeWithTag("developer_company_description").assertExists()
+        onNodeWithTag("developer_company_description_toggle").assertExists()
+        onNodeWithText("Show more").assertExists()
+    }
+
+    @Test
+    fun companyDescriptionToggleExpandsAndCollapses() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_company_description_toggle"))
+
+        // Initially shows "Show more"
+        onNodeWithText("Show more").assertExists()
+
+        // Click to expand
+        onNodeWithTag("developer_company_description_toggle").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Show less").assertExists()
+
+        // Click to collapse
+        onNodeWithTag("developer_company_description_toggle").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Show more").assertExists()
+    }
+
+    @Test
+    fun companyMetadataShowsFoundedYearAndCountry() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_detail_content")
+            .performScrollToNode(hasTestTag("developer_company_metadata"))
+        onNodeWithTag("developer_company_metadata").assertExists()
+        onNodeWithText("Founded 1979 \u2014 Japan").assertExists()
+    }
+
+    @Test
+    fun companyDescriptionHiddenWhenNoDescription() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Square" to detailWithLogoOnly)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_company_description_section").assertDoesNotExist()
+    }
+
+    @Test
+    fun companyDescriptionHiddenWhenNoCompanyInfo() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
+        )
+        advance(harness)
+
+        onNodeWithTag("developer_company_description_section").assertDoesNotExist()
     }
 }

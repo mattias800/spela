@@ -36,6 +36,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperGameItem
 import com.spela.player.presentation.ui.feature.explore.DeveloperGenreBreakdown
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
@@ -112,6 +113,18 @@ fun ExploreDeveloperScreen(
                                 detail = detail,
                                 modifier = Modifier.testTag("developer_hero_banner"),
                             )
+                        }
+
+                        // Company Description (below hero banner)
+                        val companyInfo = detail.companyInfo
+                        if (companyInfo?.description != null) {
+                            item {
+                                Spacer(Modifier.height(SpSpacing.Large))
+                                DeveloperCompanyDescription(
+                                    companyInfo = companyInfo,
+                                    modifier = Modifier.testTag("developer_company_description_section"),
+                                )
+                            }
                         }
 
                         // (b) Top Rated Row

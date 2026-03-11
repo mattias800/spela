@@ -141,6 +141,9 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		userStats = h.buildEntityUserStats(userID, games, gameResponses)
 	}
 
+	// Look up company metadata (lazy-fetched from IGDB)
+	companyInfo := h.lookupCompanyInfo(canonicalName)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperDetailResponse{
 		Name:              canonicalName,
@@ -154,6 +157,7 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		PlatformBreakdown: platformBreakdown,
 		UserStats:         userStats,
 		Publishers:        publishers,
+		CompanyInfo:       companyInfo,
 	})
 }
 
@@ -205,6 +209,9 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		userStats = h.buildEntityUserStats(userID, games, gameResponses)
 	}
 
+	// Look up company metadata (lazy-fetched from IGDB)
+	companyInfo := h.lookupCompanyInfo(canonicalName)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, PublisherDetailResponse{
 		Name:              canonicalName,
@@ -218,6 +225,7 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		PlatformBreakdown: platformBreakdown,
 		UserStats:         userStats,
 		Developers:        developers,
+		CompanyInfo:       companyInfo,
 	})
 }
 

@@ -422,6 +422,11 @@ class ExploreRepositoryImpl(
     private fun resolveEntityDetail(dto: DeveloperDetailResponseDto): DeveloperDetail =
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            companyInfo = dto.companyInfo?.let { info ->
+                info.toDomain().copy(
+                    logoUrl = apiClient.resolveUrl(info.logoUrl),
+                )
+            },
             topGames = dto.topGames.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
