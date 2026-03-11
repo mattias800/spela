@@ -1,12 +1,14 @@
 package api
 
 import (
+	"github.com/spela/server/internal/igdb"
 	"gorm.io/gorm"
 )
 
 // ExploreHandler handles explore page endpoints.
 type ExploreHandler struct {
-	DB *gorm.DB
+	DB         *gorm.DB
+	IGDBClient *igdb.Client
 }
 
 // FeaturedGameResponse is the API response for a featured game in the hero carousel.
@@ -60,6 +62,17 @@ type DeveloperListResponse struct {
 	Developers []DeveloperSummary `json:"developers"`
 }
 
+// CompanyInfo holds optional rich metadata for a developer or publisher,
+// sourced from IGDB company data.
+type CompanyInfo struct {
+	LogoURL      string `json:"logoUrl,omitempty"`
+	Description  string `json:"description,omitempty"`
+	FoundedYear  int    `json:"foundedYear,omitempty"`
+	Country      string `json:"country,omitempty"`
+	WebsiteURL   string `json:"websiteUrl,omitempty"`
+	WikipediaURL string `json:"wikipediaUrl,omitempty"`
+}
+
 // DeveloperDetailResponse is the API response for a developer detail page.
 type DeveloperDetailResponse struct {
 	Name              string              `json:"name"`
@@ -73,6 +86,7 @@ type DeveloperDetailResponse struct {
 	PlatformBreakdown []PlatformCount     `json:"platformBreakdown"`
 	UserStats         *EntityUserStats    `json:"userStats,omitempty"`
 	Publishers        []NameCount         `json:"publishers"`
+	CompanyInfo       *CompanyInfo        `json:"companyInfo,omitempty"`
 }
 
 // PublisherDetailResponse is the API response for a publisher detail page.
@@ -88,6 +102,7 @@ type PublisherDetailResponse struct {
 	PlatformBreakdown []PlatformCount     `json:"platformBreakdown"`
 	UserStats         *EntityUserStats    `json:"userStats,omitempty"`
 	Developers        []NameCount         `json:"developers"`
+	CompanyInfo       *CompanyInfo        `json:"companyInfo,omitempty"`
 }
 
 // PlatformCount holds a console name/ID and the number of games on that platform.

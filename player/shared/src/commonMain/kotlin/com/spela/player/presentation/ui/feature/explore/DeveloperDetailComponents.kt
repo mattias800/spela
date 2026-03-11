@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.feature.explore
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,12 +28,18 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -40,6 +48,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
+import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
@@ -99,18 +109,28 @@ internal fun DeveloperHeroBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
-                // Avatar (first letter)
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(SpColor.Primary.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = detail.name.take(1).uppercase(),
-                        style = SpTypography.HeadlineMedium,
-                        color = SpColor.OnPrimary,
+                // Company logo or letter avatar fallback
+                val logoUrl = detail.companyInfo?.logoUrl
+                if (logoUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = logoUrl,
+                        contentDescription = "${detail.name} logo",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .testTag("developer_company_logo"),
+                        contentScale = ContentScale.Fit,
+                        loading = {
+                            LetterAvatar(detail.name)
+                        },
+                        error = {
+                            LetterAvatar(detail.name)
+                        },
+                    )
+                } else {
+                    LetterAvatar(
+                        name = detail.name,
+                        modifier = Modifier.testTag("developer_letter_avatar"),
                     )
                 }
 
@@ -576,5 +596,129 @@ internal fun DeveloperPublishersSection(
                 )
             }
         }
+    }
+}
+
+// --- Letter Avatar (extracted for reuse) ---
+
+@Composable
+private fun LetterAvatar(
+    name: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(SpColor.Primary.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = name.take(1).uppercase(),
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnPrimary,
+        )
+    }
+}
+
+// --- Company Description Section ---
+
+@Composable
+internal fun DeveloperCompanyDescription(
+    companyInfo: CompanyInfo,
+    modifier: Modifier = Modifier,
+) {
+    val description = companyInfo.description ?: return
+
+    var expanded by remember { mutableStateOf(false) }
+    var hasVisualOverflow by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
+
+    Column(
+        modifier = modifier
+            .padding(horizontal = SpSpacing.ScreenHorizontal),
+    ) {
+        Text(
+            text = "About",
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier.testTag("developer_company_about_header"),
+        )
+        Spacer(Modifier.height(SpSpacing.Medium))
+
+        Column(
+            modifier = Modifier.animateContentSize(),
+        ) {
+            Text(
+                text = description,
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+                maxLines = if (expanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { result ->
+                    if (!expanded) hasVisualOverflow = result.hasVisualOverflow
+                },
+                modifier = Modifier.testTag("developer_company_description"),
+            )
+
+            if (hasVisualOverflow || expanded) {
+                Spacer(Modifier.height(SpSpacing.XSmall))
+
+                Text(
+                    text = if (expanded) "Show less" else "Show more",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.Primary,
+                    modifier = Modifier
+                        .clickable { expanded = !expanded }
+                        .testTag("developer_company_description_toggle"),
+                )
+            }
+        }
+
+        // Metadata line: "Founded {year} — {country}"
+        val metaParts = buildList {
+            companyInfo.foundedYear?.let { add("Founded $it") }
+            companyInfo.country?.let { add(it) }
+        }
+        if (metaParts.isNotEmpty()) {
+            Spacer(Modifier.height(SpSpacing.Medium))
+            Text(
+                text = metaParts.joinToString(" \u2014 "),
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.testTag("developer_company_metadata"),
+            )
+        }
+
+        // External links
+        val websiteUrl = companyInfo.websiteUrl
+        val wikipediaUrl = companyInfo.wikipediaUrl
+        if (!websiteUrl.isNullOrBlank() || !wikipediaUrl.isNullOrBlank()) {
+            Spacer(Modifier.height(SpSpacing.Medium))
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+                if (!websiteUrl.isNullOrBlank()) {
+                    Text(
+                        text = "Website",
+                        style = SpTypography.LabelMedium,
+                        color = SpColor.Primary,
+                        modifier = Modifier
+                            .clickable { uriHandler.openUri(websiteUrl) }
+                            .testTag("developer_company_website_link"),
+                    )
+                }
+                if (!wikipediaUrl.isNullOrBlank()) {
+                    Text(
+                        text = "Wikipedia",
+                        style = SpTypography.LabelMedium,
+                        color = SpColor.Primary,
+                        modifier = Modifier
+                            .clickable { uriHandler.openUri(wikipediaUrl) }
+                            .testTag("developer_company_wikipedia_link"),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(SpSpacing.Large))
     }
 }

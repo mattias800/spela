@@ -706,12 +706,22 @@ fun DeveloperDetailPublisherDto.toDomain(): DeveloperDetailPublisher = Developer
     count = count,
 )
 
+fun CompanyInfoDto.toDomain(): CompanyInfo = CompanyInfo(
+    logoUrl = logoUrl,
+    description = description,
+    foundedYear = foundedYear,
+    country = country,
+    websiteUrl = websiteUrl,
+    wikipediaUrl = wikipediaUrl,
+)
+
 fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount,
     avgRating = avgRating,
     consoles = consoles,
     heroUrl = heroUrl,
+    companyInfo = companyInfo?.toDomain(),
     topGames = topGames.map { it.toDomain() },
     genreBreakdown = genreBreakdown.map { it.toDeveloperGenreBreakdown() },
     platformBreakdown = platformBreakdown.map { it.toDomain() },

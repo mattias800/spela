@@ -431,4 +431,49 @@ describe("DeveloperDetailPage", () => {
       screen.queryByTestId("developer-user-stats"),
     ).not.toBeInTheDocument();
   });
+
+  // --- Company Info section ---
+
+  it("shows company info section when companyInfo is present", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        companyInfo: {
+          description: "A famous game developer.",
+          foundedYear: 1979,
+          country: "Japan",
+          websiteUrl: "https://www.capcom.com",
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("company-info-section")).toBeInTheDocument();
+    expect(screen.getByTestId("company-metadata")).toHaveTextContent(
+      "Founded 1979",
+    );
+  });
+
+  it("hides company info section when companyInfo is absent", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("company-info-section"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("passes logoUrl to hero banner when companyInfo has logo", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        companyInfo: {
+          logoUrl: "/images/companies/capcom-logo.png",
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const logo = screen.getByTestId("developer-logo");
+    expect(logo).toHaveAttribute("src", "/images/companies/capcom-logo.png");
+    expect(screen.queryByTestId("developer-avatar")).not.toBeInTheDocument();
+  });
 });

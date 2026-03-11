@@ -1111,6 +1111,15 @@ export interface EntityUserStats {
   mostPlayedGame: Game | null;
 }
 
+export interface CompanyInfo {
+  logoUrl?: string;
+  description?: string;
+  foundedYear?: number;
+  country?: string;
+  websiteUrl?: string;
+  wikipediaUrl?: string;
+}
+
 export interface DeveloperDetailResponse {
   name: string;
   gameCount: number;
@@ -1123,6 +1132,7 @@ export interface DeveloperDetailResponse {
   platformBreakdown?: PlatformCount[];
   userStats?: EntityUserStats;
   publishers?: NameCount[];
+  companyInfo?: CompanyInfo;
 }
 
 export interface PublisherDetailResponse {
@@ -1137,6 +1147,7 @@ export interface PublisherDetailResponse {
   platformBreakdown?: PlatformCount[];
   userStats?: EntityUserStats;
   developers?: NameCount[];
+  companyInfo?: CompanyInfo;
 }
 
 export interface DeveloperSpotlightResponse {

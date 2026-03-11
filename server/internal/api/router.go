@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -172,7 +173,11 @@ func NewRouter(cfg Config) *gin.Engine {
 	challengeHandler.AttemptRateLimitSeconds = cfg.ChallengeAttemptRateLimitSec
 	sessionHandler := &SessionHandler{DB: cfg.DB, Storage: cfg.Storage}
 	artworkHandler := &ArtworkHandler{DB: cfg.DB}
-	exploreHandler := &ExploreHandler{DB: cfg.DB}
+	var igdbClient *igdb.Client
+	if cfg.Scraper != nil {
+		igdbClient = cfg.Scraper.IGDBClient
+	}
+	exploreHandler := &ExploreHandler{DB: cfg.DB, IGDBClient: igdbClient}
 	savedSearchHandler := &SavedSearchHandler{DB: cfg.DB}
 	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}

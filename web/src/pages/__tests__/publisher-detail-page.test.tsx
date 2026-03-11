@@ -413,4 +413,49 @@ describe("PublisherDetailPage", () => {
       screen.queryByTestId("developer-user-stats"),
     ).not.toBeInTheDocument();
   });
+
+  // --- Company Info section ---
+
+  it("shows company info section when companyInfo is present", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        companyInfo: {
+          description: "A famous game publisher.",
+          foundedYear: 1889,
+          country: "Japan",
+          wikipediaUrl: "https://en.wikipedia.org/wiki/Nintendo",
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.getByTestId("company-info-section")).toBeInTheDocument();
+    expect(screen.getByTestId("company-metadata")).toHaveTextContent(
+      "Founded 1889",
+    );
+  });
+
+  it("hides company info section when companyInfo is absent", () => {
+    renderPage();
+    expect(
+      screen.queryByTestId("company-info-section"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("passes logoUrl to hero banner when companyInfo has logo", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        companyInfo: {
+          logoUrl: "/images/companies/nintendo-logo.png",
+        },
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const logo = screen.getByTestId("developer-logo");
+    expect(logo).toHaveAttribute("src", "/images/companies/nintendo-logo.png");
+    expect(screen.queryByTestId("developer-avatar")).not.toBeInTheDocument();
+  });
 });

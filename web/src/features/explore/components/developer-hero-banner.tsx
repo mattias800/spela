@@ -6,6 +6,7 @@ interface DeveloperHeroBannerProps {
   avgRating: number;
   consoleCount: number;
   heroUrl?: string;
+  logoUrl?: string;
 }
 
 /** Generates a deterministic color from a string, used for the avatar circle. */
@@ -28,6 +29,7 @@ export function DeveloperHeroBanner({
   avgRating,
   consoleCount,
   heroUrl,
+  logoUrl,
 }: DeveloperHeroBannerProps) {
   const color = avatarColor(name);
 
@@ -59,14 +61,23 @@ export function DeveloperHeroBanner({
       {/* Content */}
       <div className="relative px-6 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center gap-4 mb-4">
-          {/* Avatar circle */}
-          <div
-            className="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-full text-2xl font-bold text-white"
-            style={{ backgroundColor: color }}
-            data-testid="developer-avatar"
-          >
-            {name.charAt(0).toUpperCase()}
-          </div>
+          {/* Avatar / Logo */}
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`${name} logo`}
+              className="flex-shrink-0 w-16 h-16 object-contain rounded-lg"
+              data-testid="developer-logo"
+            />
+          ) : (
+            <div
+              className="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-full text-2xl font-bold text-white"
+              style={{ backgroundColor: color }}
+              data-testid="developer-avatar"
+            >
+              {name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <h1 className="text-3xl sm:text-4xl font-bold text-white">
             {name}
           </h1>

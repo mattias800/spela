@@ -154,6 +154,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SessionCheatSetting{},
 		&DailyPlayActivity{},
 		&GameArtwork{},
+		// Company metadata
+		&Company{},
 		// Phase 2 Explore: IGDB enrichment
 		&GameTheme{},
 		&GameKeyword{},
