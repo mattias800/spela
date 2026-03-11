@@ -531,6 +531,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/enrich-metadata/status", enrichmentHandler.EnrichMetadataStatus)
 
 			// ROM uploads
+			admin.GET("/uploads/writable", uploadHandler.CheckWritable)
 			admin.POST("/uploads", uploadHandler.UploadROMs)
 			admin.GET("/uploads", uploadHandler.ListUploads)
 			admin.POST("/uploads/:id/console", uploadHandler.SetConsole)

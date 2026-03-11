@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import {
+  AlertTriangle,
   CheckCheck,
   XCircle,
   Trash2,
@@ -12,6 +13,7 @@ import { useToast } from "@/components/ui";
 import {
   useStagedUploads,
   useUploadRoms,
+  useUploadWritable,
   useScrapeAllUploads,
   useAcceptUpload,
   useRejectUpload,
@@ -29,6 +31,8 @@ import { StagedUploadCard } from "@/features/upload/components/staged-upload-car
 
 export function UploadRomsPage() {
   const { toast } = useToast();
+  const { data: writable } = useUploadWritable();
+  const isReadonly = writable?.writable === false;
   const { data: uploads, isLoading: isLoadingUploads } = useStagedUploads();
   const uploadRoms = useUploadRoms();
   const scrapeAll = useScrapeAllUploads();
@@ -212,7 +216,26 @@ export function UploadRomsPage() {
         </p>
       </div>
 
-      <DropZone onFiles={handleFiles} isUploading={uploadRoms.isPending} />
+      {isReadonly && (
+        <div
+          className="flex items-start gap-3 rounded-xl border border-warning-700/50 bg-warning-900/30 p-4"
+          data-testid="readonly-warning"
+        >
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-300" />
+          <div className="text-sm text-warning-300">
+            <p className="font-medium">Uploads unavailable</p>
+            <p className="mt-1">
+              Game library directory is read-only. Contact your server
+              administrator to fix directory permissions.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <DropZone
+        onFiles={handleFiles}
+        isUploading={uploadRoms.isPending || isReadonly}
+      />
 
       <UploadProgress files={fileStatuses} />
 
