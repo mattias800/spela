@@ -823,6 +823,21 @@ export interface CompleteAttemptResponse {
   isNewBest: boolean;
 }
 
+// --- Replace ROM ---
+
+export interface ReplaceROMResult {
+  verified: boolean;
+  crc32: string;
+  canonicalName?: string;
+  previousStatus: string;
+  previousCrc32: string;
+}
+
+export interface ReplaceROMResponse {
+  game: Game;
+  replacementResult: ReplaceROMResult;
+}
+
 // --- Staged Uploads ---
 
 export type StagedUploadStatus =

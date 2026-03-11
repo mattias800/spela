@@ -520,6 +520,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/bios/download", biosHandler.TriggerDownload)
 			admin.DELETE("/bios/:filename", biosHandler.DeleteBiosFile)
 			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
+			admin.PUT("/games/:id/replace-rom", uploadLimiter.RateLimit(), gameHandler.ReplaceROM)
 			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
 			admin.GET("/cheats/stats", adminHandler.GetCheatStats)
 			admin.GET("/core-compatibility", adminHandler.GetCoreCompatibility)

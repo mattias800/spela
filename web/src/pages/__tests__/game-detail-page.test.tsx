@@ -8,6 +8,13 @@ vi.mock("@/hooks/use-games", () => ({
   useGame: vi.fn(),
   useToggleFavorite: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useScrapeIfNeeded: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useReplaceRom: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+  })),
 }));
 
 vi.mock("@/hooks/use-play-later", () => ({
