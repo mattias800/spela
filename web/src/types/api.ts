@@ -1145,6 +1145,18 @@ export interface TimelineEntry {
   games: TimelineGame[];
 }
 
+export interface RelatedDeveloper {
+  name: string;
+  gameCount: number;
+  sharedPublishers: string[];
+}
+
+export interface RelatedPublisher {
+  name: string;
+  gameCount: number;
+  sharedDevelopers: string[];
+}
+
 export interface DeveloperDetailResponse {
   name: string;
   gameCount: number;
@@ -1162,6 +1174,7 @@ export interface DeveloperDetailResponse {
   ratingDistribution?: RatingDistribution;
   primaryGenre?: string;
   timeline?: TimelineEntry[];
+  relatedDevelopers?: RelatedDeveloper[];
 }
 
 export interface PublisherDetailResponse {
@@ -1181,6 +1194,7 @@ export interface PublisherDetailResponse {
   ratingDistribution?: RatingDistribution;
   primaryGenre?: string;
   timeline?: TimelineEntry[];
+  relatedPublishers?: RelatedPublisher[];
 }
 
 export interface DeveloperSpotlightResponse {

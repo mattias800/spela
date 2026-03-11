@@ -102,6 +102,20 @@ type TimelineEntry struct {
 	Games []TimelineGame `json:"games"`
 }
 
+// RelatedDeveloper represents another developer that shares publishers with the current one.
+type RelatedDeveloper struct {
+	Name             string   `json:"name"`
+	GameCount        int      `json:"gameCount"`
+	SharedPublishers []string `json:"sharedPublishers"`
+}
+
+// RelatedPublisher represents another publisher that shares developers with the current one.
+type RelatedPublisher struct {
+	Name             string   `json:"name"`
+	GameCount        int      `json:"gameCount"`
+	SharedDevelopers []string `json:"sharedDevelopers"`
+}
+
 // DeveloperDetailResponse is the API response for a developer detail page.
 type DeveloperDetailResponse struct {
 	Name               string              `json:"name"`
@@ -120,6 +134,7 @@ type DeveloperDetailResponse struct {
 	RatingDistribution RatingDistribution  `json:"ratingDistribution"`
 	PrimaryGenre       string              `json:"primaryGenre,omitempty"`
 	Timeline           []TimelineEntry     `json:"timeline,omitempty"`
+	RelatedDevelopers  []RelatedDeveloper  `json:"relatedDevelopers,omitempty"`
 }
 
 // PublisherDetailResponse is the API response for a publisher detail page.
@@ -140,6 +155,7 @@ type PublisherDetailResponse struct {
 	RatingDistribution RatingDistribution  `json:"ratingDistribution"`
 	PrimaryGenre       string              `json:"primaryGenre,omitempty"`
 	Timeline           []TimelineEntry     `json:"timeline,omitempty"`
+	RelatedPublishers  []RelatedPublisher  `json:"relatedPublishers,omitempty"`
 }
 
 // PlatformCount holds a console name/ID and the number of games on that platform.

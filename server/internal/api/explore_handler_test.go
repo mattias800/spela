@@ -5151,3 +5151,212 @@ func TestGetPublisherDetail_NonExistent_StatisticsDefaults(t *testing.T) {
 	assert.Empty(t, resp.PrimaryGenre)
 	assert.Nil(t, resp.Timeline)
 }
+
+// --- Related Developers tests ---
+
+func TestGetDeveloperDetail_RelatedDevelopers_SharedPublishers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Developer "Intelligent Systems" published by "Nintendo"
+	createExploreGameWithDev(t, env.database, "NES", "Fire Emblem", 88, "Intelligent Systems", "Nintendo")
+	createExploreGameWithDev(t, env.database, "SNES", "Paper Mario", 85, "Intelligent Systems", "Nintendo")
+
+	// Developer "HAL Laboratory" also published by "Nintendo"
+	createExploreGameWithDev(t, env.database, "NES", "Kirby", 82, "HAL Laboratory", "Nintendo")
+	createExploreGameWithDev(t, env.database, "SNES", "Smash Bros", 90, "HAL Laboratory", "Nintendo")
+
+	// Developer "Retro Studios" also published by "Nintendo"
+	createExploreGameWithDev(t, env.database, "GBA", "Metroid Prime", 95, "Retro Studios", "Nintendo")
+
+	// Developer "Capcom" published by "Capcom" — NOT related
+	createExploreGameWithDev(t, env.database, "NES", "Mega Man", 80, "Capcom", "Capcom")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Intelligent%20Systems", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.RelatedDevelopers)
+	require.Len(t, resp.RelatedDevelopers, 2) // HAL Laboratory and Retro Studios
+
+	// Both share "Nintendo" as publisher; HAL has more games so should come first
+	assert.Equal(t, "HAL Laboratory", resp.RelatedDevelopers[0].Name)
+	assert.Equal(t, 2, resp.RelatedDevelopers[0].GameCount)
+	assert.Equal(t, []string{"Nintendo"}, resp.RelatedDevelopers[0].SharedPublishers)
+
+	assert.Equal(t, "Retro Studios", resp.RelatedDevelopers[1].Name)
+	assert.Equal(t, 1, resp.RelatedDevelopers[1].GameCount)
+	assert.Equal(t, []string{"Nintendo"}, resp.RelatedDevelopers[1].SharedPublishers)
+}
+
+func TestGetDeveloperDetail_RelatedDevelopers_NoSharedPublishers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Developer "Capcom" published only by "Capcom"
+	createExploreGameWithDev(t, env.database, "NES", "Mega Man", 80, "Capcom", "Capcom")
+	createExploreGameWithDev(t, env.database, "SNES", "Street Fighter", 85, "Capcom", "Capcom")
+
+	// Developer "Square" published only by "Square" — no overlap
+	createExploreGameWithDev(t, env.database, "SNES", "FF6", 96, "Square", "Square")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Square", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// No related developers since no other developer publishes with "Square"
+	assert.Nil(t, resp.RelatedDevelopers)
+}
+
+func TestGetDeveloperDetail_RelatedDevelopers_SelfPublished(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Developer "Nintendo" publishes its own games
+	createExploreGameWithDev(t, env.database, "NES", "Mario Bros", 90, "Nintendo", "Nintendo")
+
+	// Developer "HAL Laboratory" also published by "Nintendo"
+	createExploreGameWithDev(t, env.database, "SNES", "Kirby", 82, "HAL Laboratory", "Nintendo")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/Nintendo", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Nintendo (the developer) shares publisher "Nintendo" with HAL Laboratory
+	require.NotNil(t, resp.RelatedDevelopers)
+	require.Len(t, resp.RelatedDevelopers, 1)
+	assert.Equal(t, "HAL Laboratory", resp.RelatedDevelopers[0].Name)
+	assert.Equal(t, []string{"Nintendo"}, resp.RelatedDevelopers[0].SharedPublishers)
+}
+
+func TestGetDeveloperDetail_RelatedDevelopers_MultipleSharedPublishers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Developer "DevA" published by both "PubX" and "PubY"
+	createExploreGameWithDev(t, env.database, "NES", "Game A1", 80, "DevA", "PubX")
+	createExploreGameWithDev(t, env.database, "SNES", "Game A2", 85, "DevA", "PubY")
+
+	// Developer "DevB" also published by both "PubX" and "PubY"
+	createExploreGameWithDev(t, env.database, "NES", "Game B1", 75, "DevB", "PubX")
+	createExploreGameWithDev(t, env.database, "SNES", "Game B2", 70, "DevB", "PubY")
+
+	// Developer "DevC" published only by "PubX"
+	createExploreGameWithDev(t, env.database, "GBA", "Game C1", 60, "DevC", "PubX")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/developers/DevA", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp DeveloperDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.RelatedDevelopers)
+	require.Len(t, resp.RelatedDevelopers, 2)
+
+	// DevB shares 2 publishers, DevC shares 1 — DevB should rank first
+	assert.Equal(t, "DevB", resp.RelatedDevelopers[0].Name)
+	assert.Equal(t, 2, resp.RelatedDevelopers[0].GameCount)
+	assert.Equal(t, []string{"PubX", "PubY"}, resp.RelatedDevelopers[0].SharedPublishers)
+
+	assert.Equal(t, "DevC", resp.RelatedDevelopers[1].Name)
+	assert.Equal(t, 1, resp.RelatedDevelopers[1].GameCount)
+	assert.Equal(t, []string{"PubX"}, resp.RelatedDevelopers[1].SharedPublishers)
+}
+
+// --- Related Publishers tests ---
+
+func TestGetPublisherDetail_RelatedPublishers_SharedDevelopers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Publisher "Nintendo" publishes games by "Intelligent Systems"
+	createExploreGameWithDev(t, env.database, "NES", "Fire Emblem", 88, "Intelligent Systems", "Nintendo")
+
+	// Publisher "Atlus" also publishes games by "Intelligent Systems"
+	createExploreGameWithDev(t, env.database, "SNES", "SMT", 85, "Intelligent Systems", "Atlus")
+	createExploreGameWithDev(t, env.database, "GBA", "Persona", 90, "Intelligent Systems", "Atlus")
+
+	// Publisher "Capcom" publishes only its own games — NOT related
+	createExploreGameWithDev(t, env.database, "NES", "Mega Man", 80, "Capcom", "Capcom")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/Nintendo", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	require.NotNil(t, resp.RelatedPublishers)
+	require.Len(t, resp.RelatedPublishers, 1)
+	assert.Equal(t, "Atlus", resp.RelatedPublishers[0].Name)
+	assert.Equal(t, 2, resp.RelatedPublishers[0].GameCount)
+	assert.Equal(t, []string{"Intelligent Systems"}, resp.RelatedPublishers[0].SharedDevelopers)
+}
+
+func TestGetPublisherDetail_RelatedPublishers_NoSharedDevelopers(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Publisher "Capcom" with developer "Capcom"
+	createExploreGameWithDev(t, env.database, "NES", "Mega Man", 80, "Capcom", "Capcom")
+
+	// Publisher "Square" with developer "Square" — no overlap
+	createExploreGameWithDev(t, env.database, "SNES", "FF6", 96, "Square", "Square")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/Capcom", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Nil(t, resp.RelatedPublishers)
+}
+
+func TestGetPublisherDetail_RelatedPublishers_SelfPublished(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// Publisher "Nintendo" publishes games by developer "Nintendo"
+	createExploreGameWithDev(t, env.database, "NES", "Mario Bros", 90, "Nintendo", "Nintendo")
+
+	// Publisher "Sega" also publishes games by developer "Nintendo" (hypothetical cross-publish)
+	createExploreGameWithDev(t, env.database, "SNES", "Sonic Crossover", 75, "Nintendo", "Sega")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/publishers/Nintendo", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp PublisherDetailResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Nintendo (the publisher) shares developer "Nintendo" with Sega
+	require.NotNil(t, resp.RelatedPublishers)
+	require.Len(t, resp.RelatedPublishers, 1)
+	assert.Equal(t, "Sega", resp.RelatedPublishers[0].Name)
+	assert.Equal(t, []string{"Nintendo"}, resp.RelatedPublishers[0].SharedDevelopers)
+}

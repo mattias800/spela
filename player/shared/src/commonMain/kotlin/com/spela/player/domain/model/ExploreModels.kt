@@ -192,6 +192,12 @@ data class TimelineEntry(
     val games: List<TimelineGame>,
 )
 
+data class RelatedDeveloper(
+    val name: String,
+    val gameCount: Int,
+    val sharedPublishers: List<String>,
+)
+
 data class DeveloperDetail(
     val name: String,
     val gameCount: Int,
@@ -209,6 +215,7 @@ data class DeveloperDetail(
     val ratingDistribution: RatingDistribution? = null,
     val primaryGenre: String? = null,
     val timeline: List<TimelineEntry> = emptyList(),
+    val relatedDevelopers: List<RelatedDeveloper> = emptyList(),
 )
 
 data class DeveloperSpotlight(

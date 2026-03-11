@@ -1,6 +1,9 @@
 package com.spela.player.presentation.ui.feature.explore
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -29,6 +32,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
@@ -38,6 +42,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,12 +70,15 @@ import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.RatingDistribution
+import com.spela.player.domain.model.RelatedDeveloper
 import com.spela.player.domain.model.TimelineEntry
 import com.spela.player.domain.model.TimelineGame
+import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpHeroCover
+import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -167,8 +175,9 @@ internal fun DeveloperHeroBanner(
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 modifier = Modifier.testTag("developer_stats_row"),
             ) {
-                Text(
-                    text = "${detail.gameCount} games",
+                AnimatedStatText(
+                    targetValue = detail.gameCount,
+                    suffix = " games",
                     style = SpTypography.BodyMedium,
                     color = SpColor.OnBackgroundSecondary,
                     modifier = Modifier.testTag("developer_game_count"),
@@ -193,8 +202,9 @@ internal fun DeveloperHeroBanner(
                     }
                 }
                 if (detail.consoles.isNotEmpty()) {
-                    Text(
-                        text = "${detail.consoles.size} platforms",
+                    AnimatedStatText(
+                        targetValue = detail.consoles.size,
+                        suffix = " platforms",
                         style = SpTypography.BodyMedium,
                         color = SpColor.OnBackgroundSecondary,
                         modifier = Modifier.testTag("developer_platform_count"),
@@ -762,9 +772,9 @@ internal fun DeveloperAtAGlance(
                 .testTag("developer_at_a_glance_row"),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
-            GlanceStatItem(
+            AnimatedGlanceStatItem(
                 icon = Icons.Filled.Gamepad,
-                value = "${detail.gameCount}",
+                targetValue = detail.gameCount,
                 label = "Games",
                 modifier = Modifier.testTag("developer_glance_games"),
             )
@@ -795,9 +805,9 @@ internal fun DeveloperAtAGlance(
             }
 
             if (detail.consoles.isNotEmpty()) {
-                GlanceStatItem(
+                AnimatedGlanceStatItem(
                     icon = Icons.Filled.SportsEsports,
-                    value = "${detail.consoles.size}",
+                    targetValue = detail.consoles.size,
                     label = "Platforms",
                     modifier = Modifier.testTag("developer_glance_platforms"),
                 )
@@ -1071,5 +1081,266 @@ private fun RatingBar(
             modifier = Modifier.width(28.dp),
             textAlign = TextAlign.End,
         )
+    }
+}
+
+// --- Animated Stat Counter ---
+
+/**
+ * Animates an integer value from 0 to [targetValue] on first composition.
+ * Respects [LocalAnimationsEnabled] — when false (e.g. in tests), the final value
+ * is shown immediately without animation.
+ */
+@Composable
+private fun AnimatedStatText(
+    targetValue: Int,
+    suffix: String = "",
+    style: androidx.compose.ui.text.TextStyle = SpTypography.BodyMedium,
+    color: Color = SpColor.OnBackgroundSecondary,
+    modifier: Modifier = Modifier,
+) {
+    val animationsEnabled = LocalAnimationsEnabled.current
+    val animatable = remember { Animatable(0f) }
+
+    LaunchedEffect(targetValue) {
+        if (animationsEnabled && targetValue > 0) {
+            animatable.snapTo(0f)
+            animatable.animateTo(
+                targetValue = targetValue.toFloat(),
+                animationSpec = tween(
+                    durationMillis = 400,
+                    easing = FastOutSlowInEasing,
+                ),
+            )
+        } else {
+            animatable.snapTo(targetValue.toFloat())
+        }
+    }
+
+    Text(
+        text = "${animatable.value.toInt()}$suffix",
+        style = style,
+        color = color,
+        modifier = modifier,
+    )
+}
+
+/**
+ * GlanceStatItem variant that animates a numeric value from 0 to [targetValue].
+ */
+@Composable
+private fun AnimatedGlanceStatItem(
+    icon: ImageVector,
+    targetValue: Int,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    val animationsEnabled = LocalAnimationsEnabled.current
+    val animatable = remember { Animatable(0f) }
+
+    LaunchedEffect(targetValue) {
+        if (animationsEnabled && targetValue > 0) {
+            animatable.snapTo(0f)
+            animatable.animateTo(
+                targetValue = targetValue.toFloat(),
+                animationSpec = tween(
+                    durationMillis = 400,
+                    easing = FastOutSlowInEasing,
+                ),
+            )
+        } else {
+            animatable.snapTo(targetValue.toFloat())
+        }
+    }
+
+    SpCard(
+        modifier = modifier.width(IntrinsicSize.Min),
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                horizontal = SpSpacing.Medium,
+                vertical = SpSpacing.Small,
+            ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = SpColor.Primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.height(SpSpacing.XXSmall))
+            Text(
+                text = "${animatable.value.toInt()}",
+                style = SpTypography.TitleSmall,
+                color = SpColor.OnBackground,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = label,
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnBackgroundTertiary,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+// --- Related Developers Section ---
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun DeveloperRelatedDevelopersSection(
+    relatedDevelopers: List<RelatedDeveloper>,
+    onDeveloperSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .padding(horizontal = SpSpacing.ScreenHorizontal)
+            .padding(top = SpSpacing.Large),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.People,
+                contentDescription = null,
+                tint = SpColor.Primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = "Related Developers",
+                style = SpTypography.HeadlineMedium,
+                color = SpColor.OnBackground,
+                modifier = Modifier.testTag("developer_related_header"),
+            )
+        }
+        Spacer(Modifier.height(SpSpacing.Medium))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            relatedDevelopers.forEach { related ->
+                RelatedDeveloperCard(
+                    relatedDeveloper = related,
+                    onClick = { onDeveloperSelected(related.name) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedDeveloperCard(
+    relatedDeveloper: RelatedDeveloper,
+    onClick: () -> Unit,
+) {
+    SpCard(
+        modifier = Modifier
+            .testTag("developer_related_card_${relatedDeveloper.name}")
+            .semantics {
+                contentDescription = "${relatedDeveloper.name}, ${relatedDeveloper.gameCount} games"
+                role = Role.Button
+            },
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.padding(SpSpacing.Medium),
+        ) {
+            Text(
+                text = relatedDeveloper.name,
+                style = SpTypography.TitleSmall,
+                color = SpColor.OnCard,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(SpSpacing.XXSmall))
+            Text(
+                text = "${relatedDeveloper.gameCount} games",
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
+            if (relatedDeveloper.sharedPublishers.isNotEmpty()) {
+                Spacer(Modifier.height(SpSpacing.XXSmall))
+                Text(
+                    text = "via ${relatedDeveloper.sharedPublishers.joinToString(", ")}",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.OnBackgroundTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("developer_related_publishers_${relatedDeveloper.name}"),
+                )
+            }
+        }
+    }
+}
+
+// --- Enhanced Skeleton Loading ---
+
+@Composable
+internal fun DeveloperDetailSkeleton(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("developer_detail_loading"),
+    ) {
+        // Hero banner skeleton
+        SpShimmer(
+            modifier = Modifier.fillMaxWidth(),
+            width = 400.dp,
+            height = 200.dp,
+        )
+
+        Spacer(Modifier.height(SpSpacing.Large))
+
+        // At a Glance row skeleton
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SpSpacing.ScreenHorizontal),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            repeat(4) {
+                SpShimmer(width = 80.dp, height = 60.dp)
+            }
+        }
+
+        Spacer(Modifier.height(SpSpacing.Large))
+
+        // Section header skeleton
+        SpShimmer(
+            width = 120.dp,
+            height = 20.dp,
+            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+        )
+
+        Spacer(Modifier.height(SpSpacing.Medium))
+
+        // Game card skeletons
+        repeat(4) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = SpSpacing.ScreenHorizontal,
+                        vertical = SpSpacing.XSmall,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SpShimmer(width = 48.dp, height = 64.dp)
+                Column {
+                    SpShimmer(width = 160.dp, height = 14.dp)
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    SpShimmer(width = 80.dp, height = 12.dp)
+                }
+            }
+        }
     }
 }

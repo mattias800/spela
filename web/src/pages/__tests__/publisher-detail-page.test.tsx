@@ -23,6 +23,11 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
+// Mock the animated counter to return the target value immediately (no animation in tests)
+vi.mock("@/hooks/use-animated-counter", () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
+
 import { usePublisherDetail } from "@/hooks/use-explore";
 
 const mockUsePublisherDetail = usePublisherDetail as ReturnType<typeof vi.fn>;
@@ -194,6 +199,15 @@ describe("PublisherDetailPage", () => {
     });
     renderPage();
     expect(screen.getByTestId("publisher-detail-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows enhanced skeleton with at-a-glance and timeline placeholders", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("skeleton-at-a-glance")).toBeInTheDocument();
   });
 
   it("shows empty state when publisher not found", () => {
@@ -602,5 +616,127 @@ describe("PublisherDetailPage", () => {
     expect(
       screen.queryByTestId("rating-distribution"),
     ).not.toBeInTheDocument();
+  });
+
+  // --- Share button ---
+
+  it("renders share button in hero banner", () => {
+    renderPage();
+    expect(screen.getByTestId("share-button")).toBeInTheDocument();
+    expect(screen.getByTestId("share-button")).toHaveTextContent("Share");
+  });
+
+  it("copies URL to clipboard when share button is clicked", async () => {
+    const user = userEvent.setup();
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+
+    renderPage();
+    await user.click(screen.getByTestId("share-button"));
+
+    expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
+  });
+
+  it("shows toast after copying link", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      writable: true,
+      configurable: true,
+    });
+
+    renderPage();
+    await user.click(screen.getByTestId("share-button"));
+
+    expect(screen.getByTestId("share-toast")).toHaveTextContent("Link copied to clipboard");
+  });
+
+  // --- Related Publishers section ---
+
+  it("shows related publishers section when relatedPublishers is present", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        relatedPublishers: [
+          { name: "Sega", gameCount: 20, sharedDevelopers: ["Sonic Team"] },
+          { name: "Konami", gameCount: 12, sharedDevelopers: ["KCET"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const section = screen.getByTestId("related-publishers");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent("Related Publishers");
+    expect(screen.getByTestId("related-publisher-Sega")).toBeInTheDocument();
+    expect(screen.getByTestId("related-publisher-Konami")).toBeInTheDocument();
+  });
+
+  it("renders related publisher cards with game count and shared developers", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        relatedPublishers: [
+          { name: "Sega", gameCount: 20, sharedDevelopers: ["Sonic Team"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-publisher-Sega");
+    expect(card).toHaveTextContent("Sega");
+    expect(card).toHaveTextContent("20 games");
+    expect(card).toHaveTextContent("via Sonic Team");
+  });
+
+  it("links related publisher cards to their detail page", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        relatedPublishers: [
+          { name: "Sega", gameCount: 20, sharedDevelopers: ["Sonic Team"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-publisher-Sega");
+    expect(card).toHaveAttribute("href", "/explore/publishers/Sega");
+  });
+
+  it("hides related publishers section when empty", () => {
+    renderPage();
+    expect(screen.queryByTestId("related-publishers")).not.toBeInTheDocument();
+  });
+
+  it("hides related publishers section when relatedPublishers is empty array", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        relatedPublishers: [],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("related-publishers")).not.toBeInTheDocument();
+  });
+
+  it("renders singular game count for related publisher with 1 game", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: {
+        ...mockPublisherDetail,
+        relatedPublishers: [
+          { name: "THQ", gameCount: 1, sharedDevelopers: ["Rare"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-publisher-THQ");
+    expect(card).toHaveTextContent("1 game");
   });
 });

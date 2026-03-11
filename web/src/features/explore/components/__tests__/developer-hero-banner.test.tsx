@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
 import { DeveloperHeroBanner } from "@/features/explore/components/developer-hero-banner";
+
+// Mock the animated counter to return the target value immediately (no animation in tests)
+vi.mock("@/hooks/use-animated-counter", () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
 
 describe("DeveloperHeroBanner", () => {
   it("renders the developer name as heading", () => {
@@ -144,7 +150,10 @@ describe("DeveloperHeroBanner", () => {
         consoleCount={1}
       />,
     );
-    expect(container.querySelector("img")).not.toBeInTheDocument();
+    // No hero image, but there could be the logo or avatar images; check specifically for hero
+    const imgs = container.querySelectorAll("img");
+    // Should have no images (no hero, no logo)
+    expect(imgs).toHaveLength(0);
   });
 
   it("renders company logo instead of letter avatar when logoUrl provided", () => {
@@ -175,5 +184,43 @@ describe("DeveloperHeroBanner", () => {
     );
     expect(screen.getByTestId("developer-avatar")).toBeInTheDocument();
     expect(screen.queryByTestId("developer-logo")).not.toBeInTheDocument();
+  });
+
+  // --- Share button ---
+
+  it("renders share button", () => {
+    render(
+      <DeveloperHeroBanner
+        name="Capcom"
+        gameCount={5}
+        avgRating={0}
+        consoleCount={1}
+      />,
+    );
+    expect(screen.getByTestId("share-button")).toBeInTheDocument();
+    expect(screen.getByTestId("share-button")).toHaveTextContent("Share");
+  });
+
+  it("shows copied state when share button is clicked", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      writable: true,
+      configurable: true,
+    });
+
+    render(
+      <DeveloperHeroBanner
+        name="Capcom"
+        gameCount={5}
+        avgRating={0}
+        consoleCount={1}
+      />,
+    );
+
+    await user.click(screen.getByTestId("share-button"));
+
+    expect(screen.getByTestId("share-button")).toHaveTextContent("Copied!");
+    expect(screen.getByTestId("share-toast")).toHaveTextContent("Link copied to clipboard");
   });
 });

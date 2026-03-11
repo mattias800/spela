@@ -6,6 +6,7 @@ import {
   Star,
 } from "lucide-react";
 import type { ActiveYears } from "@/types/api";
+import { useAnimatedCounter } from "@/hooks/use-animated-counter";
 
 interface AtAGlanceRowProps {
   gameCount: number;
@@ -46,12 +47,16 @@ export function AtAGlanceRow({
   platformCount,
   avgRating,
 }: AtAGlanceRowProps) {
+  const animatedGameCount = useAnimatedCounter(gameCount);
+  const animatedPlatformCount = useAnimatedCounter(platformCount);
+  const animatedAvgRating = useAnimatedCounter(avgRating);
+
   const pills: StatPillProps[] = [];
 
   pills.push({
     icon: <Gamepad2 className="h-4 w-4" />,
     label: "Total games",
-    value: String(gameCount),
+    value: String(animatedGameCount),
     testId: "glance-total-games",
   });
 
@@ -81,7 +86,7 @@ export function AtAGlanceRow({
     pills.push({
       icon: <Monitor className="h-4 w-4" />,
       label: platformCount === 1 ? "Platform" : "Platforms",
-      value: String(platformCount),
+      value: String(animatedPlatformCount),
       testId: "glance-platforms",
     });
   }
@@ -90,7 +95,7 @@ export function AtAGlanceRow({
     pills.push({
       icon: <Star className="h-4 w-4 text-amber-400 fill-amber-400" />,
       label: "Avg rating",
-      value: avgRating.toFixed(1),
+      value: animatedAvgRating.toFixed(1),
       testId: "glance-avg-rating",
     });
   }
