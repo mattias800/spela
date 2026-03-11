@@ -202,6 +202,7 @@ export type ApiGetPath = WithQuery<
   | "/admin/settings"
   | "/admin/stats"
   | "/admin/scrape/status"
+  | "/admin/games/scan/status"
   | `/admin/games/${string}/covers`
   | `/admin/games/${string}/igdb-search`
   | "/admin/metadata-matches"

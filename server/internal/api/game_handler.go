@@ -421,54 +421,66 @@ type scanResultResponse struct {
 	AutoScraping bool              `json:"autoScraping"`
 }
 
-// ScanGames triggers a library scan.
+// ScanGames triggers a library scan in the background.
+// Returns 202 immediately; progress is reported via WebSocket events.
 func (h *GameHandler) ScanGames(c *gin.Context) {
-	h.Hub.Broadcast(ws.Event{Type: "scan_started", Payload: nil})
-
-	result, err := h.Scanner.Scan()
-	if err != nil {
-		slog.Error("game library scan failed", "error", err)
-		h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": "library scan failed"}})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "scan failed"})
+	if !h.Scanner.TryStartScan() {
+		c.JSON(http.StatusConflict, gin.H{"error": "a scan is already in progress"})
 		return
 	}
 
-	// Build response with new game summaries
-	resp := scanResultResponse{
-		NewGames:     result.NewGames,
-		UpdatedGames: result.UpdatedGames,
-		RemovedGames: result.RemovedGames,
-		TotalGames:   result.TotalGames,
-	}
+	h.Hub.Broadcast(ws.Event{Type: "scan_started", Payload: nil})
+	c.JSON(http.StatusAccepted, gin.H{"message": "scan started in background"})
 
-	if len(result.NewGameIDs) > 0 {
-		var newGames []db.Game
-		h.DB.Preload("Console").Where("id IN ?", result.NewGameIDs).Find(&newGames)
-		for _, g := range newGames {
-			resp.NewGamesList = append(resp.NewGamesList, scanGameSummary{
-				ID:          strconv.FormatUint(uint64(g.ID), 10),
-				Title:       g.Title,
-				ConsoleName: g.Console.Name,
-			})
+	go func() {
+		defer h.Scanner.FinishScan()
+
+		result, err := h.Scanner.Scan(func(p scanner.ScanProgress) {
+			h.Scanner.SetScanProgress(&p)
+			h.Hub.Broadcast(ws.Event{Type: "scan_progress", Payload: p})
+		})
+		if err != nil {
+			slog.Error("game library scan failed", "error", err)
+			h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": "library scan failed"}})
+			return
 		}
-	}
 
-	// Configure SteamGridDB if API key is set (best-effort artwork during auto-scrape)
-	if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
-		h.Scraper.ConfigureSteamGridDB(apiKey)
-	}
+		// Build response with new game summaries
+		resp := scanResultResponse{
+			NewGames:     result.NewGames,
+			UpdatedGames: result.UpdatedGames,
+			RemovedGames: result.RemovedGames,
+			TotalGames:   result.TotalGames,
+		}
 
-	// Auto-scrape new games if IGDB is configured
-	if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
-		if h.Scraper.TryStartScrape() {
-			resp.AutoScraping = true
-			h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
-			go func() {
-				defer h.Scraper.FinishScrape()
+		if len(result.NewGameIDs) > 0 {
+			var newGames []db.Game
+			h.DB.Preload("Console").Where("id IN ?", result.NewGameIDs).Find(&newGames)
+			for _, g := range newGames {
+				resp.NewGamesList = append(resp.NewGamesList, scanGameSummary{
+					ID:          strconv.FormatUint(uint64(g.ID), 10),
+					Title:       g.Title,
+					ConsoleName: g.Console.Name,
+				})
+			}
+		}
+
+		h.Hub.Broadcast(ws.Event{Type: "scan_complete", Payload: resp})
+
+		// Configure SteamGridDB if API key is set (best-effort artwork during auto-scrape)
+		if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
+			h.Scraper.ConfigureSteamGridDB(apiKey)
+		}
+
+		// Auto-scrape new games if IGDB is configured
+		if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
+			if h.Scraper.TryStartScrape() {
+				h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
 				count, total, scrapeErr := h.Scraper.ScrapeAll("new", func(p scraper.ScrapeProgress) {
 					h.Scraper.SetScrapeProgress(&p)
 					h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 				})
+				h.Scraper.FinishScrape()
 				if scrapeErr != nil {
 					slog.Error("auto-scrape after scan failed", "error", scrapeErr)
 					h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "auto-scrape failed"}})
@@ -476,12 +488,27 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 				}
 				slog.Info("auto-scrape after scan complete", "scraped", count, "total", total)
 				h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
-			}()
+			}
 		}
+	}()
+}
+
+// ScanStatus returns the current scan operation status.
+func (h *GameHandler) ScanStatus(c *gin.Context) {
+	active, progress := h.Scanner.GetScanStatus()
+
+	if !active || progress == nil {
+		c.JSON(http.StatusOK, gin.H{"active": active})
+		return
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scan_complete", Payload: resp})
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, gin.H{
+		"active":  true,
+		"phase":   progress.Phase,
+		"current": progress.Current,
+		"total":   progress.Total,
+		"message": progress.Message,
+	})
 }
 
 // ScrapeIfNeeded triggers an async scrape for a game that has never been scraped.
