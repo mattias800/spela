@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
+	"gorm.io/gorm"
 )
 
 // GetDevelopers returns a list of developers with game counts, average ratings, and console lists.
@@ -150,6 +151,9 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 	primaryGenre := buildPrimaryGenre(games)
 	timeline := buildTimeline(games)
 
+	// Related developers (other developers sharing publishers with this one)
+	relatedDevelopers := buildRelatedDevelopers(h.DB, canonicalName, publishers)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, DeveloperDetailResponse{
 		Name:               canonicalName,
@@ -168,6 +172,7 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		RatingDistribution: ratingDist,
 		PrimaryGenre:       primaryGenre,
 		Timeline:           timeline,
+		RelatedDevelopers:  relatedDevelopers,
 	})
 }
 
@@ -228,6 +233,9 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 	primaryGenre := buildPrimaryGenre(games)
 	timeline := buildTimeline(games)
 
+	// Related publishers (other publishers sharing developers with this one)
+	relatedPublishers := buildRelatedPublishers(h.DB, canonicalName, developers)
+
 	c.Header("Cache-Control", "private, max-age=300")
 	c.JSON(http.StatusOK, PublisherDetailResponse{
 		Name:               canonicalName,
@@ -246,7 +254,228 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		RatingDistribution: ratingDist,
 		PrimaryGenre:       primaryGenre,
 		Timeline:           timeline,
+		RelatedPublishers:  relatedPublishers,
 	})
+}
+
+// buildRelatedDevelopers finds other developers that share publishers with the given developer.
+// It returns up to 5 related developers, ranked by the number of shared publishers (descending).
+// Returns nil if no related developers are found.
+func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers []NameCount) []RelatedDeveloper {
+	if len(publishers) == 0 {
+		return nil
+	}
+
+	publisherNames := make([]string, len(publishers))
+	for i, p := range publishers {
+		publisherNames[i] = p.Name
+	}
+
+	// Find other developers whose games have the same publishers
+	type devPubRow struct {
+		Developer string
+		Publisher string
+		GameCount int
+	}
+	var rows []devPubRow
+	if err := database.
+		Table("games").
+		Select("developer, publisher, COUNT(*) as game_count").
+		Where("deleted_at IS NULL AND developer != '' AND publisher IN ? AND LOWER(developer) != LOWER(?)", publisherNames, developerName).
+		Group("developer, publisher").
+		Scan(&rows).Error; err != nil {
+		slog.Error("failed to fetch related developers", "error", err)
+		return nil
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	// Aggregate: for each developer, collect shared publishers and total game count
+	type devInfo struct {
+		totalGames       int
+		sharedPublishers map[string]bool
+	}
+	devMap := make(map[string]*devInfo)
+	for _, r := range rows {
+		di, ok := devMap[r.Developer]
+		if !ok {
+			di = &devInfo{sharedPublishers: make(map[string]bool)}
+			devMap[r.Developer] = di
+		}
+		di.sharedPublishers[r.Publisher] = true
+	}
+
+	// Get total game count per developer (across all their games, not just shared-publisher ones)
+	relatedDevNames := make([]string, 0, len(devMap))
+	for name := range devMap {
+		relatedDevNames = append(relatedDevNames, name)
+	}
+
+	type devCountRow struct {
+		Developer string
+		GameCount int
+	}
+	var countRows []devCountRow
+	if err := database.
+		Table("games").
+		Select("developer, COUNT(*) as game_count").
+		Where("deleted_at IS NULL AND developer IN ?", relatedDevNames).
+		Group("developer").
+		Scan(&countRows).Error; err != nil {
+		slog.Error("failed to fetch related developer game counts", "error", err)
+		return nil
+	}
+
+	for _, cr := range countRows {
+		if di, ok := devMap[cr.Developer]; ok {
+			di.totalGames = cr.GameCount
+		}
+	}
+
+	// Build result
+	result := make([]RelatedDeveloper, 0, len(devMap))
+	for name, di := range devMap {
+		pubs := make([]string, 0, len(di.sharedPublishers))
+		for p := range di.sharedPublishers {
+			pubs = append(pubs, p)
+		}
+		sort.Strings(pubs)
+		result = append(result, RelatedDeveloper{
+			Name:             name,
+			GameCount:        di.totalGames,
+			SharedPublishers: pubs,
+		})
+	}
+
+	// Sort by number of shared publishers DESC, then by game count DESC, then by name ASC
+	sort.Slice(result, func(i, j int) bool {
+		if len(result[i].SharedPublishers) != len(result[j].SharedPublishers) {
+			return len(result[i].SharedPublishers) > len(result[j].SharedPublishers)
+		}
+		if result[i].GameCount != result[j].GameCount {
+			return result[i].GameCount > result[j].GameCount
+		}
+		return result[i].Name < result[j].Name
+	})
+
+	// Limit to top 5
+	if len(result) > 5 {
+		result = result[:5]
+	}
+
+	return result
+}
+
+// buildRelatedPublishers finds other publishers that share developers with the given publisher.
+// It returns up to 5 related publishers, ranked by the number of shared developers (descending).
+// Returns nil if no related publishers are found.
+func buildRelatedPublishers(database *gorm.DB, publisherName string, developers []NameCount) []RelatedPublisher {
+	if len(developers) == 0 {
+		return nil
+	}
+
+	developerNames := make([]string, len(developers))
+	for i, d := range developers {
+		developerNames[i] = d.Name
+	}
+
+	// Find other publishers whose games have the same developers
+	type pubDevRow struct {
+		Publisher string
+		Developer string
+		GameCount int
+	}
+	var rows []pubDevRow
+	if err := database.
+		Table("games").
+		Select("publisher, developer, COUNT(*) as game_count").
+		Where("deleted_at IS NULL AND publisher != '' AND developer IN ? AND LOWER(publisher) != LOWER(?)", developerNames, publisherName).
+		Group("publisher, developer").
+		Scan(&rows).Error; err != nil {
+		slog.Error("failed to fetch related publishers", "error", err)
+		return nil
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	// Aggregate: for each publisher, collect shared developers and total game count
+	type pubInfo struct {
+		totalGames       int
+		sharedDevelopers map[string]bool
+	}
+	pubMap := make(map[string]*pubInfo)
+	for _, r := range rows {
+		pi, ok := pubMap[r.Publisher]
+		if !ok {
+			pi = &pubInfo{sharedDevelopers: make(map[string]bool)}
+			pubMap[r.Publisher] = pi
+		}
+		pi.sharedDevelopers[r.Developer] = true
+	}
+
+	// Get total game count per publisher (across all their games, not just shared-developer ones)
+	relatedPubNames := make([]string, 0, len(pubMap))
+	for name := range pubMap {
+		relatedPubNames = append(relatedPubNames, name)
+	}
+
+	type pubCountRow struct {
+		Publisher string
+		GameCount int
+	}
+	var countRows []pubCountRow
+	if err := database.
+		Table("games").
+		Select("publisher, COUNT(*) as game_count").
+		Where("deleted_at IS NULL AND publisher IN ?", relatedPubNames).
+		Group("publisher").
+		Scan(&countRows).Error; err != nil {
+		slog.Error("failed to fetch related publisher game counts", "error", err)
+		return nil
+	}
+
+	for _, cr := range countRows {
+		if pi, ok := pubMap[cr.Publisher]; ok {
+			pi.totalGames = cr.GameCount
+		}
+	}
+
+	// Build result
+	result := make([]RelatedPublisher, 0, len(pubMap))
+	for name, pi := range pubMap {
+		devs := make([]string, 0, len(pi.sharedDevelopers))
+		for d := range pi.sharedDevelopers {
+			devs = append(devs, d)
+		}
+		sort.Strings(devs)
+		result = append(result, RelatedPublisher{
+			Name:             name,
+			GameCount:        pi.totalGames,
+			SharedDevelopers: devs,
+		})
+	}
+
+	// Sort by number of shared developers DESC, then by game count DESC, then by name ASC
+	sort.Slice(result, func(i, j int) bool {
+		if len(result[i].SharedDevelopers) != len(result[j].SharedDevelopers) {
+			return len(result[i].SharedDevelopers) > len(result[j].SharedDevelopers)
+		}
+		if result[i].GameCount != result[j].GameCount {
+			return result[i].GameCount > result[j].GameCount
+		}
+		return result[i].Name < result[j].Name
+	})
+
+	// Limit to top 5
+	if len(result) > 5 {
+		result = result[:5]
+	}
+
+	return result
 }
 
 // findHeroURL returns the hero artwork URL from the highest-rated game that has hero artwork.

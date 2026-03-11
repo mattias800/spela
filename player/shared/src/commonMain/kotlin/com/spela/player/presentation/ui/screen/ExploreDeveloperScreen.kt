@@ -31,18 +31,19 @@ import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperAtAGlance
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
+import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperGameItem
 import com.spela.player.presentation.ui.feature.explore.DeveloperGenreBreakdown
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperPublishersSection
 import com.spela.player.presentation.ui.feature.explore.DeveloperRatingDistribution
+import com.spela.player.presentation.ui.feature.explore.DeveloperRelatedDevelopersSection
 import com.spela.player.presentation.ui.feature.explore.DeveloperTimeline
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
@@ -59,6 +60,7 @@ fun ExploreDeveloperScreen(
     viewModel: ExploreViewModel,
     onGameSelected: (String) -> Unit,
     onPublisherSelected: (String) -> Unit = {},
+    onDeveloperSelected: (String) -> Unit = {},
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
@@ -87,21 +89,7 @@ fun ExploreDeveloperScreen(
 
             when {
                 state.isLoading && state.detail == null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(SpSpacing.ScreenHorizontal)
-                            .testTag("developer_detail_loading"),
-                    ) {
-                        Spacer(Modifier.height(SpSpacing.Large))
-                        repeat(4) {
-                            SpGameCardSkeleton(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = SpSpacing.Medium),
-                            )
-                        }
-                    }
+                    DeveloperDetailSkeleton()
                 }
 
                 state.detail != null -> {
@@ -309,6 +297,17 @@ fun ExploreDeveloperScreen(
                                     publishers = detail.publishers,
                                     onPublisherSelected = onPublisherSelected,
                                     modifier = Modifier.testTag("developer_publishers_section"),
+                                )
+                            }
+                        }
+
+                        // 11. Related Developers Section
+                        if (detail.relatedDevelopers.isNotEmpty()) {
+                            item {
+                                DeveloperRelatedDevelopersSection(
+                                    relatedDevelopers = detail.relatedDevelopers,
+                                    onDeveloperSelected = onDeveloperSelected,
+                                    modifier = Modifier.testTag("developer_related_section"),
                                 )
                             }
                         }

@@ -20,6 +20,14 @@ function DeveloperPageSkeleton() {
     <div className="space-y-8" data-testid="developer-detail-skeleton">
       {/* Hero banner skeleton */}
       <Skeleton className="w-full h-48 rounded-2xl" />
+
+      {/* At a Glance skeleton */}
+      <div className="flex flex-wrap gap-3" data-testid="skeleton-at-a-glance">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="w-36 h-14 rounded-xl" />
+        ))}
+      </div>
+
       {/* Top rated skeleton */}
       <div>
         <Skeleton className="w-32 h-7 mb-4" />
@@ -31,12 +39,27 @@ function DeveloperPageSkeleton() {
           ))}
         </div>
       </div>
+
+      {/* Timeline skeleton */}
+      <div>
+        <Skeleton className="w-40 h-7 mb-4" />
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="flex-shrink-0 space-y-2">
+              <Skeleton className="w-12 h-5 rounded" />
+              <Skeleton className="w-28 h-36 rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Genre chips skeleton */}
       <div className="flex gap-2">
         {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} className="w-24 h-8 rounded-full" />
         ))}
       </div>
+
       {/* Game grid skeleton */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
         {Array.from({ length: 12 }, (_, i) => (
@@ -317,6 +340,37 @@ export function DeveloperDetailPage() {
         <p className="text-surface-400 text-center py-12">
           No games match the selected filter.
         </p>
+      )}
+
+      {/* Related Developers */}
+      {developer.relatedDevelopers && developer.relatedDevelopers.length > 0 && (
+        <section data-testid="related-developers">
+          <h2 className="text-lg font-bold text-surface-100 mb-3">
+            Related Developers
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {developer.relatedDevelopers.map((rel) => (
+              <Link
+                key={rel.name}
+                to={`/explore/developers/${encodeURIComponent(rel.name)}`}
+                className="flex flex-col gap-1 rounded-xl border border-surface-700 bg-surface-800/60 px-4 py-3 hover:bg-surface-700/80 hover:border-surface-600 transition-colors"
+                data-testid={`related-developer-${rel.name}`}
+              >
+                <span className="text-sm font-semibold text-surface-100">
+                  {rel.name}
+                </span>
+                <span className="text-xs text-surface-400">
+                  {rel.gameCount} {rel.gameCount === 1 ? "game" : "games"}
+                </span>
+                {rel.sharedPublishers.length > 0 && (
+                  <span className="text-xs text-surface-500">
+                    via {rel.sharedPublishers.join(", ")}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Publishers Section */}

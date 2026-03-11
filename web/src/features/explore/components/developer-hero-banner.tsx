@@ -1,4 +1,6 @@
-import { Star, Gamepad2, Monitor } from "lucide-react";
+import { useState } from "react";
+import { Star, Gamepad2, Monitor, Link2, Check } from "lucide-react";
+import { useAnimatedCounter } from "@/hooks/use-animated-counter";
 
 interface DeveloperHeroBannerProps {
   name: string;
@@ -32,6 +34,21 @@ export function DeveloperHeroBanner({
   logoUrl,
 }: DeveloperHeroBannerProps) {
   const color = avatarColor(name);
+  const [copied, setCopied] = useState(false);
+
+  const animatedGameCount = useAnimatedCounter(gameCount);
+  const animatedRating = useAnimatedCounter(avgRating);
+  const animatedConsoleCount = useAnimatedCounter(consoleCount);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: silently fail
+    }
+  };
 
   return (
     <div
@@ -78,9 +95,29 @@ export function DeveloperHeroBanner({
               {name.charAt(0).toUpperCase()}
             </div>
           )}
-          <h1 className="text-3xl sm:text-4xl font-bold text-white">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white flex-1">
             {name}
           </h1>
+
+          {/* Share button */}
+          <button
+            onClick={handleShare}
+            className="flex-shrink-0 flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3 py-2 text-sm text-white/80 hover:text-white transition-colors"
+            data-testid="share-button"
+            aria-label="Copy link to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Link2 className="h-4 w-4" />
+                <span>Share</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Stats row */}
@@ -90,22 +127,32 @@ export function DeveloperHeroBanner({
         >
           <span className="flex items-center gap-1.5">
             <Gamepad2 className="h-4 w-4" />
-            {gameCount} {gameCount === 1 ? "game" : "games"}
+            {animatedGameCount} {gameCount === 1 ? "game" : "games"}
           </span>
           {avgRating > 0 && (
             <span className="flex items-center gap-1.5">
               <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-              {avgRating.toFixed(1)}
+              {animatedRating.toFixed(1)}
             </span>
           )}
           {consoleCount > 0 && (
             <span className="flex items-center gap-1.5">
               <Monitor className="h-4 w-4" />
-              {consoleCount} {consoleCount === 1 ? "platform" : "platforms"}
+              {animatedConsoleCount} {consoleCount === 1 ? "platform" : "platforms"}
             </span>
           )}
         </div>
       </div>
+
+      {/* Toast notification */}
+      {copied && (
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-surface-800 border border-surface-600 text-surface-100 text-sm px-4 py-2 rounded-lg shadow-lg"
+          data-testid="share-toast"
+        >
+          Link copied to clipboard
+        </div>
+      )}
     </div>
   );
 }

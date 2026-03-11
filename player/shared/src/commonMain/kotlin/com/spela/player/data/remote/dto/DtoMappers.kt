@@ -740,6 +740,12 @@ fun TimelineEntryDto.toDomain(): TimelineEntry = TimelineEntry(
     games = games.map { it.toDomain() },
 )
 
+fun RelatedDeveloperDto.toDomain(): RelatedDeveloper = RelatedDeveloper(
+    name = name,
+    gameCount = gameCount,
+    sharedPublishers = sharedPublishers,
+)
+
 fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount,
@@ -757,6 +763,7 @@ fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
     ratingDistribution = ratingDistribution?.toDomain(),
     primaryGenre = primaryGenre,
     timeline = timeline.map { it.toDomain() },
+    relatedDevelopers = relatedDevelopers.map { it.toDomain() },
 )
 
 fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpotlight(

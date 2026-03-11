@@ -1241,6 +1241,13 @@ data class TimelineEntryDto(
 )
 
 @Serializable
+data class RelatedDeveloperDto(
+    val name: String = "",
+    val gameCount: Int = 0,
+    val sharedPublishers: List<String> = emptyList(),
+)
+
+@Serializable
 data class DeveloperDetailResponseDto(
     val name: String,
     val gameCount: Int,
@@ -1258,6 +1265,7 @@ data class DeveloperDetailResponseDto(
     val ratingDistribution: RatingDistributionDto? = null,
     val primaryGenre: String? = null,
     val timeline: List<TimelineEntryDto> = emptyList(),
+    val relatedDevelopers: List<RelatedDeveloperDto> = emptyList(),
 )
 
 @Serializable

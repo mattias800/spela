@@ -23,6 +23,11 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
+// Mock the animated counter to return the target value immediately (no animation in tests)
+vi.mock("@/hooks/use-animated-counter", () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
+
 import { useDeveloperDetail } from "@/hooks/use-explore";
 
 const mockUseDeveloperDetail = useDeveloperDetail as ReturnType<typeof vi.fn>;
@@ -194,6 +199,15 @@ describe("DeveloperDetailPage", () => {
     });
     renderPage();
     expect(screen.getByTestId("developer-detail-skeleton")).toBeInTheDocument();
+  });
+
+  it("shows enhanced skeleton with at-a-glance and timeline placeholders", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    renderPage();
+    expect(screen.getByTestId("skeleton-at-a-glance")).toBeInTheDocument();
   });
 
   it("shows empty state when developer not found", () => {
@@ -620,5 +634,127 @@ describe("DeveloperDetailPage", () => {
     expect(
       screen.queryByTestId("rating-distribution"),
     ).not.toBeInTheDocument();
+  });
+
+  // --- Share button ---
+
+  it("renders share button in hero banner", () => {
+    renderPage();
+    expect(screen.getByTestId("share-button")).toBeInTheDocument();
+    expect(screen.getByTestId("share-button")).toHaveTextContent("Share");
+  });
+
+  it("copies URL to clipboard when share button is clicked", async () => {
+    const user = userEvent.setup();
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+
+    renderPage();
+    await user.click(screen.getByTestId("share-button"));
+
+    expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
+  });
+
+  it("shows toast after copying link", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      writable: true,
+      configurable: true,
+    });
+
+    renderPage();
+    await user.click(screen.getByTestId("share-button"));
+
+    expect(screen.getByTestId("share-toast")).toHaveTextContent("Link copied to clipboard");
+  });
+
+  // --- Related Developers section ---
+
+  it("shows related developers section when relatedDevelopers is present", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        relatedDevelopers: [
+          { name: "Intelligent Systems", gameCount: 15, sharedPublishers: ["Nintendo"] },
+          { name: "HAL Laboratory", gameCount: 8, sharedPublishers: ["Nintendo"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const section = screen.getByTestId("related-developers");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent("Related Developers");
+    expect(screen.getByTestId("related-developer-Intelligent Systems")).toBeInTheDocument();
+    expect(screen.getByTestId("related-developer-HAL Laboratory")).toBeInTheDocument();
+  });
+
+  it("renders related developer cards with game count and shared publishers", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        relatedDevelopers: [
+          { name: "Intelligent Systems", gameCount: 15, sharedPublishers: ["Nintendo"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-developer-Intelligent Systems");
+    expect(card).toHaveTextContent("Intelligent Systems");
+    expect(card).toHaveTextContent("15 games");
+    expect(card).toHaveTextContent("via Nintendo");
+  });
+
+  it("links related developer cards to their detail page", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        relatedDevelopers: [
+          { name: "Intelligent Systems", gameCount: 15, sharedPublishers: ["Nintendo"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-developer-Intelligent Systems");
+    expect(card).toHaveAttribute("href", "/explore/developers/Intelligent%20Systems");
+  });
+
+  it("hides related developers section when empty", () => {
+    renderPage();
+    expect(screen.queryByTestId("related-developers")).not.toBeInTheDocument();
+  });
+
+  it("hides related developers section when relatedDevelopers is empty array", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        relatedDevelopers: [],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    expect(screen.queryByTestId("related-developers")).not.toBeInTheDocument();
+  });
+
+  it("renders singular game count for related developer with 1 game", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: {
+        ...mockDeveloperDetail,
+        relatedDevelopers: [
+          { name: "Rare", gameCount: 1, sharedPublishers: ["Nintendo"] },
+        ],
+      },
+      isLoading: false,
+    });
+    renderPage();
+    const card = screen.getByTestId("related-developer-Rare");
+    expect(card).toHaveTextContent("1 game");
   });
 });

@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { AtAGlanceRow } from "@/features/explore/components/at-a-glance-row";
+
+// Mock the animated counter to return the target value immediately (no animation in tests)
+vi.mock("@/hooks/use-animated-counter", () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
 
 describe("AtAGlanceRow", () => {
   it("renders the section with test id", () => {
