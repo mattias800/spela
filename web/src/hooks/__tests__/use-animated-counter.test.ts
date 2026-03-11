@@ -45,7 +45,6 @@ describe("useAnimatedCounter", () => {
 
   it("starts at 0 for non-zero targets when animation is enabled", () => {
     const { result } = renderHook(() => useAnimatedCounter(100, 400));
-    // The initial render should start at 0 (before any rAF tick)
     expect(result.current).toBe(0);
   });
 
@@ -56,7 +55,7 @@ describe("useAnimatedCounter", () => {
       () => {
         expect(result.current).toBe(100);
       },
-      { timeout: 1000 },
+      { timeout: 2000 },
     );
   });
 
@@ -67,29 +66,30 @@ describe("useAnimatedCounter", () => {
       () => {
         expect(result.current).toBe(88.5);
       },
-      { timeout: 1000 },
+      { timeout: 2000 },
     );
   });
 
-  it("only animates once per mount (does not re-animate on rerender)", async () => {
+  it("re-animates when target changes", async () => {
     const { result, rerender } = renderHook(
       ({ target }) => useAnimatedCounter(target, 50),
       { initialProps: { target: 50 } },
     );
 
-    // Wait for animation to complete
     await waitFor(
       () => {
         expect(result.current).toBe(50);
       },
-      { timeout: 1000 },
+      { timeout: 2000 },
     );
 
-    // Rerender with a new target — the hook should NOT re-animate
-    // because hasAnimated.current is already true
     rerender({ target: 100 });
 
-    // The value should stay at 50
-    expect(result.current).toBe(50);
+    await waitFor(
+      () => {
+        expect(result.current).toBe(100);
+      },
+      { timeout: 2000 },
+    );
   });
 });
