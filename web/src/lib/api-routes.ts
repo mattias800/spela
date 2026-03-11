@@ -210,6 +210,7 @@ export type ApiGetPath = WithQuery<
   | "/admin/steamgriddb/status"
   | "/admin/cheats/stats"
   | "/admin/uploads"
+  | "/admin/uploads/writable"
   | "/admin/core-compatibility"
 
   // WebSocket

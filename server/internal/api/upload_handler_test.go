@@ -1582,3 +1582,46 @@ func matchesTempZipPattern(name string) bool {
 	matched, _ := filepath.Match("upload-*.zip", name)
 	return matched
 }
+
+func TestCheckWritable_WritableDir(t *testing.T) {
+	env := setupUploadTestEnv(t)
+	router := NewRouter(*env.cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/uploads/writable", nil)
+	req.Header.Set("Authorization", "Bearer "+env.adminToken)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Equal(t, true, result["writable"])
+	assert.Nil(t, result["reason"])
+}
+
+func TestCheckWritable_ReadonlyDir(t *testing.T) {
+	env := setupUploadTestEnv(t)
+
+	// Make the game directory read-only
+	readonlyDir := filepath.Join(t.TempDir(), "readonly-games")
+	require.NoError(t, os.MkdirAll(readonlyDir, 0555))
+	t.Cleanup(func() {
+		os.Chmod(readonlyDir, 0755)
+	})
+	env.cfg.GameDirs = []string{readonlyDir}
+
+	router := NewRouter(*env.cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/uploads/writable", nil)
+	req.Header.Set("Authorization", "Bearer "+env.adminToken)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Equal(t, false, result["writable"])
+	assert.Equal(t, "Game library directory is read-only", result["reason"])
+}

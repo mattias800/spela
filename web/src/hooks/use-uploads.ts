@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { StagedUpload, Game } from "@/types/api";
 
+export function useUploadWritable() {
+  return useQuery({
+    queryKey: ["admin", "uploads", "writable"],
+    queryFn: () =>
+      api.get<{ writable: boolean; reason?: string }>(
+        "/admin/uploads/writable",
+      ),
+  });
+}
+
 export function useStagedUploads() {
   return useQuery({
     queryKey: ["admin", "uploads"],

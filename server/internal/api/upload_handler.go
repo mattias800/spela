@@ -171,6 +171,24 @@ func detectConsole(database *gorm.DB, ext string) (*uint, bool) {
 	return nil, false
 }
 
+// CheckWritable checks whether the game library directory is writable.
+// GET /api/admin/uploads/writable
+func (h *UploadHandler) CheckWritable(c *gin.Context) {
+	gameDir := h.GameDirs[0]
+	tmpPath := filepath.Join(gameDir, ".spela-write-test")
+	f, err := os.Create(tmpPath)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"writable": false,
+			"reason":   "Game library directory is read-only",
+		})
+		return
+	}
+	f.Close()
+	defer os.Remove(tmpPath)
+	c.JSON(http.StatusOK, gin.H{"writable": true})
+}
+
 // UploadROMs handles multipart file uploads of ROM files to the staging area.
 // Zip files are automatically extracted and individual ROMs inside are staged.
 // POST /api/admin/uploads
