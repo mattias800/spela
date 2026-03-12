@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/api"
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/cheats"
 	"github.com/spela/server/internal/db"
@@ -83,12 +84,9 @@ func main() {
 	var encryptionKey []byte
 	if encryptionKeyRaw != "" {
 		encryptionKey = []byte(encryptionKeyRaw)
-		if len(encryptionKey) < 32 {
-			if os.Getenv("GIN_MODE") == "release" {
-				slog.Error("FATAL: SPELA_ENCRYPTION_KEY must be at least 32 bytes in release mode")
-				os.Exit(1)
-			}
-			slog.Warn("SPELA_ENCRYPTION_KEY is shorter than 32 bytes; consider a longer key")
+		if err := auth.ValidateEncryptionKey(encryptionKey); err != nil {
+			slog.Error("FATAL: SPELA_ENCRYPTION_KEY has invalid length", "error", err)
+			os.Exit(1)
 		}
 	} else {
 		if os.Getenv("GIN_MODE") == "release" {
