@@ -242,7 +242,10 @@ describe("AdminScanPage", () => {
       phase: "active",
       current: 3,
       total: 10,
+      gameId: 42,
       gameName: "Super Mario Bros.",
+      consoleName: "Nintendo Entertainment System",
+      consoleAbbr: "nes",
       successes: 2,
       failures: 1,
       error: null,
@@ -250,7 +253,12 @@ describe("AdminScanPage", () => {
     });
     renderPage();
     expect(screen.getByText(/Scraping game 3 of 10/)).toBeInTheDocument();
-    expect(screen.getByText("Super Mario Bros.")).toBeInTheDocument();
+    // Game name should be a link to the game detail page
+    const gameLink = screen.getByRole("link", { name: "Super Mario Bros." });
+    expect(gameLink).toBeInTheDocument();
+    expect(gameLink).toHaveAttribute("href", "/games/42");
+    // Console name should be shown
+    expect(screen.getByText("(Nintendo Entertainment System)")).toBeInTheDocument();
     expect(screen.getByText("2 succeeded")).toBeInTheDocument();
     expect(screen.getByText("1 failed")).toBeInTheDocument();
   });

@@ -162,6 +162,81 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 	}
 }
 
+func TestScrapeGame_IGDBStoresRatings1to1(t *testing.T) {
+	// DB should mirror IGDB 1:1: Rating stores AggregatedRating only,
+	// TotalRating and IGDBUserRating are stored separately.
+	// Read-side queries use fallback logic (COALESCE).
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{
+				ID:               100,
+				Name:             "Mega Man 2",
+				Summary:          "Classic NES platformer",
+				AggregatedRating: 0, // no critics rating
+				TotalRating:      88.5,
+				TotalRatingCount: 200,
+				IGDBRating:       90.0,
+				IGDBRatingCount:  150,
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Mega Man 2 (USA)",
+		FileName:  "Mega Man 2 (USA).nes",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	// Rating (aggregated_rating) stays 0 — DB mirrors IGDB 1:1
+	assert.InDelta(t, 0, game.Rating, 0.01)
+	// TotalRating and IGDBUserRating stored separately
+	assert.InDelta(t, 88.5, game.TotalRating, 0.01)
+	assert.Equal(t, 200, game.TotalRatingCount)
+	assert.InDelta(t, 90.0, game.IGDBUserRating, 0.01)
+}
+
 func TestScrapeGame_IGDBNoResults_FallsBackToLibRetro(t *testing.T) {
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{

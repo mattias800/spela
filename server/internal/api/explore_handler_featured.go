@@ -32,7 +32,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		Joins("JOIN game_artworks ON game_artworks.game_id = games.id").
 		Where("games.deleted_at IS NULL").
 		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
-		Order("games.rating DESC").
+		Order(effectiveRatingPrefixed + " DESC").
 		Limit(8).
 		Scan(&rows).Error
 	if err != nil {
@@ -158,8 +158,8 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 func (h *ExploreHandler) buildTopRatedRow(userID uint) (*ExploreRowResponse, error) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("rating > 0").
-		Order("rating DESC").
+		Where(effectiveRating + " > 0").
+		Order(effectiveRating + " DESC").
 		Limit(20).
 		Find(&games).Error; err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (h *ExploreHandler) buildHiddenGemsRow(userID uint) (*ExploreRowResponse, e
 	var games []db.Game
 	query := h.DB.Preload("Console").
 		Joins("LEFT JOIN (SELECT game_id, COALESCE(SUM(play_time), 0) as total_play_time FROM play_histories GROUP BY game_id) ph ON ph.game_id = games.id").
-		Where("games.rating >= 75").
+		Where(effectiveRatingPrefixed + " >= 75").
 		Where("games.deleted_at IS NULL")
 
 	if threshold > 0 {
@@ -249,7 +249,7 @@ func (h *ExploreHandler) buildHiddenGemsRow(userID uint) (*ExploreRowResponse, e
 	}
 
 	if err := query.
-		Order("games.rating DESC").
+		Order(effectiveRatingPrefixed + " DESC").
 		Limit(20).
 		Find(&games).Error; err != nil {
 		return nil, err

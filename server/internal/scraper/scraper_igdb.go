@@ -68,10 +68,15 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
 	// --- IGDB (primary metadata + images, when configured) ---
+	igdbAttempted := false
 	if s.IGDBClient != nil && s.IGDBClient.IsConfigured() {
+		igdbAttempted = true
 		if err := s.scrapeIGDB(game, console, gameIDStr); err != nil {
 			slog.Warn("IGDB scrape failed, falling back to LibRetro", "game", game.Title, "error", err)
 		}
+	}
+	if !igdbAttempted {
+		slog.Warn("IGDB not configured, scraping with LibRetro only", "game", game.Title)
 	}
 
 	// --- LibRetro Thumbnails (preferred for box art, fallback for screenshots) ---
@@ -153,7 +158,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		return fmt.Errorf("saving scraped metadata: %w", err)
 	}
 
-	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID)
+	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID, "rating", game.Rating)
 	return nil
 }
 
@@ -285,6 +290,12 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	if match.AggregatedRating > 0 {
 		game.Rating = match.AggregatedRating
 	}
+	slog.Info("IGDB rating data",
+		"game", game.Title,
+		"aggregatedRating", match.AggregatedRating,
+		"totalRating", match.TotalRating,
+		"igdbRating", match.IGDBRating,
+	)
 	if match.TotalRating > 0 && game.TotalRating == 0 {
 		game.TotalRating = match.TotalRating
 	}

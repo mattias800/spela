@@ -5,7 +5,10 @@ import { useScrapeStatus } from "@/hooks/use-admin";
 interface ScrapeProgressPayload {
   current: number;
   total: number;
+  gameId: number;
   gameName: string;
+  consoleName: string;
+  consoleAbbr: string;
   successes: number;
   failures: number;
   verified: number;
@@ -26,7 +29,10 @@ export interface ScrapeProgressState {
   phase: ScrapePhase;
   current: number;
   total: number;
+  gameId: number;
   gameName: string;
+  consoleName: string;
+  consoleAbbr: string;
   successes: number;
   failures: number;
   verified: number;
@@ -40,7 +46,10 @@ export function useScrapeProgress(): ScrapeProgressState {
   const [phase, setPhase] = useState<ScrapePhase>("idle");
   const [current, setCurrent] = useState(0);
   const [total, setTotal] = useState(0);
+  const [gameId, setGameId] = useState(0);
   const [gameName, setGameName] = useState("");
+  const [consoleName, setConsoleName] = useState("");
+  const [consoleAbbr, setConsoleAbbr] = useState("");
   const [successes, setSuccesses] = useState(0);
   const [failures, setFailures] = useState(0);
   const [verified, setVerified] = useState(0);
@@ -54,7 +63,10 @@ export function useScrapeProgress(): ScrapeProgressState {
       setPhase("active");
       setCurrent(initialStatus.current ?? 0);
       setTotal(initialStatus.total ?? 0);
+      setGameId(initialStatus.gameId ?? 0);
       setGameName(initialStatus.gameName ?? "");
+      setConsoleName(initialStatus.consoleName ?? "");
+      setConsoleAbbr(initialStatus.consoleAbbr ?? "");
       setSuccesses(initialStatus.successes ?? 0);
       setFailures(initialStatus.failures ?? 0);
       setVerified(initialStatus.verified ?? 0);
@@ -67,7 +79,10 @@ export function useScrapeProgress(): ScrapeProgressState {
       setPhase("active");
       setCurrent(0);
       setTotal(0);
+      setGameId(0);
       setGameName("");
+      setConsoleName("");
+      setConsoleAbbr("");
       setSuccesses(0);
       setFailures(0);
       setVerified(0);
@@ -81,7 +96,10 @@ export function useScrapeProgress(): ScrapeProgressState {
       setPhase("active");
       setCurrent(payload.current);
       setTotal(payload.total);
+      setGameId(payload.gameId);
       setGameName(payload.gameName);
+      setConsoleName(payload.consoleName);
+      setConsoleAbbr(payload.consoleAbbr);
       setSuccesses(payload.successes);
       setFailures(payload.failures);
       setVerified(payload.verified);
@@ -109,12 +127,15 @@ export function useScrapeProgress(): ScrapeProgressState {
     setPhase("idle");
     setCurrent(0);
     setTotal(0);
+    setGameId(0);
     setGameName("");
+    setConsoleName("");
+    setConsoleAbbr("");
     setSuccesses(0);
     setFailures(0);
     setVerified(0);
     setError(null);
   }, []);
 
-  return { phase, current, total, gameName, successes, failures, verified, error, dismiss };
+  return { phase, current, total, gameId, gameName, consoleName, consoleAbbr, successes, failures, verified, error, dismiss };
 }

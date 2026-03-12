@@ -92,13 +92,16 @@ func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"active":    true,
-		"current":   progress.Current,
-		"total":     progress.Total,
-		"gameName":  progress.GameName,
-		"successes": progress.Successes,
-		"failures":  progress.Failures,
-		"verified":  progress.Verified,
+		"active":      true,
+		"current":     progress.Current,
+		"total":       progress.Total,
+		"gameId":      progress.GameID,
+		"gameName":    progress.GameName,
+		"consoleName": progress.ConsoleName,
+		"consoleAbbr": progress.ConsoleAbbr,
+		"successes":   progress.Successes,
+		"failures":    progress.Failures,
+		"verified":    progress.Verified,
 	})
 }
 
