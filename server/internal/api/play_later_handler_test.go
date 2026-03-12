@@ -462,8 +462,8 @@ func TestGameResponse_IsInPlayLater_InGamesList(t *testing.T) {
 
 	var console db.Console
 	database.First(&console)
-	game1 := db.Game{ConsoleID: console.ID, Title: "PL List Game 1", FileName: "test1.nes", FilePath: "/tmp/test1.nes", FileSize: 100}
-	game2 := db.Game{ConsoleID: console.ID, Title: "PL List Game 2", FileName: "test2.nes", FilePath: "/tmp/test2.nes", FileSize: 100}
+	game1 := db.Game{ConsoleID: console.ID, Title: "PL List Game 1", FileName: "test1.nes", FilePath: "/tmp/test1.nes", FileSize: 100, IsPrimary: true}
+	game2 := db.Game{ConsoleID: console.ID, Title: "PL List Game 2", FileName: "test2.nes", FilePath: "/tmp/test2.nes", FileSize: 100, IsPrimary: true}
 	database.Create(&game1)
 	database.Create(&game2)
 

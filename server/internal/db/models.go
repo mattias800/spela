@@ -77,7 +77,7 @@ type Game struct {
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
-	ConsoleID     uint           `gorm:"index;not null" json:"consoleId"`
+	ConsoleID     uint           `gorm:"index;not null;index:idx_console_group_key,priority:1;index:idx_console_is_primary,priority:1" json:"consoleId"`
 	Console       Console        `gorm:"foreignKey:ConsoleID" json:"console,omitempty"`
 	Title         string         `gorm:"size:255;not null" json:"title"`
 	FileName      string         `gorm:"size:512;not null" json:"fileName"`
@@ -113,6 +113,12 @@ type Game struct {
 	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus,omitempty"`
 	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
 	Region              string         `gorm:"size:128" json:"region,omitempty"`
+	Revision            string         `gorm:"size:64" json:"revision,omitempty"`
+	Tags                string         `gorm:"size:255" json:"tags,omitempty"`
+	IsPreRelease        bool           `gorm:"default:false;index:idx_game_is_pre_release" json:"isPreRelease"`
+	GroupKey            string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey,omitempty"`
+	IsPrimary           bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
+	PrimaryGameID       *uint          `json:"primaryGameId,omitempty"`
 	CRC32               string         `gorm:"size:16" json:"-"`
 	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
 	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`

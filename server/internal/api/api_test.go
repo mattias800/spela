@@ -262,6 +262,7 @@ func seedGameForEachConsole(t *testing.T, database *gorm.DB) {
 			FileName:  "test" + c.Abbreviation + ".rom",
 			FilePath:  "/tmp/test" + c.Abbreviation + ".rom",
 			FileSize:  1024,
+			IsPrimary: true,
 		}
 		require.NoError(t, database.Create(&game).Error)
 	}

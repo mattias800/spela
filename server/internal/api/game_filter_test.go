@@ -54,6 +54,7 @@ func createFilterGame(t *testing.T, database *gorm.DB, consoleAbbr, title string
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
+		IsPrimary: true,
 	}
 	for _, opt := range opts {
 		opt(&game)

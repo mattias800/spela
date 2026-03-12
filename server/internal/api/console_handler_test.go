@@ -91,6 +91,7 @@ func TestListConsoles_ReturnsConsolesWithGames(t *testing.T) {
 		FileName:  "test.nes",
 		FilePath:  "/tmp/test.nes",
 		FileSize:  1024,
+		IsPrimary: true,
 	}
 	err = database.Create(&game).Error
 	require.NoError(t, err)

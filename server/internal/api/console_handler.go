@@ -80,10 +80,10 @@ func (h *ConsoleHandler) ListConsoles(c *gin.Context) {
 		return
 	}
 
-	// Attach game counts
+	// Attach game counts (only primary, non-pre-release games — matches what users see)
 	for i := range consoles {
 		var count int64
-		h.DB.Model(&db.Game{}).Where("console_id = ?", consoles[i].ID).Count(&count)
+		h.DB.Model(&db.Game{}).Where("console_id = ? AND is_primary = ? AND is_pre_release = ?", consoles[i].ID, true, false).Count(&count)
 		consoles[i].GameCount = int(count)
 	}
 
@@ -109,10 +109,50 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	}
 
 	query := h.DB.Where("console_id = ?", console.ID).Preload("Console")
+	countQuery := h.DB.Model(&db.Game{}).Where("console_id = ?", console.ID)
+
+	// --- Variant grouping (default: show only primaries) ---
+	grouped := c.DefaultQuery("grouped", "true")
+	if grouped == "true" {
+		query = query.Where("is_primary = ?", true)
+		countQuery = countQuery.Where("is_primary = ?", true)
+	}
+
+	// --- Hide pre-release (default: hide betas/protos/samples) ---
+	hidePreRelease := c.DefaultQuery("hidePreRelease", "true")
+	if hidePreRelease == "true" {
+		query = query.Where("is_pre_release = ?", false)
+		countQuery = countQuery.Where("is_pre_release = ?", false)
+	}
+
+	// --- Region filter ---
+	if regionFilter := c.Query("region"); regionFilter != "" {
+		regions := strings.Split(regionFilter, ",")
+		var trimmed []string
+		for _, r := range regions {
+			r = strings.TrimSpace(r)
+			if r != "" {
+				trimmed = append(trimmed, r)
+			}
+		}
+		if len(trimmed) > 0 {
+			regionWhere := h.DB
+			for i, r := range trimmed {
+				if i == 0 {
+					regionWhere = regionWhere.Where("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				} else {
+					regionWhere = regionWhere.Or("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				}
+			}
+			query = query.Where(regionWhere)
+			countQuery = countQuery.Where(regionWhere)
+		}
+	}
 
 	// Search
 	if search := c.Query("search"); search != "" {
 		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
+		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
 	}
 
 	// Sorting
@@ -137,12 +177,7 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 		perPage = 50
 	}
 
-	// Count with same filters
 	var total int64
-	countQuery := h.DB.Model(&db.Game{}).Where("console_id = ?", console.ID)
-	if search := c.Query("search"); search != "" {
-		countQuery = countQuery.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
-	}
 	countQuery.Count(&total)
 
 	offset := (page - 1) * perPage
