@@ -120,6 +120,20 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		}
 	}
 
+	// --- Letter filter (alphabet quick-jump) ---
+	if letter := c.Query("letter"); letter != "" {
+		if letter == "#" {
+			// Non-alpha: match games starting with a digit
+			query = query.Where("title GLOB '[0-9]*'")
+			countQuery = countQuery.Where("title GLOB '[0-9]*'")
+		} else if len(letter) == 1 && ((letter[0] >= 'A' && letter[0] <= 'Z') || (letter[0] >= 'a' && letter[0] <= 'z')) {
+			upper := strings.ToUpper(letter)
+			lower := strings.ToLower(letter)
+			query = query.Where("title LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\'", lower+"%", upper+"%")
+			countQuery = countQuery.Where("title LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\'", lower+"%", upper+"%")
+		}
+	}
+
 	// --- Text search ---
 	if search := c.Query("search"); search != "" {
 		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")

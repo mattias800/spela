@@ -27,6 +27,8 @@ export function useGames(filters?: GameFilters) {
   // Variant grouping / pre-release
   if (filters?.grouped === false) params.set("grouped", "false");
   if (filters?.hidePreRelease === false) params.set("hidePreRelease", "false");
+  // Alphabet quick-jump
+  if (filters?.letter) params.set("letter", filters.letter);
   if (filters?.sortBy) params.set("sortBy", filters.sortBy);
   if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
   if (filters?.page) params.set("page", String(filters.page));

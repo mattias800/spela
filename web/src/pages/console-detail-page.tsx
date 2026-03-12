@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useScanLibrary } from "@/hooks/use-admin";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useToast } from "@/components/ui";
+import { AlphabetBar } from "@/components/alphabet-bar";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import {
   ConsoleEssentials,
@@ -43,6 +44,7 @@ export function ConsoleDetailPage() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   const [hideBetas, setHideBetas] = useState(true);
+  const [activeLetter, setActiveLetter] = useState<string | undefined>();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
   const scanLibrary = useScanLibrary();
@@ -56,6 +58,7 @@ export function ConsoleDetailPage() {
     sortBy: "title",
     sortOrder: "asc",
     hidePreRelease: hideBetas ? undefined : false,
+    letter: activeLetter,
   });
 
   // Find console info from the consoles list
@@ -212,6 +215,14 @@ export function ConsoleDetailPage() {
           Hide betas
         </label>
       </div>
+
+      <AlphabetBar
+        activeLetter={activeLetter}
+        onLetterClick={(letter) => {
+          setActiveLetter(letter);
+          setPage(1);
+        }}
+      />
 
       <ConsoleEssentials consoleId={id!} />
       <ConsoleHiddenGems consoleId={id!} />

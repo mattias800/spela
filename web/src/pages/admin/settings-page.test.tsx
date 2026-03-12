@@ -300,6 +300,43 @@ describe("AdminSettingsPage - No Game Directories UI", () => {
   });
 });
 
+describe("AdminSettingsPage - Library Defaults", () => {
+  it("renders default region select", () => {
+    renderPage();
+    expect(screen.getByText("Default Region")).toBeInTheDocument();
+  });
+
+  it("renders hide pre-release default toggle", () => {
+    renderPage();
+    expect(screen.getByText("Hide Pre-release by Default")).toBeInTheDocument();
+  });
+
+  it("initializes default region from settings", () => {
+    mockUseServerSettings.mockReturnValue({
+      data: { ...mockSettings, default_region: "Europe" },
+      isLoading: false,
+    });
+    renderPage();
+    const select = screen.getByLabelText("Default Region") as HTMLSelectElement;
+    expect(select.value).toBe("Europe");
+  });
+
+  it("defaults to USA when no default_region setting", () => {
+    renderPage();
+    const select = screen.getByLabelText("Default Region") as HTMLSelectElement;
+    expect(select.value).toBe("USA");
+  });
+
+  it("includes default_region and hide_pre_release_default in save payload", async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    expect(mockUpdateMutate).toHaveBeenCalledTimes(1);
+    const payload = mockUpdateMutate.mock.calls[0][0] as Record<string, string>;
+    expect(payload).toHaveProperty("default_region", "USA");
+    expect(payload).toHaveProperty("hide_pre_release_default", "true");
+  });
+});
+
 describe("AdminSettingsPage - SteamGridDB env var detection", () => {
   it("shows env-configured message when SteamGridDB is set via env", () => {
     mockUseSteamGridDBStatus.mockReturnValue({

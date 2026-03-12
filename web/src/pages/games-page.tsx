@@ -15,6 +15,7 @@ import {
 import { ActiveFilterPills } from "@/features/games/components/active-filter-pills";
 import { BestVersionsButton } from "@/features/games/components/best-versions-button";
 import { GameListRow } from "@/features/games/components/game-list-row";
+import { AlphabetBar } from "@/components/alphabet-bar";
 import { Pagination } from "@/components/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useThemes, useKeywords } from "@/hooks/use-explore";
@@ -51,6 +52,7 @@ function parseUrlFilters(params: URLSearchParams): Partial<GameFilters> {
   // Only serialize hidePreRelease when explicitly false (default is true/hidden)
   if (params.get("hidePreRelease") === "false") f.hidePreRelease = false;
   if (params.get("grouped") === "false") f.grouped = false;
+  if (params.get("letter")) f.letter = params.get("letter")!;
   const sortBy = params.get("sortBy");
   if (sortBy) f.sortBy = sortBy as GameFilters["sortBy"];
   const sortOrder = params.get("sortOrder");
@@ -77,6 +79,7 @@ function filtersToUrl(filters: GameFilters): URLSearchParams {
   // Only serialize when non-default (false)
   if (filters.hidePreRelease === false) params.set("hidePreRelease", "false");
   if (filters.grouped === false) params.set("grouped", "false");
+  if (filters.letter) params.set("letter", filters.letter);
   if (filters.sortBy && filters.sortBy !== "title") params.set("sortBy", filters.sortBy);
   if (filters.sortOrder && filters.sortOrder !== "asc") params.set("sortOrder", filters.sortOrder);
   if (filters.search) params.set("search", filters.search);
@@ -190,6 +193,13 @@ export function GamesPage() {
         filters={filters}
         onFiltersChange={setFilters}
         consoles={consoles}
+      />
+
+      <AlphabetBar
+        activeLetter={filters.letter}
+        onLetterClick={(letter) =>
+          setFilters((f) => ({ ...f, letter, page: 1 }))
+        }
       />
 
       {/* Content */}

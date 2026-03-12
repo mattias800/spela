@@ -186,6 +186,8 @@ export interface GameFilters {
   // Variant grouping / pre-release
   grouped?: boolean;
   hidePreRelease?: boolean;
+  // Alphabet quick-jump
+  letter?: string;
   sortBy?: "title" | "created_at" | "file_size" | "rating" | "release_date";
   sortOrder?: "asc" | "desc";
   page?: number;
@@ -240,6 +242,7 @@ export interface UserPreferences {
   selectedKeyMapping: string;
   customKeyMapping: Record<string, string>;
   consoleKeyMappings: Record<string, ConsoleKeyMapping>;
+  preferredRegions: string[];
   raLinked: boolean;
   raUsername: string;
   raHardcoreEnabled: boolean;

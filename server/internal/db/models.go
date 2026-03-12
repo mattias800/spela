@@ -40,6 +40,7 @@ type User struct {
 	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
 	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
 	DefaultSecondScreenPage string         `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
+	PreferredRegions         string         `gorm:"size:255" json:"preferredRegions,omitempty"` // comma-separated ordered list, e.g. "USA,Europe,World"
 }
 
 // LoginAttempt tracks failed login attempts per username for account lockout.

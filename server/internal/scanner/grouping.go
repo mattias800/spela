@@ -191,22 +191,132 @@ func betterVariant(a, b db.Game) bool {
 	return a.ID < b.ID
 }
 
+// defaultRegionOrder is the default region preference for primary election.
+var defaultRegionOrder = []string{"usa", "world", "europe"}
+
 // regionPriority returns a priority value for a region string.
 // Lower is better. USA=0, World=1, Europe=2, other=3.
 func regionPriority(region string) int {
-	lower := strings.ToLower(region)
+	return regionPriorityWithOrder(region, defaultRegionOrder)
+}
 
-	// Check for USA first (multi-region strings like "USA, Europe" should match)
-	if strings.Contains(lower, "usa") {
-		return 0
+// regionPriorityWithOrder returns a priority value for a region string using
+// a custom region order. Lower is better. Regions not in the order list get
+// the lowest priority (len(order)).
+func regionPriorityWithOrder(region string, order []string) int {
+	lower := strings.ToLower(region)
+	for i, r := range order {
+		if strings.Contains(lower, strings.ToLower(r)) {
+			return i
+		}
 	}
-	if strings.Contains(lower, "world") {
-		return 1
+	return len(order)
+}
+
+// GroupAndElectPrimariesWithRegions groups games by (console_id, group_key) and
+// elects the best variant in each group as primary, using a custom region preference order.
+// If regionOrder is nil or empty, the default order (USA > World > Europe) is used.
+func GroupAndElectPrimariesWithRegions(database *gorm.DB, regionOrder []string) error {
+	if len(regionOrder) == 0 {
+		return GroupAndElectPrimaries(database)
 	}
-	if strings.Contains(lower, "europe") {
-		return 2
+
+	var allGames []db.Game
+	if err := database.Where("group_key != ''").Find(&allGames).Error; err != nil {
+		return fmt.Errorf("loading grouped games: %w", err)
 	}
-	return 3
+
+	type groupKeyType struct {
+		ConsoleID uint
+		GroupKey  string
+	}
+	groups := make(map[groupKeyType][]db.Game)
+	for _, g := range allGames {
+		k := groupKeyType{ConsoleID: g.ConsoleID, GroupKey: g.GroupKey}
+		groups[k] = append(groups[k], g)
+	}
+
+	slog.Info("electing primary variants with custom region order", "groups", len(groups), "regionOrder", regionOrder)
+
+	err := database.Transaction(func(tx *gorm.DB) error {
+		for k, games := range groups {
+			sort.SliceStable(games, func(i, j int) bool {
+				return betterVariantWithRegions(games[i], games[j], regionOrder)
+			})
+
+			primary := games[0]
+
+			if err := tx.Model(&db.Game{}).
+				Where("console_id = ? AND group_key = ?", k.ConsoleID, k.GroupKey).
+				Updates(map[string]interface{}{
+					"is_primary":      false,
+					"primary_game_id": primary.ID,
+				}).Error; err != nil {
+				slog.Warn("failed to clear primary flags",
+					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
+				continue
+			}
+
+			if err := tx.Model(&db.Game{}).
+				Where("id = ?", primary.ID).
+				Updates(map[string]interface{}{
+					"is_primary":      true,
+					"primary_game_id": nil,
+				}).Error; err != nil {
+				slog.Warn("failed to set primary",
+					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
+				continue
+			}
+		}
+
+		if err := tx.Model(&db.Game{}).
+			Where("group_key = '' OR group_key IS NULL").
+			Updates(map[string]interface{}{
+				"is_primary":      true,
+				"primary_game_id": nil,
+			}).Error; err != nil {
+			return fmt.Errorf("setting empty-groupkey games as primary: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("primary election transaction: %w", err)
+	}
+
+	slog.Info("primary variant election with custom regions complete", "groups", len(groups))
+	return nil
+}
+
+// betterVariantWithRegions is like betterVariant but uses a custom region order.
+func betterVariantWithRegions(a, b db.Game, regionOrder []string) bool {
+	if a.IsPreRelease != b.IsPreRelease {
+		return !a.IsPreRelease
+	}
+	aRegion := regionPriorityWithOrder(a.Region, regionOrder)
+	bRegion := regionPriorityWithOrder(b.Region, regionOrder)
+	if aRegion != bRegion {
+		return aRegion < bRegion
+	}
+	aRev := revisionOrder(a.Revision)
+	bRev := revisionOrder(b.Revision)
+	if aRev != bRev {
+		return aRev > bRev
+	}
+	aHasMeta := a.Description != "" || a.CoverURL != ""
+	bHasMeta := b.Description != "" || b.CoverURL != ""
+	if aHasMeta != bHasMeta {
+		return aHasMeta
+	}
+	aVerified := a.VerificationStatus == "verified"
+	bVerified := b.VerificationStatus == "verified"
+	if aVerified != bVerified {
+		return aVerified
+	}
+	if len(a.FileName) != len(b.FileName) {
+		return len(a.FileName) < len(b.FileName)
+	}
+	return a.ID < b.ID
 }
 
 // revisionOrder returns a numeric order for revision strings.

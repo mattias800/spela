@@ -149,6 +149,119 @@ func TestRegionPriority(t *testing.T) {
 	}
 }
 
+func TestRegionPriorityWithOrder(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+		order  []string
+		want   int
+	}{
+		{"Europe first - Europe", "Europe", []string{"europe", "usa", "world"}, 0},
+		{"Europe first - USA", "USA", []string{"europe", "usa", "world"}, 1},
+		{"Europe first - World", "World", []string{"europe", "usa", "world"}, 2},
+		{"Europe first - Japan", "Japan", []string{"europe", "usa", "world"}, 3},
+		{"Japan first - Japan", "Japan", []string{"japan", "usa"}, 0},
+		{"Japan first - USA", "USA", []string{"japan", "usa"}, 1},
+		{"Japan first - Europe", "Europe", []string{"japan", "usa"}, 2},
+		{"empty order", "USA", []string{}, 0},
+		{"multi-region matches first", "USA, Europe", []string{"europe", "usa"}, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := regionPriorityWithOrder(tt.region, tt.order)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestBetterVariantWithRegions(t *testing.T) {
+	europeFirst := []string{"europe", "usa", "world"}
+
+	tests := []struct {
+		name  string
+		a     db.Game
+		b     db.Game
+		aWins bool
+	}{
+		{
+			name:  "Europe wins over USA with Europe-first order",
+			a:     db.Game{Region: "Europe", FileName: "Game (Europe).nes"},
+			b:     db.Game{Region: "USA", FileName: "Game (USA).nes"},
+			aWins: true,
+		},
+		{
+			name:  "USA loses to Europe with Europe-first order",
+			a:     db.Game{Region: "USA", FileName: "Game (USA).nes"},
+			b:     db.Game{Region: "Europe", FileName: "Game (Europe).nes"},
+			aWins: false,
+		},
+		{
+			name:  "non-prerelease still beats prerelease regardless of region order",
+			a:     db.Game{IsPreRelease: false, Region: "USA", FileName: "Game (USA).nes"},
+			b:     db.Game{IsPreRelease: true, Region: "Europe", FileName: "Game (Europe) (Beta).nes"},
+			aWins: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := betterVariantWithRegions(tt.a, tt.b, europeFirst)
+			assert.Equal(t, tt.aWins, result)
+		})
+	}
+}
+
+func TestGroupAndElectPrimariesWithRegions(t *testing.T) {
+	database := setupTestDB(t)
+
+	var nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	games := []db.Game{
+		{ConsoleID: nes.ID, Title: "Game", FileName: "Game (USA).nes", FilePath: "nes/Game (USA).nes", GroupKey: "game", Region: "USA"},
+		{ConsoleID: nes.ID, Title: "Game", FileName: "Game (Europe).nes", FilePath: "nes/Game (Europe).nes", GroupKey: "game", Region: "Europe"},
+		{ConsoleID: nes.ID, Title: "Game", FileName: "Game (Japan).nes", FilePath: "nes/Game (Japan).nes", GroupKey: "game", Region: "Japan"},
+	}
+	for i := range games {
+		require.NoError(t, database.Create(&games[i]).Error)
+	}
+
+	// Elect with Europe-first order
+	require.NoError(t, GroupAndElectPrimariesWithRegions(database, []string{"europe", "usa", "world"}))
+
+	// Europe should be primary
+	var europeGame db.Game
+	require.NoError(t, database.Where("file_path = ?", "nes/Game (Europe).nes").First(&europeGame).Error)
+	assert.True(t, europeGame.IsPrimary, "Europe game should be primary with Europe-first order")
+
+	var usaGame db.Game
+	require.NoError(t, database.Where("file_path = ?", "nes/Game (USA).nes").First(&usaGame).Error)
+	assert.False(t, usaGame.IsPrimary, "USA game should not be primary with Europe-first order")
+}
+
+func TestGroupAndElectPrimariesWithRegions_EmptyFallsBack(t *testing.T) {
+	database := setupTestDB(t)
+
+	var nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	games := []db.Game{
+		{ConsoleID: nes.ID, Title: "Game", FileName: "Game (USA).nes", FilePath: "nes/Game2 (USA).nes", GroupKey: "game2", Region: "USA"},
+		{ConsoleID: nes.ID, Title: "Game", FileName: "Game (Europe).nes", FilePath: "nes/Game2 (Europe).nes", GroupKey: "game2", Region: "Europe"},
+	}
+	for i := range games {
+		require.NoError(t, database.Create(&games[i]).Error)
+	}
+
+	// Empty region order falls back to default (USA first)
+	require.NoError(t, GroupAndElectPrimariesWithRegions(database, nil))
+
+	var usaGame db.Game
+	require.NoError(t, database.Where("file_path = ?", "nes/Game2 (USA).nes").First(&usaGame).Error)
+	assert.True(t, usaGame.IsPrimary, "USA should be primary with nil region order (default)")
+}
+
 func TestGroupAndElectPrimaries(t *testing.T) {
 	database := setupTestDB(t)
 
