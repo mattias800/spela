@@ -98,6 +98,7 @@ func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
 		"gameName":  progress.GameName,
 		"successes": progress.Successes,
 		"failures":  progress.Failures,
+		"verified":  progress.Verified,
 	})
 }
 

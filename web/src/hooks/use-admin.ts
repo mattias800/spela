@@ -212,6 +212,7 @@ export interface ScrapeStatus {
   gameName?: string;
   successes?: number;
   failures?: number;
+  verified?: number;
 }
 
 export function useScrapeStatus() {

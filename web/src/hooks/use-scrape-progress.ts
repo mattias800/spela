@@ -8,6 +8,7 @@ interface ScrapeProgressPayload {
   gameName: string;
   successes: number;
   failures: number;
+  verified: number;
 }
 
 interface ScrapeCompletePayload {
@@ -28,6 +29,7 @@ export interface ScrapeProgressState {
   gameName: string;
   successes: number;
   failures: number;
+  verified: number;
   error: string | null;
   dismiss: () => void;
 }
@@ -41,6 +43,7 @@ export function useScrapeProgress(): ScrapeProgressState {
   const [gameName, setGameName] = useState("");
   const [successes, setSuccesses] = useState(0);
   const [failures, setFailures] = useState(0);
+  const [verified, setVerified] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -54,6 +57,7 @@ export function useScrapeProgress(): ScrapeProgressState {
       setGameName(initialStatus.gameName ?? "");
       setSuccesses(initialStatus.successes ?? 0);
       setFailures(initialStatus.failures ?? 0);
+      setVerified(initialStatus.verified ?? 0);
     }
   }, [initialStatus, initialized]);
 
@@ -66,6 +70,7 @@ export function useScrapeProgress(): ScrapeProgressState {
       setGameName("");
       setSuccesses(0);
       setFailures(0);
+      setVerified(0);
       setError(null);
     }, []),
   );
@@ -79,6 +84,7 @@ export function useScrapeProgress(): ScrapeProgressState {
       setGameName(payload.gameName);
       setSuccesses(payload.successes);
       setFailures(payload.failures);
+      setVerified(payload.verified);
     }, []),
   );
 
@@ -106,8 +112,9 @@ export function useScrapeProgress(): ScrapeProgressState {
     setGameName("");
     setSuccesses(0);
     setFailures(0);
+    setVerified(0);
     setError(null);
   }, []);
 
-  return { phase, current, total, gameName, successes, failures, error, dismiss };
+  return { phase, current, total, gameName, successes, failures, verified, error, dismiss };
 }

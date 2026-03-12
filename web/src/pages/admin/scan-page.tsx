@@ -233,6 +233,11 @@ function ScrapeCard() {
               <span className="text-success-500">
                 {scrape.successes} succeeded
               </span>
+              {scrape.verified > 0 && (
+                <span className="text-brand-400">
+                  {scrape.verified} verified
+                </span>
+              )}
               {scrape.failures > 0 && (
                 <span className="text-error-500">
                   {scrape.failures} failed
@@ -258,6 +263,11 @@ function ScrapeCard() {
                   <span className="text-surface-300">
                     {scrape.successes} scraped
                   </span>
+                  {scrape.verified > 0 && (
+                    <span className="text-brand-400">
+                      {scrape.verified} verified
+                    </span>
+                  )}
                   {scrape.failures > 0 && (
                     <span className="text-error-400">
                       {scrape.failures} failed
