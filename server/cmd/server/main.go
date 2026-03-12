@@ -16,6 +16,7 @@ import (
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/cheats"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
@@ -233,8 +234,38 @@ func main() {
 			"total", result.TotalGames,
 		)
 
-		// Auto-scrape new games if IGDB is configured
+		// Auto-scrape new games if IGDB is configured.
+		// Load IGDB credentials from env vars or database settings (same logic
+		// as admin_handler_scraper.go:tryConfigureIGDB).
+		if result.NewGames > 0 {
+			clientID := os.Getenv("SPELA_IGDB_CLIENT_ID")
+			clientSecret := os.Getenv("SPELA_IGDB_CLIENT_SECRET")
+			if clientID == "" || clientSecret == "" {
+				var settings []db.ServerSetting
+				database.Where("key IN ?", []string{"igdb_client_id", "igdb_client_secret"}).Find(&settings)
+				for _, s := range settings {
+					switch s.Key {
+					case "igdb_client_id":
+						clientID = s.Value
+					case "igdb_client_secret":
+						clientSecret = s.Value
+					}
+				}
+			}
+			if clientID != "" && clientSecret != "" {
+				metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
+			}
+		}
 		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
+			// Configure SteamGridDB for hero art (env var or DB setting)
+			if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
+				metaScraper.ConfigureSteamGridDB(sgdbKey)
+			} else {
+				var setting db.ServerSetting
+				if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
+					metaScraper.ConfigureSteamGridDB(setting.Value)
+				}
+			}
 			if metaScraper.TryStartScrape() {
 				hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: nil})
 				count, total, scrapeErr := metaScraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
