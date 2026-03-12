@@ -40,6 +40,7 @@ import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.GameVariant
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
@@ -78,6 +79,7 @@ import com.spela.player.presentation.ui.components.GameDetailLayout
 import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpConsoleChip
@@ -218,6 +220,7 @@ fun GameDetailScreen(
                         syncState = syncState,
                         onPlayWithLocalSave = onPlayWithLocalSave,
                         onCancelLaunch = onCancelLaunch,
+                        onNavigateToGame = onNavigateToGame,
                     )
 
                     // Series & Franchise links
@@ -558,6 +561,7 @@ private fun GameInfoContent(
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
+    onNavigateToGame: ((String) -> Unit)? = null,
 ) {
     // Title row with trophy icon if achievements exist
     Row(
@@ -866,6 +870,15 @@ private fun GameInfoContent(
 
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
     MetadataGrid(game = game, onGradient = true)
+
+    // Variants section
+    if (detail.variants.isNotEmpty()) {
+        Spacer(Modifier.height(SpSpacing.XLarge))
+        VariantsSection(
+            variants = detail.variants,
+            onVariantSelected = onNavigateToGame,
+        )
+    }
 }
 
 @Composable
@@ -980,3 +993,75 @@ private val regionFlags = mapOf(
 
 private fun getRegionFlag(region: String): String? =
     regionFlags.entries.firstOrNull { region.contains(it.key, ignoreCase = true) }?.value
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun VariantsSection(
+    variants: List<GameVariant>,
+    onVariantSelected: ((String) -> Unit)?,
+) {
+    SpTitledSection(
+        title = "Versions",
+        includeTopSpacing = false,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            variants.forEach { variant ->
+                SpCard(
+                    onClick = { onVariantSelected?.invoke(variant.id) },
+                    onGradient = true,
+                    cornerRadius = SpSpacing.RadiusMedium,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(SpSpacing.Medium),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        Text(
+                            text = variant.title,
+                            style = SpTypography.TitleSmall,
+                            color = SpColor.OnCard,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                            verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                        ) {
+                            variant.region?.takeIf { it.isNotBlank() }?.let { region ->
+                                val flag = getRegionFlag(region)
+                                SpChip(
+                                    text = if (flag != null) "$flag $region" else region,
+                                    onGradient = true,
+                                )
+                            }
+                            variant.revision?.takeIf { it.isNotBlank() }?.let { revision ->
+                                SpChip(text = revision, onGradient = true)
+                            }
+                            if (variant.fileSize > 0) {
+                                SpChip(
+                                    text = formatVariantFileSize(variant.fileSize),
+                                    onGradient = true,
+                                )
+                            }
+                            variant.verificationStatus?.takeIf { it.isNotBlank() }?.let { status ->
+                                SpChip(text = status, onGradient = true)
+                            }
+                            if (variant.isPreRelease) {
+                                SpChip(text = "Pre-release", onGradient = true)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatVariantFileSize(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return String.format("%.0f KB", kb)
+    val mb = kb / 1024.0
+    if (mb < 1024) return String.format("%.1f MB", mb)
+    val gb = mb / 1024.0
+    return String.format("%.2f GB", gb)
+}

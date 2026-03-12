@@ -224,6 +224,9 @@ private class PlayFromSharedSaveTestGameRepository : GameRepository {
     override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
     override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     override suspend fun getRecentlyAddedGames(): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun getGamesForConsolePaginated(consoleId: String, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
+    override suspend fun getAllGamesPaginated(page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
+    override suspend fun searchGamesPaginated(query: String, consoleId: String?, sortBy: String?, sortOrder: String?, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
 }
 
 private class PlayFromSharedSaveTestRatingRepository : RatingRepository {

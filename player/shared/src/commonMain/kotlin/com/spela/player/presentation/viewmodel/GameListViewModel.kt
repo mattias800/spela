@@ -103,6 +103,8 @@ class GameListViewModel(
             is GameListIntent.SetSortBy -> setSortBy(intent.sortBy)
             is GameListIntent.SetSortOrder -> setSortOrder(intent.order)
             GameListIntent.ToggleViewMode -> toggleViewMode()
+            GameListIntent.LoadMoreGames -> loadMoreGames()
+            GameListIntent.ToggleHideBetas -> toggleHideBetas()
         }
     }
 
@@ -302,22 +304,97 @@ class GameListViewModel(
 
     private fun reloadGames() {
         val current = _state.value
-        _state.update { it.copy(isLoading = true) }
+        _state.update { it.copy(isLoading = true, currentPage = 1) }
         scope.launch(dispatchers.io) {
-            searchGamesUseCase(
+            val repo = gameRepository
+            if (repo != null) {
+                repo.searchGamesPaginated(
+                    query = current.searchQuery,
+                    consoleId = current.selectedConsoleFilter,
+                    sortBy = current.sortBy,
+                    sortOrder = current.sortOrder,
+                    page = 1,
+                    pageSize = current.pageSize,
+                    hidePreRelease = current.hideBetas,
+                ).fold(
+                    onSuccess = { result ->
+                        _state.update {
+                            it.copy(
+                                games = result.data,
+                                totalGames = result.total,
+                                currentPage = result.page,
+                                hasMorePages = result.data.size.toLong() < result.total,
+                                isLoading = false,
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _state.update { it.copy(error = error.message, isLoading = false) }
+                    },
+                )
+            } else {
+                searchGamesUseCase(
+                    query = current.searchQuery,
+                    consoleId = current.selectedConsoleFilter,
+                    sortBy = current.sortBy,
+                    sortOrder = current.sortOrder,
+                ).fold(
+                    onSuccess = { games ->
+                        _state.update {
+                            it.copy(
+                                games = games,
+                                totalGames = games.size.toLong(),
+                                hasMorePages = false,
+                                isLoading = false,
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _state.update { it.copy(error = error.message, isLoading = false) }
+                    },
+                )
+            }
+        }
+    }
+
+    private fun loadMoreGames() {
+        val current = _state.value
+        if (current.isLoadingMore || !current.hasMorePages) return
+        val repo = gameRepository ?: return
+
+        _state.update { it.copy(isLoadingMore = true) }
+        scope.launch(dispatchers.io) {
+            repo.searchGamesPaginated(
                 query = current.searchQuery,
                 consoleId = current.selectedConsoleFilter,
                 sortBy = current.sortBy,
                 sortOrder = current.sortOrder,
+                page = current.currentPage + 1,
+                pageSize = current.pageSize,
+                hidePreRelease = current.hideBetas,
             ).fold(
-                onSuccess = { games ->
-                    _state.update { it.copy(games = games, isLoading = false) }
+                onSuccess = { result ->
+                    _state.update {
+                        val allGames = it.games + result.data
+                        it.copy(
+                            games = allGames,
+                            totalGames = result.total,
+                            currentPage = result.page,
+                            hasMorePages = allGames.size.toLong() < result.total,
+                            isLoadingMore = false,
+                        )
+                    }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = error.message, isLoading = false) }
+                    _state.update { it.copy(error = error.message, isLoadingMore = false) }
                 },
             )
         }
+    }
+
+    private fun toggleHideBetas() {
+        _state.update { it.copy(hideBetas = !it.hideBetas) }
+        reloadGames()
     }
 
     private fun toggleFavorite(gameId: String, isFavorite: Boolean) {

@@ -36,6 +36,7 @@ import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
+import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.ChallengeRepository
@@ -185,6 +186,9 @@ class StubGameRepository(private val consoleId: String = "nes") : GameRepository
     override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
     override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     override suspend fun getRecentlyAddedGames(): Result<List<Game>> = Result.success(emptyList())
+    override suspend fun getGamesForConsolePaginated(consoleId: String, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
+    override suspend fun getAllGamesPaginated(page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
+    override suspend fun searchGamesPaginated(query: String, consoleId: String?, sortBy: String?, sortOrder: String?, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
 }
 
 class StubDownloadRepository : DownloadRepository {

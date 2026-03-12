@@ -3,6 +3,13 @@ package com.spela.player.domain.model
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
+data class PaginatedResult<T>(
+    val data: List<T>,
+    val total: Long,
+    val page: Int,
+    val pageSize: Int,
+)
+
 @Serializable
 data class ServerConnection(
     val id: String,
@@ -80,12 +87,31 @@ data class Game(
     val playable: Boolean = true,
     val heroUrl: String? = null,
     val logoUrl: String? = null,
+    val revision: String? = null,
+    val tags: String? = null,
+    val isPreRelease: Boolean = false,
+    val variantCount: Int = 0,
+    val groupKey: String? = null,
+)
+
+@Serializable
+data class GameVariant(
+    val id: String,
+    val title: String,
+    val fileName: String = "",
+    val region: String? = null,
+    val revision: String? = null,
+    val tags: String? = null,
+    val isPreRelease: Boolean = false,
+    val fileSize: Long = 0,
+    val verificationStatus: String? = null,
 )
 
 @Serializable
 data class GameDetail(
     val game: Game,
     val screenshots: List<String> = emptyList(),
+    val variants: List<GameVariant> = emptyList(),
 )
 
 @Serializable

@@ -9,6 +9,7 @@ import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
+import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
@@ -44,6 +45,32 @@ class GameRepositoryImpl(
         }
     }
 
+    override suspend fun getGamesForConsolePaginated(
+        consoleId: String,
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        return runCatching {
+            val response = apiClient.getGamesForConsole(
+                consoleId = consoleId,
+                page = page,
+                pageSize = pageSize,
+                hidePreRelease = hidePreRelease,
+                grouped = grouped,
+            )
+            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            if (page == 1) cacheGames(games)
+            PaginatedResult(
+                data = games,
+                total = response.total,
+                page = response.page,
+                pageSize = response.pageSize,
+            )
+        }
+    }
+
     override suspend fun getAllGames(): Result<List<Game>> {
         return runCatching {
             val games = apiClient.getAllGames().data.map { it.toDomain().resolveImageUrls() }
@@ -52,6 +79,30 @@ class GameRepositoryImpl(
         }.recoverCatching {
             val cached = getAllCachedGames()
             if (cached.isNotEmpty()) cached else throw it
+        }
+    }
+
+    override suspend fun getAllGamesPaginated(
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        return runCatching {
+            val response = apiClient.getAllGames(
+                page = page,
+                pageSize = pageSize,
+                hidePreRelease = hidePreRelease,
+                grouped = grouped,
+            )
+            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            if (page == 1) cacheGames(games)
+            PaginatedResult(
+                data = games,
+                total = response.total,
+                page = response.page,
+                pageSize = response.pageSize,
+            )
         }
     }
 
@@ -66,6 +117,35 @@ class GameRepositoryImpl(
         }.recoverCatching {
             val cached = searchCachedGames(query)
             if (cached.isNotEmpty()) cached else throw it
+        }
+    }
+
+    override suspend fun searchGamesPaginated(
+        query: String,
+        consoleId: String?,
+        sortBy: String?,
+        sortOrder: String?,
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        return runCatching {
+            val response = apiClient.searchGames(
+                query = query,
+                consoleId = consoleId,
+                sortBy = sortBy,
+                sortOrder = sortOrder,
+                hidePreRelease = hidePreRelease,
+                grouped = grouped,
+            )
+            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            PaginatedResult(
+                data = games,
+                total = response.total,
+                page = response.page,
+                pageSize = response.pageSize,
+            )
         }
     }
 

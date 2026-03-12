@@ -109,6 +109,14 @@ internal fun GameListRowItem(
                             )
                         }
                     }
+
+                    if (game.variantCount > 1) {
+                        Text(
+                            text = "${game.variantCount} versions",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
                 }
             }
         }

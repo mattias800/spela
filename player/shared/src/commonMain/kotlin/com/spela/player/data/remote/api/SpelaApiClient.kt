@@ -157,11 +157,17 @@ class SpelaApiClient(
         consoleId: String,
         page: Int? = null,
         pageSize: Int? = null,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+        region: String? = null,
     ): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("consoleId", consoleId)
             page?.let { parameter("page", it) }
             pageSize?.let { parameter("pageSize", it) }
+            parameter("hidePreRelease", hidePreRelease)
+            parameter("grouped", grouped)
+            region?.let { parameter("region", it) }
         }.body()
     }
 
@@ -172,6 +178,9 @@ class SpelaApiClient(
         sortOrder: String? = null,
         page: Int? = null,
         pageSize: Int? = null,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+        region: String? = null,
     ): GameListResponse {
         return client.get("$baseUrl/api/games") {
             consoleId?.let { parameter("consoleId", it) }
@@ -179,6 +188,9 @@ class SpelaApiClient(
             sortOrder?.let { parameter("sortOrder", it) }
             page?.let { parameter("page", it) }
             pageSize?.let { parameter("pageSize", it) }
+            parameter("hidePreRelease", hidePreRelease)
+            parameter("grouped", grouped)
+            region?.let { parameter("region", it) }
         }.body()
     }
 
@@ -188,12 +200,18 @@ class SpelaApiClient(
         consoleId: String? = null,
         sortBy: String? = null,
         sortOrder: String? = null,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+        region: String? = null,
     ): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("search", query)
             consoleId?.let { parameter("consoleId", it) }
             sortBy?.let { parameter("sortBy", it) }
             sortOrder?.let { parameter("sortOrder", it) }
+            parameter("hidePreRelease", hidePreRelease)
+            parameter("grouped", grouped)
+            region?.let { parameter("region", it) }
         }.body()
     }
 

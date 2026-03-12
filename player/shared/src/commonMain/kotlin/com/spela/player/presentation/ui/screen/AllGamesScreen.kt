@@ -13,26 +13,33 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.state.ViewMode
+import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.GameLibraryControls
 import com.spela.player.presentation.ui.feature.library.GameListRowItem
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
@@ -71,10 +78,12 @@ fun AllGamesScreen(
             sortBy = state.sortBy,
             sortOrder = state.sortOrder,
             viewMode = state.viewMode,
+            hideBetas = state.hideBetas,
             onFilterByConsole = { viewModel.onIntent(GameListIntent.FilterByConsole(it)) },
             onSortByChanged = { viewModel.onIntent(GameListIntent.SetSortBy(it)) },
             onSortOrderChanged = { viewModel.onIntent(GameListIntent.SetSortOrder(it)) },
             onToggleViewMode = { viewModel.onIntent(GameListIntent.ToggleViewMode) },
+            onToggleHideBetas = { viewModel.onIntent(GameListIntent.ToggleHideBetas) },
             modifier = Modifier.padding(vertical = SpSpacing.Small),
         )
 
@@ -105,8 +114,22 @@ fun AllGamesScreen(
                         }
                     }
                 } else if (state.viewMode == ViewMode.GRID) {
+                    val gridState = rememberLazyGridState()
+                    val shouldLoadMore by remember {
+                        derivedStateOf {
+                            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()
+                            lastVisibleItem != null && lastVisibleItem.index >= state.games.size - 6
+                        }
+                    }
+                    LaunchedEffect(shouldLoadMore) {
+                        if (shouldLoadMore && state.hasMorePages && !state.isLoadingMore) {
+                            viewModel.onIntent(GameListIntent.LoadMoreGames)
+                        }
+                    }
+
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                        state = gridState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             horizontal = SpSpacing.ScreenHorizontal,
@@ -122,9 +145,35 @@ fun AllGamesScreen(
                                 onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                             )
                         }
+                        if (state.isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(SpSpacing.Medium),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (LocalAnimationsEnabled.current) {
+                                        CircularProgressIndicator(color = SpColor.Primary)
+                                    }
+                                }
+                            }
+                        }
                     }
                 } else {
+                    val listState = rememberLazyListState()
+                    val shouldLoadMore by remember {
+                        derivedStateOf {
+                            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+                            lastVisibleItem != null && lastVisibleItem.index >= state.games.size - 6
+                        }
+                    }
+                    LaunchedEffect(shouldLoadMore) {
+                        if (shouldLoadMore && state.hasMorePages && !state.isLoadingMore) {
+                            viewModel.onIntent(GameListIntent.LoadMoreGames)
+                        }
+                    }
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             horizontal = SpSpacing.ScreenHorizontal,
@@ -137,6 +186,18 @@ fun AllGamesScreen(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
                             )
+                        }
+                        if (state.isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(SpSpacing.Medium),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (LocalAnimationsEnabled.current) {
+                                        CircularProgressIndicator(color = SpColor.Primary)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

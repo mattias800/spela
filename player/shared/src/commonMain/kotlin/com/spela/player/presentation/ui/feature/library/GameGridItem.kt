@@ -120,6 +120,15 @@ internal fun GameGridItem(
                         )
                     }
                 }
+                // Variant count badge
+                if (game.variantCount > 1) {
+                    Text(
+                        text = "${game.variantCount} versions",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.padding(top = SpSpacing.XXSmall),
+                    )
+                }
             }
         }
     }

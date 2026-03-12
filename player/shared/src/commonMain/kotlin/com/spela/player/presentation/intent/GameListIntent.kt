@@ -13,4 +13,6 @@ sealed interface GameListIntent {
     data class SetSortBy(val sortBy: String) : GameListIntent
     data class SetSortOrder(val order: String) : GameListIntent
     data object ToggleViewMode : GameListIntent
+    data object LoadMoreGames : GameListIntent
+    data object ToggleHideBetas : GameListIntent
 }

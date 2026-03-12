@@ -36,4 +36,10 @@ data class GameListState(
     val topRatedGames: List<TopRatedGame> = emptyList(),
     val isLoadingTopRated: Boolean = false,
     val recentlyAddedGames: List<Game> = emptyList(),
+    val totalGames: Long = 0,
+    val currentPage: Int = 1,
+    val pageSize: Int = 50,
+    val hasMorePages: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val hideBetas: Boolean = true,
 )
