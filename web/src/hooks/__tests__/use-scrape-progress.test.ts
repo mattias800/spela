@@ -39,6 +39,7 @@ describe("useScrapeProgress", () => {
     expect(result.current.gameName).toBe("");
     expect(result.current.successes).toBe(0);
     expect(result.current.failures).toBe(0);
+    expect(result.current.verified).toBe(0);
     expect(result.current.error).toBeNull();
   });
 
@@ -55,6 +56,7 @@ describe("useScrapeProgress", () => {
     expect(result.current.gameName).toBe("");
     expect(result.current.successes).toBe(0);
     expect(result.current.failures).toBe(0);
+    expect(result.current.verified).toBe(0);
     expect(result.current.error).toBeNull();
   });
 
@@ -68,6 +70,7 @@ describe("useScrapeProgress", () => {
         gameName: "Super Mario Bros.",
         successes: 2,
         failures: 1,
+        verified: 1,
       });
     });
 
@@ -77,6 +80,7 @@ describe("useScrapeProgress", () => {
     expect(result.current.gameName).toBe("Super Mario Bros.");
     expect(result.current.successes).toBe(2);
     expect(result.current.failures).toBe(1);
+    expect(result.current.verified).toBe(1);
   });
 
   it("transitions to complete on scrape_complete event", () => {
@@ -149,6 +153,7 @@ describe("useScrapeProgress", () => {
     expect(result.current.gameName).toBe("");
     expect(result.current.successes).toBe(0);
     expect(result.current.failures).toBe(0);
+    expect(result.current.verified).toBe(0);
     expect(result.current.error).toBeNull();
   });
 
@@ -195,6 +200,7 @@ describe("useScrapeProgress", () => {
         gameName: "Mega Man",
         successes: 5,
         failures: 2,
+        verified: 3,
       },
     });
 
@@ -206,6 +212,7 @@ describe("useScrapeProgress", () => {
     expect(result.current.gameName).toBe("Mega Man");
     expect(result.current.successes).toBe(5);
     expect(result.current.failures).toBe(2);
+    expect(result.current.verified).toBe(3);
   });
 
   it("does not reinitialize from status after already initialized", () => {
@@ -217,6 +224,7 @@ describe("useScrapeProgress", () => {
         gameName: "Mega Man",
         successes: 5,
         failures: 2,
+        verified: 3,
       },
     });
 

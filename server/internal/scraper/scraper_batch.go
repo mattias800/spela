@@ -180,6 +180,7 @@ type ScrapeProgress struct {
 	GameName string `json:"gameName"`
 	Successes int   `json:"successes"`
 	Failures  int   `json:"failures"`
+	Verified  int   `json:"verified"`
 }
 
 // ScrapeAll fetches metadata for games.
@@ -215,12 +216,16 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 	total := len(games)
 	successes := 0
 	failures := 0
+	verified := 0
 	for i := range games {
 		if err := s.ScrapeGame(&games[i]); err != nil {
 			slog.Warn("failed to scrape game", "game", games[i].Title, "error", err)
 			failures++
 		} else {
 			successes++
+			if games[i].VerificationStatus == "verified" {
+				verified++
+			}
 		}
 
 		if onProgress != nil {
@@ -230,6 +235,7 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 				GameName:  games[i].Title,
 				Successes: successes,
 				Failures:  failures,
+				Verified:  verified,
 			})
 		}
 	}
