@@ -213,6 +213,7 @@ export function ActiveFilterPills({
           onClick={pill.onDismiss}
           className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 px-2.5 py-1 text-xs font-medium hover:bg-brand-500/25 transition-colors"
           data-testid={`filter-pill-${pill.key}`}
+          aria-label={`Remove filter: ${pill.label}`}
         >
           {pill.label}
           <X className="h-3 w-3" />

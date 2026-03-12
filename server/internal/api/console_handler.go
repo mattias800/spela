@@ -136,16 +136,21 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 			}
 		}
 		if len(trimmed) > 0 {
-			regionWhere := h.DB
+			regionWhere := h.DB.Session(&gorm.Session{NewDB: true})
+			countRegionWhere := h.DB.Session(&gorm.Session{NewDB: true})
 			for i, r := range trimmed {
+				cond := "LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'"
+				args := []interface{}{r, "%" + escapeLikePattern(r) + "%"}
 				if i == 0 {
-					regionWhere = regionWhere.Where("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+					regionWhere = regionWhere.Where(cond, args...)
+					countRegionWhere = countRegionWhere.Where(cond, args...)
 				} else {
-					regionWhere = regionWhere.Or("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+					regionWhere = regionWhere.Or(cond, args...)
+					countRegionWhere = countRegionWhere.Or(cond, args...)
 				}
 			}
 			query = query.Where(regionWhere)
-			countQuery = countQuery.Where(regionWhere)
+			countQuery = countQuery.Where(countRegionWhere)
 		}
 	}
 

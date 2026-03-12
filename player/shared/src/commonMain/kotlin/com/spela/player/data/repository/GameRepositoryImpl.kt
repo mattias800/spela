@@ -138,6 +138,8 @@ class GameRepositoryImpl(
                 sortOrder = sortOrder,
                 hidePreRelease = hidePreRelease,
                 grouped = grouped,
+                page = page,
+                pageSize = pageSize,
             )
             val games = response.data.map { it.toDomain().resolveImageUrls() }
             PaginatedResult(

@@ -12,86 +12,91 @@ import (
 
 // GroupAndElectPrimaries groups games by (console_id, group_key) and elects
 // the best variant in each group as primary.
-// All operations run inside a single transaction to avoid a window where no
-// game is primary.
+// Processes one console at a time to bound memory usage for large libraries.
 func GroupAndElectPrimaries(database *gorm.DB) error {
-	// Load all games with a non-empty group key in one query
-	var allGames []db.Game
-	if err := database.Where("group_key != ''").Find(&allGames).Error; err != nil {
-		return fmt.Errorf("loading grouped games: %w", err)
-	}
-
-	// Group games in memory by (console_id, group_key)
-	type groupKey struct {
-		ConsoleID uint
-		GroupKey  string
-	}
-	groups := make(map[groupKey][]db.Game)
-	for _, g := range allGames {
-		k := groupKey{ConsoleID: g.ConsoleID, GroupKey: g.GroupKey}
-		groups[k] = append(groups[k], g)
-	}
-
-	slog.Info("electing primary variants", "groups", len(groups), "games", len(allGames))
-
-	// Compute primaries in memory, then batch-update in a transaction
-	err := database.Transaction(func(tx *gorm.DB) error {
-		processed := 0
-		for k, games := range groups {
-			// Sort by election priority (stable sort + ID tiebreaker for determinism)
-			sort.SliceStable(games, func(i, j int) bool {
-				return betterVariant(games[i], games[j])
-			})
-
-			primary := games[0]
-
-			// Batch update: set all games in group to non-primary
-			if err := tx.Model(&db.Game{}).
-				Where("console_id = ? AND group_key = ?", k.ConsoleID, k.GroupKey).
-				Updates(map[string]interface{}{
-					"is_primary":      false,
-					"primary_game_id": primary.ID,
-				}).Error; err != nil {
-				slog.Warn("failed to clear primary flags",
-					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
-				continue
-			}
-
-			// Set the winner as primary
-			if err := tx.Model(&db.Game{}).
-				Where("id = ?", primary.ID).
-				Updates(map[string]interface{}{
-					"is_primary":      true,
-					"primary_game_id": nil,
-				}).Error; err != nil {
-				slog.Warn("failed to set primary",
-					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
-				continue
-			}
-
-			processed++
-			if processed%500 == 0 {
-				slog.Info("primary election progress", "processed", processed, "total", len(groups))
-			}
-		}
-
-		// Handle games with empty group key: each is its own primary
-		if err := tx.Model(&db.Game{}).
-			Where("group_key = '' OR group_key IS NULL").
-			Updates(map[string]interface{}{
-				"is_primary":      true,
-				"primary_game_id": nil,
-			}).Error; err != nil {
-			return fmt.Errorf("setting empty-groupkey games as primary: %w", err)
-		}
-
-		return nil
+	return groupAndElectWithComparator(database, func(a, b db.Game) bool {
+		return betterVariant(a, b)
 	})
-	if err != nil {
-		return fmt.Errorf("primary election transaction: %w", err)
+}
+
+// groupAndElectWithComparator is the shared implementation for primary election.
+// It processes games one console at a time and uses the given comparator for sorting.
+func groupAndElectWithComparator(database *gorm.DB, less func(a, b db.Game) bool) error {
+	// Get distinct console IDs that have grouped games
+	var consoleIDs []uint
+	if err := database.Model(&db.Game{}).
+		Where("group_key != ''").
+		Distinct("console_id").
+		Pluck("console_id", &consoleIDs).Error; err != nil {
+		return fmt.Errorf("loading console IDs for grouping: %w", err)
 	}
 
-	slog.Info("primary variant election complete", "groups", len(groups))
+	totalGroups := 0
+
+	// Process one console at a time to bound memory
+	for _, cid := range consoleIDs {
+		var games []db.Game
+		if err := database.Where("console_id = ? AND group_key != ''", cid).Find(&games).Error; err != nil {
+			return fmt.Errorf("loading games for console %d: %w", cid, err)
+		}
+
+		// Group by group_key within this console
+		groups := make(map[string][]db.Game)
+		for _, g := range games {
+			groups[g.GroupKey] = append(groups[g.GroupKey], g)
+		}
+
+		err := database.Transaction(func(tx *gorm.DB) error {
+			for gk, gGames := range groups {
+				sort.SliceStable(gGames, func(i, j int) bool {
+					return less(gGames[i], gGames[j])
+				})
+
+				primary := gGames[0]
+
+				if err := tx.Model(&db.Game{}).
+					Where("console_id = ? AND group_key = ?", cid, gk).
+					Updates(map[string]interface{}{
+						"is_primary":      false,
+						"primary_game_id": primary.ID,
+					}).Error; err != nil {
+					slog.Warn("failed to clear primary flags",
+						"consoleId", cid, "groupKey", gk, "error", err)
+					continue
+				}
+
+				if err := tx.Model(&db.Game{}).
+					Where("id = ?", primary.ID).
+					Updates(map[string]interface{}{
+						"is_primary":      true,
+						"primary_game_id": nil,
+					}).Error; err != nil {
+					slog.Warn("failed to set primary",
+						"consoleId", cid, "groupKey", gk, "error", err)
+					continue
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("primary election for console %d: %w", cid, err)
+		}
+
+		totalGroups += len(groups)
+		slog.Info("primary election progress", "consoleId", cid, "groups", len(groups), "games", len(games))
+	}
+
+	// Handle games with empty group key: each is its own primary
+	if err := database.Model(&db.Game{}).
+		Where("group_key = '' OR group_key IS NULL").
+		Updates(map[string]interface{}{
+			"is_primary":      true,
+			"primary_game_id": nil,
+		}).Error; err != nil {
+		return fmt.Errorf("setting empty-groupkey games as primary: %w", err)
+	}
+
+	slog.Info("primary variant election complete", "groups", totalGroups)
 	return nil
 }
 
@@ -220,72 +225,9 @@ func GroupAndElectPrimariesWithRegions(database *gorm.DB, regionOrder []string) 
 	if len(regionOrder) == 0 {
 		return GroupAndElectPrimaries(database)
 	}
-
-	var allGames []db.Game
-	if err := database.Where("group_key != ''").Find(&allGames).Error; err != nil {
-		return fmt.Errorf("loading grouped games: %w", err)
-	}
-
-	type groupKeyType struct {
-		ConsoleID uint
-		GroupKey  string
-	}
-	groups := make(map[groupKeyType][]db.Game)
-	for _, g := range allGames {
-		k := groupKeyType{ConsoleID: g.ConsoleID, GroupKey: g.GroupKey}
-		groups[k] = append(groups[k], g)
-	}
-
-	slog.Info("electing primary variants with custom region order", "groups", len(groups), "regionOrder", regionOrder)
-
-	err := database.Transaction(func(tx *gorm.DB) error {
-		for k, games := range groups {
-			sort.SliceStable(games, func(i, j int) bool {
-				return betterVariantWithRegions(games[i], games[j], regionOrder)
-			})
-
-			primary := games[0]
-
-			if err := tx.Model(&db.Game{}).
-				Where("console_id = ? AND group_key = ?", k.ConsoleID, k.GroupKey).
-				Updates(map[string]interface{}{
-					"is_primary":      false,
-					"primary_game_id": primary.ID,
-				}).Error; err != nil {
-				slog.Warn("failed to clear primary flags",
-					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
-				continue
-			}
-
-			if err := tx.Model(&db.Game{}).
-				Where("id = ?", primary.ID).
-				Updates(map[string]interface{}{
-					"is_primary":      true,
-					"primary_game_id": nil,
-				}).Error; err != nil {
-				slog.Warn("failed to set primary",
-					"consoleId", k.ConsoleID, "groupKey", k.GroupKey, "error", err)
-				continue
-			}
-		}
-
-		if err := tx.Model(&db.Game{}).
-			Where("group_key = '' OR group_key IS NULL").
-			Updates(map[string]interface{}{
-				"is_primary":      true,
-				"primary_game_id": nil,
-			}).Error; err != nil {
-			return fmt.Errorf("setting empty-groupkey games as primary: %w", err)
-		}
-
-		return nil
+	return groupAndElectWithComparator(database, func(a, b db.Game) bool {
+		return betterVariantWithRegions(a, b, regionOrder)
 	})
-	if err != nil {
-		return fmt.Errorf("primary election transaction: %w", err)
-	}
-
-	slog.Info("primary variant election with custom regions complete", "groups", len(groups))
-	return nil
 }
 
 // betterVariantWithRegions is like betterVariant but uses a custom region order.

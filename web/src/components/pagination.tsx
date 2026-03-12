@@ -56,7 +56,7 @@ export function Pagination({
   const pages = getPageNumbers(currentPage, pageCount);
 
   return (
-    <div className="flex justify-center items-center gap-1.5 pt-4" data-testid="pagination">
+    <nav className="flex justify-center items-center gap-1.5 pt-4" aria-label="Pagination" data-testid="pagination">
       {/* Previous button */}
       <button
         onClick={() => onPageChange(currentPage - 1)}
@@ -116,6 +116,6 @@ export function Pagination({
       >
         <ChevronRight className="h-4 w-4" />
       </button>
-    </div>
+    </nav>
   );
 }

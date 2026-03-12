@@ -203,6 +203,8 @@ class SpelaApiClient(
         hidePreRelease: Boolean = true,
         grouped: Boolean = true,
         region: String? = null,
+        page: Int? = null,
+        pageSize: Int? = null,
     ): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("search", query)
@@ -212,6 +214,8 @@ class SpelaApiClient(
             parameter("hidePreRelease", hidePreRelease)
             parameter("grouped", grouped)
             region?.let { parameter("region", it) }
+            page?.let { parameter("page", it) }
+            pageSize?.let { parameter("pageSize", it) }
         }.body()
     }
 

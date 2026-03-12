@@ -48,6 +48,8 @@ export function BestVersionsButton({
           : "bg-surface-900 border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600",
       )}
       data-testid="best-versions-button"
+      aria-pressed={isActive}
+      aria-label="Best versions only"
     >
       <Sparkles className="h-4 w-4" />
       Best versions
