@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ScanSearch,
   FolderSearch,
@@ -225,7 +226,21 @@ function ScrapeCard() {
             </div>
             {scrape.gameName && (
               <p className="text-sm text-surface-400 truncate">
-                {scrape.gameName}
+                {scrape.gameId ? (
+                  <Link
+                    to={`/games/${scrape.gameId}`}
+                    className="text-brand-400 hover:text-brand-300 transition-colors"
+                  >
+                    {scrape.gameName}
+                  </Link>
+                ) : (
+                  scrape.gameName
+                )}
+                {scrape.consoleName && (
+                  <span className="text-surface-500 ml-2">
+                    ({scrape.consoleName})
+                  </span>
+                )}
               </p>
             )}
             <ProgressBar value={scrape.current} max={scrape.total} />

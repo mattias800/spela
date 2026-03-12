@@ -214,7 +214,10 @@ export interface ScrapeStatus {
   active: boolean;
   current?: number;
   total?: number;
+  gameId?: number;
   gameName?: string;
+  consoleName?: string;
+  consoleAbbr?: string;
   successes?: number;
   failures?: number;
   verified?: number;

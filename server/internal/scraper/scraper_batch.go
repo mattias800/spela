@@ -175,12 +175,15 @@ func (s *Scraper) ConfigureSteamGridDB(apiKey string) {
 
 // ScrapeProgress holds progress information for a bulk scrape operation.
 type ScrapeProgress struct {
-	Current  int    `json:"current"`
-	Total    int    `json:"total"`
-	GameName string `json:"gameName"`
-	Successes int   `json:"successes"`
-	Failures  int   `json:"failures"`
-	Verified  int   `json:"verified"`
+	Current     int    `json:"current"`
+	Total       int    `json:"total"`
+	GameID      uint   `json:"gameId"`
+	GameName    string `json:"gameName"`
+	ConsoleName string `json:"consoleName"`
+	ConsoleAbbr string `json:"consoleAbbr"`
+	Successes   int    `json:"successes"`
+	Failures    int    `json:"failures"`
+	Verified    int    `json:"verified"`
 }
 
 // ScrapeAll fetches metadata for games.
@@ -194,7 +197,7 @@ type ScrapeProgress struct {
 // Returns the number of successes, the total number of games attempted, and any error.
 func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
 	var games []db.Game
-	q := s.DB
+	q := s.DB.Preload("Console")
 	if consoleID > 0 {
 		q = q.Where("console_id = ?", consoleID)
 	}
@@ -217,6 +220,21 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 	successes := 0
 	failures := 0
 	verified := 0
+
+	progress := func(i int, game *db.Game) ScrapeProgress {
+		return ScrapeProgress{
+			Current:     i + 1,
+			Total:       total,
+			GameID:      game.ID,
+			GameName:    game.Title,
+			ConsoleName: game.Console.Name,
+			ConsoleAbbr: game.Console.Abbreviation,
+			Successes:   successes,
+			Failures:    failures,
+			Verified:    verified,
+		}
+	}
+
 	// Track groups we've already scraped a primary for, so we can propagate
 	// metadata to other variants in the same group instead of re-scraping.
 	scrapedGroups := make(map[string]uint) // "consoleID:groupKey" -> scraped game ID
@@ -234,14 +252,7 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 				if s.propagateGroupMetadata(game) {
 					successes++
 					if onProgress != nil {
-						onProgress(ScrapeProgress{
-							Current:   i + 1,
-							Total:     total,
-							GameName:  game.Title,
-							Successes: successes,
-							Failures:  failures,
-							Verified:  verified,
-						})
+						onProgress(progress(i, game))
 					}
 					continue
 				}
@@ -252,14 +263,7 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 				scrapedGroups[groupID] = game.ID
 				successes++
 				if onProgress != nil {
-					onProgress(ScrapeProgress{
-						Current:   i + 1,
-						Total:     total,
-						GameName:  game.Title,
-						Successes: successes,
-						Failures:  failures,
-						Verified:  verified,
-					})
+					onProgress(progress(i, game))
 				}
 				continue
 			}
@@ -282,14 +286,7 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 		}
 
 		if onProgress != nil {
-			onProgress(ScrapeProgress{
-				Current:   i + 1,
-				Total:     total,
-				GameName:  game.Title,
-				Successes: successes,
-				Failures:  failures,
-				Verified:  verified,
-			})
+			onProgress(progress(i, game))
 		}
 	}
 

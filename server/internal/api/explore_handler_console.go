@@ -11,6 +11,18 @@ import (
 	"github.com/spela/server/internal/db"
 )
 
+// effectiveRating is a SQL expression that picks the best available IGDB rating.
+// IGDB stores three rating types:
+//   - rating (aggregated_rating): critics' aggregated score — sparse for retro games
+//   - total_rating: combined critic + user score — much more populated
+//   - igdb_user_rating: user-only score — fallback when neither of the above exists
+//
+// The DB mirrors IGDB 1:1; this expression does the fallback at read time.
+const effectiveRating = "COALESCE(NULLIF(rating, 0), NULLIF(total_rating, 0), NULLIF(igdb_user_rating, 0), 0)"
+
+// effectiveRatingPrefixed is the same but with "games." table prefix for JOINed queries.
+const effectiveRatingPrefixed = "COALESCE(NULLIF(games.rating, 0), NULLIF(games.total_rating, 0), NULLIF(games.igdb_user_rating, 0), 0)"
+
 // --- Phase 8: Console Showcase Pages ---
 
 // GenreCount holds a genre name and the number of games in that genre.
@@ -63,11 +75,15 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 	h.DB.Model(&db.Game{}).Where("console_id = ? AND deleted_at IS NULL", console.ID).Count(&gameCount)
 	console.GameCount = int(gameCount)
 
-	// --- Essentials: top 10 by IGDB rating ---
+	// --- Essentials: top 10 by best available IGDB rating ---
+	// Use COALESCE to fall back through rating sources: aggregated_rating (critics)
+	// → total_rating (combined) → igdb_user_rating (user-only). Many retro games
+	// lack critic reviews so aggregated_rating is 0; total_rating is populated
+	// far more often.
 	var essentials []db.Game
 	if err := h.DB.Preload("Console").
-		Where("console_id = ? AND rating > 0 AND deleted_at IS NULL", console.ID).
-		Order("rating DESC").
+		Where("console_id = ? AND "+effectiveRating+" > 0 AND deleted_at IS NULL", console.ID).
+		Order(effectiveRating + " DESC").
 		Limit(10).
 		Find(&essentials).Error; err != nil {
 		slog.Error("failed to fetch console essentials", "console", abbr, "error", err)
@@ -189,7 +205,7 @@ func (h *ExploreHandler) buildConsoleHiddenGems(consoleID uint, excludeIDs []uin
 	query := h.DB.Preload("Console").
 		Joins("LEFT JOIN (SELECT game_id, COALESCE(SUM(play_time), 0) as total_play_time FROM play_histories GROUP BY game_id) ph ON ph.game_id = games.id").
 		Where("games.console_id = ?", consoleID).
-		Where("games.rating >= 70").
+		Where(effectiveRatingPrefixed + " >= 70").
 		Where("games.deleted_at IS NULL")
 
 	if len(excludeIDs) > 0 {
@@ -201,7 +217,7 @@ func (h *ExploreHandler) buildConsoleHiddenGems(consoleID uint, excludeIDs []uin
 	}
 
 	if err := query.
-		Order("games.rating DESC").
+		Order(effectiveRatingPrefixed + " DESC").
 		Limit(10).
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch console hidden gems", "error", err)
@@ -250,7 +266,7 @@ func (h *ExploreHandler) buildConsoleTopDevelopers(consoleID uint, consoleName s
 	var rows []devRow
 	if err := h.DB.
 		Table("games").
-		Select("developer, COUNT(*) as game_count, AVG(CASE WHEN rating > 0 THEN rating ELSE NULL END) as avg_rating").
+		Select("developer, COUNT(*) as game_count, AVG(CASE WHEN "+effectiveRating+" > 0 THEN "+effectiveRating+" ELSE NULL END) as avg_rating").
 		Where("console_id = ? AND deleted_at IS NULL AND developer != ''", consoleID).
 		Group("developer").
 		Order("game_count DESC").
@@ -321,11 +337,12 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 	var topGameRows []topGameRow
 	if err := h.DB.Raw(`
 		SELECT console_id, game_id FROM (
-			SELECT games.console_id, games.id as game_id, games.rating,
-				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY games.rating DESC) as rn
+			SELECT games.console_id, games.id as game_id,
+				`+effectiveRatingPrefixed+` as eff_rating,
+				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY `+effectiveRatingPrefixed+` DESC) as rn
 			FROM games
 			JOIN game_artworks ON game_artworks.game_id = games.id AND game_artworks.hero_url != ''
-			WHERE games.deleted_at IS NULL AND games.rating > 0
+			WHERE games.deleted_at IS NULL AND `+effectiveRatingPrefixed+` > 0
 		) ranked WHERE rn = 1
 	`).Scan(&topGameRows).Error; err != nil {
 		slog.Error("failed to fetch top games for console highlights", "error", err)

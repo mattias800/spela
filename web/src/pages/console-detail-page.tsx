@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Library, Check, Globe, FolderSearch } from "lucide-react";
+import { Library, Check, Globe, FolderSearch, Loader2 } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
@@ -10,7 +10,6 @@ import {
   SearchInput,
   Switch,
 } from "@/components/ui";
-import { ActionsMenu } from "@/components/ui/actions-menu";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -106,34 +105,6 @@ export function ConsoleDetailPage() {
           )}
         </div>
 
-        {/* Admin actions menu */}
-        {isAdmin && (
-          <div className="absolute right-3 top-3 z-10">
-            <ActionsMenu
-              items={[
-                {
-                  label: "Scan for new games",
-                  icon: <FolderSearch className="h-4 w-4" />,
-                  loading: scanLibrary.isPending,
-                  onClick: () =>
-                    scanLibrary.mutate(
-                      { console: consoleAbbr },
-                      {
-                        onSuccess: () =>
-                          toast("info", `Scan started for ${consoleName}.`),
-                        onError: (err) =>
-                          toast(
-                            "error",
-                            err instanceof Error ? err.message : "Scan failed",
-                          ),
-                      },
-                    ),
-                },
-              ]}
-            />
-          </div>
-        )}
-
         {/* Subtle noise/texture overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />
 
@@ -214,6 +185,33 @@ export function ConsoleDetailPage() {
           />
           Hide betas
         </label>
+        {isAdmin && (
+          <button
+            className="ml-auto inline-flex items-center gap-2 rounded-lg bg-white/[0.06] px-3 py-2 text-sm font-medium text-surface-300 hover:bg-white/[0.10] hover:text-surface-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            disabled={scanLibrary.isPending}
+            onClick={() =>
+              scanLibrary.mutate(
+                { console: consoleAbbr },
+                {
+                  onSuccess: () =>
+                    toast("info", `Scan started for ${consoleName}.`),
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scan failed",
+                    ),
+                },
+              )
+            }
+          >
+            {scanLibrary.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FolderSearch className="h-4 w-4" />
+            )}
+            Scan for new games
+          </button>
+        )}
       </div>
 
       <AlphabetBar
