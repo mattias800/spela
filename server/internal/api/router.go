@@ -181,6 +181,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	savedSearchHandler := &SavedSearchHandler{DB: cfg.DB}
 	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
+	searchHandler := &SearchHandler{DB: cfg.DB}
 	setupHandler := &SetupHandler{
 		DB:            cfg.DB,
 		JWTSecret:     cfg.JWTSecret,
@@ -231,6 +232,9 @@ func NewRouter(cfg Config) *gin.Engine {
 	api.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
 	api.Use(userLimiter.UserRateLimit())
 	{
+		// Search
+		api.GET("/search", searchHandler.Search)
+
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)
 		api.GET("/consoles/:id/games", consoleHandler.ListConsoleGames)

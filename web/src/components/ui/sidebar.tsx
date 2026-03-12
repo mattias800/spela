@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/cn";
-import { Gamepad2, LogOut } from "lucide-react";
+import { Gamepad2, LogOut, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface SidebarLinkProps {
@@ -77,9 +77,10 @@ interface SidebarContentProps {
   };
   onLogout?: () => void;
   version?: string;
+  onSearchClick?: () => void;
 }
 
-function SidebarContent({ links, user, onLogout, version }: SidebarContentProps) {
+function SidebarContent({ links, user, onLogout, version, onSearchClick }: SidebarContentProps) {
   return (
     <>
       <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-800/50">
@@ -90,6 +91,22 @@ function SidebarContent({ links, user, onLogout, version }: SidebarContentProps)
           Spela
         </span>
       </div>
+
+      {onSearchClick && (
+        <div className="px-3 pt-3 pb-1">
+          <button
+            onClick={onSearchClick}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-surface-400 hover:text-surface-100 hover:bg-surface-800/50 transition-all duration-200 cursor-pointer"
+            aria-label="Open search"
+          >
+            <Search className="h-5 w-5 flex-shrink-0" />
+            <span className="flex-1 text-left">Search...</span>
+            <kbd className="hidden sm:inline-flex items-center rounded border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-xs text-surface-500">
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {links.map((group, i) => (
@@ -149,9 +166,10 @@ interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
   version?: string;
+  onSearchClick?: () => void;
 }
 
-export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, version }: SidebarProps) {
+export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, version, onSearchClick }: SidebarProps) {
   const drawerRef = useRef<HTMLElement>(null);
 
   // Close on Escape key
@@ -180,7 +198,7 @@ export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, vers
     <>
       {/* Desktop sidebar — always visible at lg and above */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex-col z-40">
-        <SidebarContent links={links} user={user} onLogout={onLogout} version={version} />
+        <SidebarContent links={links} user={user} onLogout={onLogout} version={version} onSearchClick={onSearchClick} />
       </aside>
 
       {/* Mobile drawer — visible below lg when open */}
@@ -210,7 +228,7 @@ export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, vers
               : "-translate-x-full duration-200 ease-in",
           )}
         >
-          <SidebarContent links={links} user={user} onLogout={onLogout} version={version} />
+          <SidebarContent links={links} user={user} onLogout={onLogout} version={version} onSearchClick={() => { onSearchClick?.(); onMobileClose?.(); }} />
         </aside>
       </div>
     </>
