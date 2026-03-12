@@ -13,6 +13,7 @@ export function useGames(filters?: GameFilters) {
   if (filters?.themes?.length) params.set("themes", filters.themes.join(","));
   if (filters?.keywords?.length) params.set("keywords", filters.keywords.join(","));
   if (filters?.perspectives?.length) params.set("perspectives", filters.perspectives.join(","));
+  if (filters?.regions?.length) params.set("region", filters.regions.join(","));
   // Text filters
   if (filters?.developer) params.set("developer", filters.developer);
   if (filters?.publisher) params.set("publisher", filters.publisher);
@@ -23,6 +24,9 @@ export function useGames(filters?: GameFilters) {
   if (filters?.ratingMax != null) params.set("ratingMax", String(filters.ratingMax));
   // Play status
   if (filters?.playStatus) params.set("playStatus", filters.playStatus);
+  // Variant grouping / pre-release
+  if (filters?.grouped === false) params.set("grouped", "false");
+  if (filters?.hidePreRelease === false) params.set("hidePreRelease", "false");
   if (filters?.sortBy) params.set("sortBy", filters.sortBy);
   if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
   if (filters?.page) params.set("page", String(filters.page));

@@ -8,6 +8,7 @@ import {
   GameCardSkeleton,
   EmptyState,
   SearchInput,
+  Switch,
 } from "@/components/ui";
 import { ActionsMenu } from "@/components/ui/actions-menu";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -41,6 +42,7 @@ export function ConsoleDetailPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
+  const [hideBetas, setHideBetas] = useState(true);
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
   const scanLibrary = useScanLibrary();
@@ -53,6 +55,7 @@ export function ConsoleDetailPage() {
     pageSize: PAGE_SIZE,
     sortBy: "title",
     sortOrder: "asc",
+    hidePreRelease: hideBetas ? undefined : false,
   });
 
   // Find console info from the consoles list
@@ -187,16 +190,28 @@ export function ConsoleDetailPage() {
         />
       )}
 
-      {/* Search */}
-      <SearchInput
-        placeholder={`Search ${consoleName} games...`}
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
-        className="max-w-sm"
-      />
+      {/* Search & filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput
+          placeholder={`Search ${consoleName} games...`}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-sm"
+        />
+        <label className="flex items-center gap-2 text-sm text-surface-300 whitespace-nowrap" data-testid="console-hide-betas-toggle">
+          <Switch
+            checked={hideBetas}
+            onChange={(checked) => {
+              setHideBetas(checked);
+              setPage(1);
+            }}
+          />
+          Hide betas
+        </label>
+      </div>
 
       <ConsoleEssentials consoleId={id!} />
       <ConsoleHiddenGems consoleId={id!} />
