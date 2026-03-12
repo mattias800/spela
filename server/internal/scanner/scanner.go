@@ -636,6 +636,19 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 	s.DB.Model(&db.Game{}).Count(&count)
 	result.TotalGames = int(count)
 
+	// Backfill metadata for games created before large-library-support
+	report(ScanProgress{Phase: "backfill", Message: "Backfilling game metadata..."})
+	if err := BackfillGameMetadataWithProgress(s.DB, func(processed, total int64) {
+		report(ScanProgress{
+			Phase:   "backfill",
+			Current: int(processed),
+			Total:   int(total),
+			Message: fmt.Sprintf("Backfilling game metadata... (%d/%d)", processed, total),
+		})
+	}); err != nil {
+		slog.Warn("failed to backfill game metadata during scan", "error", err)
+	}
+
 	// Group variants and elect primary representatives
 	report(ScanProgress{Phase: "grouping", Message: "Grouping variants and electing primaries..."})
 	if err := GroupAndElectPrimaries(s.DB); err != nil {
