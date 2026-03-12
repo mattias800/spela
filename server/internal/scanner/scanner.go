@@ -552,8 +552,18 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 
 	// Pass 1: Multi-disc discovery
 	report(ScanProgress{Phase: "discovering", Message: "Scanning for multi-disc games..."})
+	multiDiscFilesWalked := 0
 	for _, dir := range s.GameDirs {
-		if err := s.scanMultiDisc(dir, consoleMap, foundPaths, claimedPaths, result); err != nil {
+		if err := s.scanMultiDisc(dir, consoleMap, foundPaths, claimedPaths, result, func() {
+			multiDiscFilesWalked++
+			if multiDiscFilesWalked%200 == 0 {
+				report(ScanProgress{
+					Phase:   "discovering",
+					Current: multiDiscFilesWalked,
+					Message: fmt.Sprintf("Scanning for multi-disc games... (%d files checked)", multiDiscFilesWalked),
+				})
+			}
+		}); err != nil {
 			slog.Warn("error in multi-disc scan", "dir", dir, "error", err)
 		}
 	}
@@ -676,7 +686,8 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 
 // scanMultiDisc performs pass 1: discovers multi-disc games via .m3u files, disc patterns,
 // and standalone .cue files (which need companion .bin files bundled).
-func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult) error {
+// The optional onFile callback is called for each file visited during the directory walk.
+func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, foundPaths, claimedPaths map[string]bool, result *ScanResult, onFile func()) error {
 	// Collect .m3u files, disc-pattern ROM files, and standalone .cue/.gdi files
 	var m3uFiles []string
 	var cueFiles []string
@@ -691,6 +702,10 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 				return filepath.SkipDir
 			}
 			return nil
+		}
+
+		if onFile != nil {
+			onFile()
 		}
 
 		ext := strings.ToLower(filepath.Ext(path))
