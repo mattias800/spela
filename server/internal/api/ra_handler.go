@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +61,11 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 	encryptedToken, err := auth.Encrypt(token, h.EncryptionKey)
 	if err != nil {
 		slog.Error("failed to encrypt RA token", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
+		if strings.Contains(err.Error(), "invalid key size") {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "encryption key misconfigured: SPELA_ENCRYPTION_KEY must be exactly 16, 24, or 32 bytes"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
+		}
 		return
 	}
 

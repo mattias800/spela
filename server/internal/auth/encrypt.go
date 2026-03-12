@@ -26,6 +26,16 @@ func DeriveEncryptionKey(jwtSecret string) []byte {
 	return h[:]
 }
 
+// ValidateEncryptionKey checks that key is a valid AES key size (16, 24, or 32 bytes).
+func ValidateEncryptionKey(key []byte) error {
+	switch len(key) {
+	case 16, 24, 32:
+		return nil
+	default:
+		return fmt.Errorf("invalid AES key size %d bytes; must be exactly 16, 24, or 32 bytes", len(key))
+	}
+}
+
 // Encrypt encrypts plaintext using AES-GCM with the given key.
 // Returns a base64-encoded string prefixed with "enc:" for identification.
 func Encrypt(plaintext string, key []byte) (string, error) {

@@ -138,8 +138,14 @@ func (h *SetupHandler) checkEncryptionKey() DiagnosticCheck {
 	check := DiagnosticCheck{ID: "encryption_key", Label: "Encryption Key"}
 	envKey := os.Getenv("SPELA_ENCRYPTION_KEY")
 	if envKey != "" {
-		check.Status = "ok"
-		check.Detail = "Set via environment variable"
+		if err := auth.ValidateEncryptionKey([]byte(envKey)); err != nil {
+			check.Status = "error"
+			check.Detail = fmt.Sprintf("Invalid key length: %d bytes", len(envKey))
+			check.Fix = "Set SPELA_ENCRYPTION_KEY to exactly 16, 24, or 32 bytes (32 recommended)"
+		} else {
+			check.Status = "ok"
+			check.Detail = "Set via environment variable"
+		}
 	} else {
 		check.Status = "warning"
 		check.Detail = "Derived from JWT secret (not recommended for production)"
