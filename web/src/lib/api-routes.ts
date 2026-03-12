@@ -14,6 +14,9 @@ export type ApiGetPath = WithQuery<
   // Health
   | "/health"
 
+  // Search
+  | "/search"
+
   // Auth
   | "/auth/setup-status"
 

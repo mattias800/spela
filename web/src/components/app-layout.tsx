@@ -30,6 +30,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useIgdbStatus } from "@/hooks/use-admin";
 import { useHealth } from "@/hooks/use-health";
+import { SearchPalette } from "@/features/search/components/search-palette";
 
 export function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -170,6 +171,7 @@ export function AppLayout() {
         mobileOpen={mobileMenuOpen}
         onMobileClose={closeMobileMenu}
         version={health?.version}
+        onSearchClick={() => window.dispatchEvent(new Event("open-search-palette"))}
       />
 
       {/* Content area — left padding on desktop, top padding on mobile */}
@@ -178,6 +180,8 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <SearchPalette />
     </div>
   );
 }
