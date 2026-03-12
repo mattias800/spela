@@ -1528,3 +1528,98 @@ func TestScan_DetectsMSXGames(t *testing.T) {
 	database.Model(&db.Game{}).Where("console_id = ?", msx2Console.ID).Count(&msx2Count)
 	assert.Equal(t, int64(1), msx2Count)
 }
+
+func TestScan_SkipsTrackBinFiles(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create orphaned CD audio track files (no .cue file present)
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Blam! Machinehead (Japan) (Track 01).bin"), []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Blam! Machinehead (Japan) (Track 02).bin"), []byte("audio"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Blam! Machinehead (Japan) (Track 06).bin"), []byte("audio"), 0644))
+
+	// Also create a legitimate single-file .bin game (no Track pattern)
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Crash Bandicoot (USA).bin"), []byte("game"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+
+	// Only the legitimate game should be created, track files should be skipped
+	assert.Equal(t, 1, result.NewGames, "only the non-track .bin should be a game")
+	assert.Equal(t, 1, result.TotalGames)
+
+	var games []db.Game
+	database.Find(&games)
+	require.Len(t, games, 1)
+	assert.Equal(t, "Crash Bandicoot", games[0].Title)
+}
+
+func TestScan_CleansUpExistingTrackFileGames(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	psxDir := filepath.Join(dir, "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// Create track files on disk
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Game (Track 01).bin"), []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "Game (Track 02).bin"), []byte("audio"), 0644))
+
+	// Simulate existing Game entries for track files (created by a prior scanner version)
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	for i := 1; i <= 2; i++ {
+		game := db.Game{
+			ConsoleID: psxConsole.ID,
+			Title:     "Game",
+			FileName:  "Game (Track 0" + string(rune('0'+i)) + ").bin",
+			FilePath:  "psx/Game (Track 0" + string(rune('0'+i)) + ").bin",
+			FileSize:  100,
+		}
+		require.NoError(t, database.Create(&game).Error)
+	}
+
+	var countBefore int64
+	database.Model(&db.Game{}).Count(&countBefore)
+	require.Equal(t, int64(2), countBefore)
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+
+	// Both track file entries should be cleaned up
+	assert.Equal(t, 2, result.RemovedGames, "track file entries should be removed")
+	assert.Equal(t, 0, result.TotalGames)
+
+	var games []db.Game
+	database.Unscoped().Find(&games)
+	assert.Len(t, games, 0, "track file games should be hard-deleted")
+}
+
+func TestTrackPattern(t *testing.T) {
+	tests := []struct {
+		filename string
+		isTrack  bool
+	}{
+		{"Game (Track 01).bin", true},
+		{"Game (Track 1).bin", true},
+		{"Blam! Machinehead (Japan) (Track 06).bin", true},
+		{"Game (Track 99).bin", true},
+		{"Game (track 3).bin", true},
+		{"Crash Bandicoot (USA).bin", false},
+		{"Super Mario 64 (USA).z64", false},
+		{"Game (Disc 1).bin", false},
+		{"Trackmania.bin", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			assert.Equal(t, tt.isTrack, trackPattern.MatchString(tt.filename))
+		})
+	}
+}
