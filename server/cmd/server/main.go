@@ -235,6 +235,15 @@ func main() {
 
 		// Auto-scrape new games if IGDB is configured
 		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
+			// Configure SteamGridDB for hero art (env var or DB setting)
+			if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
+				metaScraper.ConfigureSteamGridDB(sgdbKey)
+			} else {
+				var setting db.ServerSetting
+				if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
+					metaScraper.ConfigureSteamGridDB(setting.Value)
+				}
+			}
 			if metaScraper.TryStartScrape() {
 				hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: nil})
 				count, total, scrapeErr := metaScraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
