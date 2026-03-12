@@ -504,8 +504,14 @@ type ProgressFunc func(ScanProgress)
 // Scan walks all configured directories and detects ROMs.
 // Uses a two-pass algorithm: first discovers multi-disc games, then scans remaining files.
 // The optional onProgress callback is called at key points to report progress.
-func (s *Scanner) Scan(onProgress ProgressFunc) (*ScanResult, error) {
+// If consoleFilter is non-empty, only games matching that console abbreviation are processed
+// and the removal pass is scoped to that console.
+func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanResult, error) {
 	result := &ScanResult{}
+	filterAbbrev := ""
+	if len(consoleFilter) > 0 {
+		filterAbbrev = consoleFilter[0]
+	}
 
 	report := func(p ScanProgress) {
 		if onProgress != nil {
@@ -523,6 +529,15 @@ func (s *Scanner) Scan(onProgress ProgressFunc) (*ScanResult, error) {
 	consoleMap := make(map[string]*db.Console)
 	for i := range consoles {
 		consoleMap[consoles[i].Abbreviation] = &consoles[i]
+	}
+
+	// When filtering by console, restrict the map so only that console is processed
+	if filterAbbrev != "" {
+		if con, ok := consoleMap[filterAbbrev]; ok {
+			consoleMap = map[string]*db.Console{filterAbbrev: con}
+		} else {
+			return nil, fmt.Errorf("unknown console: %s", filterAbbrev)
+		}
 	}
 
 	// Track found file paths to detect removed games
@@ -573,7 +588,13 @@ func (s *Scanner) Scan(onProgress ProgressFunc) (*ScanResult, error) {
 	// soft-deleted and the file is still gone, hard-delete it to free the
 	// unique index slot. If the file came back, it was already restored above.
 	var allGames []db.Game
-	if err := s.DB.Unscoped().Find(&allGames).Error; err != nil {
+	gamesQuery := s.DB.Unscoped()
+	if filterAbbrev != "" {
+		if con, ok := consoleMap[filterAbbrev]; ok {
+			gamesQuery = gamesQuery.Where("console_id = ?", con.ID)
+		}
+	}
+	if err := gamesQuery.Find(&allGames).Error; err != nil {
 		return nil, fmt.Errorf("loading existing games: %w", err)
 	}
 	for i, g := range allGames {

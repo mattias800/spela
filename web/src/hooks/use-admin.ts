@@ -84,7 +84,12 @@ export function useScanLibrary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.post<Record<string, unknown>>("/admin/games/scan"),
+    mutationFn: (opts?: { console?: string }) => {
+      const path = opts?.console
+        ? (`/admin/games/scan?console=${encodeURIComponent(opts.console)}` as const)
+        : "/admin/games/scan";
+      return api.post<Record<string, unknown>>(path);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["consoles"] });

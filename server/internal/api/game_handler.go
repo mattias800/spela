@@ -423,7 +423,20 @@ type scanResultResponse struct {
 
 // ScanGames triggers a library scan in the background.
 // Returns 202 immediately; progress is reported via WebSocket events.
+// Pass ?console=<abbreviation> to scan only games for a specific console.
 func (h *GameHandler) ScanGames(c *gin.Context) {
+	consoleAbbrev := c.Query("console")
+
+	// Validate console abbreviation if provided
+	if consoleAbbrev != "" {
+		var con db.Console
+		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbrev).First(&con).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console"})
+			return
+		}
+		consoleAbbrev = con.Abbreviation // normalize casing
+	}
+
 	if !h.Scanner.TryStartScan() {
 		c.JSON(http.StatusConflict, gin.H{"error": "a scan is already in progress"})
 		return
@@ -435,10 +448,14 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 	go func() {
 		defer h.Scanner.FinishScan()
 
+		var scanArgs []string
+		if consoleAbbrev != "" {
+			scanArgs = append(scanArgs, consoleAbbrev)
+		}
 		result, err := h.Scanner.Scan(func(p scanner.ScanProgress) {
 			h.Scanner.SetScanProgress(&p)
 			h.Hub.Broadcast(ws.Event{Type: "scan_progress", Payload: p})
-		})
+		}, scanArgs...)
 		if err != nil {
 			slog.Error("game library scan failed", "error", err)
 			h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": "library scan failed"}})

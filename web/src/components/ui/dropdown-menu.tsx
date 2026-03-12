@@ -39,7 +39,11 @@ export function DropdownMenu({
             align === "right" ? "right-0" : "left-0",
             className,
           )}
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            const target = e.target as HTMLElement;
+            const button = target.closest("button");
+            if (button && !button.disabled) setOpen(false);
+          }}
         >
           {children}
         </div>

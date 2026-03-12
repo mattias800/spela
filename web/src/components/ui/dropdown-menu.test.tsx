@@ -77,6 +77,19 @@ describe("DropdownMenu", () => {
     expect(menu.className).toContain("right-0");
   });
 
+  it("stays open when clicking a disabled item", async () => {
+    render(
+      <DropdownMenu trigger={<button>Open</button>}>
+        <button disabled>Disabled</button>
+      </DropdownMenu>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Open" }));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Disabled" }));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+
   it("has role menu on the dropdown panel", async () => {
     render(
       <DropdownMenu trigger={<button>Open</button>}>
