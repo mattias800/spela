@@ -253,6 +253,10 @@ var directoryConsoleMap = map[string]string{
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
 var discPattern = regexp.MustCompile(`(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)\s*[\)\]]`)
 
+// trackPattern matches CD audio track markers in filenames, e.g. "(Track 06)", "(Track 1)".
+// These are companion files referenced by .cue sheets and should not be scanned as standalone games.
+var trackPattern = regexp.MustCompile(`(?i)\(Track\s*\d+\)`)
+
 // consoleNotes contains helpful guidance for console folders where the
 // purpose or correct usage may be ambiguous. These are included in the
 // README.txt files generated inside each console folder.
@@ -576,6 +580,11 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 			slog.Warn("error scanning directory", "dir", dir, "error", err)
 		}
 	}
+
+	// Clean up existing Game entries for CD audio track files (e.g. "Game (Track 06).bin")
+	// that were erroneously created as standalone games before the track-file filter was added.
+	removed := s.removeTrackFileGames()
+	result.RemovedGames += removed
 
 	report(ScanProgress{
 		Phase:   "checking_removed",
@@ -953,6 +962,32 @@ func (s *Scanner) identifyConsoleForDir(dir string) string {
 	return ""
 }
 
+// removeTrackFileGames deletes Game entries for CD audio track files (e.g. "Game (Track 06).bin")
+// that were previously created as standalone games. These files are companions to .cue sheets
+// and should never be standalone game entries.
+func (s *Scanner) removeTrackFileGames() int {
+	var games []db.Game
+	if err := s.DB.Where("file_name LIKE '%.bin'").Find(&games).Error; err != nil {
+		slog.Warn("failed to query .bin games for track file cleanup", "error", err)
+		return 0
+	}
+
+	removed := 0
+	for _, g := range games {
+		if trackPattern.MatchString(g.FileName) {
+			slog.Info("removing CD audio track file game entry",
+				"title", g.Title, "fileName", g.FileName, "gameId", g.ID)
+			s.DB.Unscoped().Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
+			s.DB.Unscoped().Delete(&g)
+			removed++
+		}
+	}
+	if removed > 0 {
+		slog.Info("cleaned up CD audio track file entries", "removed", removed)
+	}
+	return removed
+}
+
 // removeOldDiscGames deletes standalone Game records whose FilePath matches a claimed disc file,
 // so they don't coexist with the new multi-disc entry.
 func (s *Scanner) removeOldDiscGames(claimedFiles []string, newM3UPath string, result *ScanResult) {
@@ -1121,6 +1156,14 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 
 		// Skip .m3u files in pass 2 (handled in pass 1)
 		if ext == ".m3u" {
+			return nil
+		}
+
+		// Skip .bin files that are CD audio tracks (e.g. "Game (Track 06).bin").
+		// These are companion files referenced by .cue sheets. When the .cue file
+		// exists, Pass 1 claims them; this catches orphaned track files where the
+		// .cue file is missing or was already handled.
+		if ext == ".bin" && trackPattern.MatchString(info.Name()) {
 			return nil
 		}
 
