@@ -282,6 +282,7 @@ func NewRouter(cfg Config) *gin.Engine {
 		api.GET("/games", gameHandler.ListGames)
 		api.GET("/games/:id", gameHandler.GetGame)
 		api.GET("/games/:id/download", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
+		api.GET("/games/:id/download/:filename", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
 		api.GET("/games/:id/discs/:discNumber/download", downloadLimiter.RateLimit(), gameHandler.DownloadDisc)
 		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
 		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)

@@ -271,9 +271,12 @@ export function PlayPage() {
       // For multi-file disc formats (cue+bin), request format=zip since
       // EmulatorJS can extract zip but not tar.
       const isMultiDisc = game!.discCount > 0 && game!.discs && game!.discs.length > 0;
+      // Include the filename in the URL path so EmulatorJS can detect the
+      // file extension (e.g. .gg for Game Gear). Without it, genesis_plus_gx
+      // can't distinguish Game Gear from Genesis ROMs.
       const romUrl = isMultiDisc
         ? `/api/games/${game!.id}/discs/1/download?format=zip${token ? `&token=${encodeURIComponent(token)}` : ""}`
-        : `/api/games/${game!.id}/download${tokenSuffix}`;
+        : `/api/games/${game!.id}/download/${encodeURIComponent(game!.fileName)}${tokenSuffix}`;
 
       // Determine whether to load the save state based on user choice
       const choice = coreMismatchChoiceRef.current;
