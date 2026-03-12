@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
+import com.spela.player.util.formatBytes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -535,7 +536,7 @@ private fun SessionSaveItem(
                         }
                         if (save.fileSize > 0) {
                             if (isNotEmpty()) append(" \u00b7 ")
-                            append(formatFileSize(save.fileSize))
+                            append(formatBytes(save.fileSize))
                         }
                     },
                     style = SpTypography.BodySmall,
@@ -546,13 +547,5 @@ private fun SessionSaveItem(
                 SpChip(text = "Auto", color = SpColor.Primary)
             }
         }
-    }
-}
-
-private fun formatFileSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "${bytes}B"
-        bytes < 1024 * 1024 -> "${bytes / 1024}KB"
-        else -> "${bytes / (1024 * 1024)}MB"
     }
 }

@@ -12,7 +12,10 @@ import {
   AdvancedFilterPanel,
   savedSearchToFilters,
 } from "@/features/games/components/advanced-filter-panel";
+import { ActiveFilterPills } from "@/features/games/components/active-filter-pills";
+import { BestVersionsButton } from "@/features/games/components/best-versions-button";
 import { GameListRow } from "@/features/games/components/game-list-row";
+import { AlphabetBar } from "@/components/alphabet-bar";
 import { Pagination } from "@/components/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useThemes, useKeywords } from "@/hooks/use-explore";
@@ -30,6 +33,8 @@ function parseUrlFilters(params: URLSearchParams): Partial<GameFilters> {
   const f: Partial<GameFilters> = {};
   const consoles = params.get("consoles");
   if (consoles) f.consoles = consoles.split(",");
+  const regions = params.get("regions");
+  if (regions) f.regions = regions.split(",");
   const genres = params.get("genres");
   if (genres) f.genres = genres.split(",");
   const themes = params.get("themes");
@@ -44,6 +49,10 @@ function parseUrlFilters(params: URLSearchParams): Partial<GameFilters> {
   if (params.get("ratingMax")) f.ratingMax = Number(params.get("ratingMax"));
   const ps = params.get("playStatus");
   if (ps) f.playStatus = ps as GameFilters["playStatus"];
+  // Only serialize hidePreRelease when explicitly false (default is true/hidden)
+  if (params.get("hidePreRelease") === "false") f.hidePreRelease = false;
+  if (params.get("grouped") === "false") f.grouped = false;
+  if (params.get("letter")) f.letter = params.get("letter")!;
   const sortBy = params.get("sortBy");
   if (sortBy) f.sortBy = sortBy as GameFilters["sortBy"];
   const sortOrder = params.get("sortOrder");
@@ -56,6 +65,7 @@ function parseUrlFilters(params: URLSearchParams): Partial<GameFilters> {
 function filtersToUrl(filters: GameFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.consoles?.length) params.set("consoles", filters.consoles.join(","));
+  if (filters.regions?.length) params.set("regions", filters.regions.join(","));
   if (filters.genres?.length) params.set("genres", filters.genres.join(","));
   if (filters.themes?.length) params.set("themes", filters.themes.join(","));
   if (filters.keywords?.length) params.set("keywords", filters.keywords.join(","));
@@ -66,6 +76,10 @@ function filtersToUrl(filters: GameFilters): URLSearchParams {
   if (filters.ratingMin != null) params.set("ratingMin", String(filters.ratingMin));
   if (filters.ratingMax != null) params.set("ratingMax", String(filters.ratingMax));
   if (filters.playStatus) params.set("playStatus", filters.playStatus);
+  // Only serialize when non-default (false)
+  if (filters.hidePreRelease === false) params.set("hidePreRelease", "false");
+  if (filters.grouped === false) params.set("grouped", "false");
+  if (filters.letter) params.set("letter", filters.letter);
   if (filters.sortBy && filters.sortBy !== "title") params.set("sortBy", filters.sortBy);
   if (filters.sortOrder && filters.sortOrder !== "asc") params.set("sortOrder", filters.sortOrder);
   if (filters.search) params.set("search", filters.search);
@@ -151,21 +165,41 @@ export function GamesPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         consoles={consoles}
+        showHideBetas
       />
 
-      <AdvancedFilterPanel
+      <div className="flex flex-wrap items-start gap-3">
+        <AdvancedFilterPanel
+          filters={filters}
+          onFiltersChange={setFilters}
+          consoles={consoles}
+          themes={themes}
+          keywords={keywords}
+          savedSearches={savedSearches}
+          onSaveSearch={handleSaveSearch}
+          onDeleteSearch={(id) => deleteSearch.mutate(id)}
+          onApplySearch={handleApplySearch}
+          totalResults={data?.total}
+          isOpen={filtersOpen}
+          onToggle={() => setFiltersOpen((o) => !o)}
+        />
+        <BestVersionsButton
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      </div>
+
+      <ActiveFilterPills
         filters={filters}
         onFiltersChange={setFilters}
         consoles={consoles}
-        themes={themes}
-        keywords={keywords}
-        savedSearches={savedSearches}
-        onSaveSearch={handleSaveSearch}
-        onDeleteSearch={(id) => deleteSearch.mutate(id)}
-        onApplySearch={handleApplySearch}
-        totalResults={data?.total}
-        isOpen={filtersOpen}
-        onToggle={() => setFiltersOpen((o) => !o)}
+      />
+
+      <AlphabetBar
+        activeLetter={filters.letter}
+        onLetterClick={(letter) =>
+          setFilters((f) => ({ ...f, letter, page: 1 }))
+        }
       />
 
       {/* Content */}

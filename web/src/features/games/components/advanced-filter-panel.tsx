@@ -221,6 +221,12 @@ export function AdvancedFilterPanel({
     label: c.name,
   }));
 
+  const regionOptions = [
+    "USA", "Europe", "Japan", "World", "Korea", "Brazil",
+    "France", "Germany", "Spain", "Italy", "Australia",
+    "Canada", "China", "Asia",
+  ].map((r) => ({ value: r, label: r }));
+
   const genreOptions = [
     "Action", "Adventure", "RPG", "Platformer", "Puzzle",
     "Racing", "Shooter", "Sports", "Strategy", "Fighting",
@@ -252,6 +258,7 @@ export function AdvancedFilterPanel({
   const filtersToRecord = (f: GameFilters): Record<string, string | number> => {
     const rec: Record<string, string | number> = {};
     if (f.consoles?.length) rec.consoles = f.consoles.join(",");
+    if (f.regions?.length) rec.regions = f.regions.join(",");
     if (f.genres?.length) rec.genres = f.genres.join(",");
     if (f.themes?.length) rec.themes = f.themes.join(",");
     if (f.keywords?.length) rec.keywords = f.keywords.join(",");
@@ -333,6 +340,17 @@ export function AdvancedFilterPanel({
               onFiltersChange((f) => ({ ...f, consoles, page: 1 }))
             }
             testId="console-filter"
+          />
+
+          {/* Region picker */}
+          <ChipPicker
+            label="Regions"
+            options={regionOptions}
+            selected={filters.regions ?? []}
+            onChange={(regions) =>
+              onFiltersChange((f) => ({ ...f, regions, page: 1 }))
+            }
+            testId="region-filter"
           />
 
           {/* Genre picker */}
@@ -548,6 +566,7 @@ export function AdvancedFilterPanel({
 function countActiveFilters(filters: GameFilters): number {
   let count = 0;
   if (filters.consoles?.length) count++;
+  if (filters.regions?.length) count++;
   if (filters.genres?.length) count++;
   if (filters.themes?.length) count++;
   if (filters.keywords?.length) count++;
@@ -570,6 +589,7 @@ export function savedSearchToFilters(
   return {
     ...base,
     consoles: record.consoles ? String(record.consoles).split(",") : undefined,
+    regions: record.regions ? String(record.regions).split(",") : undefined,
     genres: record.genres ? String(record.genres).split(",") : undefined,
     themes: record.themes ? String(record.themes).split(",") : undefined,
     keywords: record.keywords ? String(record.keywords).split(",") : undefined,

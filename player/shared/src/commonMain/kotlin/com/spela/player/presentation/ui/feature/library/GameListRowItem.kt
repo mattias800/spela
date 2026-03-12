@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.feature.library
 
+import com.spela.player.util.formatBytes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,7 +88,7 @@ internal fun GameListRowItem(
                 ) {
                     if (game.fileSize > 0) {
                         Text(
-                            text = formatFileSize(game.fileSize),
+                            text = formatBytes(game.fileSize),
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
                         )
@@ -109,18 +110,17 @@ internal fun GameListRowItem(
                             )
                         }
                     }
+
+                    if (game.variantCount > 1) {
+                        val otherCount = game.variantCount - 1
+                        Text(
+                            text = "$otherCount ${if (otherCount == 1) "version" else "versions"}",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
                 }
             }
         }
     }
-}
-
-private fun formatFileSize(bytes: Long): String {
-    if (bytes < 1024) return "$bytes B"
-    val kb = bytes / 1024.0
-    if (kb < 1024) return String.format("%.0f KB", kb)
-    val mb = kb / 1024.0
-    if (mb < 1024) return String.format("%.1f MB", mb)
-    val gb = mb / 1024.0
-    return String.format("%.2f GB", gb)
 }

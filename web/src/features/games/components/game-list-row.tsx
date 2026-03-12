@@ -37,6 +37,11 @@ export function GameListRow({ game }: GameListRowProps) {
         )}
       </div>
       {consoleName && <Badge>{consoleName}</Badge>}
+      {game.variantCount != null && game.variantCount > 1 && (
+        <span className="text-xs text-surface-400 whitespace-nowrap">
+          +{game.variantCount - 1} {game.variantCount === 2 ? "version" : "versions"}
+        </span>
+      )}
       <span className="text-xs text-surface-500 w-16 text-right">
         {formatFileSize(game.fileSize)}
       </span>

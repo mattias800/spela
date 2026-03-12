@@ -58,10 +58,12 @@ internal fun GameLibraryControls(
     sortBy: String,
     sortOrder: String,
     viewMode: ViewMode,
+    hideBetas: Boolean = true,
     onFilterByConsole: (String?) -> Unit,
     onSortByChanged: (String) -> Unit,
     onSortOrderChanged: (String) -> Unit,
     onToggleViewMode: () -> Unit,
+    onToggleHideBetas: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -90,7 +92,7 @@ internal fun GameLibraryControls(
             }
         }
 
-        // Sort controls + view mode toggle
+        // Sort controls + hide betas + view mode toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,6 +111,12 @@ internal fun GameLibraryControls(
                 onToggle = {
                     onSortOrderChanged(if (sortOrder == "asc") "desc" else "asc")
                 },
+            )
+
+            FilterChip(
+                text = "Hide betas",
+                isSelected = hideBetas,
+                onClick = onToggleHideBetas,
             )
 
             ViewModeToggle(

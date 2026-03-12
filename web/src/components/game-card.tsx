@@ -106,6 +106,15 @@ export function GameCard({
             <Badge variant="brand">{game.consoleName}</Badge>
           </div>
         )}
+
+        {/* Variant count badge */}
+        {game.variantCount != null && game.variantCount > 1 && (
+          <div className="absolute bottom-2.5 right-2.5 z-10">
+            <span className="inline-flex items-center rounded-full bg-surface-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
+              {game.variantCount - 1} {game.variantCount === 2 ? "version" : "versions"}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="px-1 space-y-1">

@@ -217,14 +217,67 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 	successes := 0
 	failures := 0
 	verified := 0
+	// Track groups we've already scraped a primary for, so we can propagate
+	// metadata to other variants in the same group instead of re-scraping.
+	scrapedGroups := make(map[string]uint) // "consoleID:groupKey" -> scraped game ID
 	for i := range games {
-		if err := s.ScrapeGame(&games[i]); err != nil {
-			slog.Warn("failed to scrape game", "game", games[i].Title, "error", err)
+		game := &games[i]
+
+		// Smart scraping: if this game belongs to a variant group, try to
+		// propagate metadata from an already-scraped sibling instead of
+		// hitting external APIs again.
+		if game.GroupKey != "" && mode != "all" {
+			groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
+
+			// Check if we've already scraped a game in this group during this run
+			if _, done := scrapedGroups[groupID]; done {
+				if s.propagateGroupMetadata(game) {
+					successes++
+					if onProgress != nil {
+						onProgress(ScrapeProgress{
+							Current:   i + 1,
+							Total:     total,
+							GameName:  game.Title,
+							Successes: successes,
+							Failures:  failures,
+							Verified:  verified,
+						})
+					}
+					continue
+				}
+			}
+
+			// Check if any sibling in the DB already has metadata
+			if s.propagateGroupMetadata(game) {
+				scrapedGroups[groupID] = game.ID
+				successes++
+				if onProgress != nil {
+					onProgress(ScrapeProgress{
+						Current:   i + 1,
+						Total:     total,
+						GameName:  game.Title,
+						Successes: successes,
+						Failures:  failures,
+						Verified:  verified,
+					})
+				}
+				continue
+			}
+		}
+
+		if err := s.ScrapeGame(game); err != nil {
+			slog.Warn("failed to scrape game", "game", game.Title, "error", err)
 			failures++
 		} else {
 			successes++
-			if games[i].VerificationStatus == "verified" {
+			if game.VerificationStatus == "verified" {
 				verified++
+			}
+			// After scraping, propagate to other unscraped variants in the group
+			if game.GroupKey != "" {
+				groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
+				scrapedGroups[groupID] = game.ID
+				s.propagateToGroup(game)
 			}
 		}
 
@@ -232,7 +285,7 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 			onProgress(ScrapeProgress{
 				Current:   i + 1,
 				Total:     total,
-				GameName:  games[i].Title,
+				GameName:  game.Title,
 				Successes: successes,
 				Failures:  failures,
 				Verified:  verified,
@@ -241,4 +294,97 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 	}
 
 	return successes, total, nil
+}
+
+// propagateGroupMetadata copies metadata from a scraped sibling in the same
+// variant group to the given game. Returns true if metadata was propagated.
+func (s *Scraper) propagateGroupMetadata(game *db.Game) bool {
+	if game.GroupKey == "" {
+		return false
+	}
+
+	// Find a sibling with metadata (has Description or CoverURL and has been scraped)
+	var sibling db.Game
+	err := s.DB.Where("console_id = ? AND group_key = ? AND id != ? AND scraper_id != '' AND scraper_id IS NOT NULL AND (description != '' OR cover_url != '')",
+		game.ConsoleID, game.GroupKey, game.ID).
+		First(&sibling).Error
+	if err != nil {
+		return false
+	}
+
+	// Copy metadata fields that are shared across variants (not file-specific)
+	if game.Description == "" && sibling.Description != "" {
+		game.Description = sibling.Description
+	}
+	if game.CoverURL == "" && sibling.CoverURL != "" {
+		game.CoverURL = sibling.CoverURL
+	}
+	if game.IGDBCoverURL == "" && sibling.IGDBCoverURL != "" {
+		game.IGDBCoverURL = sibling.IGDBCoverURL
+	}
+	if game.LibRetroCoverURL == "" && sibling.LibRetroCoverURL != "" {
+		game.LibRetroCoverURL = sibling.LibRetroCoverURL
+	}
+	if game.Developer == "" && sibling.Developer != "" {
+		game.Developer = sibling.Developer
+	}
+	if game.Publisher == "" && sibling.Publisher != "" {
+		game.Publisher = sibling.Publisher
+	}
+	if game.Genre == "" && sibling.Genre != "" {
+		game.Genre = sibling.Genre
+	}
+	if game.GameModes == "" && sibling.GameModes != "" {
+		game.GameModes = sibling.GameModes
+	}
+	if game.Rating == 0 && sibling.Rating != 0 {
+		game.Rating = sibling.Rating
+	}
+	if game.ReleaseDate == "" && sibling.ReleaseDate != "" {
+		game.ReleaseDate = sibling.ReleaseDate
+	}
+	if game.Players == 0 && sibling.Players != 0 {
+		game.Players = sibling.Players
+	}
+	if game.Storyline == "" && sibling.Storyline != "" {
+		game.Storyline = sibling.Storyline
+	}
+	if game.TotalRating == 0 && sibling.TotalRating != 0 {
+		game.TotalRating = sibling.TotalRating
+	}
+	if game.TotalRatingCount == 0 && sibling.TotalRatingCount != 0 {
+		game.TotalRatingCount = sibling.TotalRatingCount
+	}
+
+	// Mark as propagated (use the sibling's scraper ID with a propagated suffix)
+	if game.ScraperID == "" {
+		game.ScraperID = sibling.ScraperID + ":propagated"
+	}
+
+	game.ScrapeAttempts++
+
+	if err := s.DB.Save(game).Error; err != nil {
+		slog.Warn("failed to save propagated metadata", "game", game.Title, "error", err)
+		return false
+	}
+
+	slog.Info("propagated metadata from group sibling", "game", game.Title, "from", sibling.Title)
+	return true
+}
+
+// propagateToGroup copies metadata from a freshly scraped game to all unscraped
+// siblings in the same variant group.
+func (s *Scraper) propagateToGroup(source *db.Game) {
+	if source.GroupKey == "" {
+		return
+	}
+
+	var siblings []db.Game
+	s.DB.Where("console_id = ? AND group_key = ? AND id != ? AND (scraper_id = '' OR scraper_id IS NULL)",
+		source.ConsoleID, source.GroupKey, source.ID).
+		Find(&siblings)
+
+	for i := range siblings {
+		s.propagateGroupMetadata(&siblings[i])
+	}
 }

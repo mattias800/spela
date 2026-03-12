@@ -105,8 +105,27 @@ data class GameDto(
     val playable: Boolean = true,
     val heroUrl: String? = null,
     val logoUrl: String? = null,
+    val revision: String? = null,
+    val tags: String? = null,
+    val isPreRelease: Boolean = false,
+    val variantCount: Int = 0,
+    val groupKey: String? = null,
+    val variants: List<GameVariantDto> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null,
+)
+
+@Serializable
+data class GameVariantDto(
+    val id: String,
+    val title: String,
+    val fileName: String = "",
+    val region: String? = null,
+    val revision: String? = null,
+    val tags: String? = null,
+    val isPreRelease: Boolean = false,
+    val fileSize: Long = 0,
+    val verificationStatus: String? = null,
 )
 
 /** Wrapper for GET /api/games which returns {data, total, page, pageSize} */

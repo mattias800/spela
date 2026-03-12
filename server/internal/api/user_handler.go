@@ -180,6 +180,7 @@ type preferencesResponse struct {
 	SelectedKeyMapping      string                         `json:"selectedKeyMapping"`
 	CustomKeyMapping        map[string]string              `json:"customKeyMapping"`
 	ConsoleKeyMappings      map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
+	PreferredRegions        []string                       `json:"preferredRegions"`
 	RALinked                bool                           `json:"raLinked"`
 	RAUsername              string                         `json:"raUsername"`
 	RAHardcoreEnabled       bool                           `json:"raHardcoreEnabled"`
@@ -219,6 +220,8 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		defaultSecondScreenPage = "art"
 	}
 
+	preferredRegions := parsePreferredRegions(user.PreferredRegions)
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
@@ -233,10 +236,29 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 		SelectedKeyMapping:      selectedKeyMapping,
 		CustomKeyMapping:        customKeyMapping,
 		ConsoleKeyMappings:      consoleKeyMappings,
+		PreferredRegions:        preferredRegions,
 		RALinked:                raLinked,
 		RAUsername:              raCred.RAUsername,
 		RAHardcoreEnabled:       raCred.HardcoreEnabled,
 	})
+}
+
+// parsePreferredRegions splits a comma-separated region string into a slice,
+// trimming whitespace and filtering empty strings. Returns an empty slice (not nil)
+// when the input is empty.
+func parsePreferredRegions(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
 }
 
 // UpdatePreferences partially updates the current user's emulation preferences.
@@ -260,6 +282,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		SelectedKeyMapping      *string                          `json:"selectedKeyMapping"`
 		CustomKeyMapping        map[string]string                `json:"customKeyMapping"`
 		ConsoleKeyMappings      map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
+		PreferredRegions        *[]string                        `json:"preferredRegions"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -296,6 +319,9 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	if req.CustomKeyMapping != nil {
 		b, _ := json.Marshal(req.CustomKeyMapping)
 		user.CustomKeyMapping = string(b)
+	}
+	if req.PreferredRegions != nil {
+		user.PreferredRegions = strings.Join(*req.PreferredRegions, ",")
 	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
@@ -387,6 +413,8 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		defaultSecondScreenPage = "art"
 	}
 
+	preferredRegions := parsePreferredRegions(user.PreferredRegions)
+
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
@@ -401,6 +429,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		SelectedKeyMapping:      selectedKeyMapping,
 		CustomKeyMapping:        customKeyMapping,
 		ConsoleKeyMappings:      consoleKeyMappings,
+		PreferredRegions:        preferredRegions,
 		RALinked:                raLinked,
 		RAUsername:              raCred.RAUsername,
 		RAHardcoreEnabled:       raCred.HardcoreEnabled,

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +82,12 @@ type GameResponse struct {
 	VerificationStatus  string         `json:"verificationStatus,omitempty"`
 	VerificationTag     string         `json:"verificationTag,omitempty"`
 	Region              string         `json:"region,omitempty"`
+	Revision       string         `json:"revision,omitempty"`
+	Tags           string         `json:"tags,omitempty"`
+	IsPreRelease   bool           `json:"isPreRelease"`
+	VariantCount   int            `json:"variantCount,omitempty"`
+	GroupKey       string         `json:"groupKey,omitempty"`
+	Variants       []VariantResponse `json:"variants,omitempty"`
 	HeroURL        string         `json:"heroUrl,omitempty"`
 	LogoURL        string         `json:"logoUrl,omitempty"`
 	BiosStatus     string         `json:"biosStatus,omitempty"`
@@ -116,6 +123,19 @@ type LanguageSupportResponse struct {
 type AgeRatingResponse struct {
 	Category string `json:"category"`
 	Rating   string `json:"rating"`
+}
+
+// VariantResponse is a simplified game entry for listing variants of a game.
+type VariantResponse struct {
+	ID                 string `json:"id"`
+	Title              string `json:"title"`
+	FileName           string `json:"fileName"`
+	Region             string `json:"region,omitempty"`
+	Revision           string `json:"revision,omitempty"`
+	Tags               string `json:"tags,omitempty"`
+	IsPreRelease       bool   `json:"isPreRelease"`
+	FileSize           int64  `json:"fileSize"`
+	VerificationStatus string `json:"verificationStatus,omitempty"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.
@@ -335,6 +355,10 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		VerificationStatus:  g.VerificationStatus,
 		VerificationTag:     g.VerificationTag,
 		Region:              g.Region,
+		Revision:            g.Revision,
+		Tags:                g.Tags,
+		IsPreRelease:        g.IsPreRelease,
+		GroupKey:            g.GroupKey,
 	}
 
 	// Map release dates
@@ -413,9 +437,67 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 
 	data := loadUserGameData(database, userID, gameIDs)
 
+	// Batch-load variant counts for all games in the page.
+	// Group by (console_id, group_key) to count how many games share each key.
+	variantCounts := make(map[string]int) // "consoleID:groupKey" -> count
+	if database != nil && len(games) > 0 {
+		// Collect unique group keys (with console_id) for this page
+		type groupKeyPair struct {
+			ConsoleID uint
+			GroupKey  string
+		}
+		seen := make(map[string]bool)
+		var pairs []groupKeyPair
+		for _, g := range games {
+			if g.GroupKey == "" {
+				continue
+			}
+			key := fmt.Sprintf("%d:%s", g.ConsoleID, g.GroupKey)
+			if !seen[key] {
+				seen[key] = true
+				pairs = append(pairs, groupKeyPair{ConsoleID: g.ConsoleID, GroupKey: g.GroupKey})
+			}
+		}
+
+		if len(pairs) > 0 {
+			type countRow struct {
+				ConsoleID uint
+				GroupKey  string
+				Cnt       int
+			}
+			var rows []countRow
+
+			// Build OR conditions for each (consoleID, groupKey) pair to avoid
+			// the cross-product issue with separate IN clauses.
+			var conditions []string
+			var args []interface{}
+			for _, p := range pairs {
+				conditions = append(conditions, "(console_id = ? AND group_key = ?)")
+				args = append(args, p.ConsoleID, p.GroupKey)
+			}
+
+			database.Model(&db.Game{}).
+				Select("console_id, group_key, COUNT(*) as cnt").
+				Where(strings.Join(conditions, " OR "), args...).
+				Group("console_id, group_key").
+				Find(&rows)
+
+			for _, r := range rows {
+				key := fmt.Sprintf("%d:%s", r.ConsoleID, r.GroupKey)
+				variantCounts[key] = r.Cnt
+			}
+		}
+	}
+
 	result := make([]GameResponse, len(games))
 	for i, g := range games {
 		result[i] = toGameResponseWithData(g, &data)
+		if g.GroupKey != "" {
+			key := fmt.Sprintf("%d:%s", g.ConsoleID, g.GroupKey)
+			if count, ok := variantCounts[key]; ok && count > 1 {
+				result[i].VariantCount = count
+			}
+		}
 	}
 	return result
 }

@@ -606,10 +606,20 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 					slog.Info("removing missing game", "title", g.Title, "path", g.FilePath)
 					result.RemovedGames++
 				}
+				// If this game was the primary variant for its group,
+				// re-elect a new primary after deletion.
+				wasPrimary := g.IsPrimary
+				removedConsoleID := g.ConsoleID
+				removedGroupKey := g.GroupKey
 				// Hard-delete game and associated discs so the unique index
 				// is freed and future scans can recreate them cleanly.
 				s.DB.Unscoped().Where("game_id = ?", g.ID).Delete(&db.GameDisc{})
 				s.DB.Unscoped().Delete(&g)
+				if wasPrimary && removedGroupKey != "" {
+					if err := ReElectPrimaryForGroup(s.DB, removedConsoleID, removedGroupKey); err != nil {
+						slog.Warn("failed to re-elect primary after game removal", "groupKey", removedGroupKey, "error", err)
+					}
+				}
 			}
 		}
 		if i%100 == 0 {
@@ -625,6 +635,12 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 	var count int64
 	s.DB.Model(&db.Game{}).Count(&count)
 	result.TotalGames = int(count)
+
+	// Group variants and elect primary representatives
+	report(ScanProgress{Phase: "grouping", Message: "Grouping variants and electing primaries..."})
+	if err := GroupAndElectPrimaries(s.DB); err != nil {
+		slog.Warn("failed to group and elect primaries", "error", err)
+	}
 
 	slog.Info("scan complete",
 		"new", result.NewGames,
@@ -864,14 +880,21 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			}
 		} else {
 			// Create new game with disc record
-			title := GameTitle(filepath.Base(cuePath))
+			cueBase := filepath.Base(cuePath)
+			title := GameTitle(cueBase)
+			meta := ParseFilenameMetadata(cueBase)
 			game := db.Game{
-				ConsoleID: console.ID,
-				Title:     title,
-				FileName:  filepath.Base(cuePath),
-				FilePath:  relPath,
-				FileSize:  totalSize,
-				DiscCount: 1,
+				ConsoleID:    console.ID,
+				Title:        title,
+				FileName:     cueBase,
+				FilePath:     relPath,
+				FileSize:     totalSize,
+				DiscCount:    1,
+				Region:       meta.Region,
+				Revision:     meta.Revision,
+				Tags:         meta.Tags,
+				IsPreRelease: meta.IsPreRelease,
+				GroupKey:     meta.GroupKey,
 			}
 			if err := s.DB.Create(&game).Error; err != nil {
 				slog.Warn("failed to create .cue game", "path", cuePath, "error", err)
@@ -1013,14 +1036,20 @@ func (s *Scanner) createMultiDiscGame(m3uPath string, discFiles []string, consol
 	// Extract title from the .m3u filename
 	m3uName := filepath.Base(m3uPath)
 	title := GameTitle(m3uName)
+	meta := ParseFilenameMetadata(m3uName)
 
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  m3uName,
-		FilePath:  m3uRelPath,
-		FileSize:  totalSize,
-		DiscCount: len(discFiles),
+		ConsoleID:    console.ID,
+		Title:        title,
+		FileName:     m3uName,
+		FilePath:     m3uRelPath,
+		FileSize:     totalSize,
+		DiscCount:    len(discFiles),
+		Region:       meta.Region,
+		Revision:     meta.Revision,
+		Tags:         meta.Tags,
+		IsPreRelease: meta.IsPreRelease,
+		GroupKey:     meta.GroupKey,
 	}
 	if err := s.DB.Create(&game).Error; err != nil {
 		slog.Warn("failed to create multi-disc game", "path", m3uPath, "error", err)
@@ -1123,12 +1152,18 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 
 		// Create new game entry
 		title := GameTitle(info.Name())
+		meta := ParseFilenameMetadata(info.Name())
 		game := db.Game{
-			ConsoleID: console.ID,
-			Title:     title,
-			FileName:  info.Name(),
-			FilePath:  relPath,
-			FileSize:  info.Size(),
+			ConsoleID:    console.ID,
+			Title:        title,
+			FileName:     info.Name(),
+			FilePath:     relPath,
+			FileSize:     info.Size(),
+			Region:       meta.Region,
+			Revision:     meta.Revision,
+			Tags:         meta.Tags,
+			IsPreRelease: meta.IsPreRelease,
+			GroupKey:     meta.GroupKey,
 		}
 		if err := s.DB.Create(&game).Error; err != nil {
 			slog.Warn("failed to create game entry", "path", relPath, "error", err)

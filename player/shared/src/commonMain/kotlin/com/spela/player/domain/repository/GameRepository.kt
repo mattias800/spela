@@ -4,6 +4,7 @@ import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
+import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
@@ -11,13 +12,36 @@ import com.spela.player.domain.model.TopRatedGame
 interface GameRepository {
     suspend fun getConsoles(): Result<List<Console>>
     suspend fun getGamesForConsole(consoleId: String): Result<List<Game>>
+    suspend fun getGamesForConsolePaginated(
+        consoleId: String,
+        page: Int = 1,
+        pageSize: Int = 50,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+    ): Result<PaginatedResult<Game>>
     suspend fun getAllGames(): Result<List<Game>>
+    suspend fun getAllGamesPaginated(
+        page: Int = 1,
+        pageSize: Int = 50,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+    ): Result<PaginatedResult<Game>>
     suspend fun searchGames(
         query: String,
         consoleId: String? = null,
         sortBy: String? = null,
         sortOrder: String? = null,
     ): Result<List<Game>>
+    suspend fun searchGamesPaginated(
+        query: String,
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+        page: Int = 1,
+        pageSize: Int = 50,
+        hidePreRelease: Boolean = true,
+        grouped: Boolean = true,
+    ): Result<PaginatedResult<Game>>
     suspend fun getGameDetail(gameId: String): Result<GameDetail>
     suspend fun getRecentGames(): Result<List<Game>>
     suspend fun getFavoriteGames(): Result<List<Game>>

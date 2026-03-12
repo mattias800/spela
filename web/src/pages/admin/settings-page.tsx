@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardContent,
   Input,
+  Select,
   Switch,
 } from "@/components/ui";
 import {
@@ -29,6 +30,8 @@ export function AdminSettingsPage() {
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
   const [biosAutoDownload, setBiosAutoDownload] = useState(true);
+  const [defaultRegion, setDefaultRegion] = useState("USA");
+  const [hidePreReleaseDefault, setHidePreReleaseDefault] = useState(true);
   const [igdbClientId, setIgdbClientId] = useState("");
   const [igdbClientSecret, setIgdbClientSecret] = useState("");
   const [steamgriddbApiKey, setSteamgriddbApiKey] = useState("");
@@ -38,6 +41,8 @@ export function AdminSettingsPage() {
       setAllowRegistration(settings["registration_enabled"] !== "false");
       setScrapeOnScan(settings["scrapeOnScan"] !== "false");
       setBiosAutoDownload(settings["bios_auto_download"] !== "false");
+      setDefaultRegion(settings["default_region"] || "USA");
+      setHidePreReleaseDefault(settings["hide_pre_release_default"] !== "false");
       setIgdbClientId(settings["igdb_client_id"] ?? "");
       setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
       setSteamgriddbApiKey(settings["steamgriddb_api_key"] ?? "");
@@ -49,6 +54,8 @@ export function AdminSettingsPage() {
       registration_enabled: String(allowRegistration),
       scrapeOnScan: String(scrapeOnScan),
       bios_auto_download: String(biosAutoDownload),
+      default_region: defaultRegion,
+      hide_pre_release_default: String(hidePreReleaseDefault),
     };
     // Only send IGDB credentials when they're managed via the UI, not env vars
     if (!igdbEnvConfigured) {
@@ -133,6 +140,44 @@ export function AdminSettingsPage() {
             <Switch
               checked={biosAutoDownload}
               onChange={setBiosAutoDownload}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-surface-100">Library Defaults</h2>
+          <p className="text-xs text-surface-500 mt-1">
+            Server-wide defaults for game library display and scraping.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select
+            id="default-region"
+            label="Default Region"
+            value={defaultRegion}
+            onChange={(e) => setDefaultRegion(e.target.value)}
+            options={[
+              { value: "USA", label: "USA" },
+              { value: "Europe", label: "Europe" },
+              { value: "World", label: "World" },
+              { value: "Japan", label: "Japan" },
+            ]}
+          />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-surface-200">
+                Hide Pre-release by Default
+              </p>
+              <p className="text-xs text-surface-500">
+                Hide betas, prototypes, and samples in game listings by default
+              </p>
+            </div>
+            <Switch
+              checked={hidePreReleaseDefault}
+              onChange={setHidePreReleaseDefault}
             />
           </div>
         </CardContent>

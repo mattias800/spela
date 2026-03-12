@@ -74,15 +74,33 @@ fun GameDto.toDomain(): Game = Game(
     playable = playable,
     heroUrl = heroUrl,
     logoUrl = logoUrl,
+    revision = revision,
+    tags = tags,
+    isPreRelease = isPreRelease,
+    variantCount = variantCount,
+    groupKey = groupKey,
 )
 
 /**
  * Constructs GameDetail from the enriched GameResponse.
  * screenshotUrls comes directly from the response.
  */
+fun GameVariantDto.toDomain(): GameVariant = GameVariant(
+    id = id,
+    title = title,
+    fileName = fileName,
+    region = region,
+    revision = revision,
+    tags = tags,
+    isPreRelease = isPreRelease,
+    fileSize = fileSize,
+    verificationStatus = verificationStatus,
+)
+
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
     screenshots = screenshotUrls,
+    variants = variants.map { it.toDomain() },
 )
 
 fun SaveStateDto.toDomain(): SaveState = SaveState(

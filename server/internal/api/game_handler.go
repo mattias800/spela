@@ -72,6 +72,68 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		countQuery = countQuery.Where("console_id IN ?", consoleIDs)
 	}
 
+	// --- Variant grouping (default: show only primaries) ---
+	grouped := c.DefaultQuery("grouped", "true")
+	if grouped == "true" {
+		query = query.Where("games.is_primary = ?", true)
+		countQuery = countQuery.Where("is_primary = ?", true)
+	}
+
+	// --- Hide pre-release (default: hide betas/protos/samples) ---
+	hidePreRelease := c.DefaultQuery("hidePreRelease", "true")
+	if hidePreRelease == "true" {
+		query = query.Where("games.is_pre_release = ?", false)
+		countQuery = countQuery.Where("is_pre_release = ?", false)
+	}
+
+	// --- Region filter ---
+	if regionFilter := c.Query("region"); regionFilter != "" {
+		regions := strings.Split(regionFilter, ",")
+		var trimmed []string
+		for _, r := range regions {
+			r = strings.TrimSpace(r)
+			if r != "" {
+				trimmed = append(trimmed, r)
+			}
+		}
+		if len(trimmed) > 0 {
+			// Build OR conditions: exact match (case-insensitive) OR substring match
+			// to handle multi-region values like "USA, Europe"
+			regionWhere := h.DB
+			for i, r := range trimmed {
+				if i == 0 {
+					regionWhere = regionWhere.Where("LOWER(games.region) = LOWER(?) OR games.region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				} else {
+					regionWhere = regionWhere.Or("LOWER(games.region) = LOWER(?) OR games.region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				}
+			}
+			query = query.Where(regionWhere)
+			countRegionWhere := h.DB
+			for i, r := range trimmed {
+				if i == 0 {
+					countRegionWhere = countRegionWhere.Where("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				} else {
+					countRegionWhere = countRegionWhere.Or("LOWER(region) = LOWER(?) OR region LIKE ? ESCAPE '\\'", r, "%"+escapeLikePattern(r)+"%")
+				}
+			}
+			countQuery = countQuery.Where(countRegionWhere)
+		}
+	}
+
+	// --- Letter filter (alphabet quick-jump) ---
+	if letter := c.Query("letter"); letter != "" {
+		if letter == "#" {
+			// Non-alpha: match games starting with a digit
+			query = query.Where("title GLOB '[0-9]*'")
+			countQuery = countQuery.Where("title GLOB '[0-9]*'")
+		} else if len(letter) == 1 && ((letter[0] >= 'A' && letter[0] <= 'Z') || (letter[0] >= 'a' && letter[0] <= 'z')) {
+			upper := strings.ToUpper(letter)
+			lower := strings.ToLower(letter)
+			query = query.Where("title LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\'", lower+"%", upper+"%")
+			countQuery = countQuery.Where("title LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\'", lower+"%", upper+"%")
+		}
+	}
+
 	// --- Text search ---
 	if search := c.Query("search"); search != "" {
 		query = query.Where("title LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(search)+"%")
@@ -270,6 +332,34 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 	userID := getUserID(c)
 	resp := ToGameResponse(game, h.DB, userID)
 	resp.BiosStatus = GetConsoleStatus(h.Storage.BiosDir, game.Console.Abbreviation)
+
+	// Load variants: other games in the same (console_id, group_key) group
+	if game.GroupKey != "" {
+		var variants []db.Game
+		h.DB.Where("console_id = ? AND group_key = ? AND id != ?",
+			game.ConsoleID, game.GroupKey, game.ID).
+			Order("file_name ASC").
+			Find(&variants)
+		if len(variants) > 0 {
+			resp.Variants = make([]VariantResponse, len(variants))
+			for i, v := range variants {
+				resp.Variants[i] = VariantResponse{
+					ID:                 strconv.FormatUint(uint64(v.ID), 10),
+					Title:              v.Title,
+					FileName:           v.FileName,
+					Region:             v.Region,
+					Revision:           v.Revision,
+					Tags:               v.Tags,
+					IsPreRelease:       v.IsPreRelease,
+					FileSize:           v.FileSize,
+					VerificationStatus: v.VerificationStatus,
+				}
+			}
+		}
+		// Set variant count (including this game)
+		resp.VariantCount = len(variants) + 1
+	}
+
 	c.JSON(http.StatusOK, resp)
 }
 

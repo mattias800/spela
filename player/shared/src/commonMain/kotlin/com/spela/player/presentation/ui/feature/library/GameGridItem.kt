@@ -120,6 +120,16 @@ internal fun GameGridItem(
                         )
                     }
                 }
+                // Variant count badge
+                if (game.variantCount > 1) {
+                    val otherCount = game.variantCount - 1
+                    Text(
+                        text = "$otherCount ${if (otherCount == 1) "version" else "versions"}",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.padding(top = SpSpacing.XXSmall),
+                    )
+                }
             }
         }
     }

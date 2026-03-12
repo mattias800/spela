@@ -40,11 +40,13 @@ const secretMaskPlaceholder = "********"
 
 // allowedSettingKeys is the allowlist of setting keys that may be written via the admin API.
 var allowedSettingKeys = map[string]bool{
-	"registration_enabled": true,
-	"igdb_client_id":       true,
-	"igdb_client_secret":   true,
-	"bios_auto_download":   true,
-	"steamgriddb_api_key":  true,
+	"registration_enabled":    true,
+	"igdb_client_id":          true,
+	"igdb_client_secret":      true,
+	"bios_auto_download":      true,
+	"steamgriddb_api_key":     true,
+	"default_region":          true,
+	"hide_pre_release_default": true,
 }
 
 // UpdateSettings updates server settings (admin only).

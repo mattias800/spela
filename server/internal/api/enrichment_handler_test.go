@@ -46,6 +46,7 @@ func createEnrichTestGame(t *testing.T, database *gorm.DB, title string, rating 
 		FilePath:  "NES/" + title + ".nes",
 		Rating:    rating,
 		ScraperID: fmt.Sprintf("igdb:%d", 1000+int(rating)),
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game

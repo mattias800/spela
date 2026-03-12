@@ -1,5 +1,5 @@
 import { Grid3X3, List, ArrowUpDown } from "lucide-react";
-import { SearchInput, Select } from "@/components/ui";
+import { SearchInput, Select, Switch } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { GameFilters, Console } from "@/types/api";
 
@@ -13,6 +13,7 @@ interface GamesFilterBarProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   consoles: Console[] | undefined;
+  showHideBetas?: boolean;
 }
 
 export function GamesFilterBar({
@@ -23,6 +24,7 @@ export function GamesFilterBar({
   viewMode,
   onViewModeChange,
   consoles,
+  showHideBetas = false,
 }: GamesFilterBarProps) {
   const consoleOptions = [
     { value: "", label: "All Consoles" },
@@ -59,6 +61,22 @@ export function GamesFilterBar({
         }
         className="w-44"
       />
+
+      {showHideBetas && (
+        <label className="flex items-center gap-2 text-sm text-surface-300 whitespace-nowrap" data-testid="hide-betas-toggle">
+          <Switch
+            checked={filters.hidePreRelease !== false}
+            onChange={(checked) =>
+              onFiltersChange((f) => ({
+                ...f,
+                hidePreRelease: checked ? undefined : false,
+                page: 1,
+              }))
+            }
+          />
+          Hide betas
+        </label>
+      )}
 
       <Select
         options={sortOptions}

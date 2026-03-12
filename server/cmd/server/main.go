@@ -132,6 +132,11 @@ func main() {
 		slog.Warn("failed to migrate shared sessions", "error", err)
 	}
 
+	// Backfill game metadata (region, tags, grouping) for existing games
+	if err := scanner.BackfillGameMetadata(database); err != nil {
+		slog.Warn("failed to backfill game metadata", "error", err)
+	}
+
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)

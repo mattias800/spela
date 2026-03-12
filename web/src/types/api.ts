@@ -58,6 +58,19 @@ export interface GameDisc {
   fileSize: number;
 }
 
+// GameVariant from backend — represents a variant in the game detail response
+export interface GameVariant {
+  id: string;
+  title: string;
+  fileName: string;
+  region: string;
+  revision: string;
+  tags: string;
+  isPreRelease: boolean;
+  fileSize: number;
+  verificationStatus: string;
+}
+
 // GameResponse from backend responses.go DTO layer
 export interface Game {
   id: string;
@@ -97,6 +110,12 @@ export interface Game {
   verificationStatus?: "verified" | "unverified" | "not_applicable";
   verificationTag?: string;
   region?: string;
+  revision?: string;
+  tags?: string;
+  isPreRelease?: boolean;
+  variantCount?: number;
+  groupKey?: string;
+  variants?: GameVariant[];
   coverAspectRatio: number;
   playable: boolean;
   biosStatus?: "ready" | "missing" | "invalid" | "not_required";
@@ -153,6 +172,7 @@ export interface GameFilters {
   themes?: string[];
   keywords?: string[];
   perspectives?: string[];
+  regions?: string[];
   // Text search filters
   developer?: string;
   publisher?: string;
@@ -163,6 +183,11 @@ export interface GameFilters {
   ratingMax?: number;
   // Play status
   playStatus?: "unplayed" | "played" | "favorited" | "play-later";
+  // Variant grouping / pre-release
+  grouped?: boolean;
+  hidePreRelease?: boolean;
+  // Alphabet quick-jump
+  letter?: string;
   sortBy?: "title" | "created_at" | "file_size" | "rating" | "release_date";
   sortOrder?: "asc" | "desc";
   page?: number;
@@ -217,6 +242,7 @@ export interface UserPreferences {
   selectedKeyMapping: string;
   customKeyMapping: Record<string, string>;
   consoleKeyMappings: Record<string, ConsoleKeyMapping>;
+  preferredRegions: string[];
   raLinked: boolean;
   raUsername: string;
   raHardcoreEnabled: boolean;

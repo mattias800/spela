@@ -181,13 +181,50 @@ class FakeGameRepository : GameRepository {
         else Result.success(games.filter { it.consoleId == consoleId })
     }
 
+    override suspend fun getGamesForConsolePaginated(
+        consoleId: String,
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        val filtered = games.filter { it.consoleId == consoleId }
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(PaginatedResult(filtered, filtered.size.toLong(), page, pageSize))
+    }
+
     override suspend fun getAllGames(): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error")) else Result.success(games)
+    }
+
+    override suspend fun getAllGamesPaginated(
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(PaginatedResult(games, games.size.toLong(), page, pageSize))
     }
 
     override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(games.filter { it.title.contains(query, ignoreCase = true) })
+    }
+
+    override suspend fun searchGamesPaginated(
+        query: String,
+        consoleId: String?,
+        sortBy: String?,
+        sortOrder: String?,
+        page: Int,
+        pageSize: Int,
+        hidePreRelease: Boolean,
+        grouped: Boolean,
+    ): Result<PaginatedResult<Game>> {
+        val filtered = games.filter { it.title.contains(query, ignoreCase = true) }
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(PaginatedResult(filtered, filtered.size.toLong(), page, pageSize))
     }
 
     override suspend fun getGameDetail(gameId: String): Result<GameDetail> {
