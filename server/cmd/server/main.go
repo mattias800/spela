@@ -132,11 +132,6 @@ func main() {
 		slog.Warn("failed to migrate shared sessions", "error", err)
 	}
 
-	// Backfill game metadata (region, tags, grouping) for existing games
-	if err := scanner.BackfillGameMetadata(database); err != nil {
-		slog.Warn("failed to backfill game metadata", "error", err)
-	}
-
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)
@@ -203,6 +198,60 @@ func main() {
 		Version:                      version,
 		TestMode:                     testMode,
 	})
+
+	// Auto-scan game library on startup (non-blocking).
+	// Uses the same scan flow as the manual "Scan library" button so progress
+	// is visible in the web UI via WebSocket events.
+	go func() {
+		if !gameScanner.TryStartScan() {
+			slog.Warn("skipping startup scan: scan already in progress")
+			return
+		}
+		defer gameScanner.FinishScan()
+
+		hub.Broadcast(websocket.Event{Type: "scan_started", Payload: nil})
+		result, scanErr := gameScanner.Scan(func(p scanner.ScanProgress) {
+			gameScanner.SetScanProgress(&p)
+			hub.Broadcast(websocket.Event{Type: "scan_progress", Payload: p})
+		})
+		if scanErr != nil {
+			slog.Error("startup library scan failed", "error", scanErr)
+			hub.Broadcast(websocket.Event{Type: "scan_error", Payload: map[string]string{"error": "startup scan failed"}})
+			return
+		}
+
+		hub.Broadcast(websocket.Event{Type: "scan_complete", Payload: map[string]interface{}{
+			"newGames":     result.NewGames,
+			"updatedGames": result.UpdatedGames,
+			"removedGames": result.RemovedGames,
+			"totalGames":   result.TotalGames,
+		}})
+		slog.Info("startup scan complete",
+			"new", result.NewGames,
+			"updated", result.UpdatedGames,
+			"removed", result.RemovedGames,
+			"total", result.TotalGames,
+		)
+
+		// Auto-scrape new games if IGDB is configured
+		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
+			if metaScraper.TryStartScrape() {
+				hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: nil})
+				count, total, scrapeErr := metaScraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
+					metaScraper.SetScrapeProgress(&p)
+					hub.Broadcast(websocket.Event{Type: "scrape_progress", Payload: p})
+				})
+				metaScraper.FinishScrape()
+				if scrapeErr != nil {
+					slog.Error("startup auto-scrape failed", "error", scrapeErr)
+					hub.Broadcast(websocket.Event{Type: "scrape_error", Payload: map[string]string{"error": "auto-scrape failed"}})
+					return
+				}
+				slog.Info("startup auto-scrape complete", "scraped", count, "total", total)
+				hub.Broadcast(websocket.Event{Type: "scrape_complete", Payload: map[string]interface{}{"scraped": count, "total": total}})
+			}
+		}
+	}()
 
 	slog.Info("server listening", "port", port)
 	srv := &http.Server{

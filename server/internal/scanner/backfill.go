@@ -8,11 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// BackfillGameMetadata populates Region, Revision, Tags, IsPreRelease, and GroupKey
-// for existing games that don't have a GroupKey set. This runs on startup to handle
-// games created before the large library support feature was added.
-// After backfilling, it calls GroupAndElectPrimaries to set IsPrimary flags.
-func BackfillGameMetadata(database *gorm.DB) error {
+// BackfillGameMetadataWithProgress populates Region, Revision, Tags, IsPreRelease, and GroupKey
+// for existing games that don't have a GroupKey set. This handles games created before the
+// large library support feature was added.
+// The onProgress callback is called after each batch with (processed, total) counts.
+// It does NOT run GroupAndElectPrimaries — the caller (Scan) handles that separately.
+func BackfillGameMetadataWithProgress(database *gorm.DB, onProgress func(processed, total int64)) error {
 	// Count games needing backfill
 	var totalNeedingBackfill int64
 	if err := database.Model(&db.Game{}).Where("group_key = '' OR group_key IS NULL").Count(&totalNeedingBackfill).Error; err != nil {
@@ -71,14 +72,11 @@ func BackfillGameMetadata(database *gorm.DB) error {
 		processed += int64(len(games))
 		slog.Info("backfilling game metadata progress",
 			"processed", processed, "total", totalNeedingBackfill)
+		if onProgress != nil {
+			onProgress(processed, totalNeedingBackfill)
+		}
 	}
 
 	slog.Info("game metadata backfill complete", "processed", processed)
-
-	// Run grouping and primary election after backfill
-	if err := GroupAndElectPrimaries(database); err != nil {
-		return fmt.Errorf("electing primaries after backfill: %w", err)
-	}
-
 	return nil
 }
