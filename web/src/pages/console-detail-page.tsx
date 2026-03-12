@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Library, Check, Globe } from "lucide-react";
+import { Library, Check, Globe, FolderSearch } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
@@ -9,12 +9,15 @@ import {
   EmptyState,
   SearchInput,
 } from "@/components/ui";
+import { ActionsMenu } from "@/components/ui/actions-menu";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
+import { useScanLibrary } from "@/hooks/use-admin";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useToast } from "@/components/ui";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import {
   ConsoleEssentials,
@@ -40,6 +43,8 @@ export function ConsoleDetailPage() {
   const [page, setPage] = useState(1);
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
+  const scanLibrary = useScanLibrary();
+  const { toast } = useToast();
 
   const { data, isLoading } = useGames({
     consoleId: id,
@@ -94,6 +99,34 @@ export function ConsoleDetailPage() {
             <Icon className="h-56 w-56 text-white" />
           )}
         </div>
+
+        {/* Admin actions menu */}
+        {isAdmin && (
+          <div className="absolute right-3 top-3 z-10">
+            <ActionsMenu
+              items={[
+                {
+                  label: "Scan for new games",
+                  icon: <FolderSearch className="h-4 w-4" />,
+                  loading: scanLibrary.isPending,
+                  onClick: () =>
+                    scanLibrary.mutate(
+                      { console: consoleAbbr },
+                      {
+                        onSuccess: () =>
+                          toast("info", `Scan started for ${consoleName}.`),
+                        onError: (err) =>
+                          toast(
+                            "error",
+                            err instanceof Error ? err.message : "Scan failed",
+                          ),
+                      },
+                    ),
+                },
+              ]}
+            />
+          </div>
+        )}
 
         {/* Subtle noise/texture overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />
