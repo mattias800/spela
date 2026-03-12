@@ -633,6 +633,14 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 		return
 	}
 
+	// If a bulk scrape is already running, don't race with it — the bulk
+	// scrape will get to this game eventually. Concurrent IGDB API calls
+	// from the same account can hit rate limits and cause silent failures.
+	if active, _ := h.Scraper.GetScrapeStatus(); active {
+		c.JSON(http.StatusConflict, gin.H{"status": "bulk_scrape_in_progress"})
+		return
+	}
+
 	// Configure SteamGridDB if API key is set (best-effort artwork)
 	if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
 		h.Scraper.ConfigureSteamGridDB(apiKey)
