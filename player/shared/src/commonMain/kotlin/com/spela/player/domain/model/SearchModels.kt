@@ -76,3 +76,31 @@ data class SearchFranchiseResult(
     val totalGames: Int = 0,
     val libraryGames: Int = 0,
 )
+
+data class SearchSuggestion(
+    val id: String,
+    val name: String,
+    val subtitle: String = "",
+    val imageUrl: String? = null,
+    val navigationType: SuggestionNavigationType,
+) {
+    val type: String get() = when (navigationType) {
+        is SuggestionNavigationType.Game -> "Game"
+        is SuggestionNavigationType.Console -> "Console"
+        is SuggestionNavigationType.Developer -> "Developer"
+        is SuggestionNavigationType.Publisher -> "Publisher"
+        is SuggestionNavigationType.Collection -> "Collection"
+        is SuggestionNavigationType.Series -> "Series"
+        is SuggestionNavigationType.Franchise -> "Franchise"
+    }
+}
+
+sealed class SuggestionNavigationType {
+    data class Game(val id: String) : SuggestionNavigationType()
+    data class Console(val id: String) : SuggestionNavigationType()
+    data class Developer(val name: String) : SuggestionNavigationType()
+    data class Publisher(val name: String) : SuggestionNavigationType()
+    data class Collection(val id: String) : SuggestionNavigationType()
+    data class Series(val id: String, val name: String) : SuggestionNavigationType()
+    data class Franchise(val id: String, val name: String) : SuggestionNavigationType()
+}

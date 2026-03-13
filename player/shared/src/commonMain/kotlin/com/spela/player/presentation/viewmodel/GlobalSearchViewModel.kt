@@ -1,6 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.GlobalSearchResult
+import com.spela.player.domain.model.SearchSuggestion
+import com.spela.player.domain.model.SuggestionNavigationType
 import com.spela.player.domain.repository.SearchRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +17,7 @@ import kotlinx.coroutines.launch
 data class GlobalSearchState(
     val query: String = "",
     val results: GlobalSearchResult? = null,
+    val suggestions: List<SearchSuggestion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val recentSearches: List<String> = emptyList(),
@@ -56,7 +59,7 @@ class GlobalSearchViewModel(
 
         val trimmed = query.trim()
         if (trimmed.length < 2) {
-            _state.update { it.copy(results = null, isLoading = false) }
+            _state.update { it.copy(results = null, suggestions = emptyList(), isLoading = false) }
             return
         }
 
@@ -70,7 +73,9 @@ class GlobalSearchViewModel(
                     _state.update {
                         it.copy(
                             results = result,
+                            suggestions = computeSuggestions(result),
                             isLoading = false,
+                            error = null,
                             recentSearches = searchRepository.getRecentSearches(),
                         )
                     }
@@ -140,6 +145,103 @@ class GlobalSearchViewModel(
         scope.launch(dispatchers.io) {
             val recents = searchRepository.getRecentSearches()
             _state.update { it.copy(recentSearches = recents) }
+        }
+    }
+
+    private companion object {
+        const val SUGGESTION_CAP = 5
+
+        fun computeSuggestions(result: GlobalSearchResult): List<SearchSuggestion> {
+            val items = mutableListOf<SearchSuggestion>()
+
+            // Priority 1: Up to 2 games
+            result.games.results.take(2).forEach { game ->
+                items.add(
+                    SearchSuggestion(
+                        id = game.id,
+                        name = game.title,
+                        subtitle = game.consoleName,
+                        imageUrl = game.coverUrl,
+                        navigationType = SuggestionNavigationType.Game(game.id),
+                    )
+                )
+            }
+
+            // Priority 2: Up to 1 console
+            result.consoles.results.take(1).forEach { console ->
+                items.add(
+                    SearchSuggestion(
+                        id = console.id,
+                        name = console.name,
+                        subtitle = "${console.gameCount} games",
+                        imageUrl = console.iconUrl.ifBlank { null },
+                        navigationType = SuggestionNavigationType.Console(console.id),
+                    )
+                )
+            }
+
+            // Priority 3: Up to 1 developer
+            result.developers.results.take(1).forEach { dev ->
+                items.add(
+                    SearchSuggestion(
+                        id = dev.name,
+                        name = dev.name,
+                        subtitle = "${dev.gameCount} games",
+                        navigationType = SuggestionNavigationType.Developer(dev.name),
+                    )
+                )
+            }
+
+            // Priority 4: Up to 1 publisher
+            result.publishers.results.take(1).forEach { pub ->
+                items.add(
+                    SearchSuggestion(
+                        id = pub.name,
+                        name = pub.name,
+                        subtitle = "${pub.gameCount} games",
+                        navigationType = SuggestionNavigationType.Publisher(pub.name),
+                    )
+                )
+            }
+
+            // Priority 5: Up to 1 collection
+            result.collections.results.take(1).forEach { coll ->
+                items.add(
+                    SearchSuggestion(
+                        id = coll.id,
+                        name = coll.name,
+                        subtitle = "${coll.gameCount} games",
+                        imageUrl = coll.coverUrl,
+                        navigationType = SuggestionNavigationType.Collection(coll.id),
+                    )
+                )
+            }
+
+            // Priority 6: Up to 1 series
+            result.series.results.take(1).forEach { s ->
+                items.add(
+                    SearchSuggestion(
+                        id = s.id,
+                        name = s.name,
+                        subtitle = "${s.libraryGames}/${s.totalGames} games in library",
+                        navigationType = SuggestionNavigationType.Series(s.id, s.name),
+                    )
+                )
+            }
+
+            // Priority 7: Up to 1 franchise
+            result.franchises.results.take(1).forEach { f ->
+                items.add(
+                    SearchSuggestion(
+                        id = f.id,
+                        name = f.name,
+                        subtitle = "${f.libraryGames}/${f.totalGames} games in library",
+                        navigationType = SuggestionNavigationType.Franchise(f.id, f.name),
+                    )
+                )
+            }
+
+            return items.take(SUGGESTION_CAP)
         }
     }
 }

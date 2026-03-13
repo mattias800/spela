@@ -370,6 +370,9 @@ class GlobalSearchTest {
         searchInputNode().performTextInput("nint")
         advanceFully(harness)
 
+        // Developer results may be below the visible area due to quick results section
+        onNodeWithTag("search_results_list")
+            .performScrollToNode(hasTestTag("search_result_developer_Nintendo"))
         onNodeWithTag("search_result_developer_Nintendo").performClick()
         advance(harness)
 
@@ -472,6 +475,165 @@ class GlobalSearchTest {
         advance(harness)
 
         onNodeWithTag("global_search_advanced_filters").assertIsDisplayed()
+    }
+
+    // --- Quick results / autocomplete ---
+
+    @Test
+    fun `quick results section shown when search has results`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        onNodeWithTag("quick_results_section").assertIsDisplayed()
+    }
+
+    @Test
+    fun `quick results section not shown when no results`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = GlobalSearchResult() // empty
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("zzzznotfound")
+        advanceFully(harness)
+
+        onNodeWithTag("quick_results_section").assertDoesNotExist()
+    }
+
+    @Test
+    fun `quick results shows correct number of items capped at 5`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        // fullSearchResult() has 2 games + 1 console + 1 developer + 1 publisher = 5
+        // (collections, series, franchises are lower priority and don't fit in cap of 5)
+        onNodeWithTag("quick_result_game_g1").assertExists()
+        onNodeWithTag("quick_result_game_g2").assertExists()
+        onNodeWithTag("quick_result_console_snes").assertExists()
+        onNodeWithTag("quick_result_developer_Nintendo").assertExists()
+        onNodeWithTag("quick_result_publisher_Konami").assertExists()
+
+        // Verify the state has exactly 5 suggestions
+        val state = harness.globalSearchViewModel.state.value
+        assertEquals(5, state.suggestions.size)
+    }
+
+    @Test
+    fun `quick results prioritizes games as first items`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        // The suggestion order should be: games first, then console, developer, publisher
+        val suggestions = harness.globalSearchViewModel.state.value.suggestions
+        assertEquals("Game", suggestions[0].type)
+        assertEquals("Game", suggestions[1].type)
+        assertEquals("Console", suggestions[2].type)
+        assertEquals("Developer", suggestions[3].type)
+        assertEquals("Publisher", suggestions[4].type)
+    }
+
+    @Test
+    fun `tapping quick result game navigates to game detail`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        onNodeWithTag("quick_result_game_g1").performClick()
+        advance(harness)
+
+        val navState = harness.navigationViewModel.state.value
+        assertEquals("game/g1", navState.currentScreen.route)
+    }
+
+    @Test
+    fun `tapping quick result console navigates to console screen`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        onNodeWithTag("quick_result_console_snes").performClick()
+        advance(harness)
+
+        val navState = harness.navigationViewModel.state.value
+        assertEquals("console/snes", navState.currentScreen.route)
+    }
+
+    @Test
+    fun `quick results not shown on empty hint state`() = runComposeUiTest {
+        val harness = createHarness()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        // Empty state (placeholder) - no quick results
+        onNodeWithTag("quick_results_section").assertDoesNotExist()
+
+        // Single character (hint state) - no quick results
+        searchInputNode().performTextInput("a")
+        advanceQuick(harness)
+
+        onNodeWithTag("search_hint").assertIsDisplayed()
+        onNodeWithTag("quick_results_section").assertDoesNotExist()
+    }
+
+    @Test
+    fun `quick result type badges show correct category names`() = runComposeUiTest {
+        val harness = createHarness()
+        harness.searchRepo.searchResult = fullSearchResult()
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+        advance(harness)
+
+        searchInputNode().performTextInput("mario")
+        advanceFully(harness)
+
+        // Each quick result item has contentDescription = "${name}, ${type}"
+        // Verify the type badge text is present via content descriptions
+        onNodeWithTag("quick_result_game_g1")
+            .assertContentDescriptionContains("Game", substring = true)
+        onNodeWithTag("quick_result_console_snes")
+            .assertContentDescriptionContains("Console", substring = true)
+        onNodeWithTag("quick_result_developer_Nintendo")
+            .assertContentDescriptionContains("Developer", substring = true)
+        onNodeWithTag("quick_result_publisher_Konami")
+            .assertContentDescriptionContains("Publisher", substring = true)
     }
 
     // --- Edge cases ---

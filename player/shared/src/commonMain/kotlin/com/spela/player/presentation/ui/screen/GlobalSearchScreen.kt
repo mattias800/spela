@@ -200,6 +200,7 @@ fun GlobalSearchScreen(
                     SearchResultsList(
                         results = state.results!!,
                         isLoading = state.isLoading,
+                        suggestions = state.suggestions,
                         expandedCategories = state.expandedCategories,
                         expandedResults = state.expandedResults,
                         onExpandCategory = { viewModel.expandCategory(it) },

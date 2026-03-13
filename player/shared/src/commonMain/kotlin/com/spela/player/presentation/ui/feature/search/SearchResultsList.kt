@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GlobalSearchResult
 import com.spela.player.domain.model.SearchCategory
+import com.spela.player.domain.model.SearchSuggestion
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -33,6 +35,7 @@ private object SearchCategoryNames {
 fun SearchResultsList(
     results: GlobalSearchResult,
     isLoading: Boolean,
+    suggestions: List<SearchSuggestion> = emptyList(),
     expandedCategories: Set<String> = emptySet(),
     expandedResults: GlobalSearchResult? = null,
     onExpandCategory: (String) -> Unit = {},
@@ -82,224 +85,166 @@ fun SearchResultsList(
             }
         }
 
-        // Games section
-        val gamesExpanded = SearchCategoryNames.GAMES in expandedCategories
-        val gamesCategory = resolveCategory(
+        // Quick results section
+        if (suggestions.isNotEmpty()) {
+            item(key = "quick_results") {
+                QuickResultsSection(
+                    suggestions = suggestions,
+                    onGameSelected = onGameSelected,
+                    onConsoleSelected = onConsoleSelected,
+                    onDeveloperSelected = onDeveloperSelected,
+                    onPublisherSelected = onPublisherSelected,
+                    onCollectionSelected = onCollectionSelected,
+                    onSeriesSelected = onSeriesSelected,
+                    onFranchiseSelected = onFranchiseSelected,
+                )
+            }
+        }
+
+        // Category sections
+        searchSection(
+            name = SearchCategoryNames.GAMES,
             category = results.games,
             expandedCategory = expandedResults?.games,
-            isExpanded = gamesExpanded,
-        )
-        if (gamesCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.GAMES,
-                    total = gamesCategory.total,
-                    displayedCount = gamesCategory.results.size,
-                    isExpanded = gamesExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.GAMES) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.GAMES) },
-                )
-            }
-            items(
-                count = gamesCategory.results.size,
-                key = { "game_${gamesCategory.results[it].id}" },
-            ) { index ->
-                val game = gamesCategory.results[index]
-                GameSearchResultItem(
-                    game = game,
-                    onClick = { onGameSelected(game.id) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "game_${it.id}" },
+        ) { game ->
+            GameSearchResultItem(game = game, onClick = { onGameSelected(game.id) })
         }
 
-        // Consoles section
-        val consolesExpanded = SearchCategoryNames.CONSOLES in expandedCategories
-        val consolesCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.CONSOLES,
             category = results.consoles,
             expandedCategory = expandedResults?.consoles,
-            isExpanded = consolesExpanded,
-        )
-        if (consolesCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.CONSOLES,
-                    total = consolesCategory.total,
-                    displayedCount = consolesCategory.results.size,
-                    isExpanded = consolesExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.CONSOLES) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.CONSOLES) },
-                )
-            }
-            items(
-                count = consolesCategory.results.size,
-                key = { "console_${consolesCategory.results[it].id}" },
-            ) { index ->
-                val console = consolesCategory.results[index]
-                ConsoleSearchResultItem(
-                    console = console,
-                    onClick = { onConsoleSelected(console.id) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "console_${it.id}" },
+        ) { console ->
+            ConsoleSearchResultItem(console = console, onClick = { onConsoleSelected(console.id) })
         }
 
-        // Developers section
-        val developersExpanded = SearchCategoryNames.DEVELOPERS in expandedCategories
-        val developersCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.DEVELOPERS,
             category = results.developers,
             expandedCategory = expandedResults?.developers,
-            isExpanded = developersExpanded,
-        )
-        if (developersCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.DEVELOPERS,
-                    total = developersCategory.total,
-                    displayedCount = developersCategory.results.size,
-                    isExpanded = developersExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.DEVELOPERS) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.DEVELOPERS) },
-                )
-            }
-            items(
-                count = developersCategory.results.size,
-                key = { "developer_${developersCategory.results[it].name}" },
-            ) { index ->
-                val developer = developersCategory.results[index]
-                CompanySearchResultItem(
-                    name = developer.name,
-                    gameCount = developer.gameCount,
-                    avgRating = developer.avgRating,
-                    label = "Developer",
-                    onClick = { onDeveloperSelected(developer.name) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "developer_${it.name}" },
+        ) { developer ->
+            CompanySearchResultItem(
+                name = developer.name,
+                gameCount = developer.gameCount,
+                avgRating = developer.avgRating,
+                label = "Developer",
+                onClick = { onDeveloperSelected(developer.name) },
+            )
         }
 
-        // Publishers section
-        val publishersExpanded = SearchCategoryNames.PUBLISHERS in expandedCategories
-        val publishersCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.PUBLISHERS,
             category = results.publishers,
             expandedCategory = expandedResults?.publishers,
-            isExpanded = publishersExpanded,
-        )
-        if (publishersCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.PUBLISHERS,
-                    total = publishersCategory.total,
-                    displayedCount = publishersCategory.results.size,
-                    isExpanded = publishersExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.PUBLISHERS) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.PUBLISHERS) },
-                )
-            }
-            items(
-                count = publishersCategory.results.size,
-                key = { "publisher_${publishersCategory.results[it].name}" },
-            ) { index ->
-                val publisher = publishersCategory.results[index]
-                CompanySearchResultItem(
-                    name = publisher.name,
-                    gameCount = publisher.gameCount,
-                    avgRating = publisher.avgRating,
-                    label = "Publisher",
-                    onClick = { onPublisherSelected(publisher.name) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "publisher_${it.name}" },
+        ) { publisher ->
+            CompanySearchResultItem(
+                name = publisher.name,
+                gameCount = publisher.gameCount,
+                avgRating = publisher.avgRating,
+                label = "Publisher",
+                onClick = { onPublisherSelected(publisher.name) },
+            )
         }
 
-        // Collections section
-        val collectionsExpanded = SearchCategoryNames.COLLECTIONS in expandedCategories
-        val collectionsCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.COLLECTIONS,
             category = results.collections,
             expandedCategory = expandedResults?.collections,
-            isExpanded = collectionsExpanded,
-        )
-        if (collectionsCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.COLLECTIONS,
-                    total = collectionsCategory.total,
-                    displayedCount = collectionsCategory.results.size,
-                    isExpanded = collectionsExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.COLLECTIONS) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.COLLECTIONS) },
-                )
-            }
-            items(
-                count = collectionsCategory.results.size,
-                key = { "collection_${collectionsCategory.results[it].id}" },
-            ) { index ->
-                val collection = collectionsCategory.results[index]
-                CollectionSearchResultItem(
-                    collection = collection,
-                    onClick = { onCollectionSelected(collection.id) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "collection_${it.id}" },
+        ) { collection ->
+            CollectionSearchResultItem(
+                collection = collection,
+                onClick = { onCollectionSelected(collection.id) },
+            )
         }
 
-        // Series section
-        val seriesExpanded = SearchCategoryNames.SERIES in expandedCategories
-        val seriesCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.SERIES,
             category = results.series,
             expandedCategory = expandedResults?.series,
-            isExpanded = seriesExpanded,
-        )
-        if (seriesCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.SERIES,
-                    total = seriesCategory.total,
-                    displayedCount = seriesCategory.results.size,
-                    isExpanded = seriesExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.SERIES) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.SERIES) },
-                )
-            }
-            items(
-                count = seriesCategory.results.size,
-                key = { "series_${seriesCategory.results[it].id}" },
-            ) { index ->
-                val series = seriesCategory.results[index]
-                SeriesSearchResultItem(
-                    series = series,
-                    onClick = { onSeriesSelected(series.id, series.name) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "series_${it.id}" },
+        ) { series ->
+            SeriesSearchResultItem(
+                series = series,
+                onClick = { onSeriesSelected(series.id, series.name) },
+            )
         }
 
-        // Franchises section
-        val franchisesExpanded = SearchCategoryNames.FRANCHISES in expandedCategories
-        val franchisesCategory = resolveCategory(
+        searchSection(
+            name = SearchCategoryNames.FRANCHISES,
             category = results.franchises,
             expandedCategory = expandedResults?.franchises,
-            isExpanded = franchisesExpanded,
-        )
-        if (franchisesCategory.results.isNotEmpty()) {
-            item {
-                SearchSectionHeader(
-                    title = SearchCategoryNames.FRANCHISES,
-                    total = franchisesCategory.total,
-                    displayedCount = franchisesCategory.results.size,
-                    isExpanded = franchisesExpanded,
-                    onSeeAll = { onExpandCategory(SearchCategoryNames.FRANCHISES) },
-                    onShowLess = { onCollapseCategory(SearchCategoryNames.FRANCHISES) },
-                )
-            }
-            items(
-                count = franchisesCategory.results.size,
-                key = { "franchise_${franchisesCategory.results[it].id}" },
-            ) { index ->
-                val franchise = franchisesCategory.results[index]
-                FranchiseSearchResultItem(
-                    franchise = franchise,
-                    onClick = { onFranchiseSelected(franchise.id, franchise.name) },
-                )
-            }
+            expandedCategories = expandedCategories,
+            onExpand = onExpandCategory,
+            onCollapse = onCollapseCategory,
+            itemKey = { "franchise_${it.id}" },
+        ) { franchise ->
+            FranchiseSearchResultItem(
+                franchise = franchise,
+                onClick = { onFranchiseSelected(franchise.id, franchise.name) },
+            )
         }
 
         // Bottom spacer
         item { Spacer(Modifier.height(SpSpacing.XLarge)) }
+    }
+}
+
+/**
+ * Adds a search section (header + items) to the LazyColumn if the category
+ * has results. Handles expand/collapse resolution via [resolveCategory].
+ */
+private fun <T> LazyListScope.searchSection(
+    name: String,
+    category: SearchCategory<T>,
+    expandedCategory: SearchCategory<T>?,
+    expandedCategories: Set<String>,
+    onExpand: (String) -> Unit,
+    onCollapse: (String) -> Unit,
+    itemKey: (T) -> String,
+    itemContent: @Composable (T) -> Unit,
+) {
+    val isExpanded = name in expandedCategories
+    val resolved = resolveCategory(category, expandedCategory, isExpanded)
+    if (resolved.results.isEmpty()) return
+
+    item {
+        SearchSectionHeader(
+            title = name,
+            total = resolved.total,
+            displayedCount = resolved.results.size,
+            isExpanded = isExpanded,
+            onSeeAll = { onExpand(name) },
+            onShowLess = { onCollapse(name) },
+        )
+    }
+    items(
+        count = resolved.results.size,
+        key = { itemKey(resolved.results[it]) },
+    ) { index ->
+        itemContent(resolved.results[index])
     }
 }
 
