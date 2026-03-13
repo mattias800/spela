@@ -249,6 +249,10 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/top-lists/top-rated").body()
     }
 
+    suspend fun getLongestGames(): List<LongestGameDto> {
+        return client.get("$baseUrl/api/top-lists/longest").body()
+    }
+
     suspend fun getSimilarGames(gameId: String): List<SimilarGameDto> {
         return client.get("$baseUrl/api/games/$gameId/similar").body()
     }

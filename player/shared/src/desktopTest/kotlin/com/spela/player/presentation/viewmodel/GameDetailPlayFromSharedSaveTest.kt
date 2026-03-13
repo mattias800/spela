@@ -221,6 +221,7 @@ private class PlayFromSharedSaveTestGameRepository : GameRepository {
     override suspend fun getTopRatedGames(consoleId: String) = Result.success(emptyList<TopRatedGame>())
     override suspend fun getTopRatedGamesGlobal() = Result.success(emptyList<TopRatedGame>())
     override suspend fun getTopRatedAvailable() = Result.success(emptyList<TopListGame>())
+    override suspend fun getLongestGames() = Result.success(emptyList<LongestGame>())
     override suspend fun getSimilarGames(gameId: String) = Result.success(emptyList<SimilarGame>())
     override suspend fun getDeveloperGames(gameId: String) = Result.success(emptyList<DeveloperGame>())
     override suspend fun getRecentlyAddedGames(): Result<List<Game>> = Result.success(emptyList())

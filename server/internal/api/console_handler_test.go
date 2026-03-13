@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -469,4 +470,217 @@ func TestGetTopListAvailable_IncludesConsoleInfo(t *testing.T) {
 	assert.Equal(t, "snes", result[0].ConsoleId)
 	assert.Equal(t, "/api/images/covers/snes/smw.png", result[0].CoverUrl)
 	assert.NotEmpty(t, result[0].GameId)
+}
+
+// --- GetTopListLongest tests ---
+
+// setupLongestListTestEnv creates an in-memory DB with seeded consoles and a gin
+// router with the top-lists/longest route.
+func setupLongestListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
+	t.Helper()
+
+	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
+	require.NoError(t, err)
+
+	err = db.SeedConsoles(database)
+	require.NoError(t, err)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	handler := &ConsoleHandler{DB: database}
+	router.GET("/api/top-lists/longest", handler.GetTopListLongest)
+
+	return database, router
+}
+
+func TestGetTopListLongest_SortedByTimeToBeatDesc(t *testing.T) {
+	database, router := setupLongestListTestEnv(t)
+
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	// Create games with varying time-to-beat values
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Short Game",
+		FileName: "short.nes", FilePath: "/games/short.nes", FileSize: 1024,
+		TimeToBeatNormally: 10, TimeToBeatHastily: 5, TimeToBeatCompletely: 20,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Long Game",
+		FileName: "long.nes", FilePath: "/games/long.nes", FileSize: 1024,
+		TimeToBeatNormally: 100, TimeToBeatHastily: 60, TimeToBeatCompletely: 200,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Medium Game",
+		FileName: "medium.nes", FilePath: "/games/medium.nes", FileSize: 1024,
+		TimeToBeatNormally: 50, TimeToBeatHastily: 30, TimeToBeatCompletely: 80,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []LongestGameResponse
+	err = json.Unmarshal(w.Body.Bytes(), &result)
+	require.NoError(t, err)
+
+	require.Len(t, result, 3)
+	assert.Equal(t, "Long Game", result[0].Name)
+	assert.Equal(t, 100, result[0].TimeToBeatNormally)
+	assert.Equal(t, 60, result[0].TimeToBeatHastily)
+	assert.Equal(t, 200, result[0].TimeToBeatCompletely)
+	assert.Equal(t, "Medium Game", result[1].Name)
+	assert.Equal(t, 50, result[1].TimeToBeatNormally)
+	assert.Equal(t, "Short Game", result[2].Name)
+	assert.Equal(t, 10, result[2].TimeToBeatNormally)
+}
+
+func TestGetTopListLongest_OnlyIncludesGamesWithTimeToBeat(t *testing.T) {
+	database, router := setupLongestListTestEnv(t)
+
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	// Game with time-to-beat data
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Has Time Data",
+		FileName: "has.nes", FilePath: "/games/has.nes", FileSize: 1024,
+		TimeToBeatNormally: 40, TimeToBeatHastily: 20, TimeToBeatCompletely: 60,
+	})
+	// Game without time-to-beat data (zero value)
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "No Time Data",
+		FileName: "no.nes", FilePath: "/games/no.nes", FileSize: 1024,
+		TimeToBeatNormally: 0,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []LongestGameResponse
+	err = json.Unmarshal(w.Body.Bytes(), &result)
+	require.NoError(t, err)
+
+	assert.Len(t, result, 1, "should only include games with time_to_beat_normally > 0")
+	assert.Equal(t, "Has Time Data", result[0].Name)
+}
+
+func TestGetTopListLongest_EmptyWhenNoGamesHaveTimeData(t *testing.T) {
+	database, router := setupLongestListTestEnv(t)
+
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	// Create games without time data
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Game A",
+		FileName: "a.nes", FilePath: "/games/a.nes", FileSize: 1024,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Game B",
+		FileName: "b.nes", FilePath: "/games/b.nes", FileSize: 1024,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []LongestGameResponse
+	err = json.Unmarshal(w.Body.Bytes(), &result)
+	require.NoError(t, err)
+
+	assert.Empty(t, result, "should return empty array when no games have time data")
+}
+
+func TestGetTopListLongest_SequentialRanks(t *testing.T) {
+	database, router := setupLongestListTestEnv(t)
+
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "First",
+		FileName: "first.nes", FilePath: "/games/first.nes", FileSize: 1024,
+		TimeToBeatNormally: 100,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Second",
+		FileName: "second.nes", FilePath: "/games/second.nes", FileSize: 1024,
+		TimeToBeatNormally: 50,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Third",
+		FileName: "third.nes", FilePath: "/games/third.nes", FileSize: 1024,
+		TimeToBeatNormally: 25,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []LongestGameResponse
+	err = json.Unmarshal(w.Body.Bytes(), &result)
+	require.NoError(t, err)
+
+	require.Len(t, result, 3)
+	assert.Equal(t, 1, result[0].Rank, "first result should have rank 1")
+	assert.Equal(t, 2, result[1].Rank, "second result should have rank 2")
+	assert.Equal(t, 3, result[2].Rank, "third result should have rank 3")
+}
+
+func TestGetTopListLongest_LimitOf50(t *testing.T) {
+	database, router := setupLongestListTestEnv(t)
+
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	// Create 55 games with time-to-beat data
+	for i := 1; i <= 55; i++ {
+		database.Create(&db.Game{
+			ConsoleID:          nesConsole.ID,
+			Title:              fmt.Sprintf("Game %03d", i),
+			FileName:           fmt.Sprintf("game%03d.nes", i),
+			FilePath:           fmt.Sprintf("/games/game%03d.nes", i),
+			FileSize:           1024,
+			TimeToBeatNormally: i * 10,
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []LongestGameResponse
+	err = json.Unmarshal(w.Body.Bytes(), &result)
+	require.NoError(t, err)
+
+	assert.Len(t, result, 50, "should be limited to 50 results")
+	// The first result should be the game with the highest time (55 * 10 = 550)
+	assert.Equal(t, 550, result[0].TimeToBeatNormally)
+	assert.Equal(t, 1, result[0].Rank)
+	// The last result should be the 50th longest (game 6 → 60 hours)
+	assert.Equal(t, 60, result[49].TimeToBeatNormally)
+	assert.Equal(t, 50, result[49].Rank)
 }

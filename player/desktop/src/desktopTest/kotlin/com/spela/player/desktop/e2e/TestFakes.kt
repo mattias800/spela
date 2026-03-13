@@ -418,6 +418,13 @@ class FakeGameRepository : GameRepository {
         else Result.success(topListGames)
     }
 
+    var longestGames: List<LongestGame> = emptyList()
+
+    override suspend fun getLongestGames(): Result<List<LongestGame>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(longestGames)
+    }
+
     var similarGames: List<SimilarGame> = emptyList()
     var developerGamesMap: Map<String, List<DeveloperGame>> = emptyMap()
 

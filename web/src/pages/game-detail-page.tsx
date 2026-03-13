@@ -40,6 +40,7 @@ import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
 import { ReplaceRomModal } from "@/features/game-detail/components/replace-rom-modal";
+import { TimeToBeatCard } from "@/features/game-detail/components/time-to-beat-card";
 import { api } from "@/lib/api-client";
 import type { Collection } from "@/types/api";
 
@@ -277,6 +278,8 @@ export function GameDetailPage() {
           ))}
         </div>
       )}
+
+      <TimeToBeatCard game={game} />
 
       <GameSessions gameId={game.id} />
 

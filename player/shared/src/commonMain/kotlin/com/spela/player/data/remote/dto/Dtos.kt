@@ -111,6 +111,9 @@ data class GameDto(
     val variantCount: Int = 0,
     val groupKey: String? = null,
     val variants: List<GameVariantDto> = emptyList(),
+    val timeToBeatHastily: Int = 0,
+    val timeToBeatNormally: Int = 0,
+    val timeToBeatCompletely: Int = 0,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )
@@ -945,6 +948,21 @@ data class TopListGameDto(
     val consoleName: String = "",
     val consoleId: String = "",
     val rating: Double = 0.0,
+)
+
+// Longest Games
+
+@Serializable
+data class LongestGameDto(
+    val rank: Int,
+    val gameId: String,
+    val name: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val timeToBeatNormally: Int = 0,
+    val timeToBeatHastily: Int = 0,
+    val timeToBeatCompletely: Int = 0,
 )
 
 // Similar Games

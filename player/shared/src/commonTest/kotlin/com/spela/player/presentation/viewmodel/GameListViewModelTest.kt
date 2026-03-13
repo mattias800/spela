@@ -250,6 +250,7 @@ class FakeGameRepository : GameRepository {
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> = Result.success(emptyList())
     override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> = Result.success(emptyList())
     override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> = Result.success(emptyList())
+    override suspend fun getLongestGames(): Result<List<LongestGame>> = Result.success(emptyList())
     override suspend fun getRecentlyAddedGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>> = Result.success(emptyList())
     override suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>> = Result.success(emptyList())

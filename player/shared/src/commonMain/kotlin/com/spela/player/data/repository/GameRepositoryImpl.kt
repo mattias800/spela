@@ -9,6 +9,7 @@ import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
+import com.spela.player.domain.model.LongestGame
 import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.TopListGame
@@ -232,6 +233,12 @@ class GameRepositoryImpl(
     override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> {
         return runCatching {
             apiClient.getTopRatedAvailable().map { it.toDomain() }
+        }
+    }
+
+    override suspend fun getLongestGames(): Result<List<LongestGame>> {
+        return runCatching {
+            apiClient.getLongestGames().map { it.toDomain() }
         }
     }
 

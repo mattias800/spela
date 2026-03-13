@@ -79,6 +79,9 @@ fun GameDto.toDomain(): Game = Game(
     isPreRelease = isPreRelease,
     variantCount = variantCount,
     groupKey = groupKey,
+    timeToBeatHastily = timeToBeatHastily,
+    timeToBeatNormally = timeToBeatNormally,
+    timeToBeatCompletely = timeToBeatCompletely,
 )
 
 /**
@@ -526,6 +529,18 @@ fun TopRatedGameDto.toDomain(): TopRatedGame = TopRatedGame(
     coverUrl = coverUrl,
     rating = rating,
     localGameId = localGameId,
+)
+
+fun LongestGameDto.toDomain(): LongestGame = LongestGame(
+    rank = rank,
+    gameId = gameId,
+    name = name,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+    consoleId = consoleId,
+    timeToBeatNormally = timeToBeatNormally,
+    timeToBeatHastily = timeToBeatHastily,
+    timeToBeatCompletely = timeToBeatCompletely,
 )
 
 fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(

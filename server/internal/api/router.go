@@ -243,6 +243,7 @@ func NewRouter(cfg Config) *gin.Engine {
 
 		// Top Lists
 		api.GET("/top-lists/top-rated", consoleHandler.GetTopListAvailable)
+		api.GET("/top-lists/longest", consoleHandler.GetTopListLongest)
 
 		// Explore
 		explore := api.Group("/explore")
