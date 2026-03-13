@@ -39,6 +39,7 @@ type ConsoleShowcaseResponse struct {
 	GenreBreakdown []GenreCount       `json:"genreBreakdown"`
 	TopDevelopers  []DeveloperSummary `json:"topDevelopers"`
 	RecentlyPlayed []GameResponse     `json:"recentlyPlayed"`
+	RecentlyAdded  []GameResponse     `json:"recentlyAdded"`
 }
 
 // ConsoleHighlight is a compact summary of a console for the explore page quick-jump row.
@@ -143,11 +144,22 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 		}
 	}
 
-	// Batch-load user game data for all games at once (essentials + hidden gems + recently played)
-	allGames := make([]db.Game, 0, len(essentials)+len(hiddenGems)+len(recentlyPlayed))
+	// --- Recently Added: most recently added games for this console ---
+	var recentlyAdded []db.Game
+	if err := h.DB.Preload("Console").
+		Where("console_id = ? AND deleted_at IS NULL", console.ID).
+		Order("created_at DESC").
+		Limit(10).
+		Find(&recentlyAdded).Error; err != nil {
+		slog.Error("failed to fetch recently added games", "console", abbr, "error", err)
+	}
+
+	// Batch-load user game data for all games at once (essentials + hidden gems + recently played + recently added)
+	allGames := make([]db.Game, 0, len(essentials)+len(hiddenGems)+len(recentlyPlayed)+len(recentlyAdded))
 	allGames = append(allGames, essentials...)
 	allGames = append(allGames, hiddenGems...)
 	allGames = append(allGames, recentlyPlayed...)
+	allGames = append(allGames, recentlyAdded...)
 	allGameIDs := make([]uint, len(allGames))
 	for i, g := range allGames {
 		allGameIDs[i] = g.ID
@@ -170,6 +182,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 		GenreBreakdown: genreBreakdown,
 		TopDevelopers:  topDevelopers,
 		RecentlyPlayed: toResponses(recentlyPlayed),
+		RecentlyAdded:  toResponses(recentlyAdded),
 	})
 }
 

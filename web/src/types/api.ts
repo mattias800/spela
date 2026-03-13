@@ -1058,6 +1058,7 @@ export interface ConsoleShowcase {
   console: Console;
   essentials: Game[];
   hiddenGems: Game[];
+  recentlyAdded: Game[];
   genreBreakdown: GenreCount[];
   topDevelopers: DeveloperSummary[];
   recentlyPlayed: Game[];

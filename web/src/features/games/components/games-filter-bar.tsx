@@ -14,6 +14,7 @@ interface GamesFilterBarProps {
   onViewModeChange: (mode: ViewMode) => void;
   consoles: Console[] | undefined;
   showHideBetas?: boolean;
+  hideConsoleFilter?: boolean;
 }
 
 export function GamesFilterBar({
@@ -25,6 +26,7 @@ export function GamesFilterBar({
   onViewModeChange,
   consoles,
   showHideBetas = false,
+  hideConsoleFilter = false,
 }: GamesFilterBarProps) {
   const consoleOptions = [
     { value: "", label: "All Consoles" },
@@ -49,18 +51,20 @@ export function GamesFilterBar({
         />
       </div>
 
-      <Select
-        options={consoleOptions}
-        value={filters.consoleId ?? ""}
-        onChange={(e) =>
-          onFiltersChange((f) => ({
-            ...f,
-            consoleId: e.target.value || undefined,
-            page: 1,
-          }))
-        }
-        className="w-44"
-      />
+      {!hideConsoleFilter && (
+        <Select
+          options={consoleOptions}
+          value={filters.consoleId ?? ""}
+          onChange={(e) =>
+            onFiltersChange((f) => ({
+              ...f,
+              consoleId: e.target.value || undefined,
+              page: 1,
+            }))
+          }
+          className="w-44"
+        />
+      )}
 
       {showHideBetas && (
         <label className="flex items-center gap-2 text-sm text-surface-300 whitespace-nowrap" data-testid="hide-betas-toggle">

@@ -2420,6 +2420,45 @@ func TestGetConsoleShowcase_CaseInsensitive(t *testing.T) {
 	assert.Equal(t, "snes", resp.Console.ID)
 }
 
+func TestGetConsoleShowcase_RecentlyAdded(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	now := time.Now()
+
+	// Create 12 games on SNES with different created_at times
+	for i := 0; i < 12; i++ {
+		createExploreGameWithTime(t, env.database, "SNES",
+			fmt.Sprintf("SNES Game %02d", i), 70,
+			now.Add(time.Duration(-i)*time.Hour))
+	}
+
+	// Create a game on NES — should NOT appear in SNES showcase
+	createExploreGameWithTime(t, env.database, "NES", "NES Game", 90, now)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// At most 10 games returned
+	require.Len(t, resp.RecentlyAdded, 10)
+
+	// Games are ordered by created_at DESC (most recent first)
+	assert.Equal(t, "SNES Game 00", resp.RecentlyAdded[0].Title)
+	assert.Equal(t, "SNES Game 01", resp.RecentlyAdded[1].Title)
+	assert.Equal(t, "SNES Game 09", resp.RecentlyAdded[9].Title)
+
+	// NES game should not be in recently added
+	for _, g := range resp.RecentlyAdded {
+		assert.Equal(t, "snes", g.ConsoleID)
+	}
+}
+
 func TestGetConsoleHighlights(t *testing.T) {
 	env := setupExploreTestEnv(t)
 

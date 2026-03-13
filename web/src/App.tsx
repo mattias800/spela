@@ -9,6 +9,7 @@ import { RegisterPage } from "@/pages/register-page";
 import { DashboardPage } from "@/pages/dashboard-page";
 import { ConsolesPage } from "@/pages/consoles-page";
 import { ConsoleDetailPage } from "@/pages/console-detail-page";
+import { ConsoleGamesPage } from "@/pages/console-games-page";
 import { GamesPage } from "@/pages/games-page";
 import { GameDetailPage } from "@/pages/game-detail-page";
 import { FavoritesPage } from "@/pages/favorites-page";
@@ -144,6 +145,10 @@ export function App() {
                     <Route
                       path="consoles/:id"
                       element={<ConsoleDetailPage />}
+                    />
+                    <Route
+                      path="consoles/:id/games"
+                      element={<ConsoleGamesPage />}
                     />
                     <Route path="games/:id" element={<GameDetailPage />} />
                     <Route

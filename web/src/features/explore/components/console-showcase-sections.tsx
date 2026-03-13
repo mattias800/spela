@@ -139,6 +139,26 @@ export function ConsoleTopDevelopers({
   );
 }
 
+export function ConsoleRecentlyAdded({
+  consoleId,
+}: ConsoleShowcaseSectionProps) {
+  const { data: showcase } = useConsoleShowcase(consoleId);
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
+
+  if (!showcase || showcase.recentlyAdded.length === 0) return null;
+
+  return (
+    <GameShelf
+      title="Recently Added"
+      games={showcase.recentlyAdded}
+      isLoading={false}
+      onToggleFavorite={handleToggleFavorite}
+      onTogglePlayLater={handleTogglePlayLater}
+    />
+  );
+}
+
 export function ConsoleRecentlyPlayed({
   consoleId,
 }: ConsoleShowcaseSectionProps) {
