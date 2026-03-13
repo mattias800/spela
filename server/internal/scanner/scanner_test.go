@@ -1380,6 +1380,7 @@ func TestIdentifyConsole_NewDirectoryMappings(t *testing.T) {
 		{"Virtual Boy by vb dir", "/games/vb/game.vb", ".vb", "VB"},
 		{"Lynx by atarilynx dir", "/games/atarilynx/game.lnx", ".lnx", "LYNX"},
 		{"Lynx by lynx dir", "/games/lynx/game.lnx", ".lnx", "LYNX"},
+		{"Lynx lyx by atarilynx dir", "/games/atarilynx/game.lyx", ".lyx", "LYNX"},
 		{"NGP by ngp dir", "/games/ngp/game.ngp", ".ngp", "NGP"},
 		{"WonderSwan by wonderswan dir", "/games/wonderswan/game.ws", ".ws", "WS"},
 		{"WonderSwan by ws dir", "/games/ws/game.ws", ".ws", "WS"},
