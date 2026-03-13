@@ -13,6 +13,7 @@ const mockScrapeDismiss = vi.fn();
 vi.mock("@/hooks/use-admin", () => ({
   useScanLibrary: vi.fn(),
   useScrapeMetadata: vi.fn(),
+  useCancelScrape: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-scrape-progress", () => ({
@@ -36,13 +37,14 @@ vi.mock("@/components/ui", async () => {
   };
 });
 
-import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
+import { useScanLibrary, useScrapeMetadata, useCancelScrape } from "@/hooks/use-admin";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
 import { useConsoles } from "@/hooks/use-consoles";
 
 const mockUseScanLibrary = useScanLibrary as ReturnType<typeof vi.fn>;
 const mockUseScrapeMetadata = useScrapeMetadata as ReturnType<typeof vi.fn>;
+const mockUseCancelScrape = useCancelScrape as ReturnType<typeof vi.fn>;
 const mockUseScrapeProgress = useScrapeProgress as ReturnType<typeof vi.fn>;
 const mockUseScanProgress = useScanProgress as ReturnType<typeof vi.fn>;
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
@@ -69,6 +71,10 @@ beforeEach(() => {
   });
   mockUseScrapeMetadata.mockReturnValue({
     mutate: mockScrapeMutate,
+    isPending: false,
+  });
+  mockUseCancelScrape.mockReturnValue({
+    mutate: vi.fn(),
     isPending: false,
   });
   mockUseScanProgress.mockReturnValue({

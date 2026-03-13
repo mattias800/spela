@@ -131,6 +131,12 @@ export function useScrapeMetadata() {
   });
 }
 
+export function useCancelScrape() {
+  return useMutation({
+    mutationFn: () => api.delete("/admin/scrape"),
+  });
+}
+
 export function useMetadataMatches() {
   return useQuery({
     queryKey: ["admin", "metadata-matches"],

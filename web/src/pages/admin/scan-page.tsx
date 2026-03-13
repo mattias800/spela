@@ -8,9 +8,10 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
+  Square,
 } from "lucide-react";
 import { Button, Card, CardHeader, CardContent, Select } from "@/components/ui";
-import { useScanLibrary, useScrapeMetadata } from "@/hooks/use-admin";
+import { useScanLibrary, useScrapeMetadata, useCancelScrape } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
@@ -176,6 +177,7 @@ function ScanCard() {
 
 function ScrapeCard() {
   const scrapeMetadata = useScrapeMetadata();
+  const cancelScrape = useCancelScrape();
   const scrape = useScrapeProgress();
   const { toast } = useToast();
   const { data: consoles } = useConsoles();
@@ -259,6 +261,25 @@ function ScrapeCard() {
                 </span>
               )}
             </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                cancelScrape.mutate(undefined, {
+                  onSuccess: () => toast("info", "Cancelling scrape..."),
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Cancel failed",
+                    ),
+                })
+              }
+              loading={cancelScrape.isPending}
+              icon={<Square className="h-3 w-3" />}
+              className="w-full"
+            >
+              Cancel Scrape
+            </Button>
           </div>
         )}
 

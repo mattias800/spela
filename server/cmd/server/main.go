@@ -266,9 +266,9 @@ func main() {
 					metaScraper.ConfigureSteamGridDB(setting.Value)
 				}
 			}
-			if metaScraper.TryStartScrape() {
+			if scrapeCtx, ok := metaScraper.TryStartScrape(); ok {
 				hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: nil})
-				count, total, scrapeErr := metaScraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
+				count, total, scrapeErr := metaScraper.ScrapeAll(scrapeCtx, "new", 0, func(p scraper.ScrapeProgress) {
 					metaScraper.SetScrapeProgress(&p)
 					hub.Broadcast(websocket.Event{Type: "scrape_progress", Payload: p})
 				})

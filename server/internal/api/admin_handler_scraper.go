@@ -39,7 +39,8 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		consoleID = console.ID
 	}
 
-	if !h.Scraper.TryStartScrape() {
+	ctx, ok := h.Scraper.TryStartScrape()
+	if !ok {
 		c.JSON(http.StatusConflict, gin.H{"error": "a scrape operation is already in progress"})
 		return
 	}
@@ -65,11 +66,16 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	go func() {
 		defer h.Scraper.FinishScrape()
 
-		count, total, err := h.Scraper.ScrapeAll(mode, consoleID, func(p scraper.ScrapeProgress) {
+		count, total, err := h.Scraper.ScrapeAll(ctx, mode, consoleID, func(p scraper.ScrapeProgress) {
 			h.Scraper.SetScrapeProgress(&p)
 			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 		})
 		if err != nil {
+			if ctx.Err() != nil {
+				slog.Info("metadata scrape cancelled", "scraped", count, "total", total)
+				h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{"scraped": count, "total": total}})
+				return
+			}
 			slog.Error("metadata scrape failed", "error", err)
 			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "metadata scrape failed"}})
 			return
@@ -80,6 +86,18 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	adminID, _ := c.Get("userId")
 	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode, "console_id", consoleID)
 	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background", "total": total})
+}
+
+// CancelScrape stops the running scrape operation (admin only).
+func (h *AdminHandler) CancelScrape(c *gin.Context) {
+	if !h.Scraper.CancelScrape() {
+		c.JSON(http.StatusConflict, gin.H{"error": "no scrape operation is running"})
+		return
+	}
+
+	adminID, _ := c.Get("userId")
+	slog.Info("audit: admin cancelled scrape", "admin_id", adminID)
+	c.JSON(http.StatusOK, gin.H{"message": "scrape cancellation requested"})
 }
 
 // ScrapeStatus returns the current scrape operation status.

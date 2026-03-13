@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
@@ -713,7 +714,7 @@ func TestScrapeAll_DefaultOnlyUnscraped(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll("", 0, nil)
+	successes, total, err := s.ScrapeAll(context.Background(), "", 0, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt the unscraped game")
 	assert.Equal(t, 1, successes)
@@ -743,7 +744,7 @@ func TestScrapeAll_ForceScrapesAll(t *testing.T) {
 		cache:      &nameCache{entries: make(map[string][]nameEntry)},
 	}
 
-	successes, total, err := s.ScrapeAll("all", 0, nil)
+	successes, total, err := s.ScrapeAll(context.Background(), "all", 0, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 2, total, "force should attempt all games")
 	assert.Equal(t, 2, successes)
@@ -775,7 +776,7 @@ func TestScrapeAll_ConsoleFilter(t *testing.T) {
 	}
 
 	// Scrape only SNES games
-	successes, total, err := s.ScrapeAll("", c1.ID, nil)
+	successes, total, err := s.ScrapeAll(context.Background(), "", c1.ID, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt SNES games")
 	assert.Equal(t, 1, successes)
@@ -807,7 +808,7 @@ func TestScrapeAll_ConsoleFilter_AllMode(t *testing.T) {
 	}
 
 	// Scrape all mode but only SNES
-	successes, total, err := s.ScrapeAll("all", c1.ID, nil)
+	successes, total, err := s.ScrapeAll(context.Background(), "all", c1.ID, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt SNES games in all mode")
 	assert.Equal(t, 1, successes)
@@ -839,7 +840,7 @@ func TestScrapeAll_ConsoleFilter_FallbackMode(t *testing.T) {
 	}
 
 	// Fallback mode but only NES
-	successes, total, err := s.ScrapeAll("fallback", c2.ID, nil)
+	successes, total, err := s.ScrapeAll(context.Background(), "fallback", c2.ID, nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "should only attempt NES fallback games")
 	assert.Equal(t, 1, successes)
