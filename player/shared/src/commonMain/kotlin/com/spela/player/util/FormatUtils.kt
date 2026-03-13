@@ -35,5 +35,9 @@ fun formatBytes(bytes: Long): String {
         value /= 1024
         unitIndex++
     }
-    return "%.1f %s".format(value, units[unitIndex])
+    return if (value == value.toLong().toDouble()) {
+        "${value.toLong()} ${units[unitIndex]}"
+    } else {
+        "%.1f %s".format(value, units[unitIndex])
+    }
 }
