@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
@@ -8,38 +9,12 @@ import type {
   MostPlayedGamesResponse,
 } from "@/types/api";
 
-/** Fields that come from scraping — everything else is user-specific and must be preserved */
-const SCRAPE_FIELDS = [
-  "coverUrl",
-  "description",
-  "developer",
-  "publisher",
-  "releaseDate",
-  "genre",
-  "players",
-  "rating",
-  "scraperId",
-  "scrapeAttempts",
-  "screenshotUrls",
-  "updatedAt",
-] as const;
-
-function mergeScrapedData(cached: Game, scraped: Game): Game {
-  const merged = { ...cached };
-  for (const key of SCRAPE_FIELDS) {
-    if (key in scraped) {
-      (merged as Record<string, unknown>)[key] = scraped[key];
-    }
-  }
-  return merged;
-}
-
 function updateGameInArray(games: Game[], scraped: Game): Game[] {
   let changed = false;
   const result = games.map((g) => {
     if (g.id === scraped.id) {
       changed = true;
-      return mergeScrapedData(g, scraped);
+      return { ...g, ...scraped };
     }
     return g;
   });
@@ -49,18 +24,19 @@ function updateGameInArray(games: Game[], scraped: Game): Game[] {
 export function useGameScrapedListener() {
   const queryClient = useQueryClient();
 
+  // Handle individual game scrape events (single scrape via admin).
+  // The payload is a full Game response, so we can replace cached data directly.
   useWebSocketEvent("game_scraped", (payload: Game) => {
     const scraped = payload;
     if (!scraped?.id) return;
 
-    // Update single game query: ["game", id] (exact to avoid clobbering
-    // sub-queries like ["game", id, "cheats"])
-    queryClient.setQueriesData<Game>(
-      { queryKey: ["game", scraped.id], exact: true },
-      (old) => (old ? mergeScrapedData(old, scraped) : old),
-    );
+    // Invalidate single game query so it re-fetches with user-specific data
+    queryClient.invalidateQueries({
+      queryKey: ["game", scraped.id],
+      exact: true,
+    });
 
-    // Update paginated games: ["games", ...] → GamesResponse
+    // Optimistically update list queries with the scraped data (covers, etc.)
     queryClient.setQueriesData<GamesResponse>(
       { queryKey: ["games"] },
       (old) => {
@@ -70,7 +46,6 @@ export function useGameScrapedListener() {
       },
     );
 
-    // Update console games: ["consoles", consoleId, "games"] → Game[]
     queryClient.setQueriesData<Game[]>(
       { queryKey: ["consoles"] },
       (old) => {
@@ -79,7 +54,6 @@ export function useGameScrapedListener() {
       },
     );
 
-    // Update collection details: ["collection", id] → CollectionDetail
     queryClient.setQueriesData<CollectionDetail>(
       { queryKey: ["collection"] },
       (old) => {
@@ -89,7 +63,6 @@ export function useGameScrapedListener() {
       },
     );
 
-    // Update most-played games: ["most-played-games"] → MostPlayedGamesResponse
     queryClient.setQueriesData<MostPlayedGamesResponse>(
       { queryKey: ["most-played-games"] },
       (old) => {
@@ -98,7 +71,7 @@ export function useGameScrapedListener() {
         const updated = old.games.map((entry: MostPlayedGame) => {
           if (entry.game.id === scraped.id) {
             changed = true;
-            return { ...entry, game: mergeScrapedData(entry.game, scraped) };
+            return { ...entry, game: { ...entry.game, ...scraped } };
           }
           return entry;
         });
@@ -106,4 +79,20 @@ export function useGameScrapedListener() {
       },
     );
   });
+
+  // Handle batch scrape progress — invalidate the game query for each game
+  // as it's scraped so the detail page refreshes automatically.
+  const handleScrapeProgress = useCallback(
+    (payload: { gameId?: number }) => {
+      if (!payload?.gameId) return;
+      const gameId = String(payload.gameId);
+      queryClient.invalidateQueries({
+        queryKey: ["game", gameId],
+        exact: true,
+      });
+    },
+    [queryClient],
+  );
+
+  useWebSocketEvent("scrape_progress", handleScrapeProgress);
 }
