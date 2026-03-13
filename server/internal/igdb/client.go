@@ -312,7 +312,7 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where platforms = (%d); limit 5;`,
+		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -372,7 +372,7 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 
 	// Case-insensitive exact match using ~ operator
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where name ~ "%s" & platforms = (%d); limit 5;`,
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = (%d); limit 5;`,
 		escapeQuery(name), platformID,
 	)
 
@@ -430,7 +430,7 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,time_to_beat.hastily,time_to_beat.normally,time_to_beat.completely; where id = %d; limit 1;`,
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where id = %d; limit 1;`,
 		igdbID,
 	)
 
