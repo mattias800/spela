@@ -203,7 +203,7 @@ func countGameFiles(dir string) int {
 		".cue": true, ".chd": true, ".zip": true, ".7z": true, ".psx": true,
 		".cso": true, ".pbp": true, ".nsp": true, ".xci": true, ".3ds": true,
 		".cia": true, ".wad": true, ".gcm": true, ".wbfs": true, ".a26": true,
-		".lnx": true, ".pce": true, ".ngp": true, ".ngc": true, ".ws": true,
+		".lnx": true, ".lyx": true, ".pce": true, ".ngp": true, ".ngc": true, ".ws": true,
 		".wsc": true, ".vb": true, ".vec": true, ".col": true, ".sg": true,
 		".gg": true, ".sms": true, ".32x": true,
 	}

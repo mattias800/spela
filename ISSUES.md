@@ -1,15 +1,5 @@
 # Known Issues
 
-## .lyx extension gaps (from PR #161 follow-up)
-
-### Missing .lyx in replace ROM modal (Medium)
-- **File**: `web/src/features/game-detail/components/replace-rom-modal.tsx:35`
-- `.lyx` is not in `ACCEPTED_EXTENSIONS`. Users replacing a Lynx ROM via the UI won't see `.lyx` files in the file picker.
-
-### Missing .lyx in setup handler (Medium)
-- **File**: `server/internal/api/setup_handler.go:206`
-- `.lyx` missing from the `knownExts` map in `countGameFiles()`. The setup page will undercount Lynx ROMs if any use the `.lyx` extension.
-
 ## Console detail page polish (from code review)
 
 ### No focus-visible on "Browse all" links (High - a11y)
