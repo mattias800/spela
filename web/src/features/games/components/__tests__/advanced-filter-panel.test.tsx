@@ -117,6 +117,16 @@ describe("AdvancedFilterPanel", () => {
     expect(within(consoleFilter).getByText("Game Boy Advance")).toBeInTheDocument();
   });
 
+  it("hides console chips when hideConsoleFilter is true", () => {
+    renderPanel({ hideConsoleFilter: true });
+    expect(screen.queryByTestId("console-filter")).not.toBeInTheDocument();
+  });
+
+  it("shows console chips when hideConsoleFilter is false", () => {
+    renderPanel({ hideConsoleFilter: false });
+    expect(screen.getByTestId("console-filter")).toBeInTheDocument();
+  });
+
   it("toggles console selection", async () => {
     const user = userEvent.setup();
     const onFiltersChange = vi.fn();

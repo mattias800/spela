@@ -197,6 +197,7 @@ interface AdvancedFilterPanelProps {
   totalResults?: number;
   isOpen: boolean;
   onToggle: () => void;
+  hideConsoleFilter?: boolean;
 }
 
 export function AdvancedFilterPanel({
@@ -212,6 +213,7 @@ export function AdvancedFilterPanel({
   totalResults,
   isOpen,
   onToggle,
+  hideConsoleFilter = false,
 }: AdvancedFilterPanelProps) {
   const [saveName, setSaveName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
@@ -332,15 +334,17 @@ export function AdvancedFilterPanel({
           </div>
 
           {/* Console picker */}
-          <ChipPicker
-            label="Consoles"
-            options={consoleOptions}
-            selected={filters.consoles ?? []}
-            onChange={(consoles) =>
-              onFiltersChange((f) => ({ ...f, consoles, page: 1 }))
-            }
-            testId="console-filter"
-          />
+          {!hideConsoleFilter && (
+            <ChipPicker
+              label="Consoles"
+              options={consoleOptions}
+              selected={filters.consoles ?? []}
+              onChange={(consoles) =>
+                onFiltersChange((f) => ({ ...f, consoles, page: 1 }))
+              }
+              testId="console-filter"
+            />
+          )}
 
           {/* Region picker */}
           <ChipPicker

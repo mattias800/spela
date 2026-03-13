@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { Game, GamesResponse, GameFilters, ReplaceROMResponse } from "@/types/api";
 
-export function useGames(filters?: GameFilters) {
+export function useGames(filters?: GameFilters, options?: { enabled?: boolean }) {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
   if (filters?.consoleId) params.set("consoleId", filters.consoleId);
@@ -40,6 +40,7 @@ export function useGames(filters?: GameFilters) {
     queryKey: ["games", filters],
     queryFn: () =>
       api.get<GamesResponse>(query ? `/games?${query}` : "/games"),
+    enabled: options?.enabled,
   });
 }
 
