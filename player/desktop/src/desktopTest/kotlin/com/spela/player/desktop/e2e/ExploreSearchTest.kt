@@ -70,10 +70,10 @@ class ExploreSearchTest {
         ),
     )
 
-    // --- Search chip on Explore screen ---
+    // --- Search bar on Explore screen ---
 
     @Test
-    fun searchChipRendersOnExploreScreen() = runComposeUiTest {
+    fun searchBarRendersOnExploreScreen() = runComposeUiTest {
         val harness = createHarness()
         // Need at least one section so explore screen is not empty
         harness.exploreRepo.featuredSeriesList = listOf(
@@ -87,11 +87,11 @@ class ExploreSearchTest {
         advance(harness)
 
         onNodeWithTag("explore_screen").assertIsDisplayed()
-        onNodeWithTag("explore_search_chip").assertExists()
+        onNodeWithTag("explore_search_bar").assertExists()
     }
 
     @Test
-    fun searchChipNavigatesToSearchScreen() = runComposeUiTest {
+    fun searchBarNavigatesToGlobalSearchScreen() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.featuredSeriesList = listOf(
             com.spela.player.domain.model.FeaturedSeries(
@@ -103,11 +103,11 @@ class ExploreSearchTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Explore))
         advance(harness)
 
-        onNodeWithTag("explore_search_chip").performClick()
+        onNodeWithTag("explore_search_bar").performClick()
         advance(harness)
 
         val navState = harness.navigationViewModel.state.value
-        assertEquals("explore_search", navState.currentScreen.route)
+        assertEquals("global_search", navState.currentScreen.route)
     }
 
     // --- Search screen renders ---

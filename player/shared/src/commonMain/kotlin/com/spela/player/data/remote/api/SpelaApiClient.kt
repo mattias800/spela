@@ -468,6 +468,15 @@ class SpelaApiClient(
     }
 
     /** Returns games filtered by multi-faceted criteria */
+    // Global Search
+
+    suspend fun globalSearch(query: String, limit: Int = 5): GlobalSearchResponseDto {
+        return client.get("$baseUrl/api/search") {
+            parameter("q", query)
+            parameter("limit", limit)
+        }.body()
+    }
+
     suspend fun getFilteredGames(
         filters: Map<String, String>,
         page: Int? = null,

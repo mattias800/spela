@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WatchLater
@@ -108,6 +109,7 @@ fun HomeScreen(
     onChallengeSelected: (String) -> Unit = {},
     onNetplaySessionSelected: (String) -> Unit = {},
     onUserSelected: (String) -> Unit = {},
+    onSearchSelected: () -> Unit = {},
     hasActiveDownloads: Boolean = false,
     activeNetplaySessions: List<NetplaySession> = emptyList(),
 ) {
@@ -206,6 +208,11 @@ fun HomeScreen(
                                         style = SpTypography.HeadlineMedium,
                                         color = SpColor.OnBackground,
                                         modifier = Modifier.weight(1f),
+                                    )
+                                    SpIconButton(
+                                        icon = Icons.Filled.Search,
+                                        contentDescription = "Search",
+                                        onClick = onSearchSelected,
                                     )
                                     if (hasActiveDownloads) {
                                         SpIconButton(

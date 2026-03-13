@@ -39,6 +39,7 @@ sealed class SpScreen(val route: String) {
     data object ExploreGallery : SpScreen("explore_gallery")
     data object ExploreSearch : SpScreen("explore_search")
     data object ExploreWizard : SpScreen("explore_wizard")
+    data object GlobalSearch : SpScreen("global_search")
 }
 
 data class NavigationState(

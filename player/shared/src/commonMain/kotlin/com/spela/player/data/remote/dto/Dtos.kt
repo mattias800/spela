@@ -1634,3 +1634,82 @@ data class CompletionistMapResponseDto(
     val totalPlayed: Int,
     val overallPct: Int,
 )
+
+// --- Global Search ---
+
+@Serializable
+data class GlobalSearchGameResultDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val developer: String? = null,
+    val genre: String? = null,
+    val coverAspectRatio: Double = 0.75,
+)
+
+@Serializable
+data class GlobalSearchConsoleResultDto(
+    val id: String,
+    val name: String,
+    val iconUrl: String = "",
+    val gameCount: Int = 0,
+    val colorTheme: String = "#6366f1",
+)
+
+@Serializable
+data class GlobalSearchDeveloperResultDto(
+    val name: String,
+    val gameCount: Int = 0,
+    val avgRating: Double = 0.0,
+)
+
+@Serializable
+data class GlobalSearchPublisherResultDto(
+    val name: String,
+    val gameCount: Int = 0,
+    val avgRating: Double = 0.0,
+)
+
+@Serializable
+data class GlobalSearchCollectionResultDto(
+    val id: String,
+    val name: String,
+    val gameCount: Int = 0,
+    val coverUrl: String? = null,
+    val username: String = "",
+)
+
+@Serializable
+data class GlobalSearchSeriesResultDto(
+    val id: String,
+    val name: String,
+    val totalGames: Int = 0,
+    val libraryGames: Int = 0,
+)
+
+@Serializable
+data class GlobalSearchFranchiseResultDto(
+    val id: String,
+    val name: String,
+    val totalGames: Int = 0,
+    val libraryGames: Int = 0,
+)
+
+@Serializable
+data class GlobalSearchCategoryDto<T>(
+    val results: List<T> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class GlobalSearchResponseDto(
+    val games: GlobalSearchCategoryDto<GlobalSearchGameResultDto> = GlobalSearchCategoryDto(),
+    val consoles: GlobalSearchCategoryDto<GlobalSearchConsoleResultDto> = GlobalSearchCategoryDto(),
+    val developers: GlobalSearchCategoryDto<GlobalSearchDeveloperResultDto> = GlobalSearchCategoryDto(),
+    val publishers: GlobalSearchCategoryDto<GlobalSearchPublisherResultDto> = GlobalSearchCategoryDto(),
+    val collections: GlobalSearchCategoryDto<GlobalSearchCollectionResultDto> = GlobalSearchCategoryDto(),
+    val series: GlobalSearchCategoryDto<GlobalSearchSeriesResultDto> = GlobalSearchCategoryDto(),
+    val franchises: GlobalSearchCategoryDto<GlobalSearchFranchiseResultDto> = GlobalSearchCategoryDto(),
+)

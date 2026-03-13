@@ -107,6 +107,7 @@ class SpelaTestHarness(
     val cheatRepo = FakeCheatRepository()
     val sessionRepo = FakeSessionRepository()
     val exploreRepo = FakeExploreRepository()
+    val searchRepo = FakeSearchRepository()
 
     private val scrapeService = com.spela.player.data.remote.ScrapeService(fakeApiClient, dispatchers, scope)
 
@@ -348,6 +349,12 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val globalSearchViewModel = GlobalSearchViewModel(
+        searchRepository = searchRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     @Composable
     fun App() {
         androidx.compose.runtime.CompositionLocalProvider(
@@ -381,6 +388,7 @@ class SpelaTestHarness(
             topListsViewModel = topListsViewModel,
             exploreViewModel = exploreViewModel,
             gamepadPortManager = gamepadPortManager,
+            globalSearchViewModel = globalSearchViewModel,
         )
         }
     }

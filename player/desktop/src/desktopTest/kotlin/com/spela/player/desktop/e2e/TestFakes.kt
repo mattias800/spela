@@ -1654,6 +1654,25 @@ class FakeExploreRepository : ExploreRepository {
         if (shouldFail) Result.failure(Exception("Failed")) else Result.success(completionistMapData)
 }
 
+class FakeSearchRepository : SearchRepository {
+    var searchResult: GlobalSearchResult = GlobalSearchResult()
+    var shouldFail: Boolean = false
+    var errorMessage: String = "Search failed"
+    var delayMs: Long = 0
+    var lastQuery: String? = null
+    var callCount: Int = 0
+
+    override suspend fun globalSearch(query: String, limit: Int): Result<GlobalSearchResult> {
+        lastQuery = query
+        callCount++
+        if (delayMs > 0) {
+            kotlinx.coroutines.delay(delayMs)
+        }
+        return if (shouldFail) Result.failure(Exception(errorMessage))
+        else Result.success(searchResult)
+    }
+}
+
 class FakeCheatRepository : CheatRepository {
     var cheats: MutableList<Cheat> = mutableListOf()
 

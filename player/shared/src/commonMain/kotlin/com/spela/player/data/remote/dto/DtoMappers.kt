@@ -989,3 +989,89 @@ fun CompletionistMapResponseDto.toDomain() = CompletionistMap(
     totalPlayed = totalPlayed,
     overallPct = overallPct,
 )
+
+// --- Global Search mappers ---
+
+fun GlobalSearchGameResultDto.toDomain() = SearchGameResult(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+    consoleName = consoleName,
+    consoleId = consoleId,
+    developer = developer,
+    genre = genre,
+    coverAspectRatio = coverAspectRatio.toFloat(),
+)
+
+fun GlobalSearchConsoleResultDto.toDomain() = SearchConsoleResult(
+    id = id,
+    name = name,
+    iconUrl = iconUrl,
+    gameCount = gameCount,
+    colorTheme = colorTheme,
+)
+
+fun GlobalSearchDeveloperResultDto.toDomain() = SearchDeveloperResult(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+)
+
+fun GlobalSearchPublisherResultDto.toDomain() = SearchPublisherResult(
+    name = name,
+    gameCount = gameCount,
+    avgRating = avgRating,
+)
+
+fun GlobalSearchCollectionResultDto.toDomain() = SearchCollectionResult(
+    id = id,
+    name = name,
+    gameCount = gameCount,
+    coverUrl = coverUrl,
+    username = username,
+)
+
+fun GlobalSearchSeriesResultDto.toDomain() = SearchSeriesResult(
+    id = id,
+    name = name,
+    totalGames = totalGames,
+    libraryGames = libraryGames,
+)
+
+fun GlobalSearchFranchiseResultDto.toDomain() = SearchFranchiseResult(
+    id = id,
+    name = name,
+    totalGames = totalGames,
+    libraryGames = libraryGames,
+)
+
+fun GlobalSearchResponseDto.toDomain() = GlobalSearchResult(
+    games = SearchCategory(
+        results = games.results.map { it.toDomain() },
+        total = games.total,
+    ),
+    consoles = SearchCategory(
+        results = consoles.results.map { it.toDomain() },
+        total = consoles.total,
+    ),
+    developers = SearchCategory(
+        results = developers.results.map { it.toDomain() },
+        total = developers.total,
+    ),
+    publishers = SearchCategory(
+        results = publishers.results.map { it.toDomain() },
+        total = publishers.total,
+    ),
+    collections = SearchCategory(
+        results = collections.results.map { it.toDomain() },
+        total = collections.total,
+    ),
+    series = SearchCategory(
+        results = series.results.map { it.toDomain() },
+        total = series.total,
+    ),
+    franchises = SearchCategory(
+        results = franchises.results.map { it.toDomain() },
+        total = franchises.total,
+    ),
+)
