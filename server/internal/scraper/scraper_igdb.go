@@ -308,15 +308,20 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	if match.IGDBRatingCount > 0 && game.IGDBUserRatingCount == 0 {
 		game.IGDBUserRatingCount = match.IGDBRatingCount
 	}
-	if match.TimeToBeat != nil {
-		if match.TimeToBeat.Hastily > 0 && game.TimeToBeatHastily == 0 {
-			game.TimeToBeatHastily = match.TimeToBeat.Hastily
-		}
-		if match.TimeToBeat.Normally > 0 && game.TimeToBeatNormally == 0 {
-			game.TimeToBeatNormally = match.TimeToBeat.Normally
-		}
-		if match.TimeToBeat.Completely > 0 && game.TimeToBeatCompletely == 0 {
-			game.TimeToBeatCompletely = match.TimeToBeat.Completely
+	// Fetch time-to-beat from the dedicated endpoint (the inline field was deprecated).
+	if s.IGDBClient != nil && game.TimeToBeatHastily == 0 && game.TimeToBeatNormally == 0 && game.TimeToBeatCompletely == 0 {
+		if ttb, err := s.IGDBClient.GetTimeToBeat(match.ID); err != nil {
+			slog.Warn("failed to fetch time to beat", "igdbID", match.ID, "error", err)
+		} else if ttb != nil {
+			if ttb.Hastily > 0 {
+				game.TimeToBeatHastily = ttb.Hastily
+			}
+			if ttb.Normally > 0 {
+				game.TimeToBeatNormally = ttb.Normally
+			}
+			if ttb.Completely > 0 {
+				game.TimeToBeatCompletely = ttb.Completely
+			}
 		}
 	}
 	if match.FirstReleaseDate > 0 {

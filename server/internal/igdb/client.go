@@ -476,6 +476,64 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	return &games[0], nil
 }
 
+// GetTimeToBeat fetches time-to-beat data for a game from the separate
+// /v4/game_time_to_beats endpoint. Returns nil if no data exists for the game.
+func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
+	if err := c.authenticate(); err != nil {
+		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+
+	<-c.rateLimiter
+
+	query := fmt.Sprintf(
+		`fields hastily,normally,completely; where game_id = %d; limit 1;`,
+		igdbGameID,
+	)
+
+	slog.Info("IGDB get time to beat request", "igdbGameID", igdbGameID)
+
+	c.mu.Lock()
+	token := c.token.AccessToken
+	c.mu.Unlock()
+
+	req, err := http.NewRequest("POST", igdbAPIBase+"/game_time_to_beats", strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("creating IGDB time to beat request: %w", err)
+	}
+	req.Header.Set("Client-ID", c.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("calling IGDB API for time to beat: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading IGDB time to beat response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var results []TimeToBeat
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("decoding IGDB time to beat response: %w", err)
+	}
+
+	if len(results) == 0 {
+		slog.Info("IGDB get time to beat: no data", "igdbGameID", igdbGameID)
+		return nil, nil
+	}
+
+	slog.Info("IGDB get time to beat response", "igdbGameID", igdbGameID,
+		"hastily", results[0].Hastily, "normally", results[0].Normally, "completely", results[0].Completely)
+
+	return &results[0], nil
+}
+
 // TopGame represents an IGDB top-rated game result.
 type TopGame struct {
 	ID               int    `json:"id"`

@@ -765,6 +765,125 @@ func TestGetGameByID_APIError(t *testing.T) {
 	assert.Contains(t, err.Error(), "500")
 }
 
+func TestGetTimeToBeat_Success(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/v4/game_time_to_beats", r.URL.Path)
+		assert.Equal(t, "myid", r.Header.Get("Client-ID"))
+		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+
+		json.NewEncoder(w).Encode([]TimeToBeat{
+			{Hastily: 31200, Normally: 111888, Completely: 187200},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	ttb, err := c.GetTimeToBeat(1029)
+	require.NoError(t, err)
+	require.NotNil(t, ttb)
+	assert.Equal(t, 31200, ttb.Hastily)
+	assert.Equal(t, 111888, ttb.Normally)
+	assert.Equal(t, 187200, ttb.Completely)
+}
+
+func TestGetTimeToBeat_NoData(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]TimeToBeat{})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	ttb, err := c.GetTimeToBeat(99999)
+	require.NoError(t, err)
+	assert.Nil(t, ttb)
+}
+
+func TestGetTimeToBeat_APIError(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal error"))
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	_, err := c.GetTimeToBeat(1234)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
 func TestPlatformMapping(t *testing.T) {
 	// Verify key platform mappings exist
 	assert.Equal(t, 18, AbbreviationToIGDBPlatform["NES"])
