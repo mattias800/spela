@@ -70,6 +70,7 @@ import com.spela.player.presentation.ui.feature.gamedetail.GameSharedSessionsSec
 import com.spela.player.presentation.ui.feature.gamedetail.SeriesFranchiseSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameReviewsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SessionsSection
+import com.spela.player.presentation.ui.feature.gamedetail.TimeToBeatSection
 import com.spela.player.presentation.ui.feature.gamedetail.ScreenshotsSection
 import com.spela.player.presentation.ui.feature.gamedetail.SimilarGamesSection
 import com.spela.player.presentation.ui.feature.library.darken
@@ -265,7 +266,16 @@ fun GameDetailScreen(
                     )
                 }
 
-                // 2. Community Stats (Play Activity)
+                // 2. Time to Beat
+                if (game.timeToBeatHastily > 0 || game.timeToBeatNormally > 0 || game.timeToBeatCompletely > 0) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    ) {
+                        TimeToBeatSection(game = game)
+                    }
+                }
+
+                // 3. Community Stats (Play Activity)
                 Column(
                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                 ) {

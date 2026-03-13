@@ -6,6 +6,7 @@ import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.SimilarGame
+import com.spela.player.domain.model.LongestGame
 import com.spela.player.domain.model.TopListGame
 import com.spela.player.domain.model.TopRatedGame
 
@@ -54,6 +55,7 @@ interface GameRepository {
     suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>>
     suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>>
     suspend fun getTopRatedAvailable(): Result<List<TopListGame>>
+    suspend fun getLongestGames(): Result<List<LongestGame>>
     suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>>
     suspend fun getDeveloperGames(gameId: String): Result<List<DeveloperGame>>
 }

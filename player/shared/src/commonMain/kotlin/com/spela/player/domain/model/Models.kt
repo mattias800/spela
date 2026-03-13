@@ -92,6 +92,9 @@ data class Game(
     val isPreRelease: Boolean = false,
     val variantCount: Int = 0,
     val groupKey: String? = null,
+    val timeToBeatHastily: Int = 0,
+    val timeToBeatNormally: Int = 0,
+    val timeToBeatCompletely: Int = 0,
 )
 
 @Serializable
@@ -621,6 +624,8 @@ data class TopRatedGame(
 
 // Top Lists
 
+enum class TopListTab { TOP_RATED, LONGEST }
+
 data class TopListGame(
     val rank: Int,
     val gameId: String,
@@ -629,6 +634,18 @@ data class TopListGame(
     val consoleName: String = "",
     val consoleId: String = "",
     val rating: Double = 0.0,
+)
+
+data class LongestGame(
+    val rank: Int,
+    val gameId: String,
+    val name: String,
+    val coverUrl: String? = null,
+    val consoleName: String = "",
+    val consoleId: String = "",
+    val timeToBeatNormally: Int = 0,
+    val timeToBeatHastily: Int = 0,
+    val timeToBeatCompletely: Int = 0,
 )
 
 // Similar Games

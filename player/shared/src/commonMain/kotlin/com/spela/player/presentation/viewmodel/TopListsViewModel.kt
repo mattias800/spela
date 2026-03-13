@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.TopListTab
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.presentation.intent.TopListsIntent
 import com.spela.player.presentation.state.TopListsState
@@ -22,7 +23,20 @@ class TopListsViewModel(
     fun onIntent(intent: TopListsIntent) {
         when (intent) {
             TopListsIntent.LoadTopLists -> loadTopLists()
+            is TopListsIntent.SelectTab -> selectTab(intent.tab)
             TopListsIntent.DismissError -> _state.update { it.copy(error = null) }
+        }
+    }
+
+    private fun selectTab(tab: TopListTab) {
+        _state.update { it.copy(selectedTab = tab) }
+        when (tab) {
+            TopListTab.TOP_RATED -> {
+                if (_state.value.games.isEmpty()) loadTopLists()
+            }
+            TopListTab.LONGEST -> {
+                if (_state.value.longestGames.isEmpty()) loadLongestGames()
+            }
         }
     }
 
@@ -45,6 +59,32 @@ class TopListsViewModel(
                         it.copy(
                             isLoading = false,
                             error = e.message ?: "Failed to load top lists",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun loadLongestGames() {
+        _state.update { it.copy(isLoading = true) }
+        scope.launch(dispatchers.io) {
+            val result = gameRepository.getLongestGames()
+            result.fold(
+                onSuccess = { games ->
+                    _state.update {
+                        it.copy(
+                            longestGames = games,
+                            isLoading = false,
+                            error = null,
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = e.message ?: "Failed to load longest games",
                         )
                     }
                 },

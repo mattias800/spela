@@ -728,6 +728,18 @@ export interface TopListGame {
   rating: number;
 }
 
+export interface LongestGame {
+  rank: number;
+  gameId: string;
+  name: string;
+  coverUrl: string;
+  consoleName: string;
+  consoleId: string;
+  timeToBeatNormally: number;
+  timeToBeatHastily: number;
+  timeToBeatCompletely: number;
+}
+
 export interface PlayStatsEntry {
   gameId: number;
   playTime: number;

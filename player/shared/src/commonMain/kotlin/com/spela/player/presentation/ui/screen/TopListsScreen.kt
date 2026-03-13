@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -38,10 +40,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.LongestGame
 import com.spela.player.domain.model.TopListGame
+import com.spela.player.domain.model.TopListTab
 import com.spela.player.presentation.intent.TopListsIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -49,6 +54,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.gamedetail.formatTimeToBeat
 import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -82,7 +88,51 @@ fun TopListsScreen(
                 onBack = onBack,
             )
 
-            if (state.isLoading && state.games.isEmpty()) {
+            // Tab bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                SpChip(
+                    text = "Top Rated",
+                    isSelected = state.selectedTab == TopListTab.TOP_RATED,
+                    onClick = { viewModel.onIntent(TopListsIntent.SelectTab(TopListTab.TOP_RATED)) },
+                    color = SpColor.Warning,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = if (state.selectedTab == TopListTab.TOP_RATED) SpColor.Warning else SpColor.OnBackgroundSecondary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    },
+                    modifier = Modifier.testTag("tab_top_rated"),
+                )
+                SpChip(
+                    text = "Longest",
+                    isSelected = state.selectedTab == TopListTab.LONGEST,
+                    onClick = { viewModel.onIntent(TopListsIntent.SelectTab(TopListTab.LONGEST)) },
+                    color = SpColor.Accent,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Timer,
+                            contentDescription = null,
+                            tint = if (state.selectedTab == TopListTab.LONGEST) SpColor.Accent else SpColor.OnBackgroundSecondary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    },
+                    modifier = Modifier.testTag("tab_longest"),
+                )
+            }
+
+            val isContentEmpty = when (state.selectedTab) {
+                TopListTab.TOP_RATED -> state.games.isEmpty()
+                TopListTab.LONGEST -> state.longestGames.isEmpty()
+            }
+
+            if (state.isLoading && isContentEmpty) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -95,30 +145,62 @@ fun TopListsScreen(
                     onRefresh = { viewModel.onIntent(TopListsIntent.LoadTopLists) },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    if (state.games.isEmpty() && !state.isLoading) {
+                    if (isContentEmpty && !state.isLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize().testTag("top_lists_empty"),
                             contentAlignment = Alignment.Center,
                         ) {
+                            val (emptyIcon, emptyTitle, emptyMessage) = when (state.selectedTab) {
+                                TopListTab.TOP_RATED -> Triple(
+                                    Icons.Filled.EmojiEvents,
+                                    "No top rated games yet",
+                                    "Top rated games from your library will appear here",
+                                )
+                                TopListTab.LONGEST -> Triple(
+                                    Icons.Filled.AccessTime,
+                                    "No time-to-beat data yet",
+                                    "Games with time-to-beat information will appear here",
+                                )
+                            }
                             SpEmptyState(
-                                icon = Icons.Filled.EmojiEvents,
-                                title = "No top rated games yet",
-                                message = "Top rated games from your library will appear here",
+                                icon = emptyIcon,
+                                title = emptyTitle,
+                                message = emptyMessage,
                             )
                         }
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize().testTag("top_lists_content"),
-                            contentPadding = PaddingValues(vertical = SpSpacing.Default),
-                        ) {
-                            itemsIndexed(
-                                state.games,
-                                key = { _, item -> "toplist-${item.gameId}" },
-                            ) { _, item ->
-                                TopListGameItem(
-                                    game = item,
-                                    onClick = { onGameSelected(item.gameId) },
-                                )
+                        when (state.selectedTab) {
+                            TopListTab.TOP_RATED -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize().testTag("top_lists_content"),
+                                    contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                                ) {
+                                    itemsIndexed(
+                                        state.games,
+                                        key = { _, item -> "toplist-${item.gameId}" },
+                                    ) { _, item ->
+                                        TopListGameItem(
+                                            game = item,
+                                            onClick = { onGameSelected(item.gameId) },
+                                        )
+                                    }
+                                }
+                            }
+                            TopListTab.LONGEST -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize().testTag("longest_games_content"),
+                                    contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                                ) {
+                                    itemsIndexed(
+                                        state.longestGames,
+                                        key = { _, item -> "longest-${item.gameId}" },
+                                    ) { _, item ->
+                                        LongestGameItem(
+                                            game = item,
+                                            onClick = { onGameSelected(item.gameId) },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -208,6 +290,105 @@ private fun TopListGameItem(
                         style = SpTypography.LabelMedium.copy(fontWeight = FontWeight.Bold),
                         color = SpColor.OnCard,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LongestGameItem(
+    game: LongestGame,
+    onClick: () -> Unit,
+) {
+    val primaryTime = when {
+        game.timeToBeatNormally > 0 -> game.timeToBeatNormally
+        game.timeToBeatHastily > 0 -> game.timeToBeatHastily
+        else -> game.timeToBeatCompletely
+    }
+
+    SpCard(
+        onGradient = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .testTag("longest_game_item_${game.gameId}")
+            .semantics {
+                contentDescription = "Rank ${game.rank}: ${game.name}, ${formatTimeToBeat(primaryTime)} to beat"
+                role = Role.Button
+            },
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RankBadge(game.rank)
+            Spacer(Modifier.width(SpSpacing.Medium))
+            SpCoverArt(
+                imageUrl = game.coverUrl,
+                contentDescription = "${game.name} cover",
+                modifier = Modifier.height(64.dp),
+                cornerRadius = SpSpacing.RadiusMedium,
+            )
+            Spacer(Modifier.width(SpSpacing.Medium))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = game.name,
+                    style = SpTypography.TitleLarge,
+                    color = SpColor.OnCard,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (game.consoleName.isNotBlank()) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
+                    Text(
+                        text = game.consoleName,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    // Primary time (normally)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.AccessTime,
+                            contentDescription = null,
+                            tint = SpColor.Accent,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = formatTimeToBeat(primaryTime),
+                            style = SpTypography.LabelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = SpColor.OnCard,
+                        )
+                    }
+                    // Secondary times
+                    if (game.timeToBeatHastily > 0 && game.timeToBeatHastily != primaryTime) {
+                        Text(
+                            text = formatTimeToBeat(game.timeToBeatHastily),
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
+                    if (game.timeToBeatCompletely > 0 && game.timeToBeatCompletely != primaryTime) {
+                        Text(
+                            text = "${formatTimeToBeat(game.timeToBeatCompletely)} (100%)",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
                 }
             }
         }

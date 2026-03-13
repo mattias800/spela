@@ -584,6 +584,73 @@ func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// LongestGameResponse is the API response for a game in the "longest games" top list.
+type LongestGameResponse struct {
+	Rank                 int    `json:"rank"`
+	GameId               string `json:"gameId"`
+	Name                 string `json:"name"`
+	CoverUrl             string `json:"coverUrl"`
+	ConsoleName          string `json:"consoleName"`
+	ConsoleId            string `json:"consoleId"`
+	TimeToBeatNormally   int    `json:"timeToBeatNormally"`
+	TimeToBeatHastily    int    `json:"timeToBeatHastily"`
+	TimeToBeatCompletely int    `json:"timeToBeatCompletely"`
+}
+
+// GetTopListLongest returns games sorted by time_to_beat_normally descending.
+// Only games with a positive time_to_beat_normally value are included, limited to 50 results.
+func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
+	type row struct {
+		GameID               uint
+		Title                string
+		CoverURL             string
+		ConsoleName          string
+		ConsoleAbbr          string
+		TimeToBeatNormally   int
+		TimeToBeatHastily    int
+		TimeToBeatCompletely int
+	}
+
+	var rows []row
+	err := h.DB.
+		Table("games").
+		Select(`games.id AS game_id,
+				games.title,
+				games.cover_url,
+				consoles.name AS console_name,
+				consoles.abbreviation AS console_abbr,
+				games.time_to_beat_normally,
+				games.time_to_beat_hastily,
+				games.time_to_beat_completely`).
+		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
+		Where("games.time_to_beat_normally > 0 AND games.deleted_at IS NULL").
+		Order("games.time_to_beat_normally DESC").
+		Limit(50).
+		Find(&rows).Error
+	if err != nil {
+		slog.Error("failed to fetch longest games list", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch longest games list"})
+		return
+	}
+
+	result := make([]LongestGameResponse, len(rows))
+	for i, r := range rows {
+		result[i] = LongestGameResponse{
+			Rank:                 i + 1,
+			GameId:               fmt.Sprintf("%d", r.GameID),
+			Name:                 r.Title,
+			CoverUrl:             resolveImageURL(r.CoverURL),
+			ConsoleName:          r.ConsoleName,
+			ConsoleId:            strings.ToLower(r.ConsoleAbbr),
+			TimeToBeatNormally:   r.TimeToBeatNormally,
+			TimeToBeatHastily:    r.TimeToBeatHastily,
+			TimeToBeatCompletely: r.TimeToBeatCompletely,
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // upsertTopRatedGames inserts or updates top-rated games for a console.
 func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGame) {
 	for i, g := range games {
