@@ -9,19 +9,19 @@ import com.spela.player.presentation.ui.feature.explore.ExploreGroupDetailConten
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @Composable
-fun ExploreSeriesScreen(
-    seriesId: String,
-    seriesName: String,
+fun ExploreFranchiseScreen(
+    franchiseId: String,
+    franchiseName: String,
     viewModel: ExploreViewModel,
     onGameSelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
 
-    val state by viewModel.seriesDetailState.collectAsState()
+    val state by viewModel.franchiseDetailState.collectAsState()
 
-    LaunchedEffect(seriesId) {
-        viewModel.loadSeriesDetail(seriesId, seriesName)
+    LaunchedEffect(franchiseId) {
+        viewModel.loadFranchiseDetail(franchiseId, franchiseName)
     }
 
     ExploreGroupDetailContent(
@@ -30,15 +30,15 @@ fun ExploreSeriesScreen(
         consoleFilter = state.consoleFilter,
         isLoading = state.isLoading,
         error = state.error,
-        title = seriesName,
-        groupLabel = "series",
+        title = franchiseName,
+        groupLabel = "franchise",
         onGameSelected = onGameSelected,
         onBack = onBack,
         onConsoleFilterSelected = { abbreviation ->
-            viewModel.setSeriesConsoleFilter(
+            viewModel.setFranchiseConsoleFilter(
                 if (abbreviation != null && state.consoleFilter == abbreviation) null else abbreviation,
             )
         },
-        onDismissError = { viewModel.dismissSeriesDetailError() },
+        onDismissError = { viewModel.dismissFranchiseDetailError() },
     )
 }

@@ -50,6 +50,9 @@ fun SearchSectionHeader(
     title: String,
     total: Int,
     displayedCount: Int,
+    isExpanded: Boolean = false,
+    onSeeAll: (() -> Unit)? = null,
+    onShowLess: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -67,12 +70,48 @@ fun SearchSectionHeader(
             color = SpColor.OnBackground,
             modifier = Modifier.weight(1f),
         )
-        if (total > displayedCount) {
-            Text(
-                text = "$total total",
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
+        when {
+            isExpanded && onShowLess != null -> {
+                Text(
+                    text = "Show less",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.Primary,
+                    modifier = Modifier
+                        .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
+                        .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
+                        .clickable(onClick = onShowLess)
+                        .focusable()
+                        .padding(
+                            horizontal = SpSpacing.Small,
+                            vertical = SpSpacing.XSmall,
+                        )
+                        .testTag("search_section_show_less_$title"),
+                )
+            }
+            total > displayedCount && onSeeAll != null -> {
+                Text(
+                    text = "See all $total",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.Primary,
+                    modifier = Modifier
+                        .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
+                        .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
+                        .clickable(onClick = onSeeAll)
+                        .focusable()
+                        .padding(
+                            horizontal = SpSpacing.Small,
+                            vertical = SpSpacing.XSmall,
+                        )
+                        .testTag("search_section_see_all_$title"),
+                )
+            }
+            total > displayedCount -> {
+                Text(
+                    text = "$total total",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+            }
         }
     }
 }
@@ -275,7 +314,7 @@ fun CompanySearchResultItem(
                         imageVector = Icons.Filled.Star,
                         contentDescription = null,
                         tint = SpColor.Rating,
-                        modifier = Modifier.size(10.dp),
+                        modifier = Modifier.size(SpSpacing.IconXSmall),
                     )
                     Text(
                         text = formatRating(avgRating),

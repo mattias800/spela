@@ -70,7 +70,7 @@ val commonModule = module {
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
-    single<SearchRepository> { SearchRepositoryImpl(get()) }
+    single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     single { BiosRepository(get(), get()) }
     single { GamepadPortManager(get()) }
 

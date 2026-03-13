@@ -117,6 +117,18 @@ class ExploreRepositoryImpl(
         )
     }
 
+    override suspend fun getFranchiseDetail(id: String): Result<SeriesDetail> = runCatching {
+        val dto = apiClient.getFranchiseDetail(id)
+        dto.toDomain().copy(
+            heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            games = dto.games.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+        )
+    }
+
     override suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>> = runCatching {
         apiClient.getGameSeries(gameId).map { it.toDomain() }
     }

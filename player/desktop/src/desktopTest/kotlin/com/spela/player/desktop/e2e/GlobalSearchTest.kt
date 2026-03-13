@@ -257,7 +257,7 @@ class GlobalSearchTest {
     }
 
     @Test
-    fun `clearing search returns to placeholder`() = runComposeUiTest {
+    fun `clearing search returns to recent searches when recents exist`() = runComposeUiTest {
         val harness = createHarness()
         harness.searchRepo.searchResult = fullSearchResult()
 
@@ -265,7 +265,7 @@ class GlobalSearchTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
         advance(harness)
 
-        // Type and get results
+        // Type and get results — this saves "mario" as a recent search
         searchInputNode().performTextInput("mario")
         advanceFully(harness)
         onNodeWithTag("search_results_list").assertIsDisplayed()
@@ -274,8 +274,9 @@ class GlobalSearchTest {
         onNodeWithTag("search_clear_button").performClick()
         advanceQuick(harness)
 
-        // Should return to placeholder
-        onNodeWithTag("search_placeholder").assertIsDisplayed()
+        // Should show recent searches (the query was saved as a recent)
+        onNodeWithTag("search_results_list").assertDoesNotExist()
+        onNodeWithTag("recent_searches_section").assertIsDisplayed()
     }
 
     @Test

@@ -105,6 +105,7 @@ import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreMoodScreen
 import com.spela.player.presentation.ui.screen.ExploreScreen
 import com.spela.player.presentation.ui.screen.ExploreSeriesScreen
+import com.spela.player.presentation.ui.screen.ExploreFranchiseScreen
 import com.spela.player.presentation.ui.screen.ExploreSearchScreen
 import com.spela.player.presentation.ui.screen.GlobalSearchScreen
 import com.spela.player.presentation.ui.screen.ExploreWizardScreen
@@ -613,6 +614,24 @@ fun SpelaApp(
                                 }
                             }
 
+                            is SpScreen.ExploreFranchise -> {
+                                if (exploreViewModel != null) {
+                                    ExploreFranchiseScreen(
+                                        franchiseId = screen.franchiseId,
+                                        franchiseName = screen.franchiseName,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
                             is SpScreen.ExploreMood -> {
                                 if (exploreViewModel != null) {
                                     ExploreMoodScreen(
@@ -739,7 +758,7 @@ fun SpelaApp(
                                         },
                                         onFranchiseSelected = { franchiseId, franchiseName ->
                                             navigationViewModel.onIntent(
-                                                NavigationIntent.NavigateTo(SpScreen.ExploreSeries(franchiseId, franchiseName))
+                                                NavigationIntent.NavigateTo(SpScreen.ExploreFranchise(franchiseId, franchiseName))
                                             )
                                         },
                                         onAdvancedFiltersSelected = {
@@ -904,6 +923,11 @@ fun SpelaApp(
                                     onNavigateToSeries = { seriesId, seriesName ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.ExploreSeries(seriesId, seriesName))
+                                        )
+                                    },
+                                    onNavigateToFranchise = { franchiseId, franchiseName ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExploreFranchise(franchiseId, franchiseName))
                                         )
                                     },
                                 )

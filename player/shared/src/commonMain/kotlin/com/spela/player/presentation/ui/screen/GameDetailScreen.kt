@@ -117,6 +117,7 @@ fun GameDetailScreen(
     onNavigateToGame: ((gameId: String) -> Unit)? = null,
     onNavigateToUser: ((userId: String) -> Unit)? = null,
     onNavigateToSeries: ((seriesId: String, seriesName: String) -> Unit)? = null,
+    onNavigateToFranchise: ((franchiseId: String, franchiseName: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
@@ -230,6 +231,7 @@ fun GameDetailScreen(
                             series = state.gameSeries,
                             franchises = state.gameFranchises,
                             onSeriesSelected = onNavigateToSeries,
+                            onFranchiseSelected = onNavigateToFranchise,
                         )
                     }
                 }

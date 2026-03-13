@@ -35,6 +35,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.search.RecentSearchesSection
 import com.spela.player.presentation.ui.feature.search.SearchResultSkeleton
 import com.spela.player.presentation.ui.feature.search.SearchResultsList
 import com.spela.player.presentation.ui.theme.SpColor
@@ -135,6 +136,15 @@ fun GlobalSearchScreen(
 
             // Content area
             when {
+                state.showRecentSearches -> {
+                    RecentSearchesSection(
+                        recentSearches = state.recentSearches,
+                        onRecentSearchSelected = { viewModel.selectRecentSearch(it) },
+                        onRemoveRecentSearch = { viewModel.removeRecentSearch(it) },
+                        onClearAll = { viewModel.clearRecentSearches() },
+                    )
+                }
+
                 state.showPlaceholder -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -190,6 +200,10 @@ fun GlobalSearchScreen(
                     SearchResultsList(
                         results = state.results!!,
                         isLoading = state.isLoading,
+                        expandedCategories = state.expandedCategories,
+                        expandedResults = state.expandedResults,
+                        onExpandCategory = { viewModel.expandCategory(it) },
+                        onCollapseCategory = { viewModel.collapseCategory(it) },
                         onGameSelected = onGameSelected,
                         onConsoleSelected = onConsoleSelected,
                         onDeveloperSelected = onDeveloperSelected,

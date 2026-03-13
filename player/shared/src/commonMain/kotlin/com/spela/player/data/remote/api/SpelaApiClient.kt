@@ -310,6 +310,11 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/series/$id").body()
     }
 
+    /** Returns detail for a specific franchise */
+    suspend fun getFranchiseDetail(id: String): SeriesDetailDto {
+        return client.get("$baseUrl/api/franchises/$id").body()
+    }
+
     /** Returns series links for a game */
     suspend fun getGameSeries(gameId: String): List<GameSeriesLinkDto> {
         return client.get("$baseUrl/api/games/$gameId/series").body()

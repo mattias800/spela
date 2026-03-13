@@ -32,6 +32,7 @@ sealed class SpScreen(val route: String) {
     data class ExploreTheme(val themeId: String, val themeName: String) : SpScreen("explore_theme/$themeId")
     data class ExploreKeyword(val keywordId: String, val keywordName: String) : SpScreen("explore_keyword/$keywordId")
     data class ExploreSeries(val seriesId: String, val seriesName: String) : SpScreen("explore_series/$seriesId")
+    data class ExploreFranchise(val franchiseId: String, val franchiseName: String) : SpScreen("explore_franchise/$franchiseId")
 
     data class ExploreMood(val moodId: String, val moodName: String) : SpScreen("explore_mood/$moodId")
     data class ExploreDeveloper(val name: String) : SpScreen("explore_developer/$name")

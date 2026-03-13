@@ -207,6 +207,26 @@ data class SeriesDetailState(
         }
 }
 
+data class FranchiseDetailState(
+    val franchiseId: String = "",
+    val franchiseName: String = "",
+    val detail: SeriesDetail? = null,
+    val consoleFilter: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null,
+) {
+    val filteredGames: List<com.spela.player.domain.model.SeriesGame>
+        get() {
+            val games = detail?.games ?: return emptyList()
+            val filtered = if (consoleFilter != null) {
+                games.filter { it.consoleAbbreviation == consoleFilter }
+            } else {
+                games
+            }
+            return filtered.sortedWith(compareBy(nullsLast()) { it.releaseDate })
+        }
+}
+
 
 private const val GALLERY_PAGE_SIZE = 40
 class ExploreViewModel(
@@ -226,6 +246,8 @@ class ExploreViewModel(
     private val _seriesDetailState = MutableStateFlow(SeriesDetailState())
     val seriesDetailState: StateFlow<SeriesDetailState> = _seriesDetailState.asStateFlow()
 
+    private val _franchiseDetailState = MutableStateFlow(FranchiseDetailState())
+    val franchiseDetailState: StateFlow<FranchiseDetailState> = _franchiseDetailState.asStateFlow()
 
     private val _moodDetailState = MutableStateFlow(MoodDetailState())
     val moodDetailState: StateFlow<MoodDetailState> = _moodDetailState.asStateFlow()
@@ -258,6 +280,7 @@ class ExploreViewModel(
     private var keywordDetailJob: Job? = null
     private var featuredSeriesJob: Job? = null
     private var seriesDetailJob: Job? = null
+    private var franchiseDetailJob: Job? = null
 
     private var moodsJob: Job? = null
     private var moodDetailJob: Job? = null
@@ -361,6 +384,31 @@ class ExploreViewModel(
 
     fun dismissSeriesDetailError() {
         _seriesDetailState.update { it.copy(error = null) }
+    }
+
+    fun loadFranchiseDetail(franchiseId: String, franchiseName: String) {
+        franchiseDetailJob?.cancel()
+        _franchiseDetailState.update {
+            FranchiseDetailState(franchiseId = franchiseId, franchiseName = franchiseName, isLoading = true)
+        }
+        franchiseDetailJob = scope.launch(dispatchers.io) {
+            exploreRepository.getFranchiseDetail(franchiseId).fold(
+                onSuccess = { detail ->
+                    _franchiseDetailState.update { it.copy(detail = detail, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _franchiseDetailState.update { it.copy(isLoading = false, error = error.message) }
+                },
+            )
+        }
+    }
+
+    fun setFranchiseConsoleFilter(abbreviation: String?) {
+        _franchiseDetailState.update { it.copy(consoleFilter = abbreviation) }
+    }
+
+    fun dismissFranchiseDetailError() {
+        _franchiseDetailState.update { it.copy(error = null) }
     }
 
     private fun loadFeatured() {
