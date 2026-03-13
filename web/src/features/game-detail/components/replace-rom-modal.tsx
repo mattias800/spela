@@ -33,6 +33,7 @@ const ACCEPTED_EXTENSIONS = [
   ".a26",
   ".a78",
   ".lnx",
+  ".lyx",
   ".jag",
   ".col",
   ".sg",
