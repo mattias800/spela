@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ type Scraper struct {
 	scrapeMu       sync.Mutex
 	scraping       bool
 	scrapeProgress *ScrapeProgress
+	scrapeCancel   context.CancelFunc
 
 	// Enrichment state tracking
 	enrichMu       sync.Mutex
@@ -53,17 +55,32 @@ func (s *Scraper) IsIGDBConfigured() bool {
 }
 
 // TryStartScrape attempts to acquire the scrape lock.
-// Returns true if the lock was acquired (caller must call FinishScrape when done).
+// Returns a context and true if the lock was acquired. The context is cancelled
+// when CancelScrape is called or when FinishScrape cleans up.
 // Also checks the enrichment lock — scraping and enrichment are mutually exclusive.
-func (s *Scraper) TryStartScrape() bool {
+func (s *Scraper) TryStartScrape() (context.Context, bool) {
 	s.scrapeMu.Lock()
 	defer s.scrapeMu.Unlock()
 	s.enrichMu.Lock()
 	defer s.enrichMu.Unlock()
 	if s.scraping || s.enriching {
-		return false
+		return nil, false
 	}
 	s.scraping = true
+	ctx, cancel := context.WithCancel(context.Background())
+	s.scrapeCancel = cancel
+	return ctx, true
+}
+
+// CancelScrape signals the running scrape to stop gracefully.
+// Returns true if a scrape was running and was cancelled.
+func (s *Scraper) CancelScrape() bool {
+	s.scrapeMu.Lock()
+	defer s.scrapeMu.Unlock()
+	if !s.scraping || s.scrapeCancel == nil {
+		return false
+	}
+	s.scrapeCancel()
 	return true
 }
 
@@ -72,6 +89,10 @@ func (s *Scraper) FinishScrape() {
 	s.scrapeMu.Lock()
 	s.scraping = false
 	s.scrapeProgress = nil
+	if s.scrapeCancel != nil {
+		s.scrapeCancel()
+		s.scrapeCancel = nil
+	}
 	s.scrapeMu.Unlock()
 }
 

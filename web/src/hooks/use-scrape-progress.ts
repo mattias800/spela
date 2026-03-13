@@ -116,6 +116,15 @@ export function useScrapeProgress(): ScrapeProgressState {
   );
 
   useWebSocketEvent(
+    "scrape_cancelled",
+    useCallback((payload: ScrapeCompletePayload) => {
+      setPhase("complete");
+      setSuccesses(payload.scraped);
+      setTotal(payload.total);
+    }, []),
+  );
+
+  useWebSocketEvent(
     "scrape_error",
     useCallback((payload: ScrapeErrorPayload) => {
       setPhase("error");

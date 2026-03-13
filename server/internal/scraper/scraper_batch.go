@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -195,7 +196,7 @@ type ScrapeProgress struct {
 // If consoleID is non-zero, only games belonging to that console are scraped.
 // If onProgress is non-nil, it is called after each game attempt with the current progress.
 // Returns the number of successes, the total number of games attempted, and any error.
-func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
+func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
 	var games []db.Game
 	q := s.DB.Preload("Console")
 	if consoleID > 0 {
@@ -239,6 +240,12 @@ func (s *Scraper) ScrapeAll(mode string, consoleID uint, onProgress func(ScrapeP
 	// metadata to other variants in the same group instead of re-scraping.
 	scrapedGroups := make(map[string]uint) // "consoleID:groupKey" -> scraped game ID
 	for i := range games {
+		// Check for cancellation before each game
+		if ctx.Err() != nil {
+			slog.Info("scrape cancelled", "completed", i, "total", total)
+			return successes, total, ctx.Err()
+		}
+
 		game := &games[i]
 
 		// Smart scraping: if this game belongs to a variant group, try to

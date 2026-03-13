@@ -508,6 +508,7 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.GET("/settings", adminHandler.GetSettings)
 			admin.PUT("/settings", adminHandler.UpdateSettings)
 			admin.POST("/scrape", adminHandler.TriggerScrape)
+			admin.DELETE("/scrape", adminHandler.CancelScrape)
 			admin.GET("/scrape/status", adminHandler.ScrapeStatus)
 			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
 			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)

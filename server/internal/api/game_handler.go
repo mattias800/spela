@@ -581,14 +581,19 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 
 		// Auto-scrape new games if IGDB is configured
 		if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
-			if h.Scraper.TryStartScrape() {
+			if scrapeCtx, ok := h.Scraper.TryStartScrape(); ok {
 				h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
-				count, total, scrapeErr := h.Scraper.ScrapeAll("new", 0, func(p scraper.ScrapeProgress) {
+				count, total, scrapeErr := h.Scraper.ScrapeAll(scrapeCtx, "new", 0, func(p scraper.ScrapeProgress) {
 					h.Scraper.SetScrapeProgress(&p)
 					h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 				})
 				h.Scraper.FinishScrape()
 				if scrapeErr != nil {
+					if scrapeCtx.Err() != nil {
+						slog.Info("auto-scrape cancelled", "scraped", count, "total", total)
+						h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{"scraped": count, "total": total}})
+						return
+					}
 					slog.Error("auto-scrape after scan failed", "error", scrapeErr)
 					h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "auto-scrape failed"}})
 					return

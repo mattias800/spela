@@ -385,4 +385,5 @@ export type ApiDeletePath = WithQuery<
   | `/admin/users/${string}/rate-limit`
   | `/admin/bios/${string}`
   | "/admin/uploads"
+  | "/admin/scrape"
 >;
