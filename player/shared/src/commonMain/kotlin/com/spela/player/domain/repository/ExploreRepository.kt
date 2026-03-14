@@ -46,6 +46,7 @@ interface ExploreRepository {
     suspend fun getKeywordGames(keywordId: String, page: Int = 1, pageSize: Int = 20): Result<List<Game>>
     suspend fun getFeaturedSeries(): Result<List<FeaturedSeries>>
     suspend fun getSeriesDetail(id: String): Result<SeriesDetail>
+    suspend fun getFranchiseDetail(id: String): Result<SeriesDetail>
     suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>>
     suspend fun getGameFranchises(gameId: String): Result<List<GameFranchiseLink>>
 

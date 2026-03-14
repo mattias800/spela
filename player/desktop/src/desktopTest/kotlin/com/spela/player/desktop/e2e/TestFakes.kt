@@ -1371,6 +1371,7 @@ class FakeExploreRepository : ExploreRepository {
     var keywordGames: Map<String, List<Game>> = emptyMap()
     var featuredSeriesList: List<FeaturedSeries> = emptyList()
     var seriesDetails: Map<String, SeriesDetail> = emptyMap()
+    var franchiseDetails: Map<String, SeriesDetail> = emptyMap()
     var gameSeriesLinks: Map<String, List<GameSeriesLink>> = emptyMap()
     var gameFranchiseLinks: Map<String, List<GameFranchiseLink>> = emptyMap()
     var moodsList: List<MoodDefinition> = emptyList()
@@ -1441,6 +1442,14 @@ class FakeExploreRepository : ExploreRepository {
             val detail = seriesDetails[id]
             if (detail != null) Result.success(detail)
             else Result.failure(Exception("Series not found"))
+        }
+
+    override suspend fun getFranchiseDetail(id: String): Result<SeriesDetail> =
+        if (shouldFail) Result.failure(Exception("Failed to load franchise detail"))
+        else {
+            val detail = franchiseDetails[id]
+            if (detail != null) Result.success(detail)
+            else Result.failure(Exception("Franchise not found"))
         }
 
     override suspend fun getGameSeries(gameId: String): Result<List<GameSeriesLink>> =
@@ -1652,6 +1661,46 @@ class FakeExploreRepository : ExploreRepository {
 
     override suspend fun getCompletionistMap(): Result<CompletionistMap> =
         if (shouldFail) Result.failure(Exception("Failed")) else Result.success(completionistMapData)
+}
+
+class FakeSearchRepository : SearchRepository {
+    var searchResult: GlobalSearchResult = GlobalSearchResult()
+    var shouldFail: Boolean = false
+    var errorMessage: String = "Search failed"
+    var delayMs: Long = 0
+    var lastQuery: String? = null
+    var callCount: Int = 0
+    var storedRecentSearches: MutableList<String> = mutableListOf()
+
+    override suspend fun globalSearch(query: String, limit: Int): Result<GlobalSearchResult> {
+        lastQuery = query
+        callCount++
+        if (delayMs > 0) {
+            kotlinx.coroutines.delay(delayMs)
+        }
+        return if (shouldFail) Result.failure(Exception(errorMessage))
+        else Result.success(searchResult)
+    }
+
+    override fun getRecentSearches(): List<String> = storedRecentSearches.toList()
+
+    override fun addRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        storedRecentSearches.remove(trimmed)
+        storedRecentSearches.add(0, trimmed)
+        if (storedRecentSearches.size > 5) {
+            storedRecentSearches.subList(5, storedRecentSearches.size).clear()
+        }
+    }
+
+    override fun removeRecentSearch(query: String) {
+        storedRecentSearches.remove(query)
+    }
+
+    override fun clearRecentSearches() {
+        storedRecentSearches.clear()
+    }
 }
 
 class FakeCheatRepository : CheatRepository {

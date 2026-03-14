@@ -1,17 +1,25 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,10 +27,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -66,6 +79,7 @@ import com.spela.player.presentation.ui.feature.explore.WildFeaturesSection
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @Composable
@@ -83,6 +97,7 @@ fun ExploreScreen(
     onGallerySelected: (() -> Unit)? = null,
     onSurpriseMe: (() -> Unit)? = null,
     onWizardSelected: (() -> Unit)? = null,
+    onGlobalSearchSelected: (() -> Unit)? = null,
     onSearchSelected: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
@@ -143,25 +158,16 @@ fun ExploreScreen(
                         }
                     }
 
-                    // Advanced search entry point
+                    // Global search entry point — tappable search bar
                     item {
-                        SpChip(
-                            text = "Advanced Search & Filters",
-                            onClick = { onSearchSelected?.invoke() },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Search,
-                                    contentDescription = null,
-                                    tint = SpColor.OnBackgroundSecondary,
-                                    modifier = Modifier.height(16.dp),
-                                )
-                            },
+                        SearchBarEntryPoint(
+                            onClick = { onGlobalSearchSelected?.invoke() },
                             modifier = Modifier
                                 .padding(
                                     horizontal = SpSpacing.ScreenHorizontal,
                                     vertical = SpSpacing.Small,
                                 )
-                                .testTag("explore_search_chip"),
+                                .testTag("explore_search_bar"),
                         )
                     }
 
@@ -771,6 +777,43 @@ fun ExploreScreen(
             },
             onDismiss = { viewModel.dismissError() },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun SearchBarEntryPoint(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(SpSpacing.RadiusLarge)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .spFocusRing(shape = shape)
+            .clip(shape)
+            .background(SpColor.SurfaceVariant)
+            .border(1.dp, SpColor.Divider, shape)
+            .clickable(onClick = onClick)
+            .focusable()
+            .padding(horizontal = SpSpacing.Default, vertical = 14.dp)
+            .semantics {
+                contentDescription = "Search games, consoles, developers"
+                role = Role.Button
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Search,
+            contentDescription = null,
+            tint = SpColor.OnBackgroundTertiary,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.size(SpSpacing.Small))
+        Text(
+            text = "Search games, consoles, developers...",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundTertiary,
         )
     }
 }

@@ -27,6 +27,7 @@ fun SeriesFranchiseSection(
     series: List<GameSeriesLink>,
     franchises: List<GameFranchiseLink>,
     onSeriesSelected: ((seriesId: String, seriesName: String) -> Unit)? = null,
+    onFranchiseSelected: ((franchiseId: String, franchiseName: String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     if (series.isEmpty() && franchises.isEmpty()) return
@@ -54,6 +55,9 @@ fun SeriesFranchiseSection(
             franchises.forEach { franchiseLink ->
                 SpChip(
                     text = "Part of ${franchiseLink.name} (${franchiseLink.gameCount} games)",
+                    onClick = if (onFranchiseSelected != null) {
+                        { onFranchiseSelected(franchiseLink.id, franchiseLink.name) }
+                    } else null,
                     color = SpColor.Accent,
                     onGradient = true,
                     modifier = Modifier.testTag("franchise_link_${franchiseLink.id}"),

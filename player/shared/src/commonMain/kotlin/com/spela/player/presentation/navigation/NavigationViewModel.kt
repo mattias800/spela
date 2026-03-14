@@ -191,6 +191,7 @@ class NavigationViewModel(
             is SpScreen.ExploreTheme,
             is SpScreen.ExploreKeyword,
             is SpScreen.ExploreSeries,
+            is SpScreen.ExploreFranchise,
             is SpScreen.ExploreMood,
             is SpScreen.ExploreDeveloper,
             is SpScreen.ExplorePublisher,

@@ -21,6 +21,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
+import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
@@ -245,6 +246,13 @@ class MainActivity : ComponentActivity() {
                 navigationViewModel.onIntent(NavigationIntent.NextSection)
                 return true
             }
+            KeyEvent.KEYCODE_BUTTON_SELECT -> {
+                val navState = navigationViewModel.state.value
+                if (navState.currentScreen !is SpScreen.GlobalSearch) {
+                    navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
+                }
+                return true
+            }
         }
 
         // Let D-pad and other keys propagate to Compose
@@ -297,6 +305,7 @@ class MainActivity : ComponentActivity() {
             }
             KeyEvent.KEYCODE_BUTTON_B -> return true
             KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> return true
+            KeyEvent.KEYCODE_BUTTON_SELECT -> return true
         }
 
         return super.onKeyUp(keyCode, event)
