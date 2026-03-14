@@ -1096,3 +1096,151 @@ func TestScrapeGame_RescrapesClearsStaleImages(t *testing.T) {
 	database.Where("game_id = ?", game.ID).Find(&screenshots)
 	assert.Empty(t, screenshots, "normalized screenshots should be cleared on re-scrape")
 }
+
+func TestEarliestPlatformReleaseDate(t *testing.T) {
+	tests := []struct {
+		name       string
+		dates      []igdb.ReleaseDate
+		platformID int
+		want       int64
+	}{
+		{
+			name:       "no dates",
+			dates:      nil,
+			platformID: 19,
+			want:       0,
+		},
+		{
+			name: "no matching platform",
+			dates: []igdb.ReleaseDate{
+				{Date: 500000000, Platform: &igdb.ReleasePlatform{ID: 18, Name: "NES"}},
+			},
+			platformID: 19,
+			want:       0,
+		},
+		{
+			name: "single matching platform",
+			dates: []igdb.ReleaseDate{
+				{Date: 500000000, Platform: &igdb.ReleasePlatform{ID: 18, Name: "NES"}},
+				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
+			},
+			platformID: 19,
+			want:       700000000,
+		},
+		{
+			name: "multiple regions same platform picks earliest",
+			dates: []igdb.ReleaseDate{
+				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}, Region: 5}, // Japan
+				{Date: 720000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}, Region: 2}, // NA
+				{Date: 710000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}, Region: 1}, // Europe
+			},
+			platformID: 19,
+			want:       700000000,
+		},
+		{
+			name: "skips entries with nil platform",
+			dates: []igdb.ReleaseDate{
+				{Date: 600000000, Platform: nil},
+				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
+			},
+			platformID: 19,
+			want:       700000000,
+		},
+		{
+			name: "skips entries with zero date",
+			dates: []igdb.ReleaseDate{
+				{Date: 0, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
+				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
+			},
+			platformID: 19,
+			want:       700000000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := earliestPlatformReleaseDate(tt.dates, tt.platformID)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestScrapeGame_UsesPlatformSpecificReleaseDate(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	// Dungeon Master: first released 1987 (Atari ST), SNES port released 1992
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{
+				ID:               2000,
+				Name:             "Dungeon Master",
+				Summary:          "A classic dungeon crawler",
+				FirstReleaseDate: 567993600, // 1987-12-15 (Atari ST)
+				Cover:            &igdb.Image{ID: 1, ImageID: "co9999"},
+				ReleaseDates: []igdb.ReleaseDate{
+					{ID: 1, Date: 567993600, Region: 1, Platform: &igdb.ReleasePlatform{ID: 63, Name: "Atari ST/STE"}},       // 1987
+					{ID: 2, Date: 694224000, Region: 5, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}},      // 1992-01-01 Japan
+					{ID: 3, Date: 701913600, Region: 2, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}},      // 1992-03-27 NA
+				},
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	imageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write([]byte("fake-image-data"))
+	}))
+	defer imageServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	origImageBase := igdb.ImageBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	igdb.SetImageBaseForTest(imageServer.URL)
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+		igdb.SetImageBaseForTest(origImageBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "SNES", Name: "Super Nintendo"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Dungeon Master (USA)",
+		FileName:  "Dungeon Master (USA).sfc",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	// Should use SNES release date (1992), NOT the global first release (1987)
+	assert.Equal(t, "1992-01-01", game.ReleaseDate, "should use platform-specific release date, not global FirstReleaseDate")
+}
