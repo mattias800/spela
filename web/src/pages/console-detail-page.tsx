@@ -226,6 +226,7 @@ export function ConsoleDetailPage() {
                   key={game.id}
                   game={game}
                   aspectRatio={console?.coverAspectRatio}
+                  hideConsoleName
                   onToggleFavorite={handleToggleFavorite}
                   onTogglePlayLater={handleTogglePlayLater}
                 />

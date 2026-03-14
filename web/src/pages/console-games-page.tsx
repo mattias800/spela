@@ -274,6 +274,7 @@ export function ConsoleGamesPage() {
               key={game.id}
               game={game}
               aspectRatio={console?.coverAspectRatio}
+              hideConsoleName
               onToggleFavorite={handleToggleFavorite}
               onTogglePlayLater={handleTogglePlayLater}
             />
@@ -282,7 +283,7 @@ export function ConsoleGamesPage() {
       ) : (
         <div className="space-y-1">
           {games.map((game) => (
-            <GameListRow key={game.id} game={game} />
+            <GameListRow key={game.id} game={game} hideConsoleName />
           ))}
         </div>
       )}

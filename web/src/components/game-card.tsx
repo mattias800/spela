@@ -9,6 +9,7 @@ interface GameCardProps {
   game: Game;
   aspectRatio?: number;
   showConsoleBadge?: boolean;
+  hideConsoleName?: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
 }
@@ -17,6 +18,7 @@ export function GameCard({
   game,
   aspectRatio,
   showConsoleBadge,
+  hideConsoleName,
   onToggleFavorite,
   onTogglePlayLater,
 }: GameCardProps) {
@@ -127,8 +129,18 @@ export function GameCard({
           </span>
         )}
         <div className="flex items-center gap-2">
-          {game.consoleName && (
-            <p className="text-xs text-surface-500">{game.consoleName}</p>
+          {hideConsoleName ? (
+            (game.releaseDate || game.developer) && (
+              <p className="text-xs text-surface-500">
+                {game.releaseDate
+                  ? new Date(game.releaseDate).getFullYear()
+                  : game.developer}
+              </p>
+            )
+          ) : (
+            game.consoleName && (
+              <p className="text-xs text-surface-500">{game.consoleName}</p>
+            )
           )}
           {game.averageRating > 0 && (
             <span className="flex items-center gap-0.5 text-xs text-surface-400">

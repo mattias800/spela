@@ -22,6 +22,7 @@ export function ConsoleEssentials({ consoleId }: ConsoleShowcaseSectionProps) {
       title="Essentials"
       games={showcase.essentials}
       isLoading={false}
+      hideConsoleName
       onToggleFavorite={handleToggleFavorite}
       onTogglePlayLater={handleTogglePlayLater}
     />
@@ -40,6 +41,7 @@ export function ConsoleHiddenGems({ consoleId }: ConsoleShowcaseSectionProps) {
       title="Hidden Gems"
       games={showcase.hiddenGems}
       isLoading={false}
+      hideConsoleName
       onToggleFavorite={handleToggleFavorite}
       onTogglePlayLater={handleTogglePlayLater}
     />
@@ -153,6 +155,7 @@ export function ConsoleRecentlyAdded({
       title="Recently Added"
       games={showcase.recentlyAdded}
       isLoading={false}
+      hideConsoleName
       onToggleFavorite={handleToggleFavorite}
       onTogglePlayLater={handleTogglePlayLater}
     />
@@ -174,6 +177,7 @@ export function ConsoleRecentlyPlayed({
         title="Recently Played"
         games={showcase.recentlyPlayed}
         isLoading={false}
+        hideConsoleName
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
       />

@@ -209,6 +209,41 @@ describe("ConsoleDetailPage", () => {
       expect(screen.getByText("Chrono Trigger")).toBeInTheDocument();
     });
 
+    it("hides console name and shows release year on game cards", () => {
+      mockUseGames.mockReturnValue({
+        data: {
+          data: [
+            makeGame({ id: "1", title: "Super Mario World", consoleName: "Super Nintendo", releaseDate: "1990-11-21" }),
+            makeGame({ id: "2", title: "Chrono Trigger", consoleName: "Super Nintendo", releaseDate: "1995-03-11" }),
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 24,
+        },
+        isLoading: false,
+      });
+      renderPage();
+
+      // Game titles are visible
+      expect(screen.getByText("Super Mario World")).toBeInTheDocument();
+      expect(screen.getByText("Chrono Trigger")).toBeInTheDocument();
+
+      // Console name "Super Nintendo" should NOT appear below game cards
+      // (it will appear in the hero banner heading, but not repeated on every card)
+      const gameCardLinks = screen.getAllByRole("link").filter(
+        (el) => el.getAttribute("href")?.startsWith("/games/"),
+      );
+      gameCardLinks.forEach((card) => {
+        // No element within the card should display the console name as subtitle text
+        const texts = Array.from(card.querySelectorAll("p")).map((p) => p.textContent);
+        expect(texts).not.toContain("Super Nintendo");
+      });
+
+      // Instead, release year should be shown
+      expect(screen.getByText("1990")).toBeInTheDocument();
+      expect(screen.getByText("1995")).toBeInTheDocument();
+    });
+
     it("does not render browse all games link", () => {
       renderPage();
       expect(screen.queryByTestId("browse-all-games-link")).not.toBeInTheDocument();
