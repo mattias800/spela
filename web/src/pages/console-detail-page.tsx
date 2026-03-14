@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Library,
-  Check,
-  Globe,
   FolderSearch,
   ArrowRight,
 } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
+import { ConsoleHeroBanner } from "@/components/console-hero-banner";
 import {
   BackButton,
   Button,
@@ -33,8 +32,6 @@ import {
   ConsoleTopDevelopers,
   ConsoleRecentlyPlayed,
 } from "@/features/explore/components/console-showcase-sections";
-import { getConsoleStyle } from "@/lib/console-metadata";
-import { cn } from "@/lib/cn";
 
 const SMALL_LIBRARY_THRESHOLD = 24;
 
@@ -59,8 +56,6 @@ export function ConsoleDetailPage() {
   const consoleName = console?.name ?? "Console";
   const consoleAbbr = console?.abbreviation ?? id ?? "";
   const gameCount = console?.gameCount ?? 0;
-  const style = getConsoleStyle(consoleAbbr);
-  const Icon = style.icon;
 
   const isSmallLibrary = gameCount > 0 && gameCount <= SMALL_LIBRARY_THRESHOLD;
 
@@ -92,76 +87,7 @@ export function ConsoleDetailPage() {
       </BackButton>
 
       {/* Console hero banner */}
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-2xl border border-white/[0.06]",
-          "bg-gradient-to-br",
-          style.gradient,
-        )}
-      >
-        {/* Background watermark icon for depth */}
-        <div className="absolute -right-8 -top-8 opacity-[0.07] pointer-events-none">
-          {console?.iconUrl ? (
-            <img
-              src={console.iconUrl}
-              alt=""
-              aria-hidden="true"
-              className="h-56 w-56 object-contain"
-            />
-          ) : (
-            <Icon className="h-56 w-56 text-white" />
-          )}
-        </div>
-
-        {/* Subtle noise/texture overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />
-
-        {/* Content */}
-        <div className="relative flex flex-col items-center px-6 py-10 md:py-12">
-          {/* Logo / Title */}
-          {console?.logoUrl ? (
-            <img
-              src={console.logoUrl}
-              alt={consoleName}
-              className="max-h-20 md:max-h-24 w-auto object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
-              onError={(e) => {
-                // Fall back to text if logo fails to load
-                const target = e.currentTarget;
-                target.style.display = "none";
-                const fallback = target.nextElementSibling;
-                if (fallback) fallback.classList.remove("hidden");
-              }}
-            />
-          ) : null}
-          <h1
-            className={cn(
-              "text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-lg",
-              console?.logoUrl && "hidden",
-            )}
-          >
-            {consoleName}
-          </h1>
-
-          {/* Metadata row */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-            <span className="text-sm font-medium text-white/70">
-              {gameCount} {gameCount === 1 ? "game" : "games"}
-            </span>
-            {console?.saveStateSupport && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
-                <Check className="h-3 w-3" />
-                Save states
-              </span>
-            )}
-            {console?.browserPlayable && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
-                <Globe className="h-3 w-3" />
-                Browser play
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      <ConsoleHeroBanner console={console} />
 
       {/* BIOS warning */}
       {showBiosWarning && (
@@ -261,12 +187,12 @@ export function ConsoleDetailPage() {
             <ArrowRight className="h-4 w-4" />
           </Link>
 
+          <ConsoleRecentlyPlayed consoleId={id!} />
           <ConsoleEssentials consoleId={id!} />
           <ConsoleHiddenGems consoleId={id!} />
           <ConsoleGenreBreakdown consoleId={id!} />
           <ConsoleTopDevelopers consoleId={id!} />
           <ConsoleRecentlyAdded consoleId={id!} />
-          <ConsoleRecentlyPlayed consoleId={id!} />
 
           <Link
             to={`/consoles/${id}/games`}

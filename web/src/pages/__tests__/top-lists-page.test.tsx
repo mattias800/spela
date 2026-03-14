@@ -65,6 +65,7 @@ const mockTopRatedGames = [
   },
 ];
 
+// TTB values from IGDB API are in seconds
 const mockLongestGames = [
   {
     rank: 1,
@@ -73,9 +74,9 @@ const mockLongestGames = [
     coverUrl: "/api/images/covers/dq7.jpg",
     consoleName: "PS1",
     consoleId: "ps1",
-    timeToBeatNormally: 100,
-    timeToBeatHastily: 80,
-    timeToBeatCompletely: 150,
+    timeToBeatNormally: 100 * 3600,
+    timeToBeatHastily: 80 * 3600,
+    timeToBeatCompletely: 150 * 3600,
   },
   {
     rank: 2,
@@ -84,9 +85,9 @@ const mockLongestGames = [
     coverUrl: "/api/images/covers/fft.jpg",
     consoleName: "PS1",
     consoleId: "ps1",
-    timeToBeatNormally: 54,
-    timeToBeatHastily: 40,
-    timeToBeatCompletely: 80,
+    timeToBeatNormally: 54 * 3600,
+    timeToBeatHastily: 40 * 3600,
+    timeToBeatCompletely: 80 * 3600,
   },
   {
     rank: 3,
@@ -95,7 +96,7 @@ const mockLongestGames = [
     coverUrl: "",
     consoleName: "SNES",
     consoleId: "snes",
-    timeToBeatNormally: 48,
+    timeToBeatNormally: 48 * 3600,
     timeToBeatHastily: 0,
     timeToBeatCompletely: 0,
   },

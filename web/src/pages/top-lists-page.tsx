@@ -134,10 +134,12 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
   );
 }
 
-function formatTimeToBeat(hours: number): string {
+/** Convert seconds (from IGDB API) to a human-readable hours string */
+function formatTimeToBeat(seconds: number): string {
+  const hours = seconds / 3600;
   if (hours < 1) return "<1 hr";
   if (hours === 1) return "1 hr";
-  if (hours === Math.floor(hours)) return `${hours} hrs`;
+  if (hours === Math.floor(hours)) return `${Math.floor(hours)} hrs`;
   return `${hours.toFixed(1)} hrs`;
 }
 

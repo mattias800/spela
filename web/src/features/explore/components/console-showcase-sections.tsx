@@ -1,6 +1,15 @@
 import { Link } from "react-router-dom";
-import { Star } from "lucide-react";
+import {
+  Star,
+  Trophy,
+  Gem,
+  LayoutGrid,
+  Building2,
+  Sparkles,
+  Play,
+} from "lucide-react";
 import { GameShelf } from "@/features/explore/components/game-shelf";
+import { SectionHeader } from "@/components/section-header";
 import { useConsoleShowcase } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -8,6 +17,30 @@ import type { GenreCount, DeveloperSummary } from "@/types/api";
 
 interface ConsoleShowcaseSectionProps {
   consoleId: string;
+}
+
+export function ConsoleRecentlyPlayed({
+  consoleId,
+}: ConsoleShowcaseSectionProps) {
+  const { data: showcase } = useConsoleShowcase(consoleId);
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
+
+  if (!showcase || showcase.recentlyPlayed.length === 0) return null;
+
+  return (
+    <div data-testid="recently-played-section">
+      <GameShelf
+        title="Continue Playing"
+        icon={Play}
+        games={showcase.recentlyPlayed}
+        isLoading={false}
+        hideConsoleName
+        onToggleFavorite={handleToggleFavorite}
+        onTogglePlayLater={handleTogglePlayLater}
+      />
+    </div>
+  );
 }
 
 export function ConsoleEssentials({ consoleId }: ConsoleShowcaseSectionProps) {
@@ -20,6 +53,7 @@ export function ConsoleEssentials({ consoleId }: ConsoleShowcaseSectionProps) {
   return (
     <GameShelf
       title="Essentials"
+      icon={Trophy}
       games={showcase.essentials}
       isLoading={false}
       hideConsoleName
@@ -39,6 +73,7 @@ export function ConsoleHiddenGems({ consoleId }: ConsoleShowcaseSectionProps) {
   return (
     <GameShelf
       title="Hidden Gems"
+      icon={Gem}
       games={showcase.hiddenGems}
       isLoading={false}
       hideConsoleName
@@ -62,12 +97,7 @@ export function ConsoleGenreBreakdown({
       data-testid="genre-breakdown"
       aria-labelledby="genre-breakdown-heading"
     >
-      <h2
-        id="genre-breakdown-heading"
-        className="text-xl font-bold text-surface-100 mb-5"
-      >
-        Genre Breakdown
-      </h2>
+      <SectionHeader title="Genre Breakdown" icon={LayoutGrid} />
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {showcase.genreBreakdown.map((genre: GenreCount) => (
           <div
@@ -105,12 +135,7 @@ export function ConsoleTopDevelopers({
       data-testid="top-developers"
       aria-labelledby="top-developers-heading"
     >
-      <h2
-        id="top-developers-heading"
-        className="text-xl font-bold text-surface-100 mb-5"
-      >
-        Studios That Defined This Console
-      </h2>
+      <SectionHeader title="Studios That Defined This Console" icon={Building2} />
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {showcase.topDevelopers.map((dev: DeveloperSummary) => (
           <Link
@@ -153,34 +178,12 @@ export function ConsoleRecentlyAdded({
   return (
     <GameShelf
       title="Recently Added"
+      icon={Sparkles}
       games={showcase.recentlyAdded}
       isLoading={false}
       hideConsoleName
       onToggleFavorite={handleToggleFavorite}
       onTogglePlayLater={handleTogglePlayLater}
     />
-  );
-}
-
-export function ConsoleRecentlyPlayed({
-  consoleId,
-}: ConsoleShowcaseSectionProps) {
-  const { data: showcase } = useConsoleShowcase(consoleId);
-  const { toggle: handleToggleFavorite } = useToggleFavorite();
-  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
-
-  if (!showcase || showcase.recentlyPlayed.length === 0) return null;
-
-  return (
-    <div data-testid="recently-played-section">
-      <GameShelf
-        title="Recently Played"
-        games={showcase.recentlyPlayed}
-        isLoading={false}
-        hideConsoleName
-        onToggleFavorite={handleToggleFavorite}
-        onTogglePlayLater={handleTogglePlayLater}
-      />
-    </div>
   );
 }
