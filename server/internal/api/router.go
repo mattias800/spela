@@ -189,6 +189,10 @@ func NewRouter(cfg Config) *gin.Engine {
 		GameDirs:      cfg.GameDirs,
 		Storage:       cfg.Storage,
 	}
+	romHackHandler := &RomHackHandler{
+		DB:       cfg.DB,
+		GameDirs: cfg.GameDirs,
+	}
 	stagingDir := filepath.Join(cfg.GameDirs[0], "staging")
 	uploadHandler := &UploadHandler{
 		DB:         cfg.DB,
@@ -532,6 +536,9 @@ func NewRouter(cfg Config) *gin.Engine {
 			admin.POST("/cheats/import", adminHandler.TriggerCheatImport)
 			admin.GET("/cheats/stats", adminHandler.GetCheatStats)
 			admin.GET("/core-compatibility", adminHandler.GetCoreCompatibility)
+
+			// ROM hacks
+			admin.POST("/rom-hacks", uploadLimiter.RateLimit(), romHackHandler.CreateRomHack)
 
 			// Enrichment backfill
 			admin.POST("/enrich-metadata", enrichmentHandler.TriggerEnrichMetadata)

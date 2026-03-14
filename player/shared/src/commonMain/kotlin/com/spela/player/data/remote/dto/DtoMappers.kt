@@ -100,10 +100,24 @@ fun GameVariantDto.toDomain(): GameVariant = GameVariant(
     verificationStatus = verificationStatus,
 )
 
+fun ParentGameDto.toDomain(): ParentGame = ParentGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+)
+
+fun RomHackGameDto.toDomain(): RomHackGame = RomHackGame(
+    id = id,
+    title = title,
+    coverUrl = coverUrl,
+)
+
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
     screenshots = screenshotUrls,
     variants = variants.map { it.toDomain() },
+    parentGame = parentGame?.toDomain(),
+    romHacks = romHacks.map { it.toDomain() },
 )
 
 fun SaveStateDto.toDomain(): SaveState = SaveState(

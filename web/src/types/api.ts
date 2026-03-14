@@ -116,6 +116,8 @@ export interface Game {
   variantCount?: number;
   groupKey?: string;
   variants?: GameVariant[];
+  parentGame?: { id: string; title: string; coverUrl: string };
+  romHacks?: { id: string; title: string; coverUrl: string }[];
   coverAspectRatio: number;
   playable: boolean;
   biosStatus?: "ready" | "missing" | "invalid" | "not_required";

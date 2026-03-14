@@ -111,6 +111,8 @@ data class GameDto(
     val variantCount: Int = 0,
     val groupKey: String? = null,
     val variants: List<GameVariantDto> = emptyList(),
+    val parentGame: ParentGameDto? = null,
+    val romHacks: List<RomHackGameDto> = emptyList(),
     val timeToBeatHastily: Int = 0,
     val timeToBeatNormally: Int = 0,
     val timeToBeatCompletely: Int = 0,
@@ -129,6 +131,22 @@ data class GameVariantDto(
     val isPreRelease: Boolean = false,
     val fileSize: Long = 0,
     val verificationStatus: String? = null,
+)
+
+/** Minimal reference to a parent game for standalone ROM hacks. */
+@Serializable
+data class ParentGameDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+)
+
+/** Minimal reference to a standalone ROM hack based on a game. */
+@Serializable
+data class RomHackGameDto(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
 )
 
 /** Wrapper for GET /api/games which returns {data, total, page, pageSize} */

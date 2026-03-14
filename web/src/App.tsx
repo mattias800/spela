@@ -22,6 +22,7 @@ import { AdminCheatsPage } from "@/pages/admin/cheats-page";
 import { AdminBiosPage } from "@/pages/admin/bios-page";
 import { CoreCompatibilityPage } from "@/pages/admin/core-compatibility-page";
 import { UploadRomsPage } from "@/pages/admin/upload-roms-page";
+import { RomHacksPage } from "@/pages/admin/rom-hacks-page";
 import { PreferencesPage } from "@/pages/preferences-page";
 import { PlayPage } from "@/pages/play-page";
 import { StatsPage } from "@/pages/stats-page";
@@ -213,6 +214,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <UploadRomsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/rom-hacks"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <RomHacksPage />
                         </ProtectedRoute>
                       }
                     />

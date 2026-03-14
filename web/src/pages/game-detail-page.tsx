@@ -41,6 +41,9 @@ import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banne
 import { ScrapeMatchModal } from "@/features/game-detail/components/scrape-match-modal";
 import { ReplaceRomModal } from "@/features/game-detail/components/replace-rom-modal";
 import { TimeToBeatCard } from "@/features/game-detail/components/time-to-beat-card";
+import { GameVariantsSection } from "@/features/game-detail/components/game-variants-section";
+import { BasedOnLink } from "@/features/game-detail/components/based-on-link";
+import { StandaloneRomHacksSection } from "@/features/game-detail/components/standalone-rom-hacks-section";
 import { api } from "@/lib/api-client";
 import type { Collection } from "@/types/api";
 
@@ -243,13 +246,15 @@ export function GameDetailPage() {
         onClose={() => setShowCollectionPicker(false)}
       />
 
-      {/* Series & Franchise links */}
-      {((gameSeries && gameSeries.length > 0) ||
+      {/* Based on / Series & Franchise links */}
+      {(game.parentGame ||
+        (gameSeries && gameSeries.length > 0) ||
         (gameFranchises && gameFranchises.length > 0)) && (
         <div
           className="flex flex-wrap items-center gap-3"
           data-testid="series-franchise-links"
         >
+          {game.parentGame && <BasedOnLink parentGame={game.parentGame} />}
           {gameSeries?.map((s) => (
             <Link
               key={`series-${s.id}`}
@@ -277,6 +282,16 @@ export function GameDetailPage() {
             </Link>
           ))}
         </div>
+      )}
+
+      {game.variants && game.variants.length > 0 && (
+        <Card className="p-6">
+          <GameVariantsSection variants={game.variants} />
+        </Card>
+      )}
+
+      {game.romHacks && game.romHacks.length > 0 && (
+        <StandaloneRomHacksSection romHacks={game.romHacks} />
       )}
 
       <TimeToBeatCard game={game} />

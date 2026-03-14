@@ -20,6 +20,7 @@ import {
   Trophy,
   Gamepad2,
   GitCompareArrows,
+  Puzzle,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -121,6 +122,7 @@ export function AppLayout() {
                 warning: hasMissingBios,
               },
               { to: "/admin/upload", icon: Upload, label: "Upload ROMs" },
+              { to: "/admin/rom-hacks", icon: Puzzle, label: "ROM Hacks" },
               { to: "/admin/scan", icon: ScanSearch, label: "Library Scan" },
               {
                 to: "/admin/metadata",

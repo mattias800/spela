@@ -110,11 +110,29 @@ data class GameVariant(
     val verificationStatus: String? = null,
 )
 
+/** Minimal reference to a parent game for standalone ROM hacks. */
+@Serializable
+data class ParentGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+)
+
+/** Minimal reference to a standalone ROM hack based on a game. */
+@Serializable
+data class RomHackGame(
+    val id: String,
+    val title: String,
+    val coverUrl: String? = null,
+)
+
 @Serializable
 data class GameDetail(
     val game: Game,
     val screenshots: List<String> = emptyList(),
     val variants: List<GameVariant> = emptyList(),
+    val parentGame: ParentGame? = null,
+    val romHacks: List<RomHackGame> = emptyList(),
 )
 
 @Serializable

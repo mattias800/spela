@@ -120,6 +120,7 @@ type Game struct {
 	GroupKey            string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey,omitempty"`
 	IsPrimary           bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
 	PrimaryGameID       *uint          `json:"primaryGameId,omitempty"`
+	ParentGameID        *uint          `gorm:"index:idx_game_parent" json:"parentGameId,omitempty"` // links standalone ROM hacks to their base game
 	CRC32               string         `gorm:"size:16" json:"-"`
 	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
 	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`
