@@ -271,11 +271,11 @@ func TestGetTopListAvailable_ReturnsOnlyLocalMatches(t *testing.T) {
 	// Create two top-rated IGDB entries
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "Super Mario Bros.",
-		TotalRating: 92.5, TotalRatingCount: 500, Rank: 1,
+		TotalRating: 92.5, TotalRatingCount: 500, UserRating: 92.5, UserRatingCount: 400, CriticRating: 90.0, CriticRatingCount: 10, Rank: 1,
 	})
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 200, Name: "The Legend of Zelda",
-		TotalRating: 90.0, TotalRatingCount: 400, Rank: 2,
+		TotalRating: 90.0, TotalRatingCount: 400, UserRating: 90.0, UserRatingCount: 350, CriticRating: 88.0, CriticRatingCount: 8, Rank: 2,
 	})
 
 	// Create a local game matching only one of them (case-insensitive)
@@ -312,15 +312,15 @@ func TestGetTopListAvailable_SortedByRatingDesc(t *testing.T) {
 	// Create top-rated entries with varying ratings
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "Game A",
-		TotalRating: 80.0, TotalRatingCount: 300, Rank: 3,
+		TotalRating: 80.0, TotalRatingCount: 300, UserRating: 80.0, UserRatingCount: 250, CriticRating: 75.0, CriticRatingCount: 5, Rank: 3,
 	})
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 200, Name: "Game B",
-		TotalRating: 95.0, TotalRatingCount: 500, Rank: 1,
+		TotalRating: 95.0, TotalRatingCount: 500, UserRating: 95.0, UserRatingCount: 450, CriticRating: 92.0, CriticRatingCount: 10, Rank: 1,
 	})
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 300, Name: "Game C",
-		TotalRating: 88.0, TotalRatingCount: 400, Rank: 2,
+		TotalRating: 88.0, TotalRatingCount: 400, UserRating: 88.0, UserRatingCount: 350, CriticRating: 85.0, CriticRatingCount: 8, Rank: 2,
 	})
 
 	// Create matching local games for all three
@@ -362,11 +362,11 @@ func TestGetTopListAvailable_SequentialRanks(t *testing.T) {
 	// Create two top-rated entries
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "First",
-		TotalRating: 90.0, TotalRatingCount: 500, Rank: 1,
+		TotalRating: 90.0, TotalRatingCount: 500, UserRating: 90.0, UserRatingCount: 400, CriticRating: 88.0, CriticRatingCount: 10, Rank: 1,
 	})
 	database.Create(&db.TopRatedGame{
 		ConsoleID: nesConsole.ID, IGDBGameID: 200, Name: "Second",
-		TotalRating: 85.0, TotalRatingCount: 400, Rank: 2,
+		TotalRating: 85.0, TotalRatingCount: 400, UserRating: 85.0, UserRatingCount: 350, CriticRating: 82.0, CriticRatingCount: 8, Rank: 2,
 	})
 
 	// Create matching local games
@@ -446,7 +446,7 @@ func TestGetTopListAvailable_IncludesConsoleInfo(t *testing.T) {
 
 	database.Create(&db.TopRatedGame{
 		ConsoleID: snesConsole.ID, IGDBGameID: 100, Name: "Super Mario World",
-		TotalRating: 95.0, TotalRatingCount: 600, Rank: 1,
+		TotalRating: 95.0, TotalRatingCount: 600, UserRating: 95.0, UserRatingCount: 500, CriticRating: 93.0, CriticRatingCount: 15, Rank: 1,
 	})
 
 	database.Create(&db.Game{

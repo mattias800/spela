@@ -564,18 +564,22 @@ type GameKeyMappingPreference struct {
 
 // TopRatedGame caches IGDB top-rated games per console.
 type TopRatedGame struct {
-	ID               uint           `gorm:"primarykey" json:"id"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
-	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
-	ConsoleID        uint           `gorm:"uniqueIndex:idx_console_igdb_game;not null" json:"consoleId"`
-	Console          Console        `gorm:"foreignKey:ConsoleID" json:"-"`
-	IGDBGameID       int            `gorm:"uniqueIndex:idx_console_igdb_game;not null" json:"igdbGameId"`
-	Name             string         `gorm:"size:255;not null" json:"name"`
-	CoverImageID     string         `gorm:"size:128" json:"coverImageId"`
-	TotalRating      float64        `json:"totalRating"`
-	TotalRatingCount int            `json:"totalRatingCount"`
-	Rank             int            `json:"rank"`
+	ID                uint           `gorm:"primarykey" json:"id"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+	ConsoleID         uint           `gorm:"uniqueIndex:idx_console_igdb_game;not null" json:"consoleId"`
+	Console           Console        `gorm:"foreignKey:ConsoleID" json:"-"`
+	IGDBGameID        int            `gorm:"uniqueIndex:idx_console_igdb_game;not null" json:"igdbGameId"`
+	Name              string         `gorm:"size:255;not null" json:"name"`
+	CoverImageID      string         `gorm:"size:128" json:"coverImageId"`
+	TotalRating       float64        `json:"totalRating"`
+	TotalRatingCount  int            `json:"totalRatingCount"`
+	UserRating        float64        `json:"userRating"`
+	UserRatingCount   int            `json:"userRatingCount"`
+	CriticRating      float64        `json:"criticRating"`
+	CriticRatingCount int            `json:"criticRatingCount"`
+	Rank              int            `json:"rank"`
 }
 
 // SimilarGame caches IGDB similar games for a local game.

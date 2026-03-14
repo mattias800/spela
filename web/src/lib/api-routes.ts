@@ -182,6 +182,7 @@ export type ApiGetPath = WithQuery<
 
   // Top Lists
   | "/top-lists/top-rated"
+  | "/top-lists/top-rated-critics"
   | "/top-lists/longest"
 
   // Challenges

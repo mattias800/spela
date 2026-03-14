@@ -533,17 +533,26 @@ type TopListGameResponse struct {
 	Rating      float64 `json:"rating"`
 }
 
-// GetTopListAvailable returns IGDB top-rated games that have a matching local
-// game on the server. Only games with a local title+console match are included,
-// sorted by IGDB rating descending, limited to 50 results.
+// GetTopListAvailable returns IGDB audience top-rated games that have a matching
+// local game on the server, sorted by user rating descending, limited to 50 results.
 func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
+	h.getTopListByRating(c, "top_rated_games.user_rating", "top_rated_games.user_rating > 0")
+}
+
+// GetTopListCritics returns IGDB critic top-rated games that have a matching
+// local game on the server, sorted by critic rating descending, limited to 50 results.
+func (h *ConsoleHandler) GetTopListCritics(c *gin.Context) {
+	h.getTopListByRating(c, "top_rated_games.critic_rating", "top_rated_games.critic_rating > 0")
+}
+
+func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string, ratingFilter string) {
 	type row struct {
 		GameID      uint
 		Name        string
 		CoverURL    string
 		ConsoleName string
 		ConsoleAbbr string
-		TotalRating float64
+		Rating      float64
 	}
 
 	var rows []row
@@ -554,12 +563,12 @@ func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
 				MIN(games.cover_url) AS cover_url,
 				consoles.name AS console_name,
 				consoles.abbreviation AS console_abbr,
-				top_rated_games.total_rating`).
+				`+ratingColumn+` AS rating`).
 		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
-		Where("top_rated_games.deleted_at IS NULL").
-		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, top_rated_games.total_rating").
-		Order("top_rated_games.total_rating DESC").
+		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
+		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, "+ratingColumn).
+		Order(ratingColumn + " DESC").
 		Limit(50).
 		Find(&rows).Error
 	if err != nil {
@@ -577,7 +586,7 @@ func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
 			CoverUrl:    resolveImageURL(r.CoverURL),
 			ConsoleName: r.ConsoleName,
 			ConsoleId:   strings.ToLower(r.ConsoleAbbr),
-			Rating:      r.TotalRating,
+			Rating:      r.Rating,
 		}
 	}
 
@@ -660,13 +669,17 @@ func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGam
 		}
 
 		tr := db.TopRatedGame{
-			ConsoleID:        consoleID,
-			IGDBGameID:       g.ID,
-			Name:             g.Name,
-			CoverImageID:     coverImageID,
-			TotalRating:      g.TotalRating,
-			TotalRatingCount: g.TotalRatingCount,
-			Rank:             i + 1,
+			ConsoleID:         consoleID,
+			IGDBGameID:        g.ID,
+			Name:              g.Name,
+			CoverImageID:      coverImageID,
+			TotalRating:       g.TotalRating,
+			TotalRatingCount:  g.TotalRatingCount,
+			UserRating:        g.UserRating,
+			UserRatingCount:   g.UserRatingCount,
+			CriticRating:      g.CriticRating,
+			CriticRatingCount: g.CriticRatingCount,
+			Rank:              i + 1,
 		}
 
 		// Upsert: update if exists, create if not
@@ -674,11 +687,15 @@ func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGam
 		err := h.DB.Where("console_id = ? AND igdb_game_id = ?", consoleID, g.ID).First(&existing).Error
 		if err == nil {
 			h.DB.Model(&existing).Updates(map[string]interface{}{
-				"name":               tr.Name,
-				"cover_image_id":     tr.CoverImageID,
-				"total_rating":       tr.TotalRating,
-				"total_rating_count": tr.TotalRatingCount,
-				"rank":               tr.Rank,
+				"name":                tr.Name,
+				"cover_image_id":      tr.CoverImageID,
+				"total_rating":        tr.TotalRating,
+				"total_rating_count":  tr.TotalRatingCount,
+				"user_rating":         tr.UserRating,
+				"user_rating_count":   tr.UserRatingCount,
+				"critic_rating":       tr.CriticRating,
+				"critic_rating_count": tr.CriticRatingCount,
+				"rank":                tr.Rank,
 			})
 		} else {
 			h.DB.Create(&tr)

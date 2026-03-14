@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Trophy, Star, Clock, Gamepad2 } from "lucide-react";
+import { Trophy, Star, Clock, Gamepad2, Users, Newspaper } from "lucide-react";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
-import { useTopRated, useLongestGames } from "@/hooks/use-top-lists";
+import { useTopRated, useTopRatedCritics, useLongestGames } from "@/hooks/use-top-lists";
 import { PlayInfo } from "@/components/play-info";
 import { cn } from "@/lib/cn";
 import type { TopListGame, LongestGame } from "@/types/api";
 
-type TabId = "top-rated" | "longest";
+type TabId = "audience" | "critics" | "longest";
 
 function rankStyle(rank: number): { text: string; bg: string } {
   if (rank === 1)
@@ -199,15 +199,14 @@ function LongestGamesList({ games }: { games: LongestGame[] }) {
 }
 
 export function TopListsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("top-rated");
+  const [activeTab, setActiveTab] = useState<TabId>("audience");
   const { data: topRated, isLoading: isLoadingTopRated } = useTopRated();
+  const { data: topRatedCritics, isLoading: isLoadingCritics } = useTopRatedCritics();
   const { data: longestGames, isLoading: isLoadingLongest } = useLongestGames();
 
-  const topRatedGames = topRated ?? [];
-  const longestGamesList = longestGames ?? [];
-
   const tabs: { id: TabId; label: string; icon: typeof Star }[] = [
-    { id: "top-rated", label: "Top Rated", icon: Star },
+    { id: "audience", label: "Audience Top Rated", icon: Users },
+    { id: "critics", label: "Critic Top Rated", icon: Newspaper },
     { id: "longest", label: "Longest Games", icon: Clock },
   ];
 
@@ -250,18 +249,40 @@ export function TopListsPage() {
         })}
       </div>
 
-      {activeTab === "top-rated" && (
+      {activeTab === "audience" && (
         <section>
           <div className="flex items-center gap-2.5 mb-5">
-            <Star className="h-5 w-5 text-brand-400" />
+            <Users className="h-5 w-5 text-brand-400" />
             <h2 className="text-xl font-bold text-surface-100">
-              Top Rated Games
+              Audience Top Rated
             </h2>
           </div>
+          <p className="text-sm text-surface-400 mb-5">
+            Highest rated by IGDB users.
+          </p>
           {isLoadingTopRated ? (
             <ListSkeleton />
           ) : (
-            <TopRatedList games={topRatedGames} />
+            <TopRatedList games={topRated ?? []} />
+          )}
+        </section>
+      )}
+
+      {activeTab === "critics" && (
+        <section>
+          <div className="flex items-center gap-2.5 mb-5">
+            <Newspaper className="h-5 w-5 text-brand-400" />
+            <h2 className="text-xl font-bold text-surface-100">
+              Critic Top Rated
+            </h2>
+          </div>
+          <p className="text-sm text-surface-400 mb-5">
+            Highest rated by critics and press outlets.
+          </p>
+          {isLoadingCritics ? (
+            <ListSkeleton />
+          ) : (
+            <TopRatedList games={topRatedCritics ?? []} />
           )}
         </section>
       )}
@@ -280,7 +301,7 @@ export function TopListsPage() {
           {isLoadingLongest ? (
             <ListSkeleton />
           ) : (
-            <LongestGamesList games={longestGamesList} />
+            <LongestGamesList games={longestGames ?? []} />
           )}
         </section>
       )}
