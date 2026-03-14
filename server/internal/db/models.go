@@ -66,6 +66,7 @@ type Console struct {
 	FolderName     string         `gorm:"size:64" json:"folderName"`
 	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
 	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
 	Playable         bool           `gorm:"default:true" json:"playable"`
 	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`

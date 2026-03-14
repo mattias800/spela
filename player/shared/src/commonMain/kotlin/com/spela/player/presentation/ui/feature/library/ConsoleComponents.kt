@@ -75,6 +75,20 @@ private val HeroTextPrimary    = Color.White.copy(alpha = 0.90f)
 private val HeroTextSecondary  = Color.White.copy(alpha = 0.70f)
 private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
 
+private fun generationLabel(generation: Int): String = when (generation) {
+    2 -> "2nd Generation · 1976–1992"
+    3 -> "3rd Generation · 1983–1992"
+    4 -> "4th Generation · 1987–1996"
+    5 -> "5th Generation · 1993–2006"
+    6 -> "6th Generation · 1998–2007"
+    7 -> "7th Generation · 2004–2013"
+    8 -> "8th Generation · 2011–2020"
+    9 -> "9th Generation · 2017–present"
+    100 -> "Home Computers · 1977–1995"
+    101 -> "Arcade · 1971–present"
+    else -> "Other"
+}
+
 @Composable
 internal fun ConsolesGrid(
     consoles: List<Console>,
@@ -82,25 +96,38 @@ internal fun ConsolesGrid(
     consolesWithMissingBios: Set<String> = emptySet(),
     columnsPerRow: Int = 2,
 ) {
+    val grouped = consoles.groupBy { it.generation }.toSortedMap()
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        consoles.chunked(columnsPerRow).forEach { rowConsoles ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            ) {
-                rowConsoles.forEach { console ->
-                    ConsoleCard(
-                        console = console,
-                        onClick = { onConsoleSelected(console.id) },
-                        hasMissingBios = console.id in consolesWithMissingBios,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                repeat(columnsPerRow - rowConsoles.size) {
-                    Spacer(Modifier.weight(1f))
+        grouped.entries.forEachIndexed { index, (generation, groupConsoles) ->
+            if (index > 0) {
+                Spacer(Modifier.height(SpSpacing.Medium))
+            }
+            Text(
+                text = generationLabel(generation),
+                style = SpTypography.TitleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.85f),
+            )
+            groupConsoles.chunked(columnsPerRow).forEach { rowConsoles ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                ) {
+                    rowConsoles.forEach { console ->
+                        ConsoleCard(
+                            console = console,
+                            onClick = { onConsoleSelected(console.id) },
+                            hasMissingBios = console.id in consolesWithMissingBios,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(columnsPerRow - rowConsoles.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
                 }
             }
         }

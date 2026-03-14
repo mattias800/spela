@@ -56,6 +56,7 @@ data class ConsoleDto(
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,
     val playable: Boolean = true,
+    val generation: Int = 0,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

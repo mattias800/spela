@@ -75,7 +75,7 @@ type ConsoleHandler struct {
 // ListConsoles returns all consoles with game counts.
 func (h *ConsoleHandler) ListConsoles(c *gin.Context) {
 	var consoles []db.Console
-	if err := h.DB.Find(&consoles).Error; err != nil {
+	if err := h.DB.Order("generation ASC, name ASC").Find(&consoles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch consoles"})
 		return
 	}

@@ -15,6 +15,7 @@ const makeConsole = (abbr: string, name: string): Console => ({
   defaultCore: "",
   coverAspectRatio: 0.75,
   colorTheme: "",
+  generation: 4,
   iconUrl: "",
   logoUrl: "",
   gameCount: 10,

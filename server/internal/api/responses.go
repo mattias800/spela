@@ -23,6 +23,7 @@ type ConsoleResponse struct {
 	EmulatorJSCore   string    `json:"emulatorJsCore"`
 	CoverAspectRatio float64   `json:"coverAspectRatio"`
 	ColorTheme       string    `json:"colorTheme"`
+	Generation       int       `json:"generation"`
 	IconURL          string    `json:"iconUrl"`
 	LogoURL          string    `json:"logoUrl"`
 	LogoPngURL       string    `json:"logoPngUrl"`
@@ -183,6 +184,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		EmulatorJSCore:   c.EmulatorJSCore,
 		CoverAspectRatio: ratio,
 		ColorTheme:       c.ColorTheme,
+		Generation:       c.Generation,
 		IconURL:          "/api/consoles/" + abbr + "/icon",
 		LogoURL:          "/api/consoles/" + abbr + "/logo",
 		LogoPngURL:       "/api/consoles/" + abbr + "/logo.png",
