@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { GameCardSkeleton, GameListRowSkeleton, EmptyState, useToast } from "@/components/ui";
+import { GameCardSkeleton, GameListRowSkeleton, EmptyState } from "@/components/ui";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -24,7 +24,7 @@ import {
   useCreateSavedSearch,
   useDeleteSavedSearch,
 } from "@/hooks/use-saved-searches";
-import { useUserPreferences, useUpdatePreferences } from "@/hooks/use-preferences";
+import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
 import type { GameFilters } from "@/types/api";
 
 type ViewMode = "grid" | "list";
@@ -94,10 +94,6 @@ export function GamesPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { data: userPrefs } = useUserPreferences();
-  const updatePrefs = useUpdatePreferences();
-  const { toast } = useToast();
-
   // Initialize filters from URL
   const [filters, setFilters] = useState<GameFilters>(() => ({
     sortBy: "title",
@@ -106,18 +102,7 @@ export function GamesPage() {
     ...parseUrlFilters(searchParams),
   }));
 
-  // Apply user's preferred regions as default when no regions are in the URL
-  const [appliedPreferredRegions, setAppliedPreferredRegions] = useState(false);
-  useEffect(() => {
-    if (
-      userPrefs?.preferredRegions?.length &&
-      !appliedPreferredRegions &&
-      !searchParams.get("regions")
-    ) {
-      setFilters((f) => ({ ...f, regions: userPrefs.preferredRegions }));
-      setAppliedPreferredRegions(true);
-    }
-  }, [userPrefs, appliedPreferredRegions, searchParams]);
+  const { saveDefaultRegions } = useDefaultRegionFilters(searchParams, setFilters);
 
   // Sync filters to URL
   useEffect(() => {
@@ -200,12 +185,7 @@ export function GamesPage() {
           totalResults={data?.total}
           isOpen={filtersOpen}
           onToggle={() => setFiltersOpen((o) => !o)}
-          onSaveDefaultRegions={(regions) => {
-            updatePrefs.mutate(
-              { preferredRegions: regions },
-              { onSuccess: () => toast("info", "Default regions saved") },
-            );
-          }}
+          onSaveDefaultRegions={saveDefaultRegions}
         />
         <BestVersionsButton
           filters={filters}

@@ -46,18 +46,9 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-vi.mock("@/hooks/use-preferences", () => ({
-  useUserPreferences: () => ({ data: undefined }),
-  useUpdatePreferences: () => ({ mutate: vi.fn() }),
+vi.mock("@/hooks/use-default-region-filters", () => ({
+  useDefaultRegionFilters: () => ({ saveDefaultRegions: vi.fn() }),
 }));
-
-vi.mock("@/components/ui", async () => {
-  const actual = await vi.importActual("@/components/ui");
-  return {
-    ...actual,
-    useToast: () => ({ toast: vi.fn() }),
-  };
-});
 
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames } from "@/hooks/use-games";
