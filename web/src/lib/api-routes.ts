@@ -302,6 +302,7 @@ export type ApiPostPath = WithQuery<
   | `/admin/uploads/${string}/reject`
   | "/admin/uploads/accept-all"
   | "/admin/uploads/reject-all"
+  | "/admin/rom-hacks"
 >;
 
 // ── PUT ──────────────────────────────────────────────────────────────────────

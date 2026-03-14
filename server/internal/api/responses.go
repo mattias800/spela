@@ -88,6 +88,8 @@ type GameResponse struct {
 	VariantCount   int            `json:"variantCount,omitempty"`
 	GroupKey       string         `json:"groupKey,omitempty"`
 	Variants       []VariantResponse `json:"variants,omitempty"`
+	ParentGame     *ParentGameResponse  `json:"parentGame,omitempty"`
+	RomHacks       []RomHackGameResponse `json:"romHacks,omitempty"`
 	HeroURL        string         `json:"heroUrl,omitempty"`
 	LogoURL        string         `json:"logoUrl,omitempty"`
 	BiosStatus     string         `json:"biosStatus,omitempty"`
@@ -136,6 +138,20 @@ type VariantResponse struct {
 	IsPreRelease       bool   `json:"isPreRelease"`
 	FileSize           int64  `json:"fileSize"`
 	VerificationStatus string `json:"verificationStatus,omitempty"`
+}
+
+// ParentGameResponse is a minimal reference to a parent game for standalone ROM hacks.
+type ParentGameResponse struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	CoverURL string `json:"coverUrl,omitempty"`
+}
+
+// RomHackGameResponse is a minimal reference to a standalone ROM hack.
+type RomHackGameResponse struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	CoverURL string `json:"coverUrl,omitempty"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys.

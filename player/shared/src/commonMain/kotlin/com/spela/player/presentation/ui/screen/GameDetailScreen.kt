@@ -35,12 +35,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.GameVariant
+import com.spela.player.domain.model.ParentGame
+import com.spela.player.domain.model.RomHackGame
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
@@ -883,12 +886,47 @@ private fun GameInfoContent(
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
     MetadataGrid(game = game, onGradient = true)
 
-    // Variants section
-    if (detail.variants.isNotEmpty()) {
+    // Variants section -- split into Versions (non-hack) and ROM Hacks (hack-tagged)
+    val versionVariants = detail.variants.filter { variant ->
+        variant.tags?.split(",")?.map { it.trim().lowercase() }?.contains("hack") != true
+    }
+    val hackVariants = detail.variants.filter { variant ->
+        variant.tags?.split(",")?.map { it.trim().lowercase() }?.contains("hack") == true
+    }
+
+    if (versionVariants.isNotEmpty()) {
         Spacer(Modifier.height(SpSpacing.XLarge))
         VariantsSection(
-            variants = detail.variants,
+            title = "Versions",
+            variants = versionVariants,
             onVariantSelected = onNavigateToGame,
+        )
+    }
+
+    if (hackVariants.isNotEmpty()) {
+        Spacer(Modifier.height(SpSpacing.XLarge))
+        VariantsSection(
+            title = "ROM Hacks",
+            variants = hackVariants,
+            onVariantSelected = onNavigateToGame,
+        )
+    }
+
+    // "Based on" section for standalone ROM hacks
+    detail.parentGame?.let { parent ->
+        Spacer(Modifier.height(SpSpacing.XLarge))
+        BasedOnSection(
+            parentGame = parent,
+            onNavigateToGame = onNavigateToGame,
+        )
+    }
+
+    // Standalone ROM Hacks section
+    if (detail.romHacks.isNotEmpty()) {
+        Spacer(Modifier.height(SpSpacing.XLarge))
+        RomHacksSection(
+            romHacks = detail.romHacks,
+            onNavigateToGame = onNavigateToGame,
         )
     }
 }
@@ -1009,11 +1047,12 @@ private fun getRegionFlag(region: String): String? =
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun VariantsSection(
+    title: String,
     variants: List<GameVariant>,
     onVariantSelected: ((String) -> Unit)?,
 ) {
     SpTitledSection(
-        title = "Versions",
+        title = title,
         includeTopSpacing = false,
     ) {
         Column(
@@ -1076,4 +1115,84 @@ private fun formatVariantFileSize(bytes: Long): String {
     if (mb < 1024) return String.format("%.1f MB", mb)
     val gb = mb / 1024.0
     return String.format("%.2f GB", gb)
+}
+
+@Composable
+private fun BasedOnSection(
+    parentGame: ParentGame,
+    onNavigateToGame: ((String) -> Unit)?,
+) {
+    SpTitledSection(
+        title = "Based on",
+        includeTopSpacing = false,
+    ) {
+        SpCard(
+            onClick = { onNavigateToGame?.invoke(parentGame.id) },
+            onGradient = true,
+            cornerRadius = SpSpacing.RadiusMedium,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(SpSpacing.Medium),
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SpCoverArt(
+                    imageUrl = parentGame.coverUrl,
+                    contentDescription = "${parentGame.title} cover art",
+                    modifier = Modifier.size(width = SpSpacing.CoverSmallWidth, height = SpSpacing.CoverSmallHeight),
+                )
+                Text(
+                    text = parentGame.title,
+                    style = SpTypography.TitleSmall,
+                    color = SpColor.OnCard,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RomHacksSection(
+    romHacks: List<RomHackGame>,
+    onNavigateToGame: ((String) -> Unit)?,
+) {
+    SpTitledSection(
+        title = "ROM Hacks",
+        includeTopSpacing = false,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            romHacks.forEach { hack ->
+                SpCard(
+                    onClick = { onNavigateToGame?.invoke(hack.id) },
+                    onGradient = true,
+                    cornerRadius = SpSpacing.RadiusMedium,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(SpSpacing.Medium),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SpCoverArt(
+                            imageUrl = hack.coverUrl,
+                            contentDescription = "${hack.title} cover art",
+                            modifier = Modifier.size(width = SpSpacing.CoverSmallWidth, height = SpSpacing.CoverSmallHeight),
+                        )
+                        Text(
+                            text = hack.title,
+                            style = SpTypography.TitleSmall,
+                            color = SpColor.OnCard,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

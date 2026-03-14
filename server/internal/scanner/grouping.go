@@ -148,18 +148,26 @@ func electPrimaryForGroup(database *gorm.DB, consoleID uint, groupKey string) er
 // betterVariant returns true if game a is a better variant than game b.
 // Election priority (highest priority first):
 // 1. Not pre-release (IsPreRelease = false beats true)
-// 2. Region preference: USA > World > Europe > other
-// 3. Latest revision (Rev B > Rev A > no revision; v1.1 > v1.0)
-// 4. Has metadata (non-empty Description or CoverURL)
-// 5. CRC verified (VerificationStatus = "verified")
-// 6. Shortest FileName
+// 2. Not a hack (non-hack beats hack-tagged games)
+// 3. Region preference: USA > World > Europe > other
+// 4. Latest revision (Rev B > Rev A > no revision; v1.1 > v1.0)
+// 5. Has metadata (non-empty Description or CoverURL)
+// 6. CRC verified (VerificationStatus = "verified")
+// 7. Shortest FileName
 func betterVariant(a, b db.Game) bool {
 	// 1. Not pre-release beats pre-release
 	if a.IsPreRelease != b.IsPreRelease {
 		return !a.IsPreRelease
 	}
 
-	// 2. Region preference
+	// 2. Non-hack beats hack (deprioritize ROM hacks in primary election)
+	aIsHack := isHackTagged(a.Tags)
+	bIsHack := isHackTagged(b.Tags)
+	if aIsHack != bIsHack {
+		return !aIsHack
+	}
+
+	// 3. Region preference
 	aRegion := regionPriority(a.Region)
 	bRegion := regionPriority(b.Region)
 	if aRegion != bRegion {
@@ -194,6 +202,16 @@ func betterVariant(a, b db.Game) bool {
 
 	// 7. Lower ID wins (deterministic tiebreaker)
 	return a.ID < b.ID
+}
+
+// isHackTagged returns true if the comma-separated tags string contains "hack".
+func isHackTagged(tags string) bool {
+	for _, t := range strings.Split(tags, ",") {
+		if strings.TrimSpace(t) == "hack" {
+			return true
+		}
+	}
+	return false
 }
 
 // defaultRegionOrder is the default region preference for primary election.
@@ -234,6 +252,11 @@ func GroupAndElectPrimariesWithRegions(database *gorm.DB, regionOrder []string) 
 func betterVariantWithRegions(a, b db.Game, regionOrder []string) bool {
 	if a.IsPreRelease != b.IsPreRelease {
 		return !a.IsPreRelease
+	}
+	aIsHack := isHackTagged(a.Tags)
+	bIsHack := isHackTagged(b.Tags)
+	if aIsHack != bIsHack {
+		return !aIsHack
 	}
 	aRegion := regionPriorityWithOrder(a.Region, regionOrder)
 	bRegion := regionPriorityWithOrder(b.Region, regionOrder)

@@ -154,6 +154,12 @@ func ParseFilenameMetadata(filename string) FilenameMetadata {
 	return meta
 }
 
+// NormalizeGroupKey produces a normalized title for grouping variants.
+// Exported for use by other packages (e.g. ROM hack creation).
+func NormalizeGroupKey(title string) string {
+	return normalizeGroupKey(title)
+}
+
 // normalizeGroupKey produces a normalized title from a filename for grouping variants.
 // Mirrors the normalization approach from scraper/namematch.go's normalizeName().
 func normalizeGroupKey(filename string) string {

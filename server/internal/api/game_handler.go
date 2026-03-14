@@ -360,6 +360,35 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 		resp.VariantCount = len(variants) + 1
 	}
 
+	// Load parent game reference (for standalone ROM hacks)
+	if game.ParentGameID != nil {
+		var parent db.Game
+		if err := h.DB.Select("id", "title", "cover_url").First(&parent, *game.ParentGameID).Error; err == nil {
+			resp.ParentGame = &ParentGameResponse{
+				ID:       strconv.FormatUint(uint64(parent.ID), 10),
+				Title:    parent.Title,
+				CoverURL: resolveImageURL(parent.CoverURL),
+			}
+		}
+	}
+
+	// Load standalone ROM hacks based on this game
+	var romHacks []db.Game
+	h.DB.Select("id", "title", "cover_url").
+		Where("parent_game_id = ?", game.ID).
+		Order("title ASC").
+		Find(&romHacks)
+	if len(romHacks) > 0 {
+		resp.RomHacks = make([]RomHackGameResponse, len(romHacks))
+		for i, rh := range romHacks {
+			resp.RomHacks[i] = RomHackGameResponse{
+				ID:       strconv.FormatUint(uint64(rh.ID), 10),
+				Title:    rh.Title,
+				CoverURL: resolveImageURL(rh.CoverURL),
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, resp)
 }
 
