@@ -5,10 +5,14 @@ import type { Game } from "@/types/api";
 
 interface GameListRowProps {
   game: Game;
+  hideConsoleName?: boolean;
 }
 
-export function GameListRow({ game }: GameListRowProps) {
+export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
   const consoleName = game.consoleName ?? "";
+  const releaseYear = game.releaseDate
+    ? new Date(game.releaseDate).getFullYear().toString()
+    : undefined;
 
   return (
     <Link
@@ -32,11 +36,17 @@ export function GameListRow({ game }: GameListRowProps) {
         <p className="text-sm font-medium text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </p>
-        {consoleName && (
-          <p className="text-xs text-surface-500">{consoleName}</p>
+        {hideConsoleName ? (
+          releaseYear && (
+            <p className="text-xs text-surface-500">{releaseYear}</p>
+          )
+        ) : (
+          consoleName && (
+            <p className="text-xs text-surface-500">{consoleName}</p>
+          )
         )}
       </div>
-      {consoleName && <Badge>{consoleName}</Badge>}
+      {!hideConsoleName && consoleName && <Badge>{consoleName}</Badge>}
       {game.variantCount != null && game.variantCount > 1 && (
         <span className="text-xs text-surface-400 whitespace-nowrap">
           +{game.variantCount - 1} {game.variantCount === 2 ? "version" : "versions"}

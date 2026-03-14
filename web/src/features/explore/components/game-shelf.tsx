@@ -8,6 +8,7 @@ interface GameShelfProps {
   title: string;
   games: Game[] | undefined;
   isLoading: boolean;
+  hideConsoleName?: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
 }
@@ -31,6 +32,7 @@ export function GameShelf({
   title,
   games,
   isLoading,
+  hideConsoleName,
   onToggleFavorite,
   onTogglePlayLater,
 }: GameShelfProps) {
@@ -119,7 +121,8 @@ export function GameShelf({
             >
               <GameCard
                 game={game}
-                showConsoleBadge
+                showConsoleBadge={!hideConsoleName}
+                hideConsoleName={hideConsoleName}
                 onToggleFavorite={onToggleFavorite}
                 onTogglePlayLater={onTogglePlayLater}
               />
