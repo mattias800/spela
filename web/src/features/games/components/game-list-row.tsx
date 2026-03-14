@@ -37,8 +37,10 @@ export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
           {game.title}
         </p>
         {hideConsoleName ? (
-          releaseYear && (
-            <p className="text-xs text-surface-500">{releaseYear}</p>
+          (releaseYear || game.developer) && (
+            <p className="text-xs text-surface-500">
+              {releaseYear ?? game.developer}
+            </p>
           )
         ) : (
           consoleName && (

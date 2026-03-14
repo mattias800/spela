@@ -130,9 +130,11 @@ export function GameCard({
         )}
         <div className="flex items-center gap-2">
           {hideConsoleName ? (
-            game.releaseDate && (
+            (game.releaseDate || game.developer) && (
               <p className="text-xs text-surface-500">
-                {new Date(game.releaseDate).getFullYear()}
+                {game.releaseDate
+                  ? new Date(game.releaseDate).getFullYear()
+                  : game.developer}
               </p>
             )
           ) : (
