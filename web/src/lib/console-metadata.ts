@@ -233,6 +233,46 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-red-500 to-red-800",
     color: "#e60012",
   },
+  "3do": {
+    icon: Gamepad2,
+    gradient: "from-gray-400 to-gray-700",
+    color: "#c0c0c0",
+  },
+  c128: {
+    icon: Monitor,
+    gradient: "from-blue-500 to-purple-800",
+    color: "#6c5eb5",
+  },
+  pet: {
+    icon: Monitor,
+    gradient: "from-blue-400 to-purple-700",
+    color: "#6c5eb5",
+  },
+  plus4: {
+    icon: Monitor,
+    gradient: "from-blue-400 to-purple-700",
+    color: "#6c5eb5",
+  },
+  vic20: {
+    icon: Monitor,
+    gradient: "from-blue-500 to-purple-800",
+    color: "#6c5eb5",
+  },
+  cdi: {
+    icon: Gamepad2,
+    gradient: "from-green-700 to-green-950",
+    color: "#006633",
+  },
+  msx1: {
+    icon: Monitor,
+    gradient: "from-blue-500 to-blue-800",
+    color: "#4a86c8",
+  },
+  msx2: {
+    icon: Monitor,
+    gradient: "from-blue-500 to-blue-800",
+    color: "#4a86c8",
+  },
 };
 
 // Map backend abbreviations to our internal keys

@@ -45,6 +45,12 @@ private val credits = listOf(
         description = "Console logo SVGs by Dan Patrick used in console detail pages.",
     ),
     CreditEntry(
+        name = "Console-Iconset",
+        url = "github.com/Tatohead/Console-Iconset",
+        license = "Free to use",
+        description = "Pixel art console and controller icons by Tatohead.",
+    ),
+    CreditEntry(
         name = "Icons8",
         url = "icons8.com",
         license = "Free with attribution",

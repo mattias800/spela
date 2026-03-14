@@ -29,6 +29,7 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
             src={c.iconUrl}
             alt={`${c.name} icon`}
             className="h-16 w-16 object-contain opacity-80 drop-shadow-lg transition-transform duration-300 group-hover:scale-110"
+            style={{ imageRendering: "pixelated" }}
           />
           <div className="text-center">
             <h3 className="text-lg font-bold text-white">{c.name}</h3>

@@ -13,7 +13,7 @@ type Entry struct {
 // MD5 checksums sourced from libretro core-info:
 // https://github.com/libretro/libretro-core-info
 var registry = []Entry{
-	// PlayStation (PSX) — pcsx_rearmed_libretro.info
+	// PlayStation (PSX) — mednafen_psx_hw_libretro.info
 	{ConsoleID: "psx", FileName: "scph5500.bin", Description: "PlayStation BIOS (Japan)", MD5: "8dd7d5296a650fac7319bce665a6a53c", Required: false},
 	{ConsoleID: "psx", FileName: "scph5501.bin", Description: "PlayStation BIOS (North America)", MD5: "490f666e1afb15b7362b406ed1cea246", Required: true},
 	{ConsoleID: "psx", FileName: "scph5502.bin", Description: "PlayStation BIOS (Europe)", MD5: "32736f17079d0b2b7024407c39bd3050", Required: false},
@@ -47,7 +47,7 @@ var registry = []Entry{
 	{ConsoleID: "nds", FileName: "bios9.bin", Description: "Nintendo DS ARM9 BIOS", MD5: "a392174eb3e572fed6447e956bde4b25", Required: false},
 	{ConsoleID: "nds", FileName: "firmware.bin", Description: "Nintendo DS Firmware", MD5: "145eaef5bd3037cbc247c213bb3da1b3", Required: false},
 
-	// PC Engine / TurboGrafx-16 (PCE) — mednafen_pce_fast_libretro.info
+	// PC Engine / TurboGrafx-16 (PCE) — mednafen_pce_libretro.info
 	{ConsoleID: "pce", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
 }
 

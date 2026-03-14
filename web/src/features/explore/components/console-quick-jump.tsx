@@ -125,6 +125,7 @@ export function ConsoleQuickJump({
                     src={con.iconUrl}
                     alt=""
                     className="h-8 w-8 object-contain mb-2"
+                    style={{ imageRendering: "pixelated" }}
                   />
                 )}
                 <p className="text-sm font-semibold text-surface-100 truncate group-hover/card:text-brand-400 transition-colors">

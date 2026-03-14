@@ -24,6 +24,13 @@ const credits: CreditEntry[] = [
       "Console logo SVGs by Dan Patrick used in console detail pages.",
   },
   {
+    name: "Console-Iconset",
+    url: "https://github.com/Tatohead/Console-Iconset",
+    license: "Free to use",
+    description:
+      "Pixel art console and controller icons by Tatohead.",
+  },
+  {
     name: "Icons8",
     url: "https://icons8.com",
     license: "Free with attribution",

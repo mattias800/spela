@@ -283,6 +283,63 @@ fun getConsoleInfo(abbreviation: String): ConsoleInfo? = when (abbreviation.lowe
         generation = "Arcade",
         summary = "Coin-operated arcade games defined gaming culture from the 1970s through the 90s, driving hardware innovation and spawning most of the genres and franchises we know today.",
     )
+    "3do" -> ConsoleInfo(
+        manufacturer = "Panasonic / Goldstar / Sanyo",
+        releaseYear = 1993,
+        mediaType = "CD-ROM",
+        generation = "5th gen",
+        summary = "The 3DO was a licensed hardware specification by The 3DO Company. Multiple manufacturers produced consoles, offering advanced 3D graphics and FMV capabilities for its era.",
+    )
+    "c128" -> ConsoleInfo(
+        manufacturer = "Commodore",
+        releaseYear = 1985,
+        mediaType = "Floppy / Cartridge",
+        generation = "Home computer",
+        summary = "The successor to the C64, featuring three operating modes: C128, C64 compatibility, and CP/M. More powerful but never escaped the C64's shadow.",
+    )
+    "pet" -> ConsoleInfo(
+        manufacturer = "Commodore",
+        releaseYear = 1977,
+        mediaType = "Tape / Floppy",
+        generation = "Home computer",
+        summary = "Commodore's first mass-market personal computer, with a built-in monitor and cassette drive. A pioneering machine that helped launch the home computer revolution.",
+    )
+    "plus4" -> ConsoleInfo(
+        manufacturer = "Commodore",
+        releaseYear = 1984,
+        mediaType = "Tape / Cartridge",
+        generation = "Home computer",
+        summary = "Marketed as a productivity machine with built-in software, the Plus/4 offered improved graphics over the C64 but lacked its sprite and sound capabilities.",
+    )
+    "vic20" -> ConsoleInfo(
+        manufacturer = "Commodore",
+        releaseYear = 1980,
+        mediaType = "Cartridge / Tape",
+        generation = "Home computer",
+        unitsSold = "2.5M units",
+        summary = "The first computer to sell one million units. Affordable and approachable, the VIC-20 introduced millions to home computing before the C64 succeeded it.",
+    )
+    "cdi" -> ConsoleInfo(
+        manufacturer = "Philips",
+        releaseYear = 1991,
+        mediaType = "CD-ROM",
+        generation = "4th gen",
+        summary = "Philips' multimedia system aimed at interactive entertainment and education. Infamous for its Zelda and Mario games, but offered a unique library of interactive titles.",
+    )
+    "msx1" -> ConsoleInfo(
+        manufacturer = "Microsoft / ASCII",
+        releaseYear = 1983,
+        mediaType = "Cartridge / Floppy",
+        generation = "Home computer",
+        summary = "A standardized home computer architecture designed by Microsoft and ASCII. Hugely popular in Japan, it hosted early Metal Gear and Bomberman titles.",
+    )
+    "msx2" -> ConsoleInfo(
+        manufacturer = "Microsoft / ASCII",
+        releaseYear = 1985,
+        mediaType = "Cartridge / Floppy",
+        generation = "Home computer",
+        summary = "The enhanced MSX2 standard added improved graphics with up to 256 colors and more RAM. Home to Metal Gear 2 and many influential Japanese games.",
+    )
     else -> null
 }
 
@@ -336,6 +393,14 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
         "c64" -> Color(0xFF3b82f6) to Color(0xFF6b21a8)         // blue-500 → purple-800
         "dos" -> Color(0xFF15803d) to Color(0xFF052e16)         // green-700 → green-950
         "amiga" -> Color(0xFFdc2626) to Color(0xFF1e40af)       // red-600 → blue-800
+        "3do" -> Color(0xFF9ca3af) to Color(0xFF374151)          // gray-400 → gray-700
+        "c128" -> Color(0xFF3b82f6) to Color(0xFF6b21a8)         // blue-500 → purple-800
+        "pet" -> Color(0xFF60a5fa) to Color(0xFF7e22ce)          // blue-400 → purple-700
+        "plus4" -> Color(0xFF60a5fa) to Color(0xFF7e22ce)        // blue-400 → purple-700
+        "vic20" -> Color(0xFF3b82f6) to Color(0xFF6b21a8)        // blue-500 → purple-800
+        "cdi" -> Color(0xFF15803d) to Color(0xFF052e16)          // green-700 → green-950
+        "msx1" -> Color(0xFF3b82f6) to Color(0xFF1e40af)         // blue-500 → blue-800
+        "msx2" -> Color(0xFF3b82f6) to Color(0xFF1e40af)         // blue-500 → blue-800
         else -> null
     }
     if (gradient != null) return gradient
