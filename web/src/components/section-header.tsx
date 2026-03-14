@@ -6,14 +6,15 @@ interface SectionHeaderProps {
   title: string;
   icon: LucideIcon;
   linkTo?: string;
+  id?: string;
 }
 
-export function SectionHeader({ title, icon: Icon, linkTo }: SectionHeaderProps) {
+export function SectionHeader({ title, icon: Icon, linkTo, id }: SectionHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-5">
       <div className="flex items-center gap-2.5">
         <Icon className="h-5 w-5 text-brand-400" />
-        <h2 className="text-xl font-bold text-surface-100">{title}</h2>
+        <h2 id={id} className="text-xl font-bold text-surface-100">{title}</h2>
       </div>
       {linkTo && (
         <Link

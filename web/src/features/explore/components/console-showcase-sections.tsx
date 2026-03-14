@@ -97,7 +97,7 @@ export function ConsoleGenreBreakdown({
       data-testid="genre-breakdown"
       aria-labelledby="genre-breakdown-heading"
     >
-      <SectionHeader title="Genre Breakdown" icon={LayoutGrid} />
+      <SectionHeader title="Genre Breakdown" icon={LayoutGrid} id="genre-breakdown-heading" />
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {showcase.genreBreakdown.map((genre: GenreCount) => (
           <div
@@ -135,7 +135,7 @@ export function ConsoleTopDevelopers({
       data-testid="top-developers"
       aria-labelledby="top-developers-heading"
     >
-      <SectionHeader title="Studios That Defined This Console" icon={Building2} />
+      <SectionHeader title="Studios That Defined This Console" icon={Building2} id="top-developers-heading" />
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {showcase.topDevelopers.map((dev: DeveloperSummary) => (
           <Link
