@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
+import { ConsoleHeroBanner } from "@/components/console-hero-banner";
 import {
   BackButton,
   GameCardSkeleton,
@@ -32,6 +33,7 @@ import { AlphabetBar } from "@/components/alphabet-bar";
 import { Pagination } from "@/components/pagination";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { useAuth } from "@/hooks/use-auth";
+import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
 import type { GameFilters } from "@/types/api";
 
 type ViewMode = "grid" | "list";
@@ -108,7 +110,6 @@ export function ConsoleGamesPage() {
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
-
   const console = consoles?.find((c) => c.id === id);
   const consoleName = console?.name ?? "Console";
 
@@ -119,6 +120,8 @@ export function ConsoleGamesPage() {
     pageSize: 48,
     ...parseUrlFilters(searchParams),
   }));
+
+  const { saveDefaultRegions } = useDefaultRegionFilters(searchParams, setFilters);
 
   // Sync filters to URL (excluding consoleId)
   useEffect(() => {
@@ -170,16 +173,7 @@ export function ConsoleGamesPage() {
         {`Back to ${consoleName}`}
       </BackButton>
 
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          {consoleName} Games
-        </h1>
-        <p className="mt-1 text-surface-400">
-          {data
-            ? `${data.total} games in your library`
-            : "Browse your game library"}
-        </p>
-      </div>
+      <ConsoleHeroBanner console={console} gameCount={data?.total} />
 
       {showBiosWarning && (
         <BiosWarningBanner
@@ -219,6 +213,7 @@ export function ConsoleGamesPage() {
           isOpen={filtersOpen}
           onToggle={() => setFiltersOpen((o) => !o)}
           hideConsoleFilter
+          onSaveDefaultRegions={saveDefaultRegions}
         />
         <BestVersionsButton
           filters={filters}

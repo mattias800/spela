@@ -1,11 +1,13 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton } from "@/components/ui";
 import type { Game } from "@/types/api";
 
 interface GameShelfProps {
   title: string;
+  icon?: LucideIcon;
   games: Game[] | undefined;
   isLoading: boolean;
   hideConsoleName?: boolean;
@@ -30,6 +32,7 @@ function GameShelfSkeleton({ title }: { title: string }) {
 
 export function GameShelf({
   title,
+  icon: Icon,
   games,
   isLoading,
   hideConsoleName,
@@ -82,7 +85,10 @@ export function GameShelf({
 
   return (
     <section data-testid={`shelf-${title}`} className="group/shelf relative">
-      <h2 className="text-xl font-bold text-surface-100 mb-5">{title}</h2>
+      <div className="flex items-center gap-2.5 mb-5">
+        {Icon && <Icon className="h-5 w-5 text-brand-400" />}
+        <h2 className="text-xl font-bold text-surface-100">{title}</h2>
+      </div>
 
       <div className="relative">
         {/* Scroll arrows */}

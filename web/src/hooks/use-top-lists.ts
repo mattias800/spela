@@ -9,6 +9,13 @@ export function useTopRated() {
   });
 }
 
+export function useTopRatedCritics() {
+  return useQuery({
+    queryKey: ["top-lists", "top-rated-critics"],
+    queryFn: () => api.get<TopListGame[]>("/top-lists/top-rated-critics"),
+  });
+}
+
 export function useLongestGames() {
   return useQuery({
     queryKey: ["top-lists", "longest"],

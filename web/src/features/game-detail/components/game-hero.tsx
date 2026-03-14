@@ -205,9 +205,11 @@ export function GameHero({
               )}
               <VerificationBadge game={game} isAdmin={isAdmin} />
               {game.region && <RegionBadge region={game.region} />}
-              {game.rating != null && game.rating > 0 && (
-                <IgdbRatingStars rating={game.rating} />
-              )}
+              {(game.rating ?? 0) > 0 ? (
+                <IgdbRatingStars rating={game.rating!} />
+              ) : (game.igdbUserRating ?? 0) > 0 ? (
+                <IgdbRatingStars rating={game.igdbUserRating!} />
+              ) : null}
               {game.averageRating > 0 && (
                 <span className="flex items-center gap-1 text-sm text-surface-400">
                   <Star className="h-4 w-4 text-amber-400 fill-amber-400" />

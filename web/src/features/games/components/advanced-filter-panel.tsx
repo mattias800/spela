@@ -198,6 +198,7 @@ interface AdvancedFilterPanelProps {
   isOpen: boolean;
   onToggle: () => void;
   hideConsoleFilter?: boolean;
+  onSaveDefaultRegions?: (regions: string[]) => void;
 }
 
 export function AdvancedFilterPanel({
@@ -214,6 +215,7 @@ export function AdvancedFilterPanel({
   isOpen,
   onToggle,
   hideConsoleFilter = false,
+  onSaveDefaultRegions,
 }: AdvancedFilterPanelProps) {
   const [saveName, setSaveName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
@@ -347,15 +349,26 @@ export function AdvancedFilterPanel({
           )}
 
           {/* Region picker */}
-          <ChipPicker
-            label="Regions"
-            options={regionOptions}
-            selected={filters.regions ?? []}
-            onChange={(regions) =>
-              onFiltersChange((f) => ({ ...f, regions, page: 1 }))
-            }
-            testId="region-filter"
-          />
+          <div>
+            <ChipPicker
+              label="Regions"
+              options={regionOptions}
+              selected={filters.regions ?? []}
+              onChange={(regions) =>
+                onFiltersChange((f) => ({ ...f, regions, page: 1 }))
+              }
+              testId="region-filter"
+            />
+            {onSaveDefaultRegions && (filters.regions?.length ?? 0) > 0 && (
+              <button
+                onClick={() => onSaveDefaultRegions(filters.regions ?? [])}
+                className="mt-1.5 text-xs text-surface-500 hover:text-brand-400 transition-colors"
+                data-testid="save-default-regions"
+              >
+                Set as default regions
+              </button>
+            )}
+          </div>
 
           {/* Genre picker */}
           <ChipPicker

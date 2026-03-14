@@ -7,9 +7,10 @@ interface TimeToBeatCardProps {
 }
 
 export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
-  const hastily = game.timeToBeatHastily ?? 0;
-  const normally = game.timeToBeatNormally ?? 0;
-  const completely = game.timeToBeatCompletely ?? 0;
+  // Backend stores time-to-beat in seconds (from IGDB API)
+  const hastily = (game.timeToBeatHastily ?? 0) / 3600;
+  const normally = (game.timeToBeatNormally ?? 0) / 3600;
+  const completely = (game.timeToBeatCompletely ?? 0) / 3600;
 
   if (!hastily && !normally && !completely) return null;
 

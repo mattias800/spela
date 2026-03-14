@@ -24,6 +24,7 @@ import {
   useCreateSavedSearch,
   useDeleteSavedSearch,
 } from "@/hooks/use-saved-searches";
+import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
 import type { GameFilters } from "@/types/api";
 
 type ViewMode = "grid" | "list";
@@ -100,6 +101,8 @@ export function GamesPage() {
     pageSize: 48,
     ...parseUrlFilters(searchParams),
   }));
+
+  const { saveDefaultRegions } = useDefaultRegionFilters(searchParams, setFilters);
 
   // Sync filters to URL
   useEffect(() => {
@@ -182,6 +185,7 @@ export function GamesPage() {
           totalResults={data?.total}
           isOpen={filtersOpen}
           onToggle={() => setFiltersOpen((o) => !o)}
+          onSaveDefaultRegions={saveDefaultRegions}
         />
         <BestVersionsButton
           filters={filters}

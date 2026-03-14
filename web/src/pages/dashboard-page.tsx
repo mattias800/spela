@@ -3,7 +3,6 @@ import {
   Play,
   Heart,
   Clock,
-  ChevronRight,
   Gamepad2,
   Trophy,
   Flag,
@@ -12,6 +11,7 @@ import {
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
+import { SectionHeader } from "@/components/section-header";
 import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
@@ -33,34 +33,6 @@ import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { useChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
 import type { Game, RecentAchievement } from "@/types/api";
-
-function SectionHeader({
-  title,
-  icon: Icon,
-  linkTo,
-}: {
-  title: string;
-  icon: typeof Play;
-  linkTo?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between mb-5">
-      <div className="flex items-center gap-2.5">
-        <Icon className="h-5 w-5 text-brand-400" />
-        <h2 className="text-xl font-bold text-surface-100">{title}</h2>
-      </div>
-      {linkTo && (
-        <Link
-          to={linkTo}
-          className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors"
-        >
-          View all
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      )}
-    </div>
-  );
-}
 
 function GameRow({
   games,

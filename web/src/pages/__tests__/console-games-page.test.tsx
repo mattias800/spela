@@ -46,6 +46,10 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
+vi.mock("@/hooks/use-default-region-filters", () => ({
+  useDefaultRegionFilters: () => ({ saveDefaultRegions: vi.fn() }),
+}));
+
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames } from "@/hooks/use-games";
 
@@ -139,10 +143,11 @@ describe("ConsoleGamesPage", () => {
     expect(screen.getByTestId("console-games-page")).toBeInTheDocument();
   });
 
-  it("renders console name in heading", () => {
+  it("renders console hero banner with name", () => {
     renderPage();
+    expect(screen.getByTestId("console-hero-banner")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Super Nintendo Games", level: 1 }),
+      screen.getByRole("heading", { name: "Super Nintendo", level: 1 }),
     ).toBeInTheDocument();
   });
 
@@ -153,9 +158,9 @@ describe("ConsoleGamesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders total game count", () => {
+  it("renders total game count in hero banner", () => {
     renderPage();
-    expect(screen.getByText("2 games in your library")).toBeInTheDocument();
+    expect(screen.getByText("2 games")).toBeInTheDocument();
   });
 
   it("renders game cards", () => {

@@ -536,14 +536,21 @@ func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
 
 // TopGame represents an IGDB top-rated game result.
 type TopGame struct {
-	ID               int    `json:"id"`
-	Name             string `json:"name"`
-	Cover            *Image `json:"cover"`
-	TotalRating      float64 `json:"total_rating"`
-	TotalRatingCount int     `json:"total_rating_count"`
+	ID                    int     `json:"id"`
+	Name                  string  `json:"name"`
+	Cover                 *Image  `json:"cover"`
+	TotalRating           float64 `json:"total_rating"`
+	TotalRatingCount      int     `json:"total_rating_count"`
+	UserRating            float64 `json:"rating"`
+	UserRatingCount       int     `json:"rating_count"`
+	CriticRating          float64 `json:"aggregated_rating"`
+	CriticRatingCount     int     `json:"aggregated_rating_count"`
 }
 
 // GetTopGames fetches the top-rated games for a given IGDB platform.
+// Only includes games that have both user ratings (rating_count > 5) AND
+// at least one critic/aggregated rating, to filter out games with inflated
+// user-only scores.
 func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
 	if err := c.authenticate(); err != nil {
 		return nil, fmt.Errorf("IGDB authentication: %w", err)
@@ -553,7 +560,7 @@ func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name, cover.image_id, total_rating, total_rating_count; where platforms = (%d) & total_rating != null & total_rating_count > 5; sort total_rating desc; limit %d;`,
+		`fields name, cover.image_id, total_rating, total_rating_count, rating, rating_count, aggregated_rating, aggregated_rating_count; where platforms = (%d) & total_rating != null & total_rating_count > 5 & aggregated_rating != null; sort total_rating desc; limit %d;`,
 		platformID, limit,
 	)
 

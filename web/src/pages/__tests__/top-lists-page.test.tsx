@@ -8,6 +8,7 @@ import { TopListsPage } from "../top-lists-page";
 
 vi.mock("@/hooks/use-top-lists", () => ({
   useTopRated: vi.fn(),
+  useTopRatedCritics: vi.fn(),
   useLongestGames: vi.fn(),
 }));
 
@@ -24,10 +25,11 @@ vi.mock("@/components/ui", async () => {
   };
 });
 
-import { useTopRated, useLongestGames } from "@/hooks/use-top-lists";
+import { useTopRated, useTopRatedCritics, useLongestGames } from "@/hooks/use-top-lists";
 import { usePlayStats } from "@/hooks/use-play-stats";
 
 const mockUseTopRated = useTopRated as ReturnType<typeof vi.fn>;
+const mockUseTopRatedCritics = useTopRatedCritics as ReturnType<typeof vi.fn>;
 const mockUseLongestGames = useLongestGames as ReturnType<typeof vi.fn>;
 const mockUsePlayStats = usePlayStats as ReturnType<typeof vi.fn>;
 
@@ -65,6 +67,7 @@ const mockTopRatedGames = [
   },
 ];
 
+// TTB values from IGDB API are in seconds
 const mockLongestGames = [
   {
     rank: 1,
@@ -73,9 +76,9 @@ const mockLongestGames = [
     coverUrl: "/api/images/covers/dq7.jpg",
     consoleName: "PS1",
     consoleId: "ps1",
-    timeToBeatNormally: 100,
-    timeToBeatHastily: 80,
-    timeToBeatCompletely: 150,
+    timeToBeatNormally: 100 * 3600,
+    timeToBeatHastily: 80 * 3600,
+    timeToBeatCompletely: 150 * 3600,
   },
   {
     rank: 2,
@@ -84,9 +87,9 @@ const mockLongestGames = [
     coverUrl: "/api/images/covers/fft.jpg",
     consoleName: "PS1",
     consoleId: "ps1",
-    timeToBeatNormally: 54,
-    timeToBeatHastily: 40,
-    timeToBeatCompletely: 80,
+    timeToBeatNormally: 54 * 3600,
+    timeToBeatHastily: 40 * 3600,
+    timeToBeatCompletely: 80 * 3600,
   },
   {
     rank: 3,
@@ -95,7 +98,7 @@ const mockLongestGames = [
     coverUrl: "",
     consoleName: "SNES",
     consoleId: "snes",
-    timeToBeatNormally: 48,
+    timeToBeatNormally: 48 * 3600,
     timeToBeatHastily: 0,
     timeToBeatCompletely: 0,
   },
@@ -122,6 +125,10 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseTopRated.mockReturnValue({
+    data: mockTopRatedGames,
+    isLoading: false,
+  });
+  mockUseTopRatedCritics.mockReturnValue({
     data: mockTopRatedGames,
     isLoading: false,
   });
@@ -160,22 +167,23 @@ describe("TopListsPage", () => {
     expect(tablist).toBeInTheDocument();
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(2);
-    expect(tabs[0]).toHaveTextContent("Top Rated");
-    expect(tabs[1]).toHaveTextContent("Longest Games");
+    expect(tabs).toHaveLength(3);
+    expect(tabs[0]).toHaveTextContent("Audience Top Rated");
+    expect(tabs[1]).toHaveTextContent("Critic Top Rated");
+    expect(tabs[2]).toHaveTextContent("Longest Games");
   });
 
-  it("shows Top Rated tab as active by default", () => {
+  it("shows Audience Top Rated tab as active by default", () => {
     renderPage();
     const tabs = screen.getAllByRole("tab");
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
     expect(tabs[1]).toHaveAttribute("aria-selected", "false");
   });
 
-  it("renders section heading for Top Rated", () => {
+  it("renders section heading for Audience Top Rated", () => {
     renderPage();
     expect(
-      screen.getByRole("heading", { name: /Top Rated Games/i, level: 2 }),
+      screen.getByRole("heading", { name: /Audience Top Rated/i, level: 2 }),
     ).toBeInTheDocument();
   });
 
@@ -264,7 +272,7 @@ describe("TopListsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides Top Rated content when Longest Games tab is active", async () => {
+  it("hides Audience Top Rated content when Longest Games tab is active", async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -274,12 +282,12 @@ describe("TopListsPage", () => {
     expect(screen.queryByText("92.5")).not.toBeInTheDocument();
   });
 
-  it("can switch back to Top Rated tab", async () => {
+  it("can switch back to Audience Top Rated tab", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await user.click(screen.getByRole("tab", { name: /Longest Games/i }));
-    await user.click(screen.getByRole("tab", { name: /Top Rated/i }));
+    await user.click(screen.getByRole("tab", { name: /Audience Top Rated/i }));
 
     expect(screen.getByText("Super Mario World")).toBeInTheDocument();
   });
