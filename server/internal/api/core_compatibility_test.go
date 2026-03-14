@@ -69,7 +69,7 @@ func TestGetCoreCompatibility_MatchedField(t *testing.T) {
 
 	// Find NES (should match: nestopia/nestopia)
 	var nes *CoreCompatibilityEntry
-	// Find NDS (should NOT match: desmume/melonds)
+	// Find NDS (should now match: desmume/desmume)
 	var nds *CoreCompatibilityEntry
 	for i := range result {
 		if result[i].ConsoleID == "nes" {
@@ -87,8 +87,31 @@ func TestGetCoreCompatibility_MatchedField(t *testing.T) {
 
 	require.NotNil(t, nds, "NDS should be present")
 	assert.Equal(t, "desmume", nds.NativeCore)
-	assert.Equal(t, "melonds", nds.WebCore)
-	assert.False(t, nds.Matched, "NDS cores should not match")
+	assert.Equal(t, "desmume", nds.WebCore)
+	assert.True(t, nds.Matched, "NDS cores should match")
+
+	// Find PSX (should match via beetle/mednafen equivalence: beetle_psx_hw ≈ mednafen_psx_hw)
+	var psx *CoreCompatibilityEntry
+	// Find SAT (should NOT match: beetle_saturn vs yabause are different engines)
+	var sat *CoreCompatibilityEntry
+	for i := range result {
+		if result[i].ConsoleID == "psx" {
+			psx = &result[i]
+		}
+		if result[i].ConsoleID == "sat" {
+			sat = &result[i]
+		}
+	}
+
+	require.NotNil(t, psx, "PSX should be present")
+	assert.Equal(t, "beetle_psx_hw", psx.NativeCore)
+	assert.Equal(t, "mednafen_psx_hw", psx.WebCore)
+	assert.True(t, psx.Matched, "PSX cores should match via beetle/mednafen equivalence")
+
+	require.NotNil(t, sat, "SAT should be present")
+	assert.Equal(t, "beetle_saturn", sat.NativeCore)
+	assert.Equal(t, "yabause", sat.WebCore)
+	assert.False(t, sat.Matched, "Saturn cores should not match (different engines)")
 }
 
 func TestGetCoreCompatibility_NonPlayableConsolesIncluded(t *testing.T) {

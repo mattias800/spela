@@ -225,6 +225,7 @@ Spela is built with and uses the following open-source projects:
 
 - **[retro-game-console-icons](https://github.com/KyleBing/retro-game-console-icons)** (GPL-3.0) — Console hardware icons
 - **[console-logos](https://github.com/PRO100BYTE/console-logos)** — Console logo SVGs by Dan Patrick
+- **[Console-Iconset](https://github.com/Tatohead/Console-Iconset)** (Free to use) — Pixel art console and controller icons by Tatohead
 - **[Icons8](https://icons8.com)** — GameCube and 3DS console icons
 - **[EmulatorJS](https://emulatorjs.org)** (GPL-3.0) — Browser-based emulation frontend
 - **[libretro / RetroArch](https://www.libretro.com)** (GPL-3.0) — Emulation API and cores

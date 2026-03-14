@@ -292,6 +292,7 @@ function ConsoleRow({
         src={c.iconUrl}
         alt=""
         className="h-6 w-6 flex-shrink-0"
+        style={{ imageRendering: "pixelated" }}
       />
       <p className="text-sm font-medium text-surface-100 flex-1 truncate">
         {c.name}

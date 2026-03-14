@@ -869,15 +869,15 @@ func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
 		{"GBC", "gambatte"},
 		{"GBA", "mgba"},
 		{"N64", "mupen64plus_next"},
-		{"NDS", "melonds"},
+		{"NDS", "desmume"},
 		{"SMS", "genesis_plus_gx"},
 		{"GEN", "genesis_plus_gx"},
 		{"SAT", "yabause"},
-		{"PSX", "pcsx_rearmed"},
+		{"PSX", "mednafen_psx_hw"},
 		{"PSP", "ppsspp"},
 		{"NEOGEO", "fbneo"},
 		{"ARCADE", "fbneo"},
-		{"PCE", "mednafen_pce_fast"},
+		{"PCE", "mednafen_pce"},
 		{"A26", "stella2014"},
 	}
 

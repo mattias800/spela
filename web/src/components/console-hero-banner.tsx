@@ -35,6 +35,7 @@ export function ConsoleHeroBanner({
             alt=""
             aria-hidden="true"
             className="h-56 w-56 object-contain"
+            style={{ imageRendering: "pixelated" }}
           />
         ) : (
           <Icon className="h-56 w-56 text-white" />
