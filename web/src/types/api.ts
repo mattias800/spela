@@ -42,6 +42,7 @@ export interface Console {
   emulatorJsCore?: string; // EmulatorJS system identifier for browser play
   coverAspectRatio: number; // backend parses "3:4" into 0.75
   colorTheme: string;
+  generation: number;
   iconUrl: string;
   logoUrl: string;
   gameCount: number;

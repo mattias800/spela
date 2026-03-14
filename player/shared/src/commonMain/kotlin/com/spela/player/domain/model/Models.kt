@@ -47,6 +47,7 @@ data class Console(
     val saveStateSupport: Boolean = true,
     val browserPlayable: Boolean = false,
     val playable: Boolean = true,
+    val generation: Int = 0,
 )
 
 @Serializable

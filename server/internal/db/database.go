@@ -767,61 +767,69 @@ func MigrateSharedSessions(database *gorm.DB) error {
 // For existing consoles, it backfills the EmulatorJSCore field if empty.
 func SeedConsoles(db *gorm.DB) error {
 	consoles := []Console{
-		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012", CoverAspect: "5:7", SaveStateSupport: true, Playable: true},
-		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", FolderName: "snes", ColorTheme: "#7b7db5", CoverAspect: "4:3", SaveStateSupport: true, Playable: true},
-		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gb", ColorTheme: "#8bac0f", CoverAspect: "7:8", SaveStateSupport: true, Playable: true},
-		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", SaveStateSupport: true, Playable: true},
-		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", FolderName: "gba", ColorTheme: "#2e17a3", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", SaveStateSupport: true, Playable: true},
-		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "desmume", FolderName: "nds", ColorTheme: "#b0b0b0", CoverAspect: "10:9", SaveStateSupport: true, Playable: true},
-		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", SaveStateSupport: true, Playable: true},
-		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", SaveStateSupport: true, Playable: true},
-		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", SaveStateSupport: true, Playable: true},
-		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso,.chd", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", SaveStateSupport: true, Playable: true},
-		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", SaveStateSupport: true, Playable: true},
-		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", SaveStateSupport: true, Playable: true},
-		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "beetle_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", SaveStateSupport: true, Playable: true},
-		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", EmulatorJSCore: "stella2014", FolderName: "atari2600", ColorTheme: "#8b4513", SaveStateSupport: true, Playable: true},
-		// New consoles
-		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", SaveStateSupport: true, Playable: true},
-		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", SaveStateSupport: true, Playable: true},
-		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd,.cue,.bin,.m3u", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", SaveStateSupport: true, Playable: true},
-		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", SaveStateSupport: true, Playable: true},
-		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", SaveStateSupport: true, Playable: true},
-		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", SaveStateSupport: true, Playable: true},
-		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", SaveStateSupport: true, Playable: true},
-		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", SaveStateSupport: false, Playable: true},
-		{Name: "Neo Geo Pocket", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", SaveStateSupport: true, Playable: true},
-		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "bluemsx", EmulatorJSCore: "gearcoleco", FolderName: "colecovision", ColorTheme: "#000000", SaveStateSupport: true, Playable: true},
-		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", SaveStateSupport: true, Playable: true},
-		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "play", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", SaveStateSupport: true, Playable: true},
-		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", SaveStateSupport: true, Playable: true},
-		{Name: "3DO", Abbreviation: "3DO", Extensions: ".iso,.bin,.cue,.chd", DefaultCore: "opera", EmulatorJSCore: "opera", FolderName: "3do", ColorTheme: "#c0c0c0", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "Commodore VIC-20", Abbreviation: "VIC20", Extensions: ".prg,.d64,.t64,.crt", DefaultCore: "vice_xvic", EmulatorJSCore: "vice_xvic", FolderName: "vic20", ColorTheme: "#6c5eb5", SaveStateSupport: true, Playable: true},
-		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", SaveStateSupport: true, Playable: true},
-		// Non-playable consoles (external emulators only)
-		{Name: "PlayStation 3", Abbreviation: "PS3", Extensions: ".iso,.bin,.pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps3", ColorTheme: "#003087", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "PlayStation 4", Abbreviation: "PS4", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps4", ColorTheme: "#003087", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "PlayStation 5", Abbreviation: "PS5", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps5", ColorTheme: "#003087", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Xbox 360", Abbreviation: "X360", Extensions: ".iso,.xex,.god", DefaultCore: "", EmulatorJSCore: "", FolderName: "xbox360", ColorTheme: "#107c10", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Xbox One", Abbreviation: "XONE", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxone", ColorTheme: "#107c10", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Xbox Series", Abbreviation: "XSX", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxseries", ColorTheme: "#107c10", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Nintendo Wii", Abbreviation: "WII", Extensions: ".iso,.wbfs,.gcz,.rvz,.ciso", DefaultCore: "", EmulatorJSCore: "", FolderName: "wii", ColorTheme: "#c0c0c0", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Nintendo Wii U", Abbreviation: "WIIU", Extensions: ".rpx,.wud,.wux", DefaultCore: "", EmulatorJSCore: "", FolderName: "wiiu", ColorTheme: "#009ac7", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
-		{Name: "Nintendo Switch", Abbreviation: "NSW", Extensions: ".nsp,.xci", DefaultCore: "", EmulatorJSCore: "", FolderName: "switch", ColorTheme: "#e60012", CoverAspect: "8:11", SaveStateSupport: false, Playable: false},
+		// 3rd Generation
+		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012", CoverAspect: "5:7", Generation: 3, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", Generation: 3, SaveStateSupport: true, Playable: true},
+		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", Generation: 3, SaveStateSupport: true, Playable: true},
+		// 4th Generation
+		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", FolderName: "snes", ColorTheme: "#7b7db5", CoverAspect: "4:3", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gb", ColorTheme: "#8bac0f", CoverAspect: "7:8", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "beetle_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, Playable: true},
+		// 5th Generation
+		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", Generation: 5, SaveStateSupport: false, Playable: true},
+		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "3DO", Abbreviation: "3DO", Extensions: ".iso,.bin,.cue,.chd", DefaultCore: "opera", EmulatorJSCore: "opera", FolderName: "3do", ColorTheme: "#c0c0c0", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Neo Geo Pocket", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", Generation: 5, SaveStateSupport: true, Playable: true},
+		// 6th Generation
+		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "play", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", Generation: 6, SaveStateSupport: true, Playable: true},
+		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd,.cue,.bin,.m3u", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", Generation: 6, SaveStateSupport: true, Playable: true},
+		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
+		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", FolderName: "gba", ColorTheme: "#2e17a3", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
+		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
+		// 7th Generation
+		{Name: "Nintendo Wii", Abbreviation: "WII", Extensions: ".iso,.wbfs,.gcz,.rvz,.ciso", DefaultCore: "", EmulatorJSCore: "", FolderName: "wii", ColorTheme: "#c0c0c0", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, Playable: false},
+		{Name: "PlayStation 3", Abbreviation: "PS3", Extensions: ".iso,.bin,.pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps3", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, Playable: false},
+		{Name: "Xbox 360", Abbreviation: "X360", Extensions: ".iso,.xex,.god", DefaultCore: "", EmulatorJSCore: "", FolderName: "xbox360", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, Playable: false},
+		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso,.chd", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", Generation: 7, SaveStateSupport: true, Playable: true},
+		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "desmume", FolderName: "nds", ColorTheme: "#b0b0b0", CoverAspect: "10:9", Generation: 7, SaveStateSupport: true, Playable: true},
+		// 8th Generation
+		{Name: "Nintendo Wii U", Abbreviation: "WIIU", Extensions: ".rpx,.wud,.wux", DefaultCore: "", EmulatorJSCore: "", FolderName: "wiiu", ColorTheme: "#009ac7", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
+		{Name: "PlayStation 4", Abbreviation: "PS4", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps4", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
+		{Name: "Xbox One", Abbreviation: "XONE", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxone", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
+		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", Generation: 8, SaveStateSupport: true, Playable: true},
+		// 9th Generation
+		{Name: "Nintendo Switch", Abbreviation: "NSW", Extensions: ".nsp,.xci", DefaultCore: "", EmulatorJSCore: "", FolderName: "switch", ColorTheme: "#e60012", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, Playable: false},
+		{Name: "PlayStation 5", Abbreviation: "PS5", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps5", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, Playable: false},
+		{Name: "Xbox Series", Abbreviation: "XSX", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxseries", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, Playable: false},
+		// 2nd Generation
+		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", EmulatorJSCore: "stella2014", FolderName: "atari2600", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "bluemsx", EmulatorJSCore: "gearcoleco", FolderName: "colecovision", ColorTheme: "#000000", Generation: 2, SaveStateSupport: true, Playable: true},
+		// Home Computers (generation = 100)
+		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore VIC-20", Abbreviation: "VIC20", Extensions: ".prg,.d64,.t64,.crt", DefaultCore: "vice_xvic", EmulatorJSCore: "vice_xvic", FolderName: "vic20", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
+		// Arcade (generation = 101)
+		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", Generation: 101, SaveStateSupport: true, Playable: true},
 	}
 
 	for _, c := range consoles {
@@ -871,6 +879,11 @@ func SeedConsoles(db *gorm.DB) error {
 				}
 				db.Exec("UPDATE consoles SET playable = ? WHERE abbreviation = ?", playableInt, c.Abbreviation)
 				slog.Info("backfilled Playable", "name", existing.Name, "playable", wantPlayable)
+			}
+			// Backfill Generation for existing consoles
+			if existing.Generation != c.Generation && c.Generation != 0 {
+				db.Model(&existing).Update("generation", c.Generation)
+				slog.Info("backfilled Generation", "name", existing.Name, "generation", c.Generation)
 			}
 			// Backfill any new extensions from the seed that are missing in the DB
 			for _, ext := range strings.Split(c.Extensions, ",") {

@@ -89,6 +89,7 @@ const testConsoles: Console[] = [
     defaultCore: "snes9x",
     coverAspectRatio: 0.75,
     colorTheme: "#6366f1",
+    generation: 4,
     iconUrl: "",
     logoUrl: "",
     gameCount: 100,

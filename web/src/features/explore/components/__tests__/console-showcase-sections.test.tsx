@@ -61,6 +61,7 @@ function makeConsole(overrides: Partial<Console> = {}): Console {
     defaultCore: "",
     coverAspectRatio: 0.75,
     colorTheme: "#6366f1",
+    generation: 4,
     iconUrl: "",
     logoUrl: "",
     gameCount: 100,

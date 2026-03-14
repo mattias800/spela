@@ -31,6 +31,7 @@ fun ConsoleDto.toDomain(): Console = Console(
     saveStateSupport = saveStateSupport,
     browserPlayable = browserPlayable,
     playable = playable,
+    generation = generation,
 )
 
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(
