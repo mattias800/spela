@@ -23,6 +23,7 @@ func registerUserAndGetToken(t *testing.T, router http.Handler, ownerToken, user
 // netplayTestCtx holds shared state for netplay tests.
 type netplayTestCtx struct {
 	router      http.Handler
+	ownerToken  string
 	hostToken   string
 	clientToken string
 	gameID      string
@@ -48,6 +49,7 @@ func setupNetplayCtx(t *testing.T) netplayTestCtx {
 
 	return netplayTestCtx{
 		router:      router,
+		ownerToken:  ownerToken,
 		hostToken:   hostToken,
 		clientToken: clientToken,
 		gameID:      "1",
@@ -460,31 +462,33 @@ func TestNetplay_DeleteSession_HostOnly(t *testing.T) {
 	ctx := setupNetplayCtx(t)
 	session := createSession(t, ctx)
 
+	// Non-host cannot delete
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
 	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
 	ctx.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)
 
+	// Host can delete
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
 	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
 	ctx.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
+	// Session should be soft-deleted (not found)
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/api/netplay/sessions/"+session.ID, nil)
 	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
 	ctx.router.ServeHTTP(w, req)
-	var detail NetplaySessionResponse
-	json.Unmarshal(w.Body.Bytes(), &detail)
-	assert.Equal(t, "ended", detail.Status)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-func TestNetplay_DeleteSession_NotWaiting(t *testing.T) {
+func TestNetplay_DeleteSession_InProgress(t *testing.T) {
 	ctx := setupNetplayCtx(t)
 	session := createSession(t, ctx)
 
+	// Client joins => in_progress
 	body, _ := json.Marshal(map[string]interface{}{"inviteCode": session.InviteCode})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/netplay/sessions/join", bytes.NewReader(body))
@@ -493,11 +497,125 @@ func TestNetplay_DeleteSession_NotWaiting(t *testing.T) {
 	ctx.router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
+	// Host can delete an in-progress session (ends it first, then soft-deletes)
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
 	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
 	ctx.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Session should no longer be found (soft-deleted)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestNetplay_DeleteSession_Ended(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+	session := createSession(t, ctx)
+
+	// End the session by host leaving
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/netplay/sessions/"+session.ID+"/leave", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Host can delete an ended session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Session should no longer be found (soft-deleted)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestNetplay_DeleteSession_AdminForceDelete(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+	session := createSession(t, ctx)
+
+	// Client joins => in_progress
+	body, _ := json.Marshal(map[string]interface{}{"inviteCode": session.InviteCode})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/netplay/sessions/join", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Owner (first registered user) can force-delete any session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.ownerToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Session should no longer be found
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.ownerToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestNetplay_DeleteSession_NonHostNonAdmin(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+	session := createSession(t, ctx)
+
+	// Client (non-host, non-admin) cannot delete
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestNetplay_DeleteSession_CleansUpInvites(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+	session := createSession(t, ctx)
+
+	// Send an invite to the client
+	body, _ := json.Marshal(map[string]interface{}{"username": "client"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/netplay/sessions/"+session.ID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Verify invite exists
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/invites/count", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	var countResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &countResp)
+	assert.Equal(t, float64(1), countResp["count"])
+
+	// Delete the session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Invites should be cleaned up (expired + soft-deleted)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/netplay/invites/count", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	json.Unmarshal(w.Body.Bytes(), &countResp)
+	assert.Equal(t, float64(0), countResp["count"])
 }
 
 func TestNetplay_UpdateSettings(t *testing.T) {
@@ -575,6 +693,27 @@ func TestNetplay_JoinEndedSession(t *testing.T) {
 	ctx := setupNetplayCtx(t)
 	session := createSession(t, ctx)
 
+	// End the session via leave (not delete, which soft-deletes)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/netplay/sessions/"+session.ID+"/leave", nil)
+	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
+	ctx.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	body, _ := json.Marshal(map[string]interface{}{"inviteCode": session.InviteCode})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/netplay/sessions/join", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
+	ctx.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestNetplay_JoinDeletedSession(t *testing.T) {
+	ctx := setupNetplayCtx(t)
+	session := createSession(t, ctx)
+
+	// Delete the session (soft-deletes, so invite code lookup returns 404)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", "/api/netplay/sessions/"+session.ID, nil)
 	req.Header.Set("Authorization", "Bearer "+ctx.hostToken)
@@ -587,7 +726,7 @@ func TestNetplay_JoinEndedSession(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+ctx.clientToken)
 	ctx.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestNetplay_WebSocket_NotPlayer(t *testing.T) {

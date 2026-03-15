@@ -287,34 +287,49 @@ func (h *NetplayHandler) LeaveSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "session ended", "endReason": endReason})
 }
 
-// DeleteSession cancels a waiting session. Host only.
+// DeleteSession soft-deletes a netplay session.
+// - Host can delete sessions in any status (waiting sessions are ended first, then soft-deleted).
+// - Admin/owner can force-delete any session regardless of ownership.
+// - Non-host non-admin users get 403.
+// Associated NetplayInvite records are cleaned up.
 func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 	uid := getUserID(c)
+	role, _ := c.Get("role")
+	roleStr, _ := role.(string)
+	isAdmin := db.IsAdminOrOwner(roleStr)
 
 	session, ok := h.loadSession(c)
 	if !ok {
 		return
 	}
 
-	if session.HostUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the host can cancel the session"})
+	if session.HostUserID != uid && !isAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the host or an admin can delete the session"})
 		return
 	}
 
-	if session.Status != "waiting" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "can only cancel a waiting session. Use leave to end an active session."})
-		return
+	// End the session first if it's not already ended
+	if session.Status != "ended" {
+		now := time.Now()
+		endReason := "host_left"
+		if isAdmin && session.HostUserID != uid {
+			endReason = "admin_deleted"
+		}
+		h.DB.Model(&session).Updates(map[string]interface{}{
+			"status":     "ended",
+			"end_reason": endReason,
+			"ended_at":   now,
+		})
 	}
 
-	now := time.Now()
-	h.DB.Model(&session).Updates(map[string]interface{}{
-		"status":     "ended",
-		"end_reason": "host_left",
-		"ended_at":   now,
-	})
-
-	// Expire pending invites when session is cancelled (AC-5.2)
+	// Expire pending invites
 	h.expireNetplayInvites(session.ID)
+
+	// Clean up invite records (soft delete)
+	h.DB.Where("netplay_session_id = ?", session.ID).Delete(&db.NetplayInvite{})
+
+	// Soft-delete the session
+	h.DB.Delete(&session)
 
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{Type: "netplay_session_deleted", Payload: gin.H{
@@ -322,7 +337,7 @@ func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 		}})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "session cancelled"})
+	c.JSON(http.StatusOK, gin.H{"message": "session deleted"})
 }
 
 // UpdateSettings updates the input delay for a session. Host only.

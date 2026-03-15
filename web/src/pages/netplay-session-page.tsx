@@ -5,6 +5,7 @@ import {
   Button,
   BackButton,
   Badge,
+  ConfirmDeleteModal,
   Modal,
   Skeleton,
   EmptyState,
@@ -61,6 +62,7 @@ export function NetplaySessionPage() {
   const deleteSession = useDeleteNetplaySession();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   useNetplayInvitesRealtime(id);
 
@@ -75,6 +77,20 @@ export function NetplaySessionPage() {
       },
       onError: () => {
         toast("error", "Failed to cancel session");
+      },
+    });
+  }
+
+  function handleDelete() {
+    if (!session) return;
+    const isInProgress = session.status === "in_progress";
+    deleteSession.mutate(session.id, {
+      onSuccess: () => {
+        toast("success", isInProgress ? "Session ended and deleted" : "Session deleted");
+        navigate("/netplay");
+      },
+      onError: () => {
+        toast("error", "Failed to delete session");
       },
     });
   }
@@ -202,16 +218,38 @@ export function NetplaySessionPage() {
 
             {/* Host-only cancel for waiting sessions */}
             {isHost && session.status === "waiting" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setShowCancelModal(true)}
-                >
-                  <Trash2 className="h-5 w-5" />
-                  Cancel Session
-                </Button>
-              </div>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowCancelModal(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Cancel Session
+              </Button>
+            )}
+
+            {/* Host-only delete for ended sessions */}
+            {isHost && session.status === "ended" && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Session
+              </Button>
+            )}
+
+            {/* Host-only end & delete for in-progress sessions */}
+            {isHost && session.status === "in_progress" && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                End &amp; Delete Session
+              </Button>
             )}
           </div>
 
@@ -301,6 +339,20 @@ export function NetplaySessionPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* Delete confirm modal */}
+      <ConfirmDeleteModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title={session.status === "in_progress" ? "End & Delete Session" : "Delete Session"}
+        message={
+          session.status === "in_progress"
+            ? "This will end the session and disconnect any connected players. This action cannot be undone."
+            : "Permanently delete this netplay session. This action cannot be undone."
+        }
+        onConfirm={handleDelete}
+        isPending={deleteSession.isPending}
+      />
     </div>
   );
 }

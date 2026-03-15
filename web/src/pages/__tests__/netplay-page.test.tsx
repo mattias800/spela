@@ -16,6 +16,10 @@ vi.mock("@/hooks/use-netplay", () => ({
     isPending: false,
   })),
   useNetplayInvitesRealtime: vi.fn(),
+  useDeleteNetplaySession: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
   useNetplayInvites: vi.fn(() => ({
     data: { data: [], total: 0 },
     isLoading: false,
@@ -32,6 +36,14 @@ vi.mock("@/hooks/use-netplay", () => ({
 
 vi.mock("@/hooks/use-games", () => ({
   useGames: vi.fn(() => ({ data: { data: [] } })),
+}));
+
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: "u1", username: "alice", role: "user" },
+    isAdmin: false,
+    isAuthenticated: true,
+  })),
 }));
 
 vi.mock("@/components/ui", async () => {
