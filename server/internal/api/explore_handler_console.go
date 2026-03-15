@@ -73,7 +73,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 
 	// Count games for the console response
 	var gameCount int64
-	h.DB.Model(&db.Game{}).Where("console_id = ? AND deleted_at IS NULL", console.ID).Count(&gameCount)
+	h.DB.Model(&db.Game{}).Where("console_id = ? AND is_primary = true AND deleted_at IS NULL", console.ID).Count(&gameCount)
 	console.GameCount = int(gameCount)
 
 	// --- Essentials: top 10 by best available IGDB rating ---
@@ -83,7 +83,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 	// far more often.
 	var essentials []db.Game
 	if err := h.DB.Preload("Console").
-		Where("console_id = ? AND "+effectiveRating+" > 0 AND deleted_at IS NULL", console.ID).
+		Where("console_id = ? AND is_primary = true AND "+effectiveRating+" > 0 AND deleted_at IS NULL", console.ID).
 		Order(effectiveRating + " DESC").
 		Limit(10).
 		Find(&essentials).Error; err != nil {
@@ -112,7 +112,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 		var playHistories []db.PlayHistory
 		if err := h.DB.
 			Joins("JOIN games ON games.id = play_histories.game_id").
-			Where("play_histories.user_id = ? AND games.console_id = ? AND games.deleted_at IS NULL", userID, console.ID).
+			Where("play_histories.user_id = ? AND games.console_id = ? AND games.is_primary = true AND games.deleted_at IS NULL", userID, console.ID).
 			Order("play_histories.last_played DESC").
 			Limit(10).
 			Find(&playHistories).Error; err != nil {
@@ -124,7 +124,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 			}
 			if len(gameIDs) > 0 {
 				if err := h.DB.Preload("Console").
-					Where("id IN ? AND deleted_at IS NULL", gameIDs).
+					Where("id IN ? AND is_primary = true AND deleted_at IS NULL", gameIDs).
 					Find(&recentlyPlayed).Error; err != nil {
 					slog.Error("failed to fetch recently played games", "console", abbr, "error", err)
 				}
@@ -147,7 +147,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 	// --- Recently Added: most recently added games for this console ---
 	var recentlyAdded []db.Game
 	if err := h.DB.Preload("Console").
-		Where("console_id = ? AND deleted_at IS NULL", console.ID).
+		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL", console.ID).
 		Order("created_at DESC").
 		Limit(10).
 		Find(&recentlyAdded).Error; err != nil {
@@ -196,7 +196,7 @@ func (h *ExploreHandler) buildConsoleHiddenGems(consoleID uint, excludeIDs []uin
 	if err := h.DB.Model(&db.PlayHistory{}).
 		Select("COALESCE(SUM(play_histories.play_time), 0) as total_play_time").
 		Joins("JOIN games ON games.id = play_histories.game_id").
-		Where("games.console_id = ? AND games.deleted_at IS NULL", consoleID).
+		Where("games.console_id = ? AND games.is_primary = true AND games.deleted_at IS NULL", consoleID).
 		Group("play_histories.game_id").
 		Having("total_play_time > 0").
 		Order("total_play_time ASC").
@@ -219,7 +219,8 @@ func (h *ExploreHandler) buildConsoleHiddenGems(consoleID uint, excludeIDs []uin
 		Joins("LEFT JOIN (SELECT game_id, COALESCE(SUM(play_time), 0) as total_play_time FROM play_histories GROUP BY game_id) ph ON ph.game_id = games.id").
 		Where("games.console_id = ?", consoleID).
 		Where(effectiveRatingPrefixed + " >= 70").
-		Where("games.deleted_at IS NULL")
+		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true")
 
 	if len(excludeIDs) > 0 {
 		query = query.Where("games.id NOT IN ?", excludeIDs)
@@ -250,7 +251,7 @@ func (h *ExploreHandler) buildGenreBreakdown(consoleID uint) []GenreCount {
 	if err := h.DB.
 		Table("games").
 		Select("genre, COUNT(*) as game_count").
-		Where("console_id = ? AND deleted_at IS NULL AND genre != ''", consoleID).
+		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL AND genre != ''", consoleID).
 		Group("genre").
 		Order("game_count DESC").
 		Scan(&rows).Error; err != nil {
@@ -280,7 +281,7 @@ func (h *ExploreHandler) buildConsoleTopDevelopers(consoleID uint, consoleName s
 	if err := h.DB.
 		Table("games").
 		Select("developer, COUNT(*) as game_count, AVG(CASE WHEN "+effectiveRating+" > 0 THEN "+effectiveRating+" ELSE NULL END) as avg_rating").
-		Where("console_id = ? AND deleted_at IS NULL AND developer != ''", consoleID).
+		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL AND developer != ''", consoleID).
 		Group("developer").
 		Order("game_count DESC").
 		Limit(5).
@@ -327,7 +328,7 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 	if err := h.DB.
 		Table("games").
 		Select("console_id, COUNT(*) as game_count").
-		Where("deleted_at IS NULL").
+		Where("deleted_at IS NULL AND is_primary = true").
 		Group("console_id").
 		Scan(&counts).Error; err != nil {
 		slog.Error("failed to count games per console", "error", err)
@@ -355,7 +356,7 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY `+effectiveRatingPrefixed+` DESC) as rn
 			FROM games
 			JOIN game_artworks ON game_artworks.game_id = games.id AND game_artworks.hero_url != ''
-			WHERE games.deleted_at IS NULL AND `+effectiveRatingPrefixed+` > 0
+			WHERE games.deleted_at IS NULL AND games.is_primary = true AND `+effectiveRatingPrefixed+` > 0
 		) ranked WHERE rn = 1
 	`).Scan(&topGameRows).Error; err != nil {
 		slog.Error("failed to fetch top games for console highlights", "error", err)

@@ -180,7 +180,7 @@ func (h *GameDiscoveryHandler) GetDeveloperGames(c *gin.Context) {
 
 	// Find other games by the same developer in the local library
 	var otherGames []db.Game
-	if err := h.DB.Where("developer = ? AND id != ?", game.Developer, game.ID).
+	if err := h.DB.Where("developer = ? AND id != ? AND is_primary = true", game.Developer, game.ID).
 		Order("title asc").
 		Limit(20).
 		Find(&otherGames).Error; err != nil {

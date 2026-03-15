@@ -27,7 +27,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 	if err := h.DB.
 		Table("games").
 		Select("developer, COUNT(*) as game_count, AVG(CASE WHEN rating > 0 THEN rating ELSE NULL END) as avg_rating").
-		Where("games.deleted_at IS NULL AND developer != ''").
+		Where("games.deleted_at IS NULL AND games.is_primary = true AND developer != ''").
 		Group("developer").
 		Order("game_count DESC").
 		Limit(50).
@@ -59,7 +59,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 		Table("games").
 		Select("DISTINCT games.developer, consoles.abbreviation").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
-		Where("games.deleted_at IS NULL AND games.developer IN ?", devNames).
+		Where("games.deleted_at IS NULL AND games.is_primary = true AND games.developer IN ?", devNames).
 		Scan(&consoleRows).Error; err != nil {
 		slog.Error("failed to fetch developer consoles", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developers"})
@@ -102,7 +102,7 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("LOWER(games.developer) = LOWER(?) AND games.deleted_at IS NULL", name).
+		Where("LOWER(games.developer) = LOWER(?) AND games.is_primary = true AND games.deleted_at IS NULL", name).
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch developer games", "developer", name, "error", err)
@@ -184,7 +184,7 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("LOWER(games.publisher) = LOWER(?) AND games.deleted_at IS NULL", name).
+		Where("LOWER(games.publisher) = LOWER(?) AND games.is_primary = true AND games.deleted_at IS NULL", name).
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch publisher games", "publisher", name, "error", err)
@@ -281,7 +281,7 @@ func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers 
 	if err := database.
 		Table("games").
 		Select("developer, publisher, COUNT(*) as game_count").
-		Where("deleted_at IS NULL AND developer != '' AND publisher IN ? AND LOWER(developer) != LOWER(?)", publisherNames, developerName).
+		Where("deleted_at IS NULL AND is_primary = true AND developer != '' AND publisher IN ? AND LOWER(developer) != LOWER(?)", publisherNames, developerName).
 		Group("developer, publisher").
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch related developers", "error", err)
@@ -321,7 +321,7 @@ func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers 
 	if err := database.
 		Table("games").
 		Select("developer, COUNT(*) as game_count").
-		Where("deleted_at IS NULL AND developer IN ?", relatedDevNames).
+		Where("deleted_at IS NULL AND is_primary = true AND developer IN ?", relatedDevNames).
 		Group("developer").
 		Scan(&countRows).Error; err != nil {
 		slog.Error("failed to fetch related developer game counts", "error", err)
@@ -391,7 +391,7 @@ func buildRelatedPublishers(database *gorm.DB, publisherName string, developers 
 	if err := database.
 		Table("games").
 		Select("publisher, developer, COUNT(*) as game_count").
-		Where("deleted_at IS NULL AND publisher != '' AND developer IN ? AND LOWER(publisher) != LOWER(?)", developerNames, publisherName).
+		Where("deleted_at IS NULL AND is_primary = true AND publisher != '' AND developer IN ? AND LOWER(publisher) != LOWER(?)", developerNames, publisherName).
 		Group("publisher, developer").
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch related publishers", "error", err)
@@ -431,7 +431,7 @@ func buildRelatedPublishers(database *gorm.DB, publisherName string, developers 
 	if err := database.
 		Table("games").
 		Select("publisher, COUNT(*) as game_count").
-		Where("deleted_at IS NULL AND publisher IN ?", relatedPubNames).
+		Where("deleted_at IS NULL AND is_primary = true AND publisher IN ?", relatedPubNames).
 		Group("publisher").
 		Scan(&countRows).Error; err != nil {
 		slog.Error("failed to fetch related publisher game counts", "error", err)
@@ -695,7 +695,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 		Table("games").
 		Select("games.developer, COUNT(DISTINCT games.id) as game_count").
 		Joins("JOIN game_artworks ON game_artworks.game_id = games.id AND game_artworks.hero_url != ''").
-		Where("games.deleted_at IS NULL AND games.developer != ''").
+		Where("games.deleted_at IS NULL AND games.is_primary = true AND games.developer != ''").
 		Group("games.developer").
 		Order("game_count DESC").
 		Limit(5).
@@ -717,7 +717,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 	// Load all games for this developer
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("LOWER(games.developer) = LOWER(?) AND games.deleted_at IS NULL", selectedDev.Developer).
+		Where("LOWER(games.developer) = LOWER(?) AND games.is_primary = true AND games.deleted_at IS NULL", selectedDev.Developer).
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch spotlight developer games", "developer", selectedDev.Developer, "error", err)
@@ -753,7 +753,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 	// Count total games by this developer (including those without hero art)
 	var totalGameCount int64
 	h.DB.Model(&db.Game{}).
-		Where("LOWER(developer) = LOWER(?) AND deleted_at IS NULL", selectedDev.Developer).
+		Where("LOWER(developer) = LOWER(?) AND is_primary = true AND deleted_at IS NULL", selectedDev.Developer).
 		Count(&totalGameCount)
 
 	c.Header("Cache-Control", "private, max-age=300")

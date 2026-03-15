@@ -91,7 +91,7 @@ func (h *ExploreHandler) GetWizardResults(c *gin.Context) {
 	era := c.Query("era")
 	vibe := c.Query("vibe")
 
-	query := h.DB.Preload("Console").Where("cover_url != ''")
+	query := h.DB.Preload("Console").Where("cover_url != '' AND is_primary = true")
 
 	// Mood -> genre/theme mapping
 	switch mood {
@@ -147,7 +147,7 @@ func (h *ExploreHandler) GetWizardResults(c *gin.Context) {
 
 	// If not enough results, relax and try without rating filter
 	if len(games) < 3 {
-		relaxed := h.DB.Preload("Console").Where("cover_url != ''")
+		relaxed := h.DB.Preload("Console").Where("cover_url != '' AND is_primary = true")
 		switch mood {
 		case "action":
 			relaxed = relaxed.Where("genre IN ?", []string{"Action", "Shooter", "Fighting", "Beat 'em up", "Platformer"})
@@ -376,7 +376,7 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 	if err := h.DB.Raw(`
 		SELECT c.id AS console_id, c.name AS console_name, c.abbreviation, COUNT(g.id) AS total_games
 		FROM consoles c
-		JOIN games g ON g.console_id = c.id AND g.deleted_at IS NULL
+		JOIN games g ON g.console_id = c.id AND g.deleted_at IS NULL AND g.is_primary = true
 		WHERE c.deleted_at IS NULL
 		GROUP BY c.id
 		HAVING COUNT(g.id) > 0

@@ -106,6 +106,7 @@ func (h *ExploreHandler) getMoodChillGames() ([]db.Game, error) {
 	var genreGameIDs []uint
 	if err := h.DB.Model(&db.Game{}).
 		Select("id").
+		Where("is_primary = true").
 		Where("LOWER(genre) LIKE ? OR LOWER(genre) LIKE ?", "%puzzle%", "%simulation%").
 		Pluck("id", &genreGameIDs).Error; err != nil {
 		return nil, err
@@ -201,6 +202,7 @@ func (h *ExploreHandler) getMoodSomethingNewGames(userID uint) ([]db.Game, error
 	if err := h.DB.Preload("Console").
 		Joins("LEFT JOIN play_histories ON play_histories.game_id = games.id AND play_histories.user_id = ? AND play_histories.deleted_at IS NULL", userID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Where("play_histories.id IS NULL OR play_histories.play_time = 0").
 		Order("games.rating DESC").
 		Limit(20).
@@ -239,7 +241,7 @@ func (h *ExploreHandler) getMoodQuickGames() ([]db.Game, error) {
 
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("id IN ?", gameIDs).
+		Where("id IN ? AND is_primary = true", gameIDs).
 		Order("rating DESC").
 		Limit(20).
 		Find(&games).Error; err != nil {
@@ -253,7 +255,7 @@ func (h *ExploreHandler) getMoodQuickGames() ([]db.Game, error) {
 func (h *ExploreHandler) getMoodTogetherGames() ([]db.Game, error) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("players > 1").
+		Where("players > 1 AND is_primary = true").
 		Order("rating DESC").
 		Limit(20).
 		Find(&games).Error; err != nil {
@@ -277,7 +279,7 @@ func (h *ExploreHandler) loadGamesByIDs(idSet map[uint]bool, order string, limit
 
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("id IN ?", ids).
+		Where("id IN ? AND is_primary = true", ids).
 		Order(order).
 		Limit(limit).
 		Find(&games).Error; err != nil {
@@ -292,7 +294,7 @@ func (h *ExploreHandler) loadGamesByIDs(idSet map[uint]bool, order string, limit
 func (h *ExploreHandler) GetSurpriseGame(c *gin.Context) {
 	userID := getUserID(c)
 
-	query := h.DB.Preload("Console").Where("cover_url != ''")
+	query := h.DB.Preload("Console").Where("cover_url != '' AND is_primary = true")
 
 	// Optional console filter
 	if consoleAbbr := c.Query("console"); consoleAbbr != "" {

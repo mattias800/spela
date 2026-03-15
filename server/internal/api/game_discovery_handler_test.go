@@ -257,6 +257,7 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 		FileSize:  1024,
 		Developer: "Nintendo",
 		CoverURL:  "NES/1/boxart.jpg",
+		IsPrimary: true,
 	}
 	game2 := db.Game{
 		ConsoleID: console.ID,
@@ -266,6 +267,7 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 		FileSize:  2048,
 		Developer: "Nintendo",
 		CoverURL:  "NES/2/boxart.jpg",
+		IsPrimary: true,
 	}
 	game3 := db.Game{
 		ConsoleID: console.ID,
@@ -273,6 +275,7 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 		FileName:  "zelda.nes",
 		FilePath:  "/tmp/zelda.nes",
 		FileSize:  3072,
+		IsPrimary: true,
 		Developer: "Nintendo",
 		CoverURL:  "NES/3/boxart.jpg",
 	}

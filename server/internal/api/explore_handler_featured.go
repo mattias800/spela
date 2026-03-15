@@ -31,6 +31,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, games.rating, games.genre, games.console_id").
 		Joins("JOIN game_artworks ON game_artworks.game_id = games.id").
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
 		Order(effectiveRatingPrefixed + " DESC").
 		Limit(8).
@@ -158,6 +159,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 func (h *ExploreHandler) buildTopRatedRow(userID uint) (*ExploreRowResponse, error) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").
+		Where("is_primary = true").
 		Where(effectiveRating + " > 0").
 		Order(effectiveRating + " DESC").
 		Limit(20).
@@ -180,6 +182,7 @@ func (h *ExploreHandler) buildTopRatedRow(userID uint) (*ExploreRowResponse, err
 func (h *ExploreHandler) buildRecentlyAddedRow(userID uint) (*ExploreRowResponse, error) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").
+		Where("is_primary = true").
 		Order("created_at DESC").
 		Limit(20).
 		Find(&games).Error; err != nil {
@@ -204,7 +207,7 @@ func (h *ExploreHandler) buildHiddenGemsRow(userID uint) (*ExploreRowResponse, e
 	// First, check if there are at least 5 games total (per acceptance criteria,
 	// hidden gems section is hidden when library is tiny)
 	var totalGames int64
-	if err := h.DB.Model(&db.Game{}).Count(&totalGames).Error; err != nil {
+	if err := h.DB.Model(&db.Game{}).Where("is_primary = true").Count(&totalGames).Error; err != nil {
 		return nil, err
 	}
 	if totalGames < 5 {
@@ -242,7 +245,8 @@ func (h *ExploreHandler) buildHiddenGemsRow(userID uint) (*ExploreRowResponse, e
 	query := h.DB.Preload("Console").
 		Joins("LEFT JOIN (SELECT game_id, COALESCE(SUM(play_time), 0) as total_play_time FROM play_histories GROUP BY game_id) ph ON ph.game_id = games.id").
 		Where(effectiveRatingPrefixed + " >= 75").
-		Where("games.deleted_at IS NULL")
+		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true")
 
 	if threshold > 0 {
 		query = query.Where("ph.total_play_time IS NULL OR ph.total_play_time <= ?", threshold)
@@ -295,7 +299,7 @@ func (h *ExploreHandler) buildMostPlayedRow(userID uint) (*ExploreRowResponse, e
 	}
 
 	var games []db.Game
-	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
+	if err := h.DB.Preload("Console").Where("id IN ? AND is_primary = true", gameIDs).Find(&games).Error; err != nil {
 		return nil, err
 	}
 
