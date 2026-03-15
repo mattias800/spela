@@ -454,25 +454,19 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 			// Fall through to serve stale data if available
 		} else {
 			ranked := bayesianRank(topGames, 25)
-			h.upsertTopRatedGames(console.ID, ranked)
-			// Re-read from DB to get consistent data
-			h.DB.Where("console_id = ?", console.ID).Order("rank asc").Find(&cached)
+			// Upsert in background — image downloads are slow, serve stale data now
+			go h.upsertTopRatedGames(console.ID, ranked)
+			// Don't re-read — serve existing cached data immediately
 		}
 	}
 
 	// Cross-reference with local games
 	result := make([]TopRatedGameResponse, 0, len(cached))
 	for _, tr := range cached {
-		coverUrl := ""
-		if tr.CoverImageID != "" {
-			coverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
-		}
-
 		resp := TopRatedGameResponse{
-			Rank:     tr.Rank,
-			Name:     tr.Name,
-			CoverUrl: coverUrl,
-			Rating:   tr.TotalRating,
+			Rank:   tr.Rank,
+			Name:   tr.Name,
+			Rating: tr.TotalRating,
 		}
 
 		// Check for local game match by case-insensitive title
@@ -480,6 +474,14 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 		if err := h.DB.Where("console_id = ? AND LOWER(title) = LOWER(?)", console.ID, tr.Name).First(&localGame).Error; err == nil {
 			id := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &id
+			// Prefer local game's cached cover
+			if localGame.CoverURL != "" {
+				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
+			}
+		}
+		// Fallback to locally downloaded top-rated cover
+		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
+			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
 		}
 
 		result = append(result, resp)
@@ -496,16 +498,10 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 
 	result := make([]TopRatedGameResponse, 0, len(cached))
 	for i, tr := range cached {
-		coverUrl := ""
-		if tr.CoverImageID != "" {
-			coverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
-		}
-
 		resp := TopRatedGameResponse{
-			Rank:     i + 1,
-			Name:     tr.Name,
-			CoverUrl: coverUrl,
-			Rating:   tr.TotalRating,
+			Rank:   i + 1,
+			Name:   tr.Name,
+			Rating: tr.TotalRating,
 		}
 
 		// Check for local game match by case-insensitive title, scoped to the same console
@@ -513,6 +509,12 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 		if err := h.DB.Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).First(&localGame).Error; err == nil {
 			id := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &id
+			if localGame.CoverURL != "" {
+				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
+			}
+		}
+		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
+			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
 		}
 
 		result = append(result, resp)
@@ -668,11 +670,20 @@ func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGam
 			coverImageID = g.Cover.ImageID
 		}
 
+		// Download cover image locally
+		coverLocalPath := ""
+		if coverImageID != "" && h.Scraper != nil {
+			coverURL := igdb.ImageURL(coverImageID, "cover_big")
+			subpath := fmt.Sprintf("top-rated/%d/cover.jpg", g.ID)
+			coverLocalPath = h.Scraper.DownloadExternalImage(coverURL, subpath)
+		}
+
 		tr := db.TopRatedGame{
 			ConsoleID:         consoleID,
 			IGDBGameID:        g.ID,
 			Name:              g.Name,
 			CoverImageID:      coverImageID,
+			CoverLocalPath:    coverLocalPath,
 			TotalRating:       g.TotalRating,
 			TotalRatingCount:  g.TotalRatingCount,
 			UserRating:        g.UserRating,
@@ -686,7 +697,7 @@ func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGam
 		var existing db.TopRatedGame
 		err := h.DB.Where("console_id = ? AND igdb_game_id = ?", consoleID, g.ID).First(&existing).Error
 		if err == nil {
-			h.DB.Model(&existing).Updates(map[string]interface{}{
+			updates := map[string]interface{}{
 				"name":                tr.Name,
 				"cover_image_id":      tr.CoverImageID,
 				"total_rating":        tr.TotalRating,
@@ -696,7 +707,11 @@ func (h *ConsoleHandler) upsertTopRatedGames(consoleID uint, games []igdb.TopGam
 				"critic_rating":       tr.CriticRating,
 				"critic_rating_count": tr.CriticRatingCount,
 				"rank":                tr.Rank,
-			})
+			}
+			if coverLocalPath != "" {
+				updates["cover_local_path"] = coverLocalPath
+			}
+			h.DB.Model(&existing).Updates(updates)
 		} else {
 			h.DB.Create(&tr)
 		}

@@ -494,7 +494,7 @@ func (h *ExploreHandler) findHeroURL(games []db.Game) string {
 		Where("game_artworks.game_id IN ? AND game_artworks.hero_url != ''", gameIDs).
 		Order("games.rating DESC").
 		First(&artwork).Error; err == nil {
-		return artwork.HeroURL
+		return resolveImageURL(artwork.HeroURL)
 	}
 	return ""
 }
@@ -746,7 +746,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 			Where("game_artworks.game_id IN ? AND game_artworks.hero_url != ''", gameIDs).
 			Order("games.rating DESC").
 			First(&artwork).Error; err == nil {
-			heroURL = artwork.HeroURL
+			heroURL = resolveImageURL(artwork.HeroURL)
 		}
 	}
 

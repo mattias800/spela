@@ -395,7 +395,7 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 					if artwork, ok := artworkMap[*entry.GameID]; ok {
 						if g.Rating > bestHeroRating {
 							bestHeroRating = g.Rating
-							bestHeroURL = artwork.HeroURL
+							bestHeroURL = resolveImageURL(artwork.HeroURL)
 						}
 					}
 				}
@@ -631,7 +631,7 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 					if artwork, ok := artworkMap[*entry.GameID]; ok {
 						if g.Rating > bestHeroRating {
 							bestHeroRating = g.Rating
-							bestHeroURL = artwork.HeroURL
+							bestHeroURL = resolveImageURL(artwork.HeroURL)
 						}
 					}
 				}

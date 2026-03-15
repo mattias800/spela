@@ -34,9 +34,9 @@ func (h *ArtworkHandler) GetGameArtwork(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, GameArtworkResponse{
-		HeroURL: artwork.HeroURL,
-		GridURL: artwork.GridURL,
-		LogoURL: artwork.LogoURL,
-		IconURL: artwork.IconURL,
+		HeroURL: resolveImageURL(artwork.HeroURL),
+		GridURL: resolveImageURL(artwork.GridURL),
+		LogoURL: resolveImageURL(artwork.LogoURL),
+		IconURL: resolveImageURL(artwork.IconURL),
 	})
 }

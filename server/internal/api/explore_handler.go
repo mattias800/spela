@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/scraper"
 	"gorm.io/gorm"
 )
 
@@ -9,6 +10,7 @@ import (
 type ExploreHandler struct {
 	DB         *gorm.DB
 	IGDBClient *igdb.Client
+	Scraper    *scraper.Scraper
 }
 
 // FeaturedGameResponse is the API response for a featured game in the hero carousel.

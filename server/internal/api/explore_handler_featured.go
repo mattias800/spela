@@ -94,8 +94,8 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		result[i] = FeaturedGameResponse{
 			GameID:              strconv.FormatUint(uint64(r.GameID), 10),
 			Title:               r.Title,
-			HeroURL:             r.HeroURL,
-			LogoURL:             r.LogoURL,
+			HeroURL:             resolveImageURL(r.HeroURL),
+			LogoURL:             resolveImageURL(r.LogoURL),
 			ConsoleID:           abbr,
 			ConsoleName:         con.Name,
 			ConsoleAbbreviation: abbr,

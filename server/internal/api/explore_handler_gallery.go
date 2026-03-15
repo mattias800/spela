@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/igdb"
 )
 
 // --- Phase 9: Visual Browsing — Gallery & Art Modes ---
@@ -185,6 +184,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 
 	type artworkRow struct {
 		IGDBImageID  string
+		LocalPath    string
 		Width        int
 		Height       int
 		GameID       uint
@@ -197,7 +197,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 
 	var rows []artworkRow
 	if err := h.DB.Table("game_artwork_images").
-		Select("game_artwork_images.igdb_image_id, game_artwork_images.width, game_artwork_images.height, games.id as game_id, games.title as game_title, games.rating, consoles.name as console_name, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
+		Select("game_artwork_images.igdb_image_id, game_artwork_images.local_path, game_artwork_images.width, game_artwork_images.height, games.id as game_id, games.title as game_title, games.rating, consoles.name as console_name, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
 		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Order("games.rating DESC").
@@ -211,8 +211,11 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 
 	items := make([]ArtworkItem, 0, len(rows))
 	for _, r := range rows {
+		if r.LocalPath == "" {
+			continue // skip artwork without locally cached image
+		}
 		items = append(items, ArtworkItem{
-			URL:          igdb.ImageURL(r.IGDBImageID, "screenshot_big"),
+			URL:          resolveImageURL(r.LocalPath),
 			Width:        r.Width,
 			Height:       r.Height,
 			GameID:       strconv.FormatUint(uint64(r.GameID), 10),

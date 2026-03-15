@@ -68,24 +68,19 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 			slog.Warn("failed to fetch similar games from IGDB", "game", game.Title, "error", err)
 			// Fall through to serve stale data if available
 		} else {
-			h.upsertSimilarGames(game.ID, similarGames)
-			// Re-read from DB to get consistent data
-			h.DB.Where("game_id = ?", game.ID).Find(&cached)
+			// Upsert in background — image downloads are slow, serve stale data now
+			gameID := game.ID
+			go h.upsertSimilarGames(gameID, similarGames)
+			// Don't re-read — serve existing cached data immediately
 		}
 	}
 
 	// Build response with local library cross-reference
 	result := make([]SimilarGameResponse, 0, len(cached))
 	for _, sg := range cached {
-		coverUrl := ""
-		if sg.CoverImageID != "" {
-			coverUrl = igdb.ImageURL(sg.CoverImageID, "cover_big")
-		}
-
 		resp := SimilarGameResponse{
-			Name:     sg.Name,
-			CoverUrl: coverUrl,
-			Rating:   sg.Rating,
+			Name:   sg.Name,
+			Rating: sg.Rating,
 		}
 
 		// Check for local game match by case-insensitive title
@@ -93,6 +88,12 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 		if err := h.DB.Where("LOWER(title) = LOWER(?)", sg.Name).First(&localGame).Error; err == nil {
 			localID := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &localID
+			if localGame.CoverURL != "" {
+				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
+			}
+		}
+		if resp.CoverUrl == "" && sg.CoverLocalPath != "" {
+			resp.CoverUrl = resolveImageURL(sg.CoverLocalPath)
 		}
 
 		result = append(result, resp)
@@ -109,23 +110,36 @@ func (h *GameDiscoveryHandler) upsertSimilarGames(gameID uint, games []igdb.Simi
 			coverImageID = g.Cover.ImageID
 		}
 
+		// Download cover image locally
+		coverLocalPath := ""
+		if coverImageID != "" && h.Scraper != nil {
+			coverURL := igdb.ImageURL(coverImageID, "cover_big")
+			subpath := fmt.Sprintf("similar/%d/%d/cover.jpg", gameID, g.ID)
+			coverLocalPath = h.Scraper.DownloadExternalImage(coverURL, subpath)
+		}
+
 		sg := db.SimilarGame{
-			GameID:       gameID,
-			IGDBGameID:   g.ID,
-			Name:         g.Name,
-			CoverImageID: coverImageID,
-			Rating:       g.TotalRating,
+			GameID:         gameID,
+			IGDBGameID:     g.ID,
+			Name:           g.Name,
+			CoverImageID:   coverImageID,
+			CoverLocalPath: coverLocalPath,
+			Rating:         g.TotalRating,
 		}
 
 		// Upsert: update if exists, create if not
 		var existing db.SimilarGame
 		err := h.DB.Where("game_id = ? AND igdb_game_id = ?", gameID, g.ID).First(&existing).Error
 		if err == nil {
-			h.DB.Model(&existing).Updates(map[string]interface{}{
+			updates := map[string]interface{}{
 				"name":           sg.Name,
 				"cover_image_id": sg.CoverImageID,
 				"rating":         sg.Rating,
-			})
+			}
+			if coverLocalPath != "" {
+				updates["cover_local_path"] = coverLocalPath
+			}
+			h.DB.Model(&existing).Updates(updates)
 		} else {
 			h.DB.Create(&sg)
 		}

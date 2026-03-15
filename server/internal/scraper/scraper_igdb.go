@@ -344,13 +344,18 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		if ic.Publisher && game.Publisher == "" {
 			game.Publisher = ic.Company.Name
 		}
-		// Store company logo if available
+		// Store company logo if available (download locally)
 		if ic.Company.Logo != nil && ic.Company.Logo.ImageID != "" {
-			logoURL := igdb.CompanyLogoURL(ic.Company.Logo.ImageID)
+			cdnURL := igdb.CompanyLogoURL(ic.Company.Logo.ImageID)
+			subpath := fmt.Sprintf("companies/%d/logo.png", ic.Company.ID)
+			logoPath := s.DownloadExternalImage(cdnURL, subpath)
+			if logoPath == "" {
+				break // download failed, skip — don't store CDN URL
+			}
 			var existing db.Company
 			if err := s.DB.Where("igdb_company_id = ?", ic.Company.ID).First(&existing).Error; err == nil {
-				if existing.LogoURL == "" {
-					s.DB.Model(&existing).Update("logo_url", logoURL)
+				if existing.LogoURL == "" || strings.HasPrefix(existing.LogoURL, "http") {
+					s.DB.Model(&existing).Update("logo_url", logoPath)
 				}
 			}
 		}
@@ -418,7 +423,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 			defer imgWg.Done()
 			coverURL := igdb.ImageURL(imageID, "cover_big")
 			coverSubpath := fmt.Sprintf("%s/%s/boxart-igdb.jpg", console.Abbreviation, gameIDStr)
-			if path := s.downloadExternalImage(coverURL, coverSubpath); path != "" {
+			if path := s.DownloadExternalImage(coverURL, coverSubpath); path != "" {
 				game.IGDBCoverURL = path
 			}
 		}(match.Cover.ImageID)
@@ -438,7 +443,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 			defer imgWg.Done()
 			screenshotURL := igdb.ImageURL(imageID, "original")
 			screenshotSubpath := fmt.Sprintf("%s/%s/screenshot_%d.jpg", console.Abbreviation, gameIDStr, idx)
-			if path := s.downloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
+			if path := s.DownloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
 				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: idx})
 			}
 		}(i, ss.ImageID)
