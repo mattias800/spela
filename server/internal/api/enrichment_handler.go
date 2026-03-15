@@ -40,7 +40,7 @@ func (h *EnrichmentHandler) ListThemes(c *gin.Context) {
 
 	var rows []themeRow
 	if err := h.DB.Model(&db.GameTheme{}).
-		Joins("JOIN games ON games.id = game_themes.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_themes.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Select("igdb_theme_id, game_themes.name, COUNT(DISTINCT game_themes.game_id) as game_count").
 		Group("igdb_theme_id, game_themes.name").
 		Having("game_count > 0").
@@ -95,6 +95,7 @@ func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 		Joins("JOIN game_themes ON game_themes.game_id = games.id").
 		Where("game_themes.igdb_theme_id = ?", themeID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Count(&total)
 
 	// Fetch games
@@ -104,6 +105,7 @@ func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 		Joins("JOIN game_themes ON game_themes.game_id = games.id").
 		Where("game_themes.igdb_theme_id = ?", themeID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Order("games.rating DESC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {
@@ -145,7 +147,7 @@ func (h *EnrichmentHandler) ListKeywords(c *gin.Context) {
 
 	var rows []keywordRow
 	if err := h.DB.Model(&db.GameKeyword{}).
-		Joins("JOIN games ON games.id = game_keywords.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_keywords.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Select("igdb_keyword_id, game_keywords.name, COUNT(DISTINCT game_keywords.game_id) as game_count").
 		Group("igdb_keyword_id, game_keywords.name").
 		Having("game_count > 0").
@@ -199,6 +201,7 @@ func (h *EnrichmentHandler) ListKeywordGames(c *gin.Context) {
 		Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
 		Where("game_keywords.igdb_keyword_id = ?", keywordID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Count(&total)
 
 	var games []db.Game
@@ -207,6 +210,7 @@ func (h *EnrichmentHandler) ListKeywordGames(c *gin.Context) {
 		Joins("JOIN game_keywords ON game_keywords.game_id = games.id").
 		Where("game_keywords.igdb_keyword_id = ?", keywordID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Order("games.rating DESC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {
@@ -452,7 +456,7 @@ func (h *EnrichmentHandler) ListFranchises(c *gin.Context) {
 
 	var rows []franchiseRow
 	if err := h.DB.Model(&db.GameFranchise{}).
-		Joins("JOIN games ON games.id = game_franchises.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_franchises.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Select("igdb_franchise_id, franchise_name, COUNT(DISTINCT game_franchises.game_id) as game_count").
 		Group("igdb_franchise_id, franchise_name").
 		Having("game_count > 0").
@@ -505,6 +509,7 @@ func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 		Joins("JOIN game_franchises ON game_franchises.game_id = games.id").
 		Where("game_franchises.igdb_franchise_id = ?", franchiseID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Count(&total)
 
 	// Fetch games
@@ -514,6 +519,7 @@ func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 		Joins("JOIN game_franchises ON game_franchises.game_id = games.id").
 		Where("game_franchises.igdb_franchise_id = ?", franchiseID).
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Order("games.release_date ASC, games.title ASC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {

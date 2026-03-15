@@ -47,6 +47,7 @@ func createExploreGame(t *testing.T, database *gorm.DB, consoleAbbr, title strin
 		FilePath:  consoleAbbr + "/" + title + ".rom",
 		Rating:    rating,
 		Genre:     "Action",
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -64,6 +65,7 @@ func createExploreGameWithTime(t *testing.T, database *gorm.DB, consoleAbbr, tit
 		FilePath:  consoleAbbr + "/" + title + ".rom",
 		Rating:    rating,
 		Genre:     "Action",
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	// Update created_at directly
@@ -1068,6 +1070,7 @@ func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, ti
 		Rating:    rating,
 		Genre:     genre,
 		Players:   players,
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -1086,6 +1089,7 @@ func createExploreGameWithCover(t *testing.T, database *gorm.DB, consoleAbbr, ti
 		Rating:    rating,
 		Genre:     "Action",
 		CoverURL:  "https://images.igdb.com/cover/" + title + ".jpg",
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -1962,6 +1966,7 @@ func createExploreGameWithDev(t *testing.T, database *gorm.DB, consoleAbbr, titl
 		Genre:     "Action",
 		Developer: developer,
 		Publisher: publisher,
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -2225,6 +2230,7 @@ func createExploreGameFull(t *testing.T, database *gorm.DB, consoleAbbr, title s
 		Genre:     genre,
 		Developer: developer,
 		Publisher: publisher,
+		IsPrimary: true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -3058,6 +3064,7 @@ func createExploreGameWithRelease(t *testing.T, database *gorm.DB, consoleAbbr, 
 		Rating:      rating,
 		Genre:       "Action",
 		ReleaseDate: releaseDate,
+		IsPrimary:   true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -4713,6 +4720,7 @@ func createExploreGameComplete(t *testing.T, database *gorm.DB, consoleAbbr, tit
 		Developer:   developer,
 		Publisher:   publisher,
 		ReleaseDate: releaseDate,
+		IsPrimary:   true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -5397,4 +5405,55 @@ func TestGetPublisherDetail_RelatedPublishers_SelfPublished(t *testing.T) {
 	require.Len(t, resp.RelatedPublishers, 1)
 	assert.Equal(t, "Sega", resp.RelatedPublishers[0].Name)
 	assert.Equal(t, []string{"Nintendo"}, resp.RelatedPublishers[0].SharedDevelopers)
+}
+
+// TestConsoleShowcase_OnlyPrimaryGames verifies that non-primary (variant) games
+// are excluded from the console showcase endpoint. Two games share the same GroupKey;
+// only the primary should appear in essentials.
+func TestConsoleShowcase_OnlyPrimaryGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	var console db.Console
+	require.NoError(t, env.database.Where("abbreviation = ?", "SNES").First(&console).Error)
+
+	// Create a primary game
+	primary := db.Game{
+		ConsoleID: console.ID,
+		Title:     "Super Mario World (USA)",
+		FileName:  "Super Mario World (USA).sfc",
+		FilePath:  "SNES/Super Mario World (USA).sfc",
+		Rating:    92,
+		Genre:     "Platformer",
+		IsPrimary: true,
+		GroupKey:   "snes:super-mario-world",
+	}
+	require.NoError(t, env.database.Create(&primary).Error)
+
+	// Create a non-primary variant of the same game
+	variant := db.Game{
+		ConsoleID: console.ID,
+		Title:     "Super Mario World (Europe)",
+		FileName:  "Super Mario World (Europe).sfc",
+		FilePath:  "SNES/Super Mario World (Europe).sfc",
+		Rating:    92,
+		Genre:     "Platformer",
+		IsPrimary: false,
+		GroupKey:   "snes:super-mario-world",
+	}
+	require.NoError(t, env.database.Create(&variant).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	// Only the primary game should appear in essentials
+	assert.Equal(t, 1, resp.Console.GameCount)
+	require.Len(t, resp.Essentials, 1)
+	assert.Equal(t, "Super Mario World (USA)", resp.Essentials[0].Title)
 }

@@ -184,7 +184,7 @@ func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint) ([]ForYouRowResp
 		// Find games in the same genre that the user hasn't played
 		var recGames []db.Game
 		query := h.DB.Preload("Console").
-			Where("games.genre = ? AND games.deleted_at IS NULL", srcGame.Genre)
+			Where("games.genre = ? AND games.is_primary = true AND games.deleted_at IS NULL", srcGame.Genre)
 
 		if len(playedGameIDs) > 0 {
 			query = query.Where("games.id NOT IN ?", playedGameIDs)
@@ -263,7 +263,7 @@ func (h *ExploreHandler) buildMoreGenreRow(userID uint) (*ForYouRowResponse, err
 	// Find top-rated unplayed games in this genre
 	var games []db.Game
 	query := h.DB.Preload("Console").
-		Where("games.genre = ? AND games.deleted_at IS NULL", topGenre)
+		Where("games.genre = ? AND games.is_primary = true AND games.deleted_at IS NULL", topGenre)
 	if len(playedGameIDs) > 0 {
 		query = query.Where("games.id NOT IN ?", playedGameIDs)
 	}
@@ -309,7 +309,7 @@ func (h *ExploreHandler) buildUnfinishedRow(userID uint) (*ForYouRowResponse, er
 	}
 
 	var games []db.Game
-	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
+	if err := h.DB.Preload("Console").Where("id IN ? AND is_primary = true", gameIDs).Find(&games).Error; err != nil {
 		return nil, err
 	}
 
@@ -362,7 +362,7 @@ func (h *ExploreHandler) buildExpandHorizonsRow(userID uint) (*ForYouRowResponse
 	var unplayedGenres []unplayedGenreRow
 	if err := h.DB.Model(&db.Game{}).
 		Select("genre, COUNT(*) as game_count").
-		Where("genre NOT IN ? AND genre != '' AND rating > 70 AND deleted_at IS NULL", playedGenres).
+		Where("genre NOT IN ? AND genre != '' AND rating > 70 AND is_primary = true AND deleted_at IS NULL", playedGenres).
 		Group("genre").
 		Order("game_count DESC").
 		Limit(1).
@@ -379,7 +379,7 @@ func (h *ExploreHandler) buildExpandHorizonsRow(userID uint) (*ForYouRowResponse
 	// Get top-rated games in this genre
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("genre = ? AND rating > 70 AND deleted_at IS NULL", targetGenre).
+		Where("genre = ? AND rating > 70 AND is_primary = true AND deleted_at IS NULL", targetGenre).
 		Order("rating DESC").
 		Limit(10).
 		Find(&games).Error; err != nil {
@@ -686,7 +686,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	}
 
 	var games []db.Game
-	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
+	if err := h.DB.Preload("Console").Where("id IN ? AND is_primary = true", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load recommended games", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
 		return

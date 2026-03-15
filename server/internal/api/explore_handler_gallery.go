@@ -105,7 +105,7 @@ func (h *ExploreHandler) GetScreenshotGallery(c *gin.Context) {
 
 	// Build the base query joining screenshots with games and consoles.
 	baseQuery := h.DB.Table("game_screenshots").
-		Joins("JOIN games ON games.id = game_screenshots.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_screenshots.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Where("game_screenshots.deleted_at IS NULL")
 
@@ -174,7 +174,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 	// Count total artwork images.
 	var count int64
 	if err := h.DB.Table("game_artwork_images").
-		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Count(&count).Error; err != nil {
 		slog.Error("failed to count artwork for gallery", "error", err)
@@ -198,7 +198,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 	var rows []artworkRow
 	if err := h.DB.Table("game_artwork_images").
 		Select("game_artwork_images.igdb_image_id, game_artwork_images.local_path, game_artwork_images.width, game_artwork_images.height, games.id as game_id, games.title as game_title, games.rating, consoles.name as console_name, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
-		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Order("games.rating DESC").
 		Offset(offset).
@@ -244,6 +244,7 @@ func (h *ExploreHandler) GetCoverGallery(c *gin.Context) {
 	baseQuery := h.DB.Table("games").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Where("games.deleted_at IS NULL").
+		Where("games.is_primary = true").
 		Where("games.cover_url != ''")
 
 	if consoleFilter != "" {

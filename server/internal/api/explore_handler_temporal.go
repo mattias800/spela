@@ -137,7 +137,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 	// Load all games that have a release_date set
 	var allGames []db.Game
 	if err := h.DB.Preload("Console").
-		Where("release_date != '' AND release_date IS NOT NULL AND deleted_at IS NULL").
+		Where("release_date != '' AND release_date IS NOT NULL AND is_primary = true AND deleted_at IS NULL").
 		Find(&allGames).Error; err != nil {
 		slog.Error("failed to fetch games for on-this-day", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
@@ -211,7 +211,7 @@ func (h *ExploreHandler) GetBestOfYear(c *gin.Context) {
 	// Find games whose release_date starts with the year
 	var games []db.Game
 	if err := h.DB.Preload("Console").
-		Where("release_date LIKE ? AND deleted_at IS NULL", yearPrefix+"%").
+		Where("release_date LIKE ? AND is_primary = true AND deleted_at IS NULL", yearPrefix+"%").
 		Where("rating > 0").
 		Order("rating DESC").
 		Limit(30).
@@ -385,7 +385,7 @@ func (h *ExploreHandler) GetDecades(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").
 		Where(whereClause, args...).
-		Where("rating > 0 AND deleted_at IS NULL").
+		Where("rating > 0 AND is_primary = true AND deleted_at IS NULL").
 		Order("rating DESC").
 		Limit(30).
 		Find(&games).Error; err != nil {
