@@ -68,13 +68,15 @@ function CollapsibleVariantList({
   testId: string;
 }) {
   const [expanded, setExpanded] = useState(variants.length <= 2);
+  const panelId = `${testId}-panel`;
 
   return (
     <div data-testid={testId}>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 w-full text-left group/toggle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-0.5 -mx-1"
+        className="flex items-center gap-2 w-full text-left group/toggle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-0.5 -mx-1 hover:bg-surface-800/30"
         aria-expanded={expanded}
+        aria-controls={panelId}
       >
         <Icon className="h-4 w-4 text-surface-400" />
         <span className="text-sm font-medium text-surface-400 group-hover/toggle:text-surface-300 transition-colors">
@@ -89,7 +91,7 @@ function CollapsibleVariantList({
         />
       </button>
       {expanded && (
-        <div className="space-y-1.5 mt-2">
+        <div id={panelId} role="region" className="space-y-1.5 mt-2">
           {variants.map((variant) => (
             <VariantRow key={variant.id} variant={variant} />
           ))}

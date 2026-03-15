@@ -745,7 +745,11 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 	// image download may have failed or not happened.
 	if _, err := os.Stat(absPath); os.IsNotExist(err) && strings.HasSuffix(reqPath, "/boxart-libretro.png") {
 		if path := h.tryOnDemandLibRetroCover(reqPath); path != "" {
-			absPath, _ = filepath.Abs(filepath.Join(h.ImageDir, path))
+			newAbs, _ := filepath.Abs(filepath.Join(h.ImageDir, path))
+			// Re-validate path stays within ImageDir after on-demand download
+			if strings.HasPrefix(newAbs, absImageDir+string(filepath.Separator)) {
+				absPath = newAbs
+			}
 		}
 	}
 
@@ -769,13 +773,19 @@ func (h *ImageHandler) tryOnDemandLibRetroCover(reqPath string) string {
 	}
 	gameIDStr := parts[len(parts)-2]
 
+	// Parse to uint to prevent SQL injection via GORM's First() footgun
+	gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
+	if err != nil {
+		return ""
+	}
+
 	var game db.Game
-	if err := h.DB.Preload("Console").First(&game, gameIDStr).Error; err != nil {
+	if err := h.DB.Preload("Console").First(&game, gameID).Error; err != nil {
 		return ""
 	}
 
 	consoleAbbr := strings.ToLower(game.Console.Abbreviation)
-	subpath := fmt.Sprintf("%s/%s/boxart-libretro.png", consoleAbbr, gameIDStr)
+	subpath := fmt.Sprintf("%s/%d/boxart-libretro.png", consoleAbbr, gameID)
 
 	system, ok := scraper.AbbreviationToLibRetro[strings.ToUpper(consoleAbbr)]
 	if !ok {
