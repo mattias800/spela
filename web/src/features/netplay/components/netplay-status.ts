@@ -23,4 +23,5 @@ export const endReasonLabel: Record<
   client_left: "Client left",
   timeout: "Expired",
   completed: "Completed",
+  admin_deleted: "Removed by admin",
 };

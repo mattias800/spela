@@ -640,7 +640,7 @@ export interface NetplaySession {
   consoleName: string;
   coverAspectRatio: number;
   status: "waiting" | "in_progress" | "ended";
-  endReason: "host_left" | "client_left" | "timeout" | "completed" | null;
+  endReason: "host_left" | "client_left" | "timeout" | "completed" | "admin_deleted" | null;
   inputDelay: number;
   inviteCode: string;
   createdAt: string;
