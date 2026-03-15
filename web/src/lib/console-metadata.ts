@@ -88,6 +88,11 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-orange-500 to-red-800",
     color: "#ed8936",
   },
+  pcecd: {
+    icon: Tv,
+    gradient: "from-orange-500 to-red-800",
+    color: "#ed8936",
+  },
   atari2600: {
     icon: Tv,
     gradient: "from-amber-600 to-brown-900",

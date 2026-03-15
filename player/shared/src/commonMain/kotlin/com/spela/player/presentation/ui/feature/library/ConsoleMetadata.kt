@@ -181,6 +181,13 @@ fun getConsoleInfo(abbreviation: String): ConsoleInfo? = when (abbreviation.lowe
         generation = "4th gen",
         summary = "NEC's hybrid 8/16-bit console was the first to market with a CD-ROM add-on. Popular in Japan with a strong shoot-em-up and RPG library.",
     )
+    "pcecd" -> ConsoleInfo(
+        manufacturer = "NEC",
+        releaseYear = 1988,
+        mediaType = "CD-ROM",
+        generation = "4th gen",
+        summary = "The first CD-ROM gaming platform, the TurboGrafx-CD add-on delivered enhanced audio, FMV cutscenes, and larger games to the PC Engine family.",
+    )
     "a26" -> ConsoleInfo(
         manufacturer = "Atari",
         releaseYear = 1977,
@@ -380,6 +387,7 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
         "neogeo" -> Color(0xFFeab308) to Color(0xFFb91c1c)      // yellow-500 → red-700
         "neocd" -> Color(0xFFeab308) to Color(0xFFb91c1c)       // yellow-500 → red-700
         "pce" -> Color(0xFFf97316) to Color(0xFF991b1b)         // orange-500 → red-800
+        "pcecd" -> Color(0xFFf97316) to Color(0xFF991b1b)       // orange-500 → red-800
         "a26" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
         "gg" -> Color(0xFF2563eb) to Color(0xFF1e3a8a)          // blue-600 → blue-900
         "scd" -> Color(0xFF374151) to Color(0xFF1e3a8a)         // gray-700 → blue-900
