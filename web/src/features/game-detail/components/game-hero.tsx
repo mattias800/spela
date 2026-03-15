@@ -145,7 +145,7 @@ export function GameHero({
       {/* Cover art */}
       <div className="w-48 flex-shrink-0 md:w-64 flex flex-col items-center">
         <div
-          className="rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
+          className="w-full rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
         >
           {game.coverUrl ? (
             <img

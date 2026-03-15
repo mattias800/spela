@@ -173,17 +173,10 @@ export function OnThisDayShelf({
           <GameCard
             game={game}
             showConsoleBadge
+            subtitle={game.releaseDate ? `Released ${new Date(game.releaseDate).getFullYear()}` : undefined}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />
-          {game.releaseDate && (
-            <p
-              className="text-xs text-surface-400 mt-1.5"
-              data-testid="release-year"
-            >
-              Released {new Date(game.releaseDate).getFullYear()}
-            </p>
-          )}
         </div>
       ))}
     </ScrollShelf>

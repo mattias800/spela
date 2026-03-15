@@ -869,7 +869,7 @@ func buildTimeline(games []db.Game) []TimelineEntry {
 		yearGames[year] = append(yearGames[year], TimelineGame{
 			ID:       strconv.FormatUint(uint64(g.ID), 10),
 			Title:    g.Title,
-			CoverURL: g.CoverURL,
+			CoverURL: resolveImageURL(g.CoverURL),
 			Rating:   g.Rating,
 		})
 	}

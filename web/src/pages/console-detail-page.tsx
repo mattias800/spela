@@ -98,53 +98,29 @@ export function ConsoleDetailPage() {
         />
       )}
 
-      {/* Admin scan button */}
-      {isAdmin && (
-        <div className="flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={scanLibrary.isPending}
-            icon={<FolderSearch className="h-4 w-4" />}
-            className="ml-auto"
-            data-testid="scan-button"
-            onClick={() =>
-              scanLibrary.mutate(
-                { console: consoleAbbr },
-                {
-                  onSuccess: () =>
-                    toast("info", `Scan started for ${consoleName}.`),
-                  onError: (err) =>
-                    toast(
-                      "error",
-                      err instanceof Error ? err.message : "Scan failed",
-                    ),
-                },
-              )
-            }
-          >
-            Scan for new games
-          </Button>
-        </div>
-      )}
-
       {/* Content varies by library size */}
       {gameCount === 0 ? (
-        <EmptyState
-          icon={Library}
-          title="No games found"
-          description="No games have been detected for this console yet."
-        />
+        <>
+          <EmptyState
+            icon={Library}
+            title="No games found"
+            description="No games have been detected for this console yet."
+          />
+          {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
+        </>
       ) : isSmallLibrary ? (
         /* Small library: inline game grid */
         <>
-          <SearchInput
-            placeholder={`Search ${consoleName} games...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-            data-testid="small-library-search"
-          />
+          <div className="flex items-center gap-3">
+            <SearchInput
+              placeholder={`Search ${consoleName} games...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm"
+              data-testid="small-library-search"
+            />
+            {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
+          </div>
           {smallLibraryData && smallLibraryData.data.length > 0 ? (
             <GameGrid>
               {smallLibraryData.data.map((game) => (
@@ -178,14 +154,17 @@ export function ConsoleDetailPage() {
       ) : (
         /* Large library: showcase sections + browse link */
         <>
-          <Link
-            to={`/consoles/${id}/games`}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-brand-600/20 hover:bg-brand-500 active:bg-brand-700 transition-all duration-200"
-            data-testid="browse-all-games-link"
-          >
-            Browse all {gameCount} games
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/consoles/${id}/games`}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-brand-600/20 hover:bg-brand-500 active:bg-brand-700 transition-all duration-200"
+              data-testid="browse-all-games-link"
+            >
+              Browse all {gameCount} games
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
+          </div>
 
           <ConsoleRecentlyPlayed consoleId={id!} />
           <ConsoleEssentials consoleId={id!} />
@@ -205,5 +184,43 @@ export function ConsoleDetailPage() {
         </>
       )}
     </div>
+  );
+}
+
+function ScanButton({
+  consoleAbbr,
+  consoleName,
+  scanLibrary,
+  toast,
+}: {
+  consoleAbbr: string;
+  consoleName: string;
+  scanLibrary: ReturnType<typeof useScanLibrary>;
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      loading={scanLibrary.isPending}
+      icon={<FolderSearch className="h-4 w-4" />}
+      data-testid="scan-button"
+      onClick={() =>
+        scanLibrary.mutate(
+          { console: consoleAbbr },
+          {
+            onSuccess: () =>
+              toast("info", `Scan started for ${consoleName}.`),
+            onError: (err) =>
+              toast(
+                "error",
+                err instanceof Error ? err.message : "Scan failed",
+              ),
+          },
+        )
+      }
+    >
+      Scan for new games
+    </Button>
   );
 }

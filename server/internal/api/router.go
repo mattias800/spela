@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -95,7 +97,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	}
 
 	// Serve images — save screenshots require auth + ownership; everything else is public
-	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret, DB: cfg.DB}
+	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret, DB: cfg.DB, Scraper: cfg.Scraper}
 	r.GET("/api/images/*filepath", imageHandler.ServeImage)
 
 	// Health check (public, no auth required)
@@ -627,6 +629,7 @@ type ImageHandler struct {
 	ImageDir  string
 	JWTSecret string
 	DB        *gorm.DB
+	Scraper   *scraper.Scraper
 }
 
 // ServeImage serves image files. Paths under save-screenshots/ require auth + ownership.
@@ -736,5 +739,71 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 		}
 	}
 
+	// If the file doesn't exist and it's a boxart-libretro.png, try on-demand
+	// download from LibRetro (no rate limit). This handles games that haven't
+	// been fully scraped yet — their CoverURL is set during scraping but the
+	// image download may have failed or not happened.
+	if _, err := os.Stat(absPath); os.IsNotExist(err) && strings.HasSuffix(reqPath, "/boxart-libretro.png") {
+		if path := h.tryOnDemandLibRetroCover(reqPath); path != "" {
+			newAbs, _ := filepath.Abs(filepath.Join(h.ImageDir, path))
+			// Re-validate path stays within ImageDir after on-demand download
+			if strings.HasPrefix(newAbs, absImageDir+string(filepath.Separator)) {
+				absPath = newAbs
+			}
+		}
+	}
+
 	c.File(absPath)
+}
+
+// tryOnDemandLibRetroCover attempts to download a LibRetro cover on-demand
+// when the requested image doesn't exist locally. Parses the request path
+// to extract console abbreviation and game ID, looks up the game, and tries
+// to download the cover from LibRetro.
+// Returns the local path on success, or empty string on failure.
+func (h *ImageHandler) tryOnDemandLibRetroCover(reqPath string) string {
+	if h.Scraper == nil {
+		return ""
+	}
+
+	// Parse path: {consoleAbbr}/{gameID}/boxart-libretro.png
+	parts := strings.Split(reqPath, "/")
+	if len(parts) < 3 {
+		return ""
+	}
+	gameIDStr := parts[len(parts)-2]
+
+	// Parse to uint to prevent SQL injection via GORM's First() footgun
+	gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
+	if err != nil {
+		return ""
+	}
+
+	var game db.Game
+	if err := h.DB.Preload("Console").First(&game, gameID).Error; err != nil {
+		return ""
+	}
+
+	consoleAbbr := strings.ToLower(game.Console.Abbreviation)
+	subpath := fmt.Sprintf("%s/%d/boxart-libretro.png", consoleAbbr, gameID)
+
+	system, ok := scraper.AbbreviationToLibRetro[strings.ToUpper(consoleAbbr)]
+	if !ok {
+		return ""
+	}
+
+	// tryDownloadImage is unexported; use downloadLibRetroImage via the scraper
+	path := h.Scraper.DownloadLibRetroBoxart(system, game.Title, subpath)
+	if path != "" {
+		// Update the game's cover URL if it was empty
+		if game.CoverURL == "" || game.LibRetroCoverURL == "" {
+			updates := map[string]interface{}{"lib_retro_cover_url": path}
+			if game.CoverURL == "" {
+				updates["cover_url"] = path
+			}
+			h.DB.Model(&game).Updates(updates)
+		}
+		slog.Info("on-demand LibRetro cover downloaded", "game", game.Title, "path", path)
+	}
+	return path
 }
