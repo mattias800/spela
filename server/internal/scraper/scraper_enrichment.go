@@ -105,13 +105,13 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 	consoleAbbr := strings.ToLower(artworkConsole.Abbreviation)
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
-	for i, a := range enrichment.Artworks {
+	for _, a := range enrichment.Artworks {
 		if a.ImageID == "" {
 			continue
 		}
 		localPath := ""
 		artworkURL := igdb.ImageURL(a.ImageID, "screenshot_big")
-		subpath := fmt.Sprintf("%s/%s/artwork_%d.jpg", consoleAbbr, gameIDStr, i)
+		subpath := fmt.Sprintf("%s/%s/artwork_%s.jpg", consoleAbbr, gameIDStr, a.ImageID)
 		if path := s.DownloadExternalImage(artworkURL, subpath); path != "" {
 			localPath = path
 		}

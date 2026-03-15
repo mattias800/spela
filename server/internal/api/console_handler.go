@@ -454,9 +454,9 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 			// Fall through to serve stale data if available
 		} else {
 			ranked := bayesianRank(topGames, 25)
-			h.upsertTopRatedGames(console.ID, ranked)
-			// Re-read from DB to get consistent data
-			h.DB.Where("console_id = ?", console.ID).Order("rank asc").Find(&cached)
+			// Upsert in background — image downloads are slow, serve stale data now
+			go h.upsertTopRatedGames(console.ID, ranked)
+			// Don't re-read — serve existing cached data immediately
 		}
 	}
 

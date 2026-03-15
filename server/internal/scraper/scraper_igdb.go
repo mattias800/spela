@@ -350,7 +350,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 			subpath := fmt.Sprintf("companies/%d/logo.png", ic.Company.ID)
 			logoPath := s.DownloadExternalImage(cdnURL, subpath)
 			if logoPath == "" {
-				logoPath = cdnURL // fallback to CDN URL if download fails
+				break // download failed, skip — don't store CDN URL
 			}
 			var existing db.Company
 			if err := s.DB.Where("igdb_company_id = ?", ic.Company.ID).First(&existing).Error; err == nil {

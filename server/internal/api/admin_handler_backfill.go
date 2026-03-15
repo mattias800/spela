@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"gorm.io/gorm"
 )
 
 // BackfillImagesResponse is the result of a backfill-images operation.
@@ -36,14 +37,22 @@ func (h *AdminHandler) BackfillImages(c *gin.Context) {
 	// 1. GameArtwork — SteamGridDB CDN URLs
 	var artworks []db.GameArtwork
 	h.DB.Where("hero_url LIKE 'http%' OR grid_url LIKE 'http%' OR logo_url LIKE 'http%' OR icon_url LIKE 'http%'").Find(&artworks)
+
+	// Batch-load games with consoles to avoid N+1
+	artworkGameIDs := make([]uint, 0, len(artworks))
 	for _, a := range artworks {
-		gameIDStr := fmt.Sprintf("%d", a.GameID)
-		var game db.Game
-		if err := h.DB.Preload("Console").First(&game, a.GameID).Error; err != nil {
+		artworkGameIDs = append(artworkGameIDs, a.GameID)
+	}
+	gameMap := batchLoadGamesWithConsole(h.DB, artworkGameIDs)
+
+	for _, a := range artworks {
+		game, ok := gameMap[a.GameID]
+		if !ok {
 			result.Errors++
 			continue
 		}
 		consoleAbbr := strings.ToLower(game.Console.Abbreviation)
+		gameIDStr := fmt.Sprintf("%d", a.GameID)
 		updates := map[string]interface{}{}
 
 		if strings.HasPrefix(a.HeroURL, "http") {
@@ -101,17 +110,25 @@ func (h *AdminHandler) BackfillImages(c *gin.Context) {
 
 	// 4. GameArtworkImage — download where LocalPath is empty
 	var artworkImages []db.GameArtworkImage
-	h.DB.Where("igdb_image_id != '' AND (local_path = '' OR local_path IS NULL)").Preload("Game").Find(&artworkImages)
-	// We need game+console info; batch lookup
-	for i, ai := range artworkImages {
-		var game db.Game
-		if err := h.DB.Preload("Console").First(&game, ai.GameID).Error; err != nil {
+	h.DB.Where("igdb_image_id != '' AND (local_path = '' OR local_path IS NULL)").Find(&artworkImages)
+
+	// Batch-load games with consoles
+	aiGameIDs := make([]uint, 0, len(artworkImages))
+	for _, ai := range artworkImages {
+		aiGameIDs = append(aiGameIDs, ai.GameID)
+	}
+	aiGameMap := batchLoadGamesWithConsole(h.DB, aiGameIDs)
+
+	for _, ai := range artworkImages {
+		game, ok := aiGameMap[ai.GameID]
+		if !ok {
 			result.Errors++
 			continue
 		}
 		consoleAbbr := strings.ToLower(game.Console.Abbreviation)
 		artworkURL := igdb.ImageURL(ai.IGDBImageID, "screenshot_big")
-		subpath := fmt.Sprintf("%s/%d/artwork_%d.jpg", consoleAbbr, game.ID, i)
+		// Use IGDB image ID for stable filename (not loop index)
+		subpath := fmt.Sprintf("%s/%d/artwork_%s.jpg", consoleAbbr, game.ID, ai.IGDBImageID)
 		if path := h.Scraper.DownloadExternalImage(artworkURL, subpath); path != "" {
 			h.DB.Model(&ai).Update("local_path", path)
 			result.GalleryDownloaded++
@@ -139,4 +156,28 @@ func (h *AdminHandler) BackfillImages(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, result)
+}
+
+// batchLoadGamesWithConsole loads games with their consoles in a single query.
+func batchLoadGamesWithConsole(database *gorm.DB, gameIDs []uint) map[uint]db.Game {
+	if len(gameIDs) == 0 {
+		return nil
+	}
+	// Deduplicate
+	seen := make(map[uint]bool, len(gameIDs))
+	unique := make([]uint, 0, len(gameIDs))
+	for _, id := range gameIDs {
+		if !seen[id] {
+			seen[id] = true
+			unique = append(unique, id)
+		}
+	}
+
+	var games []db.Game
+	database.Preload("Console").Where("id IN ?", unique).Find(&games)
+	result := make(map[uint]db.Game, len(games))
+	for _, g := range games {
+		result[g.ID] = g
+	}
+	return result
 }

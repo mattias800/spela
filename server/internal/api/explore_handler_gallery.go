@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/igdb"
 )
 
 // --- Phase 9: Visual Browsing — Gallery & Art Modes ---
@@ -212,14 +211,11 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 
 	items := make([]ArtworkItem, 0, len(rows))
 	for _, r := range rows {
-		url := ""
-		if r.LocalPath != "" {
-			url = resolveImageURL(r.LocalPath)
-		} else {
-			url = igdb.ImageURL(r.IGDBImageID, "screenshot_big")
+		if r.LocalPath == "" {
+			continue // skip artwork without locally cached image
 		}
 		items = append(items, ArtworkItem{
-			URL:          url,
+			URL:          resolveImageURL(r.LocalPath),
 			Width:        r.Width,
 			Height:       r.Height,
 			GameID:       strconv.FormatUint(uint64(r.GameID), 10),

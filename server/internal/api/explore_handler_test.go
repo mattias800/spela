@@ -2639,8 +2639,8 @@ func TestGetArtworkGallery_Success(t *testing.T) {
 	game2 := createExploreGame(t, env.database, "NES", "Super Mario Bros", 85.0)
 
 	// Create IGDB artwork images
-	env.database.Create(&db.GameArtworkImage{GameID: game1.ID, IGDBImageID: "abc123", Width: 1920, Height: 1080})
-	env.database.Create(&db.GameArtworkImage{GameID: game2.ID, IGDBImageID: "def456", Width: 1280, Height: 720})
+	env.database.Create(&db.GameArtworkImage{GameID: game1.ID, IGDBImageID: "abc123", LocalPath: "snes/1/artwork_abc123.jpg", Width: 1920, Height: 1080})
+	env.database.Create(&db.GameArtworkImage{GameID: game2.ID, IGDBImageID: "def456", LocalPath: "nes/2/artwork_def456.jpg", Width: 1280, Height: 720})
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/explore/artwork", nil)
@@ -2660,10 +2660,9 @@ func TestGetArtworkGallery_Success(t *testing.T) {
 	assert.Equal(t, "Chrono Trigger", resp.Artworks[0].GameTitle)
 	assert.Equal(t, 1920, resp.Artworks[0].Width)
 	assert.Equal(t, 1080, resp.Artworks[0].Height)
-	// Verify IGDB URL construction
-	assert.Contains(t, resp.Artworks[0].URL, "abc123")
-	assert.Contains(t, resp.Artworks[0].URL, "t_screenshot_big")
-	assert.Contains(t, resp.Artworks[0].URL, "images.igdb.com")
+	// Verify local image path
+	assert.Contains(t, resp.Artworks[0].URL, "/api/images/")
+	assert.Contains(t, resp.Artworks[0].URL, "artwork_abc123")
 
 	assert.Equal(t, "Super Mario Bros", resp.Artworks[1].GameTitle)
 	assert.NotEmpty(t, resp.Artworks[1].ConsoleAbbr)

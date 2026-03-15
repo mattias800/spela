@@ -68,9 +68,10 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 			slog.Warn("failed to fetch similar games from IGDB", "game", game.Title, "error", err)
 			// Fall through to serve stale data if available
 		} else {
-			h.upsertSimilarGames(game.ID, similarGames)
-			// Re-read from DB to get consistent data
-			h.DB.Where("game_id = ?", game.ID).Find(&cached)
+			// Upsert in background — image downloads are slow, serve stale data now
+			gameID := game.ID
+			go h.upsertSimilarGames(gameID, similarGames)
+			// Don't re-read — serve existing cached data immediately
 		}
 	}
 

@@ -90,17 +90,13 @@ func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail, sc *scrap
 	}
 
 	logoURL := ""
-	if detail.LogoImageID != "" {
-		if sc != nil {
-			cdnURL := igdb.CompanyLogoURL(detail.LogoImageID)
-			subpath := fmt.Sprintf("companies/%d/logo.png", detail.ID)
-			if path := sc.DownloadExternalImage(cdnURL, subpath); path != "" {
-				logoURL = path
-			}
+	if detail.LogoImageID != "" && sc != nil {
+		cdnURL := igdb.CompanyLogoURL(detail.LogoImageID)
+		subpath := fmt.Sprintf("companies/%d/logo.png", detail.ID)
+		if path := sc.DownloadExternalImage(cdnURL, subpath); path != "" {
+			logoURL = path
 		}
-		if logoURL == "" {
-			logoURL = igdb.CompanyLogoURL(detail.LogoImageID)
-		}
+		// If download fails, logoURL stays empty — no CDN fallback
 	}
 
 	// Extract founding year from start_date Unix timestamp
