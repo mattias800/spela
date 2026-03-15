@@ -255,6 +255,9 @@ var directoryConsoleMap = map[string]string{
 	"plus4":        "PLUS4",
 	"vic20":        "VIC20",
 	"cdi":          "CDI",
+	"tg16cd":       "PCECD",
+	"tgcd":         "PCECD",
+	"pcecd":        "PCECD",
 	"neogeocd":     "NEOCD",
 	"neocd":        "NEOCD",
 }

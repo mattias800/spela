@@ -49,6 +49,9 @@ var registry = []Entry{
 
 	// PC Engine / TurboGrafx-16 (PCE) — mednafen_pce_libretro.info
 	{ConsoleID: "pce", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
+
+	// TurboGrafx-CD (PCECD) — same BIOS as PCE, required for CD games
+	{ConsoleID: "pcecd", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
 }
 
 // repoFolders maps console IDs to their folder name in the
@@ -60,7 +63,8 @@ var repoFolders = map[string]string{
 	"dc":  "Sega - Dreamcast",
 	"gba": "Nintendo - Game Boy Advance",
 	"nds": "Nintendo - Nintendo DS",
-	"pce": "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
+	"pce":  "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
+	"pcecd": "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
 	// ps2 is not available in the repository
 }
 
