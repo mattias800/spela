@@ -51,6 +51,12 @@ private val credits = listOf(
         description = "Pixel art console and controller icons by Tatohead.",
     ),
     CreditEntry(
+        name = "The Noun Project",
+        url = "thenounproject.com",
+        license = "CC BY 3.0",
+        description = "Atari Jaguar controller icon used in the library view.",
+    ),
+    CreditEntry(
         name = "Icons8",
         url = "icons8.com",
         license = "Free with attribution",
