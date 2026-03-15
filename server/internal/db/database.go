@@ -778,6 +778,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "beetle_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Neo Geo CD", Abbreviation: "NEOCD", Extensions: ".chd,.cue,.iso", DefaultCore: "neocd", EmulatorJSCore: "", FolderName: "neogeocd", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, Playable: true},
@@ -923,6 +924,7 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "virtualjaguar", DisplayName: "Virtual Jaguar", Description: "Atari Jaguar emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "gearcoleco", DisplayName: "Gearcoleco", Description: "ColecoVision emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "puae", DisplayName: "PUAE", Description: "Commodore Amiga emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "neocd", DisplayName: "NeoCD", Description: "Neo Geo CD emulator", Platforms: "windows,linux,macos,android"},
 		{
 			Name:        "azahar",
 			DisplayName: "Azahar",
