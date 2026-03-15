@@ -230,6 +230,20 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		}
 	}
 
+	// For arcade/MAME games, ROM filenames are cryptic short codes (e.g. "sf2",
+	// "mslug", "akkaarrh") that IGDB won't recognize. Resolve the full title
+	// through LibRetro's MAME directory listing, which maps these codes to
+	// human-readable names (e.g. "akkaarrh" → "Akka Arrh").
+	if !crcVerified {
+		if fullTitle := s.ResolveFullTitle(console.Abbreviation, searchName); fullTitle != "" {
+			slog.Info("using LibRetro-resolved title for IGDB search",
+				"original", searchName, "resolved", fullTitle)
+			searchName = fullTitle
+			// Also update the game's display title from the cryptic short name
+			game.Title = fullTitle
+		}
+	}
+
 	// Always try exact name match first. IGDB's fulltext search can omit the
 	// original game (e.g. "Super Mario 64" returns the unreleased sequel but
 	// not the original).

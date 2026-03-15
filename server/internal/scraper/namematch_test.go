@@ -359,6 +359,63 @@ func TestFindBestMatch(t *testing.T) {
 	}
 }
 
+func TestFindBestMatch_MAMEShortNames(t *testing.T) {
+	// MAME thumbnail directories use full game titles.
+	// Short ROM names like "sf2" should match "Street Fighter II" etc.
+	entry := func(raw string) nameEntry {
+		return nameEntry{
+			Raw:        raw,
+			Normalized: normalizeName(raw),
+			Priority:   computePriority(raw),
+		}
+	}
+
+	mameEntries := []nameEntry{
+		entry("Akka Arrh (Prototype)"),
+		entry("Street Fighter II - The World Warrior (World 910522)"),
+		entry("Metal Slug - Super Vehicle-001"),
+		entry("Alien³ - The Gun (World)"),
+	}
+
+	tests := []struct {
+		name      string
+		query     string
+		wantRaw   string
+		wantFound bool
+	}{
+		{
+			name:      "akkaarrh matches Akka Arrh",
+			query:     "akkaarrh",
+			wantRaw:   "Akka Arrh (Prototype)",
+			wantFound: true,
+		},
+		{
+			name:      "mslug matches Metal Slug",
+			query:     "mslug",
+			wantRaw:   "Metal Slug - Super Vehicle-001",
+			wantFound: false, // too different after normalization
+		},
+		{
+			name:      "alien3 matches Alien³",
+			query:     "alien3",
+			wantRaw:   "Alien³ - The Gun (World)",
+			wantFound: false, // too different
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			match, _, found := findBestMatch(normalizeName(tt.query), mameEntries, 0.85)
+			if found != tt.wantFound {
+				t.Errorf("findBestMatch(%q): found = %v, want %v (matched: %q)", tt.query, found, tt.wantFound, match.Raw)
+			}
+			if found && match.Raw != tt.wantRaw {
+				t.Errorf("findBestMatch(%q): raw = %q, want %q", tt.query, match.Raw, tt.wantRaw)
+			}
+		})
+	}
+}
+
 func TestFindBestMatch_PrefersUSAOverJapan(t *testing.T) {
 	entry := func(raw string) nameEntry {
 		return nameEntry{

@@ -159,3 +159,54 @@ func LibRetroThumbnailURL(consoleAbbr, libRetroName string) string {
 		url.PathEscape(libRetroName),
 	)
 }
+
+// ResolveFullTitle resolves a short ROM name (e.g. MAME code "mslug") to
+// its full game title (e.g. "Metal Slug - Super Vehicle-001").
+//
+// Resolution strategy (in order):
+// 1. DAT file lookup — if a MAME/FBNeo DAT is loaded, the `description`
+//    field provides an authoritative name→title mapping for every ROM.
+// 2. LibRetro fuzzy match — falls back to matching against the LibRetro
+//    thumbnail directory listing (works when short name normalizes close
+//    to the full title, e.g. "akkaarrh" → "Akka Arrh").
+func (s *Scraper) ResolveFullTitle(consoleAbbr, shortName string) string {
+	// Strategy 1: DAT file name→description lookup (authoritative, covers all ROMs)
+	if idx, err := s.DATCache.GetIndexForNameLookup(consoleAbbr); err == nil && idx != nil {
+		if entry, ok := idx.LookupName(shortName); ok && entry.Description != "" {
+			// Strip region/version tags from description
+			title := entry.Description
+			if i := strings.Index(title, "("); i > 0 {
+				title = strings.TrimSpace(title[:i])
+			}
+			slog.Info("resolved ROM name via DAT file",
+				"short", shortName, "full", title, "description", entry.Description)
+			return title
+		}
+	}
+
+	// Strategy 2: LibRetro fuzzy match (fallback)
+	system, ok := AbbreviationToLibRetro[consoleAbbr]
+	if !ok {
+		return ""
+	}
+
+	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	if err != nil || len(entries) == 0 {
+		return ""
+	}
+
+	normalized := normalizeName(shortName)
+	match, score, found := findBestMatch(normalized, entries, 0.85)
+	if !found {
+		return ""
+	}
+
+	title := match.Raw
+	if i := strings.Index(title, "("); i > 0 {
+		title = strings.TrimSpace(title[:i])
+	}
+
+	slog.Info("resolved ROM name via LibRetro fuzzy match",
+		"short", shortName, "full", title, "raw", match.Raw, "score", score)
+	return title
+}
