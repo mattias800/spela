@@ -73,6 +73,11 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-yellow-500 to-red-700",
     color: "#ecc94b",
   },
+  neocd: {
+    icon: Joystick,
+    gradient: "from-yellow-500 to-red-700",
+    color: "#ecc94b",
+  },
   arcade: {
     icon: Joystick,
     gradient: "from-yellow-400 to-orange-700",

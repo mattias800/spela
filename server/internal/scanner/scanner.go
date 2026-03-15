@@ -255,6 +255,8 @@ var directoryConsoleMap = map[string]string{
 	"plus4":        "PLUS4",
 	"vic20":        "VIC20",
 	"cdi":          "CDI",
+	"neogeocd":     "NEOCD",
+	"neocd":        "NEOCD",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".

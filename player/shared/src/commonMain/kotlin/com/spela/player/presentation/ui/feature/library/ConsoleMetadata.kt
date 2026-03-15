@@ -167,6 +167,13 @@ fun getConsoleInfo(abbreviation: String): ConsoleInfo? = when (abbreviation.lowe
         generation = "4th gen",
         summary = "SNK's premium arcade-at-home console offered uncompromised arcade experiences. High price made it a luxury item beloved by fighting game enthusiasts.",
     )
+    "neocd" -> ConsoleInfo(
+        manufacturer = "SNK",
+        releaseYear = 1994,
+        mediaType = "CD-ROM",
+        generation = "4th gen",
+        summary = "The CD-based Neo Geo brought arcade-quality gaming at a more affordable price than the cartridge AES, with loading times as the trade-off.",
+    )
     "pce" -> ConsoleInfo(
         manufacturer = "NEC",
         releaseYear = 1987,
@@ -371,6 +378,7 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
         "psx" -> Color(0xFF6b7280) to Color(0xFF1e3a8a)         // gray-500 → blue-900
         "psp" -> Color(0xFF374151) to Color(0xFF000000)         // gray-700 → black
         "neogeo" -> Color(0xFFeab308) to Color(0xFFb91c1c)      // yellow-500 → red-700
+        "neocd" -> Color(0xFFeab308) to Color(0xFFb91c1c)       // yellow-500 → red-700
         "pce" -> Color(0xFFf97316) to Color(0xFF991b1b)         // orange-500 → red-800
         "a26" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
         "gg" -> Color(0xFF2563eb) to Color(0xFF1e3a8a)          // blue-600 → blue-900
