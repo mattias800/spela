@@ -430,8 +430,8 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 			resp.UserRating = &rating
 		}
 		if artwork, ok := data.artworks[g.ID]; ok {
-			resp.HeroURL = artwork.HeroURL
-			resp.LogoURL = artwork.LogoURL
+			resp.HeroURL = resolveImageURL(artwork.HeroURL)
+			resp.LogoURL = resolveImageURL(artwork.LogoURL)
 		}
 	}
 

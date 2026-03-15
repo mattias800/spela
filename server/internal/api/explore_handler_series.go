@@ -97,7 +97,7 @@ func (h *ExploreHandler) GetExploreFeaturedSeries(c *gin.Context) {
 		var artworks []db.GameArtwork
 		h.DB.Where("game_id IN ? AND hero_url != ''", allGameIDs).Find(&artworks)
 		for _, a := range artworks {
-			artworkMap[a.GameID] = a.HeroURL
+			artworkMap[a.GameID] = resolveImageURL(a.HeroURL)
 		}
 	}
 

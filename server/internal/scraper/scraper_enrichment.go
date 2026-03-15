@@ -3,6 +3,8 @@ package scraper
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
@@ -97,14 +99,26 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 		}
 	}
 
-	// Store artworks
-	for _, a := range enrichment.Artworks {
+	// Store artworks (download images locally)
+	var artworkConsole db.Console
+	s.DB.First(&artworkConsole, game.ConsoleID)
+	consoleAbbr := strings.ToLower(artworkConsole.Abbreviation)
+	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
+
+	for i, a := range enrichment.Artworks {
 		if a.ImageID == "" {
 			continue
+		}
+		localPath := ""
+		artworkURL := igdb.ImageURL(a.ImageID, "screenshot_big")
+		subpath := fmt.Sprintf("%s/%s/artwork_%d.jpg", consoleAbbr, gameIDStr, i)
+		if path := s.DownloadExternalImage(artworkURL, subpath); path != "" {
+			localPath = path
 		}
 		s.DB.Create(&db.GameArtworkImage{
 			GameID:      game.ID,
 			IGDBImageID: a.ImageID,
+			LocalPath:   localPath,
 			Width:       a.Width,
 			Height:      a.Height,
 		})

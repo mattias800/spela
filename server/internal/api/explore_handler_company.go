@@ -1,11 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/scraper"
 	"gorm.io/gorm"
 )
 
@@ -41,7 +43,7 @@ func companyToInfo(company *db.Company) *CompanyInfo {
 	}
 
 	info := &CompanyInfo{
-		LogoURL:      company.LogoURL,
+		LogoURL:      resolveImageURL(company.LogoURL),
 		Description:  company.Description,
 		FoundedYear:  company.FoundedYear,
 		Country:      igdb.CountryName(company.Country),
@@ -76,17 +78,30 @@ func (h *ExploreHandler) triggerCompanyFetch(name string) {
 			return
 		}
 
-		storeCompanyDetail(h.DB, detail)
+		storeCompanyDetail(h.DB, detail, h.Scraper)
 	}()
 }
 
 // storeCompanyDetail creates or updates a Company record from IGDB data.
-func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail) {
+// If sc is non-nil, the company logo is downloaded and cached locally.
+func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail, sc *scraper.Scraper) {
 	if detail == nil {
 		return
 	}
 
-	logoURL := igdb.CompanyLogoURL(detail.LogoImageID)
+	logoURL := ""
+	if detail.LogoImageID != "" {
+		if sc != nil {
+			cdnURL := igdb.CompanyLogoURL(detail.LogoImageID)
+			subpath := fmt.Sprintf("companies/%d/logo.png", detail.ID)
+			if path := sc.DownloadExternalImage(cdnURL, subpath); path != "" {
+				logoURL = path
+			}
+		}
+		if logoURL == "" {
+			logoURL = igdb.CompanyLogoURL(detail.LogoImageID)
+		}
+	}
 
 	// Extract founding year from start_date Unix timestamp
 	foundedYear := 0

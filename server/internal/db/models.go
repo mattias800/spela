@@ -574,6 +574,7 @@ type TopRatedGame struct {
 	IGDBGameID        int            `gorm:"uniqueIndex:idx_console_igdb_game;not null" json:"igdbGameId"`
 	Name              string         `gorm:"size:255;not null" json:"name"`
 	CoverImageID      string         `gorm:"size:128" json:"coverImageId"`
+	CoverLocalPath    string         `gorm:"size:512" json:"-"`
 	TotalRating       float64        `json:"totalRating"`
 	TotalRatingCount  int            `json:"totalRatingCount"`
 	UserRating        float64        `json:"userRating"`
@@ -593,8 +594,9 @@ type SimilarGame struct {
 	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
 	IGDBGameID   int            `gorm:"not null" json:"igdbGameId"`
 	Name         string         `gorm:"size:255;not null" json:"name"`
-	CoverImageID string         `gorm:"size:128" json:"coverImageId"`
-	Rating       float64        `json:"rating"`
+	CoverImageID   string         `gorm:"size:128" json:"coverImageId"`
+	CoverLocalPath string         `gorm:"size:512" json:"-"`
+	Rating         float64        `json:"rating"`
 	LocalGameID  *uint          `json:"localGameId,omitempty"`
 }
 
@@ -800,6 +802,7 @@ type GameArtworkImage struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	GameID      uint      `gorm:"uniqueIndex:idx_game_artwork_image;not null" json:"gameId"`
 	IGDBImageID string    `gorm:"uniqueIndex:idx_game_artwork_image;size:255;not null" json:"igdbImageId"`
+	LocalPath   string    `gorm:"size:512" json:"-"`
 	Width       int       `json:"width"`
 	Height      int       `json:"height"`
 }

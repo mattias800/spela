@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/spela/server/internal/db"
 )
@@ -106,8 +107,9 @@ func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, 
 	return successes, total, nil
 }
 
-// downloadExternalImage downloads an image from an external URL and saves it locally.
-func (s *Scraper) downloadExternalImage(imageURL, subpath string) string {
+// DownloadExternalImage downloads an image from an external URL and saves it locally.
+// Returns the relative path for DB storage, or "" on failure.
+func (s *Scraper) DownloadExternalImage(imageURL, subpath string) string {
 	resp, err := s.HTTPClient.Get(imageURL)
 	if err != nil {
 		slog.Debug("failed to fetch external image", "url", imageURL, "error", err)
@@ -153,6 +155,30 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 	}
 
 	artwork.GameID = game.ID
+	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
+
+	// Download images locally instead of storing CDN URLs
+	if artwork.HeroURL != "" {
+		if path := s.DownloadExternalImage(artwork.HeroURL, fmt.Sprintf("%s/%s/artwork-hero.jpg", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.HeroURL = path
+		}
+	}
+	if artwork.GridURL != "" {
+		if path := s.DownloadExternalImage(artwork.GridURL, fmt.Sprintf("%s/%s/artwork-grid.jpg", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.GridURL = path
+		}
+	}
+	if artwork.LogoURL != "" {
+		if path := s.DownloadExternalImage(artwork.LogoURL, fmt.Sprintf("%s/%s/artwork-logo.png", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.LogoURL = path
+		}
+	}
+	if artwork.IconURL != "" {
+		if path := s.DownloadExternalImage(artwork.IconURL, fmt.Sprintf("%s/%s/artwork-icon.png", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.IconURL = path
+		}
+	}
+
 	if err := s.DB.Create(artwork).Error; err != nil {
 		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)
 		return

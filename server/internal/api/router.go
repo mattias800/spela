@@ -177,7 +177,7 @@ func NewRouter(cfg Config) *gin.Engine {
 	if cfg.Scraper != nil {
 		igdbClient = cfg.Scraper.IGDBClient
 	}
-	exploreHandler := &ExploreHandler{DB: cfg.DB, IGDBClient: igdbClient}
+	exploreHandler := &ExploreHandler{DB: cfg.DB, IGDBClient: igdbClient, Scraper: cfg.Scraper}
 	savedSearchHandler := &SavedSearchHandler{DB: cfg.DB}
 	enrichmentHandler := &EnrichmentHandler{DB: cfg.DB, Scraper: cfg.Scraper, Hub: cfg.Hub}
 	discoveryHandler := &GameDiscoveryHandler{DB: cfg.DB, Scraper: cfg.Scraper}
@@ -540,6 +540,9 @@ func NewRouter(cfg Config) *gin.Engine {
 
 			// ROM hacks
 			admin.POST("/rom-hacks", uploadLimiter.RateLimit(), romHackHandler.CreateRomHack)
+
+			// Image backfill (download external CDN images locally)
+			admin.POST("/backfill-images", adminHandler.BackfillImages)
 
 			// Enrichment backfill
 			admin.POST("/enrich-metadata", enrichmentHandler.TriggerEnrichMetadata)
