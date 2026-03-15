@@ -29,7 +29,7 @@ func TestByFileName_KnownFile(t *testing.T) {
 		{"Saturn BIOS US/EU", "mpr-17933.bin", 1, "sat"},
 		{"Dreamcast boot", "dc_boot.bin", 1, "dc"},
 		{"GBA BIOS", "gba_bios.bin", 1, "gba"},
-		{"PC Engine syscard", "syscard3.pce", 1, "pce"},
+		{"PC Engine syscard", "syscard3.pce", 2, "pce"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
