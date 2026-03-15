@@ -148,6 +148,44 @@ func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
 	return nil, nil
 }
 
+// GetIndexForNameLookup returns a DAT index for name-based lookups (not CRC).
+// Unlike GetIndex, this does NOT skip disc-based systems — it's used for
+// resolving MAME short names to full titles where we need the DAT's
+// name→description mapping but don't care about CRC verification.
+func (c *DATCache) GetIndexForNameLookup(consoleAbbrev string) (*DATIndex, error) {
+	systemName, ok := AbbreviationToLibRetro[consoleAbbrev]
+	if !ok {
+		return nil, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if idx, ok := c.indices[consoleAbbrev]; ok {
+		return idx, nil
+	}
+
+	datPath := filepath.Join(c.dir, systemName+".dat")
+	if _, err := os.Stat(datPath); err == nil {
+		idx, err := c.parseFile(datPath)
+		if err == nil {
+			c.indices[consoleAbbrev] = idx
+			return idx, nil
+		}
+		slog.Warn("failed to parse DAT file for name lookup", "path", datPath, "error", err)
+	}
+
+	return nil, nil
+}
+
+// nameOnlyDATSystems lists disc-based/arcade systems where we still want the
+// DAT file for name→description lookups (e.g. MAME short name resolution),
+// even though CRC verification is skipped.
+var nameOnlyDATSystems = map[string]bool{
+	"ARCADE": true,
+	"NEOGEO": true,
+}
+
 // RefreshAll downloads/updates DAT files for all mapped non-disc-based systems.
 func (c *DATCache) RefreshAll() {
 	if err := os.MkdirAll(c.dir, 0o755); err != nil {
@@ -157,7 +195,7 @@ func (c *DATCache) RefreshAll() {
 
 	var ok, failures int
 	for consoleAbbrev, systemName := range AbbreviationToLibRetro {
-		if DiscBasedSystems[consoleAbbrev] {
+		if DiscBasedSystems[consoleAbbrev] && !nameOnlyDATSystems[consoleAbbrev] {
 			continue
 		}
 
