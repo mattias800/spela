@@ -169,9 +169,9 @@ var RomExtensions = map[string]bool{
 	".ngp": true, ".ngc": true,
 	".ws": true, ".wsc": true,
 	".col": true,
-	".d64": true, ".t64": true, ".prg": true, ".crt": true,
+	".d64": true, ".d71": true, ".d81": true, ".t64": true, ".prg": true, ".crt": true,
 	".exe": true, ".com": true, ".bat": true, ".conf": true,
-	".adf": true, ".hdf": true, ".lha": true,
+	".adf": true, ".hdf": true, ".lha": true, ".ipf": true, ".dms": true,
 	".min": true,
 	".j64": true, ".jag": true,
 	".32x": true,
@@ -249,6 +249,12 @@ var directoryConsoleMap = map[string]string{
 	"c64":          "C64",
 	"dos":          "DOS",
 	"amiga":        "AMIGA",
+	"3do":          "3DO",
+	"c128":         "C128",
+	"pet":          "PET",
+	"plus4":        "PLUS4",
+	"vic20":        "VIC20",
+	"cdi":          "CDI",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
