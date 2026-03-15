@@ -172,6 +172,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"NEOGEO": "SNK - Neo Geo",
 	"ARCADE": "MAME",
 	"PCE":    "NEC - PC Engine - TurboGrafx 16",
+	"PCECD":  "NEC - PC Engine CD - TurboGrafx-CD",
 	"A26":    "Atari - 2600",
 	"GG":    "Sega - Game Gear",
 	"SCD":   "Sega - Mega CD - Sega CD",
