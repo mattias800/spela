@@ -177,7 +177,7 @@ func (h *ExploreHandler) getMoodNostalgiaGames(userID uint) ([]db.Game, error) {
 	}
 
 	var games []db.Game
-	if err := h.DB.Preload("Console").Where("id IN ? AND is_primary = true", gameIDs).Find(&games).Error; err != nil {
+	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		return nil, err
 	}
 
