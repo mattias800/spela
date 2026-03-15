@@ -141,6 +141,12 @@ func (s *Scraper) DownloadRegionalCover(consoleAbbr, libRetroName, subpath strin
 	return s.tryDownloadImage(system, libRetroName, "Named_Boxarts", subpath)
 }
 
+// DownloadLibRetroBoxart downloads a LibRetro Named_Boxarts cover for a game title.
+// Uses fuzzy matching to find the best match. Returns the local storage path or "".
+func (s *Scraper) DownloadLibRetroBoxart(system, gameTitle, subpath string) string {
+	return s.downloadLibRetroImage(system, gameTitle, "Named_Boxarts", subpath)
+}
+
 // LibRetroThumbnailURL constructs the direct URL to a LibRetro thumbnail.
 func LibRetroThumbnailURL(consoleAbbr, libRetroName string) string {
 	system, ok := AbbreviationToLibRetro[consoleAbbr]

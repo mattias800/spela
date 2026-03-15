@@ -10,6 +10,7 @@ interface GameCardProps {
   aspectRatio?: number;
   showConsoleBadge?: boolean;
   hideConsoleName?: boolean;
+  subtitle?: string;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
 }
@@ -19,6 +20,7 @@ export function GameCard({
   aspectRatio,
   showConsoleBadge,
   hideConsoleName,
+  subtitle,
   onToggleFavorite,
   onTogglePlayLater,
 }: GameCardProps) {
@@ -149,6 +151,11 @@ export function GameCard({
             </span>
           )}
         </div>
+        {subtitle && (
+          <p className="text-xs text-surface-400" data-testid="release-year">
+            {subtitle}
+          </p>
+        )}
       </div>
     </Link>
   );

@@ -284,19 +284,17 @@ export function GameDetailPage() {
         </div>
       )}
 
+      <TimeToBeatCard game={game} />
+
+      <GameSessions gameId={game.id} />
+
       {game.variants && game.variants.length > 0 && (
-        <Card className="p-6">
-          <GameVariantsSection variants={game.variants} />
-        </Card>
+        <GameVariantsSection variants={game.variants} />
       )}
 
       {game.romHacks && game.romHacks.length > 0 && (
         <StandaloneRomHacksSection romHacks={game.romHacks} />
       )}
-
-      <TimeToBeatCard game={game} />
-
-      <GameSessions gameId={game.id} />
 
       <Card className="p-6">
         <GameCommunityStats gameId={game.id} game={game} />

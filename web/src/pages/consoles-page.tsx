@@ -13,21 +13,21 @@ interface GenerationInfo {
 function generationInfo(generation: number): GenerationInfo {
   switch (generation) {
     case 2:
-      return { label: "2nd Generation", years: "1976–1992" };
+      return { label: "2nd Generation", years: "1976–1982" };
     case 3:
-      return { label: "3rd Generation", years: "1983–1992" };
+      return { label: "3rd Generation", years: "1983–1987" };
     case 4:
-      return { label: "4th Generation", years: "1987–1996" };
+      return { label: "4th Generation", years: "1987–1993" };
     case 5:
-      return { label: "5th Generation", years: "1993–2006" };
+      return { label: "5th Generation", years: "1993–1998" };
     case 6:
-      return { label: "6th Generation", years: "1998–2007" };
+      return { label: "6th Generation", years: "1998–2005" };
     case 7:
-      return { label: "7th Generation", years: "2004–2013" };
+      return { label: "7th Generation", years: "2005–2012" };
     case 8:
-      return { label: "8th Generation", years: "2011–2020" };
+      return { label: "8th Generation", years: "2012–2020" };
     case 9:
-      return { label: "9th Generation", years: "2017–present" };
+      return { label: "9th Generation", years: "2020–present" };
     case 100:
       return { label: "Home Computers", years: "1977–1995" };
     case 101:
