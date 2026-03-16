@@ -1386,7 +1386,7 @@ func TestIdentifyConsole_NewDirectoryMappings(t *testing.T) {
 		{"WonderSwan by ws dir", "/games/ws/game.ws", ".ws", "WS"},
 		{"ColecoVision by colecovision dir", "/games/colecovision/game.col", ".col", "CV"},
 		{"C64 by c64 dir", "/games/c64/game.d64", ".d64", "C64"},
-		{"DOS by dos dir", "/games/dos/game.exe", ".exe", "DOS"},
+		{"DOS by dos dir", "/games/dos/game.zip", ".zip", "DOS"},
 		{"Amiga by amiga dir", "/games/amiga/game.adf", ".adf", "AMIGA"},
 	}
 

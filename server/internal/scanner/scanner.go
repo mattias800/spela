@@ -170,7 +170,7 @@ var RomExtensions = map[string]bool{
 	".ws": true, ".wsc": true,
 	".col": true,
 	".d64": true, ".d71": true, ".d81": true, ".t64": true, ".prg": true, ".crt": true,
-	".exe": true, ".com": true, ".bat": true, ".conf": true,
+	".conf": true, ".dosz": true,
 	".adf": true, ".hdf": true, ".lha": true, ".ipf": true, ".dms": true,
 	".min": true,
 	".j64": true, ".jag": true,

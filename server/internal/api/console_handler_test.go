@@ -281,7 +281,7 @@ func TestGetTopListAvailable_ReturnsOnlyLocalMatches(t *testing.T) {
 	// Create a local game matching only one of them (case-insensitive)
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "super mario bros.",
-		FileName: "smb.nes", FilePath: "/games/smb.nes", FileSize: 1024,
+		FileName: "smb.nes", FilePath: "/games/smb.nes", FileSize: 1024, IsPrimary: true,
 		CoverURL: "covers/nes/smb.png",
 	})
 
@@ -329,7 +329,7 @@ func TestGetTopListAvailable_SortedByRatingDesc(t *testing.T) {
 			ConsoleID: nesConsole.ID, Title: title,
 			FileName: strings.ToLower(title) + ".nes",
 			FilePath: "/games/" + strings.ToLower(title) + ".nes",
-			FileSize: 1024,
+			FileSize: 1024, IsPrimary: true,
 		})
 	}
 
@@ -372,11 +372,11 @@ func TestGetTopListAvailable_SequentialRanks(t *testing.T) {
 	// Create matching local games
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "First",
-		FileName: "first.nes", FilePath: "/games/first.nes", FileSize: 1024,
+		FileName: "first.nes", FilePath: "/games/first.nes", FileSize: 1024, IsPrimary: true,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Second",
-		FileName: "second.nes", FilePath: "/games/second.nes", FileSize: 1024,
+		FileName: "second.nes", FilePath: "/games/second.nes", FileSize: 1024, IsPrimary: true,
 	})
 
 	w := httptest.NewRecorder()
@@ -451,7 +451,7 @@ func TestGetTopListAvailable_IncludesConsoleInfo(t *testing.T) {
 
 	database.Create(&db.Game{
 		ConsoleID: snesConsole.ID, Title: "Super Mario World",
-		FileName: "smw.sfc", FilePath: "/games/smw.sfc", FileSize: 2048,
+		FileName: "smw.sfc", FilePath: "/games/smw.sfc", FileSize: 2048, IsPrimary: true,
 		CoverURL: "covers/snes/smw.png",
 	})
 
@@ -509,17 +509,17 @@ func TestGetTopListLongest_SortedByTimeToBeatDesc(t *testing.T) {
 	// Create games with varying time-to-beat values
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Short Game",
-		FileName: "short.nes", FilePath: "/games/short.nes", FileSize: 1024,
+		FileName: "short.nes", FilePath: "/games/short.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 10, TimeToBeatHastily: 5, TimeToBeatCompletely: 20,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Long Game",
-		FileName: "long.nes", FilePath: "/games/long.nes", FileSize: 1024,
+		FileName: "long.nes", FilePath: "/games/long.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 100, TimeToBeatHastily: 60, TimeToBeatCompletely: 200,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Medium Game",
-		FileName: "medium.nes", FilePath: "/games/medium.nes", FileSize: 1024,
+		FileName: "medium.nes", FilePath: "/games/medium.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 50, TimeToBeatHastily: 30, TimeToBeatCompletely: 80,
 	})
 
@@ -554,13 +554,13 @@ func TestGetTopListLongest_OnlyIncludesGamesWithTimeToBeat(t *testing.T) {
 	// Game with time-to-beat data
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Has Time Data",
-		FileName: "has.nes", FilePath: "/games/has.nes", FileSize: 1024,
+		FileName: "has.nes", FilePath: "/games/has.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 40, TimeToBeatHastily: 20, TimeToBeatCompletely: 60,
 	})
 	// Game without time-to-beat data (zero value)
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "No Time Data",
-		FileName: "no.nes", FilePath: "/games/no.nes", FileSize: 1024,
+		FileName: "no.nes", FilePath: "/games/no.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 0,
 	})
 
@@ -588,11 +588,11 @@ func TestGetTopListLongest_EmptyWhenNoGamesHaveTimeData(t *testing.T) {
 	// Create games without time data
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Game A",
-		FileName: "a.nes", FilePath: "/games/a.nes", FileSize: 1024,
+		FileName: "a.nes", FilePath: "/games/a.nes", FileSize: 1024, IsPrimary: true,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Game B",
-		FileName: "b.nes", FilePath: "/games/b.nes", FileSize: 1024,
+		FileName: "b.nes", FilePath: "/games/b.nes", FileSize: 1024, IsPrimary: true,
 	})
 
 	w := httptest.NewRecorder()
@@ -617,17 +617,17 @@ func TestGetTopListLongest_SequentialRanks(t *testing.T) {
 
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "First",
-		FileName: "first.nes", FilePath: "/games/first.nes", FileSize: 1024,
+		FileName: "first.nes", FilePath: "/games/first.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 100,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Second",
-		FileName: "second.nes", FilePath: "/games/second.nes", FileSize: 1024,
+		FileName: "second.nes", FilePath: "/games/second.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 50,
 	})
 	database.Create(&db.Game{
 		ConsoleID: nesConsole.ID, Title: "Third",
-		FileName: "third.nes", FilePath: "/games/third.nes", FileSize: 1024,
+		FileName: "third.nes", FilePath: "/games/third.nes", FileSize: 1024, IsPrimary: true,
 		TimeToBeatNormally: 25,
 	})
 
@@ -662,6 +662,7 @@ func TestGetTopListLongest_LimitOf50(t *testing.T) {
 			FileName:           fmt.Sprintf("game%03d.nes", i),
 			FilePath:           fmt.Sprintf("/games/game%03d.nes", i),
 			FileSize:           1024,
+			IsPrimary:          true,
 			TimeToBeatNormally: i * 10,
 		})
 	}

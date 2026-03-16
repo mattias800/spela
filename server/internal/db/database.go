@@ -827,7 +827,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore VIC-20", Abbreviation: "VIC20", Extensions: ".prg,.d64,.t64,.crt", DefaultCore: "vice_xvic", EmulatorJSCore: "vice_xvic", FolderName: "vic20", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha,.ipf,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
-		{Name: "DOS", Abbreviation: "DOS", Extensions: ".exe,.com,.bat,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "DOS", Abbreviation: "DOS", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
 		// Arcade (generation = 101)
