@@ -50,9 +50,10 @@ export function Pagination({
   currentPage,
   onPageChange,
 }: PaginationProps) {
-  if (total <= pageSize) return null;
+  if (!total || total <= pageSize) return null;
 
   const pageCount = Math.ceil(total / pageSize);
+  if (!pageCount || pageCount <= 1) return null;
   const pages = getPageNumbers(currentPage, pageCount);
 
   return (
