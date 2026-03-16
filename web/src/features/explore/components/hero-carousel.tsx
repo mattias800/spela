@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Badge, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { ensureContrast } from "@/lib/color-utils";
 import type { FeaturedGame } from "@/types/api";
 
 interface HeroCarouselProps {
@@ -120,8 +121,8 @@ function HeroSlide({
                     ? ({
                         "--badge-color": game.consoleColor,
                         backgroundColor: `${game.consoleColor}20`,
-                        borderColor: `${game.consoleColor}50`,
-                        color: game.consoleColor,
+                        borderColor: `${game.consoleColor}40`,
+                        color: ensureContrast(game.consoleColor),
                       } as React.CSSProperties)
                     : undefined
                 }
