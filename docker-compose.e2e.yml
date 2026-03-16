@@ -23,6 +23,7 @@ services:
       - SPELA_IGDB_CLIENT_ID=${SPELA_IGDB_CLIENT_ID:-}
       - SPELA_IGDB_CLIENT_SECRET=${SPELA_IGDB_CLIENT_SECRET:-}
       - GIN_MODE=debug
+      - SPELA_TEST_MODE=true
 
   web:
     build:
