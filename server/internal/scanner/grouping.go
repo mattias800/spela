@@ -400,16 +400,17 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 
 		for _, g := range games {
 			if g.GroupKey != canonicalGroupKey {
-				affectedGroupKeys[g.GroupKey] = true
+				oldKey := g.GroupKey
+				affectedGroupKeys[oldKey] = true
 				// Update this game's GroupKey to the canonical one
 				if err := database.Model(&g).Update("group_key", canonicalGroupKey).Error; err != nil {
 					slog.Warn("failed to update group key for IGDB merge",
-						"gameID", g.ID, "old", g.GroupKey, "new", canonicalGroupKey, "error", err)
+						"gameID", g.ID, "old", oldKey, "new", canonicalGroupKey, "error", err)
 					continue
 				}
 				mergedCount++
 				slog.Info("merged game into IGDB group",
-					"game", g.Title, "oldGroupKey", g.GroupKey,
+					"game", g.Title, "oldGroupKey", oldKey,
 					"newGroupKey", canonicalGroupKey, "scraperID", c.ScraperID)
 			}
 		}
@@ -418,6 +419,14 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 		if err := electPrimaryForGroup(database, c.ConsoleID, canonicalGroupKey); err != nil {
 			slog.Warn("failed to re-elect primary after IGDB merge",
 				"consoleID", c.ConsoleID, "groupKey", canonicalGroupKey, "error", err)
+		}
+
+		// Re-elect primaries for old groups (may still contain other games)
+		for oldKey := range affectedGroupKeys {
+			if err := electPrimaryForGroup(database, c.ConsoleID, oldKey); err != nil {
+				slog.Warn("failed to re-elect primary for vacated group",
+					"consoleID", c.ConsoleID, "groupKey", oldKey, "error", err)
+			}
 		}
 	}
 
