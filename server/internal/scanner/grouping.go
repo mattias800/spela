@@ -350,3 +350,88 @@ func ReElectPrimaryForGroup(database *gorm.DB, consoleID uint, groupKey string) 
 	}
 	return electPrimaryForGroup(database, consoleID, groupKey)
 }
+
+// MergeGroupsByIGDBID finds games that share the same IGDB game ID on the
+// same console but have different GroupKeys (e.g., "Sonic CD" USA and
+// "Sonic the Hedgehog CD" Japan). It merges them into a single group by
+// assigning the same GroupKey, then re-elects primaries for affected groups.
+//
+// This should be called after scraping, when ScraperID is populated.
+func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
+	// Find IGDB IDs that appear on 2+ games with different GroupKeys (same console)
+	type mergeCandidate struct {
+		ConsoleID uint
+		ScraperID string
+		GroupKeys int
+	}
+	var candidates []mergeCandidate
+	if err := database.Model(&db.Game{}).
+		Select("console_id, scraper_id, COUNT(DISTINCT group_key) as group_keys").
+		Where("scraper_id != '' AND group_key != '' AND deleted_at IS NULL").
+		Group("console_id, scraper_id").
+		Having("group_keys > 1").
+		Scan(&candidates).Error; err != nil {
+		return 0, fmt.Errorf("finding IGDB merge candidates: %w", err)
+	}
+
+	if len(candidates) == 0 {
+		return 0, nil
+	}
+
+	mergedCount := 0
+	for _, c := range candidates {
+		// Get all games with this IGDB ID on this console
+		var games []db.Game
+		if err := database.
+			Where("console_id = ? AND scraper_id = ? AND deleted_at IS NULL", c.ConsoleID, c.ScraperID).
+			Order("group_key ASC").
+			Find(&games).Error; err != nil {
+			slog.Warn("failed to load games for IGDB merge", "scraperID", c.ScraperID, "error", err)
+			continue
+		}
+
+		if len(games) < 2 {
+			continue
+		}
+
+		// Use the first GroupKey (alphabetically lowest) as the canonical one
+		canonicalGroupKey := games[0].GroupKey
+		affectedGroupKeys := make(map[string]bool)
+
+		for _, g := range games {
+			if g.GroupKey != canonicalGroupKey {
+				oldKey := g.GroupKey
+				affectedGroupKeys[oldKey] = true
+				// Update this game's GroupKey to the canonical one
+				if err := database.Model(&g).Update("group_key", canonicalGroupKey).Error; err != nil {
+					slog.Warn("failed to update group key for IGDB merge",
+						"gameID", g.ID, "old", oldKey, "new", canonicalGroupKey, "error", err)
+					continue
+				}
+				mergedCount++
+				slog.Info("merged game into IGDB group",
+					"game", g.Title, "oldGroupKey", oldKey,
+					"newGroupKey", canonicalGroupKey, "scraperID", c.ScraperID)
+			}
+		}
+
+		// Re-elect primary for the merged group
+		if err := electPrimaryForGroup(database, c.ConsoleID, canonicalGroupKey); err != nil {
+			slog.Warn("failed to re-elect primary after IGDB merge",
+				"consoleID", c.ConsoleID, "groupKey", canonicalGroupKey, "error", err)
+		}
+
+		// Re-elect primaries for old groups (may still contain other games)
+		for oldKey := range affectedGroupKeys {
+			if err := electPrimaryForGroup(database, c.ConsoleID, oldKey); err != nil {
+				slog.Warn("failed to re-elect primary for vacated group",
+					"consoleID", c.ConsoleID, "groupKey", oldKey, "error", err)
+			}
+		}
+	}
+
+	if mergedCount > 0 {
+		slog.Info("IGDB group merge complete", "merged", mergedCount, "candidates", len(candidates))
+	}
+	return mergedCount, nil
+}
