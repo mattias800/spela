@@ -162,9 +162,6 @@ function serveEmulatorjs(): Plugin {
           const pkgDir = path.join(coresBaseDir, entry);
           for (const file of fs.readdirSync(pkgDir)) {
             if (!file.endsWith(".data")) continue;
-            // Skip legacy variants — modern browsers don't need them,
-            // and they'll fall back to CDN if somehow requested.
-            if (file.includes("-legacy-")) continue;
             fs.cpSync(
               path.join(pkgDir, file),
               path.join(coresTargetDir, file),
