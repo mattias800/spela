@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/scanner"
 )
 
 // EnrichProgress holds progress information for a metadata enrichment operation.
@@ -321,6 +322,15 @@ func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, on
 		if onProgress != nil {
 			onProgress(progress(i, game))
 		}
+	}
+
+	// After all games are scraped, merge groups where different regional titles
+	// mapped to the same IGDB game (e.g., "Sonic CD" USA and "Sonic the
+	// Hedgehog CD" Japan have different GroupKeys but the same IGDB ID).
+	if merged, err := scanner.MergeGroupsByIGDBID(s.DB); err != nil {
+		slog.Warn("IGDB group merge failed", "error", err)
+	} else if merged > 0 {
+		slog.Info("merged game groups by IGDB ID", "merged", merged)
 	}
 
 	return successes, total, nil

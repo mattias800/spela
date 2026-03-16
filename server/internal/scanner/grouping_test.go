@@ -348,6 +348,72 @@ func TestGroupAndElectPrimaries_SingleGameGroup(t *testing.T) {
 	assert.True(t, result.IsPrimary, "single game in group should be primary")
 }
 
+func TestMergeGroupsByIGDBID(t *testing.T) {
+	database := setupTestDB(t)
+
+	var scd db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SCD").First(&scd).Error)
+
+	// Two games with different titles/GroupKeys but same IGDB ID
+	game1 := db.Game{
+		ConsoleID: scd.ID,
+		Title:     "Sonic CD",
+		FileName:  "Sonic CD (USA).cue",
+		FilePath:  "segacd/Sonic CD (USA).cue",
+		GroupKey:  "sonic cd",
+		Region:    "USA",
+		ScraperID: "igdb:2071",
+	}
+	game2 := db.Game{
+		ConsoleID: scd.ID,
+		Title:     "Sonic the Hedgehog CD",
+		FileName:  "Sonic the Hedgehog CD (Japan).cue",
+		FilePath:  "segacd/Sonic the Hedgehog CD (Japan).cue",
+		GroupKey:  "sonic hedgehog cd",
+		Region:    "Japan",
+		ScraperID: "igdb:2071",
+	}
+	require.NoError(t, database.Create(&game1).Error)
+	require.NoError(t, database.Create(&game2).Error)
+
+	// Before merge: both should be in different groups
+	require.NotEqual(t, game1.GroupKey, game2.GroupKey)
+
+	// Run election first — each gets elected primary in its own group
+	require.NoError(t, GroupAndElectPrimaries(database))
+
+	var pre1, pre2 db.Game
+	database.First(&pre1, game1.ID)
+	database.First(&pre2, game2.ID)
+	assert.True(t, pre1.IsPrimary, "game1 should be primary before merge")
+	assert.True(t, pre2.IsPrimary, "game2 should be primary before merge")
+
+	// Run IGDB merge
+	merged, err := MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+	assert.Equal(t, 1, merged, "should have merged 1 game into a different group")
+
+	// After merge: both should share the same GroupKey
+	var post1, post2 db.Game
+	database.First(&post1, game1.ID)
+	database.First(&post2, game2.ID)
+	assert.Equal(t, post1.GroupKey, post2.GroupKey, "both games should share the same GroupKey after merge")
+
+	// Only one should be primary (USA preferred)
+	primaryCount := 0
+	if post1.IsPrimary {
+		primaryCount++
+	}
+	if post2.IsPrimary {
+		primaryCount++
+	}
+	assert.Equal(t, 1, primaryCount, "exactly one game should be primary after merge")
+
+	// USA version should be primary (region preference)
+	assert.True(t, post1.IsPrimary, "USA version should be primary")
+	assert.False(t, post2.IsPrimary, "Japan version should not be primary")
+}
+
 func TestReElectPrimaryForGroup(t *testing.T) {
 	database := setupTestDB(t)
 
