@@ -662,6 +662,7 @@ func TestGetTopListLongest_LimitOf50(t *testing.T) {
 			FileName:           fmt.Sprintf("game%03d.nes", i),
 			FilePath:           fmt.Sprintf("/games/game%03d.nes", i),
 			FileSize:           1024,
+			IsPrimary:          true,
 			TimeToBeatNormally: i * 10,
 		})
 	}
