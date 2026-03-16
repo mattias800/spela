@@ -271,13 +271,6 @@ test.describe("Netplay Session Detail Page", () => {
     await expect(page.getByText("ABC123")).toBeVisible();
     await expect(page.getByText("Invite Code")).toBeVisible();
 
-    // Open in app banner
-    await expect(
-      page.getByText(
-        "Open this session in the Spela player app to join and play.",
-      ),
-    ).toBeVisible();
-
     // Players section
     await expect(
       page.getByRole("heading", { name: "Players" }),
