@@ -77,6 +77,9 @@ var registry = []Entry{
 	// PC-FX (PCFX) — mednafen_pcfx_libretro.info
 	{ConsoleID: "pcfx", FileName: "pcfx.rom", Description: "PC-FX BIOS v1.00", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true},
 
+	// ColecoVision (CV) — gearcoleco_libretro.info / bluemsx_libretro.info
+	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true},
+
 	// Philips CD-i (CDI) — same_cdi_libretro.info
 	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true},
 	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false},
@@ -97,6 +100,7 @@ var repoFolders = map[string]string{
 	"lynx":  "Atari - Lynx",
 	"3do":   "3DO Company, The - 3DO",
 	"pcfx":  "NEC - PC-FX",
+	"cv":    "Coleco - ColecoVision",
 	// ps2, neogeo, neocd, amiga, cdi — not available in the repository
 }
 
