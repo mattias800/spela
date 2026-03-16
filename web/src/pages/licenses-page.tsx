@@ -31,6 +31,13 @@ const credits: CreditEntry[] = [
       "Pixel art console and controller icons by Tatohead.",
   },
   {
+    name: "Controllers Stencil Platform Images",
+    url: "https://forums.launchbox-app.com/files/file/3480-controllers-stencil-platform-images/",
+    license: "Free to use",
+    description:
+      "White stencil controller icons by EthanAllen used in the library view.",
+  },
+  {
     name: "Icons8",
     url: "https://icons8.com",
     license: "Free with attribution",
