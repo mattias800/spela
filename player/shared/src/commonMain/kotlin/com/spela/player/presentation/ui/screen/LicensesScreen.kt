@@ -57,6 +57,12 @@ private val credits = listOf(
         description = "Atari Jaguar controller icon used in the library view.",
     ),
     CreditEntry(
+        name = "Controllers Stencil Platform Images",
+        url = "forums.launchbox-app.com/files/file/3480-controllers-stencil-platform-images/",
+        license = "Free to use",
+        description = "White stencil controller icons by EthanAllen used in the library view.",
+    ),
+    CreditEntry(
         name = "Icons8",
         url = "icons8.com",
         license = "Free with attribution",
