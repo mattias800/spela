@@ -76,7 +76,7 @@ func TestConsoleIDs(t *testing.T) {
 	for _, id := range ids {
 		idSet[id] = true
 	}
-	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cdi"} {
+	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cv", "cdi"} {
 		assert.True(t, idSet[expected], "expected console %s in registry", expected)
 	}
 }
