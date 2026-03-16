@@ -76,7 +76,7 @@ func TestConsoleIDs(t *testing.T) {
 	for _, id := range ids {
 		idSet[id] = true
 	}
-	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce"} {
+	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cdi"} {
 		assert.True(t, idSet[expected], "expected console %s in registry", expected)
 	}
 }
@@ -93,7 +93,13 @@ func TestRepoFolder(t *testing.T) {
 		{"gba", "Nintendo - Game Boy Advance"},
 		{"nds", "Nintendo - Nintendo DS"},
 		{"pce", "NEC - PC Engine - TurboGrafx 16 - SuperGrafx"},
+		{"pcecd", "NEC - PC Engine - TurboGrafx 16 - SuperGrafx"},
+		{"lynx", "Atari - Lynx"},
+		{"3do", "3DO Company, The - 3DO"},
+		{"pcfx", "NEC - PC-FX"},
 		{"ps2", ""},
+		{"neogeo", ""},
+		{"amiga", ""},
 		{"unknown", ""},
 	}
 	for _, tt := range tests {
