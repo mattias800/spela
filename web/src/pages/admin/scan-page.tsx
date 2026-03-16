@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ScanSearch,
@@ -33,10 +33,18 @@ function ScanCard() {
   const scanLibrary = useScanLibrary();
   const scan = useScanProgress();
   const { toast } = useToast();
+  const [scanRequested, setScanRequested] = useState(false);
 
   const isActive = scan.phase === "active";
   const isComplete = scan.phase === "complete";
   const isError = scan.phase === "error";
+
+  // Clear the scanRequested flag once the WebSocket phase catches up
+  useEffect(() => {
+    if (scanRequested && (isActive || isComplete || isError)) {
+      setScanRequested(false);
+    }
+  }, [scanRequested, isActive, isComplete, isError]);
 
   return (
     <Card>
@@ -154,17 +162,20 @@ function ScanCard() {
         )}
 
         <Button
-          onClick={() =>
+          onClick={() => {
+            setScanRequested(true);
             scanLibrary.mutate(undefined, {
-              onError: (err) =>
+              onError: (err) => {
+                setScanRequested(false);
                 toast(
                   "error",
                   err instanceof Error ? err.message : "Scan failed",
-                ),
-            })
-          }
-          loading={scanLibrary.isPending}
-          disabled={isActive}
+                );
+              },
+            });
+          }}
+          loading={scanLibrary.isPending || scanRequested}
+          disabled={isActive || scanLibrary.isPending || scanRequested}
           icon={<FolderSearch className="h-4 w-4" />}
           className="w-full"
         >

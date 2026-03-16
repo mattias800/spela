@@ -74,7 +74,7 @@ export function ActivityPage() {
                 Previous
               </Button>
               <span className="text-sm text-surface-400">
-                Page {page} of {Math.ceil(data.total / pageSize)}
+                Page {page} of {Math.ceil((data.total || 0) / pageSize) || 1}
               </span>
               <Button
                 variant="secondary"

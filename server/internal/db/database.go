@@ -791,7 +791,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", Generation: 5, SaveStateSupport: false, Playable: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "3DO", Abbreviation: "3DO", Extensions: ".iso,.bin,.cue,.chd", DefaultCore: "opera", EmulatorJSCore: "opera", FolderName: "3do", ColorTheme: "#c0c0c0", Generation: 5, SaveStateSupport: true, Playable: true},
-		{Name: "Neo Geo Pocket", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Neo Geo Pocket / Color", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", Generation: 5, SaveStateSupport: true, Playable: true},
@@ -850,6 +850,11 @@ func SeedConsoles(db *gorm.DB) error {
 			}
 			slog.Info("seeded console", "name", c.Name)
 		} else {
+			// Backfill name changes (e.g., "Neo Geo Pocket" → "Neo Geo Pocket / Color")
+			if c.Name != "" && existing.Name != c.Name {
+				db.Model(&existing).Update("name", c.Name)
+				slog.Info("backfilled Name", "old", existing.Name, "new", c.Name)
+			}
 			if existing.EmulatorJSCore == "" && c.EmulatorJSCore != "" {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
 				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
