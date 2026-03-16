@@ -238,7 +238,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 	if err := h.DB.
 		Table("game_ratings").
 		Select("game_ratings.game_id, AVG(game_ratings.rating) as community_rating, COUNT(*) as rating_count").
-		Joins("JOIN games ON games.id = game_ratings.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_ratings.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Where("game_ratings.deleted_at IS NULL AND games.rating < 75").
 		Group("game_ratings.game_id").
 		Having("rating_count >= 2 AND community_rating >= 4.0").

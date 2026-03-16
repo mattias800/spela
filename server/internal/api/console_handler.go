@@ -566,7 +566,7 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 				consoles.name AS console_name,
 				consoles.abbreviation AS console_abbr,
 				`+ratingColumn+` AS rating`).
-		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL").
+		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
 		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
 		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, "+ratingColumn).
@@ -634,7 +634,7 @@ func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
 				games.time_to_beat_hastily,
 				games.time_to_beat_completely`).
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
-		Where("games.time_to_beat_normally > 0 AND games.deleted_at IS NULL").
+		Where("games.time_to_beat_normally > 0 AND games.deleted_at IS NULL AND games.is_primary = true").
 		Order("games.time_to_beat_normally DESC").
 		Limit(50).
 		Find(&rows).Error
