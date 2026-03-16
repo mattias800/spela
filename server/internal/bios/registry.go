@@ -52,6 +52,35 @@ var registry = []Entry{
 
 	// TurboGrafx-CD (PCECD) — same BIOS as PCE, required for CD games
 	{ConsoleID: "pcecd", FileName: "syscard3.pce", Description: "PC Engine CD System Card 3.0", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true},
+
+	// Neo Geo (NEOGEO) — fbneo_libretro.info
+	// neogeo.zip must contain the individual BIOS ROMs (sp-s2.sp1, etc.)
+	{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS (arcade/AES/MVS)", MD5: "", Required: true},
+
+	// Neo Geo CD (NEOCD) — neocd_libretro.info
+	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true},
+	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false},
+
+	// Atari Lynx (LYNX) — handy_libretro.info
+	{ConsoleID: "lynx", FileName: "lynxboot.img", Description: "Atari Lynx Boot ROM", MD5: "fcd403db69f54290b51035d82f835e7b", Required: false},
+
+	// 3DO — opera_libretro.info
+	{ConsoleID: "3do", FileName: "panafz10.bin", Description: "Panasonic FZ-10 3DO BIOS", MD5: "51f2f43ae2f3508a14d9f56597e2d3ce", Required: true},
+	{ConsoleID: "3do", FileName: "panafz1.bin", Description: "Panasonic FZ-1 3DO BIOS", MD5: "f47264dd47fe30f73ab3c010015c155b", Required: false},
+	{ConsoleID: "3do", FileName: "goldstar.bin", Description: "Goldstar 3DO BIOS", MD5: "8639fd5e549bd6238cfee79e3e749114", Required: false},
+
+	// Commodore Amiga (AMIGA) — puae_libretro.info
+	{ConsoleID: "amiga", FileName: "kick34005.A500", Description: "Amiga 500 Kickstart v1.3 (required)", MD5: "82a21c1890cae844b3df741f2762d48d", Required: true},
+	{ConsoleID: "amiga", FileName: "kick40068.A1200", Description: "Amiga 1200 Kickstart v3.1", MD5: "646773759326fbac3b2311fd8c8793ee", Required: false},
+	{ConsoleID: "amiga", FileName: "kick40060.CD32", Description: "Amiga CD32 Kickstart v3.1", MD5: "5f8924d013dd57a89cf349f4cdedc6b1", Required: false},
+
+	// PC-FX (PCFX) — mednafen_pcfx_libretro.info
+	{ConsoleID: "pcfx", FileName: "pcfx.rom", Description: "PC-FX BIOS v1.00", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true},
+
+	// Philips CD-i (CDI) — same_cdi_libretro.info
+	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true},
+	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false},
+	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false},
 }
 
 // repoFolders maps console IDs to their folder name in the
@@ -65,7 +94,10 @@ var repoFolders = map[string]string{
 	"nds": "Nintendo - Nintendo DS",
 	"pce":  "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
 	"pcecd": "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
-	// ps2 is not available in the repository
+	"lynx":  "Atari - Lynx",
+	"3do":   "3DO Company, The - 3DO",
+	"pcfx":  "NEC - PC-FX",
+	// ps2, neogeo, neocd, amiga, cdi — not available in the repository
 }
 
 // RepoFolder returns the repository folder name for the given console ID,
