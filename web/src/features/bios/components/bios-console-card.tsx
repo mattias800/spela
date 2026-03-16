@@ -90,16 +90,23 @@ export function BiosConsoleCard({
             >
               {fileStatusIcon(file.status)}
               <div className="flex-1 min-w-0">
-                <span className="text-surface-200 font-mono text-xs">
-                  {file.fileName}
-                </span>
-                <span className="text-surface-500 ml-2 text-xs">
-                  {file.description}
-                </span>
-                {file.required && (
-                  <Badge variant="danger" className="ml-2 text-[10px] px-1.5 py-0">
-                    Required
-                  </Badge>
+                <div>
+                  <span className="text-surface-200 font-mono text-xs">
+                    {file.fileName}
+                  </span>
+                  <span className="text-surface-500 ml-2 text-xs">
+                    {file.description}
+                  </span>
+                  {file.required && (
+                    <Badge variant="danger" className="ml-2 text-[10px] px-1.5 py-0">
+                      Required
+                    </Badge>
+                  )}
+                </div>
+                {file.md5 && file.status === "missing" && (
+                  <p className="text-[10px] text-surface-600 font-mono mt-0.5">
+                    MD5: {file.md5}
+                  </p>
                 )}
               </div>
               {file.status !== "missing" && onDeleteFile && (
