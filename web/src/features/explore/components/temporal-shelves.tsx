@@ -251,7 +251,7 @@ export function BestOfYearSection({
           <button
             key={y}
             onClick={() => onYearChange(y)}
-            className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors cursor-pointer ${
               y === year
                 ? "bg-brand-500 text-white font-semibold"
                 : "bg-surface-800 text-surface-400 hover:bg-surface-700 hover:text-surface-200"
