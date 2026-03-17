@@ -91,8 +91,9 @@ type Prod struct {
 }
 
 // searchResponse is the API response for search queries.
+// Results is an object keyed by prod ID, not an array.
 type searchResponse struct {
-	Results []Prod `json:"results"`
+	Results map[string]Prod `json:"results"`
 }
 
 // prodResponse is the API response for single prod queries.
@@ -127,8 +128,14 @@ func (c *Client) SearchProd(query string) ([]Prod, error) {
 		return nil, fmt.Errorf("pouet search: parsing JSON: %w", err)
 	}
 
-	slog.Debug("pouet search results", "query", query, "count", len(result.Results))
-	return result.Results, nil
+	// Convert map to slice
+	prods := make([]Prod, 0, len(result.Results))
+	for _, p := range result.Results {
+		prods = append(prods, p)
+	}
+
+	slog.Debug("pouet search results", "query", query, "count", len(prods))
+	return prods, nil
 }
 
 // GetProd fetches a single production by ID with full details.
