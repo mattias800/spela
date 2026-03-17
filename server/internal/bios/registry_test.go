@@ -125,27 +125,34 @@ func TestDownloadable(t *testing.T) {
 		assert.NotEqual(t, "ps2", e.ConsoleID, "ps2 entries should not be downloadable")
 	}
 
-	// Should be fewer than All() since PS2, amiga, cdi are excluded
+	// Should be fewer than All() since PS2 is excluded
 	assert.Less(t, len(entries), len(All()))
 }
 
 func TestDownloadable_IncludesOverrideURLEntries(t *testing.T) {
 	entries := Downloadable()
 
-	// Neo Geo entries have OverrideURL and should be downloadable
-	var neoGeoFound, neoCDZFound bool
+	// All consoles with OverrideURL should be in the downloadable list
+	want := map[string][]string{
+		"neogeo": {"neogeo.zip"},
+		"neocd":  {"neocdz.zip", "neocd.zip"},
+		"amiga":  {"kick34005.A500", "kick40068.A1200", "kick40060.CD32"},
+		"cdi":    {"cdimono1.zip", "cdimono2.zip", "cdibios.zip"},
+	}
+
+	found := make(map[string]bool)
 	for _, e := range entries {
-		if e.ConsoleID == "neogeo" && e.FileName == "neogeo.zip" {
-			neoGeoFound = true
-			assert.NotEmpty(t, e.OverrideURL)
-		}
-		if e.ConsoleID == "neocd" && e.FileName == "neocdz.zip" {
-			neoCDZFound = true
-			assert.NotEmpty(t, e.OverrideURL)
+		if e.OverrideURL != "" {
+			found[e.ConsoleID+"/"+e.FileName] = true
 		}
 	}
-	assert.True(t, neoGeoFound, "neogeo.zip should be in downloadable list")
-	assert.True(t, neoCDZFound, "neocdz.zip should be in downloadable list")
+
+	for consoleID, files := range want {
+		for _, f := range files {
+			key := consoleID + "/" + f
+			assert.True(t, found[key], "%s should be in downloadable list with OverrideURL", key)
+		}
+	}
 }
 
 func TestRegistryEntries_HaveRequiredFields(t *testing.T) {
