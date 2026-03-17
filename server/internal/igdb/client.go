@@ -47,10 +47,11 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"GC":     21,
 	"PS2":    8,
 	"C64":    15,
-	"AMIGA":  16,
-	"ADEMO":  16,
-	"DOS":    13,
-	"DDEMO":  13,
+	"AMIGA": 16,
+	// ADEMO (Amiga Demos) intentionally omitted — demoscene productions
+	// don't exist in IGDB and would match against commercial games.
+	"DOS": 13,
+	// DDEMO (DOS Demos) intentionally omitted — same reason as ADEMO.
 	"A52":    66,
 	"A78":    60,
 	"LYNX":   61,
