@@ -71,9 +71,9 @@ var registry = []Entry{
 	{ConsoleID: "3do", FileName: "goldstar.bin", Description: "Goldstar 3DO BIOS", MD5: "8639fd5e549bd6238cfee79e3e749114", Required: false},
 
 	// Commodore Amiga (AMIGA) — puae_libretro.info
-	{ConsoleID: "amiga", FileName: "kick34005.A500", Description: "Amiga 500 Kickstart v1.3 (required)", MD5: "82a21c1890cae844b3df741f2762d48d", Required: true},
-	{ConsoleID: "amiga", FileName: "kick40068.A1200", Description: "Amiga 1200 Kickstart v3.1", MD5: "646773759326fbac3b2311fd8c8793ee", Required: false},
-	{ConsoleID: "amiga", FileName: "kick40060.CD32", Description: "Amiga CD32 Kickstart v3.1", MD5: "5f8924d013dd57a89cf349f4cdedc6b1", Required: false},
+	{ConsoleID: "amiga", FileName: "kick34005.A500", Description: "Amiga 500 Kickstart v1.3 (required)", MD5: "82a21c1890cae844b3df741f2762d48d", Required: true, OverrideURL: "https://archive.org/download/batov39/kick34005.A500"},
+	{ConsoleID: "amiga", FileName: "kick40068.A1200", Description: "Amiga 1200 Kickstart v3.1", MD5: "646773759326fbac3b2311fd8c8793ee", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40068.A1200"},
+	{ConsoleID: "amiga", FileName: "kick40060.CD32", Description: "Amiga CD32 Kickstart v3.1", MD5: "5f8924d013dd57a89cf349f4cdedc6b1", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40060.CD32"},
 
 	// PC-FX (PCFX) — mednafen_pcfx_libretro.info
 	{ConsoleID: "pcfx", FileName: "pcfx.rom", Description: "PC-FX BIOS v1.00", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true},
@@ -82,9 +82,9 @@ var registry = []Entry{
 	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true},
 
 	// Philips CD-i (CDI) — same_cdi_libretro.info
-	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true},
-	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false},
-	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false},
+	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono1.zip"},
+	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip"},
+	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip"},
 }
 
 // repoFolders maps console IDs to their folder name in the
@@ -102,7 +102,7 @@ var repoFolders = map[string]string{
 	"3do":   "3DO Company, The - 3DO",
 	"pcfx":  "NEC - PC-FX",
 	"cv":    "Coleco - ColecoVision",
-	// ps2, neogeo, neocd, amiga, cdi — not available in the repository
+	// ps2 — not available in the repository (neogeo, neocd, amiga, cdi use OverrideURL)
 }
 
 // RepoFolder returns the repository folder name for the given console ID,
