@@ -126,6 +126,7 @@ export function GameDetailPage() {
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
+  const isDemo = consoleInfo?.abbreviation === "ADEMO";
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
   const [showReplaceRom, setShowReplaceRom] = useState(false);
@@ -203,6 +204,7 @@ export function GameDetailPage() {
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
         biosMissing={showBiosWarning}
+        isDemo={isDemo}
         onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onToggleFavorite={() =>
@@ -284,9 +286,9 @@ export function GameDetailPage() {
         </div>
       )}
 
-      <TimeToBeatCard game={game} />
+      {!isDemo && <TimeToBeatCard game={game} />}
 
-      <GameSessions gameId={game.id} />
+      {!isDemo && <GameSessions gameId={game.id} />}
 
       {game.variants && game.variants.length > 0 && (
         <GameVariantsSection variants={game.variants} />
@@ -310,18 +312,18 @@ export function GameDetailPage() {
         </Card>
       </div>
 
-      {isPlayable && <GameAchievementLeaderboard gameId={game.id} />}
+      {isPlayable && !isDemo && <GameAchievementLeaderboard gameId={game.id} />}
 
       <GameScreenshots
         screenshotUrls={game.screenshotUrls}
         gameTitle={game.title}
       />
 
-      {isPlayable && (
+      {isPlayable && !isDemo && (
         <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
       )}
 
-      {isPlayable && (
+      {isPlayable && !isDemo && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-6">
             <SharedSavesList gameId={game.id} />
@@ -332,7 +334,7 @@ export function GameDetailPage() {
         </div>
       )}
 
-      {isPlayable && <GameActiveSharedSessions gameId={game.id} />}
+      {isPlayable && !isDemo && <GameActiveSharedSessions gameId={game.id} />}
     </div>
   );
 }

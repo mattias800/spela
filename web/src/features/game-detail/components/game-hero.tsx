@@ -17,6 +17,7 @@ import {
   Download,
   Monitor,
   Replace,
+  Award,
 } from "lucide-react";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { VerificationBadge } from "./verification-badge";
@@ -42,6 +43,7 @@ interface GameHeroProps {
   isScraping: boolean;
   hasAchievements?: boolean;
   biosMissing?: boolean;
+  isDemo?: boolean;
   onPlay: () => void;
   onScrape: () => void;
   onToggleFavorite: () => void;
@@ -63,6 +65,7 @@ export function GameHero({
   isScraping,
   hasAchievements,
   biosMissing,
+  isDemo,
   onPlay,
   onScrape,
   onToggleFavorite,
@@ -284,12 +287,12 @@ export function GameHero({
           {game.developer && (
             <MetaItem
               icon={Building2}
-              label="Developer"
+              label={isDemo ? "Group" : "Developer"}
               value={game.developer}
-              href={`/explore/developers/${encodeURIComponent(game.developer)}`}
+              href={isDemo ? undefined : `/explore/developers/${encodeURIComponent(game.developer)}`}
             />
           )}
-          {game.publisher && (
+          {!isDemo && game.publisher && (
             <MetaItem
               icon={Building2}
               label="Publisher"
@@ -300,14 +303,17 @@ export function GameHero({
           {game.releaseDate && (
             <MetaItem
               icon={Calendar}
-              label="Released"
+              label={isDemo ? "Year" : "Released"}
               value={game.releaseDate}
             />
           )}
           {game.genre && (
-            <MetaItem icon={Star} label="Genre" value={game.genre} />
+            <MetaItem icon={Star} label={isDemo ? "Type" : "Genre"} value={game.genre} />
           )}
-          {game.players != null && (
+          {isDemo && game.partyInfo && (
+            <MetaItem icon={Award} label="Party" value={game.partyInfo} />
+          )}
+          {!isDemo && game.players != null && (
             <MetaItem icon={Users} label="Players" value={`${game.players}`} />
           )}
           <MetaItem

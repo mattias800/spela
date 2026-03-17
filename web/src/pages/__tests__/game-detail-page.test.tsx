@@ -33,6 +33,8 @@ vi.mock("@/hooks/use-consoles", () => ({
   useConsoles: vi.fn(() => ({ data: [] })),
 }));
 
+import { useConsoles } from "@/hooks/use-consoles";
+
 vi.mock("@/hooks/use-collections", () => ({
   useMyCollections: vi.fn(() => ({ data: { data: [] } })),
   useAddGameToCollection: vi.fn(() => ({
@@ -84,11 +86,11 @@ vi.mock("@/features/game-detail/components/game-community-stats", () => ({
 }));
 
 vi.mock("@/features/game-detail/components/game-achievements", () => ({
-  GameAchievements: () => null,
+  GameAchievements: () => <div data-testid="game-achievements">Achievements</div>,
 }));
 
 vi.mock("@/features/game-detail/components/game-achievement-leaderboard", () => ({
-  GameAchievementLeaderboard: () => null,
+  GameAchievementLeaderboard: () => <div data-testid="game-achievement-leaderboard">Leaderboard</div>,
 }));
 
 vi.mock("@/features/game-detail/components/rating-summary", () => ({
@@ -100,19 +102,19 @@ vi.mock("@/features/game-detail/components/game-reviews", () => ({
 }));
 
 vi.mock("@/features/game-detail/components/shared-saves-list", () => ({
-  SharedSavesList: () => null,
+  SharedSavesList: () => <div data-testid="shared-saves-list">Shared Saves</div>,
 }));
 
 vi.mock("@/features/shared-sessions/components/game-active-shared-sessions", () => ({
-  GameActiveSharedSessions: () => null,
+  GameActiveSharedSessions: () => <div data-testid="game-active-shared-sessions">Active Sessions</div>,
 }));
 
 vi.mock("@/features/sessions/components/game-sessions", () => ({
-  GameSessions: () => null,
+  GameSessions: () => <div data-testid="game-sessions">Sessions</div>,
 }));
 
 vi.mock("@/features/challenges/components/game-challenges", () => ({
-  GameChallenges: () => null,
+  GameChallenges: () => <div data-testid="game-challenges">Challenges</div>,
 }));
 
 vi.mock("@/features/bios/components/bios-warning-banner", () => ({
@@ -123,9 +125,30 @@ vi.mock("@/features/game-detail/components/scrape-match-modal", () => ({
   ScrapeMatchModal: () => null,
 }));
 
+vi.mock("@/features/game-detail/components/replace-rom-modal", () => ({
+  ReplaceRomModal: () => null,
+}));
+
+vi.mock("@/features/game-detail/components/time-to-beat-card", () => ({
+  TimeToBeatCard: () => <div data-testid="time-to-beat-card">Time to Beat</div>,
+}));
+
+vi.mock("@/features/game-detail/components/game-variants-section", () => ({
+  GameVariantsSection: () => null,
+}));
+
+vi.mock("@/features/game-detail/components/based-on-link", () => ({
+  BasedOnLink: () => null,
+}));
+
+vi.mock("@/features/game-detail/components/standalone-rom-hacks-section", () => ({
+  StandaloneRomHacksSection: () => null,
+}));
+
 import { useGame } from "@/hooks/use-games";
 
 const mockUseGame = useGame as ReturnType<typeof vi.fn>;
+const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 
 const mockGame = {
   id: "g1",
@@ -169,5 +192,133 @@ describe("GameDetailPage - Cheats", () => {
   it("does not render a GameCheats/cheat codes section on the game detail page", () => {
     renderPage();
     expect(screen.queryByText("Cheat Codes")).not.toBeInTheDocument();
+  });
+});
+
+describe("GameDetailPage - Demo console (ADEMO)", () => {
+  const mockDemoGame = {
+    ...mockGame,
+    consoleId: "ademo",
+    consoleName: "Amiga Demos",
+  };
+
+  const ademoConsole = {
+    id: "ademo",
+    name: "Amiga Demos",
+    abbreviation: "ADEMO",
+    extensions: ["adf"],
+    defaultCore: "puae",
+    coverAspectRatio: 1,
+    colorTheme: "#666",
+    generation: 100,
+    iconUrl: "",
+    logoUrl: "",
+    gameCount: 10,
+    saveStateSupport: false,
+    browserPlayable: false,
+    playable: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    mockUseGame.mockReturnValue({
+      data: mockDemoGame,
+      isLoading: false,
+    });
+    mockUseConsoles.mockReturnValue({
+      data: [ademoConsole],
+    });
+  });
+
+  it("hides TimeToBeatCard for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("time-to-beat-card")).not.toBeInTheDocument();
+  });
+
+  it("hides GameSessions for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("game-sessions")).not.toBeInTheDocument();
+  });
+
+  it("hides GameAchievements for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("game-achievements")).not.toBeInTheDocument();
+  });
+
+  it("hides SharedSavesList for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("shared-saves-list")).not.toBeInTheDocument();
+  });
+
+  it("hides GameChallenges for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("game-challenges")).not.toBeInTheDocument();
+  });
+
+  it("hides GameActiveSharedSessions for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("game-active-shared-sessions")).not.toBeInTheDocument();
+  });
+
+  it("hides GameAchievementLeaderboard for demo consoles", () => {
+    renderPage();
+    expect(screen.queryByTestId("game-achievement-leaderboard")).not.toBeInTheDocument();
+  });
+});
+
+describe("GameDetailPage - Regular console shows all sections", () => {
+  const snesConsole = {
+    id: "snes",
+    name: "SNES",
+    abbreviation: "SNES",
+    extensions: ["sfc", "smc"],
+    defaultCore: "snes9x",
+    coverAspectRatio: 0.75,
+    colorTheme: "#7b68ee",
+    generation: 4,
+    iconUrl: "",
+    logoUrl: "",
+    gameCount: 50,
+    saveStateSupport: true,
+    browserPlayable: true,
+    playable: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    mockUseGame.mockReturnValue({
+      data: mockGame,
+      isLoading: false,
+    });
+    mockUseConsoles.mockReturnValue({
+      data: [snesConsole],
+    });
+  });
+
+  it("shows TimeToBeatCard for regular consoles", () => {
+    renderPage();
+    expect(screen.getByTestId("time-to-beat-card")).toBeInTheDocument();
+  });
+
+  it("shows GameSessions for regular consoles", () => {
+    renderPage();
+    expect(screen.getByTestId("game-sessions")).toBeInTheDocument();
+  });
+
+  it("shows GameAchievements for regular playable consoles", () => {
+    renderPage();
+    expect(screen.getByTestId("game-achievements")).toBeInTheDocument();
+  });
+
+  it("shows SharedSavesList for regular playable consoles", () => {
+    renderPage();
+    expect(screen.getByTestId("shared-saves-list")).toBeInTheDocument();
+  });
+
+  it("shows GameChallenges for regular playable consoles", () => {
+    renderPage();
+    expect(screen.getByTestId("game-challenges")).toBeInTheDocument();
   });
 });
