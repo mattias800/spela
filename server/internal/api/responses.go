@@ -75,6 +75,7 @@ type GameResponse struct {
 	Videos               []VideoResponse             `json:"videos,omitempty"`
 	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports,omitempty"`
 	AgeRatings           []AgeRatingResponse         `json:"ageRatings,omitempty"`
+	PartyInfo           string         `json:"partyInfo,omitempty"`
 	Playable            bool           `json:"playable"`
 	CoreOverride        string         `json:"coreOverride,omitempty"`
 	ScraperID           string         `json:"scraperId,omitempty"`
@@ -365,6 +366,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		TimeToBeatCompletely: g.TimeToBeatCompletely,
 		Players:              g.Players,
 		Rating:               g.Rating,
+		PartyInfo:           g.PartyInfo,
 		Playable:            g.Console.Playable,
 		CoreOverride:        g.CoreOverride,
 		ScraperID:           g.ScraperID,

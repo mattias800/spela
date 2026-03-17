@@ -472,6 +472,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		Players       int     `json:"players"`
 		Rating        float64 `json:"rating"`
 		CoreOverride  string  `json:"coreOverride"`
+		PartyInfo     string  `json:"partyInfo"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -511,6 +512,9 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	}
 	if req.CoreOverride != "" {
 		game.CoreOverride = req.CoreOverride
+	}
+	if req.PartyInfo != "" {
+		game.PartyInfo = req.PartyInfo
 	}
 
 	if err := h.DB.Save(&game).Error; err != nil {

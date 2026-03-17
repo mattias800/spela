@@ -1398,6 +1398,45 @@ func TestIdentifyConsole_NewDirectoryMappings(t *testing.T) {
 	}
 }
 
+func TestIdentifyConsole_AmigaDemosFolderMapping(t *testing.T) {
+	s := &Scanner{}
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{"amiga-demos folder", "/games/amiga-demos/second_reality.adf", ".adf", "ADEMO"},
+		{"amigademos folder", "/games/amigademos/state_of_the_art.lha", ".lha", "ADEMO"},
+		{"amiga folder stays AMIGA", "/games/amiga/game.adf", ".adf", "AMIGA"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.identifyConsole(tt.path, tt.ext)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestCreateConsoleFolders_AmigaDemosFolderCreated(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	err := CreateConsoleFolders(database, []string{dir})
+	require.NoError(t, err)
+
+	// Verify amiga-demos folder was created
+	info, err := os.Stat(filepath.Join(dir, "amiga-demos"))
+	require.NoError(t, err, "amiga-demos folder should exist")
+	assert.True(t, info.IsDir())
+
+	// Verify README.txt mentions Amiga Demos
+	data, err := os.ReadFile(filepath.Join(dir, "amiga-demos", "README.txt"))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "Amiga Demos")
+}
+
 func TestCreateConsoleFolders_WritesREADME(t *testing.T) {
 	database := setupTestDB(t)
 	dir := t.TempDir()

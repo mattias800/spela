@@ -249,6 +249,8 @@ var directoryConsoleMap = map[string]string{
 	"c64":          "C64",
 	"dos":          "DOS",
 	"amiga":        "AMIGA",
+	"amiga-demos":  "ADEMO",
+	"amigademos":   "ADEMO",
 	"3do":          "3DO",
 	"c128":         "C128",
 	"pet":          "PET",
