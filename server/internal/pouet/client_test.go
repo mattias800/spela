@@ -24,13 +24,13 @@ func TestSearchProd(t *testing.T) {
 	c := testClient(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "/search/prod/")
 		assert.Equal(t, "second reality", r.URL.Query().Get("q"))
-		w.Write([]byte(`{"results":[
-			{"id":"3064","name":"Second Reality","types":["demo"],
+		w.Write([]byte(`{"success":true,"results":{
+			"3064":{"id":"3064","name":"Second Reality","types":["demo"],
 			 "groups":[{"id":"44","name":"Future Crew","acronym":"FC"}],
 			 "platforms":{"67":{"name":"MS-Dos","slug":"msdos"}},
-			 "voteup":1200,"votepig":100,"votedown":20,
+			 "voteup":"1200","votepig":"100","votedown":"20",
 			 "releaseDate":"1993-08-01"}
-		]}`))
+		}}`))
 	})
 
 	prods, err := c.SearchProd("second reality")
@@ -51,7 +51,7 @@ func TestGetProd(t *testing.T) {
 			"groups":[{"id":"44","name":"Future Crew"}],
 			"platforms":{"67":{"name":"MS-Dos"}},
 			"screenshot":"https://content.pouet.net/files/screenshots/00003/00003064.jpg",
-			"voteup":1200,"votepig":100,"votedown":"20",
+			"voteup":"1200","votepig":"100","votedown":"20",
 			"releaseDate":"1993-08-01",
 			"party":{"id":"3","name":"Assembly"},
 			"party_year":"1993",
