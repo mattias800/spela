@@ -66,9 +66,14 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			continue
 		}
 
-		// Build URL: {baseURL}/{RepoFolder(consoleID)}/{fileName}
-		folder := RepoFolder(entry.ConsoleID)
-		url := fmt.Sprintf("%s/%s/%s", baseURL, folder, entry.FileName)
+		// Use OverrideURL if set, otherwise build from repo base URL
+		var url string
+		if entry.OverrideURL != "" {
+			url = entry.OverrideURL
+		} else {
+			folder := RepoFolder(entry.ConsoleID)
+			url = fmt.Sprintf("%s/%s/%s", baseURL, folder, entry.FileName)
+		}
 
 		resp, err := client.Get(url)
 		if err != nil {

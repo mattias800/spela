@@ -162,6 +162,40 @@ func TestDownloadMissing_EmptyMD5Accepted(t *testing.T) {
 	assert.Equal(t, fileContent, data)
 }
 
+func TestDownloadMissing_OverrideURL(t *testing.T) {
+	biosDir := t.TempDir()
+	fileContent := []byte("neo geo bios content")
+
+	// This server simulates the OverrideURL (archive.org)
+	overrideServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(fileContent)
+	}))
+	defer overrideServer.Close()
+
+	// This server simulates the default repo — should NOT be called
+	defaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("default server should not be called for entries with OverrideURL")
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer defaultServer.Close()
+
+	origRegistry := make([]Entry, len(registry))
+	copy(origRegistry, registry)
+	registry = []Entry{
+		{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS", MD5: "", Required: true, OverrideURL: overrideServer.URL + "/neogeo.zip"},
+	}
+	defer func() { registry = origRegistry }()
+
+	result := DownloadMissing(biosDir, defaultServer.URL, nil)
+
+	assert.Equal(t, 1, result.Downloaded)
+	assert.Equal(t, 0, result.Failed)
+
+	data, err := os.ReadFile(filepath.Join(biosDir, "neogeo.zip"))
+	require.NoError(t, err)
+	assert.Equal(t, fileContent, data)
+}
+
 func TestDownloadMissing_NilProgressCallback(t *testing.T) {
 	biosDir := t.TempDir()
 

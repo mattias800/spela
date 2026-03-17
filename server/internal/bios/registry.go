@@ -7,6 +7,7 @@ type Entry struct {
 	Description string // human-readable label
 	MD5         string // expected MD5 checksum (lowercase hex)
 	Required    bool   // true if the console cannot function without it
+	OverrideURL string // if set, download from this URL instead of the default repo
 }
 
 // registry is the built-in list of known BIOS files.
@@ -55,11 +56,11 @@ var registry = []Entry{
 
 	// Neo Geo (NEOGEO) — fbneo_libretro.info
 	// neogeo.zip must contain the individual BIOS ROMs (sp-s2.sp1, etc.)
-	{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS (arcade/AES/MVS)", MD5: "", Required: true},
+	{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS (arcade/AES/MVS)", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neogeo.zip"},
 
 	// Neo Geo CD (NEOCD) — neocd_libretro.info
-	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true},
-	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false},
+	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocdz.zip"},
+	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocd.zip"},
 
 	// Atari Lynx (LYNX) — handy_libretro.info
 	{ConsoleID: "lynx", FileName: "lynxboot.img", Description: "Atari Lynx Boot ROM", MD5: "fcd403db69f54290b51035d82f835e7b", Required: false},
@@ -110,12 +111,13 @@ func RepoFolder(consoleID string) string {
 	return repoFolders[consoleID]
 }
 
-// Downloadable returns all registry entries whose console has a known
-// repository folder, i.e. entries that can be auto-downloaded.
+// Downloadable returns all registry entries that can be auto-downloaded,
+// i.e. entries whose console has a known repository folder OR that have
+// an explicit OverrideURL.
 func Downloadable() []Entry {
 	var out []Entry
 	for _, e := range registry {
-		if repoFolders[e.ConsoleID] != "" {
+		if repoFolders[e.ConsoleID] != "" || e.OverrideURL != "" {
 			out = append(out, e)
 		}
 	}
