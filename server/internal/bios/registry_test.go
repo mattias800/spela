@@ -113,9 +113,11 @@ func TestDownloadable(t *testing.T) {
 	entries := Downloadable()
 	assert.NotEmpty(t, entries)
 
-	// Every downloadable entry must have a repo folder mapping
+	// Every downloadable entry must have a repo folder mapping OR an OverrideURL
 	for _, e := range entries {
-		assert.NotEmpty(t, RepoFolder(e.ConsoleID), "entry %s should have a repo folder", e.FileName)
+		hasFolder := RepoFolder(e.ConsoleID) != ""
+		hasOverride := e.OverrideURL != ""
+		assert.True(t, hasFolder || hasOverride, "entry %s should have a repo folder or OverrideURL", e.FileName)
 	}
 
 	// PS2 entries should NOT be in the downloadable list
@@ -123,8 +125,27 @@ func TestDownloadable(t *testing.T) {
 		assert.NotEqual(t, "ps2", e.ConsoleID, "ps2 entries should not be downloadable")
 	}
 
-	// Should be fewer than All() since PS2 is excluded
+	// Should be fewer than All() since PS2, amiga, cdi are excluded
 	assert.Less(t, len(entries), len(All()))
+}
+
+func TestDownloadable_IncludesOverrideURLEntries(t *testing.T) {
+	entries := Downloadable()
+
+	// Neo Geo entries have OverrideURL and should be downloadable
+	var neoGeoFound, neoCDZFound bool
+	for _, e := range entries {
+		if e.ConsoleID == "neogeo" && e.FileName == "neogeo.zip" {
+			neoGeoFound = true
+			assert.NotEmpty(t, e.OverrideURL)
+		}
+		if e.ConsoleID == "neocd" && e.FileName == "neocdz.zip" {
+			neoCDZFound = true
+			assert.NotEmpty(t, e.OverrideURL)
+		}
+	}
+	assert.True(t, neoGeoFound, "neogeo.zip should be in downloadable list")
+	assert.True(t, neoCDZFound, "neocdz.zip should be in downloadable list")
 }
 
 func TestRegistryEntries_HaveRequiredFields(t *testing.T) {
