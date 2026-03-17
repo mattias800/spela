@@ -561,7 +561,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 	}
 
 	if !h.Scanner.TryStartScan() {
-		c.JSON(http.StatusConflict, gin.H{"error": "a scan is already in progress"})
+		c.JSON(http.StatusConflict, gin.H{"error": "A scan is already in progress"})
 		return
 	}
 

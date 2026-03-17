@@ -461,7 +461,7 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 	h.downloadMu.Lock()
 	if h.downloading {
 		h.downloadMu.Unlock()
-		c.JSON(http.StatusConflict, gin.H{"error": "a BIOS download is already in progress"})
+		c.JSON(http.StatusConflict, gin.H{"error": "A BIOS download is already in progress"})
 		return
 	}
 	h.downloading = true
