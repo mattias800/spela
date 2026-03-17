@@ -30,6 +30,32 @@ function serveEmulatorjs(): Plugin {
     ".svg": "image/svg+xml",
   };
 
+  /**
+   * Patches to apply to EmulatorJS source files at serve/build time.
+   * DOSBox Pure needs raw ZIP files (it handles extraction internally),
+   * but EmulatorJS normally extracts ZIPs before passing to the core.
+   * EmulatorJS already skips extraction for arcade/mame — we add "dos".
+   */
+  const ejsPatches: Record<string, [string, string][]> = {
+    "src/emulator.js": [
+      [
+        '["arcade", "mame"].includes(this.getCore(true))',
+        '["arcade", "mame", "dos"].includes(this.getCore(true))',
+      ],
+    ],
+  };
+
+  function applyPatches(filePath: string, content: string): string {
+    for (const [file, patches] of Object.entries(ejsPatches)) {
+      if (filePath.endsWith(file)) {
+        for (const [from, to] of patches) {
+          content = content.replace(from, to);
+        }
+      }
+    }
+    return content;
+  }
+
   function serveFile(
     filePath: string,
     res: import("http").ServerResponse,
@@ -38,10 +64,20 @@ function serveEmulatorjs(): Plugin {
       const stat = fs.statSync(filePath);
       if (!stat.isFile()) return false;
       const ext = path.extname(filePath);
-      res.setHeader(
-        "Content-Type",
-        mimeTypes[ext] || "application/octet-stream",
-      );
+      const contentType = mimeTypes[ext] || "application/octet-stream";
+      res.setHeader("Content-Type", contentType);
+
+      // Apply patches to EmulatorJS JS source files
+      if (ext === ".js" && filePath.startsWith(dataDir)) {
+        const relPath = filePath.slice(dataDir.length + 1);
+        if (ejsPatches[relPath]) {
+          let content = fs.readFileSync(filePath, "utf-8");
+          content = applyPatches(filePath, content);
+          res.end(content);
+          return true;
+        }
+      }
+
       fs.createReadStream(filePath).pipe(res);
       return true;
     } catch {
@@ -113,6 +149,16 @@ function serveEmulatorjs(): Plugin {
       const targetDir = path.join(resolvedOutDir, "emulatorjs", "data");
       if (fs.existsSync(dataDir)) {
         fs.cpSync(dataDir, targetDir, { recursive: true });
+      }
+
+      // Apply EmulatorJS patches to the copied build files
+      for (const [file] of Object.entries(ejsPatches)) {
+        const patchTarget = path.join(targetDir, file);
+        if (fs.existsSync(patchTarget)) {
+          let content = fs.readFileSync(patchTarget, "utf-8");
+          content = applyPatches(patchTarget, content);
+          fs.writeFileSync(patchTarget, content);
+        }
       }
 
       // Only bundle cores that Spela actually uses (non-legacy variants).
