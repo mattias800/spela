@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/pouet"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -18,6 +19,7 @@ type Scraper struct {
 	HTTPClient       *http.Client
 	IGDBClient       *igdb.Client
 	SteamGridDBClient *SteamGridDBClient
+	PouetClient       *pouet.Client
 	DATCache         *DATCache
 	GameDirs         []string
 	cache            *nameCache
@@ -40,12 +42,13 @@ func NewScraper(database *gorm.DB, store *storage.Storage, datDir string, gameDi
 		Timeout: 30 * time.Second,
 	}
 	return &Scraper{
-		DB:         database,
-		Storage:    store,
-		HTTPClient: httpClient,
-		DATCache:   NewDATCache(datDir, httpClient),
-		GameDirs:   gameDirs,
-		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+		DB:          database,
+		Storage:     store,
+		HTTPClient:  httpClient,
+		PouetClient: pouet.NewClient(),
+		DATCache:    NewDATCache(datDir, httpClient),
+		GameDirs:    gameDirs,
+		cache:       &nameCache{entries: make(map[string][]nameEntry)},
 	}
 }
 

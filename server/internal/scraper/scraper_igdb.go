@@ -67,6 +67,20 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	gameName := gameNameFromFileName(game.FileName)
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
+	// --- Pouet (for demoscene consoles) ---
+	if DemoConsoles[console.Abbreviation] {
+		if err := s.scrapePouet(game, console, gameIDStr); err != nil {
+			slog.Warn("Pouet scrape failed", "game", game.Title, "error", err)
+		}
+		// Skip IGDB for demo consoles — demoscene productions don't exist in IGDB.
+		// Also skip LibRetro (no demo thumbnails there either).
+		game.ScrapeAttempts++
+		if err := s.DB.Save(game).Error; err != nil {
+			return fmt.Errorf("saving game after Pouet scrape: %w", err)
+		}
+		return nil
+	}
+
 	// --- IGDB (primary metadata + images, when configured) ---
 	igdbAttempted := false
 	if s.IGDBClient != nil && s.IGDBClient.IsConfigured() {
