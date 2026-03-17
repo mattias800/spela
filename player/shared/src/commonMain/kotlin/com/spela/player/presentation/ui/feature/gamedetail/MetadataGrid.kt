@@ -55,7 +55,7 @@ internal fun MetadataGrid(
             }
         }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.CalendarMonth, "Released", it))
+            add(MetaItem(Icons.Filled.CalendarMonth, if (isDemoConsole) "Year" else "Released", it))
         }
         game.genre?.takeIf { it.isNotBlank() }?.let {
             add(MetaItem(Icons.Filled.Star, if (isDemoConsole) "Type" else "Genre", it))

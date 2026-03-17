@@ -93,6 +93,20 @@ class GameDetailDemoConsoleTest {
     }
 
     @Test
+    fun demoConsoleShowsYearInsteadOfReleased() = runComposeUiTest {
+        val harness = createHarnessWithDemoGame()
+        setContent { harness.App() }
+        navigateToDemoGame(harness)
+
+        onNodeWithText("State of the Art").assertIsDisplayed()
+        // Should show "Year" label for releaseDate field
+        onNodeWithText("Year").assertIsDisplayed()
+        onNodeWithText("1992").assertIsDisplayed()
+        // "Released" label should not be present
+        onNodeWithText("Released").assertDoesNotExist()
+    }
+
+    @Test
     fun demoConsoleShowsPartyInfoWhenPresent() = runComposeUiTest {
         val harness = createHarnessWithDemoGame()
         setContent { harness.App() }
@@ -168,6 +182,18 @@ class GameDetailDemoConsoleTest {
         onNodeWithText("Developer").assertIsDisplayed()
         // "Group" should not be present for regular consoles
         onNodeWithText("Group").assertDoesNotExist()
+    }
+
+    @Test
+    fun regularConsoleShowsReleasedLabel() = runComposeUiTest {
+        val harness = createHarnessWithDemoGame()
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        onNodeWithText("Castlevania").assertIsDisplayed()
+        onNodeWithText("Released").assertIsDisplayed()
+        // "Year" should not be present for regular consoles
+        onNodeWithText("Year").assertDoesNotExist()
     }
 
     @Test
