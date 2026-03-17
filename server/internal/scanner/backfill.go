@@ -27,13 +27,16 @@ func BackfillGameMetadataWithProgress(database *gorm.DB, onProgress func(process
 
 	slog.Info("backfilling game metadata", "total", totalNeedingBackfill)
 
-	// Process in batches of 100
+	// Process in batches of 100, using ID-based pagination to avoid
+	// reprocessing games whose GroupKey remains empty after parsing.
 	const batchSize = 100
 	var processed int64
+	var lastID uint
 
 	for {
 		var games []db.Game
-		if err := database.Where("group_key = '' OR group_key IS NULL").
+		if err := database.Where("(group_key = '' OR group_key IS NULL) AND id > ?", lastID).
+			Order("id ASC").
 			Limit(batchSize).
 			Find(&games).Error; err != nil {
 			return fmt.Errorf("loading games for backfill: %w", err)
@@ -43,6 +46,8 @@ func BackfillGameMetadataWithProgress(database *gorm.DB, onProgress func(process
 			break
 		}
 
+		lastID = games[len(games)-1].ID
+
 		// Accumulate updates in memory, then batch-save in a transaction
 		for i := range games {
 			meta := ParseFilenameMetadata(games[i].FileName)
@@ -50,6 +55,11 @@ func BackfillGameMetadataWithProgress(database *gorm.DB, onProgress func(process
 			games[i].Tags = meta.Tags
 			games[i].IsPreRelease = meta.IsPreRelease
 			games[i].GroupKey = meta.GroupKey
+
+			// Fallback: use filename as GroupKey if parsing returns empty
+			if games[i].GroupKey == "" {
+				games[i].GroupKey = games[i].FileName
+			}
 
 			// Only backfill Region if it's currently empty
 			if games[i].Region == "" && meta.Region != "" {
