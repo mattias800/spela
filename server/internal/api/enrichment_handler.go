@@ -853,7 +853,7 @@ func (h *EnrichmentHandler) TriggerEnrichMetadata(c *gin.Context) {
 	mode := c.DefaultQuery("mode", "missing")
 
 	if !h.Scraper.TryStartEnrich() {
-		c.JSON(http.StatusConflict, gin.H{"error": "an enrichment or scrape operation is already in progress"})
+		c.JSON(http.StatusConflict, gin.H{"error": "An enrichment or scrape operation is already in progress"})
 		return
 	}
 

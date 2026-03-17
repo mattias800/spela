@@ -41,7 +41,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 
 	ctx, ok := h.Scraper.TryStartScrape()
 	if !ok {
-		c.JSON(http.StatusConflict, gin.H{"error": "a scrape operation is already in progress"})
+		c.JSON(http.StatusConflict, gin.H{"error": "A scrape operation is already in progress"})
 		return
 	}
 
