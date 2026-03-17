@@ -5,7 +5,7 @@ import { Button, Skeleton } from "@/components/ui";
 import { useGame } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
-import { useBiosFiles, useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
+import { useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
 import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
@@ -52,7 +52,6 @@ export function PlayPage() {
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
   const { data: preferences } = useUserPreferences();
   const { data: consoles } = useConsoles();
-  const { data: biosFiles } = useBiosFiles();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
 
@@ -223,9 +222,13 @@ export function PlayPage() {
       const tokenSuffix = token
         ? `?token=${encodeURIComponent(token)}`
         : "";
+      // Filter BIOS files for the current console only
+      const consoleBiosFiles = biosConsole?.files
+        .filter((f) => f.status !== "missing")
+        .map((f) => f.fileName) ?? [];
       const biosUrls =
-        biosFiles && biosFiles.length > 0
-          ? biosFiles.map((f) => getBiosFileUrl(f.name) + tokenSuffix)
+        consoleBiosFiles.length > 0
+          ? consoleBiosFiles.map((f) => getBiosFileUrl(f) + tokenSuffix)
           : undefined;
 
       // Update currentDisc now that the switch is committed
@@ -285,12 +288,13 @@ export function PlayPage() {
         isFreshStart || skipSaveState,
       );
 
-      // Build authenticated BIOS file URLs
+      // Build authenticated BIOS file URLs (filtered for current console)
+      const consoleBiosFiles2 = biosConsole?.files
+        .filter((f) => f.status !== "missing")
+        .map((f) => f.fileName) ?? [];
       const biosUrls =
-        biosFiles && biosFiles.length > 0
-          ? biosFiles.map(
-              (f) => getBiosFileUrl(f.name) + tokenSuffix,
-            )
+        consoleBiosFiles2.length > 0
+          ? consoleBiosFiles2.map((f) => getBiosFileUrl(f) + tokenSuffix)
           : undefined;
 
       emulator.initEmulator({
