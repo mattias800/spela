@@ -34,7 +34,9 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"PSX":    7,
 	"PSP":    38,
 	"NEOGEO": 80,
+	"NEOCD":  136, // Neo Geo CD
 	"PCE":    86,
+	"PCECD":  150, // TurboGrafx-CD / PC Engine CD
 	"A26":    59,
 	"GG":     35,
 	"SCD":    78,
@@ -67,9 +69,15 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"X360":   12,
 	"XONE":   49,
 	"XSX":    169,
+	"3DO":    50,
+	"CDI":    117,
 	"WII":    5,
 	"WIIU":   41,
 	"NSW":    130,
+	"C128":   15, // shares IGDB platform with C64
+	"PET":    90,
+	"PLUS4":  94,
+	"VIC20":  71,
 }
 
 // oauthToken holds a Twitch OAuth token with its expiration.
