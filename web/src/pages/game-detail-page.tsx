@@ -126,7 +126,7 @@ export function GameDetailPage() {
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
-  const isDemo = consoleInfo?.abbreviation === "ADEMO";
+  const isDemo = consoleInfo?.abbreviation === "ADEMO" || consoleInfo?.abbreviation === "DDEMO";
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
   const [showReplaceRom, setShowReplaceRom] = useState(false);

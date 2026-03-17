@@ -48,6 +48,7 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"AMIGA":  16,
 	"ADEMO":  16,
 	"DOS":    13,
+	"DDEMO":  13,
 	"A52":    66,
 	"A78":    60,
 	"LYNX":   61,
