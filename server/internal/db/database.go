@@ -829,6 +829,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha,.ipf,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Amiga Demos", Abbreviation: "ADEMO", Extensions: ".adf,.hdf,.lha,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga-demos", ColorTheme: "#8b7fc7", Generation: 100, SaveStateSupport: false, Playable: true},
 		{Name: "DOS", Abbreviation: "DOS", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "DOS Demos", Abbreviation: "DDEMO", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos-demos", ColorTheme: "#333333", Generation: 100, SaveStateSupport: false, Playable: true},
 		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
 		// Arcade (generation = 101)

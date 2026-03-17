@@ -149,7 +149,7 @@ fun GameDetailScreen(
 
     val detail = state.gameDetail ?: return
     val game = detail.game
-    val isDemoConsole = state.console?.abbreviation == "ADEMO"
+    val isDemoConsole = state.console?.abbreviation == "ADEMO" || state.console?.abbreviation == "DDEMO"
 
     // Per-console gradient background (same as console screen, darkened)
     val backgroundColors = remember(game.consoleId) {

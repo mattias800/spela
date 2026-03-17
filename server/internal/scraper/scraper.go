@@ -193,6 +193,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"PS2":   "Sony - PlayStation 2",
 	"C64":   "Commodore - 64",
 	"DOS":   "DOS",
+	"DDEMO": "DOS",
 	"AMIGA": "Commodore - Amiga",
 	"ADEMO": "Commodore - Amiga",
 	"MSX1":  "Microsoft - MSX",
