@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/components/ui";
 import { GameHero } from "../game-hero";
 import type { Game } from "@/types/api";
@@ -49,7 +50,9 @@ function renderWithQuery(ui: React.ReactElement) {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{ui}</ToastProvider>
+      <MemoryRouter>
+        <ToastProvider>{ui}</ToastProvider>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -206,6 +209,114 @@ describe("GameHero", () => {
       "title",
       "Missing required BIOS files",
     );
+  });
+
+  describe("demo mode (isDemo)", () => {
+    it('shows "Group" label instead of "Developer" when isDemo is true', () => {
+      const game = makeGame({ developer: "Future Crew" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.getByText("Group")).toBeInTheDocument();
+      expect(screen.queryByText("Developer")).not.toBeInTheDocument();
+      expect(screen.getByText("Future Crew")).toBeInTheDocument();
+    });
+
+    it('shows "Type" label instead of "Genre" when isDemo is true', () => {
+      const game = makeGame({ genre: "Demo" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.getByText("Type")).toBeInTheDocument();
+      expect(screen.queryByText("Genre")).not.toBeInTheDocument();
+      expect(screen.getByText("Demo")).toBeInTheDocument();
+    });
+
+    it('shows "Year" label instead of "Released" when isDemo is true', () => {
+      const game = makeGame({ releaseDate: "1993" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.getByText("Year")).toBeInTheDocument();
+      expect(screen.queryByText("Released")).not.toBeInTheDocument();
+      expect(screen.getByText("1993")).toBeInTheDocument();
+    });
+
+    it("shows Party field with partyInfo when isDemo is true", () => {
+      const game = makeGame({ partyInfo: "Assembly 1993, 1st place" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.getByText("Party")).toBeInTheDocument();
+      expect(screen.getByText("Assembly 1993, 1st place")).toBeInTheDocument();
+    });
+
+    it("does not show Party field when partyInfo is empty", () => {
+      const game = makeGame({ partyInfo: undefined });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.queryByText("Party")).not.toBeInTheDocument();
+    });
+
+    it("does not show Party field when not in demo mode", () => {
+      const game = makeGame({ partyInfo: "Assembly 1993, 1st place" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={false} />,
+      );
+
+      expect(screen.queryByText("Party")).not.toBeInTheDocument();
+    });
+
+    it("hides Players field when isDemo is true", () => {
+      const game = makeGame({ players: 1 });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.queryByText("Players")).not.toBeInTheDocument();
+    });
+
+    it("hides Publisher field when isDemo is true", () => {
+      const game = makeGame({ publisher: "Some Publisher" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      expect(screen.queryByText("Publisher")).not.toBeInTheDocument();
+      expect(screen.queryByText("Some Publisher")).not.toBeInTheDocument();
+    });
+
+    it("does not link developer name when isDemo is true", () => {
+      const game = makeGame({ developer: "Future Crew" });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={true} />,
+      );
+
+      // In demo mode, the Group value should not be a link
+      const groupValue = screen.getByText("Future Crew");
+      expect(groupValue.tagName).not.toBe("A");
+    });
+
+    it("uses standard labels when isDemo is false", () => {
+      const game = makeGame({
+        developer: "Nintendo",
+        genre: "Platform",
+        releaseDate: "1990",
+      });
+      renderWithQuery(
+        <GameHero game={game} {...defaultProps} isDemo={false} />,
+      );
+
+      expect(screen.getByText("Developer")).toBeInTheDocument();
+      expect(screen.getByText("Genre")).toBeInTheDocument();
+      expect(screen.getByText("Released")).toBeInTheDocument();
+    });
   });
 
   describe("non-playable games", () => {

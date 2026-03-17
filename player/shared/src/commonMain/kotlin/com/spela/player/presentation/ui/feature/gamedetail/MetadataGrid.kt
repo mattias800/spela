@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Domain
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Star
@@ -42,21 +43,27 @@ internal fun MetadataGrid(
     game: Game,
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
+    isDemoConsole: Boolean = false,
 ) {
     val items = buildList {
         game.developer?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.Domain, "Developer", it))
+            add(MetaItem(Icons.Filled.Domain, if (isDemoConsole) "Group" else "Developer", it))
         }
-        game.publisher?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.Domain, "Publisher", it))
+        if (!isDemoConsole) {
+            game.publisher?.takeIf { it.isNotBlank() }?.let {
+                add(MetaItem(Icons.Filled.Domain, "Publisher", it))
+            }
         }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.CalendarMonth, "Released", it))
+            add(MetaItem(Icons.Filled.CalendarMonth, if (isDemoConsole) "Year" else "Released", it))
         }
         game.genre?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.Star, "Genre", it))
+            add(MetaItem(Icons.Filled.Star, if (isDemoConsole) "Type" else "Genre", it))
         }
-        if (game.players > 0) {
+        if (isDemoConsole && game.partyInfo.isNotBlank()) {
+            add(MetaItem(Icons.Filled.EmojiEvents, "Party", game.partyInfo))
+        }
+        if (!isDemoConsole && game.players > 0) {
             add(MetaItem(Icons.Filled.Group, "Players", "${game.players}"))
         }
         if (game.fileSize > 0) {

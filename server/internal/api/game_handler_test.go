@@ -53,6 +53,52 @@ func TestDownloadGame_NoPlayHistory(t *testing.T) {
 	assert.Equal(t, int64(0), count, "downloading a game should not create a PlayHistory record")
 }
 
+// TestUpdateMetadata_PartyInfo verifies that the PartyInfo field can be set
+// via the admin game metadata endpoint and appears in the game response.
+func TestUpdateMetadata_PartyInfo(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a test game on the ADEMO console
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "ADEMO").First(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     "State of the Art",
+		FileName:  "sota.adf",
+		FilePath:  "/tmp/sota.adf",
+		FileSize:  100,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Update PartyInfo via admin endpoint
+	body, _ := json.Marshal(map[string]string{"partyInfo": "Assembly 1993, 1st place"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/admin/games/"+gameID+"/metadata", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify PartyInfo is returned in the response
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "Assembly 1993, 1st place", resp["partyInfo"])
+
+	// Verify PartyInfo also appears in GET /api/games/:id
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/games/"+gameID, nil)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	var getResp map[string]interface{}
+	json.Unmarshal(w2.Body.Bytes(), &getResp)
+	assert.Equal(t, "Assembly 1993, 1st place", getResp["partyInfo"])
+}
+
 // TestUpdatePlayTime_CreatesPlayHistory verifies that UpdatePlayTime creates
 // a PlayHistory record when the user starts playing a game for the first time.
 // This is a regression guard: PlayHistory should only be created by play-time

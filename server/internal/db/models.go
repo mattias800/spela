@@ -122,6 +122,7 @@ type Game struct {
 	IsPrimary           bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
 	PrimaryGameID       *uint          `json:"primaryGameId,omitempty"`
 	ParentGameID        *uint          `gorm:"index:idx_game_parent" json:"parentGameId,omitempty"` // links standalone ROM hacks to their base game
+	PartyInfo           string         `gorm:"size:512" json:"partyInfo,omitempty"`                // Demo party and placement, e.g. "Assembly 1993, 1st place"
 	CRC32               string         `gorm:"size:16" json:"-"`
 	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
 	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`

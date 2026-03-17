@@ -83,6 +83,7 @@ fun GameDto.toDomain(): Game = Game(
     timeToBeatHastily = timeToBeatHastily,
     timeToBeatNormally = timeToBeatNormally,
     timeToBeatCompletely = timeToBeatCompletely,
+    partyInfo = partyInfo,
 )
 
 /**

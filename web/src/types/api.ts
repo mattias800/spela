@@ -113,6 +113,7 @@ export interface Game {
   region?: string;
   revision?: string;
   tags?: string;
+  partyInfo?: string;
   isPreRelease?: boolean;
   variantCount?: number;
   groupKey?: string;
