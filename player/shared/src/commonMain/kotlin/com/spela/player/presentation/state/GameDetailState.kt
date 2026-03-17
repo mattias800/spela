@@ -4,6 +4,7 @@ import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineData
 import com.spela.player.domain.model.BiosMissingFile
+import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.GameAchievement
@@ -24,6 +25,7 @@ enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
 
 data class GameDetailState(
     val gameDetail: GameDetail? = null,
+    val console: Console? = null,
     val sharedSaves: List<SharedSaveState> = emptyList(),
     val downloadProgress: DownloadProgress? = null,
     val isGameCached: Boolean = false,

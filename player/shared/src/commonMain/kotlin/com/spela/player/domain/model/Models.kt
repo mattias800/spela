@@ -96,6 +96,7 @@ data class Game(
     val timeToBeatHastily: Int = 0,
     val timeToBeatNormally: Int = 0,
     val timeToBeatCompletely: Int = 0,
+    val partyInfo: String = "",
 )
 
 @Serializable

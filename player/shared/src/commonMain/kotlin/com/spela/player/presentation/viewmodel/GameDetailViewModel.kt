@@ -126,12 +126,15 @@ class GameDetailViewModel(
                     val isPlayable = detail.game.playable
                     val myRating = detail.game.userRating
                     val summary = ratingRepository.getRatingSummary(gameId).getOrNull()
+                    val console = gameRepository.getConsoles().getOrNull()
+                        ?.find { it.id == detail.game.consoleId }
                     val sharedSaves = if (isPlayable) {
                         sharedSaveRepository.getSharedSaves(gameId).getOrDefault(emptyList())
                     } else emptyList()
                     _state.update {
                         it.copy(
                             gameDetail = detail,
+                            console = console,
                             sharedSaves = sharedSaves,
                             isGameCached = isCached,
                             myRating = myRating,

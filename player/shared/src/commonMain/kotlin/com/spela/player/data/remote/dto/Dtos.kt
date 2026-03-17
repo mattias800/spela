@@ -117,6 +117,7 @@ data class GameDto(
     val timeToBeatHastily: Int = 0,
     val timeToBeatNormally: Int = 0,
     val timeToBeatCompletely: Int = 0,
+    val partyInfo: String = "",
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

@@ -231,7 +231,7 @@ class FakeGameRepository : GameRepository {
     var topRatedGames: List<TopRatedGame> = emptyList()
     var screenshotUrls: List<String> = emptyList()
 
-    val consoles = listOf(
+    var consoles: List<Console> = listOf(
         Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
         Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
     )
