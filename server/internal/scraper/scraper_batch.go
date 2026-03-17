@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/spela/server/internal/db"
-	"github.com/spela/server/internal/scanner"
 )
 
 // EnrichProgress holds progress information for a metadata enrichment operation.
@@ -324,14 +323,11 @@ func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, on
 		}
 	}
 
-	// After all games are scraped, merge groups where different regional titles
-	// mapped to the same IGDB game (e.g., "Sonic CD" USA and "Sonic the
-	// Hedgehog CD" Japan have different GroupKeys but the same IGDB ID).
-	if merged, err := scanner.MergeGroupsByIGDBID(s.DB); err != nil {
-		slog.Warn("IGDB group merge failed", "error", err)
-	} else if merged > 0 {
-		slog.Info("merged game groups by IGDB ID", "merged", merged)
-	}
+	// DISABLED: MergeGroupsByIGDBID was merging unrelated games when IGDB
+	// returned the same match for different titles (e.g., DOS games with
+	// similar names). This caused wrong metadata propagation across games.
+	// TODO: Re-enable with a title similarity check to prevent false merges.
+	// See: https://github.com/mattias800/spela/issues/XXX
 
 	return successes, total, nil
 }
