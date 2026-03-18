@@ -99,6 +99,7 @@ func (h *SetupHandler) runDiagnostics() []DiagnosticCheck {
 	checks = append(checks, h.checkGameDirs())
 	checks = append(checks, h.checkStorageWritable())
 	checks = append(checks, h.checkIGDB())
+	checks = append(checks, h.checkSteamGridDB())
 
 	return checks
 }
@@ -265,6 +266,24 @@ func (h *SetupHandler) checkIGDB() DiagnosticCheck {
 		check.Status = "warning"
 		check.Detail = "Not configured"
 		check.Fix = "Configure IGDB in the next step for game metadata and cover art"
+	}
+	return check
+}
+
+func (h *SetupHandler) checkSteamGridDB() DiagnosticCheck {
+	check := DiagnosticCheck{ID: "steamgriddb", Label: "SteamGridDB Artwork"}
+	source := SteamGridDBSource(h.DB)
+	switch source {
+	case "env":
+		check.Status = "ok"
+		check.Detail = "Configured via environment variables"
+	case "database":
+		check.Status = "ok"
+		check.Detail = "Configured via settings"
+	default:
+		check.Status = "warning"
+		check.Detail = "Not configured (optional)"
+		check.Fix = "Configure SteamGridDB for hero artwork, logos, and grid images"
 	}
 	return check
 }
