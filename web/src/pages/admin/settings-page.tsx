@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Image, CheckCircle2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -19,6 +18,7 @@ import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
 import { IgdbConfigCard } from "@/features/admin/components/igdb-config-card";
 import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
+import { SteamGridDBConfigCard } from "@/features/admin/components/steamgriddb-config-card";
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useServerSettings();
@@ -191,54 +191,11 @@ export function AdminSettingsPage() {
         envConfigured={igdbEnvConfigured}
       />
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-            <Image className="h-5 w-5 text-brand-400" />
-            SteamGridDB
-          </h2>
-          <p className="text-xs text-surface-500 mt-1">
-            Used for hero artwork on the companion display. Get a free API key
-            at{" "}
-            <a
-              href="https://www.steamgriddb.com/profile/preferences/api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-400 hover:text-brand-300 underline"
-            >
-              steamgriddb.com
-            </a>
-            .
-          </p>
-        </CardHeader>
-        <CardContent>
-          {steamgriddbEnvConfigured ? (
-            <div className="rounded-xl bg-surface-800/50 border border-surface-700/50 p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success-500 flex-shrink-0" />
-                <p className="text-sm text-surface-200">
-                  Configured via environment variables
-                </p>
-              </div>
-              <p className="mt-1.5 ml-6 text-xs text-surface-500">
-                SteamGridDB API key is set through{" "}
-                <code className="px-1 py-0.5 rounded bg-surface-800 text-surface-300 font-mono">
-                  SPELA_STEAMGRIDDB_API_KEY
-                </code>
-                . To change it, update your environment and restart the server.
-              </p>
-            </div>
-          ) : (
-            <Input
-              label="SteamGridDB API Key"
-              type="password"
-              placeholder="SteamGridDB API Key"
-              value={steamgriddbApiKey}
-              onChange={(e) => setSteamgriddbApiKey(e.target.value)}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <SteamGridDBConfigCard
+        apiKey={steamgriddbApiKey}
+        onApiKeyChange={setSteamgriddbApiKey}
+        envConfigured={steamgriddbEnvConfigured}
+      />
 
       <div className="flex justify-end">
         <Button
