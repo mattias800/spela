@@ -81,6 +81,11 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			return
 		}
 		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
+
+		// Refresh top-rated cache for all consoles with IGDB platform mappings.
+		if h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
+			h.refreshTopRatedForAllConsoles()
+		}
 	}()
 
 	adminID, _ := c.Get("userId")
@@ -261,4 +266,37 @@ func IGDBSource(database *gorm.DB) string {
 		return "database"
 	}
 	return "none"
+}
+
+// refreshTopRatedForAllConsoles fetches IGDB top-rated games for every console
+// that has an IGDB platform mapping and upserts them into the cache.
+// Called after a scrape completes so the top lists are always fresh.
+func (h *AdminHandler) refreshTopRatedForAllConsoles() {
+	slog.Info("refreshing top-rated games for all consoles")
+
+	var consoles []db.Console
+	h.DB.Find(&consoles)
+
+	consoleHandler := &ConsoleHandler{DB: h.DB, Scraper: h.Scraper}
+	refreshed := 0
+
+	for _, console := range consoles {
+		abbr := console.Abbreviation
+		platformID, ok := igdb.AbbreviationToIGDBPlatform[abbr]
+		if !ok {
+			continue
+		}
+
+		topGames, err := h.Scraper.IGDBClient.GetTopGames(platformID, 100)
+		if err != nil {
+			slog.Warn("failed to fetch top-rated games", "console", abbr, "error", err)
+			continue
+		}
+
+		ranked := bayesianRank(topGames, 25)
+		consoleHandler.upsertTopRatedGames(console.ID, ranked)
+		refreshed++
+	}
+
+	slog.Info("top-rated refresh complete", "consoles", refreshed)
 }

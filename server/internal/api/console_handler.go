@@ -566,8 +566,7 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 		Rating      float64
 	}
 
-	var rows []row
-	err := h.DB.
+	q := h.DB.
 		Table("top_rated_games").
 		Select(`MIN(games.id) AS game_id,
 				top_rated_games.name AS name,
@@ -578,7 +577,15 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
 		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
-		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations).
+		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations)
+
+	// Per-console filter when accessed via /consoles/:id/top-lists/*
+	if consoleParam := c.Param("id"); consoleParam != "" {
+		q = q.Where("LOWER(consoles.abbreviation) = LOWER(?)", consoleParam)
+	}
+
+	var rows []row
+	err := q.
 		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, "+ratingColumn).
 		Order(ratingColumn + " DESC").
 		Limit(50).
@@ -633,7 +640,7 @@ func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
 	}
 
 	var rows []row
-	err := h.DB.
+	q := h.DB.
 		Table("games").
 		Select(`games.id AS game_id,
 				games.title,
@@ -645,7 +652,14 @@ func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
 				games.time_to_beat_completely`).
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Where("games.time_to_beat_normally > 0 AND games.time_to_beat_normally <= ? AND games.deleted_at IS NULL AND games.is_primary = true", maxTimeToBeatSeconds).
-		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations).
+		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations)
+
+	// Per-console filter when accessed via /consoles/:id/top-lists/*
+	if consoleParam := c.Param("id"); consoleParam != "" {
+		q = q.Where("LOWER(consoles.abbreviation) = LOWER(?)", consoleParam)
+	}
+
+	err := q.
 		Order("games.time_to_beat_normally DESC").
 		Limit(50).
 		Find(&rows).Error
