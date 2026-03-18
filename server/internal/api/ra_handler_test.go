@@ -122,7 +122,8 @@ func setupRATestEnv(t *testing.T) (*httptest.Server, http.Handler, *Config) {
 	romPath := filepath.Join(romDir, "testgame.nes")
 	os.WriteFile(romPath, romContentForTest, 0o644)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	return mockRA, router, cfg
 }
 

@@ -14,7 +14,8 @@ import (
 
 func TestGetPlayStats_ReturnsPlayHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -64,7 +65,8 @@ func TestGetPlayStats_ReturnsPlayHistory(t *testing.T) {
 
 func TestGetPlayStats_EmptyWhenNoHistory(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -83,7 +85,8 @@ func TestGetPlayStats_EmptyWhenNoHistory(t *testing.T) {
 
 func TestGetPlayStats_ExcludesOtherUsers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -120,7 +123,8 @@ func TestGetPlayStats_ExcludesOtherUsers(t *testing.T) {
 
 func TestGetPlayStats_SkipsZeroPlayTime(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console

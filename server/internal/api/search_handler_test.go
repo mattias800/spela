@@ -19,7 +19,8 @@ func setupSearchEnv(t *testing.T) (*gorm.DB, http.Handler, string) {
 	t.Helper()
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 	return database, router, token
 }
@@ -385,7 +386,8 @@ func TestSearch_Franchises(t *testing.T) {
 func TestSearch_RequiresAuth(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/search?q=test", nil)

@@ -15,7 +15,8 @@ import (
 
 func TestRegisterDevice_NewDevice(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{
@@ -41,7 +42,8 @@ func TestRegisterDevice_NewDevice(t *testing.T) {
 
 func TestRegisterDevice_UpsertExisting(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{
@@ -89,7 +91,8 @@ func TestRegisterDevice_UpsertExisting(t *testing.T) {
 
 func TestRegisterDevice_MissingFields(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	tests := []struct {
@@ -116,7 +119,8 @@ func TestRegisterDevice_MissingFields(t *testing.T) {
 
 func TestGetDevices_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -133,7 +137,8 @@ func TestGetDevices_Empty(t *testing.T) {
 
 func TestGetDevices_MultipleDevicesWithShaders(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register two devices
@@ -169,7 +174,8 @@ func TestGetDevices_MultipleDevicesWithShaders(t *testing.T) {
 
 func TestUpdateDevice_Rename(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register device
@@ -203,7 +209,8 @@ func TestUpdateDevice_Rename(t *testing.T) {
 
 func TestUpdateDevice_Unauthorized(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a device belonging to a different user
@@ -225,7 +232,8 @@ func TestUpdateDevice_Unauthorized(t *testing.T) {
 
 func TestUpdateDevice_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{"name": "Nope"})
@@ -239,7 +247,8 @@ func TestUpdateDevice_NotFound(t *testing.T) {
 
 func TestDeleteDevice_Success(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register device
@@ -287,7 +296,8 @@ func TestDeleteDevice_Success(t *testing.T) {
 
 func TestDeleteDevice_Unauthorized(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create device owned by different user
@@ -307,7 +317,8 @@ func TestDeleteDevice_Unauthorized(t *testing.T) {
 
 func TestDeleteDevice_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -319,7 +330,8 @@ func TestDeleteDevice_NotFound(t *testing.T) {
 
 func TestGetDevicePreferences_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register device
@@ -352,7 +364,8 @@ func TestGetDevicePreferences_Empty(t *testing.T) {
 
 func TestGetDevicePreferences_Unauthorized(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	database.Create(&db.User{Username: "other3", Email: "other3@x.com", PasswordHash: "x", Role: "user"})
@@ -371,7 +384,8 @@ func TestGetDevicePreferences_Unauthorized(t *testing.T) {
 
 func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register device
@@ -442,7 +456,8 @@ func TestUpdateDevicePreferences_AddUpdateDelete(t *testing.T) {
 
 func TestUpdateDevicePreferences_Unauthorized(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	database.Create(&db.User{Username: "other4", Email: "other4@x.com", PasswordHash: "x", Role: "user"})
@@ -465,7 +480,8 @@ func TestUpdateDevicePreferences_Unauthorized(t *testing.T) {
 
 func TestAdminGetUserDevices_Success(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router) // owner/admin
 
 	// Get the admin user's ID
@@ -498,7 +514,8 @@ func TestAdminGetUserDevices_Success(t *testing.T) {
 
 func TestAdminGetUserDevices_NonAdmin(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register first user (becomes owner)
 	ownerToken := registerAndGetToken(t, router)

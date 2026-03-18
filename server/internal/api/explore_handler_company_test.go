@@ -194,7 +194,8 @@ func setupExploreCompanyTestEnv(t *testing.T) *exploreTestEnv {
 	t.Helper()
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 	return &exploreTestEnv{
 		database: database,

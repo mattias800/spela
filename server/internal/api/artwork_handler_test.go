@@ -16,7 +16,8 @@ import (
 func TestGetGameArtwork_NoArtwork(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -49,7 +50,8 @@ func TestGetGameArtwork_NoArtwork(t *testing.T) {
 func TestGetGameArtwork_WithArtwork(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -93,7 +95,8 @@ func TestGetGameArtwork_WithArtwork(t *testing.T) {
 func TestGetGameArtwork_IncludedInGameDetail(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game with console
@@ -132,7 +135,8 @@ func TestGetGameArtwork_IncludedInGameDetail(t *testing.T) {
 func TestGetGameArtwork_GameDetailNoArtwork(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game without artwork

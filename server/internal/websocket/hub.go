@@ -42,6 +42,7 @@ type Hub struct {
 	upgrader   websocket.Upgrader
 	userGames  map[uint]userGameEntry // userID -> game entry
 	nowFunc    func() time.Time       // for testing; defaults to time.Now
+	done       chan struct{}
 }
 
 // Client represents a single WebSocket connection.
@@ -70,6 +71,7 @@ func NewHub(allowedOrigins []string) *Hub {
 		unregister: make(chan *Client),
 		userGames:  make(map[uint]userGameEntry),
 		nowFunc:    time.Now,
+		done:       make(chan struct{}),
 	}
 	h.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -110,11 +112,14 @@ func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 }
 
 // Run starts the hub event loop. Call this in a goroutine.
+// Call Close() to stop the loop.
 func (h *Hub) Run() {
 	go h.cleanupStaleGames()
 
 	for {
 		select {
+		case <-h.done:
+			return
 		case client := <-h.register:
 			h.mu.Lock()
 			h.clients[client] = true
@@ -220,12 +225,26 @@ func (h *Hub) GetUserGame(userID uint) uint {
 	return entry.GameID
 }
 
+// Close stops the hub event loop and cleanup goroutine.
+func (h *Hub) Close() {
+	select {
+	case <-h.done:
+	default:
+		close(h.done)
+	}
+}
+
 // cleanupStaleGames periodically removes game entries whose heartbeat has expired.
 func (h *Hub) cleanupStaleGames() {
 	ticker := time.NewTicker(heartbeatCleanupInterval)
 	defer ticker.Stop()
-	for range ticker.C {
-		h.expireStaleGames()
+	for {
+		select {
+		case <-ticker.C:
+			h.expireStaleGames()
+		case <-h.done:
+			return
+		}
 	}
 }
 

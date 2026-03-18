@@ -16,7 +16,8 @@ import (
 
 func TestGetUserRateLimit_NoAttempts(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{
@@ -43,7 +44,8 @@ func TestGetUserRateLimit_NoAttempts(t *testing.T) {
 
 func TestGetUserRateLimit_WithFailedAttempts(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{
@@ -77,7 +79,8 @@ func TestGetUserRateLimit_WithFailedAttempts(t *testing.T) {
 
 func TestGetUserRateLimit_LockedOut(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{
@@ -114,7 +117,8 @@ func TestGetUserRateLimit_LockedOut(t *testing.T) {
 
 func TestGetUserRateLimit_ExpiredLockout(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{
@@ -150,7 +154,8 @@ func TestGetUserRateLimit_ExpiredLockout(t *testing.T) {
 func TestGetUserRateLimit_UserNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	database := cfg.DB
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	req := httptest.NewRequest("GET", "/api/admin/users/99999/rate-limit", nil)
@@ -163,7 +168,8 @@ func TestGetUserRateLimit_UserNotFound(t *testing.T) {
 
 func TestGetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	user := db.User{
 		Username:     "regular",
@@ -185,7 +191,8 @@ func TestGetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 
 func TestResetUserRateLimit_ClearsAttempts(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{
@@ -230,7 +237,8 @@ func TestResetUserRateLimit_ClearsAttempts(t *testing.T) {
 func TestResetUserRateLimit_UserNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	database := cfg.DB
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	req := httptest.NewRequest("DELETE", "/api/admin/users/99999/rate-limit", nil)
@@ -243,7 +251,8 @@ func TestResetUserRateLimit_UserNotFound(t *testing.T) {
 
 func TestResetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	user := db.User{
 		Username:     "regular",
@@ -265,7 +274,8 @@ func TestResetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 
 func TestResetUserRateLimit_NoExistingAttempts(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	user := db.User{

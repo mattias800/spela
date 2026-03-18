@@ -418,7 +418,8 @@ func TestNetplayInvite_AcceptExpireOthers(t *testing.T) {
 	game := db.Game{ConsoleID: nes.ID, Title: "Mega Man", FileName: "megaman.nes", FilePath: "/tmp/megaman.nes"}
 	database.Create(&game)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 	hostToken := registerUserAndGetToken(t, router, ownerToken, "host2", "host2@test.com")
 	client1Token := registerUserAndGetToken(t, router, ownerToken, "player1", "p1@test.com")

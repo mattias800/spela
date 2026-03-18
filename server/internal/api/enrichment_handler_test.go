@@ -25,7 +25,8 @@ func setupEnrichTestEnv(t *testing.T) *enrichTestEnv {
 	t.Helper()
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 	return &enrichTestEnv{
 		database: database,

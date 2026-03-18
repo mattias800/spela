@@ -161,7 +161,8 @@ func createRomHackRequest(t *testing.T, token string, fields map[string]string, 
 
 func TestCreateRomHack_VariantMode(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create an IPS patch
 	patch := buildTestIPSPatch(0, []byte("Patched"))
@@ -209,7 +210,8 @@ func TestCreateRomHack_VariantMode(t *testing.T) {
 
 func TestCreateRomHack_StandaloneMode(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create an IPS patch
 	patch := buildTestIPSPatch(0, []byte("Patched"))
@@ -249,7 +251,8 @@ func TestCreateRomHack_StandaloneMode(t *testing.T) {
 
 func TestCreateRomHack_BPSPatch(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Read the actual ROM data to build a BPS patch
 	romPath := filepath.Join(env.tmpDir, env.baseGame.FilePath)
@@ -289,7 +292,8 @@ func TestCreateRomHack_BPSPatch(t *testing.T) {
 
 func TestCreateRomHack_MissingBaseGameID(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	patch := buildTestIPSPatch(0, []byte("X"))
 
@@ -306,7 +310,8 @@ func TestCreateRomHack_MissingBaseGameID(t *testing.T) {
 
 func TestCreateRomHack_InvalidMode(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	patch := buildTestIPSPatch(0, []byte("X"))
 
@@ -323,7 +328,8 @@ func TestCreateRomHack_InvalidMode(t *testing.T) {
 
 func TestCreateRomHack_MissingLabel(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	patch := buildTestIPSPatch(0, []byte("X"))
 
@@ -340,7 +346,8 @@ func TestCreateRomHack_MissingLabel(t *testing.T) {
 
 func TestCreateRomHack_MissingTitle(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	patch := buildTestIPSPatch(0, []byte("X"))
 
@@ -357,7 +364,8 @@ func TestCreateRomHack_MissingTitle(t *testing.T) {
 
 func TestCreateRomHack_UnsupportedFormat(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
@@ -373,7 +381,8 @@ func TestCreateRomHack_UnsupportedFormat(t *testing.T) {
 
 func TestCreateRomHack_BaseGameNotFound(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	patch := buildTestIPSPatch(0, []byte("X"))
 
@@ -390,7 +399,8 @@ func TestCreateRomHack_BaseGameNotFound(t *testing.T) {
 
 func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create a regular user
 	user := db.User{
@@ -418,7 +428,8 @@ func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 
 func TestGetGame_ParentGameAndRomHacks(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create a standalone ROM hack that references the base game
 	parentID := env.baseGame.ID
@@ -476,7 +487,8 @@ func TestGetGame_ParentGameAndRomHacks(t *testing.T) {
 
 func TestGetGame_DeletedParentGraceful(t *testing.T) {
 	env := setupRomHackTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create a standalone hack with a non-existent parent ID
 	nonExistentID := uint(99999)

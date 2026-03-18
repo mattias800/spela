@@ -44,7 +44,11 @@ type Config struct {
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
-func NewRouter(cfg Config) *gin.Engine {
+// NewRouter creates a configured gin.Engine with all routes and middleware.
+// The returned cleanup function stops background goroutines (rate limiter cleanup).
+// In production the cleanup is optional (goroutines run for process lifetime),
+// but tests must call it to avoid goroutine leaks.
+func NewRouter(cfg Config) (*gin.Engine, func()) {
 	r := gin.Default()
 
 	// Only trust proxies on private/loopback networks (Docker internal, localhost).
@@ -580,7 +584,15 @@ func NewRouter(cfg Config) *gin.Engine {
 		r.NoRoute(serveFrontend(cfg.FrontendDir))
 	}
 
-	return r
+	cleanup := func() {
+		authLimiter.Close()
+		refreshLimiter.Close()
+		downloadLimiter.Close()
+		uploadLimiter.Close()
+		userLimiter.Close()
+	}
+
+	return r, cleanup
 }
 
 // serveFrontend returns a Gin handler that serves static files from the given

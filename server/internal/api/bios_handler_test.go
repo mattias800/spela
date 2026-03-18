@@ -545,7 +545,8 @@ func TestGetConsoleStatus(t *testing.T) {
 
 func TestGetGame_IncludesBiosStatus(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Create a PSX game
 	var psx db.Console
@@ -578,7 +579,8 @@ func TestGetGame_IncludesBiosStatus(t *testing.T) {
 
 func TestGetGame_BiosStatus_NotRequired(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Create a NES game (NES doesn't need BIOS)
 	var nes db.Console

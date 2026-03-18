@@ -28,7 +28,8 @@ type sessionTestEnv struct {
 func setupSessionTestEnv(t *testing.T) *sessionTestEnv {
 	t.Helper()
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register first user (owner)
 	token := registerAndGetToken(t, router)
@@ -1011,7 +1012,8 @@ func createSharedSaveOnDisk(t *testing.T, database *gorm.DB, storage string, gam
 
 func TestCreateFromSharedSave_Success(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var user db.User
@@ -1086,7 +1088,8 @@ func TestCreateFromSharedSave_SaveNotFound(t *testing.T) {
 
 func TestCreateFromSharedSave_SaveBelongsToDifferentGame(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var user db.User
@@ -1332,7 +1335,8 @@ func TestDuplicateSession_NotFound(t *testing.T) {
 
 func TestDuplicateSession_SharedSessionMember(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	token1 := registerAndGetToken(t, router)
 	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "password123")

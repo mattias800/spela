@@ -15,7 +15,8 @@ import (
 
 func TestActivityFeed_RatingMetadataIsParsedObject(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -67,7 +68,8 @@ func TestActivityFeed_RatingMetadataIsParsedObject(t *testing.T) {
 
 func TestActivityFeed_EmptyMetadataOmitted(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game and favorite it (creates event without metadata)

@@ -43,7 +43,8 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	t.Helper()
 	database, cfg := setupTestEnv(t)
 	cfg.ChallengeAttemptRateLimitSec = rateLimitSec
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Create user 1
 	w := httptest.NewRecorder()
@@ -794,7 +795,8 @@ func TestLazyExpiration(t *testing.T) {
 	// Re-approach: create a test that uses the returned DB properly
 	t.Run("expired challenge shown as expired", func(t *testing.T) {
 		database, cfg := setupTestEnv(t)
-		router := NewRouter(*cfg)
+		router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 		// Register a user
 		body, _ := json.Marshal(map[string]string{

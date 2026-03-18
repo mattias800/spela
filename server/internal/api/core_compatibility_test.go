@@ -12,7 +12,8 @@ import (
 
 func TestGetCoreCompatibility_AdminOnly(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	// Non-admin user should be rejected
@@ -27,7 +28,8 @@ func TestGetCoreCompatibility_AdminOnly(t *testing.T) {
 
 func TestGetCoreCompatibility_ReturnsConsoles(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -52,7 +54,8 @@ func TestGetCoreCompatibility_ReturnsConsoles(t *testing.T) {
 
 func TestGetCoreCompatibility_MatchedField(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -116,7 +119,8 @@ func TestGetCoreCompatibility_MatchedField(t *testing.T) {
 
 func TestGetCoreCompatibility_NonPlayableConsolesIncluded(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()

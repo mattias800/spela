@@ -74,7 +74,8 @@ func uploadFiles(t *testing.T, router http.Handler, token string, files map[stri
 
 func TestUploadROMs_ValidExtension(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Super Mario Bros.nes": []byte("fake rom data"),
@@ -98,7 +99,8 @@ func TestUploadROMs_ValidExtension(t *testing.T) {
 
 func TestUploadROMs_InvalidExtension(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"readme.txt": []byte("not a rom"),
@@ -119,7 +121,8 @@ func TestUploadROMs_InvalidExtension(t *testing.T) {
 
 func TestUploadROMs_MultipleFiles(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Mario.nes":    []byte("nes rom"),
@@ -150,7 +153,8 @@ func TestUploadROMs_MultipleFiles(t *testing.T) {
 
 func TestUploadROMs_AmbiguousExtension(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"game.bin": []byte("could be genesis or psx"),
@@ -190,7 +194,8 @@ func TestUploadROMs_UnambiguousConsoleDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
 			env := setupUploadTestEnv(t)
-			router := NewRouter(*env.cfg)
+			router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 			files := map[string][]byte{
 				tt.filename: []byte("rom data"),
@@ -210,7 +215,8 @@ func TestUploadROMs_UnambiguousConsoleDetection(t *testing.T) {
 
 func TestSetConsole_AmbiguousUpload(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload ambiguous file
 	files := map[string][]byte{
@@ -243,7 +249,8 @@ func TestSetConsole_AmbiguousUpload(t *testing.T) {
 
 func TestListUploads(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload some files
 	files := map[string][]byte{
@@ -267,7 +274,8 @@ func TestListUploads(t *testing.T) {
 
 func TestScrapeUpload(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Mario.nes": []byte("nes rom"),
@@ -296,7 +304,8 @@ func TestScrapeUpload(t *testing.T) {
 
 func TestScrapeUpload_RequiresConsole(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload ambiguous file
 	files := map[string][]byte{
@@ -320,7 +329,8 @@ func TestScrapeUpload_RequiresConsole(t *testing.T) {
 
 func TestAcceptUpload(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"TestGame.nes": []byte("nes rom data here"),
@@ -364,7 +374,8 @@ func TestAcceptUpload(t *testing.T) {
 
 func TestAcceptUpload_RequiresConsole(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload ambiguous file
 	files := map[string][]byte{
@@ -388,7 +399,8 @@ func TestAcceptUpload_RequiresConsole(t *testing.T) {
 
 func TestRejectUpload(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"BadGame.nes": []byte("rom data"),
@@ -425,7 +437,8 @@ func TestRejectUpload(t *testing.T) {
 
 func TestDuplicateDetection(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create an existing game in the library
 	var nesConsole db.Console
@@ -466,7 +479,8 @@ func TestDuplicateDetection(t *testing.T) {
 
 func TestAcceptAllUploads(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload multiple files
 	files := map[string][]byte{
@@ -508,7 +522,8 @@ func TestAcceptAllUploads(t *testing.T) {
 
 func TestRejectAllUploads(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Game1.nes": []byte("nes rom 1"),
@@ -537,7 +552,8 @@ func TestRejectAllUploads(t *testing.T) {
 
 func TestClearStaging(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Game1.nes": []byte("nes rom 1"),
@@ -565,7 +581,8 @@ func TestClearStaging(t *testing.T) {
 
 func TestUploadROMs_NonAdmin_Forbidden(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create regular user
 	regularUser := db.User{
@@ -587,7 +604,8 @@ func TestUploadROMs_NonAdmin_Forbidden(t *testing.T) {
 
 func TestUploadROMs_PathTraversal(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"../../../evil.nes": []byte("evil content"),
@@ -606,7 +624,8 @@ func TestUploadROMs_PathTraversal(t *testing.T) {
 
 func TestScrapeAllUploads(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"Game1.nes": []byte("nes rom 1"),
@@ -635,7 +654,8 @@ func TestScrapeAllUploads(t *testing.T) {
 
 func TestAcceptUpload_CreatesGameInCorrectDirectory(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload an SNES ROM
 	files := map[string][]byte{
@@ -672,7 +692,8 @@ func TestAcceptUpload_CreatesGameInCorrectDirectory(t *testing.T) {
 
 func TestUploadROMs_DuplicateFilename(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload same file twice
 	files1 := map[string][]byte{"Mario.nes": []byte("rom 1")}
@@ -698,7 +719,8 @@ func TestUploadROMs_DuplicateFilename(t *testing.T) {
 
 func TestUploadEndpoint_NotFound(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Try to accept non-existent upload
 	w := httptest.NewRecorder()
@@ -711,7 +733,8 @@ func TestUploadEndpoint_NotFound(t *testing.T) {
 
 func TestSetConsole_UnknownConsole(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload ambiguous file
 	files := map[string][]byte{"game.bin": []byte("data")}
@@ -735,7 +758,8 @@ func TestSetConsole_UnknownConsole(t *testing.T) {
 
 func TestUploadROMs_NoFiles(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -791,7 +815,8 @@ func TestUploadROMs_BinAutoIdentifiedByDAT(t *testing.T) {
 		{"Sonic the Hedgehog (USA, Europe)", "Sonic the Hedgehog (USA, Europe).bin", "6ED72A8E", int64(len(romData))},
 	})
 
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"unknown_game.bin": romData,
@@ -814,7 +839,8 @@ func TestUploadROMs_BinAutoIdentifiedByDAT(t *testing.T) {
 
 func TestUploadROMs_BinNoDATPendingConsole(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload a .bin with no matching DAT entry (no DAT files written)
 	files := map[string][]byte{
@@ -835,7 +861,8 @@ func TestUploadROMs_BinNoDATPendingConsole(t *testing.T) {
 
 func TestUploadROMs_PkgAmbiguousExtension(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"game.pkg": []byte("could be ps3 or ps4 or ps5"),
@@ -853,7 +880,8 @@ func TestUploadROMs_PkgAmbiguousExtension(t *testing.T) {
 
 func TestUploadROMs_XvdAmbiguousExtension(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	files := map[string][]byte{
 		"game.xvd": []byte("could be xboxone or xboxseries"),
@@ -887,7 +915,8 @@ func TestUploadROMs_UnambiguousNewConsoleDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
 			env := setupUploadTestEnv(t)
-			router := NewRouter(*env.cfg)
+			router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 			files := map[string][]byte{
 				tt.filename: []byte("rom data"),
@@ -918,7 +947,8 @@ func TestUploadROMs_BinOversizedPendingConsole(t *testing.T) {
 		{"Some Game", "Some Game.bin", "AABBCCDD", 100},
 	})
 
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create a file larger than all MaxROMSize limits by using a content that
 	// exceeds the maximum size. We can't actually upload a huge file in tests,
@@ -994,7 +1024,8 @@ func TestScrapeStaged_RedumpVerification(t *testing.T) {
 		{"Uncharted 2 (USA)", "Uncharted 2 (USA).iso", crc, int64(len(romData))},
 	})
 
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload a PS3 .iso file
 	files := map[string][]byte{
@@ -1043,7 +1074,8 @@ func TestScrapeStaged_RedumpVerification(t *testing.T) {
 
 func TestScrapeStaged_DiscSystemNoRedump_NotApplicable(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload a file for PS4 (no Redump mapping exists for PS4)
 	files := map[string][]byte{
@@ -1101,7 +1133,8 @@ func TestTryIdentifyByDAT_RedumpFallback(t *testing.T) {
 
 	// .bin is ambiguous — tryIdentifyByDAT should try No-Intro first, then Redump
 	// Since PSX is disc-based and has a Redump mapping, it should find the match
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 	files := map[string][]byte{
 		"unknown_disc.bin": romData,
 	}
@@ -1139,7 +1172,8 @@ func createZipBytes(t *testing.T, entries map[string][]byte) []byte {
 
 func TestUploadROMs_ZipWithSingleROM(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"Mario.nes": []byte("nes rom data"),
@@ -1174,7 +1208,8 @@ func TestUploadROMs_ZipWithSingleROM(t *testing.T) {
 
 func TestUploadROMs_ZipWithMultipleROMs(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"Mario.nes":   []byte("nes rom"),
@@ -1204,7 +1239,8 @@ func TestUploadROMs_ZipWithMultipleROMs(t *testing.T) {
 
 func TestUploadROMs_ZipWithMixedFiles(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"Mario.nes":  []byte("nes rom"),
@@ -1234,7 +1270,8 @@ func TestUploadROMs_ZipWithMixedFiles(t *testing.T) {
 
 func TestUploadROMs_ZipWithNestedDirectories(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"nes/Mario.nes":         []byte("nes rom"),
@@ -1262,7 +1299,8 @@ func TestUploadROMs_ZipWithNestedDirectories(t *testing.T) {
 
 func TestUploadROMs_ZipPathTraversal(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Zip entries with path traversal attempts (Zip Slip / CVE-2018-1002200)
 	zipData := createZipBytes(t, map[string][]byte{
@@ -1298,7 +1336,8 @@ func TestUploadROMs_ZipPathTraversal(t *testing.T) {
 
 func TestUploadROMs_EmptyZip(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Create an empty zip
 	buf := &bytes.Buffer{}
@@ -1320,7 +1359,8 @@ func TestUploadROMs_EmptyZip(t *testing.T) {
 
 func TestUploadROMs_ZipWithNoROMs(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"readme.txt":  []byte("just a readme"),
@@ -1347,7 +1387,8 @@ func TestUploadROMs_ZipWithNoROMs(t *testing.T) {
 
 func TestUploadROMs_ZipPlusIndividualFiles(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"ZippedGame.nes": []byte("zipped nes rom"),
@@ -1401,7 +1442,8 @@ func TestUploadROMs_ZipPlusIndividualFiles(t *testing.T) {
 
 func TestUploadROMs_CorruptZip(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload corrupted zip data
 	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
@@ -1431,7 +1473,8 @@ func TestUploadROMs_CorruptZip(t *testing.T) {
 
 func TestUploadROMs_CorruptZipPlusValidFile(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Upload corrupt zip + valid ROM in same batch
 	body := &bytes.Buffer{}
@@ -1481,7 +1524,8 @@ func TestUploadROMs_CorruptZipPlusValidFile(t *testing.T) {
 
 func TestUploadROMs_ZipWithInnerZip(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	// Inner .zip files should be treated as ROM files (libretro can load them)
 	zipData := createZipBytes(t, map[string][]byte{
@@ -1508,7 +1552,8 @@ func TestUploadROMs_ZipWithInnerZip(t *testing.T) {
 
 func TestUploadROMs_ZipConsoleDetection(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"Game.nes": []byte("nes rom"),
@@ -1552,7 +1597,8 @@ func TestUploadROMs_ZipConsoleDetection(t *testing.T) {
 
 func TestUploadROMs_ZipTempFilesCleanedUp(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
 		"Game.nes": []byte("nes rom"),
@@ -1585,7 +1631,8 @@ func matchesTempZipPattern(name string) bool {
 
 func TestCheckWritable_WritableDir(t *testing.T) {
 	env := setupUploadTestEnv(t)
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/uploads/writable", nil)
@@ -1611,7 +1658,8 @@ func TestCheckWritable_ReadonlyDir(t *testing.T) {
 	})
 	env.cfg.GameDirs = []string{readonlyDir}
 
-	router := NewRouter(*env.cfg)
+	router, cleanup := NewRouter(*env.cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/uploads/writable", nil)

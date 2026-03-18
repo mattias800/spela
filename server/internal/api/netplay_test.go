@@ -40,7 +40,8 @@ func setupNetplayCtx(t *testing.T) netplayTestCtx {
 	game := db.Game{ConsoleID: nes.ID, Title: "Mega Man", FileName: "megaman.nes", FilePath: "/tmp/megaman.nes"}
 	database.Create(&game)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	// Register owner first (regular register, gets owner role)
 	ownerToken := registerAndGetToken(t, router)
 	// Create host and client as non-owner users via admin endpoint
@@ -135,7 +136,8 @@ func TestNetplay_CreateSession_UnsupportedConsole(t *testing.T) {
 	game := db.Game{ConsoleID: psx.ID, Title: "FF7", FileName: "ff7.bin", FilePath: "/tmp/ff7.bin"}
 	database.Create(&game)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"gameId": "1"})
@@ -251,7 +253,8 @@ func TestNetplay_JoinFullSession(t *testing.T) {
 	game := db.Game{ConsoleID: nes.ID, Title: "Game", FileName: "g.nes", FilePath: "/tmp/g.nes"}
 	database.Create(&game)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 	hostToken := registerUserAndGetToken(t, router, ownerToken, "fullhost", "fh@t.com")
 	p2Token := registerUserAndGetToken(t, router, ownerToken, "fullp2", "fp2@t.com")

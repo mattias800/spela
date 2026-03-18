@@ -46,7 +46,8 @@ func setupReplaceROMTestEnv(t *testing.T) *replaceROMTestEnv {
 	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
 	require.NoError(t, err)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	return &replaceROMTestEnv{
 		db:         database,

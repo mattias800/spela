@@ -20,7 +20,8 @@ import (
 // should add it to "Continue Playing".
 func TestDownloadGame_NoPlayHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a ROM file in the game directory
@@ -57,7 +58,8 @@ func TestDownloadGame_NoPlayHistory(t *testing.T) {
 // via the admin game metadata endpoint and appears in the game response.
 func TestUpdateMetadata_PartyInfo(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game on the ADEMO console
@@ -105,7 +107,8 @@ func TestUpdateMetadata_PartyInfo(t *testing.T) {
 // updates, not by downloads.
 func TestUpdatePlayTime_CreatesPlayHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game

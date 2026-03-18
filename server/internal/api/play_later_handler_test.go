@@ -15,7 +15,8 @@ import (
 
 func TestAddToPlayLater(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -38,7 +39,8 @@ func TestAddToPlayLater(t *testing.T) {
 
 func TestAddToPlayLater_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -50,7 +52,8 @@ func TestAddToPlayLater_GameNotFound(t *testing.T) {
 
 func TestAddToPlayLater_Duplicate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -89,7 +92,8 @@ func TestAddToPlayLater_Duplicate(t *testing.T) {
 
 func TestAddToPlayLater_CreatesActivityEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -130,7 +134,8 @@ func TestAddToPlayLater_CreatesActivityEvent(t *testing.T) {
 
 func TestRemoveFromPlayLater(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -171,7 +176,8 @@ func TestRemoveFromPlayLater(t *testing.T) {
 
 func TestRemoveFromPlayLater_NotInQueue(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -193,7 +199,8 @@ func TestRemoveFromPlayLater_NotInQueue(t *testing.T) {
 
 func TestListPlayLater_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -210,7 +217,8 @@ func TestListPlayLater_Empty(t *testing.T) {
 
 func TestListPlayLater_OrderedByPosition(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -248,7 +256,8 @@ func TestListPlayLater_OrderedByPosition(t *testing.T) {
 
 func TestListPlayLater_ReturnsEnrichedGameResponse(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -289,7 +298,8 @@ func TestListPlayLater_ReturnsEnrichedGameResponse(t *testing.T) {
 
 func TestReorderPlayLater(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -346,7 +356,8 @@ func TestReorderPlayLater(t *testing.T) {
 
 func TestReorderPlayLater_EmptyArray(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
@@ -366,7 +377,8 @@ func TestReorderPlayLater_EmptyArray(t *testing.T) {
 
 func TestReorderPlayLater_InvalidGameIDs(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -400,7 +412,8 @@ func TestReorderPlayLater_InvalidGameIDs(t *testing.T) {
 
 func TestGameResponse_IsInPlayLater_Populated(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -457,7 +470,8 @@ func TestGameResponse_IsInPlayLater_Populated(t *testing.T) {
 
 func TestGameResponse_IsInPlayLater_InGamesList(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -499,7 +513,8 @@ func TestGameResponse_IsInPlayLater_InGamesList(t *testing.T) {
 
 func TestPlayLater_PerUserIsolation(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 
 	// Register second user
@@ -543,7 +558,8 @@ func TestPlayLater_PerUserIsolation(t *testing.T) {
 
 func TestReorderPlayLater_MissingBody(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -556,7 +572,8 @@ func TestReorderPlayLater_MissingBody(t *testing.T) {
 
 func TestReorderPlayLater_PartialList(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
