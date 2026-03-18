@@ -299,9 +299,9 @@ func TestDiagnostics_RunDiagnostics_ReturnsAllChecks(t *testing.T) {
 	}
 
 	checks := handler.runDiagnostics()
-	assert.Len(t, checks, 6)
+	assert.Len(t, checks, 7)
 
-	expectedIDs := []string{"database", "jwt_secret", "encryption_key", "game_dirs", "storage_writable", "igdb"}
+	expectedIDs := []string{"database", "jwt_secret", "encryption_key", "game_dirs", "storage_writable", "igdb", "steamgriddb"}
 	for i, id := range expectedIDs {
 		assert.Equal(t, id, checks[i].ID)
 	}
