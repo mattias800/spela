@@ -15,8 +15,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// DefaultRepoBaseURL is the base URL for the retroarch_system BIOS repository.
-const DefaultRepoBaseURL = "https://raw.githubusercontent.com/Abdess/retroarch_system/master"
+// DefaultRepoBaseURL is the base URL for the retrobios BIOS repository.
+// Previously "Abdess/retroarch_system" on master branch with flat folder names;
+// renamed to "Abdess/retrobios" on main branch with manufacturer/system paths.
+const DefaultRepoBaseURL = "https://raw.githubusercontent.com/Abdess/retrobios/main/bios"
 
 // DownloadProgress reports the status of a single file download.
 type DownloadProgress struct {
