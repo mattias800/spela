@@ -257,6 +257,8 @@ func setupTopListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 
 	handler := &ConsoleHandler{DB: database}
 	router.GET("/api/top-lists/top-rated", handler.GetTopListAvailable)
+	router.GET("/api/top-lists/top-rated-critics", handler.GetTopListCritics)
+	router.GET("/api/top-lists/longest", handler.GetTopListLongest)
 
 	return database, router
 }
@@ -684,4 +686,165 @@ func TestGetTopListLongest_LimitOf50(t *testing.T) {
 	// The last result should be the 50th longest (game 6 → 60 hours)
 	assert.Equal(t, 60, result[49].TimeToBeatNormally)
 	assert.Equal(t, 50, result[49].Rank)
+}
+
+// --- Bug fix tests ---
+
+func TestGetTopListAvailable_UsesTotalRatingNotUserRating(t *testing.T) {
+	// Bug: Audience list was empty because it used user_rating which IGDB
+	// often returns as null (stored as 0). Fix uses total_rating instead.
+	database, router := setupTopListTestEnv(t)
+
+	var nesConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nesConsole).Error)
+
+	// Game with total_rating but user_rating=0 (typical IGDB response)
+	database.Create(&db.TopRatedGame{
+		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "Mega Man 2",
+		TotalRating: 88.0, TotalRatingCount: 200,
+		UserRating: 0, UserRatingCount: 0,
+		CriticRating: 85.0, CriticRatingCount: 5, Rank: 1,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Mega Man 2",
+		FileName: "mm2.nes", FilePath: "/games/mm2.nes", IsPrimary: true,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/top-rated", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var result []TopListGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Len(t, result, 1, "should include game with total_rating even if user_rating is 0")
+	assert.Equal(t, "Mega Man 2", result[0].Name)
+	assert.Equal(t, 88.0, result[0].Rating)
+}
+
+func TestGetTopListCritics_ReturnsGamesWithCriticRating(t *testing.T) {
+	database, router := setupTopListTestEnv(t)
+
+	var nesConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nesConsole).Error)
+
+	database.Create(&db.TopRatedGame{
+		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "Zelda",
+		TotalRating: 92.0, TotalRatingCount: 500,
+		CriticRating: 95.0, CriticRatingCount: 10, Rank: 1,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Zelda",
+		FileName: "zelda.nes", FilePath: "/games/zelda.nes", IsPrimary: true,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/top-rated-critics", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var result []TopListGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, 95.0, result[0].Rating)
+}
+
+func TestGetTopListAvailable_ExcludesDemoConsoles(t *testing.T) {
+	database, router := setupTopListTestEnv(t)
+
+	var nesConsole, ademoConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nesConsole).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "ADEMO").First(&ademoConsole).Error)
+
+	// NES game (should appear)
+	database.Create(&db.TopRatedGame{
+		ConsoleID: nesConsole.ID, IGDBGameID: 100, Name: "Super Mario",
+		TotalRating: 90.0, TotalRatingCount: 400, Rank: 1,
+	})
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Super Mario",
+		FileName: "sm.nes", FilePath: "/games/sm.nes", IsPrimary: true,
+	})
+
+	// Demo "game" (should be excluded)
+	database.Create(&db.TopRatedGame{
+		ConsoleID: ademoConsole.ID, IGDBGameID: 200, Name: "Some Demo",
+		TotalRating: 95.0, TotalRatingCount: 50, Rank: 1,
+	})
+	database.Create(&db.Game{
+		ConsoleID: ademoConsole.ID, Title: "Some Demo",
+		FileName: "demo.adf", FilePath: "/games/demo.adf", IsPrimary: true,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/top-rated", nil)
+	router.ServeHTTP(w, req)
+
+	var result []TopListGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Len(t, result, 1, "should exclude demo console entries")
+	assert.Equal(t, "Super Mario", result[0].Name)
+}
+
+func TestGetTopListLongest_CapsUnreasonableTimeToBeat(t *testing.T) {
+	database, router := setupTopListTestEnv(t)
+
+	var nesConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nesConsole).Error)
+
+	// Reasonable game
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Long RPG",
+		FileName: "rpg.nes", FilePath: "/games/rpg.nes", IsPrimary: true,
+		TimeToBeatNormally: 100 * 3600, // 100 hours
+	})
+
+	// Unreasonable game (567890 hours like World Cup 98)
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Broken Data",
+		FileName: "broken.nes", FilePath: "/games/broken.nes", IsPrimary: true,
+		TimeToBeatNormally: 567890 * 3600,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	var result []LongestGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Len(t, result, 1, "should exclude games with unreasonable time-to-beat")
+	assert.Equal(t, "Long RPG", result[0].Name)
+}
+
+func TestGetTopListLongest_ExcludesDemoConsoles(t *testing.T) {
+	database, router := setupTopListTestEnv(t)
+
+	var nesConsole, ddemoConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nesConsole).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "DDEMO").First(&ddemoConsole).Error)
+
+	database.Create(&db.Game{
+		ConsoleID: nesConsole.ID, Title: "Real Game",
+		FileName: "game.nes", FilePath: "/games/game.nes", IsPrimary: true,
+		TimeToBeatNormally: 50 * 3600,
+	})
+	database.Create(&db.Game{
+		ConsoleID: ddemoConsole.ID, Title: "DOS Demo",
+		FileName: "demo.zip", FilePath: "/games/demo.zip", IsPrimary: true,
+		TimeToBeatNormally: 1 * 3600,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-lists/longest", nil)
+	router.ServeHTTP(w, req)
+
+	var result []LongestGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	assert.Len(t, result, 1, "should exclude demo console entries")
+	assert.Equal(t, "Real Game", result[0].Name)
 }

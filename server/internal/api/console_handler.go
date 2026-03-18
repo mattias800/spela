@@ -412,6 +412,13 @@ type TopRatedGameResponse struct {
 // topRatedStaleness is how long cached top-rated data is considered fresh.
 const topRatedStaleness = 7 * 24 * time.Hour
 
+// maxTimeToBeatSeconds caps time-to-beat values at ~10000 hours to filter out
+// bogus IGDB data (e.g. World Cup 98 listed at 567890 hours).
+const maxTimeToBeatSeconds = 10000 * 3600
+
+// demoConsoleAbbreviations lists consoles that should be excluded from top lists.
+var demoConsoleAbbreviations = []string{"ADEMO", "DDEMO"}
+
 // GetTopRated returns the top-rated IGDB games for a console.
 // Results are cached in the local DB and refreshed when stale (>7 days).
 func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
@@ -536,9 +543,11 @@ type TopListGameResponse struct {
 }
 
 // GetTopListAvailable returns IGDB audience top-rated games that have a matching
-// local game on the server, sorted by user rating descending, limited to 50 results.
+// local game on the server, sorted by total rating descending, limited to 50 results.
+// Uses total_rating (combined user+critic) rather than user_rating alone, since
+// IGDB's user-only rating field is often null for games that do have ratings.
 func (h *ConsoleHandler) GetTopListAvailable(c *gin.Context) {
-	h.getTopListByRating(c, "top_rated_games.user_rating", "top_rated_games.user_rating > 0")
+	h.getTopListByRating(c, "top_rated_games.total_rating", "top_rated_games.total_rating > 0")
 }
 
 // GetTopListCritics returns IGDB critic top-rated games that have a matching
@@ -569,6 +578,7 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
 		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
+		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations).
 		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, "+ratingColumn).
 		Order(ratingColumn + " DESC").
 		Limit(50).
@@ -634,7 +644,8 @@ func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
 				games.time_to_beat_hastily,
 				games.time_to_beat_completely`).
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
-		Where("games.time_to_beat_normally > 0 AND games.deleted_at IS NULL AND games.is_primary = true").
+		Where("games.time_to_beat_normally > 0 AND games.time_to_beat_normally <= ? AND games.deleted_at IS NULL AND games.is_primary = true", maxTimeToBeatSeconds).
+		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations).
 		Order("games.time_to_beat_normally DESC").
 		Limit(50).
 		Find(&rows).Error
