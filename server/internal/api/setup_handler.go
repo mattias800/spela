@@ -265,7 +265,7 @@ func (h *SetupHandler) checkIGDB() DiagnosticCheck {
 	default:
 		check.Status = "warning"
 		check.Detail = "Not configured"
-		check.Fix = "Configure IGDB in the next step for game metadata and cover art"
+		check.Fix = "Set SPELA_IGDB_CLIENT_ID and SPELA_IGDB_CLIENT_SECRET, or configure in the IGDB step"
 	}
 	return check
 }
@@ -283,7 +283,7 @@ func (h *SetupHandler) checkSteamGridDB() DiagnosticCheck {
 	default:
 		check.Status = "warning"
 		check.Detail = "Not configured (optional)"
-		check.Fix = "Configure SteamGridDB for hero artwork, logos, and grid images"
+		check.Fix = "Set SPELA_STEAMGRIDDB_API_KEY, or configure in the SteamGridDB step"
 	}
 	return check
 }
