@@ -103,9 +103,9 @@ func (s *Scraper) applyPouetMetadata(game *db.Game, prod *pouet.Prod, console db
 	// Description
 	game.Description = buildDemoDescription(prod)
 
-	// Release date
+	// Release date — sanitize invalid Pouet dates like "1989-00-15"
 	if prod.ReleaseDate != "" && len(prod.ReleaseDate) >= 4 {
-		game.ReleaseDate = prod.ReleaseDate
+		game.ReleaseDate = sanitizePouetDate(prod.ReleaseDate)
 	}
 
 	// Rating
@@ -230,6 +230,28 @@ func stripParenContent(s string) string {
 		result = result[:start] + result[start+end+1:]
 	}
 	return strings.TrimSpace(result)
+}
+
+// sanitizePouetDate fixes invalid Pouet dates like "1989-00-15" where month
+// or day is "00". Replaces "00" with "01" to produce a valid ISO date.
+// Returns just the year if the date can't be salvaged.
+func sanitizePouetDate(d string) string {
+	if len(d) < 4 {
+		return d
+	}
+	// Just a year
+	if len(d) == 4 {
+		return d
+	}
+	// Format: YYYY-MM-DD — fix zero month/day
+	parts := strings.Split(d, "-")
+	if len(parts) >= 2 && parts[1] == "00" {
+		parts[1] = "01"
+	}
+	if len(parts) >= 3 && parts[2] == "00" {
+		parts[2] = "01"
+	}
+	return strings.Join(parts, "-")
 }
 
 func capitalize(s string) string {

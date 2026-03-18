@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui";
 import { formatFileSize } from "@/lib/format";
+import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
 
 interface GameListRowProps {
@@ -10,9 +11,8 @@ interface GameListRowProps {
 
 export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
   const consoleName = game.consoleName ?? "";
-  const releaseYear = game.releaseDate
-    ? new Date(game.releaseDate).getFullYear().toString()
-    : undefined;
+  const year = getReleaseYear(game.releaseDate);
+  const releaseYear = year ? year.toString() : undefined;
 
   return (
     <Link

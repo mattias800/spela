@@ -3,6 +3,7 @@ import { Heart, Star, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
+import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
 
 interface GameCardProps {
@@ -134,9 +135,8 @@ export function GameCard({
           {hideConsoleName ? (
             (game.releaseDate || game.developer) && (
               <p className="text-xs text-surface-500">
-                {game.releaseDate
-                  ? new Date(game.releaseDate).getFullYear()
-                  : game.developer}
+                {getReleaseYear(game.releaseDate)
+                  ?? game.developer}
               </p>
             )
           ) : (
