@@ -87,22 +87,23 @@ var registry = []Entry{
 	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip"},
 }
 
-// repoFolders maps console IDs to their folder name in the
-// Abdess/retroarch_system GitHub repository.
+// repoFolders maps console IDs to their folder path in the
+// Abdess/retrobios GitHub repository (under the bios/ directory).
 var repoFolders = map[string]string{
-	"psx": "Sony - PlayStation",
-	"sat": "Sega - Saturn",
-	"scd": "Sega - Mega CD - Sega CD",
-	"dc":  "Sega - Dreamcast",
-	"gba": "Nintendo - Game Boy Advance",
-	"nds": "Nintendo - Nintendo DS",
-	"pce":  "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
-	"pcecd": "NEC - PC Engine - TurboGrafx 16 - SuperGrafx",
-	"lynx":  "Atari - Lynx",
-	"3do":   "3DO Company, The - 3DO",
-	"pcfx":  "NEC - PC-FX",
-	"cv":    "Coleco - ColecoVision",
-	// ps2 — not available in the repository (neogeo, neocd, amiga, cdi use OverrideURL)
+	"psx":   "Sony/PlayStation",
+	"sat":   "Sega/Saturn",
+	"scd":   "Sega/Mega CD",
+	"dc":    "Sega/Dreamcast",
+	"gba":   "Nintendo/Game Boy Advance",
+	"pce":   "NEC/PC Engine",
+	"pcecd": "NEC/PC Engine",
+	"lynx":  "Atari/Lynx",
+	"3do":   "3DO Company/3DO",
+	"pcfx":  "NEC/PC-FX",
+	// nds — repo uses different filenames (nds7.bin/nds9.bin vs bios7.bin/bios9.bin)
+	// cv — repo uses different filename (BIOS.col vs colecovision.rom)
+	// ps2 — not available in the repository
+	// neogeo, neocd, amiga, cdi — use OverrideURL
 }
 
 // RepoFolder returns the repository folder name for the given console ID,
