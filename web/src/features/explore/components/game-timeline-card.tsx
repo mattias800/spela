@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { ensureContrast } from "@/lib/color-utils";
+import { getReleaseYear } from "@/lib/date-utils";
 import type { SeriesGame } from "@/types/api";
 
 interface GameTimelineCardProps {
@@ -10,9 +11,7 @@ interface GameTimelineCardProps {
 }
 
 export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) {
-  const year = game.releaseDate
-    ? new Date(game.releaseDate).getFullYear()
-    : null;
+  const year = getReleaseYear(game.releaseDate);
 
   const content = (
     <div

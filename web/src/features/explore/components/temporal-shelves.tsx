@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
+import { getReleaseYear } from "@/lib/date-utils";
 import {
   ChevronLeft,
   ChevronRight,
@@ -173,7 +174,7 @@ export function OnThisDayShelf({
           <GameCard
             game={game}
             showConsoleBadge
-            subtitle={game.releaseDate ? `Released ${new Date(game.releaseDate).getFullYear()}` : undefined}
+            subtitle={getReleaseYear(game.releaseDate) ? `Released ${getReleaseYear(game.releaseDate)}` : undefined}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />
