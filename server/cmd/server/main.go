@@ -182,7 +182,7 @@ func main() {
 	}
 
 	// Create router
-	router := api.NewRouter(api.Config{
+	router, _ := api.NewRouter(api.Config{
 		DB:            database,
 		JWTSecret:     jwtSecret,
 		EncryptionKey: encryptionKey,

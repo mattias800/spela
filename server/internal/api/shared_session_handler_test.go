@@ -100,7 +100,8 @@ func takeSharedSessionTurn(t *testing.T, router http.Handler, token, sharedSessi
 
 func TestSharedSession_Create(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -130,7 +131,8 @@ func TestSharedSession_Create(t *testing.T) {
 
 func TestSharedSession_Create_MissingFields(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	tests := []struct {
@@ -157,7 +159,8 @@ func TestSharedSession_Create_MissingFields(t *testing.T) {
 
 func TestSharedSession_Create_InvalidGame(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{
@@ -174,7 +177,8 @@ func TestSharedSession_Create_InvalidGame(t *testing.T) {
 
 func TestSharedSession_List_OnlyMySessions(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -216,7 +220,8 @@ func TestSharedSession_List_OnlyMySessions(t *testing.T) {
 
 func TestSharedSession_GetDetail_MemberCanView(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -243,7 +248,8 @@ func TestSharedSession_GetDetail_MemberCanView(t *testing.T) {
 
 func TestSharedSession_GetDetail_NonMemberForbidden(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -266,7 +272,8 @@ func TestSharedSession_GetDetail_NonMemberForbidden(t *testing.T) {
 
 func TestSharedSession_Update_OwnerCanUpdate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -297,7 +304,8 @@ func TestSharedSession_Update_OwnerCanUpdate(t *testing.T) {
 
 func TestSharedSession_Update_MemberCannotUpdate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -325,7 +333,8 @@ func TestSharedSession_Update_MemberCannotUpdate(t *testing.T) {
 
 func TestSharedSession_Update_InvalidStatus(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -348,7 +357,8 @@ func TestSharedSession_Update_InvalidStatus(t *testing.T) {
 
 func TestSharedSession_Delete_OwnerCanDelete(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -376,7 +386,8 @@ func TestSharedSession_Delete_OwnerCanDelete(t *testing.T) {
 
 func TestSharedSession_Delete_MemberCannotDelete(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -402,7 +413,8 @@ func TestSharedSession_Delete_MemberCannotDelete(t *testing.T) {
 
 func TestSharedSession_InviteUser(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	_ = registerSecondUser(t, router, token1)
 
@@ -432,7 +444,8 @@ func TestSharedSession_InviteUser(t *testing.T) {
 
 func TestSharedSession_InviteUser_AlreadyMember(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -459,7 +472,8 @@ func TestSharedSession_InviteUser_AlreadyMember(t *testing.T) {
 
 func TestSharedSession_InviteUser_AlreadyInvited(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	_ = registerSecondUser(t, router, token1)
 
@@ -492,7 +506,8 @@ func TestSharedSession_InviteUser_AlreadyInvited(t *testing.T) {
 
 func TestSharedSession_InviteUser_SelfInviteFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -515,7 +530,8 @@ func TestSharedSession_InviteUser_SelfInviteFails(t *testing.T) {
 
 func TestSharedSession_AcceptInvite(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -545,7 +561,8 @@ func TestSharedSession_AcceptInvite(t *testing.T) {
 
 func TestSharedSession_AcceptInvite_WrongUser(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	_ = registerSecondUser(t, router, token1)
 	token3 := registerNamedUser(t, router, token1, "player3")
@@ -582,7 +599,8 @@ func TestSharedSession_AcceptInvite_WrongUser(t *testing.T) {
 
 func TestSharedSession_DeclineInvite(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -635,7 +653,8 @@ func TestSharedSession_DeclineInvite(t *testing.T) {
 
 func TestSharedSession_LeaveSharedSession_MemberCanLeave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -671,7 +690,8 @@ func TestSharedSession_LeaveSharedSession_MemberCanLeave(t *testing.T) {
 
 func TestSharedSession_LeaveSharedSession_OwnerCannotLeave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -692,7 +712,8 @@ func TestSharedSession_LeaveSharedSession_OwnerCannotLeave(t *testing.T) {
 
 func TestSharedSession_RemoveMember_OwnerCanRemove(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -733,7 +754,8 @@ func TestSharedSession_RemoveMember_OwnerCanRemove(t *testing.T) {
 
 func TestSharedSession_RemoveMember_MemberCannotRemoveOthers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -765,7 +787,8 @@ func TestSharedSession_RemoveMember_MemberCannotRemoveOthers(t *testing.T) {
 
 func TestSharedSession_TakeTurn_Success(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -791,7 +814,8 @@ func TestSharedSession_TakeTurn_Success(t *testing.T) {
 
 func TestSharedSession_TakeTurn_Conflict(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -819,7 +843,8 @@ func TestSharedSession_TakeTurn_Conflict(t *testing.T) {
 
 func TestSharedSession_TakeTurn_StaleTurnExpired(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -857,7 +882,8 @@ func TestSharedSession_TakeTurn_StaleTurnExpired(t *testing.T) {
 
 func TestSharedSession_ReleaseTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -892,7 +918,8 @@ func TestSharedSession_ReleaseTurn(t *testing.T) {
 
 func TestSharedSession_ReleaseTurn_NonHolderFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -918,7 +945,8 @@ func TestSharedSession_ReleaseTurn_NonHolderFails(t *testing.T) {
 
 func TestSharedSession_Heartbeat(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -950,7 +978,8 @@ func TestSharedSession_Heartbeat(t *testing.T) {
 
 func TestSharedSession_Heartbeat_NonHolderFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -975,7 +1004,8 @@ func TestSharedSession_Heartbeat_NonHolderFails(t *testing.T) {
 
 func TestSharedSession_TakeTurn_InactiveSessionFails(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1008,7 +1038,8 @@ func TestSharedSession_TakeTurn_InactiveSessionFails(t *testing.T) {
 
 func TestSharedSession_UploadSave_RequiresActiveTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1038,7 +1069,8 @@ func TestSharedSession_UploadSave_RequiresActiveTurn(t *testing.T) {
 
 func TestSharedSession_UploadSave_InvalidTurnToken(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1072,7 +1104,8 @@ func TestSharedSession_UploadSave_InvalidTurnToken(t *testing.T) {
 
 func TestSharedSession_UploadAndListSaves(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1124,7 +1157,8 @@ func TestSharedSession_UploadAndListSaves(t *testing.T) {
 
 func TestSharedSession_DownloadSave_MemberCanDownload(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1172,7 +1206,8 @@ func TestSharedSession_DownloadSave_MemberCanDownload(t *testing.T) {
 
 func TestSharedSession_AutoSave_Upsert(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1237,7 +1272,8 @@ func TestSharedSession_AutoSave_Upsert(t *testing.T) {
 
 func TestSharedSession_GetAutoSave_NotFound(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1258,7 +1294,8 @@ func TestSharedSession_GetAutoSave_NotFound(t *testing.T) {
 
 func TestSharedSession_DeleteSave_OwnerOnly(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1323,7 +1360,8 @@ func TestSharedSession_DeleteSave_OwnerOnly(t *testing.T) {
 
 func TestSharedSession_Saves_NonMemberCannotAccess(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1355,7 +1393,8 @@ func TestSharedSession_Saves_NonMemberCannotAccess(t *testing.T) {
 
 func TestSharedSession_Create_CreatesActivityEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1392,7 +1431,8 @@ func TestSharedSession_Create_CreatesActivityEvent(t *testing.T) {
 
 func TestSharedSession_LeaveSharedSession_ReleasesTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1444,7 +1484,8 @@ func TestSharedSession_LeaveSharedSession_ReleasesTurn(t *testing.T) {
 
 func TestSharedSession_ReInviteAfterDecline(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1507,7 +1548,8 @@ func TestSharedSession_ReInviteAfterDecline(t *testing.T) {
 
 func TestSharedSession_RemoveMember_ReleasesTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1556,7 +1598,8 @@ func TestSharedSession_RemoveMember_ReleasesTurn(t *testing.T) {
 
 func TestSharedSession_Create_CreatesSession(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1589,7 +1632,8 @@ func TestSharedSession_Create_CreatesSession(t *testing.T) {
 
 func TestSharedSession_SaveUpload_CreatesSessionSave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1631,7 +1675,8 @@ func TestSharedSession_SaveUpload_CreatesSessionSave(t *testing.T) {
 
 func TestSharedSession_AutoSaveUpload_CreatesSessionSave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1672,7 +1717,8 @@ func TestSharedSession_AutoSaveUpload_CreatesSessionSave(t *testing.T) {
 
 func TestSharedSession_MigrateSharedSessions(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	_ = NewRouter(*cfg)
+	_, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	var console db.Console
 	database.First(&console)
@@ -1730,7 +1776,8 @@ func TestSharedSession_MigrateSharedSessions(t *testing.T) {
 
 func TestSharedSession_SessionTurnValidation_CannotUploadWithoutTurn(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token1 := registerAndGetToken(t, router)
 	token2 := registerSecondUser(t, router, token1)
 
@@ -1786,7 +1833,8 @@ func TestSharedSession_SessionTurnValidation_CannotUploadWithoutTurn(t *testing.
 
 func TestSharedSession_Create_IncludesCoreName(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game on NES (DefaultCore = "nestopia")
@@ -1803,7 +1851,8 @@ func TestSharedSession_Create_IncludesCoreName(t *testing.T) {
 
 func TestSharedSession_Create_UsesGameCoreOverride(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game on NES with a core override
@@ -1820,7 +1869,8 @@ func TestSharedSession_Create_UsesGameCoreOverride(t *testing.T) {
 
 func TestSharedSession_GetDetail_IncludesCoreName(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console

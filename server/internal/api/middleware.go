@@ -141,6 +141,7 @@ type RateLimiter struct {
 	mu       sync.Mutex
 	limit    int
 	window   time.Duration
+	done     chan struct{}
 }
 
 type rateLimitEntry struct {
@@ -149,26 +150,44 @@ type rateLimitEntry struct {
 }
 
 // NewRateLimiter creates a rate limiter that allows `limit` requests per `window`.
+// Call Close() to stop the background cleanup goroutine.
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		visitors: make(map[string]*rateLimitEntry),
 		limit:    limit,
 		window:   window,
+		done:     make(chan struct{}),
 	}
 	// Cleanup stale entries periodically
 	go func() {
+		ticker := time.NewTicker(window)
+		defer ticker.Stop()
 		for {
-			time.Sleep(window)
-			rl.mu.Lock()
-			for ip, e := range rl.visitors {
-				if time.Since(e.lastSeen) > window {
-					delete(rl.visitors, ip)
+			select {
+			case <-ticker.C:
+				rl.mu.Lock()
+				for ip, e := range rl.visitors {
+					if time.Since(e.lastSeen) > window {
+						delete(rl.visitors, ip)
+					}
 				}
+				rl.mu.Unlock()
+			case <-rl.done:
+				return
 			}
-			rl.mu.Unlock()
 		}
 	}()
 	return rl
+}
+
+// Close stops the background cleanup goroutine.
+func (rl *RateLimiter) Close() {
+	select {
+	case <-rl.done:
+		// already closed
+	default:
+		close(rl.done)
+	}
 }
 
 // RateLimit returns a Gin middleware that rate limits by client IP.

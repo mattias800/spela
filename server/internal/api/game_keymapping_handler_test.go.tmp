@@ -1,0 +1,338 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetGameKeyMapping_NotFound(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Create a game to reference
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateGameKeyMapping_CreateNew(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	mapping := map[string]string{"0": "96", "1": "97", "2": "98"}
+	body, _ := json.Marshal(map[string]interface{}{
+		"customMapping": mapping,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, float64(game.ID), resp["gameId"])
+	customMapping := resp["customMapping"].(map[string]interface{})
+	assert.Equal(t, "96", customMapping["0"])
+	assert.Equal(t, "97", customMapping["1"])
+	assert.Equal(t, "98", customMapping["2"])
+}
+
+func TestUpdateGameKeyMapping_UpdateExisting(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Create initial mapping
+	mapping := map[string]string{"0": "96", "1": "97"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Update mapping
+	updatedMapping := map[string]string{"0": "100", "1": "101", "3": "102"}
+	body, _ = json.Marshal(map[string]interface{}{"customMapping": updatedMapping})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	customMapping := resp["customMapping"].(map[string]interface{})
+	assert.Equal(t, "100", customMapping["0"])
+	assert.Equal(t, "101", customMapping["1"])
+	assert.Equal(t, "102", customMapping["3"])
+	_, has2 := customMapping["2"]
+	assert.False(t, has2, "key 2 should not exist in the updated mapping")
+}
+
+func TestGetGameKeyMapping_AfterCreate(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Create mapping
+	mapping := map[string]string{"0": "96", "1": "97"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Get mapping
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.Equal(t, float64(game.ID), resp["gameId"])
+	customMapping := resp["customMapping"].(map[string]interface{})
+	assert.Equal(t, "96", customMapping["0"])
+	assert.Equal(t, "97", customMapping["1"])
+}
+
+func TestDeleteGameKeyMapping_Success(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Create mapping
+	mapping := map[string]string{"0": "96"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Delete mapping
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify it's gone
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestDeleteGameKeyMapping_NotFound(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Try to delete non-existent mapping
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateGameKeyMapping_GameNotFound(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	mapping := map[string]string{"0": "96"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/games/9999/keymapping", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateGameKeyMapping_MissingCustomMapping(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Send without customMapping field
+	body, _ := json.Marshal(map[string]interface{}{})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdateGameKeyMapping_UpsertAfterDelete(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// Create mapping
+	mapping := map[string]string{"0": "96"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Delete mapping
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Re-create mapping (tests the Unscoped upsert path after hard delete)
+	newMapping := map[string]string{"0": "200", "1": "201"}
+	body, _ = json.Marshal(map[string]interface{}{"customMapping": newMapping})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify it's retrievable
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	customMapping := resp["customMapping"].(map[string]interface{})
+	assert.Equal(t, "200", customMapping["0"])
+	assert.Equal(t, "201", customMapping["1"])
+}
+
+func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+
+	// Register first user (becomes owner)
+	token1 := registerAndGetToken(t, router)
+
+	// Register second user
+	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "password123")
+
+	// Create a game
+	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}
+	database.Create(&game)
+
+	// User 1 creates a mapping
+	mapping1 := map[string]string{"0": "96", "1": "97"}
+	body, _ := json.Marshal(map[string]interface{}{"customMapping": mapping1})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// User 2 should not see user 1's mapping
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// User 2 creates their own mapping
+	mapping2 := map[string]string{"0": "200"}
+	body, _ = json.Marshal(map[string]interface{}{"customMapping": mapping2})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token2)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// User 1's mapping should still be intact
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", fmt.Sprintf("/api/user/games/%d/keymapping", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp1 map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp1)
+	cm1 := resp1["customMapping"].(map[string]interface{})
+	assert.Equal(t, "96", cm1["0"])
+	assert.Equal(t, "97", cm1["1"])
+}
+
+func TestUpdateGameKeyMapping_NoAuth(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"customMapping": map[string]string{"0": "96"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/games/1/keymapping", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}

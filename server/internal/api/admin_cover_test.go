@@ -52,7 +52,8 @@ func createTestGame(t *testing.T, database *gorm.DB) db.Game {
 
 func TestGetGameCovers_ReturnsBothSources(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 
@@ -82,7 +83,8 @@ func TestGetGameCovers_ReturnsBothSources(t *testing.T) {
 
 func TestGetGameCovers_OnlyIGDB(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	var console db.Console
@@ -118,7 +120,8 @@ func TestGetGameCovers_OnlyIGDB(t *testing.T) {
 
 func TestSetGameCover_SwitchToIGDB(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 
@@ -139,7 +142,8 @@ func TestSetGameCover_SwitchToIGDB(t *testing.T) {
 
 func TestSetGameCover_SwitchToLibRetro(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 
@@ -168,7 +172,8 @@ func TestSetGameCover_SwitchToLibRetro(t *testing.T) {
 
 func TestSetGameCover_MissingSource_Returns400(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	var console db.Console
@@ -195,7 +200,8 @@ func TestSetGameCover_MissingSource_Returns400(t *testing.T) {
 
 func TestSetGameCover_InvalidSource_Returns400(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 
@@ -212,7 +218,8 @@ func TestSetGameCover_InvalidSource_Returns400(t *testing.T) {
 func TestGetGameCovers_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	database := cfg.DB
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	req := httptest.NewRequest("GET", "/api/admin/games/99999/covers", nil)
@@ -225,7 +232,8 @@ func TestGetGameCovers_NotFound(t *testing.T) {
 
 func TestGetGameCovers_NonAdmin_Returns403(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	user := db.User{
 		Username:     "regular",
@@ -249,7 +257,8 @@ func TestGetGameCovers_NonAdmin_Returns403(t *testing.T) {
 
 func TestGetGameCovers_NoCovers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	var console db.Console
@@ -287,7 +296,8 @@ func TestGetGameCovers_NoCovers(t *testing.T) {
 
 func TestGetGameCovers_CustomPreMigrationCover(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	var console db.Console
@@ -330,7 +340,8 @@ func TestGetGameCovers_CustomPreMigrationCover(t *testing.T) {
 
 func TestSetGameCover_RegionalRejectsUnknownLibRetroName(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 
@@ -355,7 +366,8 @@ func TestSetGameCover_RegionalRejectsUnknownLibRetroName(t *testing.T) {
 
 func TestSetGameCover_SetsCoverManuallySet(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	game := createTestGame(t, database)
 

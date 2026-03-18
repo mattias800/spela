@@ -1,0 +1,1846 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// --- Helper functions ---
+
+// registerSecondUser registers a second user and returns their access token.
+func registerSecondUser(t *testing.T, router http.Handler, ownerToken string) string {
+	t.Helper()
+	return createNonOwnerUser(t, router, ownerToken, "player2", "player2@example.com", "password123")
+}
+
+// registerNamedUser registers a user with the given username and returns their access token.
+func registerNamedUser(t *testing.T, router http.Handler, ownerToken, username string) string {
+	t.Helper()
+	return createNonOwnerUser(t, router, ownerToken, username, username+"@example.com", "password123")
+}
+
+// createSharedSession creates a shared session via API and returns the response map.
+func createSharedSession(t *testing.T, router http.Handler, token, gameID, name string) map[string]interface{} {
+	t.Helper()
+	body, _ := json.Marshal(map[string]string{
+		"gameId": gameID,
+		"name":   name,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	return resp
+}
+
+// inviteAndAcceptSharedSession invites a user to a shared session and has them accept it.
+func inviteAndAcceptSharedSession(t *testing.T, router http.Handler, ownerToken, inviteeToken, sharedSessionID, inviteeUsername string) {
+	t.Helper()
+
+	// Invite
+	body, _ := json.Marshal(map[string]string{"username": inviteeUsername})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Get the invite ID from the invitee's list
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/shared-session-invites", nil)
+	req.Header.Set("Authorization", "Bearer "+inviteeToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var invites []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &invites)
+	require.True(t, len(invites) > 0, "should have at least one invite")
+
+	inviteID := invites[0]["id"].(string)
+
+	// Accept
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/user/shared-session-invites/"+inviteID+"/accept", nil)
+	req.Header.Set("Authorization", "Bearer "+inviteeToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+}
+
+// takeSharedSessionTurn acquires the turn and returns the turn token.
+func takeSharedSessionTurn(t *testing.T, router http.Handler, token, sharedSessionID string) string {
+	t.Helper()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/take-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	return resp["turnToken"].(string)
+}
+
+// --- CRUD tests ---
+
+func TestSharedSession_Create(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Shared Session Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "My Shared Session")
+
+	assert.NotEmpty(t, resp["id"])
+	assert.Equal(t, "My Shared Session", resp["name"])
+	assert.Equal(t, gameID, resp["gameId"])
+	assert.Equal(t, "active", resp["status"])
+	assert.Equal(t, "Shared Session Game", resp["gameTitle"])
+	assert.Equal(t, "apitest", resp["ownerUsername"])
+	assert.Equal(t, float64(1), resp["memberCount"])
+
+	// Verify members include the owner
+	members := resp["members"].([]interface{})
+	assert.Len(t, members, 1)
+	member := members[0].(map[string]interface{})
+	assert.Equal(t, "owner", member["role"])
+	assert.Equal(t, "apitest", member["username"])
+}
+
+func TestSharedSession_Create_MissingFields(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	tests := []struct {
+		name string
+		body map[string]string
+	}{
+		{"missing gameId", map[string]string{"name": "Test"}},
+		{"missing name", map[string]string{"gameId": "1"}},
+		{"both missing", map[string]string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body, _ := json.Marshal(tt.body)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/shared-sessions", bytes.NewReader(body))
+			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Content-Type", "application/json")
+			router.ServeHTTP(w, req)
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	}
+}
+
+func TestSharedSession_Create_InvalidGame(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]string{
+		"gameId": "99999",
+		"name":   "Session for Missing Game",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestSharedSession_List_OnlyMySessions(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "List Test", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// User1 creates a shared session
+	createSharedSession(t, router, token1, gameID, "User1 Session")
+
+	// User2 creates a shared session
+	createSharedSession(t, router, token2, gameID, "User2 Session")
+
+	// User1 should only see their shared session
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var sessions []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &sessions)
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, "User1 Session", sessions[0]["name"])
+
+	// User2 should only see their shared session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &sessions)
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, "User2 Session", sessions[0]["name"])
+}
+
+func TestSharedSession_GetDetail_MemberCanView(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Detail Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Detail Session")
+	sharedSessionID := ss["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "Detail Session", resp["name"])
+	members := resp["members"].([]interface{})
+	assert.Len(t, members, 1)
+}
+
+func TestSharedSession_GetDetail_NonMemberForbidden(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Forbidden Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Forbidden Session")
+	sharedSessionID := ss["id"].(string)
+
+	// User2 (non-member) tries to view
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSharedSession_Update_OwnerCanUpdate(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Update Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Original Name")
+	sharedSessionID := ss["id"].(string)
+
+	body, _ := json.Marshal(map[string]string{
+		"name":   "Updated Name",
+		"status": "completed",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/shared-sessions/"+sharedSessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "Updated Name", resp["name"])
+	assert.Equal(t, "completed", resp["status"])
+}
+
+func TestSharedSession_Update_MemberCannotUpdate(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Update Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Owner Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Invite and accept user2
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// User2 tries to update
+	body, _ := json.Marshal(map[string]string{"name": "Hacked"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/shared-sessions/"+sharedSessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token2)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSharedSession_Update_InvalidStatus(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Status Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Status Session")
+	sharedSessionID := ss["id"].(string)
+
+	body, _ := json.Marshal(map[string]string{"status": "invalid_status"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/shared-sessions/"+sharedSessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSharedSession_Delete_OwnerCanDelete(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Delete Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Delete Me")
+	sharedSessionID := ss["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify it's gone
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestSharedSession_Delete_MemberCannotDelete(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Delete Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Protected Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+// --- Membership tests ---
+
+func TestSharedSession_InviteUser(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	_ = registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Invite Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Invite Session")
+	sharedSessionID := ss["id"].(string)
+
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "pending", resp["status"])
+	assert.Equal(t, "player2", resp["inviteeUsername"])
+	assert.Equal(t, "apitest", resp["inviterUsername"])
+}
+
+func TestSharedSession_InviteUser_AlreadyMember(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Already Member Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Already Member Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Try to invite again
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusConflict, w.Code)
+}
+
+func TestSharedSession_InviteUser_AlreadyInvited(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	_ = registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Already Invited Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Already Invited Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Invite once
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Invite again (duplicate)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusConflict, w.Code)
+}
+
+func TestSharedSession_InviteUser_SelfInviteFails(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Self Invite Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Self Invite Session")
+	sharedSessionID := ss["id"].(string)
+
+	body, _ := json.Marshal(map[string]string{"username": "apitest"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSharedSession_AcceptInvite(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Accept Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Accept Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Verify user2 is now a member by listing shared sessions
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var sessions []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &sessions)
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, float64(2), sessions[0]["memberCount"])
+}
+
+func TestSharedSession_AcceptInvite_WrongUser(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	_ = registerSecondUser(t, router, token1)
+	token3 := registerNamedUser(t, router, token1, "player3")
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Wrong User Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Wrong User Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Invite player2
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var inviteResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &inviteResp)
+	inviteID := inviteResp["id"].(string)
+
+	// Player3 tries to accept player2's invite
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/user/shared-session-invites/"+inviteID+"/accept", nil)
+	req.Header.Set("Authorization", "Bearer "+token3)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSharedSession_DeclineInvite(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Decline Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Decline Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Invite
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Get invite
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/shared-session-invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var invites []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &invites)
+	inviteID := invites[0]["id"].(string)
+
+	// Decline
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/user/shared-session-invites/"+inviteID+"/decline", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify invite list is now empty
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/shared-session-invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &invites)
+	assert.Len(t, invites, 0)
+}
+
+func TestSharedSession_LeaveSharedSession_MemberCanLeave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Leave Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Leave Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Player2 leaves
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/leave", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Player2 can no longer see the shared session
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var sessions []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &sessions)
+	assert.Len(t, sessions, 0)
+}
+
+func TestSharedSession_LeaveSharedSession_OwnerCannotLeave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Owner Leave Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Owner Leave Session")
+	sharedSessionID := ss["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/leave", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSharedSession_RemoveMember_OwnerCanRemove(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Remove Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Remove Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Get player2's user ID
+	var player2 db.User
+	database.Where("username = ?", "player2").First(&player2)
+	player2ID := fmt.Sprintf("%d", player2.ID)
+
+	// Owner removes player2
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID+"/members/"+player2ID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify member count
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(1), resp["memberCount"])
+}
+
+func TestSharedSession_RemoveMember_MemberCannotRemoveOthers(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Remove Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Remove Auth Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Get owner's user ID
+	var owner db.User
+	database.Where("username = ?", "apitest").First(&owner)
+	ownerID := fmt.Sprintf("%d", owner.ID)
+
+	// Player2 tries to remove owner
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID+"/members/"+ownerID, nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+// --- Turn control tests ---
+
+func TestSharedSession_TakeTurn_Success(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Turn Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Turn Session")
+	sharedSessionID := ss["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/take-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.NotEmpty(t, resp["turnToken"])
+	assert.NotNil(t, resp["turnTakenAt"])
+}
+
+func TestSharedSession_TakeTurn_Conflict(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Conflict Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Conflict Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// User1 takes turn
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	// User2 tries to take turn - should fail
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/take-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusConflict, w.Code)
+}
+
+func TestSharedSession_TakeTurn_StaleTurnExpired(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Stale Turn Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Stale Turn Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// User1 takes turn
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	// Manually make the turn stale by updating the timestamp in the DB
+	var user1 db.User
+	database.Where("username = ?", "apitest").First(&user1)
+	staleTime := time.Now().Add(-SharedSessionTurnTimeout - time.Minute)
+	database.Model(&db.SharedSession{}).Where("id = ?", sharedSessionID).Update("turn_taken_at", staleTime)
+
+	// User2 should now be able to take the turn
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/take-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.NotEmpty(t, resp["turnToken"])
+}
+
+func TestSharedSession_ReleaseTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Release Turn Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Release Turn Session")
+	sharedSessionID := ss["id"].(string)
+
+	takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Release
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/release-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify shared session no longer has active user
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Nil(t, resp["activeUserId"])
+}
+
+func TestSharedSession_ReleaseTurn_NonHolderFails(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Release Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Release Auth Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	// User2 tries to release user1's turn
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/release-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSharedSession_Heartbeat(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Heartbeat Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Heartbeat Session")
+	sharedSessionID := ss["id"].(string)
+
+	takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Small delay to ensure timestamp changes
+	time.Sleep(10 * time.Millisecond)
+
+	// Heartbeat
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/heartbeat", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, sharedSessionID, resp["sharedSessionId"])
+	assert.NotNil(t, resp["turnTakenAt"])
+}
+
+func TestSharedSession_Heartbeat_NonHolderFails(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Heartbeat Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Heartbeat Auth Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/heartbeat", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSharedSession_TakeTurn_InactiveSessionFails(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Inactive Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Inactive Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Set shared session to completed
+	body, _ := json.Marshal(map[string]string{"status": "completed"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/shared-sessions/"+sharedSessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Try to take turn
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/take-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// --- Save tests ---
+
+func TestSharedSession_UploadSave_RequiresActiveTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Save Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Save Auth Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Try to upload without holding the turn
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "test.sav")
+	part.Write([]byte("save data"))
+	writer.WriteField("name", "My Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSharedSession_UploadSave_InvalidTurnToken(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Token Auth Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Token Auth Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Take the turn
+	takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Upload with wrong turn token
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "test.sav")
+	part.Write([]byte("save data"))
+	writer.WriteField("name", "My Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", "wrong-token")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestSharedSession_UploadAndListSaves(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Upload Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Upload Save Session")
+	sharedSessionID := ss["id"].(string)
+
+	turnToken := takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Upload save
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "mysave.sav")
+	part.Write([]byte("shared session save data"))
+	writer.WriteField("name", "Boss Fight Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	assert.Equal(t, "Boss Fight Save", saveResp["name"])
+	assert.Equal(t, float64(24), saveResp["fileSize"])
+	assert.Equal(t, false, saveResp["isAuto"])
+	assert.Equal(t, "apitest", saveResp["username"])
+
+	// List saves
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var saves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saves)
+	assert.Len(t, saves, 1)
+	assert.Equal(t, "Boss Fight Save", saves[0]["name"])
+}
+
+func TestSharedSession_DownloadSave_MemberCanDownload(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Download Session Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Download Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// User1 takes turn and uploads save
+	turnToken := takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "shared.sav")
+	part.Write([]byte("shared save data"))
+	writer.WriteField("name", "Shared Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	saveID := saveResp["id"].(string)
+
+	// User2 (member) downloads
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves/"+saveID, nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "shared save data", w.Body.String())
+}
+
+func TestSharedSession_AutoSave_Upsert(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Auto Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "Auto Save Session")
+	sharedSessionID := ss["id"].(string)
+
+	turnToken := takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// First auto-save (creates)
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "auto.sav")
+	part.Write([]byte("auto save v1"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, true, resp["isAuto"])
+	assert.Equal(t, "Auto Save", resp["name"])
+	firstSaveID := resp["id"].(string)
+
+	// Second auto-save (upserts)
+	buf.Reset()
+	writer = multipart.NewWriter(&buf)
+	part, _ = writer.CreateFormFile("save", "auto.sav")
+	part.Write([]byte("auto save v2 - longer"))
+	writer.Close()
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, firstSaveID, resp["id"], "should update same record, not create new")
+	assert.Equal(t, float64(len("auto save v2 - longer")), resp["fileSize"])
+
+	// Get auto-save
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "auto save v2 - longer", w.Body.String())
+}
+
+func TestSharedSession_GetAutoSave_NotFound(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "No Auto Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token, gameID, "No Auto Save Session")
+	sharedSessionID := ss["id"].(string)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestSharedSession_DeleteSave_OwnerOnly(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Delete Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Delete Save Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Upload save
+	turnToken := takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, _ := writer.CreateFormFile("save", "deleteme.sav")
+	part.Write([]byte("delete me"))
+	writer.WriteField("name", "Delete Me")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var saveResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saveResp)
+	saveID := saveResp["id"].(string)
+
+	// Player2 (member, not owner) tries to delete - should fail
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID+"/saves/"+saveID, nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// Owner deletes - should succeed
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID+"/saves/"+saveID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify save is gone
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var saves []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &saves)
+	assert.Len(t, saves, 0)
+}
+
+func TestSharedSession_Saves_NonMemberCannotAccess(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "NonMember Save Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "NonMember Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Non-member tries to list saves
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// Non-member tries to get auto-save
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+// --- Activity event tests ---
+
+func TestSharedSession_Create_CreatesActivityEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Activity Session Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	createSharedSession(t, router, token, gameID, "Activity Session")
+
+	// Check activity feed
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var feedResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &feedResp)
+	data := feedResp["data"].([]interface{})
+
+	found := false
+	for _, item := range data {
+		event := item.(map[string]interface{})
+		if event["eventType"] == "created_shared_session" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "should have a created_shared_session activity event")
+}
+
+// --- Tests for code review bug fixes ---
+
+func TestSharedSession_LeaveSharedSession_ReleasesTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Leave Turn Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Leave Turn Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Player2 takes the turn
+	takeSharedSessionTurn(t, router, token2, sharedSessionID)
+
+	// Verify turn is held
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var detail map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &detail)
+	assert.NotNil(t, detail["activeUserId"], "turn should be held before leaving")
+
+	// Player2 leaves while holding the turn
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/leave", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify the turn was released
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &detail)
+	assert.Nil(t, detail["activeUserId"], "turn should be released after member leaves")
+
+	// Owner can now take the turn (not deadlocked)
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+}
+
+func TestSharedSession_ReInviteAfterDecline(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Re-invite Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Re-invite Session")
+	sharedSessionID := ss["id"].(string)
+
+	// Invite player2
+	body, _ := json.Marshal(map[string]string{"username": "player2"})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Player2 gets and declines the invite
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/shared-session-invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var invites []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &invites)
+	require.Len(t, invites, 1)
+	inviteID := invites[0]["id"].(string)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/user/shared-session-invites/"+inviteID+"/decline", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Re-invite player2 — should succeed (not blocked by declined invite)
+	body, _ = json.Marshal(map[string]string{"username": "player2"})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/invites", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Player2 can now accept the new invite
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/shared-session-invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token2)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	json.Unmarshal(w.Body.Bytes(), &invites)
+	assert.Len(t, invites, 1)
+	assert.Equal(t, "pending", invites[0]["status"])
+}
+
+func TestSharedSession_RemoveMember_ReleasesTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Remove Turn Game", FileName: "test.nes", FilePath: "/tmp/test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	ss := createSharedSession(t, router, token1, gameID, "Remove Turn Session")
+	sharedSessionID := ss["id"].(string)
+
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Player2 takes the turn
+	takeSharedSessionTurn(t, router, token2, sharedSessionID)
+
+	// Get player2's user ID
+	var player2 db.User
+	database.Where("username = ?", "player2").First(&player2)
+	player2ID := fmt.Sprintf("%d", player2.ID)
+
+	// Owner removes player2 who holds the turn
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/shared-sessions/"+sharedSessionID+"/members/"+player2ID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify the turn was released
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var detail map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &detail)
+	assert.Nil(t, detail["activeUserId"], "turn should be released after member is removed")
+
+	// Owner can take the turn (not deadlocked)
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+}
+
+// --- SharedSession-Session integration tests ---
+
+func TestSharedSession_Create_CreatesSession(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Session Test Game", FileName: "test.nes", FilePath: "/tmp/session-shared.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Session Test")
+
+	// Response should include a sessionId
+	assert.NotNil(t, resp["sessionId"], "shared session response should include sessionId")
+	sessionID := resp["sessionId"].(string)
+	assert.NotEmpty(t, sessionID)
+
+	// Verify the GameSession was actually created in the database
+	var session db.GameSession
+	err := database.First(&session, sessionID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "Shared Session: Session Test", session.Name)
+	assert.Equal(t, game.ID, session.GameID)
+
+	// Verify the shared session's SessionID is set in the database
+	sharedSessionID := resp["id"].(string)
+	var ssModel db.SharedSession
+	database.First(&ssModel, sharedSessionID)
+	require.NotNil(t, ssModel.SessionID)
+	assert.Equal(t, session.ID, *ssModel.SessionID)
+}
+
+func TestSharedSession_SaveUpload_CreatesSessionSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "SessionSave Game", FileName: "test.nes", FilePath: "/tmp/session-save.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Save Session")
+	sharedSessionID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Take the turn
+	turnToken := takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Upload a manual save
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "manual.sav")
+	part.Write([]byte("save-data"))
+	writer.WriteField("name", "Manual Save")
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves", &body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Verify a SessionSaveState was also created
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ?", sessionID).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1, "should have one session save state")
+	assert.Equal(t, "Manual Save", sessionSaves[0].Name)
+	assert.False(t, sessionSaves[0].IsAuto)
+}
+
+func TestSharedSession_AutoSaveUpload_CreatesSessionSave(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "AutoSave Session Game", FileName: "test.nes", FilePath: "/tmp/autosave-session.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "AutoSave Session")
+	sharedSessionID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Take the turn
+	turnToken := takeSharedSessionTurn(t, router, token, sharedSessionID)
+
+	// Upload auto save
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "auto.sav")
+	part.Write([]byte("auto-save-data"))
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/saves/auto", &body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Turn-Token", turnToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Verify a SessionSaveState was also created (auto)
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ? AND is_auto = ?", sessionID, true).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1, "should have one auto session save state")
+	assert.Equal(t, "Auto Save", sessionSaves[0].Name)
+	assert.True(t, sessionSaves[0].IsAuto)
+}
+
+func TestSharedSession_MigrateSharedSessions(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	_ = NewRouter(*cfg)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Migration Game", FileName: "test.nes", FilePath: "/tmp/migrate.nes", FileSize: 100}
+	database.Create(&game)
+
+	// Manually create a shared session without a session (simulating pre-migration data)
+	ssModel := db.SharedSession{
+		OwnerID: 1,
+		GameID:  game.ID,
+		Name:    "Old Session",
+		Status:  "active",
+	}
+	database.Create(&ssModel)
+	assert.Nil(t, ssModel.SessionID)
+
+	// Create a shared session save
+	ssSave := db.SharedSessionSave{
+		SharedSessionID:  ssModel.ID,
+		UserID:   1,
+		Name:     "Old Save",
+		FilePath: "/tmp/old-save.sav",
+		FileSize: 100,
+		IsAuto:   false,
+	}
+	database.Create(&ssSave)
+
+	// Run migration
+	err := db.MigrateSharedSessions(database)
+	require.NoError(t, err)
+
+	// Reload shared session
+	database.First(&ssModel, ssModel.ID)
+	require.NotNil(t, ssModel.SessionID, "shared session should now have a session ID")
+
+	// Verify session was created
+	var session db.GameSession
+	err = database.First(&session, *ssModel.SessionID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "Shared Session: Old Session", session.Name)
+	assert.Equal(t, game.ID, session.GameID)
+	assert.Equal(t, ssModel.OwnerID, session.OwnerID)
+
+	// Verify shared session saves were copied to session saves
+	var sessionSaves []db.SessionSaveState
+	database.Where("session_id = ?", session.ID).Find(&sessionSaves)
+	assert.Len(t, sessionSaves, 1)
+	assert.Equal(t, "Old Save", sessionSaves[0].Name)
+	assert.Equal(t, ssSave.FilePath, sessionSaves[0].FilePath)
+
+	// Run migration again — should be idempotent
+	err = db.MigrateSharedSessions(database)
+	require.NoError(t, err)
+}
+
+func TestSharedSession_SessionTurnValidation_CannotUploadWithoutTurn(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token1 := registerAndGetToken(t, router)
+	token2 := registerSecondUser(t, router, token1)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "TurnVal Game", FileName: "test.nes", FilePath: "/tmp/turnval.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token1, gameID, "Turn Validation Session")
+	sharedSessionID := resp["id"].(string)
+	sessionID := resp["sessionId"].(string)
+
+	// Invite and accept player2
+	inviteAndAcceptSharedSession(t, router, token1, token2, sharedSessionID, "player2")
+
+	// Player1 takes the turn
+	takeSharedSessionTurn(t, router, token1, sharedSessionID)
+
+	// Player2 (who does NOT hold the turn) tries to upload a session save
+	// They're the session owner? No — the session owner is player1 (shared session creator).
+	// Player2 doesn't own the session, so they'll get 403 from ownership check.
+	// Instead, let's test that the shared session creator (player1) who owns the session
+	// cannot upload via the session endpoint when they DON'T hold the turn.
+
+	// First release the turn so nobody holds it
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/shared-sessions/"+sharedSessionID+"/release-turn", nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Now player2 takes the turn
+	takeSharedSessionTurn(t, router, token2, sharedSessionID)
+
+	// Player1 (session owner but NOT turn holder) tries to upload via session endpoint
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, _ := writer.CreateFormFile("save", "sneaky.sav")
+	part.Write([]byte("sneaky-data"))
+	writer.WriteField("name", "Sneaky Save")
+	writer.Close()
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &body)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code, "session owner should be blocked when shared session turn is held by another user")
+}
+
+// --- Core Name Tests ---
+
+func TestSharedSession_Create_IncludesCoreName(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game on NES (DefaultCore = "nestopia")
+	var console db.Console
+	database.Where("abbreviation = ?", "NES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "NES Game", FileName: "test.nes", FilePath: "/tmp/core_test.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Core Test Session")
+
+	assert.Equal(t, "nestopia", resp["coreName"], "shared session should include the recommended core name")
+}
+
+func TestSharedSession_Create_UsesGameCoreOverride(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game on NES with a core override
+	var console db.Console
+	database.Where("abbreviation = ?", "NES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Override NES Game", FileName: "override.nes", FilePath: "/tmp/override_test.nes", FileSize: 100, CoreOverride: "fceux"}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	resp := createSharedSession(t, router, token, gameID, "Override Core Session")
+
+	assert.Equal(t, "fceux", resp["coreName"], "shared session should use the game's core override")
+}
+
+func TestSharedSession_GetDetail_IncludesCoreName(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	var console db.Console
+	database.Where("abbreviation = ?", "SNES").First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "SNES Game", FileName: "test.sfc", FilePath: "/tmp/snes_core.sfc", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	created := createSharedSession(t, router, token, gameID, "SNES Session")
+	sharedSessionID := created["id"].(string)
+
+	// GET detail
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/shared-sessions/"+sharedSessionID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var detail map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &detail)
+	assert.Equal(t, "snes9x", detail["coreName"])
+}

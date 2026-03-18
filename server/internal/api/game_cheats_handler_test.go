@@ -16,7 +16,8 @@ import (
 func TestGetGameCheats_Empty(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var nes db.Console
@@ -38,7 +39,8 @@ func TestGetGameCheats_Empty(t *testing.T) {
 func TestGetGameCheats_WithCheats(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var nes db.Console
@@ -69,7 +71,8 @@ func TestGetGameCheats_WithCheats(t *testing.T) {
 func TestGetGameCheats_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()

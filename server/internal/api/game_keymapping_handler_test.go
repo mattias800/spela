@@ -15,7 +15,8 @@ import (
 
 func TestGetGameKeyMapping_NotFound(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game to reference
@@ -31,7 +32,8 @@ func TestGetGameKeyMapping_NotFound(t *testing.T) {
 
 func TestUpdateGameKeyMapping_CreateNew(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -61,7 +63,8 @@ func TestUpdateGameKeyMapping_CreateNew(t *testing.T) {
 
 func TestUpdateGameKeyMapping_UpdateExisting(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -100,7 +103,8 @@ func TestUpdateGameKeyMapping_UpdateExisting(t *testing.T) {
 
 func TestGetGameKeyMapping_AfterCreate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -135,7 +139,8 @@ func TestGetGameKeyMapping_AfterCreate(t *testing.T) {
 
 func TestDeleteGameKeyMapping_Success(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -169,7 +174,8 @@ func TestDeleteGameKeyMapping_Success(t *testing.T) {
 
 func TestDeleteGameKeyMapping_NotFound(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -186,7 +192,8 @@ func TestDeleteGameKeyMapping_NotFound(t *testing.T) {
 
 func TestUpdateGameKeyMapping_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	mapping := map[string]string{"0": "96"}
@@ -201,7 +208,8 @@ func TestUpdateGameKeyMapping_GameNotFound(t *testing.T) {
 
 func TestUpdateGameKeyMapping_MissingCustomMapping(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -220,7 +228,8 @@ func TestUpdateGameKeyMapping_MissingCustomMapping(t *testing.T) {
 
 func TestUpdateGameKeyMapping_UpsertAfterDelete(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -270,7 +279,8 @@ func TestUpdateGameKeyMapping_UpsertAfterDelete(t *testing.T) {
 
 func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register first user (becomes owner)
 	token1 := registerAndGetToken(t, router)
@@ -324,7 +334,8 @@ func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
 
 func TestUpdateGameKeyMapping_NoAuth(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	body, _ := json.Marshal(map[string]interface{}{
 		"customMapping": map[string]string{"0": "96"},

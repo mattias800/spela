@@ -15,7 +15,8 @@ import (
 
 func TestCreateCollection(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
@@ -43,7 +44,8 @@ func TestCreateCollection(t *testing.T) {
 
 func TestCreateCollection_MissingName(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
@@ -59,7 +61,8 @@ func TestCreateCollection_MissingName(t *testing.T) {
 
 func TestCreateCollection_CreatesActivityEvent(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
@@ -96,7 +99,8 @@ func TestCreateCollection_CreatesActivityEvent(t *testing.T) {
 
 func TestListMyCollections(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create two collections
@@ -128,7 +132,8 @@ func TestListMyCollections(t *testing.T) {
 
 func TestListMyCollections_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -146,7 +151,8 @@ func TestListMyCollections_Empty(t *testing.T) {
 
 func TestListPublicCollections(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create one public and one private collection
@@ -186,7 +192,8 @@ func TestListPublicCollections(t *testing.T) {
 
 func TestGetCollection(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game
@@ -235,7 +242,8 @@ func TestGetCollection(t *testing.T) {
 
 func TestGetCollection_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -247,7 +255,8 @@ func TestGetCollection_NotFound(t *testing.T) {
 
 func TestGetCollection_PrivateNotAccessibleByOthers(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a private collection
@@ -276,7 +285,8 @@ func TestGetCollection_PrivateNotAccessibleByOthers(t *testing.T) {
 
 func TestGetCollection_PublicAccessibleByOthers(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a public collection
@@ -309,7 +319,8 @@ func TestGetCollection_PublicAccessibleByOthers(t *testing.T) {
 
 func TestUpdateCollection(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create collection
@@ -347,7 +358,8 @@ func TestUpdateCollection(t *testing.T) {
 
 func TestUpdateCollection_NotOwner(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create collection
@@ -378,7 +390,8 @@ func TestUpdateCollection_NotOwner(t *testing.T) {
 
 func TestDeleteCollection(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game and collection with it
@@ -430,7 +443,8 @@ func TestDeleteCollection(t *testing.T) {
 
 func TestDeleteCollection_NotOwner(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"name": "Protected"})
@@ -458,7 +472,8 @@ func TestDeleteCollection_NotOwner(t *testing.T) {
 
 func TestAddGame(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -495,7 +510,8 @@ func TestAddGame(t *testing.T) {
 
 func TestAddGame_Duplicate(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -536,7 +552,8 @@ func TestAddGame_Duplicate(t *testing.T) {
 
 func TestAddGame_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"name": "Empty Col"})
@@ -562,7 +579,8 @@ func TestAddGame_GameNotFound(t *testing.T) {
 
 func TestAddGame_NotOwner(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -597,7 +615,8 @@ func TestAddGame_NotOwner(t *testing.T) {
 
 func TestRemoveGame(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -650,7 +669,8 @@ func TestRemoveGame(t *testing.T) {
 
 func TestRemoveGame_NotInCollection(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"name": "Empty For Remove"})
@@ -674,7 +694,8 @@ func TestRemoveGame_NotInCollection(t *testing.T) {
 
 func TestAddMultipleGames_PositionOrder(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console

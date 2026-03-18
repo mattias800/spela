@@ -1,0 +1,111 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestActivityFeed_RatingMetadataIsParsedObject(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Create a game
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Rated Game", FileName: "rated.nes", FilePath: "/tmp/rated.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Rate the game (which creates an activity event with metadata)
+	ratingBody, _ := json.Marshal(map[string]interface{}{"rating": 5})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/ratings", bytes.NewReader(ratingBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code, "rating request failed: %s", w.Body.String())
+
+	// Fetch the activity feed
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var feedResp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &feedResp)
+	require.NoError(t, err)
+	data := feedResp["data"].([]interface{})
+
+	// Find the rated_game event
+	var ratedEvent map[string]interface{}
+	for _, item := range data {
+		event := item.(map[string]interface{})
+		if event["eventType"] == "rated_game" {
+			ratedEvent = event
+			break
+		}
+	}
+	require.NotNil(t, ratedEvent, "should have a rated_game activity event")
+
+	// The metadata must be a parsed JSON object, not a string
+	metadata, ok := ratedEvent["metadata"].(map[string]interface{})
+	require.True(t, ok, "metadata should be a JSON object, got %T: %v", ratedEvent["metadata"], ratedEvent["metadata"])
+
+	// Verify the rating value is correct
+	assert.Equal(t, float64(5), metadata["rating"], "metadata.rating should be 5")
+}
+
+func TestActivityFeed_EmptyMetadataOmitted(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	token := registerAndGetToken(t, router)
+
+	// Create a game and favorite it (creates event without metadata)
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Fav Game", FileName: "fav.nes", FilePath: "/tmp/fav.nes", FileSize: 100}
+	database.Create(&game)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/favorites/"+gameID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	// Fetch activity feed
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/social/activity", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var feedResp map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &feedResp)
+	require.NoError(t, err)
+	data := feedResp["data"].([]interface{})
+
+	var favEvent map[string]interface{}
+	for _, item := range data {
+		event := item.(map[string]interface{})
+		if event["eventType"] == "favorited_game" {
+			favEvent = event
+			break
+		}
+	}
+	require.NotNil(t, favEvent, "should have a favorited_game activity event")
+
+	// Metadata should be nil/absent (omitempty) for events without metadata
+	assert.Nil(t, favEvent["metadata"], "metadata should be nil for events without metadata")
+}

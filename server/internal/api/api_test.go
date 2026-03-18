@@ -99,6 +99,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 
 	hub := ws.NewHub(nil)
 	go hub.Run()
+	t.Cleanup(hub.Close)
 
 	cfg := &Config{
 		DB:        database,
@@ -116,7 +117,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 
 func TestRegisterAndLogin(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register
 	body, _ := json.Marshal(map[string]string{
@@ -159,7 +161,8 @@ func TestRegisterAndLogin(t *testing.T) {
 
 func TestRegister_DuplicateUsername(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	body, _ := json.Marshal(map[string]string{
 		"username": "dupeuser",
@@ -189,7 +192,8 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 
 func TestLogin_InvalidCredentials(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	body, _ := json.Marshal(map[string]string{
 		"username": "nonexistent",
@@ -204,7 +208,8 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 
 func TestRefreshToken(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register to get tokens
 	body, _ := json.Marshal(map[string]string{
@@ -241,7 +246,8 @@ func TestRefreshToken(t *testing.T) {
 
 func TestProtectedEndpoint_NoAuth(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/consoles", nil)
@@ -271,7 +277,8 @@ func seedGameForEachConsole(t *testing.T, database *gorm.DB) {
 func TestListConsoles(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	seedGameForEachConsole(t, database)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -298,7 +305,8 @@ func TestListConsoles(t *testing.T) {
 
 func TestListGames_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -318,7 +326,8 @@ func TestListGames_Empty(t *testing.T) {
 
 func TestListGames_SQLInjectionOrder(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Attempt SQL injection via order parameter
@@ -339,7 +348,8 @@ func TestListGames_SQLInjectionOrder(t *testing.T) {
 
 func TestGetGame_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -351,7 +361,8 @@ func TestGetGame_NotFound(t *testing.T) {
 
 func TestUserProfile(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -367,7 +378,8 @@ func TestUserProfile(t *testing.T) {
 
 func TestUpdateProfile(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{
@@ -388,7 +400,8 @@ func TestUpdateProfile(t *testing.T) {
 
 func TestUpdateProfile_EmailChangeRequiresPassword(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Try to change email without password
@@ -417,7 +430,8 @@ func TestUpdateProfile_EmailChangeRequiresPassword(t *testing.T) {
 
 func TestUpdateProfile_AvatarWithoutPassword(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Updating avatar should NOT require password
@@ -434,7 +448,8 @@ func TestUpdateProfile_AvatarWithoutPassword(t *testing.T) {
 
 func TestAdminEndpoint_NonAdmin(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register first user as admin
 	ownerToken := registerAndGetToken(t, router)
@@ -457,7 +472,8 @@ func TestAdminEndpoint_NonAdmin(t *testing.T) {
 
 func TestAdminListUsers(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -473,7 +489,8 @@ func TestAdminListUsers(t *testing.T) {
 
 func TestFavorites(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -512,7 +529,8 @@ func TestFavorites(t *testing.T) {
 
 func TestListCores(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -525,7 +543,8 @@ func TestListCores(t *testing.T) {
 func TestHealthEndpoint(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	cfg.Version = "1.2.3"
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/health", nil)
@@ -541,7 +560,8 @@ func TestHealthEndpoint(t *testing.T) {
 
 func TestGetPreferences_Defaults(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -561,7 +581,8 @@ func TestGetPreferences_Defaults(t *testing.T) {
 
 func TestUpdatePreferences(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Update all preferences
@@ -601,7 +622,8 @@ func TestUpdatePreferences(t *testing.T) {
 
 func TestUpdatePreferences_PartialUpdate(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Only update one field
@@ -626,7 +648,8 @@ func TestUpdatePreferences_PartialUpdate(t *testing.T) {
 
 func TestUpdatePreferences_ShaderSelection(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Set shader
@@ -676,7 +699,8 @@ func TestUpdatePreferences_ShaderSelection(t *testing.T) {
 
 func TestGetPreferences_IncludesConsoleShaders(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -695,7 +719,8 @@ func TestGetPreferences_IncludesConsoleShaders(t *testing.T) {
 
 func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{
@@ -727,7 +752,8 @@ func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 
 func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// First set a console shader
@@ -761,7 +787,8 @@ func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 
 func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Set a per-console shader
@@ -802,7 +829,8 @@ func TestUpdatePreferences_ConsoleShaderIndependentOfGlobal(t *testing.T) {
 
 func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Set a per-console shader
@@ -837,7 +865,8 @@ func TestUpdatePreferences_PartialUpdate_PreservesConsoleShaders(t *testing.T) {
 func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	seedGameForEachConsole(t, database)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -891,7 +920,8 @@ func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
 
 func TestUpdatePlayTime(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -935,7 +965,8 @@ func TestUpdatePlayTime(t *testing.T) {
 
 func TestUpdatePlayTime_InvalidInput(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -969,7 +1000,8 @@ func TestUpdatePlayTime_InvalidInput(t *testing.T) {
 
 func TestUpdatePlayTime_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"seconds": 60})
@@ -983,7 +1015,8 @@ func TestUpdatePlayTime_GameNotFound(t *testing.T) {
 
 func TestGetPreferences_DefaultTheme(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -1000,7 +1033,8 @@ func TestGetPreferences_DefaultTheme(t *testing.T) {
 
 func TestUpdatePreferences_ThemeSelection(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Set theme
@@ -1046,7 +1080,8 @@ func TestUpdatePreferences_ThemeSelection(t *testing.T) {
 
 func TestGetPreferences_DefaultSecondScreenPage(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -1063,7 +1098,8 @@ func TestGetPreferences_DefaultSecondScreenPage(t *testing.T) {
 
 func TestUpdatePreferences_DefaultSecondScreenPage(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Test each valid value
@@ -1096,7 +1132,8 @@ func TestUpdatePreferences_DefaultSecondScreenPage(t *testing.T) {
 
 func TestUpdatePreferences_DefaultSecondScreenPage_InvalidValue(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	for _, value := range []string{"invalid", "ART", "Controls", "", "game_info"} {
@@ -1125,7 +1162,8 @@ func TestUpdatePreferences_DefaultSecondScreenPage_InvalidValue(t *testing.T) {
 
 func TestGetOnlineUsers_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -1143,7 +1181,8 @@ func TestGetOnlineUsers_Empty(t *testing.T) {
 
 func TestGetPublicProfile(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Get the user ID
@@ -1197,7 +1236,8 @@ func TestGetPublicProfile(t *testing.T) {
 
 func TestGetPublicProfile_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -1209,7 +1249,8 @@ func TestGetPublicProfile_NotFound(t *testing.T) {
 
 func TestGetPublicProfile_EmptyStats(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register a second user with no activity
@@ -1247,7 +1288,8 @@ func TestGetPublicProfile_EmptyStats(t *testing.T) {
 
 func TestGetActivityFeed_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -1268,7 +1310,8 @@ func TestGetActivityFeed_Empty(t *testing.T) {
 
 func TestGetActivityFeed_AfterPlayTime(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -1311,7 +1354,8 @@ func TestGetActivityFeed_AfterPlayTime(t *testing.T) {
 
 func TestGetActivityFeed_AfterFavorite(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -1348,7 +1392,8 @@ func TestGetActivityFeed_AfterFavorite(t *testing.T) {
 
 func TestGetActivityFeed_Pagination(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -1436,7 +1481,8 @@ func TestOnlineUserTracking(t *testing.T) {
 
 func TestCreateRating(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a test game
@@ -1466,7 +1512,8 @@ func TestCreateRating(t *testing.T) {
 
 func TestUpdateRating(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1501,7 +1548,8 @@ func TestUpdateRating(t *testing.T) {
 
 func TestCreateRating_InvalidInput(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1536,7 +1584,8 @@ func TestCreateRating_InvalidInput(t *testing.T) {
 
 func TestCreateRating_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]interface{}{"rating": 4})
@@ -1550,7 +1599,8 @@ func TestCreateRating_GameNotFound(t *testing.T) {
 
 func TestGetRatings(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1589,7 +1639,8 @@ func TestGetRatings(t *testing.T) {
 
 func TestGetRatingSummary(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1633,7 +1684,8 @@ func TestGetRatingSummary(t *testing.T) {
 
 func TestGetMyRating(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1672,7 +1724,8 @@ func TestGetMyRating(t *testing.T) {
 
 func TestDeleteRating(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1707,7 +1760,8 @@ func TestDeleteRating(t *testing.T) {
 
 func TestDeleteRating_NotFound(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1725,7 +1779,8 @@ func TestDeleteRating_NotFound(t *testing.T) {
 
 func TestGameResponse_IncludesRatingData(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1759,7 +1814,8 @@ func TestGameResponse_IncludesRatingData(t *testing.T) {
 
 func TestRating_CreatesActivityEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1804,7 +1860,8 @@ func TestRating_CreatesActivityEvent(t *testing.T) {
 
 func TestShareSave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1841,7 +1898,8 @@ func TestShareSave(t *testing.T) {
 
 func TestShareSave_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var buf bytes.Buffer
@@ -1860,7 +1918,8 @@ func TestShareSave_GameNotFound(t *testing.T) {
 
 func TestShareSave_NoFile(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1878,7 +1937,8 @@ func TestShareSave_NoFile(t *testing.T) {
 
 func TestListSharedSaves(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1922,7 +1982,8 @@ func TestListSharedSaves(t *testing.T) {
 
 func TestListSharedSaves_Empty(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1946,7 +2007,8 @@ func TestListSharedSaves_Empty(t *testing.T) {
 
 func TestDownloadSharedSave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -1990,7 +2052,8 @@ func TestDownloadSharedSave(t *testing.T) {
 
 func TestDeleteSharedSave(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -2040,7 +2103,8 @@ func TestDeleteSharedSave(t *testing.T) {
 
 func TestDeleteSharedSave_NotOwner(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router) // owner user
 
 	var console db.Console
@@ -2081,7 +2145,8 @@ func TestDeleteSharedSave_NotOwner(t *testing.T) {
 
 func TestShareSave_CreatesActivityEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -2130,7 +2195,8 @@ func TestShareSave_CreatesActivityEvent(t *testing.T) {
 
 func TestSearchUsers(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register additional users
@@ -2217,7 +2283,8 @@ func TestSearchUsers(t *testing.T) {
 
 func TestGetPendingInviteCount(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Register a second user
@@ -2279,7 +2346,8 @@ func TestGetPendingInviteCount(t *testing.T) {
 
 func TestUpdateVerificationTag_AdminSuccess(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	// First user is owner (admin)
 	token := registerAndGetToken(t, router)
 
@@ -2309,7 +2377,8 @@ func TestUpdateVerificationTag_AdminSuccess(t *testing.T) {
 
 func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	// Register first user as owner
 	ownerToken := registerAndGetToken(t, router)
 
@@ -2333,7 +2402,8 @@ func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
 
 func TestUpdateVerificationTag_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	body, _ := json.Marshal(map[string]string{"tag": "test"})
@@ -2347,7 +2417,8 @@ func TestUpdateVerificationTag_GameNotFound(t *testing.T) {
 
 func TestGameResponse_IncludesVerificationFields(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -2377,7 +2448,8 @@ func TestGameResponse_IncludesVerificationFields(t *testing.T) {
 
 func TestScrapeStatus_Idle(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -2396,7 +2468,8 @@ func TestScrapeStatus_Idle(t *testing.T) {
 
 func TestScrapeStatus_NonAdmin(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Register first user as admin (owner)
 	ownerToken := registerAndGetToken(t, router)
@@ -2440,7 +2513,8 @@ func registerAndGetToken(t *testing.T, router http.Handler) string {
 // returns a tar archive containing both the .cue and .bin files.
 func TestDownloadGame_CueBinServeTar(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create .cue + .bin files in the game directory
@@ -2493,7 +2567,8 @@ func TestDownloadGame_CueBinServeTar(t *testing.T) {
 // TestDownloadGame_CueBinServeZip verifies the zip format option for .cue downloads.
 func TestDownloadGame_CueBinServeZip(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
@@ -2543,7 +2618,8 @@ func TestDownloadGame_CueBinServeZip(t *testing.T) {
 // returns a tar archive containing the .gdi and all track files.
 func TestDownloadGame_GdiBinServeTar(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create .gdi + track files in the game directory

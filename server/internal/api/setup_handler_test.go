@@ -29,7 +29,8 @@ func createSetupTestUser(t *testing.T, database *gorm.DB, role string) string {
 
 func TestDiagnostics_PublicWhenNoUsers(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/setup/diagnostics", nil)
@@ -59,7 +60,8 @@ func TestDiagnostics_PublicWhenNoUsers(t *testing.T) {
 
 func TestDiagnostics_RequiresAuthWhenUsersExist(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Create a user so setup is no longer needed
 	createSetupTestUser(t, database, "owner")
@@ -74,7 +76,8 @@ func TestDiagnostics_RequiresAuthWhenUsersExist(t *testing.T) {
 
 func TestDiagnostics_AdminCanAccess(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	token := createSetupTestUser(t, database, "owner")
 
@@ -93,7 +96,8 @@ func TestDiagnostics_AdminCanAccess(t *testing.T) {
 
 func TestDiagnostics_RegularUserForbidden(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Create an owner first (so users exist), then a regular user
 	createSetupTestUser(t, database, "owner")
@@ -118,7 +122,8 @@ func TestDiagnostics_RegularUserForbidden(t *testing.T) {
 
 func TestDiagnostics_InvalidTokenRejected(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	createSetupTestUser(t, database, "owner")
 
@@ -259,7 +264,8 @@ func TestDiagnostics_CheckIGDB_ConfiguredViaDB(t *testing.T) {
 
 func TestSetupStatus_IncludesGameCount(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Seed a console and some games
 	var console db.Console

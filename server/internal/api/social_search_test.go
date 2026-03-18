@@ -17,7 +17,8 @@ import (
 
 func TestSearchUsers_EmptyQuery_ReturnsAllUsers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router) // creates "apitest" user
 
 	// Create additional users
@@ -62,7 +63,8 @@ func TestSearchUsers_EmptyQuery_ReturnsAllUsers(t *testing.T) {
 
 func TestSearchUsers_WithQuery_MatchesByPrefix(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "alice", "alice@test.com", "password123")
@@ -95,7 +97,8 @@ func TestSearchUsers_WithQuery_MatchesByPrefix(t *testing.T) {
 
 func TestSearchUsers_Pagination(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	// Create 5 users
@@ -144,7 +147,8 @@ func TestSearchUsers_Pagination(t *testing.T) {
 
 func TestSearchUsers_PageSizeClampedTo50(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -161,7 +165,8 @@ func TestSearchUsers_PageSizeClampedTo50(t *testing.T) {
 
 func TestSearchUsers_ReturnsPaginatedResponse(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -183,7 +188,8 @@ func TestSearchUsers_ReturnsPaginatedResponse(t *testing.T) {
 
 func TestSearchUsers_ExcludesSelf(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	// Search for "apitest" (the owner's username)
@@ -203,7 +209,8 @@ func TestSearchUsers_ExcludesSelf(t *testing.T) {
 
 func TestRecentPartners_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -220,7 +227,8 @@ func TestRecentPartners_Empty(t *testing.T) {
 
 func TestRecentPartners_NetplayPartners(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	// Create users
@@ -281,7 +289,8 @@ func TestRecentPartners_NetplayPartners(t *testing.T) {
 
 func TestRecentPartners_SharedSessionPartners(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "carol", "carol@test.com", "password123")
@@ -332,7 +341,8 @@ func TestRecentPartners_SharedSessionPartners(t *testing.T) {
 
 func TestRecentPartners_ExcludesDisabledUsers(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "disabled_user", "disabled@test.com", "password123")
@@ -373,7 +383,8 @@ func TestRecentPartners_ExcludesDisabledUsers(t *testing.T) {
 
 func TestRecentPartners_ExcludesOldSessions(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "old_partner", "old@test.com", "password123")
@@ -416,7 +427,8 @@ func TestRecentPartners_ExcludesOldSessions(t *testing.T) {
 
 func TestRecentPartners_SortedByMostRecent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "first", "first@test.com", "password123")
@@ -478,7 +490,8 @@ func TestRecentPartners_SortedByMostRecent(t *testing.T) {
 
 func TestRecentPartners_NetplayWithoutClient_Excluded(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	var owner db.User
@@ -513,7 +526,8 @@ func TestRecentPartners_NetplayWithoutClient_Excluded(t *testing.T) {
 
 func TestRecentPartners_MaxTenResults(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	var owner db.User
@@ -557,7 +571,8 @@ func TestRecentPartners_MaxTenResults(t *testing.T) {
 
 func TestRecentPartners_CombinesNetplayAndSharedSessions(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
 	createNonOwnerUser(t, router, ownerToken, "netplay_friend", "nf@test.com", "password123")

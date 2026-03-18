@@ -15,7 +15,8 @@ import (
 
 func TestGetGameStats_GameNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -27,7 +28,8 @@ func TestGetGameStats_GameNotFound(t *testing.T) {
 
 func TestGetGameStats_NoPlayHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create a game with no play history
@@ -54,7 +56,8 @@ func TestGetGameStats_NoPlayHistory(t *testing.T) {
 
 func TestGetGameStats_WithPlayHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -99,7 +102,8 @@ func TestGetGameStats_WithPlayHistory(t *testing.T) {
 
 func TestMostPlayedGames_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -117,7 +121,8 @@ func TestMostPlayedGames_Empty(t *testing.T) {
 
 func TestMostPlayedGames_WithData(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -163,7 +168,8 @@ func TestMostPlayedGames_WithData(t *testing.T) {
 
 func TestMostActivePlayers_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -181,7 +187,8 @@ func TestMostActivePlayers_Empty(t *testing.T) {
 
 func TestMostActivePlayers_WithData(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -236,7 +243,8 @@ func TestMostActivePlayers_WithData(t *testing.T) {
 
 func TestGetUserStats_NoHistory(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -259,7 +267,8 @@ func TestGetUserStats_NoHistory(t *testing.T) {
 
 func TestGetUserStats_WithHistory(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var console db.Console
@@ -322,7 +331,8 @@ func TestRecordDailyPlayActivity_Upsert(t *testing.T) {
 
 func TestHeatmap_Empty(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -339,7 +349,8 @@ func TestHeatmap_Empty(t *testing.T) {
 
 func TestHeatmap_WithData(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var user db.User
@@ -371,7 +382,8 @@ func TestHeatmap_WithData(t *testing.T) {
 
 func TestHeatmap_PublicEndpoint(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	// Create another user with activity
@@ -396,7 +408,8 @@ func TestHeatmap_PublicEndpoint(t *testing.T) {
 
 func TestHeatmap_UserIsolation(t *testing.T) {
 	database, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	var user db.User
@@ -426,7 +439,8 @@ func TestHeatmap_UserIsolation(t *testing.T) {
 
 func TestHeatmap_PublicNotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()

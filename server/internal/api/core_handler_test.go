@@ -13,7 +13,8 @@ import (
 
 func TestListCores_AzaharHasDownloadURL(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()
@@ -41,7 +42,8 @@ func TestListCores_AzaharHasDownloadURL(t *testing.T) {
 
 func TestListCores_BuildbotCoresHaveNoDownloadURL(t *testing.T) {
 	_, cfg := setupTestEnv(t)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	token := registerAndGetToken(t, router)
 
 	w := httptest.NewRecorder()

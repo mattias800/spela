@@ -19,7 +19,8 @@ func TestResetEndpoint_NotRegisteredByDefault(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	cfg.TestMode = false
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
@@ -31,7 +32,8 @@ func TestResetEndpoint_RegisteredInTestMode(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	cfg.TestMode = true
 	cfg.NetplayHub = ws.NewNetplayHub(nil)
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
@@ -62,7 +64,8 @@ func TestResetEndpoint_DeletesExtraUsers(t *testing.T) {
 	database.Model(&db.User{}).Count(&countBefore)
 	assert.Equal(t, int64(4), countBefore)
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
 	router.ServeHTTP(w, req)
@@ -108,7 +111,8 @@ func TestResetEndpoint_ResetsUserPreferences(t *testing.T) {
 		Role:         "user",
 	})
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
 	router.ServeHTTP(w, req)
@@ -144,7 +148,8 @@ func TestResetEndpoint_ClearsTransientData(t *testing.T) {
 	database.Create(&db.ServerSetting{Key: "registration_enabled", Value: "false"})
 	database.Create(&db.LoginAttempt{Username: "admin", FailedCount: 3})
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
 	router.ServeHTTP(w, req)
@@ -178,7 +183,8 @@ func TestResetEndpoint_PreservesConsolesAndCores(t *testing.T) {
 	require.Greater(t, consolesBefore, int64(0))
 	require.Greater(t, coresBefore, int64(0))
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
 	router.ServeHTTP(w, req)
@@ -207,7 +213,8 @@ func TestResetEndpoint_PreservesGames(t *testing.T) {
 	database.Where("abbreviation = ?", "NES").First(&nes)
 	database.Create(&db.Game{ConsoleID: nes.ID, Title: "Test Game", FileName: "test.nes", FilePath: "nes/test.nes"})
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/test/reset", nil)
 	router.ServeHTTP(w, req)
@@ -227,7 +234,8 @@ func TestResetEndpoint_AdminCanLoginAfterReset(t *testing.T) {
 	adminHash, _ := auth.HashPassword("admin123")
 	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
 
-	router := NewRouter(*cfg)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
 
 	// Reset
 	w := httptest.NewRecorder()
