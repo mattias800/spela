@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { Gamepad2, Check } from "lucide-react";
 
-const STEPS = ["System Check", "Account", "IGDB", "Games", "Done"];
+const STEPS = ["System Check", "Account", "IGDB", "SteamGridDB", "Games", "Done"];
 
 interface WizardLayoutProps {
   currentStep: number;

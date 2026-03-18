@@ -5,6 +5,7 @@ import { WizardLayout } from "@/features/setup/components/wizard-layout";
 import { SystemCheckStep } from "@/features/setup/components/system-check-step";
 import { CreateAccountStep } from "@/features/setup/components/create-account-step";
 import { IgdbStep } from "@/features/setup/components/igdb-step";
+import { SteamGridDBStep } from "@/features/setup/components/steamgriddb-step";
 import { GameScanStep } from "@/features/setup/components/game-scan-step";
 import { CompleteStep } from "@/features/setup/components/complete-step";
 
@@ -36,6 +37,9 @@ export function SetupWizardPage() {
         />
       )}
       {currentStep === 3 && (
+        <SteamGridDBStep onSkip={nextStep} onSave={nextStep} />
+      )}
+      {currentStep === 4 && (
         <GameScanStep
           onSkip={nextStep}
           onComplete={() => {
@@ -44,7 +48,7 @@ export function SetupWizardPage() {
           }}
         />
       )}
-      {currentStep === 4 && (
+      {currentStep === 5 && (
         <CompleteStep
           igdbConfigured={igdbConfigured}
           gamesScanned={gamesScanned}
