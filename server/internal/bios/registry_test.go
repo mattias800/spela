@@ -98,7 +98,7 @@ func TestRepoFolder(t *testing.T) {
 		{"3do", "3DO Company/3DO"},
 		{"pcfx", "NEC/PC-FX"},
 		{"cv", ""},
-		{"ps2", ""},
+		{"ps2", "Sony/PlayStation 2"},
 		{"neogeo", ""},
 		{"amiga", ""},
 		{"unknown", ""},
@@ -121,12 +121,10 @@ func TestDownloadable(t *testing.T) {
 		assert.True(t, hasFolder || hasOverride, "entry %s should have a repo folder or OverrideURL", e.FileName)
 	}
 
-	// PS2 entries should NOT be in the downloadable list
+	// NDS entries should NOT be in the downloadable list (different filenames in repo)
 	for _, e := range entries {
-		assert.NotEqual(t, "ps2", e.ConsoleID, "ps2 entries should not be downloadable")
+		assert.NotEqual(t, "nds", e.ConsoleID, "nds entries should not be downloadable (repo uses different filenames)")
 	}
-
-	// Should be fewer than All() since PS2 is excluded
 	assert.Less(t, len(entries), len(All()))
 }
 

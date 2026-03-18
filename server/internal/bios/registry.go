@@ -79,7 +79,8 @@ var registry = []Entry{
 	{ConsoleID: "pcfx", FileName: "pcfx.rom", Description: "PC-FX BIOS v1.00", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true},
 
 	// ColecoVision (CV) — gearcoleco_libretro.info / bluemsx_libretro.info
-	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true},
+	// Repo has BIOS.col; we download and save as colecovision.rom (expected by cores).
+	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true, OverrideURL: "https://raw.githubusercontent.com/Abdess/retrobios/main/bios/Coleco/ColecoVision/BIOS.col"},
 
 	// Philips CD-i (CDI) — same_cdi_libretro.info
 	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono1.zip"},
@@ -100,9 +101,9 @@ var repoFolders = map[string]string{
 	"lynx":  "Atari/Lynx",
 	"3do":   "3DO Company/3DO",
 	"pcfx":  "NEC/PC-FX",
+	"ps2":  "Sony/PlayStation 2",
 	// nds — repo uses different filenames (nds7.bin/nds9.bin vs bios7.bin/bios9.bin)
-	// cv — repo uses different filename (BIOS.col vs colecovision.rom)
-	// ps2 — not available in the repository
+	// cv — uses OverrideURL (repo has BIOS.col, cores expect colecovision.rom)
 	// neogeo, neocd, amiga, cdi — use OverrideURL
 }
 
