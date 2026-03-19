@@ -8,6 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT_DIR="${1:-$SCRIPT_DIR/dats}"
 BASE_URL="https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
+MAME_BASE_URL="https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/mame"
 
 # All non-disc-based systems from AbbreviationToLibRetro in scraper.go
 # (excludes PSX, SAT, DC, SCD, PS2)
@@ -51,7 +52,12 @@ fail=0
 
 for system in "${SYSTEMS[@]}"; do
   encoded=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$system'))")
-  url="$BASE_URL/$encoded.dat"
+  # MAME DAT lives in a different directory than No-Intro DATs
+  if [ "$system" = "MAME" ]; then
+    url="$MAME_BASE_URL/$encoded.dat"
+  else
+    url="$BASE_URL/$encoded.dat"
+  fi
   dest="$OUT_DIR/$system.dat"
 
   printf "Downloading: %s ... " "$system"

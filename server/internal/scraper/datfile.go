@@ -3,6 +3,7 @@ package scraper
 import (
 	"bufio"
 	"io"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,9 +27,10 @@ type DATIndex struct {
 }
 
 var (
-	reQuotedValue = regexp.MustCompile(`"([^"]+)"`)
-	reROMSize     = regexp.MustCompile(`\bsize\s+(\d+)`)
-	reROMCRC      = regexp.MustCompile(`\bcrc\s+([0-9A-Fa-f]+)`)
+	reQuotedValue     = regexp.MustCompile(`"([^"]+)"`)
+	reUnquotedROMName = regexp.MustCompile(`\bname\s+(\S+\.(?:zip|7z))`)
+	reROMSize         = regexp.MustCompile(`\bsize\s+(\d+)`)
+	reROMCRC          = regexp.MustCompile(`\bcrc\s+([0-9A-Fa-f]+)`)
 )
 
 // ParseDAT parses a CLRMamePro format DAT file and returns a CRC-indexed lookup.
@@ -65,9 +67,20 @@ func ParseDAT(r io.Reader) (*DATIndex, error) {
 			if entry.CRC != "" && entry.ROMName != "" {
 				idx.byCRC[entry.CRC] = entry
 			}
-			// Also index by name for MAME/FBNeo DATs (name → description lookup)
+			// Index by game name for name → description lookup
 			if entry.GameName != "" {
 				idx.byName[strings.ToLower(entry.GameName)] = entry
+			}
+			// Also index by ROM zip name (without extension) for MAME DATs
+			// where the short name (e.g., "akkaarrh") maps to a full title.
+			// Use GameName as Description if Description is empty.
+			if entry.ROMName != "" {
+				shortName := strings.TrimSuffix(entry.ROMName, filepath.Ext(entry.ROMName))
+				romEntry := entry
+				if romEntry.Description == "" {
+					romEntry.Description = romEntry.GameName
+				}
+				idx.byName[strings.ToLower(shortName)] = romEntry
 			}
 			inGame = false
 			continue
@@ -87,7 +100,10 @@ func ParseDAT(r io.Reader) (*DATIndex, error) {
 				entry.Description = m[1]
 			}
 		} else if strings.HasPrefix(line, "rom (") || strings.HasPrefix(line, "rom(") {
+			// ROM name can be quoted ("name.zip") or unquoted (name.zip) in MAME DATs
 			if m := reQuotedValue.FindStringSubmatch(line); m != nil {
+				entry.ROMName = m[1]
+			} else if m := reUnquotedROMName.FindStringSubmatch(line); m != nil {
 				entry.ROMName = m[1]
 			}
 			if m := reROMCRC.FindStringSubmatch(line); m != nil {

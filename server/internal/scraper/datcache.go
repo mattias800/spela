@@ -67,6 +67,7 @@ var MaxROMSize = map[string]int64{
 }
 
 const datBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
+const mameBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/mame"
 
 const redumpBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/redump"
 
@@ -203,6 +204,17 @@ func (c *DATCache) RefreshAll() {
 		idx, err := c.downloadAndCache(consoleAbbrev, systemName, datPath)
 		if err != nil {
 			slog.Warn("failed to refresh DAT file", "system", systemName, "error", err)
+			// Fall back to loading from disk if file already exists
+			if _, statErr := os.Stat(datPath); statErr == nil {
+				if diskIdx, parseErr := c.parseFile(datPath); parseErr == nil {
+					slog.Info("loaded DAT from disk (download failed)", "system", systemName)
+					c.mu.Lock()
+					c.indices[consoleAbbrev] = diskIdx
+					c.mu.Unlock()
+					ok++
+					continue
+				}
+			}
 			failures++
 			continue
 		}
@@ -217,9 +229,14 @@ func (c *DATCache) RefreshAll() {
 	slog.Info("DAT refresh complete", "refreshed", ok, "failures", failures)
 }
 
-// downloadAndCache downloads a No-Intro DAT file, saves it to disk, then parses it.
+// downloadAndCache downloads a DAT file, saves it to disk, then parses it.
+// Uses the MAME-specific URL for arcade systems (different repo path).
 func (c *DATCache) downloadAndCache(consoleAbbrev, systemName, datPath string) (*DATIndex, error) {
-	return c.downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, datBaseURL)
+	baseURL := datBaseURL
+	if systemName == "MAME" {
+		baseURL = mameBaseURL
+	}
+	return c.downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, baseURL)
 }
 
 // downloadAndCacheFromURL downloads a DAT file from the given base URL, saves it to disk, then parses it.
