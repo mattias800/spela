@@ -301,17 +301,19 @@ fun SpelaApp(
                 var serverWarningDismissed by remember { mutableStateOf(false) }
                 var snackbarData by remember { mutableStateOf<SpSnackbarData?>(null) }
 
-                // "Back online" snackbar: fires when transitioning to Online
+                // "Back online" snackbar: fires only after a genuine offline→online transition
+                var hasBeenOffline by remember { mutableStateOf(false) }
                 LaunchedEffect(currentConnectionState) {
                     if (currentConnectionState is ConnectionState.Online) {
-                        // Only show if we're past initial load
-                        if (!navState.isRestoringSession) {
+                        if (hasBeenOffline) {
                             snackbarData = SpSnackbarData(
                                 message = "Back online",
                                 type = SpSnackbarType.Success,
                                 durationMs = 3000L,
                             )
                         }
+                    } else if (!currentConnectionState.isConnected) {
+                        hasBeenOffline = true
                     }
                     // Reset dismiss when state changes away from ServerUnreachable
                     if (currentConnectionState !is ConnectionState.ServerUnreachable) {
