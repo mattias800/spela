@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -68,6 +69,7 @@ var MaxROMSize = map[string]int64{
 
 const datBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro"
 const mameBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/mame"
+const fbNeoBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/fbneo-split"
 
 const redumpBaseURL = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/redump"
 
@@ -230,11 +232,13 @@ func (c *DATCache) RefreshAll() {
 }
 
 // downloadAndCache downloads a DAT file, saves it to disk, then parses it.
-// Uses the MAME-specific URL for arcade systems (different repo path).
+// Uses platform-specific URLs for systems outside the No-Intro collection.
 func (c *DATCache) downloadAndCache(consoleAbbrev, systemName, datPath string) (*DATIndex, error) {
 	baseURL := datBaseURL
 	if systemName == "MAME" {
 		baseURL = mameBaseURL
+	} else if strings.HasPrefix(systemName, "FBNeo") {
+		baseURL = fbNeoBaseURL
 	}
 	return c.downloadAndCacheFromURL(consoleAbbrev, systemName, datPath, baseURL)
 }

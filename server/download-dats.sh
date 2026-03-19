@@ -24,7 +24,7 @@ SYSTEMS=(
   "Sega - Mega Drive - Genesis"
   "Sony - PlayStation Portable"
   "SNK - Neo Geo"
-  "MAME"
+  "FBNeo - Arcade Games"
   "NEC - PC Engine - TurboGrafx 16"
   "Atari - 2600"
   "Sega - Game Gear"
@@ -52,9 +52,11 @@ fail=0
 
 for system in "${SYSTEMS[@]}"; do
   encoded=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$system'))")
-  # MAME DAT lives in a different directory than No-Intro DATs
+  # MAME/FBNeo DATs live in different directories than No-Intro DATs
   if [ "$system" = "MAME" ]; then
     url="$MAME_BASE_URL/$encoded.dat"
+  elif [[ "$system" == FBNeo* ]]; then
+    url="https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/fbneo-split/$encoded.dat"
   else
     url="$BASE_URL/$encoded.dat"
   fi
