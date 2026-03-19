@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import type {
   GameRating,
   GameRatingsResponse,
@@ -32,7 +32,17 @@ export function useGameRatingSummary(gameId: string) {
 export function useMyRating(gameId: string) {
   return useQuery({
     queryKey: ["ratings", gameId, "mine"],
-    queryFn: () => api.get<GameRating>(`/games/${gameId}/ratings/mine`),
+    queryFn: async () => {
+      try {
+        return await api.get<GameRating>(`/games/${gameId}/ratings/mine`);
+      } catch (e) {
+        // 404 = no rating submitted yet, not an error
+        if (e instanceof ApiError && e.status === 404) {
+          return null;
+        }
+        throw e;
+      }
+    },
     enabled: !!gameId,
     retry: false,
   });
