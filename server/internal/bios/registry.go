@@ -58,6 +58,10 @@ var registry = []Entry{
 	// neogeo.zip must contain the individual BIOS ROMs (sp-s2.sp1, etc.)
 	{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS (arcade/AES/MVS)", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neogeo.zip"},
 
+	// Arcade (ARCADE) — fbneo_libretro.info
+	// FBNeo needs the Neo Geo BIOS for Neo Geo arcade games.
+	{ConsoleID: "arcade", FileName: "neogeo.zip", Description: "Neo Geo BIOS (for Neo Geo arcade games)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neogeo.zip"},
+
 	// Neo Geo CD (NEOCD) — neocd_libretro.info
 	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocdz.zip"},
 	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocd.zip"},
