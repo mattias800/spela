@@ -414,6 +414,70 @@ func TestMergeGroupsByIGDBID(t *testing.T) {
 	assert.False(t, post2.IsPrimary, "Japan version should not be primary")
 }
 
+func TestMergeGroupsByIGDBID_SkipsUnrelatedTitles(t *testing.T) {
+	database := setupTestDB(t)
+
+	var dos db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "DOS").First(&dos).Error)
+
+	// Two games with completely different titles but same IGDB ID (false match)
+	game1 := db.Game{
+		ConsoleID: dos.ID,
+		Title:     "Alley Cat",
+		FileName:  "Alley Cat.zip",
+		FilePath:  "dos/Alley Cat.zip",
+		GroupKey:  "alley cat",
+		ScraperID: "igdb:999",
+	}
+	game2 := db.Game{
+		ConsoleID: dos.ID,
+		Title:     "Space Invaders",
+		FileName:  "Space Invaders.zip",
+		FilePath:  "dos/Space Invaders.zip",
+		GroupKey:  "space invaders",
+		ScraperID: "igdb:999",
+	}
+	require.NoError(t, database.Create(&game1).Error)
+	require.NoError(t, database.Create(&game2).Error)
+	require.NoError(t, GroupAndElectPrimaries(database))
+
+	merged, err := MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+	assert.Equal(t, 0, merged, "should NOT merge games with unrelated titles")
+
+	// Both should still be primary in their own groups
+	var post1, post2 db.Game
+	database.First(&post1, game1.ID)
+	database.First(&post2, game2.ID)
+	assert.True(t, post1.IsPrimary)
+	assert.True(t, post2.IsPrimary)
+	assert.NotEqual(t, post1.GroupKey, post2.GroupKey, "group keys should remain different")
+}
+
+func TestTitlesRelated(t *testing.T) {
+	tests := []struct {
+		name   string
+		titles []string
+		want   bool
+	}{
+		{"same title", []string{"Sonic CD", "Sonic CD"}, true},
+		{"regional variants", []string{"Sonic CD", "Sonic the Hedgehog CD"}, true},
+		{"completely different", []string{"Alley Cat", "Space Invaders"}, false},
+		{"one shared word", []string{"Super Mario Bros", "Super Smash Bros"}, true},
+		{"no shared significant word", []string{"A Game", "B Game"}, true}, // "game" is shared
+		{"single game", []string{"Test"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			games := make([]db.Game, len(tt.titles))
+			for i, title := range tt.titles {
+				games[i] = db.Game{Title: title}
+			}
+			assert.Equal(t, tt.want, titlesRelated(games))
+		})
+	}
+}
+
 func TestReElectPrimaryForGroup(t *testing.T) {
 	database := setupTestDB(t)
 
