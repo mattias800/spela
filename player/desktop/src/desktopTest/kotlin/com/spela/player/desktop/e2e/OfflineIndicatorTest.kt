@@ -83,4 +83,49 @@ class OfflineIndicatorTest {
 
         onNodeWithContentDescription("Database error screen").assertDoesNotExist()
     }
+
+    @Test
+    fun backOnlineSnackbarNotShownWithoutPriorOffline() = runComposeUiTest {
+        // App starts with no server configured — should NOT show "Back online"
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // The server connection screen should be shown
+        onNodeWithText("Connect to your game server").assertIsDisplayed()
+
+        // "Back online" snackbar must NOT appear — the app was never offline
+        onNodeWithText("Back online").assertDoesNotExist()
+    }
+
+    @Test
+    fun backOnlineSnackbarNotShownOnInitialLogin() = runComposeUiTest {
+        // App starts logged in — should NOT show "Back online" on first load
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // "Back online" snackbar must NOT appear on initial app load
+        onNodeWithText("Back online").assertDoesNotExist()
+    }
+
+    @Test
+    fun backOnlineSnackbarShownAfterOfflineToOnlineTransition() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        advance(harness)
+
+        // Simulate going offline (DatabaseError has isConnected=false) then back online
+        harness.connectivityMonitor.reportDatabaseError("test-offline")
+        advanceQuick(harness)
+
+        harness.connectivityMonitor.clearDatabaseError()
+        advanceQuick(harness)
+
+        // NOW "Back online" should appear
+        onNodeWithText("Back online").assertIsDisplayed()
+    }
 }
