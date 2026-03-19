@@ -73,7 +73,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
     },
   });
 
-  if (!game.verificationStatus) {
+  if (!game.verificationStatus || game.verificationStatus === "not_applicable") {
     return null;
   }
 
