@@ -51,7 +51,7 @@ export function PlayPage() {
 
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
   const { data: preferences } = useUserPreferences();
-  const { data: consoles } = useConsoles();
+  const { data: consoles, isLoading: consolesLoading } = useConsoles();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
 
@@ -344,7 +344,7 @@ export function PlayPage() {
 
   // ── Loading state ─────────────────────────────────────────────────
 
-  if (gameLoading) {
+  if (gameLoading || consolesLoading) {
     return (
       <div className="flex flex-col h-screen">
         <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
