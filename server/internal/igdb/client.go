@@ -1406,6 +1406,8 @@ func escapeQuery(s string) string {
 
 // CleanGameName strips file extensions, region tags, revision tags,
 // disc indicators, and bracket/parentheses content from a ROM filename.
+// For titles with alternate names separated by " ~ " (e.g.,
+// "Puzzle Bobble ~ Bust-A-Move"), uses the first (primary) title.
 func CleanGameName(fileName string) string {
 	// Remove file extension
 	if idx := strings.LastIndex(fileName, "."); idx > 0 {
@@ -1421,6 +1423,14 @@ func CleanGameName(fileName string) string {
 			break
 		}
 		result = cleaned
+	}
+
+	result = strings.TrimSpace(result)
+
+	// Handle tilde-separated alternate titles (No-Intro naming convention).
+	// Use the first (primary) title for search.
+	if idx := strings.Index(result, " ~ "); idx > 0 {
+		result = result[:idx]
 	}
 
 	return strings.TrimSpace(result)

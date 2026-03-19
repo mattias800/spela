@@ -198,3 +198,41 @@ game (
 	assert.True(t, ok)
 	assert.Equal(t, "Version B (USA)", entry.GameName)
 }
+
+func TestParseDAT_MAMEROMNameLookup(t *testing.T) {
+	input := `clrmamepro (
+	name "MAME"
+	version "2017-02-14"
+)
+
+game (
+	name "Ali Baba and 40 Thieves"
+	year "1982"
+	developer "Sega"
+	rom ( name alibaba.zip size 20184 crc A5EDCB7A md5 fdb65ceadc7d9362bf56e5e2e4e40436 sha1 test )
+)
+
+game (
+	name "Akka Arrh (prototype)"
+	year "2022"
+	developer "Atari"
+	rom ( name akkaarrh.zip size 12345 crc DEADBEEF md5 abc123 sha1 test )
+)
+`
+	idx, err := ParseDAT(strings.NewReader(input))
+	require.NoError(t, err)
+
+	// Should find by ROM zip name (without extension)
+	entry, ok := idx.LookupName("alibaba")
+	assert.True(t, ok, "should find alibaba by ROM name")
+	assert.Equal(t, "Ali Baba and 40 Thieves", entry.Description)
+
+	entry2, ok2 := idx.LookupName("akkaarrh")
+	assert.True(t, ok2, "should find akkaarrh by ROM name")
+	assert.Equal(t, "Akka Arrh (prototype)", entry2.Description)
+
+	// Should also find by full game name
+	entry3, ok3 := idx.LookupName("ali baba and 40 thieves")
+	assert.True(t, ok3, "should find by full game name")
+	assert.Equal(t, "Ali Baba and 40 Thieves", entry3.GameName)
+}

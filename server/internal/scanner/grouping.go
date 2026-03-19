@@ -394,6 +394,16 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 			continue
 		}
 
+		// Safety check: verify titles are similar enough to merge.
+		// This prevents false merges when IGDB returns the same match
+		// for unrelated games (e.g., DOS games with similar names).
+		if !titlesRelated(games) {
+			slog.Debug("skipping IGDB merge: titles not related",
+				"scraperID", c.ScraperID,
+				"titles", fmt.Sprintf("%v", gameTitles(games)))
+			continue
+		}
+
 		// Use the first GroupKey (alphabetically lowest) as the canonical one
 		canonicalGroupKey := games[0].GroupKey
 		affectedGroupKeys := make(map[string]bool)
@@ -434,4 +444,49 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 		slog.Info("IGDB group merge complete", "merged", mergedCount, "candidates", len(candidates))
 	}
 	return mergedCount, nil
+}
+
+// titlesRelated checks if a set of games have related titles (at least one
+// significant word in common). This prevents merging "Alley Cat" with
+// "Alley Master" just because IGDB returned the same match.
+func titlesRelated(games []db.Game) bool {
+	if len(games) < 2 {
+		return true
+	}
+
+	// Extract significant words (3+ chars) from each title
+	wordSets := make([]map[string]bool, len(games))
+	for i, g := range games {
+		words := make(map[string]bool)
+		for _, w := range strings.Fields(strings.ToLower(g.Title)) {
+			// Skip short words (a, of, the, etc.)
+			if len(w) >= 3 {
+				words[w] = true
+			}
+		}
+		wordSets[i] = words
+	}
+
+	// Check that every pair shares at least one significant word
+	for i := 1; i < len(wordSets); i++ {
+		shared := false
+		for w := range wordSets[0] {
+			if wordSets[i][w] {
+				shared = true
+				break
+			}
+		}
+		if !shared {
+			return false
+		}
+	}
+	return true
+}
+
+func gameTitles(games []db.Game) []string {
+	titles := make([]string, len(games))
+	for i, g := range games {
+		titles[i] = g.Title
+	}
+	return titles
 }

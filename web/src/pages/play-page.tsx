@@ -51,7 +51,7 @@ export function PlayPage() {
 
   const { data: game, isLoading: gameLoading } = useGame(id ?? "");
   const { data: preferences } = useUserPreferences();
-  const { data: consoles } = useConsoles();
+  const { data: consoles, isLoading: consolesLoading } = useConsoles();
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
 
@@ -344,7 +344,7 @@ export function PlayPage() {
 
   // ── Loading state ─────────────────────────────────────────────────
 
-  if (gameLoading) {
+  if (gameLoading || consolesLoading) {
     return (
       <div className="flex flex-col h-screen">
         <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
@@ -388,6 +388,33 @@ export function PlayPage() {
         <Button variant="secondary" onClick={() => navigate(`/games/${id}`)}>
           Back to Game Details
         </Button>
+      </div>
+    );
+  }
+
+  // ── Error state ──────────────────────────────────────────────────
+
+  if (emulator.status === "error") {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <AlertTriangle className="h-12 w-12 text-danger-500 mx-auto" />
+        <h2 className="text-xl font-bold text-surface-100">
+          Emulation Error
+        </h2>
+        <p className="text-surface-400 max-w-md mx-auto">
+          {emulator.error || "The emulator encountered an unexpected error."}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <Button
+            variant="secondary"
+            onClick={() => navigate(`/games/${id}`)}
+          >
+            Back to Game Details
+          </Button>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }

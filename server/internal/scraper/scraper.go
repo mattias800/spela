@@ -173,7 +173,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"PSX":    "Sony - PlayStation",
 	"PSP":    "Sony - PlayStation Portable",
 	"NEOGEO": "SNK - Neo Geo",
-	"ARCADE": "MAME",
+	"ARCADE": "FBNeo - Arcade Games",
 	"PCE":    "NEC - PC Engine - TurboGrafx 16",
 	"PCECD":  "NEC - PC Engine CD - TurboGrafx-CD",
 	"A26":    "Atari - 2600",
