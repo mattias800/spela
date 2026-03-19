@@ -26,6 +26,25 @@
 
   var parentOrigin = window.location.origin;
 
+  // Catch uncaught errors/exceptions and forward to parent as emulator-error.
+  // This catches WASM core crashes, OOM, and other fatal errors.
+  window.addEventListener("error", function (event) {
+    sendToParent({
+      type: "emulator-error",
+      error: event.message || "An unexpected error occurred in the emulator",
+    });
+  });
+  window.addEventListener("unhandledrejection", function (event) {
+    var reason =
+      event.reason instanceof Error
+        ? event.reason.message
+        : String(event.reason || "Emulator promise rejected");
+    sendToParent({
+      type: "emulator-error",
+      error: reason,
+    });
+  });
+
   /** Send a typed message to the parent window. */
   function sendToParent(msg) {
     if (window.parent && window.parent !== window) {

@@ -392,6 +392,33 @@ export function PlayPage() {
     );
   }
 
+  // ── Error state ──────────────────────────────────────────────────
+
+  if (emulator.status === "error") {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <AlertTriangle className="h-12 w-12 text-danger-500 mx-auto" />
+        <h2 className="text-xl font-bold text-surface-100">
+          Emulation Error
+        </h2>
+        <p className="text-surface-400 max-w-md mx-auto">
+          {emulator.error || "The emulator encountered an unexpected error."}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <Button
+            variant="secondary"
+            onClick={() => navigate(`/games/${id}`)}
+          >
+            Back to Game Details
+          </Button>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Main emulator layout ──────────────────────────────────────────
 
   return (
