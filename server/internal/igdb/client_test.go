@@ -407,6 +407,8 @@ func TestCleanGameName(t *testing.T) {
 		{"Simple", "Simple"},
 		{"Brackets [a] (b) [c].rom", "Brackets"},
 		{"Final Fantasy III (Japan) (Rev 1).smc", "Final Fantasy III"},
+		{"Puzzle Bobble ~ Bust-A-Move (Japan) (En,Ja).cue", "Puzzle Bobble"},
+		{"Bakumatsu Roman - Gekka no Kenshi ~ The Last Blade (Japan).cue", "Bakumatsu Roman - Gekka no Kenshi"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
