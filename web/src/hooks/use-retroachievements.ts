@@ -69,7 +69,7 @@ export function useGameAchievementProgress(gameId: string | undefined) {
         .get<GameAchievementProgressResponse>(
           `/games/${gameId}/achievements/progress`,
         )
-        .then((res) => res.progress),
+        .then((res) => res.progress ?? null),
     enabled: !!gameId,
   });
 }
