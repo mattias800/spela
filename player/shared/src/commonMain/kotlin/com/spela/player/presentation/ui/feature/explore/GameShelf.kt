@@ -3,6 +3,8 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,6 +61,7 @@ fun GameShelf(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExploreGameCard(
     game: Game,
@@ -69,7 +72,7 @@ internal fun ExploreGameCard(
         modifier = modifier
             .testTag("explore_game_card_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
+                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -98,31 +101,36 @@ internal fun ExploreGameCard(
 
                 Spacer(Modifier.height(SpSpacing.XXSmall))
 
-                // Console badge
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // Console abbreviation + rating (wraps to new line if needed)
+                FlowRow(
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
                     Text(
-                        text = game.consoleName,
+                        text = game.consoleId.uppercase(),
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                         maxLines = 1,
                     )
 
-                    // Rating
+                    // Rating (star + number treated as a unit)
                     if (game.rating > 0) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(10.dp),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = SpColor.Rating,
+                                modifier = Modifier.size(10.dp),
+                            )
+                            Text(
+                                text = formatRating(game.rating),
+                                style = SpTypography.LabelSmall,
+                                color = SpColor.OnBackgroundTertiary,
+                            )
+                        }
                     }
                 }
 

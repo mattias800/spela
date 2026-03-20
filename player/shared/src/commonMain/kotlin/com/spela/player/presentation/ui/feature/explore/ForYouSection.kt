@@ -125,7 +125,7 @@ private fun ForYouGameCard(
             .width(SpSpacing.CoverMediumWidth)
             .testTag("for_you_game_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
+                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -159,7 +159,7 @@ private fun ForYouGameCard(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
                     Text(
-                        text = game.consoleName,
+                        text = game.consoleId.uppercase(),
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                         maxLines = 1,
