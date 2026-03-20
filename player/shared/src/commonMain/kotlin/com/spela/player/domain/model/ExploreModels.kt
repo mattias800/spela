@@ -5,6 +5,7 @@ data class FeaturedGame(
     val title: String,
     val heroUrl: String?,
     val logoUrl: String?,
+    val consoleName: String,
     val consoleAbbreviation: String,
     val consoleColor: String,
     val rating: Double,

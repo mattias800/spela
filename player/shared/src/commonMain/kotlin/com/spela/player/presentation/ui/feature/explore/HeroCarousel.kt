@@ -279,10 +279,10 @@ private fun HeroSlide(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                // Console badge
+                // Console badge — full name since the hero has plenty of space
                 val consoleColor = parseHexColor(game.consoleColor, SpColor.Primary)
                 SpChip(
-                    text = game.consoleAbbreviation,
+                    text = game.consoleName.ifEmpty { game.consoleAbbreviation.uppercase() },
                     color = consoleColor,
                     isSelected = true,
                     onGradient = true,

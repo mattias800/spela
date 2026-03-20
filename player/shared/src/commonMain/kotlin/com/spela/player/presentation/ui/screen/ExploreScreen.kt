@@ -237,6 +237,7 @@ fun ExploreScreen(
                         WildFeaturesSection(
                             onSurpriseMe = { onSurpriseMe?.invoke() },
                             onWizardSelected = { onWizardSelected?.invoke() },
+                            includeTopSpacing = false,
                             modifier = Modifier
                                 .padding(horizontal = SpSpacing.ScreenHorizontal)
                                 .testTag("explore_wild_features"),

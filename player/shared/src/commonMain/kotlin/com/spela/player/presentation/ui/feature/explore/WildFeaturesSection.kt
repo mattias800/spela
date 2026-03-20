@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -28,14 +28,13 @@ fun WildFeaturesSection(
     onSurpriseMe: () -> Unit,
     onWizardSelected: () -> Unit,
     modifier: Modifier = Modifier,
+    includeTopSpacing: Boolean = true,
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Feeling Adventurous?",
-            color = SpColor.OnBackground,
-            style = SpTypography.HeadlineSmall,
-        )
-        Spacer(modifier = Modifier.height(SpSpacing.Medium))
+    SpTitledSection(
+        title = "Feeling Adventurous?",
+        modifier = modifier,
+        includeTopSpacing = includeTopSpacing,
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),

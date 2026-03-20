@@ -1072,6 +1072,7 @@ data class FeaturedGameDto(
     val title: String,
     val heroUrl: String? = null,
     val logoUrl: String? = null,
+    val consoleName: String = "",
     val consoleAbbreviation: String = "",
     val consoleColor: String = "",
     val rating: Double = 0.0,

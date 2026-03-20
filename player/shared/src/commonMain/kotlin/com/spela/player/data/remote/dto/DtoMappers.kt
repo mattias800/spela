@@ -602,6 +602,7 @@ fun FeaturedGameDto.toDomain(): FeaturedGame = FeaturedGame(
     title = title,
     heroUrl = heroUrl,
     logoUrl = logoUrl,
+    consoleName = consoleName,
     consoleAbbreviation = consoleAbbreviation,
     consoleColor = consoleColor,
     rating = rating,
