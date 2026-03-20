@@ -443,6 +443,133 @@ web/src/
 
 ---
 
+## Design System Principles (Player App)
+
+These principles are **mandatory** for all UI work. The UI Agent must reject any
+PR that violates them. The Code Reviewer must also check for violations.
+
+### 1. Components Never Control Their Own Outer Spacing
+
+A component must **never** add margin, padding, or spacing around its own outer
+boundary. Spacing between siblings is always the responsibility of the parent
+layout. This applies to all `Sp*` components and feature components.
+
+**Why:** When components add their own outer spacing, gaps become inconsistent
+across screens because different parents and different component combinations
+produce unpredictable accumulated spacing.
+
+**In practice:**
+- Use `Arrangement.spacedBy()` on the parent `Column`, `Row`, or `LazyColumn`
+- Components may have **internal** padding (padding inside their own border/card)
+- Components must NOT have `Modifier.padding(top/bottom = ...)` on their root
+- If a component needs spacing that varies by context, accept it as a `modifier`
+  parameter — the parent decides
+
+### 2. One Visual Pattern = One Shared Component
+
+If the same visual pattern appears on 2+ screens, it **must** be a shared `Sp*`
+component. Duplicating layout code across screens is the #1 source of visual
+inconsistency.
+
+**Common violations:**
+- Platform badges/chips rendered differently across screens — use `SpChip`
+- Card section headers with different typography — use `SpTitledSection`
+- Game shelves with different spacing — use `GameShelf`
+- Cover art placeholders with different colors — use `SpCoverArt`
+
+**Rule:** Before building any visual element in a screen file, search the
+`components/` and `feature/` directories for an existing component. If one
+exists, use it. If the existing component doesn't quite fit, extend it with
+a new prop — don't build a one-off alternative.
+
+### 3. Layout Containers Are Standardized
+
+Recurring layout patterns must be extracted into shared layout components:
+
+- **`SpSectionList`** — a `LazyColumn` (or `Column`) with standardized
+  `spacedBy` gaps, screen-edge horizontal padding, and top/bottom content
+  padding. All screens that display a vertical list of card sections should
+  use this instead of building their own `LazyColumn` with ad-hoc padding.
+- **`SpTitledSection`** — the standard card wrapper with a title. Already
+  exists; every titled section on every screen must use it. No custom
+  `Column + Text + Spacer + Card` patterns in screen files.
+- **`GameShelf`** — horizontal scrolling game row. Already exists; all
+  game carousels must use it. No custom `LazyRow` patterns for game lists.
+
+### 4. Typography and Sizing
+
+- **Minimum body text size:** `SpTypography.BodySmall` (never smaller for
+  readable content). `LabelSmall` may be used only for secondary metadata
+  (timestamps, counts) — never for text the user needs to actually read.
+- **Line spacing:** Use `SpTypography` styles which have correct line heights.
+  Never set custom `lineHeight` in screen files.
+- **Card text hierarchy:** Title (`TitleSmall`/`TitleMedium`) > Subtitle
+  (`BodySmall`/`BodyMedium`) > Metadata (`LabelSmall`). Each level must be
+  visually distinguishable at a glance.
+
+### 5. Color and Contrast
+
+- **Minimum contrast:** All text must be readable against its background.
+  On dark backgrounds: use `SpColor.OnBackground` (primary text),
+  `SpColor.OnBackgroundSecondary` (secondary), never `OnBackgroundTertiary`
+  for text that needs to be read. `OnBackgroundTertiary` is only for
+  decorative or truly optional metadata.
+- **Link text:** Always `SpColor.Link`, never `SpColor.Primary` (too dark
+  on dark backgrounds).
+- **Gradient safety:** Never use `Float.MAX_VALUE` or extreme values in
+  gradient endpoints. Skia will crash. Use Compose defaults or calculated
+  values based on `size`.
+- **Cover art placeholders:** Must use transparent black overlay
+  (`Color.Black.copy(alpha = 0.3f)`) so they blend with any background
+  color — never opaque colored gradients.
+
+### 6. Platform Badges and Console Names
+
+- **Badges:** Always use `SpChip` for platform badges. Same component,
+  same styling, everywhere.
+- **Console names in cards:** Use the full console name by default (e.g.
+  "Super Nintendo", "Genesis", "Game Boy Advance"). Only use abbreviation
+  when the full name genuinely doesn't fit (measured, not assumed).
+  The `consoleId.uppercase()` abbreviation is a last resort for very
+  narrow cards, not a default.
+- **Console names in banners/heroes:** Always use the full name — there is
+  plenty of space.
+
+### 7. Animations and Transitions
+
+- **Tab bar navigation (click):** No animation — instant switch.
+- **Tab bar navigation (gamepad L1/R1):** Slide animation.
+- **Forward navigation (push):** Slide in from right.
+- **Back navigation (pop):** Slide in from left.
+- **Within-screen transitions:** Use `AnimatedVisibility` for show/hide.
+
+### 8. Content Ordering (User-First)
+
+Sections within a screen must be ordered by relevance to the user:
+
+1. **Continue Playing / Recently Played** — always first (the user's
+   in-progress games are the most relevant)
+2. **Curated content** (Essentials, Hidden Gems, etc.)
+3. **Browse / Discovery** (Browse All Games button, genre filters)
+4. **Metadata** (developer info, stats) — least urgent
+
+### Design System Review Checklist (for UI Agent)
+
+Before approving any UI PR, verify:
+
+- [ ] No component adds its own outer spacing
+- [ ] All visual patterns use existing `Sp*` components (no duplicates)
+- [ ] Platform badges use `SpChip` everywhere
+- [ ] Text sizes follow the typography hierarchy
+- [ ] All text has sufficient contrast against its background
+- [ ] Console names use full name by default, abbreviation only when space-constrained
+- [ ] Cover art placeholders use transparent black, not opaque colors
+- [ ] Layout gaps are controlled by parent `spacedBy`, not child padding
+- [ ] No hardcoded `Color(0xFF...)` or raw `dp` values in screen files
+- [ ] Sections ordered by user relevance (Continue Playing first)
+
+---
+
 ## Definition of Done
 
 A task is **not done** until:

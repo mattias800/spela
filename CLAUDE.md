@@ -1,5 +1,10 @@
 # Spela - Project Conventions
 
+> **Important:** Before starting any work, read `AGENTS.md` (agent workflow,
+> design system enforcement) and `AGENT_TEAM.md` (team roles, design system
+> principles, review checklist). These contain mandatory rules for UI work,
+> component discipline, and the review process.
+
 ## Overview
 Spela is a self-hosted game emulation service with three components:
 1. **Backend server** (Go) - Game hosting, user management, metadata, saves
