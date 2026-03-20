@@ -3,6 +3,8 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -68,59 +70,78 @@ fun DeveloperSpotlightSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(140.dp)
                     .clip(RoundedCornerShape(SpSpacing.CardCornerRadius))
                     .background(
                         Brush.linearGradient(
-                            listOf(
-                                Color(0xFF1A237E),
-                                Color(0xFF283593),
+                            colors = listOf(
+                                SpColor.PrimaryDark,
+                                Color(0xFF1A1A4E),
+                                SpColor.AccentDark.copy(alpha = 0.6f),
                             ),
+                            start = Offset(0f, 0f),
+                            end = Offset(Float.MAX_VALUE, Float.MAX_VALUE),
                         ),
                     ),
-                contentAlignment = Alignment.Center,
             ) {
+                // Decorative label
+                Text(
+                    text = "SPOTLIGHT",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.Accent.copy(alpha = 0.35f),
+                    letterSpacing = 4.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(SpSpacing.Medium),
+                )
+
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(SpSpacing.Medium),
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(SpSpacing.XLarge),
                 ) {
                     Text(
                         text = spotlight.name,
-                        style = SpTypography.TitleLarge,
+                        style = SpTypography.HeadlineMedium,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(Modifier.height(SpSpacing.XXSmall))
+                    Spacer(Modifier.height(SpSpacing.Small))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
                         Text(
                             text = "${spotlight.gameCount} games",
-                            style = SpTypography.LabelSmall,
+                            style = SpTypography.BodyMedium,
                             color = Color.White.copy(alpha = 0.85f),
                         )
                         if (spotlight.avgRating > 0) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = SpColor.Rating,
-                                modifier = Modifier.size(SpSpacing.IconXSmall),
-                            )
-                            Text(
-                                text = formatRating(spotlight.avgRating),
-                                style = SpTypography.LabelSmall,
-                                color = Color.White.copy(alpha = 0.85f),
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = SpColor.Rating,
+                                    modifier = Modifier.size(SpSpacing.IconSmall),
+                                )
+                                Text(
+                                    text = formatRating(spotlight.avgRating),
+                                    style = SpTypography.BodyMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                )
+                            }
                         }
                     }
                     if (spotlight.consoles.isNotEmpty()) {
-                        Spacer(Modifier.height(SpSpacing.XXSmall))
+                        Spacer(Modifier.height(SpSpacing.XSmall))
                         Text(
-                            text = spotlight.consoles.joinToString(", "),
-                            style = SpTypography.LabelSmall,
-                            color = Color.White.copy(alpha = 0.65f),
+                            text = spotlight.consoles.joinToString(" · "),
+                            style = SpTypography.BodySmall,
+                            color = SpColor.Accent.copy(alpha = 0.7f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
