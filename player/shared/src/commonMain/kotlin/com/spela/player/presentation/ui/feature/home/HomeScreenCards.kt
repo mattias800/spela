@@ -34,6 +34,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
 import com.spela.player.presentation.ui.components.SpConsoleChip
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -136,45 +137,16 @@ internal fun GameCoverCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = game.coverAspectRatio,
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
+        coverAspectRatio = game.coverAspectRatio,
+        rating = game.rating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+    )
 }
 
 @Composable
