@@ -39,17 +39,21 @@ fun SpChip(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val backgroundColor = when {
-        onGradient -> Color.White.copy(alpha = if (isSelected) 0.12f else 0.06f)
-        isSelected -> color.copy(alpha = 0.2f)
+        onGradient -> Color.White.copy(alpha = if (isSelected) 0.15f else 0.06f)
+        isSelected -> color.copy(alpha = 0.15f)
         else -> Color.Transparent
     }
     val borderColor = when {
-        isFocused -> SpColor.Primary.copy(alpha = 0.85f)
-        onGradient -> Color.White.copy(alpha = 0.20f)
-        isSelected -> color
+        isFocused -> SpColor.PrimaryLight.copy(alpha = 0.85f)
+        onGradient -> Color.White.copy(alpha = 0.25f)
+        isSelected -> color.copy(alpha = 0.4f)
         else -> SpColor.Divider
     }
-    val textColor = if (onGradient) Color.White.copy(alpha = 0.90f) else if (isSelected) color else SpColor.OnBackgroundSecondary
+    val textColor = when {
+        onGradient -> Color.White.copy(alpha = 0.90f)
+        isSelected -> SpColor.OnBackgroundSecondary
+        else -> SpColor.OnBackgroundSecondary
+    }
 
     Box(
         modifier = modifier
@@ -63,7 +67,7 @@ fun SpChip(
                     onClick = onClick,
                 ).focusable(interactionSource = interactionSource) else Modifier
             )
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XXSmall),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -185,7 +185,6 @@ fun GameDetailScreen(
                     SpTitledSection(
                         title = "Your Rating",
                         icon = Icons.Filled.Star,
-                        includeTopSpacing = false,
                     ) {
                         StarRatingRow(
                             currentRating = state.myRating,
@@ -1063,7 +1062,6 @@ private fun VariantsSection(
 ) {
     SpTitledSection(
         title = title,
-        includeTopSpacing = false,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -1134,7 +1132,6 @@ private fun BasedOnSection(
 ) {
     SpTitledSection(
         title = "Based on",
-        includeTopSpacing = false,
     ) {
         SpCard(
             onClick = { onNavigateToGame?.invoke(parentGame.id) },
@@ -1171,7 +1168,6 @@ private fun RomHacksSection(
 ) {
     SpTitledSection(
         title = "ROM Hacks",
-        includeTopSpacing = false,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),

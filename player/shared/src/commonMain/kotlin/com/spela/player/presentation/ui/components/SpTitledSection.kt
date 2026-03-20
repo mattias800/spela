@@ -36,7 +36,6 @@ import com.spela.player.presentation.ui.theme.SpTypography
  * @param title Section heading text.
  * @param modifier Modifier applied to the outer Column.
  * @param icon Optional icon displayed before the title in accent color.
- * @param includeTopSpacing Whether to add [SpSpacing.XXLarge] above the title (default true).
  * @param titleTrailing Optional composable rendered beside the title in a Row (e.g. a count badge).
  * @param edgeToEdgeContent When true, content has no horizontal padding so carousels can
  *   extend to the card edges. Header row retains horizontal padding. Default false.
@@ -47,54 +46,49 @@ fun SpTitledSection(
     title: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    includeTopSpacing: Boolean = true,
     titleTrailing: @Composable (() -> Unit)? = null,
     edgeToEdgeContent: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
-    Column(modifier = modifier) {
-        if (includeTopSpacing) {
-            Spacer(Modifier.height(SpSpacing.XXLarge))
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.18f), shape)
-                .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
-                .let {
-                    if (edgeToEdgeContent) it.padding(vertical = SpSpacing.XLarge)
-                    else it.padding(SpSpacing.XLarge)
-                },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.XLarge) else Modifier,
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (icon != null) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = SpColor.Accent,
-                            modifier = Modifier.size(SpSpacing.IconDefault),
-                        )
-                    }
-                    Text(
-                        text = title,
-                        style = SpTypography.HeadlineSmall,
-                        color = SpColor.OnBackground,
-                        modifier = Modifier.weight(1f).semantics { heading() },
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.18f), shape)
+            .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
+            .let {
+                if (edgeToEdgeContent) it.padding(vertical = SpSpacing.XLarge)
+                else it.padding(SpSpacing.XLarge)
+            },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.XLarge) else Modifier,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = SpColor.Accent,
+                        modifier = Modifier.size(SpSpacing.IconDefault),
                     )
-                    if (titleTrailing != null) {
-                        titleTrailing()
-                    }
                 }
-                Spacer(Modifier.height(SpSpacing.Default))
-                content()
+                Text(
+                    text = title,
+                    style = SpTypography.HeadlineSmall,
+                    color = SpColor.OnBackground,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                if (titleTrailing != null) {
+                    titleTrailing()
+                }
             }
+            Spacer(Modifier.height(SpSpacing.Default))
+            content()
         }
     }
 }
+

@@ -99,7 +99,7 @@ internal fun ExploreGameCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Spacer(Modifier.height(SpSpacing.XSmall))
+                Spacer(Modifier.height(SpSpacing.Small))
 
                 // Console name + rating (wraps to new line if needed)
                 FlowRow(

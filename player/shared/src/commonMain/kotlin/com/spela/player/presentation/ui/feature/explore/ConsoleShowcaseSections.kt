@@ -196,6 +196,7 @@ internal fun TopDevelopersList(
         developers.forEach { developer ->
             SpCard(
                 onClick = { onDeveloperSelected(developer.name) },
+                onGradient = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("developer_card_${developer.name}")
