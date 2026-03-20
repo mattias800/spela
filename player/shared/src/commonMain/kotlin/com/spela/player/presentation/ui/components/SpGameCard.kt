@@ -91,14 +91,16 @@ fun SpGameCard(
                 )
 
                 // Subtitle (console name)
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = subtitle,
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (subtitle.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Text(
+                        text = subtitle,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
 
                 // Rating (third line)
                 if (rating > 0) {
