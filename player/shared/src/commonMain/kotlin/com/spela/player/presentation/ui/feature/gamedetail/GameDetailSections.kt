@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +57,7 @@ fun ScreenshotsSection(screenshots: List<String>) {
 
     SpTitledSection(
         title = "Screenshots",
+        icon = Icons.Filled.CameraAlt,
         edgeToEdgeContent = true,
     ) {
     LazyRow(
