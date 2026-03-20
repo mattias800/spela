@@ -90,8 +90,8 @@ object SpColor {
     val DividerLight = Color(0xFF3A3A4A)
 
     // Default screen background gradient (dark, non-black)
-    val ScreenGradientStart = Color(0xFF14142A)
-    val ScreenGradientEnd = Color(0xFF0F1A2A)
+    val ScreenGradientStart = Color(0xFF1E1E3A)
+    val ScreenGradientEnd = Color(0xFF162030)
 }
 
 /**
