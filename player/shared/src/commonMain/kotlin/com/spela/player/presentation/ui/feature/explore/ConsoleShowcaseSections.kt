@@ -115,7 +115,6 @@ fun ConsoleTopDevelopers(
 
     SpTitledSection(
         title = "Top Developers",
-        edgeToEdgeContent = true,
         modifier = Modifier
             .testTag("console_top_developers_section"),
     ) {

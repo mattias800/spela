@@ -58,13 +58,13 @@ fun SpTitledSection(
             .background(Color.Black.copy(alpha = 0.18f), shape)
             .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
             .let {
-                if (edgeToEdgeContent) it.padding(vertical = SpSpacing.XLarge)
-                else it.padding(SpSpacing.XLarge)
+                if (edgeToEdgeContent) it.padding(vertical = SpSpacing.Default)
+                else it.padding(SpSpacing.Default)
             },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.XLarge) else Modifier,
+                modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.Default) else Modifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
