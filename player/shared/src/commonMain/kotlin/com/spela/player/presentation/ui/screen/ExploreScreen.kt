@@ -413,11 +413,24 @@ fun ExploreScreen(
                                 modifier = Modifier
                                     .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_artwork_section"),
+                                titleTrailing = if (onGallerySelected != null) {
+                                    {
+                                        Text(
+                                            text = "Browse Gallery",
+                                            style = SpTypography.LabelLarge,
+                                            color = SpColor.Link,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(SpSpacing.Small))
+                                                .clickable(onClick = onGallerySelected)
+                                                .padding(SpSpacing.Small)
+                                                .testTag("browse_gallery_button"),
+                                        )
+                                    }
+                                } else null,
                             ) {
                                 ArtworkShowcaseSection(
                                     artworks = state.artworkShowcase,
                                     onGameSelected = onGameSelected,
-                                    onGallerySelected = onGallerySelected,
                                 )
                             }
                         }

@@ -49,29 +49,6 @@ fun ArtworkShowcaseSection(
     Column(
         modifier = modifier.testTag("artwork_showcase"),
     ) {
-        if (onGallerySelected != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Text(
-                    text = "Browse Gallery",
-                    style = SpTypography.LabelLarge,
-                    color = SpColor.Link,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(SpSpacing.Small))
-                        .clickable(onClick = onGallerySelected)
-                        .padding(SpSpacing.Small)
-                        .testTag("browse_gallery_button")
-                        .semantics {
-                            contentDescription = "Browse screenshot gallery"
-                            role = Role.Button
-                        },
-                )
-            }
-        }
         LazyRow(
             modifier = Modifier.testTag("artwork_showcase_row"),
             contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
