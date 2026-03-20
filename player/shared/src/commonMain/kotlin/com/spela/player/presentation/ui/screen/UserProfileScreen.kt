@@ -150,7 +150,7 @@ private fun ProfileContent(
                         Text(
                             text = "Playing ${profile.currentGame.title}",
                             style = SpTypography.BodySmall,
-                            color = SpColor.Primary,
+                            color = SpColor.Link,
                         )
                     } else if (profile.isOnline) {
                         Text(
@@ -237,7 +237,7 @@ private fun StatCard(
             Text(
                 text = value,
                 style = SpTypography.HeadlineLarge,
-                color = SpColor.Primary,
+                color = SpColor.Link,
             )
             Spacer(Modifier.height(SpSpacing.XXSmall))
             Text(

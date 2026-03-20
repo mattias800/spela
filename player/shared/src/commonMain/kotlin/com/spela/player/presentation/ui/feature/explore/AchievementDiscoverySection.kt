@@ -238,7 +238,7 @@ internal fun ActiveChallengesSection(
                 Text(
                     text = "${ch.type} \u00b7 ${ch.difficulty}",
                     style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
+                    color = SpColor.Link,
                     maxLines = 1,
                 )
                 Text(

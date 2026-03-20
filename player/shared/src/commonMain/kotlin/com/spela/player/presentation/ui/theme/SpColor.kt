@@ -13,6 +13,9 @@ object SpColor {
     val PrimaryDark = Color(0xFF4834D4)
     val PrimaryContainer = Color(0xFF1E1640)
 
+    // Link color — brighter than Primary for readable text on dark backgrounds
+    val Link = Color(0xFF9B8FEF)
+
     // Secondary palette - vivid coral/rose
     val Secondary = Color(0xFFFF6B81)
     val SecondaryLight = Color(0xFFFF8E9E)

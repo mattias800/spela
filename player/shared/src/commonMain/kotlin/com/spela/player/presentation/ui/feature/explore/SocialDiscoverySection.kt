@@ -241,7 +241,7 @@ fun ActiveNowSection(
                 Text(
                     text = badges.joinToString(" · "),
                     style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
+                    color = SpColor.Link,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.testTag("active_badge_${item.game.id}"),
