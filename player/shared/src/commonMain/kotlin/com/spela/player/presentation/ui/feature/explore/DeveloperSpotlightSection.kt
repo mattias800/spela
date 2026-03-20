@@ -106,7 +106,7 @@ fun DeveloperSpotlightSection(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
                                 tint = SpColor.Rating,
-                                modifier = Modifier.size(10.dp),
+                                modifier = Modifier.size(SpSpacing.IconXSmall),
                             )
                             Text(
                                 text = formatRating(spotlight.avgRating),

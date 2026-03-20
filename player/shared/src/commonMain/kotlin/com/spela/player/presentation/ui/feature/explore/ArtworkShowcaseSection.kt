@@ -176,7 +176,7 @@ private fun ArtworkCard(
                         modifier = Modifier.testTag("artwork_title_${artwork.gameId}"),
                     )
                     Text(
-                        text = artwork.consoleName,
+                        text = artwork.consoleAbbreviation.uppercase(),
                         style = SpTypography.LabelSmall,
                         color = Color.White.copy(alpha = 0.8f),
                         maxLines = 1,

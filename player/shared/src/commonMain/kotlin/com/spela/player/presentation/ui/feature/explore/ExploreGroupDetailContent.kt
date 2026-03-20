@@ -364,9 +364,9 @@ internal fun TimelineItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
-                    game.consoleName?.let { consoleName ->
+                    game.consoleAbbreviation?.let { abbr ->
                         Text(
-                            text = consoleName,
+                            text = abbr.uppercase(),
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
                         )
