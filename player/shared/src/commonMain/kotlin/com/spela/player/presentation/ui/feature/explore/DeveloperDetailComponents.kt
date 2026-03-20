@@ -295,7 +295,7 @@ internal fun TopRatedGameCard(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
                             tint = SpColor.Rating,
-                            modifier = Modifier.size(10.dp),
+                            modifier = Modifier.size(SpSpacing.IconXSmall),
                         )
                         Text(
                             text = formatRating(game.rating),
@@ -567,7 +567,7 @@ internal fun DeveloperGameItem(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
                             tint = SpColor.Rating,
-                            modifier = Modifier.size(10.dp),
+                            modifier = Modifier.size(SpSpacing.IconXSmall),
                         )
                         Text(
                             text = formatRating(game.rating),

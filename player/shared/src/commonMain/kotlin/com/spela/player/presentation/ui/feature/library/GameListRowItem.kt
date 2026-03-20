@@ -99,7 +99,7 @@ internal fun GameListRowItem(
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = SpColor.Warning,
+                                tint = SpColor.Rating,
                                 modifier = Modifier.height(SpSpacing.IconSmall).width(SpSpacing.IconSmall),
                             )
                             Spacer(Modifier.width(SpSpacing.XXSmall))
