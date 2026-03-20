@@ -58,7 +58,6 @@ fun DeveloperSpotlightSection(
         SpCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .testTag("developer_spotlight_card")
                 .semantics {
                     contentDescription = "${spotlight.name}, ${spotlight.gameCount} games, rating ${formatRating(spotlight.avgRating)}"
@@ -223,7 +222,6 @@ fun DeveloperSpotlightSkeleton(
         SpShimmer(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .clip(RoundedCornerShape(SpSpacing.CardCornerRadius)),
             width = 400.dp,
             height = 100.dp,

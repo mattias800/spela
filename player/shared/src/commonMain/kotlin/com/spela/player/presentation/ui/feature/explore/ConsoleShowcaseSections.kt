@@ -50,7 +50,6 @@ fun ConsoleEssentials(
         title = "Essentials",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_essentials_section"),
     ) {
         GameShelf(
@@ -73,7 +72,6 @@ fun ConsoleHiddenGems(
         title = "Hidden Gems",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_hidden_gems_section"),
     ) {
         GameShelf(
@@ -97,7 +95,6 @@ fun ConsoleGenreBreakdown(
         title = "Genre Breakdown",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_genre_breakdown_section"),
     ) {
         GenreBreakdownChips(
@@ -120,7 +117,6 @@ fun ConsoleTopDevelopers(
         title = "Top Developers",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_top_developers_section"),
     ) {
         TopDevelopersList(
@@ -143,7 +139,6 @@ fun ConsoleRecentlyPlayed(
         title = "Recently Played",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_recently_played_section"),
     ) {
         GameShelf(
@@ -162,7 +157,6 @@ internal fun GenreBreakdownChips(
 ) {
     FlowRow(
         modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("genre_breakdown_chips"),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -189,7 +183,6 @@ internal fun TopDevelopersList(
 ) {
     Column(
         modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("top_developers_list"),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
