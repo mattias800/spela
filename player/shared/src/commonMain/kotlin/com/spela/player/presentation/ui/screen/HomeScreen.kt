@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -177,7 +178,9 @@ fun HomeScreen(
                             SpEmptyStates.EmptyLibrary()
                         }
                     } else {
+                        val listState = rememberLazyListState()
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 top = titleBarInset,

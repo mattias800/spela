@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -94,8 +96,10 @@ internal fun LibraryConsolesTab(
                         SpEmptyStates.EmptyLibrary()
                     }
                 } else {
+                    val listState = rememberLazyListState()
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().testTag("consoles-list"),
                         contentPadding = PaddingValues(
                             start = SpSpacing.ScreenHorizontal,
                             end = SpSpacing.ScreenHorizontal,

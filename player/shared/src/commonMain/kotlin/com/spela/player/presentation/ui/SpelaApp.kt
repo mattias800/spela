@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -360,6 +361,7 @@ fun SpelaApp(
 
                 Box(modifier = Modifier.weight(1f)) {
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+                    val saveableStateHolder = rememberSaveableStateHolder()
                     AnimatedContent(
                         targetState = navState.currentScreen,
                         transitionSpec = {
@@ -374,6 +376,7 @@ fun SpelaApp(
                             }
                         },
                     ) { screen ->
+                        saveableStateHolder.SaveableStateProvider(screen.route) {
                         when (screen) {
                             is SpScreen.ServerConnection -> {
                                 ServerConnectionScreen(
@@ -1286,6 +1289,7 @@ fun SpelaApp(
                                     )
                                 }
                             }
+                        }
                         }
                     }
 
