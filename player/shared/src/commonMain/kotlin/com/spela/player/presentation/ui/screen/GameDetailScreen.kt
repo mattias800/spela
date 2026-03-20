@@ -539,6 +539,9 @@ private fun GameInfoContent(
     onCancelLaunch: () -> Unit = {},
     onNavigateToGame: ((String) -> Unit)? = null,
 ) {
+    // Game info header — tightly spaced, treated as one unit
+    Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+
     // Title row with trophy icon if achievements exist
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -560,7 +563,6 @@ private fun GameInfoContent(
         }
     }
 
-    Spacer(Modifier.height(SpSpacing.Small))
 
     // Badges row: console, verification, region, IGDB rating, community rating
     @OptIn(ExperimentalLayoutApi::class)
@@ -594,7 +596,6 @@ private fun GameInfoContent(
     }
 
     if (state.isScraping) {
-        Spacer(Modifier.height(SpSpacing.Small))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -612,7 +613,6 @@ private fun GameInfoContent(
         }
     }
 
-    Spacer(Modifier.height(SpSpacing.XLarge))
 
     // Action buttons row: Play/Download + Actions menu + playtime chips
     val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
@@ -748,7 +748,6 @@ private fun GameInfoContent(
 
     // Sync status row (shown while pre-launch or post-exit sync is in progress)
     syncState?.takeIf { !it.isTimedOut }?.let { sync ->
-        Spacer(Modifier.height(SpSpacing.Small))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -772,7 +771,6 @@ private fun GameInfoContent(
     if (missingBiosFiles.isNotEmpty()) {
         var showBiosInfo by remember { mutableStateOf(false) }
 
-        Spacer(Modifier.height(SpSpacing.Small))
         BiosWarningChip(
             missingFiles = missingBiosFiles,
             onClick = { showBiosInfo = !showBiosInfo },
@@ -794,7 +792,6 @@ private fun GameInfoContent(
                     style = SpTypography.LabelMedium,
                     color = SpColor.Warning,
                 )
-                Spacer(Modifier.height(SpSpacing.XSmall))
                 missingBiosFiles.forEach { file ->
                     Text(
                         text = file.fileName,
@@ -832,7 +829,6 @@ private fun GameInfoContent(
         }
     }
 
-    Spacer(Modifier.height(SpSpacing.XLarge))
 
     // Description (plain text, matching web UI)
     game.description?.let { description ->
@@ -841,11 +837,12 @@ private fun GameInfoContent(
             style = SpTypography.BodyMedium,
             color = SpColor.OnBackgroundSecondary,
         )
-        Spacer(Modifier.height(SpSpacing.XLarge))
     }
 
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
     MetadataGrid(game = game, onGradient = true, isDemoConsole = isDemoConsole)
+
+    } // end of tightly-spaced header Column
 
     // Variants section -- split into Versions (non-hack) and ROM Hacks (hack-tagged)
     val versionVariants = detail.variants.filter { variant ->
@@ -856,7 +853,7 @@ private fun GameInfoContent(
     }
 
     if (versionVariants.isNotEmpty()) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
+        Spacer(Modifier.height(SpSpacing.Default))
         VariantsSection(
             title = "Versions",
             variants = versionVariants,
@@ -865,7 +862,7 @@ private fun GameInfoContent(
     }
 
     if (hackVariants.isNotEmpty()) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
+        Spacer(Modifier.height(SpSpacing.Default))
         VariantsSection(
             title = "ROM Hacks",
             variants = hackVariants,
@@ -875,7 +872,7 @@ private fun GameInfoContent(
 
     // "Based on" section for standalone ROM hacks
     detail.parentGame?.let { parent ->
-        Spacer(Modifier.height(SpSpacing.XLarge))
+        Spacer(Modifier.height(SpSpacing.Default))
         BasedOnSection(
             parentGame = parent,
             onNavigateToGame = onNavigateToGame,
@@ -884,7 +881,7 @@ private fun GameInfoContent(
 
     // Standalone ROM Hacks section
     if (detail.romHacks.isNotEmpty()) {
-        Spacer(Modifier.height(SpSpacing.XLarge))
+        Spacer(Modifier.height(SpSpacing.Default))
         RomHacksSection(
             romHacks = detail.romHacks,
             onNavigateToGame = onNavigateToGame,
