@@ -176,6 +176,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -184,6 +185,7 @@ fun ExploreScreen(
                             }
                         } else if (state.consoleHighlights.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -204,6 +206,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingMoods && state.moods.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -212,6 +215,7 @@ fun ExploreScreen(
                             }
                         } else if (state.moods.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -243,6 +247,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "For You",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -251,6 +256,7 @@ fun ExploreScreen(
                             }
                         } else if (state.forYouRows.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "For You",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -269,6 +275,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingThemes && state.themes.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -277,6 +284,7 @@ fun ExploreScreen(
                             }
                         } else if (state.themes.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -297,6 +305,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingKeywords && state.keywords.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -305,6 +314,7 @@ fun ExploreScreen(
                             }
                         } else if (state.keywords.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -325,6 +335,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -333,6 +344,7 @@ fun ExploreScreen(
                             }
                         } else if (state.featuredSeries.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -354,6 +366,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Developer Spotlight",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -362,6 +375,7 @@ fun ExploreScreen(
                             }
                         } else if (state.developerSpotlight != null) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Developer Spotlight",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -383,6 +397,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -391,6 +406,7 @@ fun ExploreScreen(
                             }
                         } else if (state.artworkShowcase.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -411,6 +427,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -419,6 +436,7 @@ fun ExploreScreen(
                             }
                         } else if (state.trendingGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -437,6 +455,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -445,6 +464,7 @@ fun ExploreScreen(
                             }
                         } else if (state.communityTopGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -463,6 +483,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -471,6 +492,7 @@ fun ExploreScreen(
                             }
                         } else if (state.cultClassics.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -489,6 +511,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -497,6 +520,7 @@ fun ExploreScreen(
                             }
                         } else if (state.activeNowGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -515,6 +539,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -523,6 +548,7 @@ fun ExploreScreen(
                             }
                         } else if (state.recentReviews.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -541,6 +567,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "On This Day",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -554,6 +581,7 @@ fun ExploreScreen(
                                 "On This Day"
                             }
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = title,
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -572,6 +600,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -580,6 +609,7 @@ fun ExploreScreen(
                             }
                         } else if (state.anniversaries.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -598,6 +628,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -606,6 +637,7 @@ fun ExploreScreen(
                             }
                         } else if (state.easyToCompleteGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -624,6 +656,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -632,6 +665,7 @@ fun ExploreScreen(
                             }
                         } else if (state.hardestGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -650,6 +684,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -658,6 +693,7 @@ fun ExploreScreen(
                             }
                         } else if (state.almostDoneGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -676,6 +712,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -684,6 +721,7 @@ fun ExploreScreen(
                             }
                         } else if (state.freshChallengeGames.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -702,6 +740,7 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -710,6 +749,7 @@ fun ExploreScreen(
                             }
                         } else if (state.activeChallenges.isNotEmpty()) {
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
@@ -731,6 +771,7 @@ fun ExploreScreen(
                         val skeletonTitles = listOf("Top Rated", "Recently Added", "Hidden Gems")
                         items(skeletonTitles.size) { index ->
                             SpTitledSection(
+                                includeTopSpacing = false,
                                 title = skeletonTitles[index],
                                 edgeToEdgeContent = true,
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
@@ -745,7 +786,8 @@ fun ExploreScreen(
                         ) { row ->
                             if (row.games.isNotEmpty()) {
                                 SpTitledSection(
-                                    title = row.title,
+                                includeTopSpacing = false,
+                                title = row.title,
                                     edgeToEdgeContent = true,
                                     modifier = Modifier
                                         .padding(horizontal = SpSpacing.ScreenHorizontal)
