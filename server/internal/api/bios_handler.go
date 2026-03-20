@@ -37,6 +37,7 @@ type BiosFileResponse struct {
 	Size        int64   `json:"size"`
 	MD5         string  `json:"md5"`
 	ExpectedMD5 string  `json:"expectedMd5,omitempty"`
+	SubDir      string  `json:"subDir,omitempty"`
 	ConsoleID   *string `json:"consoleId"`
 	ConsoleName *string `json:"consoleName,omitempty"`
 	Description *string `json:"description,omitempty"`
@@ -50,7 +51,8 @@ type ConsoleFileStatus struct {
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 	MD5         string `json:"md5"`
-	Status      string `json:"status"` // "valid", "present", "invalid", "missing"
+	Status      string `json:"status"`            // "valid", "present", "invalid", "missing"
+	SubDir      string `json:"subDir,omitempty"`   // subdirectory within system_dir
 }
 
 // ConsoleBiosStatus represents the BIOS status summary for one console.
@@ -134,12 +136,22 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 		consoleID := e.ConsoleID
 		desc := e.Description
 
+		// Check if file exists: flat first, then subdirectory path
+		fullPath := e.FilePath(h.Storage.BiosDir)
 		info, onDisk := diskFiles[e.FileName]
+		if !onDisk && e.SubDir != "" {
+			// Check subdirectory path
+			if fi, err := os.Stat(fullPath); err == nil {
+				info = fi
+				onDisk = true
+			}
+		}
 		if !onDisk {
 			fileResponses = append(fileResponses, BiosFileResponse{
 				Name:        e.FileName,
 				Size:        0,
 				MD5:         e.MD5,
+				SubDir:      e.SubDir,
 				ConsoleID:   &consoleID,
 				ConsoleName: &consoleName,
 				Description: &desc,
@@ -152,7 +164,7 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 		matchedFiles[e.FileName] = true
 
 		// Compute MD5 of the file on disk
-		fileMD5, err := computeFileMD5(filepath.Join(h.Storage.BiosDir, e.FileName))
+		fileMD5, err := computeFileMD5(fullPath)
 		status := "present"
 		if err == nil {
 			if e.MD5 == "" {
@@ -169,6 +181,7 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 			Name:        e.FileName,
 			Size:        info.Size(),
 			MD5:         fileMD5,
+			SubDir:      e.SubDir,
 			ConsoleID:   &consoleID,
 			ConsoleName: &consoleName,
 			Description: &desc,
@@ -216,10 +229,16 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 				optionalTotal++
 			}
 
+			fullPath := e.FilePath(h.Storage.BiosDir)
 			_, onDisk := diskFiles[e.FileName]
+			if !onDisk && e.SubDir != "" {
+				if _, err := os.Stat(fullPath); err == nil {
+					onDisk = true
+				}
+			}
 			status := "missing"
 			if onDisk {
-				fileMD5, err := computeFileMD5(filepath.Join(h.Storage.BiosDir, e.FileName))
+				fileMD5, err := computeFileMD5(fullPath)
 				if err == nil && e.MD5 == "" {
 					status = "present"
 				} else if err == nil && fileMD5 == e.MD5 {
@@ -253,6 +272,7 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 				Required:    e.Required,
 				MD5:         e.MD5,
 				Status:      status,
+				SubDir:      e.SubDir,
 			})
 		}
 
@@ -292,8 +312,20 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 	path := h.Storage.BiosFilePath(filename)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
-		return
+		// Check if the file exists in a registry-defined subdirectory
+		for _, e := range bios.ByFileName(filename) {
+			if e.SubDir != "" {
+				subPath := e.FilePath(h.Storage.BiosDir)
+				if _, serr := os.Stat(subPath); serr == nil {
+					path = subPath
+					break
+				}
+			}
+		}
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
+			return
+		}
 	}
 
 	// Validate the resolved path stays within BiosDir

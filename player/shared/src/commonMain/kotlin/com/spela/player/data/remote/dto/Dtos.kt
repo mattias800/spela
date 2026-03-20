@@ -549,6 +549,7 @@ data class BiosFileDto(
     val name: String,
     val size: Long,
     val md5: String? = null,
+    val subDir: String? = null,
     val consoleId: String? = null,
     val consoleName: String? = null,
     val description: String? = null,
@@ -576,6 +577,7 @@ data class BiosConsoleFileDto(
     val required: Boolean = false,
     val md5: String? = null,
     val status: String = "missing",
+    val subDir: String? = null,
 )
 
 @Serializable
