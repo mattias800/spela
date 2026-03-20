@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -87,14 +88,6 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
-private data class SortOption(val key: String, val label: String)
-private val sortOptions = listOf(
-    SortOption("title",       "Title (A–Z)"),
-    SortOption("rating",      "Rating"),
-    SortOption("releaseDate", "Release date"),
-    SortOption("lastPlayed",  "Recently played"),
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConsoleScreen(
@@ -105,25 +98,14 @@ fun ConsoleScreen(
     onBack: () -> Unit,
     onDeveloperSelected: (String) -> Unit = {},
     onNavigateToConsoleSettings: () -> Unit = {},
+    onBrowseAllGames: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
 
     val console = state.consoles.firstOrNull { it.id == consoleId }
     val consoleName = console?.name ?: "Games"
 
-    var isSearchVisible by rememberSaveable { mutableStateOf(false) }
-    var showSortMenu by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
-
-    // Back handler: close search first, then navigate back
-    PlatformBackHandler {
-        if (isSearchVisible) {
-            viewModel.onIntent(GameListIntent.Search(""))
-            isSearchVisible = false
-        } else {
-            onBack()
-        }
-    }
+    PlatformBackHandler { onBack() }
 
     LaunchedEffect(consoleId) {
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
@@ -133,32 +115,11 @@ fun ConsoleScreen(
         exploreViewModel?.loadConsoleShowcase(consoleId)
     }
 
-    // Auto-focus search field when it becomes visible
-    LaunchedEffect(isSearchVisible) {
-        if (isSearchVisible) {
-            focusRequester.requestFocus()
-        }
-    }
-
     val continuePlayingGames = remember(state.games) {
         state.games
             .filter { it.lastPlayedAt != null }
             .sortedByDescending { it.lastPlayedAt }
             .take(5)
-    }
-
-    // Client-side sort applied on top of whatever order the server returns.
-    val sortedGames = remember(state.games, state.sortBy, state.sortOrder) {
-        val asc = state.sortOrder != "desc"
-        when (state.sortBy) {
-            "rating"      -> if (asc) state.games.sortedBy { it.averageRating }
-                             else state.games.sortedByDescending { it.averageRating }
-            "releaseDate" -> if (asc) state.games.sortedBy { it.releaseDate ?: "" }
-                             else state.games.sortedByDescending { it.releaseDate ?: "" }
-            "lastPlayed"  -> state.games.sortedByDescending { it.lastPlayedAt ?: "" }
-            else          -> if (asc) state.games.sortedBy { it.title.lowercase() }
-                             else state.games.sortedByDescending { it.title.lowercase() }
-        }
     }
 
     // Darkened version of the console's brand gradient for the full-screen background
@@ -247,37 +208,6 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Search field
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column {
-                            AnimatedVisibility(
-                                visible = isSearchVisible,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut(),
-                            ) {
-                                SpSearchField(
-                                    value = state.searchQuery,
-                                    onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = SpSpacing.Small)
-                                        .focusRequester(focusRequester),
-                                    placeholder = "Search $consoleName games...",
-                                    trailingIcon = {
-                                        SpIconButton(
-                                            icon = Icons.Filled.Close,
-                                            contentDescription = "Close search",
-                                            onClick = {
-                                                viewModel.onIntent(GameListIntent.Search(""))
-                                                isSearchVisible = false
-                                            },
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                    }
-
                     // BIOS warning banner
                     if (consoleId in state.consolesWithMissingBios) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -298,9 +228,6 @@ fun ConsoleScreen(
                             ConsoleHiddenGems(exploreViewModel, onGameSelected)
                         }
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleGenreBreakdown(exploreViewModel)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
                             ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected)
                         }
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -308,79 +235,34 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Loading state
-                    if (state.isLoading && state.games.isEmpty()) {
+                    // Browse All Games button
+                    if (state.games.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            SpButton(
+                                text = "Browse All ${state.games.size} Games",
+                                onClick = onBrowseAllGames,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = SpSpacing.Default),
+                            )
+                        }
+                    } else if (state.isLoading) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().height(300.dp),
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 SpLoadingIndicator(message = "Loading games...")
                             }
                         }
-                    } else if (state.games.isEmpty()) {
-                        // Empty state
+                    } else {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().height(300.dp),
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (state.searchQuery.length >= 2) {
-                                    SpEmptyStates.NoSearchResults(query = state.searchQuery)
-                                } else {
-                                    SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
-                                }
+                                SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
                             }
-                        }
-                    } else {
-                        // "Games" heading + sort dropdown (#2)
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = SpSpacing.Default, bottom = SpSpacing.Small),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "${sortedGames.size} games",
-                                    style = SpTypography.HeadlineSmall,
-                                    color = SpColor.OnBackground,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Box {
-                                    SpIconButton(
-                                        icon = Icons.Filled.SwapVert,
-                                        contentDescription = "Sort games",
-                                        onClick = { showSortMenu = true },
-                                    )
-                                    DropdownMenu(
-                                        expanded = showSortMenu,
-                                        onDismissRequest = { showSortMenu = false },
-                                    ) {
-                                        sortOptions.forEach { option ->
-                                            DropdownMenuItem(
-                                                text = { Text(option.label) },
-                                                onClick = {
-                                                    viewModel.onIntent(GameListIntent.SetSortBy(option.key))
-                                                    showSortMenu = false
-                                                },
-                                                leadingIcon = if (state.sortBy == option.key) {
-                                                    { Icon(Icons.Filled.Check, null, Modifier.size(16.dp)) }
-                                                } else null,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Game grid items (sorted)
-                        items(sortedGames, key = { it.id }) { game ->
-                            GameGridItem(
-                                game = game,
-                                onClick = { onGameSelected(game.id) },
-                                onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
-                            )
                         }
                     }
                 }
@@ -391,14 +273,7 @@ fun ConsoleScreen(
                 title = consoleName,
                 showBack = true,
                 onGradient = true,
-                onBack = {
-                    if (isSearchVisible) {
-                        viewModel.onIntent(GameListIntent.Search(""))
-                        isSearchVisible = false
-                    } else {
-                        onBack()
-                    }
-                },
+                onBack = onBack,
                 titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
                     {
                         AsyncImage(
@@ -409,22 +284,6 @@ fun ConsoleScreen(
                     }
                 } else null,
                 actions = {
-                    SpIconButton(
-                        icon = Icons.Filled.Search,
-                        contentDescription = "Search games",
-                        onGradient = true,
-                        onClick = { isSearchVisible = !isSearchVisible },
-                        badge = if (!isSearchVisible && state.searchQuery.isNotEmpty()) {
-                            {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .align(Alignment.TopEnd)
-                                        .background(SpColor.Primary, shape = CircleShape),
-                                )
-                            }
-                        } else null,
-                    )
                     SpIconButton(
                         icon = Icons.Filled.Settings,
                         contentDescription = "Console settings",

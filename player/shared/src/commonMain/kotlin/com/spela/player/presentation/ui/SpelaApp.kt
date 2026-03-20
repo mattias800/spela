@@ -70,6 +70,7 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
+import com.spela.player.presentation.ui.screen.ConsoleGamesScreen
 import com.spela.player.presentation.ui.screen.ConsoleScreen
 import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
 import com.spela.player.presentation.ui.screen.ConsolesScreen
@@ -840,6 +841,26 @@ fun SpelaApp(
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.ConsoleSettings(screen.consoleId))
                                         )
+                                    },
+                                    onBrowseAllGames = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ConsoleGames(screen.consoleId))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.ConsoleGames -> {
+                                ConsoleGamesScreen(
+                                    consoleId = screen.consoleId,
+                                    viewModel = gameListViewModel,
+                                    onGameSelected = { gameId: String ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
                             }
