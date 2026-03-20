@@ -139,6 +139,7 @@ fun ExploreScreen(
                     topPadding = titleBarInset,
                 ) {
                     // Hero carousel
+                    if (state.isLoadingFeatured || state.featuredGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingFeatured && state.featuredGames.isEmpty()) {
                             HeroCarouselSkeleton(
@@ -156,6 +157,7 @@ fun ExploreScreen(
                             )
                         }
                     }
+                    }
 
                     // Global search entry point — tappable search bar
                     item {
@@ -170,6 +172,7 @@ fun ExploreScreen(
                     }
 
                     // Console quick-jump section
+                    if (state.isLoadingConsoleHighlights || state.consoleHighlights.isNotEmpty()) {
                     item {
                         if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
                             SpTitledSection(
@@ -194,8 +197,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Mood picker section
+                    if (state.isLoadingMoods || state.moods.isNotEmpty()) {
                     item {
                         if (state.isLoadingMoods && state.moods.isEmpty()) {
                             SpTitledSection(
@@ -220,6 +225,7 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Wild Features — Lucky & Wizard
                     item {
@@ -232,6 +238,7 @@ fun ExploreScreen(
                     }
 
                     // For You section (personalized recommendations)
+                    if (state.isLoadingForYou || state.forYouRows.isNotEmpty()) {
                     item {
                         if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
                             SpTitledSection(
@@ -254,8 +261,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Theme grid section
+                    if (state.isLoadingThemes || state.themes.isNotEmpty()) {
                     item {
                         if (state.isLoadingThemes && state.themes.isEmpty()) {
                             SpTitledSection(
@@ -280,8 +289,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Keyword chips section
+                    if (state.isLoadingKeywords || state.keywords.isNotEmpty()) {
                     item {
                         if (state.isLoadingKeywords && state.keywords.isEmpty()) {
                             SpTitledSection(
@@ -306,8 +317,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Series shelf section
+                    if (state.isLoadingFeaturedSeries || state.featuredSeries.isNotEmpty()) {
                     item {
                         if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
                             SpTitledSection(
@@ -332,6 +345,7 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
 
                     // Developer spotlight section
@@ -352,6 +366,7 @@ fun ExploreScreen(
                     }
 
                     // Artwork showcase section
+                    if (state.isLoadingArtwork || state.artworkShowcase.isNotEmpty()) {
                     item {
                         if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
                             SpTitledSection(
@@ -388,9 +403,11 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Social & Community Discovery sections
                     // Trending
+                    if (state.isLoadingSocial || state.trendingGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
                             SpTitledSection(
@@ -413,8 +430,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Community Favorites
+                    if (state.isLoadingSocial || state.communityTopGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
                             SpTitledSection(
@@ -437,8 +456,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Cult Classics
+                    if (state.isLoadingSocial || state.cultClassics.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
                             SpTitledSection(
@@ -461,8 +482,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Active Right Now
+                    if (state.isLoadingSocial || state.activeNowGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
                             SpTitledSection(
@@ -485,8 +508,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Recently Reviewed
+                    if (state.isLoadingSocial || state.recentReviews.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
                             SpTitledSection(
@@ -509,8 +534,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Temporal Discovery: On This Day
+                    if (state.isLoadingTemporal || state.onThisDayGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
                             SpTitledSection(
@@ -538,8 +565,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Temporal Discovery: Your Anniversaries
+                    if (state.isLoadingTemporal || state.anniversaries.isNotEmpty()) {
                     item {
                         if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
                             SpTitledSection(
@@ -562,8 +591,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Easy to 100%
+                    if (state.isLoadingAchievement || state.easyToCompleteGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
                             SpTitledSection(
@@ -586,8 +617,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Mount Everest (Hardest)
+                    if (state.isLoadingAchievement || state.hardestGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
                             SpTitledSection(
@@ -610,8 +643,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Almost Done
+                    if (state.isLoadingAchievement || state.almostDoneGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
                             SpTitledSection(
@@ -634,8 +669,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Fresh Challenges
+                    if (state.isLoadingAchievement || state.freshChallengeGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
                             SpTitledSection(
@@ -658,8 +695,10 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Active Challenges
+                    if (state.isLoadingAchievement || state.activeChallenges.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
                             SpTitledSection(
@@ -683,6 +722,7 @@ fun ExploreScreen(
                                 )
                             }
                         }
+                    }
                     }
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {

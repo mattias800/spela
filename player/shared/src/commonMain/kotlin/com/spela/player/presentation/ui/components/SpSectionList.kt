@@ -34,7 +34,7 @@ fun SpSectionList(
             top = topPadding,
             bottom = SpSpacing.XLarge,
         ),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
         content = content,
     )
 }
