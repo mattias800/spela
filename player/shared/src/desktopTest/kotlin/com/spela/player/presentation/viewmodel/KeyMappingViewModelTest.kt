@@ -8,6 +8,7 @@ import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -319,6 +320,69 @@ class KeyMappingViewModelTest {
         assertEquals(DefaultKeyMappings.FULL.buttons.size, state.buttonsForConsole.size)
     }
 
+    @Test
+    fun applyPresetReloadsGamepadPortManager() = runTest(testDispatcher) {
+        val portManager = GamepadPortManager(fakeRepo)
+        val scope = CoroutineScope(testDispatcher)
+        val vm = KeyMappingViewModel(
+            keyMappingRepository = fakeRepo,
+            preferencesRepository = fakePrefsRepo,
+            gamepadPortManager = portManager,
+            dispatchers = testDispatchers,
+            scope = scope,
+        )
+
+        // Load initial mapping for a console
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        // Register a device so port 0 has an active mapping
+        portManager.connectDevice(1, "Test Controller")
+
+        // Apply a preset with different bindings
+        fakeRepo.presetBindings = mapOf(
+            LibretroButtons.A to 300,
+            LibretroButtons.B to 301,
+        )
+        vm.onIntent(KeyMappingIntent.ShowPresetPicker)
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.ApplyPreset("test-preset"))
+        advanceUntilIdle()
+
+        // The GamepadPortManager should now have the new bindings
+        // (mapKeyToLibretro uses the reverse mapping: keyCode -> retroButton)
+        assertEquals(LibretroButtons.A, portManager.mapKeyToLibretro(0, 300))
+        assertEquals(LibretroButtons.B, portManager.mapKeyToLibretro(0, 301))
+    }
+
+    @Test
+    fun resetAllReloadsGamepadPortManager() = runTest(testDispatcher) {
+        val portManager = GamepadPortManager(fakeRepo)
+        val scope = CoroutineScope(testDispatcher)
+        val vm = KeyMappingViewModel(
+            keyMappingRepository = fakeRepo,
+            preferencesRepository = fakePrefsRepo,
+            gamepadPortManager = portManager,
+            dispatchers = testDispatchers,
+            scope = scope,
+        )
+
+        vm.onIntent(KeyMappingIntent.LoadMapping("nes"))
+        advanceUntilIdle()
+
+        // Register a device
+        portManager.connectDevice(1, "Test Controller")
+
+        // Modify a binding then reset
+        vm.onIntent(KeyMappingIntent.ResetAll)
+        advanceUntilIdle()
+
+        // After reset, default mappings should be loaded in GamepadPortManager
+        val defaultA = fakeRepo.getDefaultMapping()[LibretroButtons.A]!!
+        assertEquals(LibretroButtons.A, portManager.mapKeyToLibretro(0, defaultA))
+    }
+
     // Fake repositories for testing
 
     private class FakePreferencesRepository : PreferencesRepository {
@@ -344,6 +408,7 @@ class KeyMappingViewModelTest {
     private class FakeKeyMappingRepository : KeyMappingRepository {
         private val storage = mutableMapOf<String, MutableMap<Int, Int>>() // "consoleId:port" -> bindings
         private val gameMappings = mutableMapOf<String, MutableMap<Int, Int>>()
+        var presetBindings: Map<Int, Int>? = null
 
         private val defaults = mapOf(
             LibretroButtons.UP to 100,
@@ -381,8 +446,13 @@ class KeyMappingViewModelTest {
         }
 
         override fun getDefaultMapping(): Map<Int, Int> = defaults
-        override fun getAvailablePresets(): List<KeyMappingPreset> = emptyList()
-        override suspend fun applyPreset(presetId: String) {}
+        override fun getAvailablePresets(): List<KeyMappingPreset> = listOf(
+            KeyMappingPreset("test-preset", "Test Preset", "Test preset description", presetBindings ?: defaults),
+        )
+        override suspend fun applyPreset(presetId: String) {
+            val bindings = presetBindings ?: return
+            storage[key(DEFAULT_CONSOLE_ID, 0)] = bindings.toMutableMap()
+        }
         override suspend fun ensureDefaultsApplied() {}
         override suspend fun getEffectiveMappingForGame(gameId: String, consoleId: String, port: Int): Map<Int, Int> {
             return gameMappings[gameId] ?: getEffectiveMapping(consoleId, port)
