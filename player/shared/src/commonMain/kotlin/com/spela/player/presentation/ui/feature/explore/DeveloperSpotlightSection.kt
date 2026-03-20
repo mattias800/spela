@@ -159,7 +159,7 @@ private fun SpotlightGameCard(
             .width(SpSpacing.CoverMediumWidth)
             .testTag("developer_spotlight_game_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
+                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -187,7 +187,7 @@ private fun SpotlightGameCard(
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
                 Text(
-                    text = game.consoleName,
+                    text = game.consoleId.uppercase(),
                     style = SpTypography.LabelSmall,
                     color = SpColor.OnBackgroundTertiary,
                     maxLines = 1,
