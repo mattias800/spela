@@ -51,6 +51,7 @@ import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -283,10 +284,9 @@ private fun HeroSlide(
             ) {
                 // Console badge — full name since the hero has plenty of space
                 val consoleColor = parseHexColor(game.consoleColor, SpColor.Primary)
-                SpChip(
-                    text = game.consoleName.ifEmpty { game.consoleAbbreviation.uppercase() },
-                    color = consoleColor,
-                    isSelected = true,
+                SpConsoleChip(
+                    consoleName = game.consoleName.ifEmpty { game.consoleAbbreviation.uppercase() },
+                    consoleColor = consoleColor,
                     onGradient = true,
                 )
 

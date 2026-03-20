@@ -33,6 +33,7 @@ import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
+import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -95,18 +96,9 @@ internal fun ContinuePlayingCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
-                MetadataBadge(
-                    icon = {
-                        Icon(
-                            Icons.Filled.SportsEsports,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = SpColor.OnCard.copy(alpha = 0.85f),
-                        )
-                    },
-                    label = game.consoleName,
-                    backgroundColor = SpColor.OnCard.copy(alpha = 0.12f),
-                    textColor = SpColor.OnCard.copy(alpha = 0.85f),
+                SpConsoleChip(
+                    consoleName = game.consoleName,
+                    consoleColor = SpColor.Primary,
                 )
                 if (game.totalPlayTime > 0) {
                     Spacer(Modifier.height(SpSpacing.XXSmall))
