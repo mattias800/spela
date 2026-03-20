@@ -103,10 +103,13 @@ class DownloadRepositoryImpl(
         val path = "$gameDir/$actualFileName"
 
         apiClient.downloadGameToFile(gameId, fileStorage, path) { downloaded, total ->
-            // Use server-reported fileSize as fallback when Content-Length is missing
-            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else null
+            // Prefer the DB file size over Content-Length. OkHttp transparently
+            // decompresses gzip responses, so Content-Length may report the
+            // compressed size while downloaded bytes count decompressed data,
+            // causing the progress bar to jump past 100%.
+            val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal ?: -1))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
             }
         }
 
@@ -148,16 +151,18 @@ class DownloadRepositoryImpl(
             disc.fileName.endsWith(".gdi", ignoreCase = true)) {
             // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk
             apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
+                val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: disc.fileSize))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
                 }
             }
         } else {
             // Single file — stream to disk
             val discPath = "$gameDir/${disc.fileName}"
             apiClient.downloadDiscToFile(gameId, disc.discNumber, fileStorage, discPath) { downloaded, total ->
+                val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, total ?: disc.fileSize))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
                 }
             }
         }
@@ -185,9 +190,9 @@ class DownloadRepositoryImpl(
         fileStorage.createDirectory(gameDir)
 
         apiClient.downloadGameAndExtract(gameId, fileStorage, gameDir) { downloaded, total ->
-            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else null
+            val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal ?: -1))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
             }
         }
 
