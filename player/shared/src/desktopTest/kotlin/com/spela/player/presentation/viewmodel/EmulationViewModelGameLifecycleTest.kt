@@ -255,4 +255,24 @@ class EmulationViewModelGameLifecycleTest {
         assertEquals("explicit-session", vm.state.value.sessionId)
         assertEquals(0, builder.sessionRepository.createSessionCallCount)
     }
+
+    @Test
+    fun newGameCreatesNewSessionInsteadOfReusing() = runTest {
+        // Set up an existing session
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "Default")
+        )
+        val vm = builder.build()
+
+        // Start game with skipAutoLoad=true ("New Game")
+        vm.onIntent(EmulationIntent.StartGame("game1", skipAutoLoad = true))
+        builder.advanceTimeBy(100)
+
+        // Should create a NEW session, not reuse the existing one
+        assertEquals(1, builder.sessionRepository.createSessionCallCount)
+        assertNotNull(vm.state.value.sessionId)
+        // The new session ID should NOT be the existing one
+        assertTrue(vm.state.value.sessionId != "existing-42",
+            "New Game should create a fresh session, not reuse existing")
+    }
 }

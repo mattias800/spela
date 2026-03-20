@@ -60,17 +60,26 @@ class SaveManager(
      * Ensures a session exists for the given game. If sessionId is already set,
      * returns it. Otherwise tries to reuse the most recent session, or creates
      * a new one named "Default" (matching the web UI behavior).
+     *
+     * When [forceNew] is true (user chose "New Game"), always creates a fresh
+     * session instead of reusing an existing one. This prevents overwriting
+     * auto-saves from a previous playthrough.
+     *
      * Returns the resolved session ID, or null if offline/failed.
      */
-    suspend fun ensureSession(gameId: String, sessionId: String?): String? {
+    suspend fun ensureSession(gameId: String, sessionId: String?, forceNew: Boolean = false): String? {
         if (sessionId != null) return sessionId
         return try {
-            val existing = sessionRepository.getSessionsForGame(gameId).getOrNull()
-            if (!existing.isNullOrEmpty()) {
-                existing.first().id
-            } else {
-                sessionRepository.createSession(gameId, "Default").getOrNull()?.id
+            if (!forceNew) {
+                val existing = sessionRepository.getSessionsForGame(gameId).getOrNull()
+                if (!existing.isNullOrEmpty()) {
+                    return existing.first().id
+                }
             }
+            val existing = sessionRepository.getSessionsForGame(gameId).getOrNull()
+            val number = (existing?.size ?: 0) + 1
+            val name = if (number == 1) "Default" else "Playthrough $number"
+            sessionRepository.createSession(gameId, name).getOrNull()?.id
         } catch (e: Exception) {
             println("[SaveManager] Failed to ensure session: ${e.message}")
             null
