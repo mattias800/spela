@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -138,6 +139,7 @@ fun ExploreScreen(
                         top = titleBarInset,
                         bottom = SpSpacing.XLarge,
                     ),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                 ) {
                     // Hero carousel
                     item {
@@ -145,7 +147,6 @@ fun ExploreScreen(
                             HeroCarouselSkeleton(
                                 modifier = Modifier.padding(
                                     horizontal = SpSpacing.ScreenHorizontal,
-                                    vertical = SpSpacing.Default,
                                 ),
                             )
                         } else if (state.featuredGames.isNotEmpty()) {
@@ -154,7 +155,6 @@ fun ExploreScreen(
                                 onGameSelected = onGameSelected,
                                 modifier = Modifier.padding(
                                     horizontal = SpSpacing.ScreenHorizontal,
-                                    vertical = SpSpacing.Default,
                                 ),
                             )
                         }
@@ -167,7 +167,6 @@ fun ExploreScreen(
                             modifier = Modifier
                                 .padding(
                                     horizontal = SpSpacing.ScreenHorizontal,
-                                    vertical = SpSpacing.Small,
                                 )
                                 .testTag("explore_search_bar"),
                         )
