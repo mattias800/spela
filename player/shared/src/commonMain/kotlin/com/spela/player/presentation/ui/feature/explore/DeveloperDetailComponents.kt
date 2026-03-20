@@ -690,7 +690,7 @@ internal fun DeveloperCompanyDescription(
                 Text(
                     text = if (expanded) "Show less" else "Show more",
                     style = SpTypography.LabelMedium,
-                    color = SpColor.Primary,
+                    color = SpColor.Link,
                     modifier = Modifier
                         .clickable { expanded = !expanded }
                         .testTag("developer_company_description_toggle"),
@@ -723,7 +723,7 @@ internal fun DeveloperCompanyDescription(
                     Text(
                         text = "Website",
                         style = SpTypography.LabelMedium,
-                        color = SpColor.Primary,
+                        color = SpColor.Link,
                         modifier = Modifier
                             .clickable { uriHandler.openUri(websiteUrl) }
                             .testTag("developer_company_website_link"),
@@ -733,7 +733,7 @@ internal fun DeveloperCompanyDescription(
                     Text(
                         text = "Wikipedia",
                         style = SpTypography.LabelMedium,
-                        color = SpColor.Primary,
+                        color = SpColor.Link,
                         modifier = Modifier
                             .clickable { uriHandler.openUri(wikipediaUrl) }
                             .testTag("developer_company_wikipedia_link"),
@@ -917,7 +917,7 @@ private fun TimelineYearColumn(
         Text(
             text = "${entry.year}",
             style = SpTypography.TitleSmall,
-            color = SpColor.Primary,
+            color = SpColor.Link,
         )
         Spacer(Modifier.height(SpSpacing.Small))
         entry.games.forEach { game ->

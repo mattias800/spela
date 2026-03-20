@@ -573,7 +573,7 @@ private fun SeeAllLink(
     Text(
         text = "See all",
         style = SpTypography.LabelLarge,
-        color = SpColor.Primary,
+        color = SpColor.Link,
         modifier = Modifier
             .clip(RoundedCornerShape(SpSpacing.Small))
             .clickable(onClick = onClick)

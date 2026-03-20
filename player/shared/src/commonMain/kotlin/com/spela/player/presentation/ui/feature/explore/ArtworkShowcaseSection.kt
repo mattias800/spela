@@ -59,7 +59,7 @@ fun ArtworkShowcaseSection(
                 Text(
                     text = "Browse Gallery",
                     style = SpTypography.LabelLarge,
-                    color = SpColor.Primary,
+                    color = SpColor.Link,
                     modifier = Modifier
                         .clip(RoundedCornerShape(SpSpacing.Small))
                         .clickable(onClick = onGallerySelected)

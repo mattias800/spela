@@ -285,6 +285,7 @@ private fun HeroSlide(
                     text = game.consoleAbbreviation,
                     color = consoleColor,
                     isSelected = true,
+                    onGradient = true,
                 )
 
                 // Rating
@@ -309,7 +310,7 @@ private fun HeroSlide(
 
                 // Genre
                 if (game.genre.isNotEmpty()) {
-                    SpChip(text = game.genre)
+                    SpChip(text = game.genre, onGradient = true)
                 }
             }
 

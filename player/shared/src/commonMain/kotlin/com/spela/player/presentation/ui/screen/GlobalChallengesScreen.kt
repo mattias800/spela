@@ -83,7 +83,7 @@ fun GlobalChallengesScreen(
                 if (selectedTabIndex < tabPositions.size) {
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = SpColor.Primary,
+                        color = SpColor.Link,
                     )
                 }
             },

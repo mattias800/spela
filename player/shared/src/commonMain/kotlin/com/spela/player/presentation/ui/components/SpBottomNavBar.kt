@@ -78,9 +78,9 @@ fun SpBottomNavBar(
                 val interactionSource = remember { MutableInteractionSource() }
                 val isFocused by interactionSource.collectIsFocusedAsState()
                 val color = when {
-                    isSelected -> SpColor.Primary
-                    isFocused -> SpColor.Primary.copy(alpha = 0.7f)
-                    else -> SpColor.OnBackgroundTertiary
+                    isSelected -> SpColor.PrimaryLight
+                    isFocused -> SpColor.PrimaryLight.copy(alpha = 0.7f)
+                    else -> SpColor.OnBackgroundSecondary
                 }
 
                 Box(

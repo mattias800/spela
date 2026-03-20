@@ -170,7 +170,7 @@ fun ActivityScreen(
                                 ) {
                                     if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
                                         CircularProgressIndicator(
-                                            color = SpColor.Primary,
+                                            color = SpColor.Link,
                                             modifier = Modifier.size(24.dp),
                                         )
                                     }
