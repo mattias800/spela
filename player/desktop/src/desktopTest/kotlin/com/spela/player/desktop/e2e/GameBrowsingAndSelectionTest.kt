@@ -68,10 +68,8 @@ class GameBrowsingAndSelectionTest {
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").performClick()
         advance(harness)
 
-        // Should navigate to console screen and show NES games
-        onNodeWithText("Castlevania").assertIsDisplayed()
-        onNodeWithText("Super Mario Bros.").assertIsDisplayed()
-        onNodeWithText("Mega Man 2").assertIsDisplayed()
+        // Should navigate to console screen and show the browse button
+        onNodeWithText("Browse All 3 Games").assertIsDisplayed()
     }
 
     @Test
