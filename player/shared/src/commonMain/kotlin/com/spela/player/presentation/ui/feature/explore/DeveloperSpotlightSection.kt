@@ -3,7 +3,6 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -178,7 +177,7 @@ private fun SpotlightGameCard(
             .width(SpSpacing.CoverMediumWidth)
             .testTag("developer_spotlight_game_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
+                contentDescription = "${game.title}, ${game.consoleName}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -206,7 +205,7 @@ private fun SpotlightGameCard(
                 )
                 Spacer(Modifier.height(SpSpacing.XXSmall))
                 Text(
-                    text = game.consoleId.uppercase(),
+                    text = game.consoleName,
                     style = SpTypography.LabelSmall,
                     color = SpColor.OnBackgroundTertiary,
                     maxLines = 1,

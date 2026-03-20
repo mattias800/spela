@@ -517,7 +517,7 @@ internal fun DeveloperGameItem(
             )
             .testTag("developer_game_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
+                contentDescription = "${game.title}, ${game.consoleName}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -557,7 +557,7 @@ internal fun DeveloperGameItem(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
                     Text(
-                        text = game.consoleId.uppercase(),
+                        text = game.consoleName,
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                     )

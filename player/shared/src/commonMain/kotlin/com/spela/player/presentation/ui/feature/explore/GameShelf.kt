@@ -72,7 +72,7 @@ internal fun ExploreGameCard(
         modifier = modifier
             .testTag("explore_game_card_${game.id}")
             .semantics {
-                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
+                contentDescription = "${game.title}, ${game.consoleName}"
                 role = Role.Button
             },
         onClick = onClick,
@@ -101,13 +101,13 @@ internal fun ExploreGameCard(
 
                 Spacer(Modifier.height(SpSpacing.XXSmall))
 
-                // Console abbreviation + rating (wraps to new line if needed)
+                // Console name + rating (wraps to new line if needed)
                 FlowRow(
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
                     Text(
-                        text = game.consoleId.uppercase(),
+                        text = game.consoleName,
                         style = SpTypography.LabelSmall,
                         color = SpColor.OnBackgroundTertiary,
                         maxLines = 1,
