@@ -471,8 +471,21 @@ If the same visual pattern appears on 2+ screens, it **must** be a shared `Sp*`
 component. Duplicating layout code across screens is the #1 source of visual
 inconsistency.
 
+**Design components vs Role components:**
+
+Components are organized in two layers:
+- **Design components** define the *look*: `SpChip`, `SpCard`, `SpButton`.
+  They are styling primitives with no domain knowledge.
+- **Role components** define the *what*: `SpConsoleChip`, `GameShelf`,
+  `SpTitledSection`. They represent a domain concept and use design
+  components internally.
+
+Screens should primarily use role components. Role components should
+use design components. This ensures that when the look of a chip
+changes, all console badges update automatically.
+
 **Common violations:**
-- Platform badges/chips rendered differently across screens — use `SpChip`
+- Platform badges/chips rendered differently across screens — use `SpConsoleChip` (not raw `SpChip`)
 - Card section headers with different typography — use `SpTitledSection`
 - Game shelves with different spacing — use `GameShelf`
 - Cover art placeholders with different colors — use `SpCoverArt`

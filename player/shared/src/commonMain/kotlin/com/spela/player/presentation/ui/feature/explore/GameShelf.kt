@@ -99,7 +99,7 @@ internal fun ExploreGameCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Spacer(Modifier.height(SpSpacing.XXSmall))
+                Spacer(Modifier.height(SpSpacing.XSmall))
 
                 // Console name + rating (wraps to new line if needed)
                 FlowRow(
@@ -108,8 +108,8 @@ internal fun ExploreGameCard(
                 ) {
                     Text(
                         text = game.consoleName,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundSecondary,
                         maxLines = 1,
                     )
 
@@ -127,8 +127,8 @@ internal fun ExploreGameCard(
                             )
                             Text(
                                 text = formatRating(game.rating),
-                                style = SpTypography.LabelSmall,
-                                color = SpColor.OnBackgroundTertiary,
+                                style = SpTypography.BodySmall,
+                                color = SpColor.OnBackgroundSecondary,
                             )
                         }
                     }
