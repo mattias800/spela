@@ -830,6 +830,8 @@ private fun GameInfoContent(
     }
 
 
+    } // end of tightly-spaced header Column
+
     // Description (plain text, matching web UI)
     game.description?.let { description ->
         Text(
@@ -841,8 +843,6 @@ private fun GameInfoContent(
 
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
     MetadataGrid(game = game, onGradient = true, isDemoConsole = isDemoConsole)
-
-    } // end of tightly-spaced header Column
 
     // Variants section -- split into Versions (non-hack) and ROM Hacks (hack-tagged)
     val versionVariants = detail.variants.filter { variant ->

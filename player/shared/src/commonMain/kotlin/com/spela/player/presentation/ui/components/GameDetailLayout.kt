@@ -216,7 +216,7 @@ private fun PortraitLayout(
                     }
                     Spacer(Modifier.height(SpSpacing.Medium))
                     coverExtra(true)
-                    Spacer(Modifier.height(SpSpacing.XLarge))
+                    Spacer(Modifier.height(SpSpacing.Large))
                 }
             }
 
