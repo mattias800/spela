@@ -39,6 +39,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.util.formatPlayTime
 
@@ -60,7 +61,7 @@ fun UserProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .spScreenBackground(),
     ) {
         SpTopBar(
             title = state.publicProfile?.username ?: "Profile",

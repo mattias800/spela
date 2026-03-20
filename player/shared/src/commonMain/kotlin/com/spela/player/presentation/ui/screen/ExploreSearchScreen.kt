@@ -49,6 +49,7 @@ import com.spela.player.presentation.ui.feature.explore.GameFilterPanel
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.util.formatRating
 
@@ -69,12 +70,12 @@ fun ExploreSearchScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .spScreenBackground()
             .testTag("explore_search_screen"),
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = "Advanced Search",

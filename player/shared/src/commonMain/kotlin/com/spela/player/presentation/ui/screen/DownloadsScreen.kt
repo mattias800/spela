@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.util.formatBytes
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.viewmodel.DownloadsIntent
@@ -67,7 +68,7 @@ fun DownloadsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .spScreenBackground(),
     ) {
         SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
 

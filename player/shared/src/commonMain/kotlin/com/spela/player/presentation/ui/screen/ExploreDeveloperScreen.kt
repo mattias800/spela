@@ -50,6 +50,7 @@ import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import androidx.compose.material3.Text
 
@@ -75,11 +76,10 @@ fun ExploreDeveloperScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().testTag("developer_detail_screen")) {
+    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("developer_detail_screen")) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = name,
