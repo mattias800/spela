@@ -65,6 +65,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -178,14 +179,9 @@ fun HomeScreen(
                             SpEmptyStates.EmptyLibrary()
                         }
                     } else {
-                        val listState = rememberLazyListState()
-                        LazyColumn(
-                            state = listState,
+                        SpSectionList(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = titleBarInset,
-                                bottom = SpSpacing.Default,
-                            ),
+                            topPadding = titleBarInset,
                         ) {
                             // Scrollable heading with app icon
                             item {
@@ -257,7 +253,7 @@ fun HomeScreen(
                                     SpTitledSection(
                                         title = "Netplay",
                                         icon = Icons.Filled.WifiTethering,
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         Column(
                                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -280,7 +276,7 @@ fun HomeScreen(
                                         title = "Continue Playing",
                                         icon = Icons.Filled.PlayArrow,
                                         edgeToEdgeContent = true,
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         ContinuePlayingRow(
                                             games = state.recentGames.take(6),
@@ -303,7 +299,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToPlayLater,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         GameCarouselRow(
                                             games = state.playLaterGames.take(6),
@@ -326,7 +322,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToFavorites,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         GameCarouselRow(
                                             games = state.favoriteGames.take(6),
@@ -343,7 +339,7 @@ fun HomeScreen(
                                         title = "Recently Added",
                                         icon = Icons.Filled.NewReleases,
                                         edgeToEdgeContent = true,
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         GameCarouselRow(
                                             games = state.recentlyAddedGames.take(6),
@@ -368,7 +364,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToStats,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         RecentAchievementsRow(achievements = state.recentAchievements)
                                     }
@@ -388,7 +384,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToChallenges,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         TrendingChallengesRow(
                                             challenges = state.trendingChallenges,
@@ -405,7 +401,7 @@ fun HomeScreen(
                                         title = "Top Rated",
                                         icon = Icons.Filled.Star,
                                         edgeToEdgeContent = true,
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         TopRatedRow(
                                             games = state.topRatedGames,
@@ -424,7 +420,7 @@ fun HomeScreen(
                                         title = "Online Now",
                                         icon = Icons.Filled.People,
                                         edgeToEdgeContent = true,
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         OnlineUsersRow(
                                             users = socialState.onlineUsers,
@@ -446,7 +442,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToActivity,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         Column(
                                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -471,7 +467,7 @@ fun HomeScreen(
                                                 onClick = onNavigateToStats,
                                             )
                                         },
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                        
                                     ) {
                                         PersonalStatsCard(stats = state.personalStats!!)
                                     }
@@ -518,7 +514,6 @@ private fun DeviceNameBanner(
         SpCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .semantics { contentDescription = "Name this device banner" },
         ) {
             Column(

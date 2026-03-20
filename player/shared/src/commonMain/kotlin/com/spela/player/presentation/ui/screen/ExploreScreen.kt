@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ActiveNowSection
 import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSection
@@ -133,13 +134,9 @@ fun ExploreScreen(
             }
 
             else -> {
-                LazyColumn(
+                SpSectionList(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        top = titleBarInset,
-                        bottom = SpSpacing.XLarge,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+                    topPadding = titleBarInset,
                 ) {
                     // Hero carousel
                     item {
@@ -178,7 +175,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ConsoleQuickJumpSkeleton()
                             }
@@ -187,7 +183,6 @@ fun ExploreScreen(
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_consoles_section"),
                             ) {
                                 ConsoleQuickJumpSection(
@@ -206,7 +201,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 MoodPickerSkeleton()
                             }
@@ -215,7 +209,6 @@ fun ExploreScreen(
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_moods_section"),
                             ) {
                                 MoodPicker(
@@ -234,7 +227,6 @@ fun ExploreScreen(
                             onSurpriseMe = { onSurpriseMe?.invoke() },
                             onWizardSelected = { onWizardSelected?.invoke() },
                             modifier = Modifier
-                                .padding(horizontal = SpSpacing.ScreenHorizontal)
                                 .testTag("explore_wild_features"),
                         )
                     }
@@ -245,7 +237,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "For You",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ForYouSkeleton()
                             }
@@ -254,7 +245,6 @@ fun ExploreScreen(
                                 title = "For You",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_for_you_section"),
                             ) {
                                 ForYouSection(
@@ -271,7 +261,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ThemeGridSkeleton()
                             }
@@ -280,7 +269,6 @@ fun ExploreScreen(
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_themes_section"),
                             ) {
                                 ThemeGrid(
@@ -299,7 +287,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 KeywordChipsSkeleton()
                             }
@@ -308,7 +295,6 @@ fun ExploreScreen(
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_keywords_section"),
                             ) {
                                 KeywordChips(
@@ -327,7 +313,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SeriesShelfSkeleton()
                             }
@@ -336,7 +321,6 @@ fun ExploreScreen(
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_series_section"),
                             ) {
                                 SeriesShelf(
@@ -354,7 +338,6 @@ fun ExploreScreen(
                     item {
                         if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
                             DeveloperSpotlightSkeleton(
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                         } else if (state.developerSpotlight != null) {
                             DeveloperSpotlightSection(
@@ -374,7 +357,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ArtworkShowcaseSkeleton()
                             }
@@ -383,7 +365,6 @@ fun ExploreScreen(
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_artwork_section"),
                                 titleTrailing = if (onGallerySelected != null) {
                                     {
@@ -415,7 +396,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
@@ -424,7 +404,6 @@ fun ExploreScreen(
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_trending_section"),
                             ) {
                                 TrendingSection(
@@ -441,7 +420,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
@@ -450,7 +428,6 @@ fun ExploreScreen(
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_community_top_section"),
                             ) {
                                 CommunityTopSection(
@@ -467,7 +444,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
@@ -476,7 +452,6 @@ fun ExploreScreen(
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_cult_classics_section"),
                             ) {
                                 CultClassicsSection(
@@ -493,7 +468,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
@@ -502,7 +476,6 @@ fun ExploreScreen(
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_active_now_section"),
                             ) {
                                 ActiveNowSection(
@@ -519,7 +492,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
@@ -528,7 +500,6 @@ fun ExploreScreen(
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_recently_reviewed_section"),
                             ) {
                                 RecentlyReviewedSection(
@@ -545,7 +516,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "On This Day",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 TemporalSectionSkeleton()
                             }
@@ -559,7 +529,6 @@ fun ExploreScreen(
                                 title = title,
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_on_this_day_section"),
                             ) {
                                 OnThisDaySection(
@@ -576,7 +545,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 TemporalSectionSkeleton()
                             }
@@ -585,7 +553,6 @@ fun ExploreScreen(
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_anniversaries_section"),
                             ) {
                                 AnniversariesSection(
@@ -602,7 +569,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
@@ -611,7 +577,6 @@ fun ExploreScreen(
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_easy_to_complete_section"),
                             ) {
                                 EasyToCompleteSection(
@@ -628,7 +593,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
@@ -637,7 +601,6 @@ fun ExploreScreen(
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_hardest_games_section"),
                             ) {
                                 HardestGamesSection(
@@ -654,7 +617,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
@@ -663,7 +625,6 @@ fun ExploreScreen(
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_almost_done_section"),
                             ) {
                                 AlmostDoneSection(
@@ -680,7 +641,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
@@ -689,7 +649,6 @@ fun ExploreScreen(
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_fresh_challenges_section"),
                             ) {
                                 FreshChallengesSection(
@@ -706,7 +665,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
@@ -715,7 +673,6 @@ fun ExploreScreen(
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_active_challenges_section"),
                             ) {
                                 ActiveChallengesSection(
@@ -735,7 +692,6 @@ fun ExploreScreen(
                             SpTitledSection(
                                 title = skeletonTitles[index],
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 GameShelfSkeleton()
                             }
@@ -750,7 +706,6 @@ fun ExploreScreen(
                                 title = row.title,
                                     edgeToEdgeContent = true,
                                     modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
                                         .testTag("explore_row_${row.id}"),
                                 ) {
                                     GameShelf(
