@@ -304,14 +304,7 @@ fun GameDetailScreen(
                 )
 
                 // 3. Screenshots
-                if (detail.screenshots.isNotEmpty()) {
-                    SpTitledSection(
-                        title = "Screenshots",
-                        edgeToEdgeContent = true,
-                    ) {
-                        ScreenshotsSection(detail.screenshots)
-                    }
-                }
+                ScreenshotsSection(detail.screenshots)
 
                 // 3b. Similar Games
                 if (state.similarGames.isNotEmpty()) {

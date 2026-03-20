@@ -54,18 +54,12 @@ fun ScreenshotsSection(screenshots: List<String>) {
 
     var lightboxIndex by remember { mutableStateOf<Int?>(null) }
 
-    Spacer(Modifier.height(SpSpacing.XXLarge))
-    Text(
-        text = "Screenshots",
-        style = SpTypography.HeadlineSmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .semantics { heading() },
-    )
-    Spacer(Modifier.height(SpSpacing.Medium))
+    SpTitledSection(
+        title = "Screenshots",
+        edgeToEdgeContent = true,
+    ) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+        contentPadding = PaddingValues(horizontal = SpSpacing.Default),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
@@ -82,6 +76,7 @@ fun ScreenshotsSection(screenshots: List<String>) {
             }
         }
     }
+    } // SpTitledSection
     ScreenshotLightbox(
         visible = lightboxIndex != null,
         screenshotUrls = screenshots,
