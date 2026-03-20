@@ -231,12 +231,14 @@ private fun HeroSlide(
                 ),
         )
 
-        // Content overlay (bottom-left)
+        // Content overlay (centered)
         Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.BottomCenter)
                 .padding(SpSpacing.XLarge)
-                .padding(bottom = SpSpacing.XLarge),
+                .padding(bottom = SpSpacing.XLarge)
+                .fillMaxWidth(),
         ) {
             // Logo or title text fallback
             if (game.logoUrl != null) {
@@ -244,8 +246,8 @@ private fun HeroSlide(
                     model = game.logoUrl,
                     contentDescription = "${game.title} logo",
                     modifier = Modifier
-                        .height(60.dp)
-                        .fillMaxWidth(0.5f),
+                        .height(80.dp)
+                        .fillMaxWidth(0.7f),
                     contentScale = ContentScale.Fit,
                     loading = {
                         Text(
