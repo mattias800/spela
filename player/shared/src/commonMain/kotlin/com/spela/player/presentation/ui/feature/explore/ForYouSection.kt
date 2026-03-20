@@ -47,6 +47,7 @@ fun ForYouSection(
 ) {
     Column(
         modifier = modifier.testTag("for_you_section"),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
     ) {
         rows.forEach { row ->
             if (row.games.isNotEmpty()) {
@@ -54,7 +55,6 @@ fun ForYouSection(
                     row = row,
                     onGameSelected = onGameSelected,
                 )
-                Spacer(Modifier.height(SpSpacing.Default))
             }
         }
     }
@@ -98,7 +98,7 @@ private fun ForYouRowSection(
             )
         }
 
-        Spacer(Modifier.height(SpSpacing.Small))
+        Spacer(Modifier.height(SpSpacing.Medium))
 
         // Horizontal game shelf
         LazyRow(
