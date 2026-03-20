@@ -60,8 +60,8 @@ private data class SortOption(val key: String, val label: String)
 private val sortOptions = listOf(
     SortOption("title", "Title (A–Z)"),
     SortOption("rating", "Rating"),
-    SortOption("releaseDate", "Release Date"),
-    SortOption("lastPlayed", "Recently Played"),
+    SortOption("releaseDate", "Release date"),
+    SortOption("lastPlayed", "Recently played"),
 )
 
 /**

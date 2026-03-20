@@ -42,6 +42,16 @@ class ConsoleScreenImprovementsTest {
         advance(harness)
     }
 
+    private fun ComposeUiTest.navigateToConsoleGames(
+        harness: SpelaTestHarness,
+        consoleId: String = "nes",
+    ) {
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ConsoleGames(consoleId))
+        )
+        advance(harness)
+    }
+
     // ────────────────────────────────────────────────
     // #1: Fading edge — ConsoleInfoSection stats
     // ────────────────────────────────────────────────
@@ -85,7 +95,7 @@ class ConsoleScreenImprovementsTest {
     fun sortButtonIsDisplayed() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // The SwapVert icon button should be accessible
         onNodeWithContentDescription("Sort games").assertIsDisplayed()
@@ -95,7 +105,7 @@ class ConsoleScreenImprovementsTest {
     fun sortMenuShowsOptionsOnClick() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Click the sort button to open the dropdown menu
         onNodeWithContentDescription("Sort games").performClick()
@@ -112,7 +122,7 @@ class ConsoleScreenImprovementsTest {
     fun selectingSortOptionChangesOrder() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Default sort is "title" — games should be alphabetically sorted
         // NES games: Castlevania (1986), Mega Man 2 (1988), Super Mario Bros. (1985)
@@ -131,7 +141,7 @@ class ConsoleScreenImprovementsTest {
     fun sortMenuShowsCheckmarkForActiveOption() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Default sort is "title", open menu — Title should have a check icon
         onNodeWithContentDescription("Sort games").performClick()
@@ -155,7 +165,7 @@ class ConsoleScreenImprovementsTest {
     fun selectingSortOptionClosesMenu() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Open sort menu and select an option
         onNodeWithContentDescription("Sort games").performClick()
@@ -185,7 +195,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // The favorited game card should include "favorited" in its content description
         onNodeWithContentDescription("Castlevania, Action, favorited").assertIsDisplayed()
@@ -197,7 +207,7 @@ class ConsoleScreenImprovementsTest {
 
         // Ensure no games are favorited (default)
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Castlevania should not have "favorited" in content description
         onNodeWithContentDescription("Castlevania, Action").assertIsDisplayed()
@@ -216,7 +226,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Both favorited games should show the badge
         onNodeWithContentDescription("Castlevania, Action, favorited").assertIsDisplayed()
@@ -243,7 +253,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // The game card should still be displayed (shimmer replaces placeholder)
         onNodeWithContentDescription("Castlevania, Action").assertIsDisplayed()
@@ -259,7 +269,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Card should render normally
         onNodeWithContentDescription("Castlevania, Action").assertIsDisplayed()
@@ -279,7 +289,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // The formatted rating text should be displayed
         onNodeWithText("4.5").assertIsDisplayed()
@@ -291,7 +301,7 @@ class ConsoleScreenImprovementsTest {
 
         // All games have default averageRating = 0.0 — no star should show
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // No rating text for any game
         onAllNodesWithText("0.0").assertCountEquals(0)
@@ -307,7 +317,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         onNodeWithText("1.0").assertIsDisplayed()
     }
@@ -322,7 +332,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         onAllNodesWithText("0.9").assertCountEquals(0)
     }
@@ -342,7 +352,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         onNodeWithText("4.5").assertIsDisplayed()
         onNodeWithText("3.2").assertIsDisplayed()
@@ -361,7 +371,7 @@ class ConsoleScreenImprovementsTest {
         harness.gameRepo.games = harness.gameRepo.games.filter { it.consoleId != "nes" }
 
         setContent { harness.App() }
-        navigateToConsole(harness, "nes")
+        navigateToConsoleGames(harness, "nes")
 
         // The improved empty state message from SpEmptyStates.NoGamesInConsole
         // uses console.name ("Nintendo Entertainment System"), not abbreviation
@@ -377,7 +387,7 @@ class ConsoleScreenImprovementsTest {
         harness.gameRepo.games = harness.gameRepo.games.filter { it.consoleId != "snes" }
 
         setContent { harness.App() }
-        navigateToConsole(harness, "snes")
+        navigateToConsoleGames(harness, "snes")
 
         // Should use the console name "Super Nintendo" in the empty state
         onNodeWithText("No Super Nintendo games", substring = true).assertIsDisplayed()
@@ -387,7 +397,7 @@ class ConsoleScreenImprovementsTest {
     fun nonEmptyConsoleDoesNotShowEmptyState() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
-        navigateToConsole(harness, "nes")
+        navigateToConsoleGames(harness, "nes")
 
         // With 3 NES games, the empty state should not appear
         onAllNodesWithText("No Nintendo Entertainment System games", substring = true)
@@ -413,7 +423,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Both features should be visible on the same card
         onNodeWithContentDescription("Castlevania, Action, favorited").assertIsDisplayed()
@@ -435,7 +445,7 @@ class ConsoleScreenImprovementsTest {
         }
 
         setContent { harness.App() }
-        navigateToConsole(harness)
+        navigateToConsoleGames(harness)
 
         // Open sort menu and select Rating
         onNodeWithContentDescription("Sort games").performClick()

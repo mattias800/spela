@@ -48,7 +48,7 @@ class GamepadNavigationTest {
         setContent { harness.App() }
 
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Console("nes"))
+            NavigationIntent.NavigateTo(SpScreen.ConsoleGames("nes"))
         )
         advance(harness)
 
