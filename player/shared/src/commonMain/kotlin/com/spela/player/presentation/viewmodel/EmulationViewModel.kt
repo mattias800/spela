@@ -314,9 +314,11 @@ class EmulationViewModel(
                 }
             }
 
-            // Auto-create or reuse session for normal play (not shared/netplay/challenge)
+            // Auto-create or reuse session for normal play (not shared/netplay/challenge).
+            // When skipAutoLoad is true ("New Game"), force a fresh session to avoid
+            // overwriting auto-saves from a previous playthrough.
             if (sharedSessionId == null && netplaySessionId == null && challengeId == null) {
-                val resolvedSessionId = saveManager.ensureSession(gameId, sessionId)
+                val resolvedSessionId = saveManager.ensureSession(gameId, sessionId, forceNew = skipAutoLoad)
                 saveManager.currentSessionId = resolvedSessionId
                 if (resolvedSessionId != null && resolvedSessionId != sessionId) {
                     withContext(dispatchers.main) {
