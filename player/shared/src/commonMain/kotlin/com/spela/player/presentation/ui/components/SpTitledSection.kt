@@ -27,18 +27,20 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * Reusable section wrapper with a title and card-styled content slot.
+ * CONTENT component — a card section with a title and content slot.
  *
- * Renders: optional top spacing + a card container with icon + title header inside,
- * followed by the content. The card uses a semi-transparent black background that
- * darkens the gradient behind it slightly.
+ * Layer 2 in the component hierarchy (Design → Content → Role).
+ * Renders a semi-transparent card with: icon + title header, then content below.
+ *
+ * Does NOT add outer spacing — the parent (e.g. [SpSectionList]) controls
+ * gaps between sections via `Arrangement.spacedBy()`.
  *
  * @param title Section heading text.
- * @param modifier Modifier applied to the outer Column.
+ * @param modifier Modifier applied to the card Box.
  * @param icon Optional icon displayed before the title in accent color.
- * @param titleTrailing Optional composable rendered beside the title in a Row (e.g. a count badge).
- * @param edgeToEdgeContent When true, content has no horizontal padding so carousels can
- *   extend to the card edges. Header row retains horizontal padding. Default false.
+ * @param titleTrailing Optional composable beside the title (e.g. a link).
+ * @param edgeToEdgeContent When true, content has no horizontal padding so
+ *   carousels can extend to the card edges. Header retains horizontal padding.
  * @param content Section body rendered inside the card below the header.
  */
 @Composable

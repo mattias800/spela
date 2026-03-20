@@ -471,18 +471,53 @@ If the same visual pattern appears on 2+ screens, it **must** be a shared `Sp*`
 component. Duplicating layout code across screens is the #1 source of visual
 inconsistency.
 
-**Design components vs Role components:**
+**Component hierarchy — Design → Content → Role:**
 
-Components are organized in two layers:
-- **Design components** define the *look*: `SpChip`, `SpCard`, `SpButton`.
-  They are styling primitives with no domain knowledge.
-- **Role components** define the *what*: `SpConsoleChip`, `GameShelf`,
-  `SpTitledSection`. They represent a domain concept and use design
-  components internally.
+Components are organized in three layers:
 
-Screens should primarily use role components. Role components should
-use design components. This ensures that when the look of a chip
-changes, all console badges update automatically.
+```
+Layer 1: DESIGN components (the look)
+  SpCard, SpChip, SpButton, SpCoverArt
+  → Define visual styling. No domain knowledge.
+  → Accept modifier for flexible use by higher layers.
+
+Layer 2: CONTENT components (what something looks like)
+  SpGameCard, SpTitledSection, SpSectionList
+  → Compose design components into a fixed content layout.
+  → SpGameCard = SpCard + SpCoverArt + title + subtitle + rating.
+  → Do NOT accept modifier — the layout is strict and enforced.
+  → Parent controls sizing via explicit parameters (e.g. width).
+
+Layer 3: ROLE components (what something IS in context)
+  ExploreGameCard, ForYouGameCard, SpotlightGameCard,
+  ContinuePlayingCard, SpConsoleChip, GameCoverCard
+  → Thin wrappers that delegate to content components.
+  → Define the role (e.g. "a game in the For You section").
+  → Map domain models to content component parameters.
+  → No custom UI code — just parameter mapping.
+```
+
+**Example — the card hierarchy:**
+
+```
+SpCard (design)           — card styling, borders, click, hover
+  └─ SpGameCard (content) — cover + title + subtitle + rating layout
+       ├─ ExploreGameCard (role) — game in Explore shelves
+       ├─ ForYouGameCard (role)  — game in For You section
+       ├─ SpotlightGameCard (role) — game in Developer Spotlight
+       ├─ GameCoverCard (role)   — game in Favorites/Play Later
+       └─ DeveloperGameCard (role) — game in Developer detail
+
+SpChip (design)           — chip styling, colors, border
+  └─ SpConsoleChip (role) — always represents a console platform
+```
+
+**Rules:**
+- Screens should primarily use role components.
+- Role components delegate to content components — no custom UI.
+- Content components compose design components — enforced layout.
+- When adding a new game card variant, create a new role component
+  that delegates to SpGameCard. Never duplicate SpGameCard's layout.
 
 **Common violations:**
 - Platform badges/chips rendered differently across screens — use `SpConsoleChip` (not raw `SpChip`)

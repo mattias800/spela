@@ -31,15 +31,17 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.util.formatRating
 
 /**
- * Standard game card — the ONE component for displaying a game with
- * cover art, title, subtitle, and optional rating.
+ * CONTENT component — defines how a game looks on a card.
  *
- * This is a ROLE component. It defines WHAT is shown (a game), not
- * HOW it looks (that's SpCard + SpCoverArt). All game cards across
- * the app must use this component for visual consistency.
+ * Layer 2 in the component hierarchy (Design → Content → Role).
+ * Composes [SpCard] + [SpCoverArt] into a fixed layout:
+ * cover art → title → subtitle → rating → favorite/play later indicators.
  *
- * Does NOT accept a modifier parameter — its layout is fixed.
- * The parent controls sizing via the width parameter.
+ * Does NOT accept a modifier parameter — the layout is strict.
+ * Parent controls sizing via the [width] parameter only.
+ *
+ * Role components (ExploreGameCard, ForYouGameCard, etc.) should
+ * delegate to this — never duplicate this layout.
  */
 @Composable
 fun SpGameCard(

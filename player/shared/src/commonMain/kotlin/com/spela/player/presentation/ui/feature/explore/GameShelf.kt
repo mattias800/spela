@@ -45,6 +45,7 @@ fun GameShelf(
     }
 }
 
+/** ROLE component — a game card in the Explore page shelves. Delegates to [SpGameCard]. */
 @Composable
 internal fun ExploreGameCard(
     game: Game,

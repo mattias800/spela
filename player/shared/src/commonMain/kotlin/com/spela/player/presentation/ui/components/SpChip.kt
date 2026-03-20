@@ -25,6 +25,15 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+/**
+ * DESIGN component — defines the visual look of a chip/badge.
+ *
+ * Layer 1 in the component hierarchy (Design → Content → Role).
+ * Provides: pill shape, background, border, text styling.
+ * Has no domain knowledge — does not know what a "console" is.
+ *
+ * Used by role components like [SpConsoleChip].
+ */
 @Composable
 fun SpChip(
     text: String,
@@ -84,6 +93,13 @@ fun SpChip(
     }
 }
 
+/**
+ * ROLE component — a chip that represents a console platform.
+ *
+ * Layer 3 in the component hierarchy (Design → Content → Role).
+ * Thin wrapper around [SpChip] — maps console domain data to chip parameters.
+ * All console badges across the app must use this, never raw [SpChip].
+ */
 @Composable
 fun SpConsoleChip(
     consoleName: String,

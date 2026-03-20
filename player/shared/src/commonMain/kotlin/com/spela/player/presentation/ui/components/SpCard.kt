@@ -29,6 +29,16 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
+/**
+ * DESIGN component — defines the visual look of a card.
+ *
+ * Layer 1 in the component hierarchy (Design → Content → Role).
+ * Provides: rounded corners, border, background, click/hover/focus states.
+ * Has no domain knowledge — does not know what a "game" or "console" is.
+ *
+ * Used by content components like [SpGameCard] and [SpTitledSection].
+ * Screens should rarely use SpCard directly — prefer a content or role component.
+ */
 @Composable
 fun SpCard(
     modifier: Modifier = Modifier,

@@ -11,14 +11,19 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
- * Standardized vertical list of sections with consistent gaps.
+ * CONTENT component — standardized vertical list of sections.
  *
- * This is the primary layout for screens that display a vertical list
- * of card sections (Explore, Console, Home, etc.). It enforces:
- * - Consistent vertical gap between all children (SpSpacing.Large = 20dp)
- * - Consistent horizontal padding (SpSpacing.ScreenHorizontal)
+ * Layer 2 in the component hierarchy (Design → Content → Role).
+ * The primary layout for screens that show a vertical list of card
+ * sections (Explore, Console, Home). Enforces:
+ * - Consistent vertical gap between all children via `spacedBy`
+ * - Consistent horizontal padding via `contentPadding`
  *
- * Child items must NOT add their own outer vertical or horizontal spacing.
+ * Child items must NOT add their own outer spacing — this component
+ * is the single source of truth for inter-section gaps and alignment.
+ *
+ * Note: items that render nothing (empty data) should be guarded with
+ * a condition OUTSIDE the `item {}` call to avoid ghost gaps.
  */
 @Composable
 fun SpSectionList(
