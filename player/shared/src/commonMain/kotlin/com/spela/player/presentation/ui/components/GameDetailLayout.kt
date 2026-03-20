@@ -166,6 +166,7 @@ private fun LandscapeLayout(
 
             // Full-width sections below the hero row
             item {
+                Spacer(Modifier.height(SpSpacing.Large))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
