@@ -500,13 +500,16 @@ Layer 3: ROLE components (what something IS in context)
 **Example — the card hierarchy:**
 
 ```
-SpCard (design)           — card styling, borders, click, hover
-  └─ SpGameCard (content) — cover + title + subtitle + rating layout
-       ├─ ExploreGameCard (role) — game in Explore shelves
-       ├─ ForYouGameCard (role)  — game in For You section
-       ├─ SpotlightGameCard (role) — game in Developer Spotlight
-       ├─ GameCoverCard (role)   — game in Favorites/Play Later
-       └─ DeveloperGameCard (role) — game in Developer detail
+SpCard (design)                      — card styling, borders, click, hover
+  └─ SpGameCard (content)            — cover + title + subtitle + rating layout
+       ├─ ExploreGameCard (role)      — game in Explore shelves
+       ├─ ForYouGameCard (role)       — game in For You section
+       ├─ SpotlightGameCard (role)    — game in Developer Spotlight
+       ├─ GameCoverCard (role)        — game in Favorites/Play Later
+       ├─ DeveloperGameCard (role)    — game in Developer detail
+       └─ SpAvailabilityGameCard (content) — adds library availability
+            ├─ TopRatedCard (role)    — game in Top Rated (may not be in library)
+            └─ SimilarGameCard (role) — similar game suggestion
 
 SpChip (design)           — chip styling, colors, border
   └─ SpConsoleChip (role) — always represents a console platform
