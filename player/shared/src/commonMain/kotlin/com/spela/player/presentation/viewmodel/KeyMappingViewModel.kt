@@ -171,6 +171,7 @@ class KeyMappingViewModel(
                 val activePreset = _state.value.availablePresets.find { it.bindings == defaults }
                 _state.update { it.copy(currentBindings = defaults, activePresetId = activePreset?.id) }
                 preferencesRepository.pushKeyMappingsToServer()
+                gamepadPortManager?.loadAllMappings(consoleId)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to reset: ${e.message}") }
             }
@@ -261,6 +262,7 @@ class KeyMappingViewModel(
                     )
                 }
                 preferencesRepository.pushKeyMappingsToServer()
+                gamepadPortManager?.loadAllMappings(consoleId)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to apply preset: ${e.message}") }
             }
