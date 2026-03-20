@@ -426,6 +426,15 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 
 	if len(matches) > 0 {
 		match := matches[0]
+		// Move to subdirectory if required by the registry entry
+		if match.SubDir != "" {
+			subDirPath := match.FilePath(h.Storage.BiosDir)
+			if err := os.MkdirAll(filepath.Dir(subDirPath), 0755); err == nil {
+				if err := os.Rename(safePath, subDirPath); err == nil {
+					safePath = subDirPath
+				}
+			}
+		}
 		consoleName := names[match.ConsoleID]
 		consoleID := match.ConsoleID
 		desc := match.Description
@@ -453,8 +462,20 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 	path := h.Storage.BiosFilePath(filename)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
-		return
+		// Check subdirectory paths for entries with SubDir
+		for _, e := range bios.ByFileName(filename) {
+			if e.SubDir != "" {
+				subPath := e.FilePath(h.Storage.BiosDir)
+				if _, serr := os.Stat(subPath); serr == nil {
+					path = subPath
+					break
+				}
+			}
+		}
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
+			return
+		}
 	}
 
 	// Validate the resolved path stays within BiosDir (same check as GetBiosFile)
@@ -503,7 +524,7 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 	entries := bios.Downloadable()
 	missing := 0
 	for _, e := range entries {
-		path := filepath.Join(h.Storage.BiosDir, e.FileName)
+		path := e.FilePath(h.Storage.BiosDir)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			missing++
 		}
@@ -566,7 +587,7 @@ func GetConsoleStatus(biosDir string, consoleAbbr string) string {
 		}
 		hasRequired = true
 
-		filePath := filepath.Join(biosDir, e.FileName)
+		filePath := e.FilePath(biosDir)
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			hasMissingRequired = true
 			continue

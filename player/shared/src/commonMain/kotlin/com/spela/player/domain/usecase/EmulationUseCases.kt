@@ -55,10 +55,14 @@ class PrepareGameUseCase(
         }
 
         val coreName = platformCoreSubstitution(core.name)
+        // When the core name was substituted, the server's download URL is for the
+        // original name. Clear it so CoreRepository falls back to the buildbot URL
+        // constructed from the substituted name.
+        val downloadUrl = if (coreName != core.name) null else core.downloadUrl
 
         val corePath = coreRepository.getLocalCorePath(coreName)
             ?: run {
-                coreRepository.downloadCore(coreName, core.downloadUrl).getOrElse {
+                coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
                     return Result.failure(it)
                 }
             }
