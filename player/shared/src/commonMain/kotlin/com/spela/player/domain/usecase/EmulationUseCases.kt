@@ -20,6 +20,12 @@ private val ANDROID_CORE_SUBSTITUTIONS = mapOf(
     "mupen64plus_next" to "mupen64plus_next_gles3",
     "beetle_psx_hw" to "mednafen_psx_hw",
     "beetle_psx" to "mednafen_psx",
+    "beetle_pce" to "mednafen_pce_fast",
+    "beetle_saturn" to "mednafen_saturn",
+    "beetle_vb" to "mednafen_vb",
+    "beetle_ngp" to "mednafen_ngp",
+    "beetle_wswan" to "mednafen_wswan",
+    "beetle_pcfx" to "mednafen_pcfx",
 )
 
 class PrepareGameUseCase(
