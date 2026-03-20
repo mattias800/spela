@@ -519,6 +519,12 @@ SpCard (design)                          — developer card variant
   └─ SpDeveloperCard (content)           — name + game count + rating
        └─ ConsoleDeveloperCard (role)    — developer in console Top Developers
 
+SpTileCard (design)                      — colored navigation tile
+  ├─ SpConsoleTile (content)             — logo + name + game count
+  │    └─ ConsoleQuickJumpCard (role)    — console in Browse by Console
+  └─ SpMoodTile (content)               — icon + name + description
+       └─ MoodCard (role)               — mood in What Are You In The Mood For
+
 SpChip (design)           — chip styling, colors, border
   └─ SpConsoleChip (role) — always represents a console platform
 ```
