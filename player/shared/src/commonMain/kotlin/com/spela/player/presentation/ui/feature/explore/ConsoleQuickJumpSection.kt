@@ -28,6 +28,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ConsoleHighlight
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -86,13 +91,18 @@ private fun ConsoleQuickJumpCard(
                 modifier = Modifier.padding(SpSpacing.Medium),
             ) {
                 if (console.logoUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = console.logoUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .height(28.dp)
-                            .fillMaxWidth(),
-                    )
+                    var logoFailed by remember { mutableStateOf(false) }
+                    if (!logoFailed) {
+                        AsyncImage(
+                            model = console.logoUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(28.dp)
+                                .fillMaxWidth(),
+                            onError = { logoFailed = true },
+                        )
+                    }
                 }
                 Spacer(Modifier.height(SpSpacing.Small))
                 Text(
