@@ -515,6 +515,10 @@ SpCard (design)                      — wide card variant (same design)
   └─ SpWideGameCard (content)        — horizontal: cover left, text right
        └─ ContinuePlayingCard (role) — continue playing a game
 
+SpCard (design)                          — developer card variant
+  └─ SpDeveloperCard (content)           — name + game count + rating
+       └─ ConsoleDeveloperCard (role)    — developer in console Top Developers
+
 SpChip (design)           — chip styling, colors, border
   └─ SpConsoleChip (role) — always represents a console platform
 ```

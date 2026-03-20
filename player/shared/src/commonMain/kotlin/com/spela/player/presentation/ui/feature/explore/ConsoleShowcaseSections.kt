@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.GenreCount
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpDeveloperCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -186,61 +187,25 @@ internal fun TopDevelopersList(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
         developers.forEach { developer ->
-            SpCard(
+            ConsoleDeveloperCard(
+                developer = developer,
                 onClick = { onDeveloperSelected(developer.name) },
-                onGradient = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("developer_card_${developer.name}")
-                    .semantics {
-                        contentDescription = "${developer.name}, ${developer.gameCount} games"
-                    },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(SpSpacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            text = developer.name,
-                            style = SpTypography.TitleSmall,
-                            color = SpColor.OnCard,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XXSmall))
-                        Text(
-                            text = "${developer.gameCount} games",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-
-                    if (developer.avgRating > 0) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = SpColor.Rating,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Text(
-                                text = formatRating(developer.avgRating),
-                                style = SpTypography.BodyMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                        }
-                    }
-                }
-            }
+            )
         }
     }
+}
+
+/** ROLE component — a developer card in the console "Top Developers" section. Delegates to [SpDeveloperCard]. */
+@Composable
+private fun ConsoleDeveloperCard(
+    developer: DeveloperSummary,
+    onClick: () -> Unit,
+) {
+    SpDeveloperCard(
+        name = developer.name,
+        gameCount = developer.gameCount,
+        avgRating = developer.avgRating,
+        onClick = onClick,
+        testTag = "developer_card_${developer.name}",
+    )
 }
