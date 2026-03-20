@@ -79,8 +79,6 @@ fun DeveloperSpotlightSection(
                                 Color(0xFF1A1A4E),
                                 SpColor.AccentDark.copy(alpha = 0.6f),
                             ),
-                            start = Offset(0f, 0f),
-                            end = Offset(Float.MAX_VALUE, Float.MAX_VALUE),
                         ),
                     ),
             ) {
