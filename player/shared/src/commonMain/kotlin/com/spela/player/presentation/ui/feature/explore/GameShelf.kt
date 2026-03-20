@@ -3,35 +3,20 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
@@ -55,111 +40,27 @@ fun GameShelf(
             ExploreGameCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },
-                modifier = Modifier.width(SpSpacing.CoverMediumWidth),
             )
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExploreGameCard(
     game: Game,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    SpCard(
-        modifier = modifier
-            .testTag("explore_game_card_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = game.coverAspectRatio,
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(Modifier.height(SpSpacing.Small))
-
-                // Console name + rating (wraps to new line if needed)
-                FlowRow(
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                ) {
-                    Text(
-                        text = game.consoleName,
-                        style = SpTypography.BodySmall,
-                        color = SpColor.OnBackgroundSecondary,
-                        maxLines = 1,
-                    )
-
-                    // Rating (star + number treated as a unit)
-                    if (game.rating > 0) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = SpColor.Rating,
-                                modifier = Modifier.size(SpSpacing.IconXSmall),
-                            )
-                            Text(
-                                text = formatRating(game.rating),
-                                style = SpTypography.BodySmall,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                        }
-                    }
-                }
-
-                // Favorite / Play Later indicators
-                if (game.isFavorite || game.isInPlayLater) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                    ) {
-                        if (game.isFavorite) {
-                            Icon(
-                                imageVector = Icons.Filled.Favorite,
-                                contentDescription = "Favorited",
-                                tint = SpColor.Favorite,
-                                modifier = Modifier.size(12.dp),
-                            )
-                        }
-                        if (game.isInPlayLater) {
-                            Icon(
-                                imageVector = Icons.Filled.WatchLater,
-                                contentDescription = "In Play Later",
-                                tint = SpColor.OnBackgroundTertiary,
-                                modifier = Modifier.size(12.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+        coverAspectRatio = game.coverAspectRatio,
+        rating = game.rating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+        testTag = "explore_game_card_${game.id}",
+    )
 }
 
 @Composable

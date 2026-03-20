@@ -54,7 +54,6 @@ fun TrendingSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameSelected(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -90,7 +89,6 @@ fun CommunityTopSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameSelected(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +130,6 @@ fun CultClassicsSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameSelected(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -170,7 +167,6 @@ fun RecentlyReviewedSection(
                     ExploreGameCard(
                         game = item.game,
                         onClick = { onGameSelected(item.game.id) },
-                        modifier = Modifier.width(80.dp),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -231,7 +227,6 @@ fun ActiveNowSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameSelected(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 val badges = buildList {

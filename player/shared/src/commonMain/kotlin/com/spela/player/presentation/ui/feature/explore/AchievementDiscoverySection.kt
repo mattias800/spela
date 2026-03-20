@@ -57,7 +57,6 @@ internal fun EasyToCompleteSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameClick(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -95,7 +94,6 @@ internal fun HardestGamesSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameClick(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -133,7 +131,6 @@ internal fun AlmostDoneSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameClick(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
@@ -181,7 +178,6 @@ internal fun FreshChallengesSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameClick(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
