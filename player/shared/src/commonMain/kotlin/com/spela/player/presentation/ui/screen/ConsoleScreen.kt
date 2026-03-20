@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.PlayArrow
@@ -40,6 +37,7 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -126,31 +124,20 @@ fun ConsoleScreen(
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                SpSectionList(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = SpSpacing.ScreenHorizontal,
-                        end = SpSpacing.ScreenHorizontal,
-                        top = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
-                        bottom = SpSpacing.Default,
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                    topPadding = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
                 ) {
-                    // Console hero banner (scrolls with content, includes info section)
+                    // Console hero banner
                     if (console != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleHeroBanner(
-                                console = console,
-                                modifier = Modifier.padding(top = SpSpacing.Small),
-                            )
+                        item {
+                            ConsoleHeroBanner(console = console)
                         }
                     }
 
-                    // Continue Playing section (most relevant — always first after hero)
+                    // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             SpTitledSection(
                                 title = "Continue Playing",
                                 icon = Icons.Filled.PlayArrow,
@@ -159,15 +146,14 @@ fun ConsoleScreen(
                                 ContinuePlayingRow(
                                     games = continuePlayingGames,
                                     onGameSelected = onGameSelected,
-                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )
                             }
                         }
                     }
 
-                    // Browse All Games button (quick access near top)
+                    // Browse All Games (quick access)
                     if (state.games.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             SpButton(
                                 text = "Browse All ${state.games.size} Games",
                                 onClick = onBrowseAllGames,
@@ -176,9 +162,25 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Top Rated section
+                    // BIOS warning
+                    if (consoleId in state.consolesWithMissingBios) {
+                        item {
+                            BiosWarningBanner(
+                                consoleName = consoleName,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    // Curated content
+                    if (exploreViewModel != null) {
+                        item { ConsoleEssentials(exploreViewModel, onGameSelected) }
+                        item { ConsoleHiddenGems(exploreViewModel, onGameSelected) }
+                    }
+
+                    // Top Rated
                     if (state.topRatedGames.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             SpTitledSection(
                                 title = "Top Rated",
                                 icon = Icons.Filled.Star,
@@ -187,38 +189,19 @@ fun ConsoleScreen(
                                 TopRatedRow(
                                     games = state.topRatedGames,
                                     onGameSelected = onGameSelected,
-                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )
                             }
                         }
                     }
 
-                    // BIOS warning banner
-                    if (consoleId in state.consolesWithMissingBios) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            BiosWarningBanner(
-                                consoleName = consoleName,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-
-                    // Showcase sections (Essentials, Hidden Gems, Top Developers)
+                    // Top Developers
                     if (exploreViewModel != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleEssentials(exploreViewModel, onGameSelected)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleHiddenGems(exploreViewModel, onGameSelected)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected)
-                        }
+                        item { ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected) }
                     }
 
-                    // Loading state (no games loaded yet)
+                    // Loading / Empty
                     if (state.games.isEmpty() && state.isLoading) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,
@@ -227,8 +210,7 @@ fun ConsoleScreen(
                             }
                         }
                     } else if (state.games.isEmpty() && !state.isLoading) {
-                        // Empty state (no games in console)
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,

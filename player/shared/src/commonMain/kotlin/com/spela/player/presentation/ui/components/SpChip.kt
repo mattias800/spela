@@ -67,7 +67,7 @@ fun SpChip(
                     onClick = onClick,
                 ).focusable(interactionSource = interactionSource) else Modifier
             )
-            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XXSmall),
+            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
