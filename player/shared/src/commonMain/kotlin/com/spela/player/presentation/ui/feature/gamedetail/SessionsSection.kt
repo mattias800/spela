@@ -80,7 +80,7 @@ internal fun SessionsSection(
     ) {
         if (sessions.isEmpty() && !isLoading) {
             Text(
-                text = "No sessions yet. Start a new playthrough to track your progress.",
+                text = "No sessions yet. Press Play to start your first playthrough.",
                 style = SpTypography.BodyMedium,
                 color = SpColor.OnBackgroundTertiary,
                 modifier = Modifier.testTag("sessions_empty"),
