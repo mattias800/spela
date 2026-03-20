@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ConsoleHighlight
+import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -67,7 +65,7 @@ private fun ConsoleQuickJumpCard(
 
     SpCard(
         modifier = Modifier
-            .width(140.dp)
+            .width(160.dp)
             .testTag("console_card_${console.id}")
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games"
@@ -78,22 +76,25 @@ private fun ConsoleQuickJumpCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(90.dp)
+                .height(100.dp)
                 .clip(RoundedCornerShape(SpSpacing.CardCornerRadius))
                 .background(accentColor.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(SpSpacing.Small),
+                modifier = Modifier.padding(SpSpacing.Medium),
             ) {
-                Icon(
-                    imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(28.dp),
-                )
-                Spacer(Modifier.height(SpSpacing.XSmall))
+                if (console.logoUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = console.logoUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(28.dp)
+                            .fillMaxWidth(),
+                    )
+                }
+                Spacer(Modifier.height(SpSpacing.Small))
                 Text(
                     text = console.name,
                     style = SpTypography.TitleSmall,
@@ -102,9 +103,9 @@ private fun ConsoleQuickJumpCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${console.gameCount} games",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
+                    text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundSecondary,
                     maxLines = 1,
                 )
             }
@@ -124,8 +125,8 @@ fun ConsoleQuickJumpSkeleton(
         items(5) {
             SpShimmer(
                 modifier = Modifier.clip(RoundedCornerShape(SpSpacing.CardCornerRadius)),
-                width = 140.dp,
-                height = 90.dp,
+                width = 160.dp,
+                height = 100.dp,
             )
         }
     }
