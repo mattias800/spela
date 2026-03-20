@@ -35,16 +35,24 @@ actual fun platformModule(): Module = module {
         DatabaseResetHelper.init(context)
         // Create driver first — AndroidSqliteDriver runs migrations automatically
         val driver = AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
-        // Validate schema after migration using the same driver connection
+        // Validate schema after migration — auto-reset if incompatible.
+        // The local DB is a cache (game metadata, auth tokens, download records).
+        // Saves are on the server, so resetting is safe and avoids blocking the user.
         try {
             val errorMessage = validateSchemaWithDriver(driver)
             if (errorMessage != null) {
-                println("Spela: $errorMessage")
-                DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
+                println("Spela: $errorMessage — auto-resetting database")
+                driver.close()
+                context.deleteDatabase("spela.db")
+                val freshDriver = AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
+                return@single freshDriver
             }
         } catch (e: Exception) {
-            println("Spela: Failed to validate database: ${e.message}")
-            DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
+            println("Spela: Schema validation failed: ${e.message} — auto-resetting database")
+            driver.close()
+            context.deleteDatabase("spela.db")
+            val freshDriver = AndroidSqliteDriver(SpelaDatabase.Schema, context, "spela.db")
+            return@single freshDriver
         }
         driver
     }

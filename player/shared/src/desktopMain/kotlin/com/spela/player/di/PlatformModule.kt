@@ -70,16 +70,32 @@ actual fun platformModule(): Module = module {
             driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
         }
 
-        // Validate schema after create/migrate to catch corruption
+        // Validate schema after create/migrate — auto-reset if incompatible.
+        // The local DB is a cache (game metadata, auth tokens, download records).
+        // Saves are on the server, so resetting is safe and avoids blocking the user.
         try {
             val errorMessage = validateSchemaWithDriver(driver)
             if (errorMessage != null) {
-                println("Spela: $errorMessage")
-                DatabaseHealthCheck.reportError("$errorMessage Please reset the app.")
+                println("Spela: $errorMessage — auto-resetting database")
+                driver.close()
+                java.io.File(dbPath).delete()
+                java.io.File("$dbPath-wal").delete()
+                java.io.File("$dbPath-shm").delete()
+                val freshDriver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
+                SpelaDatabase.Schema.create(freshDriver)
+                freshDriver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
+                return@single freshDriver
             }
         } catch (e: Exception) {
-            println("Spela: Failed to validate database: ${e.message}")
-            DatabaseHealthCheck.reportError("Database validation failed: ${e.message}. Please reset the app.")
+            println("Spela: Schema validation failed: ${e.message} — auto-resetting database")
+            driver.close()
+            java.io.File(dbPath).delete()
+            java.io.File("$dbPath-wal").delete()
+            java.io.File("$dbPath-shm").delete()
+            val freshDriver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
+            SpelaDatabase.Schema.create(freshDriver)
+            freshDriver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
+            return@single freshDriver
         }
 
         driver
