@@ -61,6 +61,7 @@ internal fun ContinuePlayingRow(
 }
 
 /** ROLE component — a continue playing card. Delegates to [SpWideGameCard]. */
+/** ROLE component — a continue playing card on the Home screen. Delegates to [SpWideGameCard]. */
 @Composable
 internal fun ContinuePlayingCard(
     game: Game,
@@ -102,6 +103,7 @@ internal fun GameCarouselRow(
     }
 }
 
+/** ROLE component — a game card in Favorites/Play Later/Recently Added. Delegates to [SpGameCard]. */
 @Composable
 internal fun GameCoverCard(
     game: Game,

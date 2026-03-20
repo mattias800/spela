@@ -56,6 +56,7 @@ internal fun DeveloperGamesSection(
     }
 }
 
+/** ROLE component — a game card in Developer detail. Delegates to [SpGameCard]. */
 @Composable
 private fun DeveloperGameCard(
     game: DeveloperGame,

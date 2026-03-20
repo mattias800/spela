@@ -167,6 +167,7 @@ fun DeveloperSpotlightSection(
     }
 }
 
+/** ROLE component — a game card in Developer Spotlight. Delegates to [SpGameCard]. */
 @Composable
 private fun SpotlightGameCard(
     game: Game,

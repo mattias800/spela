@@ -116,6 +116,7 @@ private fun ForYouRowSection(
     }
 }
 
+/** ROLE component — a game card in For You recommendations. Delegates to [SpGameCard]. */
 @Composable
 private fun ForYouGameCard(
     game: Game,
