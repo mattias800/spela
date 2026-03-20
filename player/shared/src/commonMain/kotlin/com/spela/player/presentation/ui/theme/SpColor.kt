@@ -106,6 +106,7 @@ fun Modifier.spScreenBackground(
     from: Color = SpColor.ScreenGradientStart,
     to: Color = SpColor.ScreenGradientEnd,
 ): Modifier = drawBehind {
+    if (size.width <= 0f || size.height <= 0f) return@drawBehind
     val cx = size.width / 2f
     val cy = size.height / 2f
     val d = (size.width + size.height) * 0.25f
