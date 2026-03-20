@@ -91,6 +91,11 @@ var registry = []Entry{
 	{ConsoleID: "amiga", FileName: "kick40068.A1200", Description: "Amiga 1200 Kickstart v3.1", MD5: "646773759326fbac3b2311fd8c8793ee", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40068.A1200"},
 	{ConsoleID: "amiga", FileName: "kick40060.CD32", Description: "Amiga CD32 Kickstart v3.1", MD5: "5f8924d013dd57a89cf349f4cdedc6b1", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40060.CD32"},
 
+	// Amiga Demos (ADEMO) — same core (puae), same BIOS as Amiga
+	{ConsoleID: "ademo", FileName: "kick34005.A500", Description: "Amiga 500 Kickstart v1.3 (required)", MD5: "82a21c1890cae844b3df741f2762d48d", Required: true, OverrideURL: "https://archive.org/download/batov39/kick34005.A500"},
+	{ConsoleID: "ademo", FileName: "kick40068.A1200", Description: "Amiga 1200 Kickstart v3.1", MD5: "646773759326fbac3b2311fd8c8793ee", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40068.A1200"},
+	{ConsoleID: "ademo", FileName: "kick40060.CD32", Description: "Amiga CD32 Kickstart v3.1", MD5: "5f8924d013dd57a89cf349f4cdedc6b1", Required: false, OverrideURL: "https://archive.org/download/batov39/kick40060.CD32"},
+
 	// PC-FX (PCFX) — mednafen_pcfx_libretro.info
 	{ConsoleID: "pcfx", FileName: "pcfx.rom", Description: "PC-FX BIOS v1.00", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true},
 
