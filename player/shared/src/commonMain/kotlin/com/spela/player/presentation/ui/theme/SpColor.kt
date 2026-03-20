@@ -1,5 +1,9 @@
 package com.spela.player.presentation.ui.theme
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 object SpColor {
@@ -84,4 +88,29 @@ object SpColor {
     // Divider
     val Divider = Color(0xFF2A2A3A)
     val DividerLight = Color(0xFF3A3A4A)
+
+    // Default screen background gradient (dark, non-black)
+    val ScreenGradientStart = Color(0xFF14142A)
+    val ScreenGradientEnd = Color(0xFF0F1A2A)
+}
+
+/**
+ * Applies the standard dark gradient background used on content screens.
+ * Ensures cards with transparent backgrounds blend properly instead of
+ * showing pure black.
+ */
+fun Modifier.spScreenBackground(
+    from: Color = SpColor.ScreenGradientStart,
+    to: Color = SpColor.ScreenGradientEnd,
+): Modifier = drawBehind {
+    val cx = size.width / 2f
+    val cy = size.height / 2f
+    val d = (size.width + size.height) * 0.25f
+    drawRect(
+        brush = Brush.linearGradient(
+            colors = listOf(from, to),
+            start = Offset(cx - d, cy - d),
+            end = Offset(cx + d, cy + d),
+        ),
+    )
 }

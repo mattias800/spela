@@ -52,6 +52,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.util.formatRating
 
 /**
@@ -83,11 +84,10 @@ fun ExploreGroupDetailContent(
     onConsoleFilterSelected: (String?) -> Unit,
     onDismissError: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize().testTag("explore_${groupLabel}_screen")) {
+    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("explore_${groupLabel}_screen")) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = title,

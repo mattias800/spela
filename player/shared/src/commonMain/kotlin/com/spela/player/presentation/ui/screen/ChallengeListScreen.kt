@@ -25,6 +25,7 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +48,7 @@ fun ChallengeListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .spScreenBackground(),
     ) {
         SpTopBar(
             title = gameTitle,

@@ -36,6 +36,7 @@ import com.spela.player.presentation.ui.feature.challenges.ChallengeFilterBar
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 
 private val tabs = listOf(
@@ -63,7 +64,7 @@ fun GlobalChallengesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .spScreenBackground(),
     ) {
         SpTopBar(
             title = "Challenges",

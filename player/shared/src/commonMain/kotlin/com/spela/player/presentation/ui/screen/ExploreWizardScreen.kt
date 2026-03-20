@@ -40,6 +40,7 @@ import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @Composable
@@ -58,6 +59,7 @@ fun ExploreWizardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .spScreenBackground()
             .testTag("wizard_screen"),
     ) {
         // Top bar with back button

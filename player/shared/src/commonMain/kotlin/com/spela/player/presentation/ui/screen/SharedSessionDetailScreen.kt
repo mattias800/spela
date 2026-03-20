@@ -36,6 +36,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,11 +56,10 @@ fun SharedSessionDetailScreen(
         viewModel.onIntent(SharedSessionDetailIntent.LoadSaves(sharedSessionId))
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().spScreenBackground()) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = state.sharedSession?.name ?: "Shared Session",

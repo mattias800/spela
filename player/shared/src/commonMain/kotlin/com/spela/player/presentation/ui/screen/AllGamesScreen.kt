@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.feature.library.GameLibraryControls
 import com.spela.player.presentation.ui.feature.library.GameListRowItem
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +60,7 @@ fun AllGamesScreen(
         viewModel.onIntent(GameListIntent.Search(""))
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().spScreenBackground()) {
         SpSearchField(
             value = searchQuery,
             onValueChange = { query ->

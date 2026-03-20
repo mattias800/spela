@@ -59,6 +59,7 @@ import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.TopListsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,11 +77,10 @@ fun TopListsScreen(
         viewModel.onIntent(TopListsIntent.LoadTopLists)
     }
 
-    Box(modifier = Modifier.fillMaxSize().testTag("top_lists_screen")) {
+    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("top_lists_screen")) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = "Top Lists",

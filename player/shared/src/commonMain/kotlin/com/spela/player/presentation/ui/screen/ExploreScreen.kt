@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -111,6 +112,7 @@ fun ExploreScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .spScreenBackground()
             .testTag("explore_screen"),
     ) {
         when {

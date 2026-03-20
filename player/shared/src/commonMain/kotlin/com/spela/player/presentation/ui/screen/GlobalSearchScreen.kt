@@ -40,6 +40,7 @@ import com.spela.player.presentation.ui.feature.search.SearchResultSkeleton
 import com.spela.player.presentation.ui.feature.search.SearchResultsList
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
 
 @Composable
@@ -67,12 +68,12 @@ fun GlobalSearchScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .spScreenBackground()
             .testTag("global_search_screen"),
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
+                .fillMaxSize(),
         ) {
             SpTopBar(
                 title = "Search",
