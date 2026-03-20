@@ -57,6 +57,27 @@ class SaveManager(
     var currentSessionId: String? = null
 
     /**
+     * Ensures a session exists for the given game. If sessionId is already set,
+     * returns it. Otherwise tries to reuse the most recent session, or creates
+     * a new one named "Default" (matching the web UI behavior).
+     * Returns the resolved session ID, or null if offline/failed.
+     */
+    suspend fun ensureSession(gameId: String, sessionId: String?): String? {
+        if (sessionId != null) return sessionId
+        return try {
+            val existing = sessionRepository.getSessionsForGame(gameId).getOrNull()
+            if (!existing.isNullOrEmpty()) {
+                existing.first().id
+            } else {
+                sessionRepository.createSession(gameId, "Default").getOrNull()?.id
+            }
+        } catch (e: Exception) {
+            println("[SaveManager] Failed to ensure session: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Load SRAM (save data) before starting emulation.
      * Downloads from session SRAM endpoint.
      * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)
