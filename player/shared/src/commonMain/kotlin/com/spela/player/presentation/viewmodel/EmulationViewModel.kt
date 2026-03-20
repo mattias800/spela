@@ -250,7 +250,7 @@ class EmulationViewModel(
                 sharedSessionId = sharedSessionId,
                 turnToken = turnToken,
                 netplaySessionId = netplaySessionId,
-                sessionId = sessionId,
+                sessionId = sessionId, // may be updated by ensureSession below
                 challengeId = challengeId,
                 challengeAttemptId = null,
                 challengeElapsedMs = 0,
@@ -310,6 +310,17 @@ class EmulationViewModel(
                             gameRating = detail.game.rating,
                             gamePlayers = detail.game.players,
                         )
+                    }
+                }
+            }
+
+            // Auto-create or reuse session for normal play (not shared/netplay/challenge)
+            if (sharedSessionId == null && netplaySessionId == null && challengeId == null) {
+                val resolvedSessionId = saveManager.ensureSession(gameId, sessionId)
+                saveManager.currentSessionId = resolvedSessionId
+                if (resolvedSessionId != null && resolvedSessionId != sessionId) {
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(sessionId = resolvedSessionId) }
                     }
                 }
             }

@@ -219,4 +219,40 @@ class EmulationViewModelGameLifecycleTest {
         // Immediately after startGame, supportsSaveStates should be reset to true
         assertTrue(vm.state.value.supportsSaveStates, "supportsSaveStates should reset to true on new game start")
     }
+
+    @Test
+    fun startGameAutoCreatesSessionWhenNoneProvided() = runTest {
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        // Session should have been auto-created
+        assertNotNull(vm.state.value.sessionId, "Session should be auto-created when none provided")
+        assertEquals(1, builder.sessionRepository.createSessionCallCount)
+        assertEquals("Default", builder.sessionRepository.lastCreatedSessionName)
+    }
+
+    @Test
+    fun startGameReusesExistingSession() = runTest {
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "My Save")
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        // Should reuse existing session, not create a new one
+        assertEquals("existing-42", vm.state.value.sessionId)
+        assertEquals(0, builder.sessionRepository.createSessionCallCount)
+    }
+
+    @Test
+    fun startGameWithExplicitSessionIdDoesNotAutoCreate() = runTest {
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1", sessionId = "explicit-session"))
+        builder.advanceTimeBy(100)
+
+        assertEquals("explicit-session", vm.state.value.sessionId)
+        assertEquals(0, builder.sessionRepository.createSessionCallCount)
+    }
 }

@@ -346,13 +346,20 @@ class StubSessionRepository : SessionRepository {
     var uploadSessionSramCallCount = 0; private set
     var downloadSessionSramCallCount = 0; private set
     var uploadSessionSaveCallCount = 0; private set
+    var createSessionCallCount = 0; private set
+    var lastCreatedSessionName: String? = null; private set
 
     var downloadSessionAutoSaveResult: Result<ByteArray> = Result.failure(Exception("no auto-save"))
     var downloadSessionSramResult: Result<ByteArray> = Result.failure(Exception("no sram"))
+    var existingSessions: List<GameSession> = emptyList()
 
-    override suspend fun getSessionsForGame(gameId: String) = Result.success(emptyList<GameSession>())
+    override suspend fun getSessionsForGame(gameId: String) = Result.success(existingSessions)
     override suspend fun getSession(sessionId: String) = Result.failure<GameSession>(Exception("stub"))
-    override suspend fun createSession(gameId: String, name: String) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun createSession(gameId: String, name: String): Result<GameSession> {
+        createSessionCallCount++
+        lastCreatedSessionName = name
+        return Result.success(GameSession(id = "auto-${createSessionCallCount}", gameId = gameId, name = name))
+    }
     override suspend fun updateSession(sessionId: String, name: String?, coreName: String?) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
