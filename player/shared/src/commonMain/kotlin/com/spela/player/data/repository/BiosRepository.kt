@@ -20,9 +20,11 @@ open class BiosRepository(
         }
         val biosDir = fileStorage.getBiosDir()
         for (file in serverFiles) {
-            val localPath = "$biosDir/${file.name}"
+            val localDir = if (!file.subDir.isNullOrEmpty()) "$biosDir/${file.subDir}" else biosDir
+            val localPath = "$localDir/${file.name}"
             if (!fileStorage.fileExists(localPath)) {
                 try {
+                    if (!file.subDir.isNullOrEmpty()) fileStorage.createDirectory(localDir)
                     val data = apiClient.downloadBiosFile(file.name)
                     fileStorage.writeFile(localPath, data)
                 } catch (e: Exception) {
@@ -60,15 +62,21 @@ open class BiosRepository(
     open suspend fun getConsoleStatus(consoleId: String): BiosConsoleStatus? {
         val status = cachedBiosStatus ?: fetchBiosStatus() ?: return null
         val console = status.consoles.find { it.consoleId == consoleId } ?: return null
+        val biosDir = fileStorage.getBiosDir()
 
         val missingFiles = console.files
             .filter { it.required && it.status == "missing" }
-            .map { BiosMissingFile(it.fileName, it.description, it.required) }
+            .map { BiosMissingFile(it.fileName, it.description, it.required, it.subDir) }
 
         // Also check local files - some may have been synced already
         val localFiles = getLocalBiosFiles()
         val actuallyMissing = missingFiles.filter { missing ->
-            missing.fileName !in localFiles
+            val localPath = if (!missing.subDir.isNullOrEmpty()) {
+                "$biosDir/${missing.subDir}/${missing.fileName}"
+            } else {
+                "$biosDir/${missing.fileName}"
+            }
+            missing.fileName !in localFiles && !fileStorage.fileExists(localPath)
         }
 
         return BiosConsoleStatus(
@@ -96,9 +104,11 @@ open class BiosRepository(
         val stillMissing = mutableListOf<BiosMissingFile>()
 
         for (missing in consoleStatus.missingFiles) {
-            val localPath = "$biosDir/${missing.fileName}"
+            val localDir = if (!missing.subDir.isNullOrEmpty()) "$biosDir/${missing.subDir}" else biosDir
+            val localPath = "$localDir/${missing.fileName}"
             if (!fileStorage.fileExists(localPath)) {
                 try {
+                    if (!missing.subDir.isNullOrEmpty()) fileStorage.createDirectory(localDir)
                     val data = apiClient.downloadBiosFile(missing.fileName)
                     fileStorage.writeFile(localPath, data)
                 } catch (e: Exception) {
@@ -117,14 +127,22 @@ open class BiosRepository(
     open suspend fun getConsolesWithMissingBios(): Map<String, BiosConsoleStatus> {
         val status = cachedBiosStatus ?: fetchBiosStatus() ?: return emptyMap()
         val localFiles = getLocalBiosFiles()
+        val biosDir = fileStorage.getBiosDir()
 
         return status.consoles
             .filter { it.biosRequired && it.status == "missing" }
             .mapNotNull { console ->
                 val missingFiles = console.files
                     .filter { it.required && it.status == "missing" }
-                    .filter { it.fileName !in localFiles }
-                    .map { BiosMissingFile(it.fileName, it.description, it.required) }
+                    .filter { file ->
+                        val localPath = if (!file.subDir.isNullOrEmpty()) {
+                            "$biosDir/${file.subDir}/${file.fileName}"
+                        } else {
+                            "$biosDir/${file.fileName}"
+                        }
+                        file.fileName !in localFiles && !fileStorage.fileExists(localPath)
+                    }
+                    .map { BiosMissingFile(it.fileName, it.description, it.required, it.subDir) }
 
                 if (missingFiles.isNotEmpty()) {
                     console.consoleId to BiosConsoleStatus(

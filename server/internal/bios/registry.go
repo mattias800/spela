@@ -1,5 +1,7 @@
 package bios
 
+import "path/filepath"
+
 // Entry represents a known BIOS file in the registry.
 type Entry struct {
 	ConsoleID   string // lowercase abbreviation, e.g. "psx"
@@ -8,6 +10,16 @@ type Entry struct {
 	MD5         string // expected MD5 checksum (lowercase hex)
 	Required    bool   // true if the console cannot function without it
 	OverrideURL string // if set, download from this URL instead of the default repo
+	SubDir      string // subdirectory within system_dir, e.g. "same_cdi/bios" (empty = flat)
+}
+
+// FilePath returns the path of this entry relative to the BIOS directory,
+// taking SubDir into account.
+func (e Entry) FilePath(biosDir string) string {
+	if e.SubDir != "" {
+		return filepath.Join(biosDir, e.SubDir, e.FileName)
+	}
+	return filepath.Join(biosDir, e.FileName)
 }
 
 // registry is the built-in list of known BIOS files.
@@ -86,10 +98,10 @@ var registry = []Entry{
 	// Repo has BIOS.col; we download and save as colecovision.rom (expected by cores).
 	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true, OverrideURL: "https://raw.githubusercontent.com/Abdess/retrobios/main/bios/Coleco/ColecoVision/BIOS.col"},
 
-	// Philips CD-i (CDI) — same_cdi_libretro.info
-	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono1.zip"},
-	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip"},
-	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip"},
+	// Philips CD-i (CDI) — same_cdi_libretro.info (MAME-based, needs subdirectory)
+	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono1.zip", SubDir: "same_cdi/bios"},
+	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip", SubDir: "same_cdi/bios"},
+	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip", SubDir: "same_cdi/bios"},
 }
 
 // repoFolders maps console IDs to their folder path in the

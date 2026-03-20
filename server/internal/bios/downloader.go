@@ -58,7 +58,7 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 		}
 
 		// Skip if already present
-		destPath := filepath.Join(biosDir, entry.FileName)
+		destPath := entry.FilePath(biosDir)
 		if _, err := os.Stat(destPath); err == nil {
 			progress.Status = "skipped"
 			result.Skipped++
@@ -99,6 +99,21 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				onProgress(progress)
 			}
 			continue
+		}
+
+		// Ensure subdirectory exists for entries that need it
+		if entry.SubDir != "" {
+			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+				resp.Body.Close()
+				progress.Status = "failed"
+				progress.Error = fmt.Sprintf("creating subdirectory: %v", err)
+				result.Failed++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				if onProgress != nil {
+					onProgress(progress)
+				}
+				continue
+			}
 		}
 
 		// Write to .tmp file first
