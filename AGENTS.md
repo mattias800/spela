@@ -86,7 +86,35 @@ before the PR is considered ready.
 - **Code Reviewer**: Reviews correctness, security, performance, API design,
   test coverage, and adherence to CLAUDE.md conventions.
 - **UI Agent**: Reviews visual quality, UX polish, loading/empty/error states,
-  design system consistency, and shared component discipline.
+  design system consistency, and shared component discipline. **Must use the
+  Design System Review Checklist** from AGENT_TEAM.md for every UI PR.
 
 If either agent requests changes, fix them before passing the PR to the user.
 This gate applies to all PRs, not just team-built features.
+
+## Design System Enforcement
+
+The **Design System Principles** in `AGENT_TEAM.md` are mandatory for all UI
+work. Violations are blocking — a PR with design system violations cannot be
+merged even if it is functionally correct.
+
+Key rules (see AGENT_TEAM.md for full details):
+
+1. **Components never control their own outer spacing** — parent decides layout
+2. **One visual pattern = one shared component** — no duplicated UI patterns
+3. **Layout containers are standardized** — use SpSectionList, SpTitledSection, GameShelf
+4. **Typography follows hierarchy** — minimum sizes, proper line spacing
+5. **Contrast is non-negotiable** — all text must be readable
+6. **Console names use full name by default** — abbreviation only when space is genuinely tight
+7. **Cover art placeholders use transparent black** — never opaque colored gradients
+8. **Sections ordered by user relevance** — Continue Playing first
+
+When in doubt, the question is always: "Does an Sp* component for this exist?
+If not, should we create one before proceeding?"
+
+**Shared component default:** All visual elements must use shared `Sp*`
+components. Custom/inline UI is only permitted when the element is truly
+one-of-a-kind and must NOT be reused (e.g., a platform-specific emulation
+surface). If there is any chance the pattern could appear elsewhere, it
+must be a shared component. The reviewer must verify: "Is this custom
+element intentionally non-reusable, or should it be an Sp* component?"
