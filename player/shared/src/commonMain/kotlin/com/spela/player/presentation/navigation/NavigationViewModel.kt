@@ -64,6 +64,18 @@ class NavigationViewModel(
                         currentScreen = intent.screen,
                         backStack = current.backStack + current.currentScreen,
                         isGoingBack = false,
+                        isTabSwitch = false,
+                    )
+                }
+            }
+
+            is NavigationIntent.SwitchTab -> {
+                _state.update { current ->
+                    current.copy(
+                        currentScreen = intent.screen,
+                        backStack = emptyList(),
+                        isGoingBack = false,
+                        isTabSwitch = true,
                     )
                 }
             }
@@ -75,6 +87,7 @@ class NavigationViewModel(
                             currentScreen = current.backStack.last(),
                             backStack = current.backStack.dropLast(1),
                             isGoingBack = true,
+                            isTabSwitch = false,
                         )
                     } else if (current.currentScreen is SpScreen.Settings ||
                         current.currentScreen is SpScreen.Downloads ||
@@ -87,6 +100,7 @@ class NavigationViewModel(
                         current.copy(
                             currentScreen = SpScreen.Home,
                             isGoingBack = true,
+                            isTabSwitch = false,
                         )
                     } else {
                         current
@@ -103,6 +117,7 @@ class NavigationViewModel(
                         currentScreen = sections[nextIndex],
                         backStack = emptyList(),
                         isGoingBack = false,
+                        isTabSwitch = false,
                     )
                 }
             }
@@ -116,6 +131,7 @@ class NavigationViewModel(
                         currentScreen = sections[prevIndex],
                         backStack = emptyList(),
                         isGoingBack = true,
+                        isTabSwitch = false,
                     )
                 }
             }
