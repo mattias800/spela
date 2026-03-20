@@ -511,6 +511,10 @@ SpCard (design)                      — card styling, borders, click, hover
             ├─ TopRatedCard (role)    — game in Top Rated (may not be in library)
             └─ SimilarGameCard (role) — similar game suggestion
 
+SpCard (design)                      — wide card variant (same design)
+  └─ SpWideGameCard (content)        — horizontal: cover left, text right
+       └─ ContinuePlayingCard (role) — continue playing a game
+
 SpChip (design)           — chip styling, colors, border
   └─ SpConsoleChip (role) — always represents a console platform
 ```

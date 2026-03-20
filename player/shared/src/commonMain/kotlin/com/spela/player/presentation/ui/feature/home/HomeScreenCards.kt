@@ -35,6 +35,7 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -59,59 +60,28 @@ internal fun ContinuePlayingRow(
     }
 }
 
+/** ROLE component — a continue playing card. Delegates to [SpWideGameCard]. */
 @Composable
 internal fun ContinuePlayingCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(280.dp)
-            .semantics {
-                contentDescription = "Continue playing ${game.title} on ${game.consoleName}"
-                role = Role.Button
-            },
+    SpWideGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.height(84.dp),
-                cornerRadius = SpSpacing.RadiusMedium,
-                aspectRatio = game.coverAspectRatio,
-            )
-            Spacer(Modifier.width(SpSpacing.Medium))
-            Column(modifier = Modifier.weight(1f)) {
+        coverAspectRatio = game.coverAspectRatio,
+        extraContent = if (game.totalPlayTime > 0) {
+            {
                 Text(
-                    text = game.title,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    text = formatPlayTime(game.totalPlayTime),
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundSecondary,
                 )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                SpConsoleChip(
-                    consoleName = game.consoleName,
-                    consoleColor = SpColor.Primary,
-                )
-                if (game.totalPlayTime > 0) {
-                    Spacer(Modifier.height(SpSpacing.XXSmall))
-                    Text(
-                        text = formatPlayTime(game.totalPlayTime),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
             }
-        }
-    }
+        } else null,
+    )
 }
 
 @Composable
