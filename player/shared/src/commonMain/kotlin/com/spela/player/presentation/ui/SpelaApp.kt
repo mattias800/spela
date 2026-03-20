@@ -362,6 +362,14 @@ fun SpelaApp(
                 Box(modifier = Modifier.weight(1f)) {
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
                     val saveableStateHolder = rememberSaveableStateHolder()
+
+                    // When navigating forward, clear saved state for the new screen
+                    // so it starts fresh (e.g., scroll position at top).
+                    // When going back, the saved state is preserved by SaveableStateProvider.
+                    if (!navState.isGoingBack) {
+                        saveableStateHolder.removeState(navState.currentScreen.route)
+                    }
+
                     AnimatedContent(
                         targetState = navState.currentScreen,
                         transitionSpec = {
@@ -1289,9 +1297,9 @@ fun SpelaApp(
                                     )
                                 }
                             }
-                        }
-                        }
-                    }
+                        } // when (screen)
+                        } // SaveableStateProvider
+                    } // AnimatedContent
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
