@@ -221,6 +221,7 @@ private fun PortraitLayout(
             }
 
             item {
+                Spacer(Modifier.height(SpSpacing.Large))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
