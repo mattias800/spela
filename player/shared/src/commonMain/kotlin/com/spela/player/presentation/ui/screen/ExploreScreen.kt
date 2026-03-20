@@ -366,31 +366,18 @@ fun ExploreScreen(
                     // Developer spotlight section
                     item {
                         if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
-                            SpTitledSection(
-                                includeTopSpacing = false,
-                                title = "Developer Spotlight",
-                                edgeToEdgeContent = true,
+                            DeveloperSpotlightSkeleton(
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                            ) {
-                                DeveloperSpotlightSkeleton()
-                            }
+                            )
                         } else if (state.developerSpotlight != null) {
-                            SpTitledSection(
-                                includeTopSpacing = false,
-                                title = "Developer Spotlight",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                    .testTag("explore_developer_spotlight_section"),
-                            ) {
-                                DeveloperSpotlightSection(
-                                    spotlight = state.developerSpotlight!!,
-                                    onDeveloperSelected = { name ->
-                                        onDeveloperSelected?.invoke(name)
-                                    },
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
+                            DeveloperSpotlightSection(
+                                spotlight = state.developerSpotlight!!,
+                                onDeveloperSelected = { name ->
+                                    onDeveloperSelected?.invoke(name)
+                                },
+                                onGameSelected = onGameSelected,
+                                modifier = Modifier.testTag("explore_developer_spotlight_section"),
+                            )
                         }
                     }
 

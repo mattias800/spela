@@ -81,26 +81,26 @@ fun DeveloperSpotlightSection(
                         ),
                     ),
             ) {
-                // Decorative label
+                // Section title inside banner
                 Text(
-                    text = "SPOTLIGHT",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Accent.copy(alpha = 0.35f),
-                    letterSpacing = 4.sp,
+                    text = "Developer Spotlight",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.Accent.copy(alpha = 0.7f),
+                    letterSpacing = 2.sp,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(SpSpacing.Medium),
+                        .align(Alignment.TopStart)
+                        .padding(SpSpacing.XLarge),
                 )
 
                 Column(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
+                        .align(Alignment.BottomStart)
                         .padding(SpSpacing.XLarge),
                 ) {
                     Text(
                         text = spotlight.name,
                         style = SpTypography.HeadlineMedium,
-                        color = Color.White,
+                        color = SpColor.OnBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -112,7 +112,7 @@ fun DeveloperSpotlightSection(
                         Text(
                             text = "${spotlight.gameCount} games",
                             style = SpTypography.BodyMedium,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = SpColor.OnBackgroundSecondary,
                         )
                         if (spotlight.avgRating > 0) {
                             Row(
@@ -128,7 +128,7 @@ fun DeveloperSpotlightSection(
                                 Text(
                                     text = formatRating(spotlight.avgRating),
                                     style = SpTypography.BodyMedium,
-                                    color = Color.White.copy(alpha = 0.85f),
+                                    color = SpColor.OnBackgroundSecondary,
                                 )
                             }
                         }
