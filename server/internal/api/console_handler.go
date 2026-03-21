@@ -490,6 +490,10 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
 			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
 		}
+		// Fallback to IGDB cover URL if local download hasn't completed
+		if resp.CoverUrl == "" && tr.CoverImageID != "" {
+			resp.CoverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
+		}
 
 		result = append(result, resp)
 	}
@@ -522,6 +526,9 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 		}
 		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
 			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
+		}
+		if resp.CoverUrl == "" && tr.CoverImageID != "" {
+			resp.CoverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
 		}
 
 		result = append(result, resp)
