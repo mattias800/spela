@@ -115,11 +115,11 @@ fun SpButton(
                     when {
                         !enabled -> SpColor.Divider
                         onGradient -> Color.White.copy(alpha = 0.25f)
-                        else -> SpColor.Primary
+                        else -> SpColor.OnBackgroundSecondary.copy(alpha = 0.5f)
                     },
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (onGradient) Color.White else SpColor.Primary,
+                    contentColor = if (onGradient) Color.White else SpColor.OnBackgroundSecondary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
