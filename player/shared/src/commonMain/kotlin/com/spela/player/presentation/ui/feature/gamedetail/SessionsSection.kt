@@ -69,15 +69,12 @@ internal fun SessionsSection(
         title = "Sessions",
         icon = Icons.Outlined.Gamepad,
         modifier = modifier.testTag("sessions_section"),
-        titleTrailing = if (sessions.isNotEmpty()) {
-            {
-                Text(
-                    text = "(${sessions.size})",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
-        } else null,
+        titleTrailing = {
+            SpSecondaryButton(
+                text = "New Session",
+                onClick = { showCreateDialog = true },
+            )
+        },
     ) {
         if (sessions.isEmpty() && !isLoading) {
             Text(
@@ -86,7 +83,6 @@ internal fun SessionsSection(
                 color = SpColor.OnBackgroundTertiary,
                 modifier = Modifier.testTag("sessions_empty"),
             )
-            Spacer(Modifier.height(SpSpacing.Default))
         }
 
         sessions.forEachIndexed { index, session ->
@@ -109,15 +105,6 @@ internal fun SessionsSection(
                     .padding(vertical = SpSpacing.XXSmall),
             )
         }
-
-        Spacer(Modifier.height(SpSpacing.Small))
-        SpSecondaryButton(
-            text = "Start New Session",
-            onClick = { showCreateDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("create_session_button"),
-        )
     }
 
     // Rename dialog
