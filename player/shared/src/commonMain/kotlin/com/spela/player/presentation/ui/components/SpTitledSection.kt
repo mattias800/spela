@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,7 +67,8 @@ fun SpTitledSection(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.Default) else Modifier,
+                modifier = (if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.Default) else Modifier)
+                    .heightIn(min = 40.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
