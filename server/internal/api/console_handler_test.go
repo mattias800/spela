@@ -848,3 +848,93 @@ func TestGetTopListLongest_ExcludesDemoConsoles(t *testing.T) {
 	assert.Len(t, result, 1, "should exclude demo console entries")
 	assert.Equal(t, "Real Game", result[0].Name)
 }
+
+func TestGetTopRatedGlobal_DeduplicatesSameGameAcrossConsoles(t *testing.T) {
+	database, store, router := setupConsoleTestEnv(t)
+
+	handler := &ConsoleHandler{DB: database, Storage: store}
+	router.GET("/api/top-rated", handler.GetTopRatedGlobal)
+
+	// Look up two different consoles
+	var snes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	// Insert the same game (same IGDB game ID) as top-rated on two consoles.
+	// This happens because IGDB lists "Super Metroid" on both SNES and GBA
+	// (or virtual console re-releases), and upsertTopRatedGames runs per-console.
+	database.Create(&db.TopRatedGame{
+		ConsoleID: snes.ID, IGDBGameID: 1103, Name: "Super Metroid",
+		TotalRating: 96.0, TotalRatingCount: 500, Rank: 1,
+	})
+	database.Create(&db.TopRatedGame{
+		ConsoleID: gba.ID, IGDBGameID: 1103, Name: "Super Metroid",
+		TotalRating: 95.0, TotalRatingCount: 200, Rank: 1,
+	})
+	// A different game for variety
+	database.Create(&db.TopRatedGame{
+		ConsoleID: snes.ID, IGDBGameID: 2000, Name: "Chrono Trigger",
+		TotalRating: 92.0, TotalRatingCount: 400, Rank: 2,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-rated", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []TopRatedGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	// Super Metroid should appear exactly once, not twice
+	names := make([]string, len(result))
+	for i, g := range result {
+		names[i] = g.Name
+	}
+	assert.Len(t, result, 2, "should deduplicate: got %v", names)
+	assert.Equal(t, "Super Metroid", result[0].Name)
+	assert.Equal(t, "Chrono Trigger", result[1].Name)
+}
+
+func TestGetTopRatedGlobal_DeduplicatePrefersLocalLibraryMatch(t *testing.T) {
+	database, store, router := setupConsoleTestEnv(t)
+
+	handler := &ConsoleHandler{DB: database, Storage: store}
+	router.GET("/api/top-rated", handler.GetTopRatedGlobal)
+
+	var snes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	// Add a local SNES game matching "Super Metroid"
+	database.Create(&db.Game{
+		ConsoleID: snes.ID, Title: "Super Metroid",
+		FileName: "super_metroid.sfc", FilePath: "SNES/super_metroid.sfc",
+		CoverURL: "SNES/1/boxart.png",
+	})
+
+	// Insert same game on two consoles — GBA version has higher rating
+	// but SNES has the local library match
+	database.Create(&db.TopRatedGame{
+		ConsoleID: gba.ID, IGDBGameID: 1103, Name: "Super Metroid",
+		TotalRating: 97.0, TotalRatingCount: 200, Rank: 1,
+	})
+	database.Create(&db.TopRatedGame{
+		ConsoleID: snes.ID, IGDBGameID: 1103, Name: "Super Metroid",
+		TotalRating: 96.0, TotalRatingCount: 500, Rank: 1,
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/top-rated", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []TopRatedGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	require.Len(t, result, 1)
+	assert.Equal(t, "Super Metroid", result[0].Name)
+	// Should have a localGameId because the SNES version matches a library game
+	assert.NotNil(t, result[0].LocalGameId, "should prefer the console entry that has a local library match")
+}
