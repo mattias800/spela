@@ -38,6 +38,7 @@ import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpConfirmDialog
@@ -452,10 +453,9 @@ fun SettingsScreen(
                                 onToggle = { viewModel.onIntent(SettingsIntent.ToggleRAHardcore) },
                             )
                             Spacer(Modifier.height(SpSpacing.Small))
-                            SpButton(
+                            SpSecondaryButton(
                                 text = "Unlink Account",
                                 onClick = { viewModel.onIntent(SettingsIntent.UnlinkRA) },
-                                style = SpButtonStyle.Outlined,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         } else {
@@ -556,10 +556,9 @@ fun SettingsScreen(
                             connectionState = connectionState,
                         )
                         Spacer(Modifier.height(SpSpacing.Medium))
-                        SpButton(
+                        SpSecondaryButton(
                             text = if (syncState.isSyncing) "Syncing..." else "Sync Now",
                             onClick = { viewModel.onIntent(SettingsIntent.SyncNow) },
-                            style = SpButtonStyle.Outlined,
                             modifier = Modifier.fillMaxWidth(),
                             isLoading = syncState.isSyncing,
                             enabled = isOnline && !syncState.isSyncing,
@@ -632,10 +631,9 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                         Spacer(Modifier.height(SpSpacing.Default))
-                        SpButton(
+                        SpSecondaryButton(
                             text = "Sign Out",
                             onClick = { viewModel.onIntent(SettingsIntent.ShowLogoutConfirm) },
-                            style = SpButtonStyle.Outlined,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }

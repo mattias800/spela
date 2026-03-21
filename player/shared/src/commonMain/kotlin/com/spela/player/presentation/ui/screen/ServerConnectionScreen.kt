@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -256,10 +257,9 @@ fun ServerConnectionScreen(
 
                         if (!state.isAddingServer) {
                             Spacer(Modifier.height(SpSpacing.Default))
-                            SpButton(
+                            SpSecondaryButton(
                                 text = "Add Server",
                                 onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
-                                style = SpButtonStyle.Outlined,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }

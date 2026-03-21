@@ -31,6 +31,7 @@ import com.spela.player.domain.model.ButtonInfo
 import com.spela.player.domain.model.ConsoleButtonLayout
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -201,10 +202,9 @@ fun KeyMappingWizard(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    SpButton(
+                    SpSecondaryButton(
                         text = "Reset All",
                         onClick = onResetAll,
-                        style = SpButtonStyle.Outlined,
                         modifier = Modifier.weight(1f),
                     )
                     SpButton(

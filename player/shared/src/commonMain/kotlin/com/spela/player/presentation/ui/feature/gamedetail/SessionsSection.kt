@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpInnerCard
@@ -110,10 +111,9 @@ internal fun SessionsSection(
         }
 
         Spacer(Modifier.height(SpSpacing.Small))
-        SpButton(
+        SpSecondaryButton(
             text = "Start New Session",
             onClick = { showCreateDialog = true },
-            style = SpButtonStyle.Outlined,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("create_session_button"),

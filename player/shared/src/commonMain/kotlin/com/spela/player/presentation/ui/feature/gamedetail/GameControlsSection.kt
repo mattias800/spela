@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.SportsEsports
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -45,10 +46,9 @@ fun GameControlsSection(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
-                    SpButton(
+                    SpSecondaryButton(
                         text = "Edit",
                         onClick = onEditMapping,
-                        style = SpButtonStyle.Outlined,
                     )
                     SpButton(
                         text = "Remove Override",
@@ -62,10 +62,9 @@ fun GameControlsSection(
                     style = SpTypography.BodyMedium,
                     color = SpColor.OnBackgroundTertiary,
                 )
-                SpButton(
+                SpSecondaryButton(
                     text = "Set Custom Controls",
                     onClick = onEnableOverride,
-                    style = SpButtonStyle.Outlined,
                 )
             }
         }

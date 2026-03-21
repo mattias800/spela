@@ -26,6 +26,7 @@ import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -117,10 +118,9 @@ internal fun InputDelaySection(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (isHost) {
-                    SpButton(
+                    SpSecondaryButton(
                         text = "",
                         onClick = { if (inputDelay > 1) onChangeDelay(inputDelay - 1) },
-                        style = SpButtonStyle.Outlined,
                         enabled = inputDelay > 1 && !isUpdating,
                         leadingIcon = {
                             Icon(
@@ -140,10 +140,9 @@ internal fun InputDelaySection(
                         },
                     )
 
-                    SpButton(
+                    SpSecondaryButton(
                         text = "",
                         onClick = { if (inputDelay < 10) onChangeDelay(inputDelay + 1) },
-                        style = SpButtonStyle.Outlined,
                         enabled = inputDelay < 10 && !isUpdating,
                         leadingIcon = {
                             Icon(

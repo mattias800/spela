@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -155,10 +156,9 @@ private fun ControllerRow(
 
         // Configure button
         if (assignment != null) {
-            SpButton(
+            SpSecondaryButton(
                 text = "Configure",
                 onClick = onConfigure,
-                style = SpButtonStyle.Outlined,
             )
         }
     }

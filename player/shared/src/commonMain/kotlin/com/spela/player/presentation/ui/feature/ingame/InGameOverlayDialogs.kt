@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.theme.SpColor
@@ -76,10 +77,9 @@ internal fun OverlayConfirmDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                SpButton(
+                SpSecondaryButton(
                     text = cancelText,
                     onClick = onCancel,
-                    style = SpButtonStyle.Outlined,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 SpButton(
