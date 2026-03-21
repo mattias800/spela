@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -55,50 +56,16 @@ internal fun DeveloperGamesSection(
     }
 }
 
+/** ROLE component — a game card in Developer detail. Delegates to [SpGameCard]. */
 @Composable
 private fun DeveloperGameCard(
     game: DeveloperGame,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .semantics {
-                contentDescription = "${game.title} on ${game.consoleName}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (game.consoleName.isNotEmpty()) {
-                    Text(
-                        text = game.consoleName,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
+    )
 }

@@ -3,7 +3,6 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +37,7 @@ import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -59,7 +59,6 @@ fun DeveloperSpotlightSection(
         SpCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .testTag("developer_spotlight_card")
                 .semantics {
                     contentDescription = "${spotlight.name}, ${spotlight.gameCount} games, rating ${formatRating(spotlight.avgRating)}"
@@ -82,26 +81,26 @@ fun DeveloperSpotlightSection(
                         ),
                     ),
             ) {
-                // Decorative label
+                // Section title inside banner
                 Text(
-                    text = "SPOTLIGHT",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Accent.copy(alpha = 0.35f),
-                    letterSpacing = 4.sp,
+                    text = "Developer Spotlight",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.Accent.copy(alpha = 0.7f),
+                    letterSpacing = 2.sp,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(SpSpacing.Medium),
+                        .align(Alignment.TopStart)
+                        .padding(SpSpacing.XLarge),
                 )
 
                 Column(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
+                        .align(Alignment.BottomStart)
                         .padding(SpSpacing.XLarge),
                 ) {
                     Text(
                         text = spotlight.name,
                         style = SpTypography.HeadlineMedium,
-                        color = Color.White,
+                        color = SpColor.OnBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -113,7 +112,7 @@ fun DeveloperSpotlightSection(
                         Text(
                             text = "${spotlight.gameCount} games",
                             style = SpTypography.BodyMedium,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = SpColor.OnBackgroundSecondary,
                         )
                         if (spotlight.avgRating > 0) {
                             Row(
@@ -129,7 +128,7 @@ fun DeveloperSpotlightSection(
                                 Text(
                                     text = formatRating(spotlight.avgRating),
                                     style = SpTypography.BodyMedium,
-                                    color = Color.White.copy(alpha = 0.85f),
+                                    color = SpColor.OnBackgroundSecondary,
                                 )
                             }
                         }
@@ -168,52 +167,21 @@ fun DeveloperSpotlightSection(
     }
 }
 
+/** ROLE component — a game card in Developer Spotlight. Delegates to [SpGameCard]. */
 @Composable
 private fun SpotlightGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .testTag("developer_spotlight_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = game.coverAspectRatio,
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                Text(
-                    text = game.consoleId.uppercase(),
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
+        coverAspectRatio = game.coverAspectRatio,
+        rating = game.rating,
+        testTag = "developer_spotlight_game_${game.id}",
+    )
 }
 
 @Composable
@@ -224,7 +192,6 @@ fun DeveloperSpotlightSkeleton(
         SpShimmer(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .clip(RoundedCornerShape(SpSpacing.CardCornerRadius)),
             width = 400.dp,
             height = 100.dp,

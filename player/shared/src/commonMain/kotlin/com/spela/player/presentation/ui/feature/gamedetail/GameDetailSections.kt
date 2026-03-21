@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.mutableStateOf
@@ -54,18 +55,13 @@ fun ScreenshotsSection(screenshots: List<String>) {
 
     var lightboxIndex by remember { mutableStateOf<Int?>(null) }
 
-    Spacer(Modifier.height(SpSpacing.XXLarge))
-    Text(
-        text = "Screenshots",
-        style = SpTypography.HeadlineSmall,
-        color = SpColor.OnBackground,
-        modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .semantics { heading() },
-    )
-    Spacer(Modifier.height(SpSpacing.Medium))
+    SpTitledSection(
+        title = "Screenshots",
+        icon = Icons.Filled.CameraAlt,
+        edgeToEdgeContent = true,
+    ) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+        contentPadding = PaddingValues(horizontal = SpSpacing.Default),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
@@ -82,6 +78,7 @@ fun ScreenshotsSection(screenshots: List<String>) {
             }
         }
     }
+    } // SpTitledSection
     ScreenshotLightbox(
         visible = lightboxIndex != null,
         screenshotUrls = screenshots,

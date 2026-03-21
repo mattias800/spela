@@ -467,34 +467,7 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 		}
 	}
 
-	// Cross-reference with local games
-	result := make([]TopRatedGameResponse, 0, len(cached))
-	for _, tr := range cached {
-		resp := TopRatedGameResponse{
-			Rank:   tr.Rank,
-			Name:   tr.Name,
-			Rating: tr.TotalRating,
-		}
-
-		// Check for local game match by case-insensitive title
-		var localGame db.Game
-		if err := h.DB.Where("console_id = ? AND LOWER(title) = LOWER(?)", console.ID, tr.Name).First(&localGame).Error; err == nil {
-			id := fmt.Sprintf("%d", localGame.ID)
-			resp.LocalGameId = &id
-			// Prefer local game's cached cover
-			if localGame.CoverURL != "" {
-				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
-			}
-		}
-		// Fallback to locally downloaded top-rated cover
-		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
-			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
-		}
-
-		result = append(result, resp)
-	}
-
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, h.buildTopRatedResponses(cached, false))
 }
 
 // GetTopRatedGlobal returns the top 20 top-rated IGDB games across all consoles.
@@ -503,31 +476,7 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 	var cached []db.TopRatedGame
 	h.DB.Order("total_rating desc").Limit(20).Find(&cached)
 
-	result := make([]TopRatedGameResponse, 0, len(cached))
-	for i, tr := range cached {
-		resp := TopRatedGameResponse{
-			Rank:   i + 1,
-			Name:   tr.Name,
-			Rating: tr.TotalRating,
-		}
-
-		// Check for local game match by case-insensitive title, scoped to the same console
-		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).First(&localGame).Error; err == nil {
-			id := fmt.Sprintf("%d", localGame.ID)
-			resp.LocalGameId = &id
-			if localGame.CoverURL != "" {
-				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
-			}
-		}
-		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
-			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
-		}
-
-		result = append(result, resp)
-	}
-
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, h.buildTopRatedResponses(cached, true))
 }
 
 // TopListGameResponse is the API response for a top-rated IGDB game that is
@@ -685,6 +634,46 @@ func (h *ConsoleHandler) GetTopListLongest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+// buildTopRatedResponses converts cached TopRatedGame rows into API responses,
+// cross-referencing with local games for cover art and game IDs.
+// When rerank is true, ranks are assigned by position (1-based) instead of
+// using the stored rank — used by the global endpoint which sorts by rating.
+func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank bool) []TopRatedGameResponse {
+	result := make([]TopRatedGameResponse, 0, len(cached))
+	for i, tr := range cached {
+		rank := tr.Rank
+		if rerank {
+			rank = i + 1
+		}
+		resp := TopRatedGameResponse{
+			Rank:   rank,
+			Name:   tr.Name,
+			Rating: tr.TotalRating,
+		}
+
+		// Check for local game match by case-insensitive title, scoped to the same console
+		var localGame db.Game
+		if err := h.DB.Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).First(&localGame).Error; err == nil {
+			id := fmt.Sprintf("%d", localGame.ID)
+			resp.LocalGameId = &id
+			if localGame.CoverURL != "" {
+				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
+			}
+		}
+		// Fallback to locally downloaded top-rated cover
+		if resp.CoverUrl == "" && tr.CoverLocalPath != "" {
+			resp.CoverUrl = resolveImageURL(tr.CoverLocalPath)
+		}
+		// Fallback to IGDB cover URL if local download hasn't completed
+		if resp.CoverUrl == "" && tr.CoverImageID != "" {
+			resp.CoverUrl = igdb.ImageURL(tr.CoverImageID, "cover_big")
+		}
+
+		result = append(result, resp)
+	}
+	return result
 }
 
 // upsertTopRatedGames inserts or updates top-rated games for a console.

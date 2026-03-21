@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpInnerCard
@@ -68,15 +69,12 @@ internal fun SessionsSection(
         title = "Sessions",
         icon = Icons.Outlined.Gamepad,
         modifier = modifier.testTag("sessions_section"),
-        titleTrailing = if (sessions.isNotEmpty()) {
-            {
-                Text(
-                    text = "(${sessions.size})",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
-        } else null,
+        titleTrailing = {
+            SpSecondaryButton(
+                text = "New Session",
+                onClick = { showCreateDialog = true },
+            )
+        },
     ) {
         if (sessions.isEmpty() && !isLoading) {
             Text(
@@ -85,7 +83,6 @@ internal fun SessionsSection(
                 color = SpColor.OnBackgroundTertiary,
                 modifier = Modifier.testTag("sessions_empty"),
             )
-            Spacer(Modifier.height(SpSpacing.Default))
         }
 
         sessions.forEachIndexed { index, session ->
@@ -108,16 +105,6 @@ internal fun SessionsSection(
                     .padding(vertical = SpSpacing.XXSmall),
             )
         }
-
-        Spacer(Modifier.height(SpSpacing.Small))
-        SpButton(
-            text = "Start New Session",
-            onClick = { showCreateDialog = true },
-            style = SpButtonStyle.Outlined,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("create_session_button"),
-        )
     }
 
     // Rename dialog

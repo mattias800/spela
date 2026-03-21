@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -115,73 +116,23 @@ private fun ForYouRowSection(
     }
 }
 
+/** ROLE component — a game card in For You recommendations. Delegates to [SpGameCard]. */
 @Composable
 private fun ForYouGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .testTag("for_you_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleId.uppercase()}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = game.coverAspectRatio,
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                ) {
-                    Text(
-                        text = game.consoleId.uppercase(),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        maxLines = 1,
-                    )
-
-                    if (game.rating > 0) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-            }
-        }
-    }
+        coverAspectRatio = game.coverAspectRatio,
+        rating = game.rating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+        testTag = "for_you_game_${game.id}",
+    )
 }
 
 @Composable

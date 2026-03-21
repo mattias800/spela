@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.TopRatedGame
+import com.spela.player.presentation.ui.components.SpAvailabilityGameCard
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.theme.SpColor
@@ -54,58 +55,18 @@ internal fun TopRatedRow(
     }
 }
 
+/** ROLE component — a top-rated game card with library availability. Delegates to [SpAvailabilityGameCard]. */
 @Composable
 private fun TopRatedCard(
     game: TopRatedGame,
     onClick: (() -> Unit)?,
 ) {
-    val alpha = if (game.localGameId != null) 1f else 0.5f
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .alpha(alpha)
-            .semantics {
-                contentDescription = "${game.name}, rated ${game.rating.toInt()}"
-                if (onClick != null) role = Role.Button
-            },
-        onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.name} cover art",
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.name,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = SpColor.Gold,
-                    )
-                    Spacer(Modifier.width(SpSpacing.XXSmall))
-                    Text(
-                        text = "${game.rating.toInt()}",
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.Gold,
-                    )
-                }
-            }
-        }
-    }
+    SpAvailabilityGameCard(
+        title = game.name,
+        subtitle = "",
+        coverUrl = game.coverUrl,
+        onClick = onClick ?: {},
+        available = game.localGameId != null,
+        rating = game.rating,
+    )
 }

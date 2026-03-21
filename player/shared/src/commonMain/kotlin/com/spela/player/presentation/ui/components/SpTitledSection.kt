@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,19 +28,20 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * Reusable section wrapper with a title and card-styled content slot.
+ * CONTENT component — a card section with a title and content slot.
  *
- * Renders: optional top spacing + a card container with icon + title header inside,
- * followed by the content. The card uses a semi-transparent black background that
- * darkens the gradient behind it slightly.
+ * Layer 2 in the component hierarchy (Design → Content → Role).
+ * Renders a semi-transparent card with: icon + title header, then content below.
+ *
+ * Does NOT add outer spacing — the parent (e.g. [SpSectionList]) controls
+ * gaps between sections via `Arrangement.spacedBy()`.
  *
  * @param title Section heading text.
- * @param modifier Modifier applied to the outer Column.
+ * @param modifier Modifier applied to the card Box.
  * @param icon Optional icon displayed before the title in accent color.
- * @param includeTopSpacing Whether to add [SpSpacing.XXLarge] above the title (default true).
- * @param titleTrailing Optional composable rendered beside the title in a Row (e.g. a count badge).
- * @param edgeToEdgeContent When true, content has no horizontal padding so carousels can
- *   extend to the card edges. Header row retains horizontal padding. Default false.
+ * @param titleTrailing Optional composable beside the title (e.g. a link).
+ * @param edgeToEdgeContent When true, content has no horizontal padding so
+ *   carousels can extend to the card edges. Header retains horizontal padding.
  * @param content Section body rendered inside the card below the header.
  */
 @Composable
@@ -47,54 +49,50 @@ fun SpTitledSection(
     title: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    includeTopSpacing: Boolean = true,
     titleTrailing: @Composable (() -> Unit)? = null,
     edgeToEdgeContent: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
-    Column(modifier = modifier) {
-        if (includeTopSpacing) {
-            Spacer(Modifier.height(SpSpacing.XXLarge))
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.18f), shape)
-                .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
-                .let {
-                    if (edgeToEdgeContent) it.padding(vertical = SpSpacing.XLarge)
-                    else it.padding(SpSpacing.XLarge)
-                },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.XLarge) else Modifier,
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (icon != null) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = SpColor.Accent,
-                            modifier = Modifier.size(SpSpacing.IconDefault),
-                        )
-                    }
-                    Text(
-                        text = title,
-                        style = SpTypography.HeadlineSmall,
-                        color = SpColor.OnBackground,
-                        modifier = Modifier.weight(1f).semantics { heading() },
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.18f), shape)
+            .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
+            .let {
+                if (edgeToEdgeContent) it.padding(vertical = SpSpacing.Default)
+                else it.padding(SpSpacing.Default)
+            },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = (if (edgeToEdgeContent) Modifier.padding(horizontal = SpSpacing.Default) else Modifier)
+                    .heightIn(min = 40.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = SpColor.Accent,
+                        modifier = Modifier.size(SpSpacing.IconDefault),
                     )
-                    if (titleTrailing != null) {
-                        titleTrailing()
-                    }
                 }
-                Spacer(Modifier.height(SpSpacing.Default))
-                content()
+                Text(
+                    text = title,
+                    style = SpTypography.HeadlineSmall,
+                    color = SpColor.OnBackground,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                if (titleTrailing != null) {
+                    titleTrailing()
+                }
             }
+            Spacer(Modifier.height(SpSpacing.Default))
+            content()
         }
     }
 }
+

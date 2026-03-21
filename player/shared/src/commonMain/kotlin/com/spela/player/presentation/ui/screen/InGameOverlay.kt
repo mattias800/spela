@@ -26,6 +26,7 @@ import com.spela.player.presentation.ui.feature.ingame.OverlayConfirmDialog
 import com.spela.player.presentation.ui.feature.ingame.OverlayToast
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
 import com.spela.player.presentation.ui.components.challenge.ChallengeCreationPanel
@@ -97,13 +98,12 @@ fun InGameOverlay(
             visible = true,
             onTimeout = { onExit() },
             actions = {
-                SpButton(
+                SpSecondaryButton(
                     text = "Leave Session",
                     onClick = {
                         viewModel.onIntent(EmulationIntent.ConfirmNetplayLeave)
                         onExit()
                     },
-                    style = SpButtonStyle.Outlined,
                 )
             },
         )

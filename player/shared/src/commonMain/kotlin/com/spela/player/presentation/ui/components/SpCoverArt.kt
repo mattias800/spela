@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import coil3.compose.SubcomposeAsyncImage
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -138,11 +139,7 @@ private fun CoverPlaceholder(title: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    listOf(SpColor.SurfaceVariant, SpColor.SurfaceElevated)
-                )
-            ),
+            .background(Color.Black.copy(alpha = 0.3f)),
         contentAlignment = Alignment.Center,
     ) {
         Text(

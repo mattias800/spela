@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ConsoleButtonLayout
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -202,10 +203,9 @@ fun KeyMappingScreen(
                         )
                     }
                     if (onClearBinding != null) {
-                        SpButton(
+                        SpSecondaryButton(
                             text = "Clear",
                             onClick = onClearBinding,
-                            style = SpButtonStyle.Outlined,
                         )
                     }
                 }
@@ -218,17 +218,15 @@ fun KeyMappingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
-                SpButton(
+                SpSecondaryButton(
                     text = "Start Wizard",
                     onClick = onStartWizard,
-                    style = SpButtonStyle.Outlined,
                     modifier = Modifier.weight(1f),
                 )
                 if (onLoadPreset != null) {
-                    SpButton(
+                    SpSecondaryButton(
                         text = "Load Preset",
                         onClick = onLoadPreset,
-                        style = SpButtonStyle.Outlined,
                         modifier = Modifier.weight(1f),
                     )
                 }

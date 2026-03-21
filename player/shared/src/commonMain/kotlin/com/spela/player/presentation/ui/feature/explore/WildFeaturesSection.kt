@@ -28,12 +28,10 @@ fun WildFeaturesSection(
     onSurpriseMe: () -> Unit,
     onWizardSelected: () -> Unit,
     modifier: Modifier = Modifier,
-    includeTopSpacing: Boolean = true,
 ) {
     SpTitledSection(
         title = "Feeling Adventurous?",
         modifier = modifier,
-        includeTopSpacing = includeTopSpacing,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

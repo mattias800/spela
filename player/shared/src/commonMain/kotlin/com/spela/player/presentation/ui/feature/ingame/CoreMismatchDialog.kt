@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -97,10 +98,9 @@ internal fun CoreMismatchDialog(
                     onClick = onTryAnyway,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                SpButton(
+                SpSecondaryButton(
                     text = "Start with Game Save Only",
                     onClick = onGameSaveOnly,
-                    style = SpButtonStyle.Outlined,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 SpButton(

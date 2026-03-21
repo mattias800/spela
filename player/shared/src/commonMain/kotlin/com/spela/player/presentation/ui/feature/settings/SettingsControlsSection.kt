@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpRadioOption
@@ -44,10 +45,9 @@ internal fun LazyListScope.controlsDefaultScopeItems(
     }
 
     item {
-        SpButton(
+        SpSecondaryButton(
             text = "Customize Bindings",
             onClick = onOpenFullMapping,
-            style = SpButtonStyle.Outlined,
             modifier = Modifier.fillMaxWidth().testTag("customize_bindings_button"),
         )
     }

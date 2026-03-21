@@ -157,6 +157,7 @@ private fun LandscapeLayout(
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = SpSpacing.ScreenHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                     ) {
                         sections()
                     }
@@ -165,7 +166,13 @@ private fun LandscapeLayout(
 
             // Full-width sections below the hero row
             item {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(Modifier.height(SpSpacing.Large))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+                ) {
                     fullWidthSections()
                 }
             }
@@ -210,12 +217,18 @@ private fun PortraitLayout(
                     }
                     Spacer(Modifier.height(SpSpacing.Medium))
                     coverExtra(true)
-                    Spacer(Modifier.height(SpSpacing.XLarge))
+                    Spacer(Modifier.height(SpSpacing.Large))
                 }
             }
 
             item {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(Modifier.height(SpSpacing.Large))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+                ) {
                     sections()
                     fullWidthSections()
                 }

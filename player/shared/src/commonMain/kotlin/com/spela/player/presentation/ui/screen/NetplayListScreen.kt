@@ -37,6 +37,7 @@ import com.spela.player.domain.model.NetplaySession
 import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.ui.feature.netplay.NetplayStatusChip
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -116,10 +117,9 @@ fun NetplayListScreen(
                                     .padding(horizontal = SpSpacing.ScreenHorizontal),
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                             ) {
-                                SpButton(
+                                SpSecondaryButton(
                                     text = "Join by Code",
                                     onClick = { showJoinDialog = true },
-                                    style = SpButtonStyle.Outlined,
                                 )
                             }
                             Spacer(Modifier.height(SpSpacing.Default))

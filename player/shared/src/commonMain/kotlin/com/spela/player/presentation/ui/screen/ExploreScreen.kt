@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ActiveNowSection
 import com.spela.player.presentation.ui.feature.explore.ArtworkShowcaseSection
@@ -133,15 +134,12 @@ fun ExploreScreen(
             }
 
             else -> {
-                LazyColumn(
+                SpSectionList(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        top = titleBarInset,
-                        bottom = SpSpacing.XLarge,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+                    topPadding = titleBarInset,
                 ) {
                     // Hero carousel
+                    if (state.isLoadingFeatured || state.featuredGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingFeatured && state.featuredGames.isEmpty()) {
                             HeroCarouselSkeleton(
@@ -159,6 +157,7 @@ fun ExploreScreen(
                             )
                         }
                     }
+                    }
 
                     // Global search entry point — tappable search bar
                     item {
@@ -173,23 +172,20 @@ fun ExploreScreen(
                     }
 
                     // Console quick-jump section
+                    if (state.isLoadingConsoleHighlights || state.consoleHighlights.isNotEmpty()) {
                     item {
                         if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ConsoleQuickJumpSkeleton()
                             }
                         } else if (state.consoleHighlights.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_consoles_section"),
                             ) {
                                 ConsoleQuickJumpSection(
@@ -201,25 +197,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Mood picker section
+                    if (state.isLoadingMoods || state.moods.isNotEmpty()) {
                     item {
                         if (state.isLoadingMoods && state.moods.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 MoodPickerSkeleton()
                             }
                         } else if (state.moods.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_moods_section"),
                             ) {
                                 MoodPicker(
@@ -231,37 +225,33 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Wild Features — Lucky & Wizard
                     item {
                         WildFeaturesSection(
                             onSurpriseMe = { onSurpriseMe?.invoke() },
                             onWizardSelected = { onWizardSelected?.invoke() },
-                            includeTopSpacing = false,
                             modifier = Modifier
-                                .padding(horizontal = SpSpacing.ScreenHorizontal)
                                 .testTag("explore_wild_features"),
                         )
                     }
 
                     // For You section (personalized recommendations)
+                    if (state.isLoadingForYou || state.forYouRows.isNotEmpty()) {
                     item {
                         if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "For You",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ForYouSkeleton()
                             }
                         } else if (state.forYouRows.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "For You",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_for_you_section"),
                             ) {
                                 ForYouSection(
@@ -271,25 +261,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Theme grid section
+                    if (state.isLoadingThemes || state.themes.isNotEmpty()) {
                     item {
                         if (state.isLoadingThemes && state.themes.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ThemeGridSkeleton()
                             }
                         } else if (state.themes.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_themes_section"),
                             ) {
                                 ThemeGrid(
@@ -301,25 +289,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Keyword chips section
+                    if (state.isLoadingKeywords || state.keywords.isNotEmpty()) {
                     item {
                         if (state.isLoadingKeywords && state.keywords.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 KeywordChipsSkeleton()
                             }
                         } else if (state.keywords.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_keywords_section"),
                             ) {
                                 KeywordChips(
@@ -331,25 +317,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Series shelf section
+                    if (state.isLoadingFeaturedSeries || state.featuredSeries.isNotEmpty()) {
                     item {
                         if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SeriesShelfSkeleton()
                             }
                         } else if (state.featuredSeries.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_series_section"),
                             ) {
                                 SeriesShelf(
@@ -361,87 +345,82 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
 
                     // Developer spotlight section
                     item {
                         if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
-                            SpTitledSection(
-                                includeTopSpacing = false,
-                                title = "Developer Spotlight",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                            ) {
-                                DeveloperSpotlightSkeleton()
-                            }
+                            DeveloperSpotlightSkeleton(
+                            )
                         } else if (state.developerSpotlight != null) {
-                            SpTitledSection(
-                                includeTopSpacing = false,
-                                title = "Developer Spotlight",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                    .testTag("explore_developer_spotlight_section"),
-                            ) {
-                                DeveloperSpotlightSection(
-                                    spotlight = state.developerSpotlight!!,
-                                    onDeveloperSelected = { name ->
-                                        onDeveloperSelected?.invoke(name)
-                                    },
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
+                            DeveloperSpotlightSection(
+                                spotlight = state.developerSpotlight!!,
+                                onDeveloperSelected = { name ->
+                                    onDeveloperSelected?.invoke(name)
+                                },
+                                onGameSelected = onGameSelected,
+                                modifier = Modifier.testTag("explore_developer_spotlight_section"),
+                            )
                         }
                     }
 
                     // Artwork showcase section
+                    if (state.isLoadingArtwork || state.artworkShowcase.isNotEmpty()) {
                     item {
                         if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 ArtworkShowcaseSkeleton()
                             }
                         } else if (state.artworkShowcase.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_artwork_section"),
+                                titleTrailing = if (onGallerySelected != null) {
+                                    {
+                                        Text(
+                                            text = "Browse Gallery",
+                                            style = SpTypography.LabelLarge,
+                                            color = SpColor.Link,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(SpSpacing.Small))
+                                                .clickable(onClick = onGallerySelected)
+                                                .padding(SpSpacing.Small)
+                                                .testTag("browse_gallery_button"),
+                                        )
+                                    }
+                                } else null,
                             ) {
                                 ArtworkShowcaseSection(
                                     artworks = state.artworkShowcase,
                                     onGameSelected = onGameSelected,
-                                    onGallerySelected = onGallerySelected,
                                 )
                             }
                         }
                     }
+                    }
 
                     // Social & Community Discovery sections
                     // Trending
+                    if (state.isLoadingSocial || state.trendingGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
                         } else if (state.trendingGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_trending_section"),
                             ) {
                                 TrendingSection(
@@ -451,25 +430,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Community Favorites
+                    if (state.isLoadingSocial || state.communityTopGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
                         } else if (state.communityTopGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_community_top_section"),
                             ) {
                                 CommunityTopSection(
@@ -479,25 +456,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Cult Classics
+                    if (state.isLoadingSocial || state.cultClassics.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
                         } else if (state.cultClassics.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_cult_classics_section"),
                             ) {
                                 CultClassicsSection(
@@ -507,25 +482,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Active Right Now
+                    if (state.isLoadingSocial || state.activeNowGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
                         } else if (state.activeNowGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_active_now_section"),
                             ) {
                                 ActiveNowSection(
@@ -535,25 +508,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Recently Reviewed
+                    if (state.isLoadingSocial || state.recentReviews.isNotEmpty()) {
                     item {
                         if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 SocialSectionSkeleton()
                             }
                         } else if (state.recentReviews.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_recently_reviewed_section"),
                             ) {
                                 RecentlyReviewedSection(
@@ -563,15 +534,15 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Temporal Discovery: On This Day
+                    if (state.isLoadingTemporal || state.onThisDayGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "On This Day",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 TemporalSectionSkeleton()
                             }
@@ -582,11 +553,9 @@ fun ExploreScreen(
                                 "On This Day"
                             }
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = title,
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_on_this_day_section"),
                             ) {
                                 OnThisDaySection(
@@ -596,25 +565,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Temporal Discovery: Your Anniversaries
+                    if (state.isLoadingTemporal || state.anniversaries.isNotEmpty()) {
                     item {
                         if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 TemporalSectionSkeleton()
                             }
                         } else if (state.anniversaries.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_anniversaries_section"),
                             ) {
                                 AnniversariesSection(
@@ -624,25 +591,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Easy to 100%
+                    if (state.isLoadingAchievement || state.easyToCompleteGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
                         } else if (state.easyToCompleteGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_easy_to_complete_section"),
                             ) {
                                 EasyToCompleteSection(
@@ -652,25 +617,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Mount Everest (Hardest)
+                    if (state.isLoadingAchievement || state.hardestGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
                         } else if (state.hardestGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_hardest_games_section"),
                             ) {
                                 HardestGamesSection(
@@ -680,25 +643,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Almost Done
+                    if (state.isLoadingAchievement || state.almostDoneGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
                         } else if (state.almostDoneGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_almost_done_section"),
                             ) {
                                 AlmostDoneSection(
@@ -708,25 +669,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Fresh Challenges
+                    if (state.isLoadingAchievement || state.freshChallengeGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
                         } else if (state.freshChallengeGames.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_fresh_challenges_section"),
                             ) {
                                 FreshChallengesSection(
@@ -736,25 +695,23 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
 
                     // Achievement Discovery: Active Challenges
+                    if (state.isLoadingAchievement || state.activeChallenges.isNotEmpty()) {
                     item {
                         if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 AchievementSectionSkeleton()
                             }
                         } else if (state.activeChallenges.isNotEmpty()) {
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                                     .testTag("explore_active_challenges_section"),
                             ) {
                                 ActiveChallengesSection(
@@ -766,16 +723,15 @@ fun ExploreScreen(
                             }
                         }
                     }
+                    }
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {
                         // Loading skeletons for rows
                         val skeletonTitles = listOf("Top Rated", "Recently Added", "Hidden Gems")
                         items(skeletonTitles.size) { index ->
                             SpTitledSection(
-                                includeTopSpacing = false,
                                 title = skeletonTitles[index],
                                 edgeToEdgeContent = true,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             ) {
                                 GameShelfSkeleton()
                             }
@@ -787,11 +743,9 @@ fun ExploreScreen(
                         ) { row ->
                             if (row.games.isNotEmpty()) {
                                 SpTitledSection(
-                                includeTopSpacing = false,
                                 title = row.title,
                                     edgeToEdgeContent = true,
                                     modifier = Modifier
-                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
                                         .testTag("explore_row_${row.id}"),
                                 ) {
                                     GameShelf(

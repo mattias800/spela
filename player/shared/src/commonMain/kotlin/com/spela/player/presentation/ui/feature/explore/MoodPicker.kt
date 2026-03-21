@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.MoodDefinition
-import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpMoodTile
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -54,63 +54,24 @@ fun MoodPicker(
     }
 }
 
+/** ROLE component — a mood tile in "What are you in the mood for?". Delegates to [SpMoodTile]. */
 @Composable
 private fun MoodCard(
     mood: MoodDefinition,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     val gradientColors = mood.gradient.map { parseHexColor(it, Color(0xFF424242)) }.ifEmpty {
         listOf(Color(0xFF424242), Color(0xFF616161))
     }
 
-    SpCard(
-        modifier = Modifier
-            .width(200.dp)
-            .height(100.dp)
-            .testTag("mood_card_${mood.id}")
-            .semantics {
-                contentDescription = "${mood.name}, ${mood.description}"
-                role = Role.Button
-            },
+    SpMoodTile(
+        icon = mood.icon,
+        name = mood.name,
+        description = mood.description,
+        gradientColors = gradientColors,
         onClick = onClick,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .clip(shape)
-                .background(Brush.linearGradient(gradientColors)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(SpSpacing.Medium),
-            ) {
-                Text(
-                    text = mood.icon,
-                    style = SpTypography.HeadlineMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = mood.name,
-                    style = SpTypography.TitleSmall,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = mood.description,
-                    style = SpTypography.LabelSmall,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-    }
+        testTag = "mood_card_${mood.id}",
+    )
 }
 
 @Composable

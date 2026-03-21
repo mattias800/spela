@@ -374,7 +374,7 @@ fun SpelaApp(
                     AnimatedContent(
                         targetState = navState.currentScreen,
                         transitionSpec = {
-                            if (!animationsEnabled) {
+                            if (!animationsEnabled || navState.isTabSwitch) {
                                 EnterTransition.None togetherWith ExitTransition.None
                             } else if (navState.isGoingBack) {
                                 (slideInHorizontally { -it / 3 } + fadeIn())
@@ -1502,7 +1502,7 @@ fun SpelaApp(
                                 BottomNavTab.SETTINGS -> SpScreen.Settings
                             }
                             navigationViewModel.onIntent(
-                                NavigationIntent.NavigateTo(targetScreen)
+                                NavigationIntent.SwitchTab(targetScreen)
                             )
                         },
                     )

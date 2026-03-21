@@ -1,19 +1,12 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,20 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -43,17 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -61,30 +37,26 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
-import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
-import com.spela.player.presentation.ui.feature.explore.ConsoleGenreBreakdown
 import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
-import com.spela.player.presentation.ui.feature.explore.ConsoleRecentlyPlayed
 import com.spela.player.presentation.ui.feature.explore.ConsoleTopDevelopers
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.home.TopRatedRow
 import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
-import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
@@ -152,31 +124,20 @@ fun ConsoleScreen(
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
+                SpSectionList(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = SpSpacing.ScreenHorizontal,
-                        end = SpSpacing.ScreenHorizontal,
-                        top = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
-                        bottom = SpSpacing.Default,
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
+                    topPadding = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
                 ) {
-                    // Console hero banner (scrolls with content, includes info section)
+                    // Console hero banner
                     if (console != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleHeroBanner(
-                                console = console,
-                                modifier = Modifier.padding(top = SpSpacing.Small),
-                            )
+                        item {
+                            ConsoleHeroBanner(console = console)
                         }
                     }
 
-                    // Continue Playing section
+                    // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             SpTitledSection(
                                 title = "Continue Playing",
                                 icon = Icons.Filled.PlayArrow,
@@ -185,15 +146,41 @@ fun ConsoleScreen(
                                 ContinuePlayingRow(
                                     games = continuePlayingGames,
                                     onGameSelected = onGameSelected,
-                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )
                             }
                         }
                     }
 
-                    // Top Rated section
+                    // Browse All Games (quick access)
+                    if (state.games.isNotEmpty()) {
+                        item {
+                            SpButton(
+                                text = "Browse All ${state.games.size} Games",
+                                onClick = onBrowseAllGames,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    // BIOS warning
+                    if (consoleId in state.consolesWithMissingBios) {
+                        item {
+                            BiosWarningBanner(
+                                consoleName = consoleName,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    // Curated content
+                    if (exploreViewModel != null) {
+                        item { ConsoleEssentials(exploreViewModel, onGameSelected) }
+                        item { ConsoleHiddenGems(exploreViewModel, onGameSelected) }
+                    }
+
+                    // Top Rated
                     if (state.topRatedGames.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item {
                             SpTitledSection(
                                 title = "Top Rated",
                                 icon = Icons.Filled.Star,
@@ -202,52 +189,19 @@ fun ConsoleScreen(
                                 TopRatedRow(
                                     games = state.topRatedGames,
                                     onGameSelected = onGameSelected,
-                                    contentPadding = PaddingValues(horizontal = SpSpacing.Default),
                                 )
                             }
                         }
                     }
 
-                    // BIOS warning banner
-                    if (consoleId in state.consolesWithMissingBios) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            BiosWarningBanner(
-                                consoleName = consoleName,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = SpSpacing.Small),
-                            )
-                        }
-                    }
-
+                    // Top Developers
                     if (exploreViewModel != null) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleEssentials(exploreViewModel, onGameSelected)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleHiddenGems(exploreViewModel, onGameSelected)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected)
-                        }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            ConsoleRecentlyPlayed(exploreViewModel, onGameSelected)
-                        }
+                        item { ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected) }
                     }
 
-                    // Browse All Games button
-                    if (state.games.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            SpButton(
-                                text = "Browse All ${state.games.size} Games",
-                                onClick = onBrowseAllGames,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = SpSpacing.Default),
-                            )
-                        }
-                    } else if (state.isLoading) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                    // Loading / Empty
+                    if (state.games.isEmpty() && state.isLoading) {
+                        item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,
@@ -255,8 +209,8 @@ fun ConsoleScreen(
                                 SpLoadingIndicator(message = "Loading games...")
                             }
                         }
-                    } else {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                    } else if (state.games.isEmpty() && !state.isLoading) {
+                        item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(200.dp),
                                 contentAlignment = Alignment.Center,

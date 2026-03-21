@@ -48,6 +48,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -281,10 +282,9 @@ fun SessionDetailScreen(
                                         )
                                     }
                                     Spacer(Modifier.width(SpSpacing.Medium))
-                                    SpButton(
+                                    SpSecondaryButton(
                                         text = "Delete Session",
                                         onClick = { viewModel.onIntent(SessionDetailIntent.ShowDeleteConfirm) },
-                                        style = SpButtonStyle.Outlined,
                                         modifier = Modifier.testTag("session_delete_button"),
                                     )
                                 }
@@ -482,10 +482,9 @@ private fun SessionDetailHeader(
                     )
                 },
             )
-            SpButton(
+            SpSecondaryButton(
                 text = "Edit",
                 onClick = onRename,
-                style = SpButtonStyle.Outlined,
                 modifier = Modifier.testTag("session_detail_rename_button"),
                 leadingIcon = {
                     Icon(

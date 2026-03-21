@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.EmulationActionButton
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
@@ -167,12 +168,11 @@ internal fun InGameOverlayPanel(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
-                        SpButton(
+                        SpSecondaryButton(
                             text = "Leave Session",
                             onClick = {
                                 viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm)
                             },
-                            style = SpButtonStyle.Outlined,
                             modifier = Modifier.weight(1f),
                         )
                         SpButton(
@@ -288,12 +288,11 @@ internal fun InGameOverlayPanel(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
-                        SpButton(
+                        SpSecondaryButton(
                             text = "Exit Game",
                             onClick = {
                                 viewModel.onIntent(EmulationIntent.ShowExitConfirm)
                             },
-                            style = SpButtonStyle.Outlined,
                             modifier = Modifier.weight(1f),
                         )
                         SpButton(

@@ -115,11 +115,11 @@ fun SpButton(
                     when {
                         !enabled -> SpColor.Divider
                         onGradient -> Color.White.copy(alpha = 0.25f)
-                        else -> SpColor.Primary
+                        else -> SpColor.OnBackgroundSecondary.copy(alpha = 0.5f)
                     },
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (onGradient) Color.White else SpColor.Primary,
+                    contentColor = if (onGradient) Color.White else SpColor.OnBackgroundSecondary,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
@@ -177,4 +177,33 @@ private fun ButtonContent(
             style = SpTypography.LabelLarge,
         )
     }
+}
+
+/**
+ * ROLE component — a secondary/outlined button.
+ *
+ * Layer 3 in the component hierarchy (Design → Content → Role).
+ * Thin wrapper around [SpButton] with [SpButtonStyle.Outlined].
+ * Use this for secondary actions instead of passing style manually.
+ */
+@Composable
+fun SpSecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    onGradient: Boolean = false,
+) {
+    SpButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        style = SpButtonStyle.Outlined,
+        enabled = enabled,
+        isLoading = isLoading,
+        leadingIcon = leadingIcon,
+        onGradient = onGradient,
+    )
 }

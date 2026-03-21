@@ -37,6 +37,7 @@ import com.spela.player.domain.model.SharedSessionMember
 import com.spela.player.domain.model.SharedSessionSave
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -142,10 +143,9 @@ internal fun SharedSessionHeader(
                         )
                     },
                 )
-                SpButton(
+                SpSecondaryButton(
                     text = "Release Turn",
                     onClick = onReleaseTurn,
-                    style = SpButtonStyle.Outlined,
                     isLoading = isReleasingTurn,
                     enabled = !isReleasingTurn,
                     leadingIcon = {

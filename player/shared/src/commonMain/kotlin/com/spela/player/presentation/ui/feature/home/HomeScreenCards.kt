@@ -33,6 +33,9 @@ import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
+import com.spela.player.presentation.ui.components.SpConsoleChip
+import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -57,68 +60,29 @@ internal fun ContinuePlayingRow(
     }
 }
 
+/** ROLE component — a continue playing card. Delegates to [SpWideGameCard]. */
+/** ROLE component — a continue playing card on the Home screen. Delegates to [SpWideGameCard]. */
 @Composable
 internal fun ContinuePlayingCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(280.dp)
-            .semantics {
-                contentDescription = "Continue playing ${game.title} on ${game.consoleName}"
-                role = Role.Button
-            },
+    SpWideGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.height(84.dp),
-                cornerRadius = SpSpacing.RadiusMedium,
-                aspectRatio = game.coverAspectRatio,
-            )
-            Spacer(Modifier.width(SpSpacing.Medium))
-            Column(modifier = Modifier.weight(1f)) {
+        coverAspectRatio = game.coverAspectRatio,
+        extraContent = if (game.totalPlayTime > 0) {
+            {
                 Text(
-                    text = game.title,
-                    style = SpTypography.TitleLarge,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    text = formatPlayTime(game.totalPlayTime),
+                    style = SpTypography.BodySmall,
+                    color = SpColor.OnBackgroundSecondary,
                 )
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                MetadataBadge(
-                    icon = {
-                        Icon(
-                            Icons.Filled.SportsEsports,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = SpColor.OnCard.copy(alpha = 0.85f),
-                        )
-                    },
-                    label = game.consoleName,
-                    backgroundColor = SpColor.OnCard.copy(alpha = 0.12f),
-                    textColor = SpColor.OnCard.copy(alpha = 0.85f),
-                )
-                if (game.totalPlayTime > 0) {
-                    Spacer(Modifier.height(SpSpacing.XXSmall))
-                    Text(
-                        text = formatPlayTime(game.totalPlayTime),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
             }
-        }
-    }
+        } else null,
+    )
 }
 
 @Composable
@@ -139,50 +103,22 @@ internal fun GameCarouselRow(
     }
 }
 
+/** ROLE component — a game card in Favorites/Play Later/Recently Added. Delegates to [SpGameCard]. */
 @Composable
 internal fun GameCoverCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = game.coverAspectRatio,
-            )
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
+        coverAspectRatio = game.coverAspectRatio,
+        rating = game.rating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+    )
 }
 
 @Composable

@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -105,10 +106,9 @@ fun DownloadsScreen(
                                 color = SpColor.OnBackgroundTertiary,
                             )
                         }
-                        SpButton(
+                        SpSecondaryButton(
                             text = "Clear",
                             onClick = { viewModel.onIntent(DownloadsIntent.ClearCache) },
-                            style = SpButtonStyle.Outlined,
                             isLoading = state.isClearingCache,
                             enabled = !state.isClearingCache && state.cacheSize > 0,
                         )

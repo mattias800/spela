@@ -32,6 +32,7 @@ import com.spela.player.domain.model.ChallengeDifficulty
 import com.spela.player.domain.model.ChallengeType
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTextField
@@ -210,10 +211,9 @@ internal fun CreateChallengeDialog(
                     .testTag("challenge_dialog_actions"),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
-                SpButton(
+                SpSecondaryButton(
                     text = "Cancel",
                     onClick = onDismiss,
-                    style = SpButtonStyle.Outlined,
                     enabled = !isSubmitting,
                     modifier = Modifier.weight(1f),
                 )

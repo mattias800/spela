@@ -60,16 +60,14 @@ fun SpSessionCode(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                SpButton(
+                SpSecondaryButton(
                     text = "Copy Code",
                     onClick = onCopy,
-                    style = SpButtonStyle.Outlined,
                 )
                 if (onShare != null) {
-                    SpButton(
+                    SpSecondaryButton(
                         text = "Share",
                         onClick = onShare,
-                        style = SpButtonStyle.Outlined,
                     )
                 }
             }

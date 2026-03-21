@@ -44,6 +44,7 @@ import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -337,10 +338,9 @@ private fun DeleteChallengeConfirmDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
-                SpButton(
+                SpSecondaryButton(
                     text = "Cancel",
                     onClick = onDismiss,
-                    style = SpButtonStyle.Outlined,
                     modifier = Modifier.weight(1f),
                 )
                 SpButton(

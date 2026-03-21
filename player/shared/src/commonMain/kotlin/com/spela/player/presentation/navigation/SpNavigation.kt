@@ -48,6 +48,7 @@ data class NavigationState(
     val currentScreen: SpScreen = SpScreen.ServerConnection,
     val backStack: List<SpScreen> = emptyList(),
     val isGoingBack: Boolean = false,
+    val isTabSwitch: Boolean = false,
     val showInGameOverlay: Boolean = false,
     val overlayGameId: String? = null,
     val overlaySharedSessionId: String? = null,
@@ -68,6 +69,8 @@ data class NavigationState(
 
 sealed interface NavigationIntent {
     data class NavigateTo(val screen: SpScreen) : NavigationIntent
+    /** Switch to a root tab via bottom nav click — no animation. */
+    data class SwitchTab(val screen: SpScreen) : NavigationIntent
     data object GoBack : NavigationIntent
     data object NextSection : NavigationIntent
     data object PreviousSection : NavigationIntent

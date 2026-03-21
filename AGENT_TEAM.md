@@ -471,8 +471,73 @@ If the same visual pattern appears on 2+ screens, it **must** be a shared `Sp*`
 component. Duplicating layout code across screens is the #1 source of visual
 inconsistency.
 
+**Component hierarchy — Design → Content → Role:**
+
+Components are organized in three layers:
+
+```
+Layer 1: DESIGN components (the look)
+  SpCard, SpChip, SpButton, SpCoverArt
+  → Define visual styling. No domain knowledge.
+  → Accept modifier for flexible use by higher layers.
+
+Layer 2: CONTENT components (what something looks like)
+  SpGameCard, SpTitledSection, SpSectionList
+  → Compose design components into a fixed content layout.
+  → SpGameCard = SpCard + SpCoverArt + title + subtitle + rating.
+  → Do NOT accept modifier — the layout is strict and enforced.
+  → Parent controls sizing via explicit parameters (e.g. width).
+
+Layer 3: ROLE components (what something IS in context)
+  ExploreGameCard, ForYouGameCard, SpotlightGameCard,
+  ContinuePlayingCard, SpConsoleChip, GameCoverCard
+  → Thin wrappers that delegate to content components.
+  → Define the role (e.g. "a game in the For You section").
+  → Map domain models to content component parameters.
+  → No custom UI code — just parameter mapping.
+```
+
+**Example — the card hierarchy:**
+
+```
+SpCard (design)                      — card styling, borders, click, hover
+  └─ SpGameCard (content)            — cover + title + subtitle + rating layout
+       ├─ ExploreGameCard (role)      — game in Explore shelves
+       ├─ ForYouGameCard (role)       — game in For You section
+       ├─ SpotlightGameCard (role)    — game in Developer Spotlight
+       ├─ GameCoverCard (role)        — game in Favorites/Play Later
+       ├─ DeveloperGameCard (role)    — game in Developer detail
+       └─ SpAvailabilityGameCard (content) — adds library availability
+            ├─ TopRatedCard (role)    — game in Top Rated (may not be in library)
+            └─ SimilarGameCard (role) — similar game suggestion
+
+SpCard (design)                      — wide card variant (same design)
+  └─ SpWideGameCard (content)        — horizontal: cover left, text right
+       └─ ContinuePlayingCard (role) — continue playing a game
+
+SpCard (design)                          — developer card variant
+  └─ SpDeveloperCard (content)           — name + game count + rating
+       └─ ConsoleDeveloperCard (role)    — developer in console Top Developers
+
+SpTileCard (design)                      — colored navigation tile
+  ├─ SpConsoleTile (content)             — logo + name + game count
+  │    └─ ConsoleQuickJumpCard (role)    — console in Browse by Console
+  └─ SpMoodTile (content)               — icon + name + description
+       └─ MoodCard (role)               — mood in What Are You In The Mood For
+
+SpChip (design)           — chip styling, colors, border
+  └─ SpConsoleChip (role) — always represents a console platform
+```
+
+**Rules:**
+- Screens should primarily use role components.
+- Role components delegate to content components — no custom UI.
+- Content components compose design components — enforced layout.
+- When adding a new game card variant, create a new role component
+  that delegates to SpGameCard. Never duplicate SpGameCard's layout.
+
 **Common violations:**
-- Platform badges/chips rendered differently across screens — use `SpChip`
+- Platform badges/chips rendered differently across screens — use `SpConsoleChip` (not raw `SpChip`)
 - Card section headers with different typography — use `SpTitledSection`
 - Game shelves with different spacing — use `GameShelf`
 - Cover art placeholders with different colors — use `SpCoverArt`

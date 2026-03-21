@@ -42,6 +42,7 @@ import com.spela.player.presentation.ui.feature.netplay.InputDelaySection
 import com.spela.player.presentation.ui.feature.netplay.LobbyHeader
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpNetplayPlayerSlot
@@ -291,10 +292,9 @@ fun NetplayLobbyScreen(
                                     .padding(horizontal = SpSpacing.ScreenHorizontal),
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                             ) {
-                                SpButton(
+                                SpSecondaryButton(
                                     text = if (session.clientUserId == null) "Cancel" else "Leave",
                                     onClick = { viewModel.onIntent(NetplayLobbyIntent.LeaveSession) },
-                                    style = SpButtonStyle.Outlined,
                                 )
                             }
                         }

@@ -272,10 +272,9 @@ private fun UserInviteRow(
                 modifier = Modifier.size(24.dp),
             )
         } else {
-            SpButton(
+            SpSecondaryButton(
                 text = "Invite",
                 onClick = onInvite,
-                style = SpButtonStyle.Outlined,
                 enabled = !isSendingThisUser,
                 isLoading = isSendingThisUser,
                 leadingIcon = {

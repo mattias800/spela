@@ -25,6 +25,15 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+/**
+ * DESIGN component — defines the visual look of a chip/badge.
+ *
+ * Layer 1 in the component hierarchy (Design → Content → Role).
+ * Provides: pill shape, background, border, text styling.
+ * Has no domain knowledge — does not know what a "console" is.
+ *
+ * Used by role components like [SpConsoleChip].
+ */
 @Composable
 fun SpChip(
     text: String,
@@ -39,17 +48,21 @@ fun SpChip(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val backgroundColor = when {
-        onGradient -> Color.White.copy(alpha = if (isSelected) 0.12f else 0.06f)
-        isSelected -> color.copy(alpha = 0.2f)
+        onGradient -> Color.White.copy(alpha = if (isSelected) 0.15f else 0.06f)
+        isSelected -> color.copy(alpha = 0.15f)
         else -> Color.Transparent
     }
     val borderColor = when {
-        isFocused -> SpColor.Primary.copy(alpha = 0.85f)
-        onGradient -> Color.White.copy(alpha = 0.20f)
-        isSelected -> color
+        isFocused -> SpColor.PrimaryLight.copy(alpha = 0.85f)
+        onGradient -> Color.White.copy(alpha = 0.25f)
+        isSelected -> color.copy(alpha = 0.4f)
         else -> SpColor.Divider
     }
-    val textColor = if (onGradient) Color.White.copy(alpha = 0.90f) else if (isSelected) color else SpColor.OnBackgroundSecondary
+    val textColor = when {
+        onGradient -> Color.White.copy(alpha = 0.90f)
+        isSelected -> SpColor.OnBackgroundSecondary
+        else -> SpColor.OnBackgroundSecondary
+    }
 
     Box(
         modifier = modifier
@@ -63,7 +76,7 @@ fun SpChip(
                     onClick = onClick,
                 ).focusable(interactionSource = interactionSource) else Modifier
             )
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -80,6 +93,13 @@ fun SpChip(
     }
 }
 
+/**
+ * ROLE component — a chip that represents a console platform.
+ *
+ * Layer 3 in the component hierarchy (Design → Content → Role).
+ * Thin wrapper around [SpChip] — maps console domain data to chip parameters.
+ * All console badges across the app must use this, never raw [SpChip].
+ */
 @Composable
 fun SpConsoleChip(
     consoleName: String,

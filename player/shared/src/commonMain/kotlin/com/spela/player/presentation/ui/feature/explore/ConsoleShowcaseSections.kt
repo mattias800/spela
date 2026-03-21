@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.GenreCount
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpDeveloperCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -50,7 +51,6 @@ fun ConsoleEssentials(
         title = "Essentials",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_essentials_section"),
     ) {
         GameShelf(
@@ -73,7 +73,6 @@ fun ConsoleHiddenGems(
         title = "Hidden Gems",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_hidden_gems_section"),
     ) {
         GameShelf(
@@ -97,7 +96,6 @@ fun ConsoleGenreBreakdown(
         title = "Genre Breakdown",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_genre_breakdown_section"),
     ) {
         GenreBreakdownChips(
@@ -118,9 +116,7 @@ fun ConsoleTopDevelopers(
 
     SpTitledSection(
         title = "Top Developers",
-        edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_top_developers_section"),
     ) {
         TopDevelopersList(
@@ -143,7 +139,6 @@ fun ConsoleRecentlyPlayed(
         title = "Recently Played",
         edgeToEdgeContent = true,
         modifier = Modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("console_recently_played_section"),
     ) {
         GameShelf(
@@ -162,7 +157,6 @@ internal fun GenreBreakdownChips(
 ) {
     FlowRow(
         modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("genre_breakdown_chips"),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -189,65 +183,29 @@ internal fun TopDevelopersList(
 ) {
     Column(
         modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("top_developers_list"),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
         developers.forEach { developer ->
-            SpCard(
+            ConsoleDeveloperCard(
+                developer = developer,
                 onClick = { onDeveloperSelected(developer.name) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("developer_card_${developer.name}")
-                    .semantics {
-                        contentDescription = "${developer.name}, ${developer.gameCount} games"
-                    },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(SpSpacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            text = developer.name,
-                            style = SpTypography.TitleSmall,
-                            color = SpColor.OnCard,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(SpSpacing.XXSmall))
-                        Text(
-                            text = "${developer.gameCount} games",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-
-                    if (developer.avgRating > 0) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = SpColor.Rating,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Text(
-                                text = formatRating(developer.avgRating),
-                                style = SpTypography.BodyMedium,
-                                color = SpColor.OnBackgroundSecondary,
-                            )
-                        }
-                    }
-                }
-            }
+            )
         }
     }
+}
+
+/** ROLE component — a developer card in the console "Top Developers" section. Delegates to [SpDeveloperCard]. */
+@Composable
+private fun ConsoleDeveloperCard(
+    developer: DeveloperSummary,
+    onClick: () -> Unit,
+) {
+    SpDeveloperCard(
+        name = developer.name,
+        gameCount = developer.gameCount,
+        avgRating = developer.avgRating,
+        onClick = onClick,
+        testTag = "developer_card_${developer.name}",
+    )
 }

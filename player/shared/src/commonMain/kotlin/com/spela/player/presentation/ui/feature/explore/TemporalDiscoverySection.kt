@@ -51,7 +51,6 @@ fun OnThisDaySection(
                 ExploreGameCard(
                     game = game,
                     onClick = { onGameSelected(game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 val year = game.releaseDate?.take(4) ?: ""
@@ -92,7 +91,6 @@ fun AnniversariesSection(
                 ExploreGameCard(
                     game = item.game,
                     onClick = { onGameSelected(item.game.id) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
