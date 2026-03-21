@@ -27,7 +27,7 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-go@v5
@@ -44,10 +44,10 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -63,15 +63,15 @@ jobs:
       run:
         working-directory: player
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -89,7 +89,7 @@ jobs:
     needs: [go-test, web-test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
       - name: Extract version from tag
@@ -117,16 +117,16 @@ jobs:
     needs: [player-test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
       - uses: android-actions/setup-android@v3
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -150,7 +150,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :android:assembleRelease -PappVersion=${RELEASE_TAG#v}
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: spela-android-apk
           path: player/android/build/outputs/apk/release/*.apk
@@ -178,10 +178,10 @@ jobs:
             artifact-path: player/desktop/build/compose/binaries/main/msi/*.msi
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           # JBR is needed on Windows/Linux for transparent title bar; macOS uses
           # native apple.awt.transparentTitleBar which works with any JDK.
@@ -211,7 +211,7 @@ jobs:
           echo "C:\VulkanSDK\$ver\Bin" >> $env:GITHUB_PATH
           choco install ninja -y
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -224,7 +224,7 @@ jobs:
         shell: bash
         run: ./gradlew ${{ matrix.format }} -PappVersion=${RELEASE_TAG#v}
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
@@ -236,10 +236,10 @@ jobs:
     needs: [player-test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: 21
@@ -250,7 +250,7 @@ jobs:
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
             libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -265,7 +265,7 @@ jobs:
         working-directory: player
         run: bash linux/build-appimage.sh --arch x86_64
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: spela-linux-appimage-x86_64
           path: player/desktop/build/appimage/Spela-x86_64.AppImage
@@ -277,10 +277,10 @@ jobs:
     needs: [player-test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: 21
@@ -299,7 +299,7 @@ jobs:
             org.freedesktop.Sdk//24.08 \
             org.freedesktop.Sdk.Extension.openjdk21//24.08
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -314,7 +314,7 @@ jobs:
         working-directory: player
         run: bash linux/flatpak/build-flatpak.sh
       - name: Upload Flatpak
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: spela-linux-flatpak
           path: player/desktop/build/flatpak/spela.flatpak
@@ -326,10 +326,10 @@ jobs:
     needs: [player-test]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: 21
@@ -343,7 +343,7 @@ jobs:
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
             libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -361,12 +361,12 @@ jobs:
         working-directory: player
         run: bash linux/build-appimage.sh --arch aarch64
       - name: Upload DEB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: spela-linux-arm64-deb
           path: player/desktop/build/compose/binaries/main/deb/*.deb
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: spela-linux-appimage-aarch64
           path: player/desktop/build/appimage/Spela-aarch64.AppImage
@@ -384,11 +384,11 @@ jobs:
       - build-linux-arm64
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
           pattern: spela-*
