@@ -471,12 +471,51 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 }
 
 // GetTopRatedGlobal returns the top 20 top-rated IGDB games across all consoles.
-// Results are pulled from the existing cached top-rated data and sorted by rating.
+// The same IGDB game can appear under multiple consoles (e.g. Super Metroid on
+// SNES, Wii, 3DS). We deduplicate by igdb_game_id, preferring the console entry
+// that has a matching local library game so the card shows as "available".
 func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
-	var cached []db.TopRatedGame
-	h.DB.Order("total_rating desc").Limit(20).Find(&cached)
+	var all []db.TopRatedGame
+	h.DB.Order("total_rating desc").Find(&all)
 
-	c.JSON(http.StatusOK, h.buildTopRatedResponses(cached, true))
+	// Build a set of (igdb_game_id → console_id) pairs that have a local game match,
+	// so we can prefer those entries during dedup.
+	localConsoles := make(map[int]uint) // igdb_game_id → preferred console_id
+	for _, tr := range all {
+		if _, seen := localConsoles[tr.IGDBGameID]; seen {
+			continue
+		}
+		var count int64
+		h.DB.Model(&db.Game{}).Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).Count(&count)
+		if count > 0 {
+			localConsoles[tr.IGDBGameID] = tr.ConsoleID
+		}
+	}
+
+	// Deduplicate: for each igdb_game_id, prefer the entry whose console has a
+	// local library match; otherwise keep the highest-rated (first encountered).
+	best := make(map[int]db.TopRatedGame) // igdb_game_id → best entry
+	order := make([]int, 0)               // insertion order for stable iteration
+	for _, tr := range all {
+		existing, seen := best[tr.IGDBGameID]
+		if !seen {
+			best[tr.IGDBGameID] = tr
+			order = append(order, tr.IGDBGameID)
+		} else if prefConsole, ok := localConsoles[tr.IGDBGameID]; ok && tr.ConsoleID == prefConsole && existing.ConsoleID != prefConsole {
+			// Swap in the entry that matches the local library
+			best[tr.IGDBGameID] = tr
+		}
+	}
+
+	deduped := make([]db.TopRatedGame, 0, 20)
+	for _, igdbID := range order {
+		deduped = append(deduped, best[igdbID])
+		if len(deduped) >= 20 {
+			break
+		}
+	}
+
+	c.JSON(http.StatusOK, h.buildTopRatedResponses(deduped, true))
 }
 
 // TopListGameResponse is the API response for a top-rated IGDB game that is
