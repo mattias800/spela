@@ -220,13 +220,13 @@ class GameRepositoryImpl(
 
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {
         return runCatching {
-            apiClient.getTopRatedGames(consoleId).map { it.toDomain() }
+            apiClient.getTopRatedGames(consoleId).map { it.toDomain().resolveImageUrls() }
         }
     }
 
     override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> {
         return runCatching {
-            apiClient.getTopRatedGamesGlobal().map { it.toDomain() }
+            apiClient.getTopRatedGamesGlobal().map { it.toDomain().resolveImageUrls() }
         }
     }
 
@@ -398,5 +398,9 @@ class GameRepositoryImpl(
     private fun Console.resolveImageUrls(): Console = copy(
         iconUrl = apiClient.resolveUrl(iconUrl) ?: "",
         logoUrl = apiClient.resolveUrl(logoUrl) ?: "",
+    )
+
+    private fun TopRatedGame.resolveImageUrls(): TopRatedGame = copy(
+        coverUrl = apiClient.resolveUrl(coverUrl),
     )
 }
