@@ -720,6 +720,10 @@ fun SpelaApp(
                                 }
                             }
 
+                            is SpScreen.DeveloperGames -> {
+                                // TODO: Wire to DeveloperGamesScreen in Task 4
+                            }
+
                             is SpScreen.ExploreGallery -> {
                                 if (exploreViewModel != null) {
                                     ExploreGalleryScreen(
