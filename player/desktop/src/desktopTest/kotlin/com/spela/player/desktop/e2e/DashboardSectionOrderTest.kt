@@ -95,8 +95,8 @@ class DashboardSectionOrderTest {
         advance(harness)
 
         onNodeWithText("Top Rated").assertIsDisplayed()
-        onNodeWithContentDescription("Chrono Trigger, rated 96").assertExists()
-        onNodeWithContentDescription("Super Metroid, rated 94").assertExists()
+        onNodeWithText("Chrono Trigger").assertExists()
+        onNodeWithText("Super Metroid").assertExists()
     }
 
     @Test

@@ -109,7 +109,7 @@ fun DeveloperGamesScreen(
     ) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("developer_games_grid"),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,
                 end = SpSpacing.ScreenHorizontal,

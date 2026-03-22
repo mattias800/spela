@@ -104,8 +104,8 @@ class DeveloperGamesTest {
         onNodeWithText("Gradius").assertExists()
 
         // Semantic content description includes console name
-        onNodeWithContentDescription("Contra on NES").assertExists()
-        onNodeWithContentDescription("Gradius on SNES").assertExists()
+        onNodeWithContentDescription("Contra, NES").assertExists()
+        onNodeWithContentDescription("Gradius, SNES").assertExists()
     }
 
     // --- Current game exclusion ---
@@ -128,13 +128,13 @@ class DeveloperGamesTest {
         scrollToSection(hasText("More from Konami"))
 
         // Other Konami games are visible
-        onNodeWithContentDescription("Contra on NES").assertExists()
-        onNodeWithContentDescription("Gradius on NES").assertExists()
+        onNodeWithContentDescription("Contra, NES").assertExists()
+        onNodeWithContentDescription("Gradius, NES").assertExists()
 
         // The current game (Castlevania) should NOT appear as a developer game card.
         // Note: "Castlevania" text exists in the page title, but the developer games
         // row should not contain a card with the Castlevania content description.
-        onNodeWithContentDescription("Castlevania on NES").assertDoesNotExist()
+        onNodeWithContentDescription("Castlevania, NES").assertDoesNotExist()
     }
 
     // --- Clickability ---
@@ -155,7 +155,7 @@ class DeveloperGamesTest {
         scrollToSection(hasText("More from Konami"))
 
         // All developer game cards are library games, so all should be clickable
-        onNodeWithContentDescription("Contra on NES").assertHasClickAction()
-        onNodeWithContentDescription("Gradius on NES").assertHasClickAction()
+        onNodeWithContentDescription("Contra, NES").assertHasClickAction()
+        onNodeWithContentDescription("Gradius, NES").assertHasClickAction()
     }
 }

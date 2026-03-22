@@ -166,9 +166,10 @@ fun ExploreDeveloperScreen(
                                     titleTrailing = if (detail.games.isNotEmpty() && onNavigateToGames != null) {
                                         {
                                             SpButton(
-                                                text = "See all",
+                                                text = "See all games",
                                                 style = SpButtonStyle.Ghost,
                                                 onClick = { onNavigateToGames(name, isDeveloper) },
+                                                modifier = Modifier.testTag("developer_see_all_games"),
                                             )
                                         }
                                     } else {
