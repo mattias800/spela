@@ -8,7 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -36,6 +38,7 @@ fun SpCoverArt(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = SpSpacing.RadiusLarge,
     aspectRatio: Float? = COVER_ASPECT_RATIO,
+    onAspectRatioResolved: ((Float) -> Unit)? = null,
     // True while a scrape is in progress — shows an animated shimmer instead of
     // the static placeholder so the user knows something is happening.
     isLoading: Boolean = false,
@@ -61,6 +64,14 @@ fun SpCoverArt(
                 contentScale = scale,
                 loading = { CoverShimmer() },
                 error = { CoverPlaceholder(contentDescription) },
+                onSuccess = { state ->
+                    if (onAspectRatioResolved != null) {
+                        val size = state.result.image.run { width.toFloat() / height.toFloat() }
+                        if (size.isFinite() && size > 0f) {
+                            onAspectRatioResolved(size)
+                        }
+                    }
+                },
             )
             else -> CoverPlaceholder(contentDescription)
         }

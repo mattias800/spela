@@ -85,6 +85,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpRegionChip
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -121,6 +122,8 @@ fun GameDetailScreen(
     onNavigateToUser: ((userId: String) -> Unit)? = null,
     onNavigateToSeries: ((seriesId: String, seriesName: String) -> Unit)? = null,
     onNavigateToFranchise: ((franchiseId: String, franchiseName: String) -> Unit)? = null,
+    onNavigateToDeveloper: ((name: String) -> Unit)? = null,
+    onNavigateToPublisher: ((name: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
@@ -222,6 +225,8 @@ fun GameDetailScreen(
                     onPlayWithLocalSave = onPlayWithLocalSave,
                     onCancelLaunch = onCancelLaunch,
                     onNavigateToGame = onNavigateToGame,
+                    onNavigateToDeveloper = onNavigateToDeveloper,
+                    onNavigateToPublisher = onNavigateToPublisher,
                 )
 
                 // Series & Franchise links
@@ -531,9 +536,11 @@ private fun GameInfoContent(
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
     onNavigateToGame: ((String) -> Unit)? = null,
+    onNavigateToDeveloper: ((name: String) -> Unit)? = null,
+    onNavigateToPublisher: ((name: String) -> Unit)? = null,
 ) {
-    // Game info header — tightly spaced, treated as one unit
-    Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+    // Game info header — title, badges, and actions
+    Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Default)) {
 
     // Title row with trophy icon if achievements exist
     Row(
@@ -574,8 +581,7 @@ private fun GameInfoContent(
             verificationTag = game.verificationTag,
         )
         game.region?.takeIf { it.isNotBlank() }?.let { region ->
-            val flag = getRegionFlag(region)
-            SpChip(text = if (flag != null) "$flag $region" else region, onGradient = true)
+            SpRegionChip(region = region, onGradient = true)
         }
         if (game.rating > 0) {
             IgdbRatingStars(rating = game.rating)
@@ -835,7 +841,13 @@ private fun GameInfoContent(
     }
 
     // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
-    MetadataGrid(game = game, onGradient = true, isDemoConsole = isDemoConsole)
+    MetadataGrid(
+        game = game,
+        onGradient = true,
+        isDemoConsole = isDemoConsole,
+        onDeveloperClick = onNavigateToDeveloper,
+        onPublisherClick = onNavigateToPublisher,
+    )
 
     // Variants section -- split into Versions (non-hack) and ROM Hacks (hack-tagged)
     val versionVariants = detail.variants.filter { variant ->
@@ -970,31 +982,6 @@ private fun CommunityRatingBadge(averageRating: Double, ratingCount: Long) {
     }
 }
 
-private val regionFlags = mapOf(
-    "USA" to "\uD83C\uDDFA\uD83C\uDDF8",
-    "Japan" to "\uD83C\uDDEF\uD83C\uDDF5",
-    "Europe" to "\uD83C\uDDEA\uD83C\uDDFA",
-    "World" to "\uD83C\uDF0D",
-    "Korea" to "\uD83C\uDDF0\uD83C\uDDF7",
-    "Brazil" to "\uD83C\uDDE7\uD83C\uDDF7",
-    "France" to "\uD83C\uDDEB\uD83C\uDDF7",
-    "Germany" to "\uD83C\uDDE9\uD83C\uDDEA",
-    "Spain" to "\uD83C\uDDEA\uD83C\uDDF8",
-    "Italy" to "\uD83C\uDDEE\uD83C\uDDF9",
-    "Australia" to "\uD83C\uDDE6\uD83C\uDDFA",
-    "China" to "\uD83C\uDDE8\uD83C\uDDF3",
-    "Canada" to "\uD83C\uDDE8\uD83C\uDDE6",
-    "UK" to "\uD83C\uDDEC\uD83C\uDDE7",
-    "Sweden" to "\uD83C\uDDF8\uD83C\uDDEA",
-    "Netherlands" to "\uD83C\uDDF3\uD83C\uDDF1",
-    "Russia" to "\uD83C\uDDF7\uD83C\uDDFA",
-    "Taiwan" to "\uD83C\uDDF9\uD83C\uDDFC",
-    "Asia" to "\uD83C\uDF0F",
-)
-
-private fun getRegionFlag(region: String): String? =
-    regionFlags.entries.firstOrNull { region.contains(it.key, ignoreCase = true) }?.value
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun VariantsSection(
@@ -1028,11 +1015,7 @@ private fun VariantsSection(
                             verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                         ) {
                             variant.region?.takeIf { it.isNotBlank() }?.let { region ->
-                                val flag = getRegionFlag(region)
-                                SpChip(
-                                    text = if (flag != null) "$flag $region" else region,
-                                    onGradient = true,
-                                )
+                                SpRegionChip(region = region, onGradient = true)
                             }
                             variant.revision?.takeIf { it.isNotBlank() }?.let { revision ->
                                 SpChip(text = revision, onGradient = true)
@@ -1043,9 +1026,9 @@ private fun VariantsSection(
                                     onGradient = true,
                                 )
                             }
-                            variant.verificationStatus?.takeIf { it.isNotBlank() }?.let { status ->
-                                SpChip(text = status, onGradient = true)
-                            }
+                            VerificationChip(
+                                verificationStatus = variant.verificationStatus,
+                            )
                             if (variant.isPreRelease) {
                                 SpChip(text = "Pre-release", onGradient = true)
                             }

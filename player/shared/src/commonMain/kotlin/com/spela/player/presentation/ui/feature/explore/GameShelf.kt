@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
@@ -45,18 +45,17 @@ fun GameShelf(
     }
 }
 
-/** ROLE component — a game card in the Explore page shelves. Delegates to [SpGameCard]. */
+/** ROLE component — a game card in the Explore page shelves. Delegates to [SpCarouselGameCard]. */
 @Composable
 internal fun ExploreGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpGameCard(
+    SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        coverAspectRatio = game.coverAspectRatio,
         rating = game.rating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,

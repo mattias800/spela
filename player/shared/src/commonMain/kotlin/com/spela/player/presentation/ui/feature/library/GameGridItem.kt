@@ -1,36 +1,17 @@
 package com.spela.player.presentation.ui.feature.library
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import com.spela.player.domain.model.Game
-import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpCoverArt
-import com.spela.player.presentation.ui.theme.SpColor
-import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.components.SpGridGameCard
 
+/**
+ * ROLE component — a game card for use in grid layouts.
+ *
+ * Layer 3 in the component hierarchy (Design → Content → Role).
+ * Delegates to [SpGridGameCard] which delegates to [SpGameCard].
+ * Optionally triggers auto-scraping for games without cover art.
+ */
 @Composable
 internal fun GameGridItem(
     game: Game,
@@ -44,93 +25,15 @@ internal fun GameGridItem(
         }
     }
 
-    SpCard(
+    SpGridGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-        onGradient = true,
-        modifier = Modifier.semantics {
-            contentDescription = "${game.title}${game.genre?.let { ", $it" } ?: ""}${if (game.isFavorite) ", favorited" else ""}"
-            role = Role.Button
-        },
-    ) {
-        Column {
-            // Cover art with favorite badge overlay and scraping shimmer
-            Box {
-                SpCoverArt(
-                    imageUrl = game.coverUrl,
-                    contentDescription = "${game.title} cover art",
-                    modifier = Modifier.fillMaxWidth(),
-                    aspectRatio = game.coverAspectRatio,
-                    isLoading = game.coverUrl == null && game.scrapeAttempts == 0,
-                )
-                if (game.isFavorite) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(SpSpacing.XSmall)
-                            .background(Color.Black.copy(alpha = 0.55f), CircleShape)
-                            .padding(SpSpacing.XXSmall),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = "Favorited",
-                            tint = SpColor.Favorite,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                    }
-                }
-            }
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = SpSpacing.Small,
-                    vertical = SpSpacing.Small,
-                ),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (game.genre != null) {
-                    Text(
-                        text = game.genre,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        maxLines = 1,
-                    )
-                }
-                // Star rating — only shown when there are community ratings
-                if (game.averageRating >= 1.0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                        modifier = Modifier.padding(top = SpSpacing.XXSmall),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                        Text(
-                            text = "%.1f".format(game.averageRating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-                // Variant count badge
-                if (game.variantCount > 1) {
-                    val otherCount = game.variantCount - 1
-                    Text(
-                        text = "$otherCount ${if (otherCount == 1) "version" else "versions"}",
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        modifier = Modifier.padding(top = SpSpacing.XXSmall),
-                    )
-                }
-            }
-        }
-    }
+        rating = game.averageRating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+        variantCount = game.variantCount,
+        testTag = "game_grid_item_${game.id}",
+    )
 }

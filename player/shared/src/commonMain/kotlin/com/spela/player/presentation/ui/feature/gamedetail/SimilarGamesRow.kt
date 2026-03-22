@@ -76,6 +76,7 @@ private fun SimilarGameCard(
         coverUrl = game.coverUrl,
         onClick = onClick ?: {},
         available = game.localGameId != null,
+        coverHeight = SpSpacing.CoverMediumHeight,
         rating = game.rating,
     )
 }

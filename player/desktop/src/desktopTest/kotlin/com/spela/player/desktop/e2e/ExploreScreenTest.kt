@@ -147,8 +147,8 @@ class ExploreScreenTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Explore))
         advance(harness)
 
-        // Console abbreviation chip and genre chip should be visible for the active slide
-        onNodeWithText("SNES").assertExists()
+        // Console name chip and genre chip should be visible for the active slide
+        onNodeWithText("Super Nintendo").assertExists()
         onNodeWithText("Platformer").assertExists()
     }
 

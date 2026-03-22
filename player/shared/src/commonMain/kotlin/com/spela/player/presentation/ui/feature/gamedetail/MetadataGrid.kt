@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -44,14 +45,16 @@ internal fun MetadataGrid(
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
     isDemoConsole: Boolean = false,
+    onDeveloperClick: ((name: String) -> Unit)? = null,
+    onPublisherClick: ((name: String) -> Unit)? = null,
 ) {
     val items = buildList {
         game.developer?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.Domain, if (isDemoConsole) "Group" else "Developer", it))
+            add(MetaItem(Icons.Filled.Domain, if (isDemoConsole) "Group" else "Developer", it, onClick = onDeveloperClick?.let { cb -> { cb(game.developer!!) } }))
         }
         if (!isDemoConsole) {
             game.publisher?.takeIf { it.isNotBlank() }?.let {
-                add(MetaItem(Icons.Filled.Domain, "Publisher", it))
+                add(MetaItem(Icons.Filled.Domain, "Publisher", it, onClick = onPublisherClick?.let { cb -> { cb(game.publisher!!) } }))
             }
         }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let {
@@ -90,6 +93,7 @@ internal fun MetadataGrid(
                     value = item.value,
                     modifier = Modifier.weight(1f),
                     onGradient = onGradient,
+                    onClick = item.onClick,
                 )
             }
         }
@@ -100,6 +104,7 @@ private data class MetaItem(
     val icon: ImageVector,
     val label: String,
     val value: String,
+    val onClick: (() -> Unit)? = null,
 )
 
 @Composable
@@ -109,10 +114,16 @@ private fun MetadataItem(
     value: String,
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     val secondaryColor = if (onGradient) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.50f) else SpColor.OnBackgroundTertiary
+    val isClickable = onClick != null
     Row(
-        modifier = modifier.padding(vertical = SpSpacing.XSmall),
+        modifier = modifier
+            .padding(vertical = SpSpacing.XSmall)
+            .then(
+                if (isClickable) Modifier.clickable(onClick = onClick!!) else Modifier
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -131,7 +142,7 @@ private fun MetadataItem(
             Text(
                 text = value,
                 style = SpTypography.BodyMedium,
-                color = SpColor.OnBackground,
+                color = if (isClickable) SpColor.Primary else SpColor.OnBackground,
             )
         }
     }

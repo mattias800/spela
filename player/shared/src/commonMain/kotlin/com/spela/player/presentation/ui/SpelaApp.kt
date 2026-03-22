@@ -71,6 +71,7 @@ import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.ConsoleGamesScreen
+import com.spela.player.presentation.ui.screen.DeveloperGamesScreen
 import com.spela.player.presentation.ui.screen.ConsoleScreen
 import com.spela.player.presentation.ui.screen.ConsoleSettingsScreen
 import com.spela.player.presentation.ui.screen.ConsolesScreen
@@ -685,6 +686,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(developerName))
                                             )
                                         },
+                                        onNavigateToGames = { devName, isDev ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.DeveloperGames(devName, isDev))
+                                            )
+                                        },
                                         onBack = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
@@ -711,6 +717,29 @@ fun SpelaApp(
                                         onDeveloperSelected = { developerName ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(developerName))
+                                            )
+                                        },
+                                        onNavigateToGames = { devName, isDev ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.DeveloperGames(devName, isDev))
+                                            )
+                                        },
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
+                            }
+
+                            is SpScreen.DeveloperGames -> {
+                                if (exploreViewModel != null) {
+                                    DeveloperGamesScreen(
+                                        name = screen.name,
+                                        isDeveloper = screen.isDeveloper,
+                                        viewModel = exploreViewModel,
+                                        onGameSelected = { gameId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
                                         onBack = {
@@ -962,6 +991,16 @@ fun SpelaApp(
                                     onNavigateToFranchise = { franchiseId, franchiseName ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.ExploreFranchise(franchiseId, franchiseName))
+                                        )
+                                    },
+                                    onNavigateToDeveloper = { name ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                        )
+                                    },
+                                    onNavigateToPublisher = { name ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(name))
                                         )
                                     },
                                 )

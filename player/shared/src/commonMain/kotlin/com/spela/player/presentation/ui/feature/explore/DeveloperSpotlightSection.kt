@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
-import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -167,18 +167,17 @@ fun DeveloperSpotlightSection(
     }
 }
 
-/** ROLE component — a game card in Developer Spotlight. Delegates to [SpGameCard]. */
+/** ROLE component — a game card in Developer Spotlight. Delegates to [SpCarouselGameCard]. */
 @Composable
 private fun SpotlightGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpGameCard(
+    SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        coverAspectRatio = game.coverAspectRatio,
         rating = game.rating,
         testTag = "developer_spotlight_game_${game.id}",
     )

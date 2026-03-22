@@ -211,6 +211,7 @@ class NavigationViewModel(
             is SpScreen.ExploreMood,
             is SpScreen.ExploreDeveloper,
             is SpScreen.ExplorePublisher,
+            is SpScreen.DeveloperGames,
             -> BottomNavTab.EXPLORE
             is SpScreen.Consoles, is SpScreen.Console -> BottomNavTab.CONSOLES
             is SpScreen.Collections, is SpScreen.CollectionDetail -> BottomNavTab.COLLECTIONS

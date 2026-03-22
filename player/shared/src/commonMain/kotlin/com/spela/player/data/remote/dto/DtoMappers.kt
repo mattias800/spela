@@ -545,6 +545,7 @@ fun TopRatedGameDto.toDomain(): TopRatedGame = TopRatedGame(
     coverUrl = coverUrl,
     rating = rating,
     localGameId = localGameId,
+    consoleName = consoleName,
 )
 
 fun LongestGameDto.toDomain(): LongestGame = LongestGame(

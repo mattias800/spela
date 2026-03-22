@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { TopListGame, LongestGame } from "@/types/api";
+import type { TopListGame, TopRatedGame, LongestGame } from "@/types/api";
 
 export function useTopRated() {
   return useQuery({
@@ -20,5 +20,12 @@ export function useLongestGames() {
   return useQuery({
     queryKey: ["top-lists", "longest"],
     queryFn: () => api.get<LongestGame[]>("/top-lists/longest"),
+  });
+}
+
+export function useTopRatedGlobal() {
+  return useQuery({
+    queryKey: ["top-rated-global"],
+    queryFn: () => api.get<TopRatedGame[]>("/top-rated"),
   });
 }
