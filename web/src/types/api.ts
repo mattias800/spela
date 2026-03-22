@@ -732,6 +732,15 @@ export interface TopListGame {
   rating: number;
 }
 
+export interface TopRatedGame {
+  rank: number;
+  name: string;
+  coverUrl: string;
+  rating: number;
+  localGameId: string | null;
+  consoleName: string;
+}
+
 export interface LongestGame {
   rank: number;
   gameId: string;

@@ -21,6 +21,7 @@ import {
   useGames,
 } from "@/hooks/use-games";
 import { useBiosStatus } from "@/hooks/use-bios";
+import { TopRatedRow } from "@/features/dashboard/components/top-rated-row";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { useIgdbStatus } from "@/hooks/use-admin";
 import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
@@ -287,6 +288,8 @@ export function DashboardPage() {
       <RecentAchievementsSection />
 
       <TrendingChallengesSection />
+
+      <TopRatedRow />
 
       {showEmptyState && (
         <EmptyState
