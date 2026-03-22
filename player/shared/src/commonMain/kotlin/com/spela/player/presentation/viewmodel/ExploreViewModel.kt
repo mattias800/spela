@@ -119,6 +119,8 @@ data class DeveloperDetailState(
     val detail: DeveloperDetail? = null,
     val consoleFilter: String? = null,
     val genreFilter: String? = null,
+    val gamesSearchQuery: String = "",
+    val gamesSortBy: String = "title",  // "title", "rating", "releaseDate"
     val isLoading: Boolean = false,
     val error: String? = null,
 ) {
@@ -135,6 +137,18 @@ data class DeveloperDetailState(
                 }
             }
             return result
+        }
+
+    val sortedFilteredGames: List<Game>
+        get() {
+            val filtered = if (gamesSearchQuery.length >= 2) {
+                filteredGames.filter { it.title.contains(gamesSearchQuery, ignoreCase = true) }
+            } else filteredGames
+            return when (gamesSortBy) {
+                "rating" -> filtered.sortedByDescending { it.rating }
+                "releaseDate" -> filtered.sortedBy { it.releaseDate ?: "" }
+                else -> filtered.sortedBy { it.title.lowercase() }
+            }
         }
 }
 
@@ -609,6 +623,14 @@ class ExploreViewModel(
 
     fun setDeveloperGenreFilter(genre: String?) {
         _developerDetailState.update { it.copy(genreFilter = genre) }
+    }
+
+    fun setDeveloperGamesSearch(query: String) {
+        _developerDetailState.update { it.copy(gamesSearchQuery = query) }
+    }
+
+    fun setDeveloperGamesSort(sortBy: String) {
+        _developerDetailState.update { it.copy(gamesSortBy = sortBy) }
     }
 
     fun dismissDeveloperDetailError() {
