@@ -1,17 +1,16 @@
 package com.spela.player.presentation.ui.feature.search
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
@@ -23,17 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.SearchSuggestion
 import com.spela.player.domain.model.SuggestionNavigationType
+import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -55,7 +51,6 @@ fun QuickResultsSection(
             .fillMaxWidth()
             .testTag("quick_results_section"),
     ) {
-        // Section header
         Text(
             text = "Quick results",
             style = SpTypography.TitleMedium,
@@ -93,50 +88,50 @@ private fun QuickResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    SpCard(
         modifier = modifier
             .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("quick_result_${suggestion.type.lowercase()}_${suggestion.id}")
-            .semantics {
-                contentDescription = "${suggestion.name}, ${suggestion.type}"
-                role = Role.Button
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)
+            .testTag("quick_result_${suggestion.type.lowercase()}_${suggestion.id}"),
+        onClick = onClick,
     ) {
-        // Thumbnail / icon
-        QuickResultThumbnail(suggestion = suggestion)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Medium),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            // Thumbnail / icon
+            QuickResultThumbnail(suggestion = suggestion)
 
-        // Name and subtitle
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = suggestion.name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (suggestion.subtitle.isNotBlank()) {
+            // Name and subtitle
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = suggestion.subtitle,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
+                    text = suggestion.name,
+                    style = SpTypography.TitleSmall,
+                    color = SpColor.OnCard,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (suggestion.subtitle.isNotBlank()) {
+                    Spacer(Modifier.height(SpSpacing.XXSmall))
+                    Text(
+                        text = suggestion.subtitle,
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-        }
 
-        // Type badge
-        TypeBadge(type = suggestion.type)
+            // Type badge using SpChip
+            SpChip(
+                text = suggestion.type,
+                isSelected = true,
+            )
+        }
     }
 }
 
@@ -152,16 +147,16 @@ private fun QuickResultThumbnail(
             imageUrl = suggestion.imageUrl,
             contentDescription = "${suggestion.name} cover",
             modifier = modifier
-                .width(SpSpacing.IconXLarge)
-                .height(43.dp), // 32dp * 4/3 aspect ratio
+                .width(40.dp)
+                .height(54.dp),
             aspectRatio = 0.75f,
             cornerRadius = SpSpacing.RadiusSmall,
         )
     } else {
         Box(
             modifier = modifier
-                .size(SpSpacing.IconXLarge)
-                .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
+                .size(40.dp)
+                .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
                 .background(SpColor.SurfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
@@ -173,7 +168,7 @@ private fun QuickResultThumbnail(
                     AsyncImage(
                         model = suggestion.imageUrl,
                         contentDescription = null,
-                        modifier = Modifier.size(SpSpacing.IconDefault),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 isCollection -> {
@@ -181,7 +176,7 @@ private fun QuickResultThumbnail(
                         imageVector = Icons.Filled.Folder,
                         contentDescription = null,
                         tint = SpColor.OnBackgroundSecondary,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 isConsole -> {
@@ -189,38 +184,19 @@ private fun QuickResultThumbnail(
                         imageVector = Icons.Filled.Gamepad,
                         contentDescription = null,
                         tint = SpColor.OnBackgroundSecondary,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 else -> {
                     Text(
                         text = suggestion.name.take(2).uppercase(),
-                        style = SpTypography.LabelSmall,
+                        style = SpTypography.LabelMedium,
                         color = SpColor.OnBackgroundSecondary,
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun TypeBadge(
-    type: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = type,
-        style = SpTypography.LabelSmall,
-        color = SpColor.Primary,
-        modifier = modifier
-            .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-            .background(SpColor.PrimaryContainer)
-            .padding(
-                horizontal = SpSpacing.Small,
-                vertical = SpSpacing.XXSmall,
-            ),
-    )
 }
 
 private fun dispatchNavigation(

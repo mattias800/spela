@@ -1,8 +1,5 @@
 package com.spela.player.presentation.ui.feature.search
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Gamepad
@@ -37,9 +32,11 @@ import com.spela.player.domain.model.SearchConsoleResult
 import com.spela.player.domain.model.SearchFranchiseResult
 import com.spela.player.domain.model.SearchGameResult
 import com.spela.player.domain.model.SearchSeriesResult
-import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpLinkText
+import com.spela.player.presentation.ui.components.SpWideGameCard
+import com.spela.player.presentation.ui.components.SpWideIconCard
 import com.spela.player.presentation.ui.components.SpShimmer
-import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -72,15 +69,10 @@ fun SearchSectionHeader(
         )
         when {
             isExpanded && onShowLess != null -> {
-                Text(
+                SpLinkText(
                     text = "Show less",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
+                    onClick = onShowLess,
                     modifier = Modifier
-                        .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
-                        .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                        .clickable(onClick = onShowLess)
-                        .focusable()
                         .padding(
                             horizontal = SpSpacing.Small,
                             vertical = SpSpacing.XSmall,
@@ -89,15 +81,10 @@ fun SearchSectionHeader(
                 )
             }
             total > displayedCount && onSeeAll != null -> {
-                Text(
+                SpLinkText(
                     text = "See all $total",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
+                    onClick = onSeeAll,
                     modifier = Modifier
-                        .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
-                        .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                        .clickable(onClick = onSeeAll)
-                        .focusable()
                         .padding(
                             horizontal = SpSpacing.Small,
                             vertical = SpSpacing.XSmall,
@@ -122,58 +109,17 @@ fun GameSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("search_result_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        SpCoverArt(
-            imageUrl = game.coverUrl,
-            contentDescription = "${game.title} cover",
-            modifier = Modifier
-                .width(40.dp)
-                .height(54.dp),
-            aspectRatio = game.coverAspectRatio,
-            cornerRadius = SpSpacing.RadiusSmall,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = game.title,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-            ) {
-                Text(
-                    text = game.consoleName,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
-                    maxLines = 1,
-                )
-                if (!game.developer.isNullOrBlank()) {
-                    Text(
-                        text = "\u00B7",
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
+    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+        SpWideGameCard(
+            title = game.title,
+            subtitle = game.consoleName,
+            coverUrl = game.coverUrl,
+            onClick = onClick,
+            coverAspectRatio = game.coverAspectRatio,
+            fillWidth = true,
+            testTag = "search_result_game_${game.id}",
+            extraContent = if (!game.developer.isNullOrBlank()) {
+                {
                     Text(
                         text = game.developer,
                         style = SpTypography.LabelSmall,
@@ -182,8 +128,8 @@ fun GameSearchResultItem(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-        }
+            } else null,
+        )
     }
 }
 
@@ -193,61 +139,29 @@ fun ConsoleSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("search_result_console_${console.id}")
-            .semantics {
-                contentDescription = "${console.name}, ${console.gameCount} games"
-                role = Role.Button
+    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+        SpWideIconCard(
+            title = console.name,
+            subtitle = "${console.gameCount} games",
+            onClick = onClick,
+            testTag = "search_result_console_${console.id}",
+            icon = {
+                if (console.iconUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = console.iconUrl,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Gamepad,
+                        contentDescription = null,
+                        tint = SpColor.OnBackgroundSecondary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                .background(SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (console.iconUrl.isNotBlank()) {
-                AsyncImage(
-                    model = console.iconUrl,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.Gamepad,
-                    contentDescription = null,
-                    tint = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = console.name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "${console.gameCount} games",
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
+        )
     }
 }
 
@@ -260,70 +174,40 @@ fun CompanySearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("search_result_${label.lowercase()}_$name")
-            .semantics {
-                contentDescription = "$name, $gameCount games"
-                role = Role.Button
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                .background(SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = name.take(2).uppercase(),
-                style = SpTypography.LabelMedium,
-                color = SpColor.OnBackgroundSecondary,
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-            ) {
+    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+        SpWideIconCard(
+            title = name,
+            subtitle = "$gameCount games",
+            onClick = onClick,
+            testTag = "search_result_${label.lowercase()}_$name",
+            icon = {
                 Text(
-                    text = "$gameCount games",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
+                    text = name.take(2).uppercase(),
+                    style = SpTypography.TitleMedium,
+                    color = SpColor.OnBackgroundSecondary,
                 )
-                if (avgRating > 0) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = SpColor.Rating,
-                        modifier = Modifier.size(SpSpacing.IconXSmall),
-                    )
-                    Text(
-                        text = formatRating(avgRating),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
+            },
+            extraContent = if (avgRating > 0) {
+                {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = SpColor.Rating,
+                            modifier = Modifier.size(SpSpacing.IconXSmall),
+                        )
+                        Text(
+                            text = formatRating(avgRating),
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
                 }
-            }
-        }
+            } else null,
+        )
     }
 }
 
@@ -333,62 +217,21 @@ fun CollectionSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("search_result_collection_${collection.id}")
-            .semantics {
-                contentDescription = "${collection.name}, ${collection.gameCount} games"
-                role = Role.Button
+    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+        SpWideIconCard(
+            title = collection.name,
+            subtitle = "${collection.username} \u00B7 ${collection.gameCount} games",
+            onClick = onClick,
+            testTag = "search_result_collection_${collection.id}",
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Folder,
+                    contentDescription = null,
+                    tint = SpColor.OnBackgroundSecondary,
+                    modifier = Modifier.size(28.dp),
+                )
             },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                .background(SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Folder,
-                contentDescription = null,
-                tint = SpColor.OnBackgroundSecondary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = collection.name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-            ) {
-                Text(
-                    text = collection.username,
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.Primary,
-                )
-                Text(
-                    text = "\u00B7 ${collection.gameCount} games",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
-        }
+        )
     }
 }
 
@@ -401,52 +244,20 @@ fun GroupSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .focusable()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
-            .testTag("search_result_${testTagPrefix}")
-            .semantics {
-                contentDescription = "$name, $subtitle"
-                role = Role.Button
+    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+        SpWideIconCard(
+            title = name,
+            subtitle = subtitle,
+            onClick = onClick,
+            testTag = "search_result_${testTagPrefix}",
+            icon = {
+                Text(
+                    text = avatarText,
+                    style = SpTypography.TitleMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                )
             },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                .background(SpColor.SurfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = avatarText,
-                style = SpTypography.LabelMedium,
-                color = SpColor.OnBackgroundSecondary,
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = subtitle,
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
+        )
     }
 }
 
@@ -491,47 +302,25 @@ fun SearchResultSkeleton(
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal),
     ) {
-        // Mimic a section header
         SpShimmer(width = 80.dp, height = 16.dp)
         Spacer(Modifier.height(SpSpacing.Medium))
-
-        // Mimic several result rows
         repeat(4) {
-            Row(
+            SpCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = SpSpacing.Small),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    .padding(vertical = SpSpacing.XXSmall),
             ) {
-                SpShimmer(width = 40.dp, height = 54.dp)
-                Column(modifier = Modifier.weight(1f)) {
-                    SpShimmer(width = 160.dp, height = 14.dp)
-                    Spacer(Modifier.height(SpSpacing.XSmall))
-                    SpShimmer(width = 100.dp, height = 12.dp)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(SpSpacing.Large))
-
-        // Second section
-        SpShimmer(width = 100.dp, height = 16.dp)
-        Spacer(Modifier.height(SpSpacing.Medium))
-
-        repeat(3) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = SpSpacing.Small),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            ) {
-                SpShimmer(width = 40.dp, height = 40.dp)
-                Column(modifier = Modifier.weight(1f)) {
-                    SpShimmer(width = 140.dp, height = 14.dp)
-                    Spacer(Modifier.height(SpSpacing.XSmall))
-                    SpShimmer(width = 80.dp, height = 12.dp)
+                Row(
+                    modifier = Modifier.padding(SpSpacing.Medium),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SpShimmer(width = 40.dp, height = 54.dp)
+                    Column {
+                        SpShimmer(width = 160.dp, height = 14.dp)
+                        Spacer(Modifier.height(SpSpacing.XSmall))
+                        SpShimmer(width = 100.dp, height = 12.dp)
+                    }
                 }
             }
         }
