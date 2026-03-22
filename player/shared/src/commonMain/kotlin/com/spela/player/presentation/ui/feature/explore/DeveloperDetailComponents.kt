@@ -50,10 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,6 +61,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -220,70 +217,30 @@ internal fun DeveloperTopRatedRow(
             items = topGames,
             key = { "top_${it.id}" },
         ) { game ->
-            TopRatedGameCard(
+            DeveloperTopRatedCard(
                 game = game,
-                onClick = { onGameSelected(game.id) },
+                onGameSelected = onGameSelected,
             )
         }
     }
 }
 
+/** ROLE component — developer's top-rated game card. Delegates to [SpGameCard]. */
 @Composable
-internal fun TopRatedGameCard(
+internal fun DeveloperTopRatedCard(
     game: Game,
-    onClick: () -> Unit,
+    onGameSelected: (String) -> Unit,
 ) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverMediumWidth)
-            .testTag("developer_top_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, rated ${formatRating(game.rating)}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = SpSpacing.RadiusLarge, topEnd = SpSpacing.RadiusLarge)),
-                cornerRadius = 0.dp,
-            )
-            Column(
-                modifier = Modifier.padding(SpSpacing.Small),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (game.rating > 0) {
-                    Spacer(Modifier.height(SpSpacing.XXSmall))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    SpGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
+        onClick = { onGameSelected(game.id) },
+        rating = game.rating,
+        isFavorite = game.isFavorite,
+        isInPlayLater = game.isInPlayLater,
+        testTag = "developer_top_game_${game.id}",
+    )
 }
 
 // --- (d) User Stats Card ---
