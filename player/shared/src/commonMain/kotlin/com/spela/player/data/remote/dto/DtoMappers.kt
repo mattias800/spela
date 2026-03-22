@@ -561,6 +561,7 @@ fun LongestGameDto.toDomain(): LongestGame = LongestGame(
 )
 
 fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
+    igdbGameId = igdbGameId,
     name = name,
     coverUrl = coverUrl,
     rating = rating,

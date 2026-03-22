@@ -243,6 +243,7 @@ fun ExploreGroupDetailContent(
                         title = "",
                         showBack = true,
                         onBack = onBack,
+                        onGradient = true,
                     )
                     } // Box
                 }

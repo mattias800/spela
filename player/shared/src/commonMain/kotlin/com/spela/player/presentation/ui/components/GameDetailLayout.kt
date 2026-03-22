@@ -208,14 +208,13 @@ private fun LandscapeLayout(
                         verticalAlignment = Alignment.Bottom,
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                     ) {
-                        // Small cover art
+                        // Cover art — max width and height, dynamic sizing, no crop
                         val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
                         Box(
                             modifier = Modifier
-                                .width(coverWidth)
-                                .shadow(8.dp, coverShape)
-                                .clip(coverShape)
-                                .border(1.dp, SpColor.Divider, coverShape),
+                                .widthIn(max = coverWidth)
+                                .heightIn(max = 200.dp)
+                                .clip(coverShape),
                         ) {
                             coverArt(Modifier.fillMaxWidth(), false)
                         }

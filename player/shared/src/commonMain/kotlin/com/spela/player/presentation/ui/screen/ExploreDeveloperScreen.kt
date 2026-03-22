@@ -245,6 +245,7 @@ fun ExploreDeveloperScreen(
                         title = "",
                         showBack = true,
                         onBack = onBack,
+                        onGradient = true,
                     )
                     } // Box
                 }
