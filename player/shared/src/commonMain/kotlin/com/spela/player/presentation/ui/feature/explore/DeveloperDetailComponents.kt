@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
+import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
@@ -76,8 +78,6 @@ internal fun DeveloperHeroBanner(
     modifier: Modifier = Modifier,
 ) {
     val companyInfo = detail.companyInfo
-    var descriptionExpanded by remember { mutableStateOf(false) }
-    var hasVisualOverflow by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -154,6 +154,7 @@ internal fun DeveloperHeroBanner(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
+                    .padding(start = SpSpacing.Small)
                     .widthIn(max = 120.dp),
             ) {
                 DeveloperInfoSection(
@@ -204,47 +205,13 @@ internal fun DeveloperHeroBanner(
                     )
                 }
 
-                // About description (only if available)
-                val description = companyInfo?.description
-                if (description != null) {
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Column(
-                        modifier = Modifier.animateContentSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = description,
-                            style = SpTypography.BodySmall,
-                            color = Color.White.copy(alpha = 0.7f),
-                            maxLines = if (descriptionExpanded) Int.MAX_VALUE else 2,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                            onTextLayout = { result ->
-                                if (!descriptionExpanded) hasVisualOverflow = result.hasVisualOverflow
-                            },
-                            modifier = Modifier.testTag("developer_company_description"),
-                        )
-
-                        if (hasVisualOverflow || descriptionExpanded) {
-                            Text(
-                                text = if (descriptionExpanded) "Show less" else "Show more",
-                                style = SpTypography.LabelMedium,
-                                color = SpColor.Link,
-                                modifier = Modifier
-                                    .clickable { descriptionExpanded = !descriptionExpanded }
-                                    .testTag("developer_company_description_toggle"),
-                            )
-                        }
-                    }
-                }
-
                 // Metadata line: "Founded {year} · {country}"
                 val metaParts = buildList {
                     companyInfo?.foundedYear?.let { add("Founded $it") }
                     companyInfo?.country?.let { add(it) }
                 }
                 if (metaParts.isNotEmpty()) {
-                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    Spacer(Modifier.height(SpSpacing.Small))
                     Text(
                         text = metaParts.joinToString(" \u00b7 "),
                         style = SpTypography.LabelSmall,
@@ -547,6 +514,45 @@ internal fun DeveloperDetailSkeleton(
                     SpShimmer(width = 80.dp, height = 12.dp)
                 }
             }
+        }
+    }
+}
+
+// --- Company Description (collapsible about section) ---
+
+@Composable
+internal fun DeveloperCompanyDescription(
+    companyInfo: CompanyInfo,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var hasOverflow by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.animateContentSize(),
+    ) {
+        Text(
+            text = companyInfo.description ?: "",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundSecondary,
+            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { result ->
+                if (!expanded) hasOverflow = result.hasVisualOverflow
+            },
+            modifier = Modifier.testTag("developer_company_description"),
+        )
+
+        if (hasOverflow || expanded) {
+            Text(
+                text = if (expanded) "Show less" else "Show more",
+                style = SpTypography.LabelMedium,
+                color = SpColor.Primary,
+                modifier = Modifier
+                    .clickable { expanded = !expanded }
+                    .padding(top = SpSpacing.XSmall)
+                    .testTag("developer_company_description_toggle"),
+            )
         }
     }
 }

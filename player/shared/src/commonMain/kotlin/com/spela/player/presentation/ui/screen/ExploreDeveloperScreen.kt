@@ -32,6 +32,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
@@ -107,7 +108,20 @@ fun ExploreDeveloperScreen(
                             )
                         }
 
-                        // 2. Related chips (publishers + related developers)
+                        // 2. About (company description)
+                        val companyInfo = detail.companyInfo
+                        if (companyInfo?.description != null) {
+                            item {
+                                SpTitledSection(title = "About") {
+                                    DeveloperCompanyDescription(
+                                        companyInfo = companyInfo,
+                                        modifier = Modifier.testTag("developer_company_description_section"),
+                                    )
+                                }
+                            }
+                        }
+
+                        // 3. Related chips (publishers + related developers)
                         val hasPublishers = detail.publishers.isNotEmpty()
                         val hasRelated = detail.relatedDevelopers.isNotEmpty()
                         if (hasPublishers || hasRelated) {
