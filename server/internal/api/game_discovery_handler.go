@@ -23,6 +23,7 @@ type GameDiscoveryHandler struct {
 
 // SimilarGameResponse is the API response for a similar game.
 type SimilarGameResponse struct {
+	IGDBGameID  int     `json:"igdbGameId"`
 	Name        string  `json:"name"`
 	CoverUrl    string  `json:"coverUrl"`
 	Rating      float64 `json:"rating"`
@@ -79,8 +80,9 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 	result := make([]SimilarGameResponse, 0, len(cached))
 	for _, sg := range cached {
 		resp := SimilarGameResponse{
-			Name:   sg.Name,
-			Rating: sg.Rating,
+			IGDBGameID: sg.IGDBGameID,
+			Name:       sg.Name,
+			Rating:     sg.Rating,
 		}
 
 		// Check for local game match by case-insensitive title

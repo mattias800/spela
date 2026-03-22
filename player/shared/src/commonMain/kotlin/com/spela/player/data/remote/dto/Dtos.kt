@@ -992,6 +992,7 @@ data class LongestGameDto(
 
 @Serializable
 data class SimilarGameDto(
+    val igdbGameId: Int = 0,
     val name: String,
     val coverUrl: String? = null,
     val rating: Double = 0.0,
@@ -1127,6 +1128,7 @@ data class SeriesDetailDto(
     val id: String,
     val name: String,
     val heroUrl: String? = null,
+    val logoUrl: String? = null,
     val consoles: List<SeriesConsoleDto> = emptyList(),
     val libraryGames: Int = 0,
     val totalGames: Int = 0,

@@ -672,6 +672,7 @@ data class LongestGame(
 // Similar Games
 
 data class SimilarGame(
+    val igdbGameId: Int = 0,
     val name: String,
     val coverUrl: String? = null,
     val rating: Double = 0.0,

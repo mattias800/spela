@@ -52,7 +52,7 @@ internal fun SimilarGamesSection(
             contentPadding = PaddingValues(horizontal = SpSpacing.XLarge),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
-            items(games, key = { it.name }) { game ->
+            items(games, key = { it.igdbGameId }) { game ->
                 SimilarGameCard(
                     game = game,
                     onClick = if (game.localGameId != null) {

@@ -393,6 +393,8 @@ class GameRepositoryImpl(
     /** Resolve relative image URLs to absolute URLs using the server base URL. */
     private fun Game.resolveImageUrls(): Game = copy(
         coverUrl = apiClient.resolveUrl(coverUrl),
+        heroUrl = apiClient.resolveUrl(heroUrl),
+        logoUrl = apiClient.resolveUrl(logoUrl),
     )
 
     private fun Console.resolveImageUrls(): Console = copy(

@@ -285,6 +285,7 @@ type SeriesDetailResponse struct {
 	IGDBCollectionID int                   `json:"igdbCollectionId"`
 	Name             string                `json:"name"`
 	HeroURL          string                `json:"heroUrl,omitempty"`
+	LogoURL          string                `json:"logoUrl,omitempty"`
 	LibraryGames     int                   `json:"libraryGames"`
 	TotalGames       int                   `json:"totalGames"`
 	Consoles         []SeriesConsoleInfo   `json:"consoles"`
@@ -356,8 +357,9 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 	consoleInfoMap := make(map[uint]db.Console)  // consoleID -> Console
 	libraryGames := 0
 
-	// Track the best game for hero art (highest rated with hero art)
+	// Track best hero art (highest rated) and first available logo
 	var bestHeroURL string
+	var bestLogoURL string
 	var bestHeroRating float64 = -1
 
 	games := make([]SeriesGameResponse, len(series.Entries))
@@ -395,11 +397,14 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 						consoleInfoMap[g.Console.ID] = g.Console
 					}
 
-					// Track best hero art
+					// Track best hero art (highest rated) and first logo
 					if artwork, ok := artworkMap[*entry.GameID]; ok {
 						if g.Rating > bestHeroRating {
 							bestHeroRating = g.Rating
 							bestHeroURL = resolveImageURL(artwork.HeroURL)
+						}
+						if bestLogoURL == "" && artwork.LogoURL != "" {
+							bestLogoURL = resolveImageURL(artwork.LogoURL)
 						}
 					}
 				}
@@ -429,6 +434,7 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 		IGDBCollectionID: series.IGDBCollectionID,
 		Name:             series.Name,
 		HeroURL:          bestHeroURL,
+		LogoURL:          bestLogoURL,
 		LibraryGames:     libraryGames,
 		TotalGames:       len(series.Entries),
 		Consoles:         consoles,
@@ -542,6 +548,7 @@ type FranchiseDetailResponse struct {
 	IGDBFranchiseID int                  `json:"igdbFranchiseId"`
 	Name            string               `json:"name"`
 	HeroURL         string               `json:"heroUrl,omitempty"`
+	LogoURL         string               `json:"logoUrl,omitempty"`
 	LibraryGames    int                  `json:"libraryGames"`
 	TotalGames      int                  `json:"totalGames"`
 	Consoles        []SeriesConsoleInfo  `json:"consoles"`
@@ -598,6 +605,7 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 	libraryGames := 0
 
 	var bestHeroURL string
+	var bestLogoURL string
 	var bestHeroRating float64 = -1
 
 	games := make([]SeriesGameResponse, len(franchise.Entries))
@@ -639,6 +647,9 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 							bestHeroRating = g.Rating
 							bestHeroURL = resolveImageURL(artwork.HeroURL)
 						}
+						if bestLogoURL == "" && artwork.LogoURL != "" {
+							bestLogoURL = resolveImageURL(artwork.LogoURL)
+						}
 					}
 				}
 			} else {
@@ -668,6 +679,7 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 		IGDBFranchiseID: franchise.IGDBFranchiseID,
 		Name:            franchise.Name,
 		HeroURL:         bestHeroURL,
+		LogoURL:         bestLogoURL,
 		LibraryGames:    libraryGames,
 		TotalGames:      len(franchise.Entries),
 		Consoles:        consoles,

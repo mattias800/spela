@@ -49,7 +49,7 @@ fun SpCoverArt(
     } else {
         modifier.clip(shape)
     }
-    val scale = if (aspectRatio != null) ContentScale.Crop else ContentScale.FillWidth
+    val scale = if (aspectRatio != null) ContentScale.Crop else ContentScale.Fit
 
     Box(
         modifier = boxModifier,

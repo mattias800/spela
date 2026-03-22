@@ -27,6 +27,8 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpGameGrid
+import com.spela.player.presentation.ui.components.SpGridGameCard
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -190,7 +192,41 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 4. Your Stats
+                        // 4. Games grid
+                        if (detail.games.isNotEmpty()) {
+                            item {
+                                SpTitledSection(
+                                    title = "Games",
+                                    titleTrailing = if (detail.games.size > 12 && onNavigateToGames != null) {
+                                        {
+                                            SpButton(
+                                                text = "See all",
+                                                style = SpButtonStyle.Ghost,
+                                                onClick = { onNavigateToGames(name, isDeveloper) },
+                                            )
+                                        }
+                                    } else null,
+                                ) {
+                                    SpGameGrid(
+                                        items = detail.games.take(12).map { game ->
+                                            @Composable {
+                                                SpGridGameCard(
+                                                    title = game.title,
+                                                    subtitle = game.consoleName,
+                                                    coverUrl = game.coverUrl,
+                                                    onClick = { onGameSelected(game.id) },
+                                                    rating = game.averageRating,
+                                                    isFavorite = game.isFavorite,
+                                                    isInPlayLater = game.isInPlayLater,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        // 5. Your Stats
                         if (detail.userStats != null) {
                             item {
                                 SpTitledSection(title = "Your Stats") {
@@ -209,6 +245,7 @@ fun ExploreDeveloperScreen(
                         title = "",
                         showBack = true,
                         onBack = onBack,
+                        onGradient = true,
                     )
                     } // Box
                 }

@@ -561,6 +561,7 @@ fun LongestGameDto.toDomain(): LongestGame = LongestGame(
 )
 
 fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
+    igdbGameId = igdbGameId,
     name = name,
     coverUrl = coverUrl,
     rating = rating,
@@ -643,6 +644,7 @@ fun SeriesDetailDto.toDomain(): SeriesDetail = SeriesDetail(
     id = id,
     name = name,
     heroUrl = heroUrl,
+    logoUrl = logoUrl,
     consoles = consoles.map { it.toDomain() },
     libraryGames = libraryGames,
     totalGames = totalGames,

@@ -1,16 +1,21 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -24,38 +29,34 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * CONTENT component — horizontal game card with cover on the left and text on the right.
+ * CONTENT component — horizontal card with icon/avatar on the left and text on the right.
  *
  * Layer 2 in the component hierarchy (Design → Content → Role).
- * Composes [SpCard] + [SpCoverArt] into a horizontal layout.
- * Used for cards that need more horizontal space (e.g. Continue Playing).
+ * Matches the layout of [SpWideGameCard] but with an icon slot instead of cover art.
+ * Used for non-game search results (consoles, developers, collections, etc).
  *
- * Parallel to [SpGameCard] (vertical layout). Both use [SpCard] as their
- * design component. Choose based on layout needs:
- * - [SpGameCard] — vertical, compact, for shelves and grids
- * - [SpWideGameCard] — horizontal, spacious, for featured/prominent cards
- *
- * Does NOT accept a modifier parameter — the layout is strict.
- * Parent controls sizing via the [width] parameter only.
- *
- * @param extraContent Optional composable rendered below the subtitle
- *   (e.g. play time, console chip). Rendered inside the text column.
+ * @param title Primary text (TitleLarge).
+ * @param subtitle Secondary text below title.
+ * @param onClick Click handler.
+ * @param icon Composable rendered inside the icon box (e.g. Icon, Text with initials).
+ * @param iconSize Size of the icon box.
+ * @param testTag Optional test tag.
+ * @param extraContent Optional composable below the subtitle.
  */
 @Composable
-fun SpWideGameCard(
+fun SpWideIconCard(
     title: String,
     subtitle: String,
-    coverUrl: String?,
     onClick: () -> Unit,
-    coverAspectRatio: Float = 0.75f,
-    width: Dp = 280.dp,
-    fillWidth: Boolean = false,
-    coverHeight: Dp = 84.dp,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 56.dp,
     testTag: String? = null,
     extraContent: (@Composable () -> Unit)? = null,
 ) {
     SpCard(
-        modifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(width))
+        modifier = modifier
+            .fillMaxWidth()
             .let { if (testTag != null) it.testTag(testTag) else it }
             .semantics {
                 contentDescription = "$title, $subtitle"
@@ -70,13 +71,15 @@ fun SpWideGameCard(
                 .padding(SpSpacing.Medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SpCoverArt(
-                imageUrl = coverUrl,
-                contentDescription = "$title cover art",
-                modifier = Modifier.height(coverHeight),
-                cornerRadius = SpSpacing.RadiusMedium,
-                aspectRatio = coverAspectRatio,
-            )
+            Box(
+                modifier = Modifier
+                    .size(iconSize)
+                    .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
+                    .background(SpColor.SurfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                icon()
+            }
             Spacer(Modifier.width(SpSpacing.Medium))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

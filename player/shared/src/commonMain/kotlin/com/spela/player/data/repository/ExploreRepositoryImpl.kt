@@ -109,6 +109,7 @@ class ExploreRepositoryImpl(
         val dto = apiClient.getSeriesDetail(id)
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            logoUrl = apiClient.resolveUrl(dto.logoUrl),
             games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
@@ -121,6 +122,7 @@ class ExploreRepositoryImpl(
         val dto = apiClient.getFranchiseDetail(id)
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            logoUrl = apiClient.resolveUrl(dto.logoUrl),
             games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),

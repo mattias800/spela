@@ -61,8 +61,8 @@ fun SpTitledSection(
             .background(Color.Black.copy(alpha = 0.18f), shape)
             .border(1.dp, SpColor.Divider.copy(alpha = 0.4f), shape)
             .let {
-                if (edgeToEdgeContent) it.padding(vertical = SpSpacing.Default)
-                else it.padding(SpSpacing.Default)
+                if (edgeToEdgeContent) it.padding(top = SpSpacing.Default, bottom = SpSpacing.XLarge)
+                else it.padding(start = SpSpacing.Default, end = SpSpacing.Default, top = SpSpacing.Default, bottom = SpSpacing.XLarge)
             },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

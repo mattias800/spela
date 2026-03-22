@@ -45,6 +45,7 @@ data class SeriesDetail(
     val id: String,
     val name: String,
     val heroUrl: String?,
+    val logoUrl: String?,
     val consoles: List<SeriesConsole>,
     val libraryGames: Int,
     val totalGames: Int,
