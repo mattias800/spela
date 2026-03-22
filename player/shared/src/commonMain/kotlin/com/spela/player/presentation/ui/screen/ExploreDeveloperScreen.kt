@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.layout.layout
 import androidx.compose.material.icons.Icons
@@ -70,26 +72,26 @@ fun ExploreDeveloperScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = name,
-                showBack = true,
-                onBack = onBack,
-            )
-
             when {
                 state.isLoading && state.detail == null -> {
+                    SpTopBar(
+                        title = name,
+                        showBack = true,
+                        onBack = onBack,
+                    )
                     DeveloperDetailSkeleton()
                 }
 
                 state.detail != null -> {
                     val detail = state.detail!!
+                    val horizontalPadding = SpSpacing.ScreenHorizontal
 
+                    Box(modifier = Modifier.fillMaxSize()) {
                     SpSectionList(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                     ) {
-                        // 1. Hero Banner — full-width edge-to-edge, counteracts SpSectionList padding
+                        // 0. Hero Banner — full-width edge-to-edge
                         item {
-                            val horizontalPadding = SpSpacing.ScreenHorizontal
                             DeveloperHeroBanner(
                                 detail = detail,
                                 modifier = Modifier
@@ -107,8 +109,7 @@ fun ExploreDeveloperScreen(
                                     .testTag("developer_hero_banner"),
                             )
                         }
-
-                        // 2. About (company description)
+                        // 1. About (company description)
                         val companyInfo = detail.companyInfo
                         if (companyInfo?.description != null) {
                             item {
@@ -203,9 +204,21 @@ fun ExploreDeveloperScreen(
                             }
                         }
                     }
+                    // Top bar overlaid on everything — floats over the banner
+                    SpTopBar(
+                        title = "",
+                        showBack = true,
+                        onBack = onBack,
+                    )
+                    } // Box
                 }
 
                 else -> {
+                    SpTopBar(
+                        title = name,
+                        showBack = true,
+                        onBack = onBack,
+                    )
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,

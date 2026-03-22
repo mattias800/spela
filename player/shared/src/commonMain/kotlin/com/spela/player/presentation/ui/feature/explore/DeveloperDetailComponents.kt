@@ -82,7 +82,7 @@ internal fun DeveloperHeroBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(200.dp + SpSpacing.TopBarHeight + SpSpacing.Large),
     ) {
         // Background: hero image or gradient fallback
         if (detail.heroUrl != null) {
@@ -145,16 +145,26 @@ internal fun DeveloperHeroBanner(
         )
 
         // Content: stats on left, logo + info centered (console banner pattern)
+        // Top padding clears the overlaid back button
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = SpSpacing.XLarge),
+                .padding(
+                    top = SpSpacing.TopBarHeight + SpSpacing.Large,
+                    start = SpSpacing.XLarge,
+                    end = SpSpacing.XLarge,
+                ),
         ) {
-            // LEFT side — "At a Glance" data table
+            // LEFT side — "At a Glance" data table with contrast backdrop
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = SpSpacing.Small)
+                    .background(
+                        Color.Black.copy(alpha = 0.4f),
+                        RoundedCornerShape(SpSpacing.CardCornerRadius),
+                    )
+                    .padding(SpSpacing.Medium)
                     .widthIn(max = 120.dp),
             ) {
                 DeveloperInfoSection(
@@ -163,61 +173,72 @@ internal fun DeveloperHeroBanner(
                 )
             }
 
-            // CENTER — Company logo + description + metadata
-            Column(
+            // CENTER — Logo/name in a contrast backdrop
+            Box(
                 modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                contentAlignment = Alignment.Center,
             ) {
-                // Company logo — same sizing as console banner
-                val logoUrl = companyInfo?.logoUrl
-                if (logoUrl != null) {
-                    SubcomposeAsyncImage(
-                        model = logoUrl,
-                        contentDescription = "${detail.name} logo",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 80.dp)
-                            .testTag("developer_company_logo"),
-                        contentScale = ContentScale.Fit,
-                        loading = {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LetterAvatar(detail.name, size = 72.dp)
-                            }
-                        },
-                        error = {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                LetterAvatar(detail.name, size = 72.dp)
-                            }
-                        },
-                    )
-                } else {
-                    LetterAvatar(
-                        name = detail.name,
-                        size = 72.dp,
-                        modifier = Modifier.testTag("developer_letter_avatar"),
-                    )
-                }
+                Column(
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.4f),
+                            RoundedCornerShape(SpSpacing.CardCornerRadius),
+                        )
+                        .padding(SpSpacing.Large),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Company logo or name text
+                    val logoUrl = companyInfo?.logoUrl
+                    if (logoUrl != null) {
+                        SubcomposeAsyncImage(
+                            model = logoUrl,
+                            contentDescription = "${detail.name} logo",
+                            modifier = Modifier
+                                .widthIn(max = 200.dp)
+                                .heightIn(max = 80.dp)
+                                .testTag("developer_company_logo"),
+                            contentScale = ContentScale.Fit,
+                            loading = {
+                                Text(
+                                    text = detail.name,
+                                    style = SpTypography.HeadlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                )
+                            },
+                            error = {
+                                Text(
+                                    text = detail.name,
+                                    style = SpTypography.HeadlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                )
+                            },
+                        )
+                    } else {
+                        Text(
+                            text = detail.name,
+                            style = SpTypography.HeadlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.testTag("developer_letter_avatar"),
+                        )
+                    }
 
-                // Metadata line: "Founded {year} · {country}"
-                val metaParts = buildList {
-                    companyInfo?.foundedYear?.let { add("Founded $it") }
-                    companyInfo?.country?.let { add(it) }
-                }
-                if (metaParts.isNotEmpty()) {
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Text(
-                        text = metaParts.joinToString(" \u00b7 "),
-                        style = SpTypography.LabelSmall,
-                        color = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.testTag("developer_company_metadata"),
-                    )
+                    // Metadata line: "Founded {year} · {country}"
+                    val metaParts = buildList {
+                        companyInfo?.foundedYear?.let { add("Founded $it") }
+                        companyInfo?.country?.let { add(it) }
+                    }
+                    if (metaParts.isNotEmpty()) {
+                        Spacer(Modifier.height(SpSpacing.Small))
+                        Text(
+                            text = metaParts.joinToString(" \u00b7 "),
+                            style = SpTypography.LabelSmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.testTag("developer_company_metadata"),
+                        )
+                    }
                 }
             }
         }
