@@ -640,6 +640,7 @@ data class TopRatedGame(
     val coverUrl: String? = null,
     val rating: Double = 0.0,
     val localGameId: String? = null,
+    val consoleName: String = "",
 )
 
 // Top Lists

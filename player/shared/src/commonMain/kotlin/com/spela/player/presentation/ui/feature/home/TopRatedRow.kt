@@ -63,7 +63,7 @@ private fun TopRatedCard(
 ) {
     SpAvailabilityGameCard(
         title = game.name,
-        subtitle = "",
+        subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick ?: {},
         available = game.localGameId != null,

@@ -407,6 +407,7 @@ type TopRatedGameResponse struct {
 	CoverUrl    string  `json:"coverUrl"`
 	Rating      float64 `json:"rating"`
 	LocalGameId *string `json:"localGameId"`
+	ConsoleName string  `json:"consoleName"`
 }
 
 // topRatedStaleness is how long cached top-rated data is considered fresh.
@@ -686,10 +687,18 @@ func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank
 		if rerank {
 			rank = i + 1
 		}
+		// Resolve console name
+		var consoleName string
+		var console db.Console
+		if err := h.DB.Select("name").First(&console, tr.ConsoleID).Error; err == nil {
+			consoleName = console.Name
+		}
+
 		resp := TopRatedGameResponse{
-			Rank:   rank,
-			Name:   tr.Name,
-			Rating: tr.TotalRating,
+			Rank:        rank,
+			Name:        tr.Name,
+			Rating:      tr.TotalRating,
+			ConsoleName: consoleName,
 		}
 
 		// Check for local game match by case-insensitive title, scoped to the same console
