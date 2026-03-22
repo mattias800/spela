@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.layout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
@@ -32,7 +33,6 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperAtAGlance
-import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
@@ -87,12 +87,23 @@ fun ExploreDeveloperScreen(
                     SpSectionList(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                     ) {
-                        // 1. Hero Banner — scrolls with content
+                        // 1. Hero Banner — full-width edge-to-edge, counteracts SpSectionList padding
                         item {
+                            val horizontalPadding = SpSpacing.ScreenHorizontal
                             DeveloperHeroBanner(
                                 detail = detail,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .layout { measurable, constraints ->
+                                        val extraWidth = (horizontalPadding * 2).roundToPx()
+                                        val newConstraints = constraints.copy(
+                                            maxWidth = constraints.maxWidth + extraWidth,
+                                            minWidth = if (constraints.minWidth > 0) constraints.minWidth + extraWidth else 0,
+                                        )
+                                        val placeable = measurable.measure(newConstraints)
+                                        layout(placeable.width, placeable.height) {
+                                            placeable.place(-horizontalPadding.roundToPx(), 0)
+                                        }
+                                    }
                                     .testTag("developer_hero_banner"),
                             )
                         }
@@ -137,20 +148,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 3. About (company description)
-                        val companyInfo = detail.companyInfo
-                        if (companyInfo?.description != null) {
-                            item {
-                                SpTitledSection(title = "About") {
-                                    DeveloperCompanyDescription(
-                                        companyInfo = companyInfo,
-                                        modifier = Modifier.testTag("developer_company_description_section"),
-                                    )
-                                }
-                            }
-                        }
-
-                        // 4. At a Glance
+                        // 3. At a Glance
                         item {
                             SpTitledSection(title = "At a Glance") {
                                 DeveloperAtAGlance(
@@ -160,7 +158,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 5. Top Rated
+                        // 4. Top Rated
                         if (detail.topGames.size >= 3) {
                             item {
                                 SpTitledSection(
@@ -188,7 +186,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 6. Your Stats
+                        // 5. Your Stats
                         if (detail.userStats != null) {
                             item {
                                 SpTitledSection(title = "Your Stats") {

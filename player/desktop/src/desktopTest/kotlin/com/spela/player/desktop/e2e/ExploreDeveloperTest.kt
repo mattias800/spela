@@ -24,7 +24,7 @@ import kotlin.test.assertEquals
  * - Developer spotlight section on Explore screen
  * - Developer detail hero banner
  * - Related chips row (publishers + related developers as chips)
- * - About section (company description)
+ * - Company description (overlaid in hero banner)
  * - At a Glance section
  * - Top Rated row
  * - Your Stats card
@@ -428,7 +428,7 @@ class ExploreDeveloperTest {
     // --- Company Info: Description Section ---
 
     @Test
-    fun companyDescriptionSectionShown() = runComposeUiTest {
+    fun companyDescriptionShownInHeroBanner() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
 
@@ -438,10 +438,8 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
-        onNodeWithTag("developer_detail_content")
-            .performScrollToNode(hasTestTag("developer_company_description_section"))
-        onNodeWithTag("developer_company_description_section").assertExists()
-        onNodeWithText("About").assertExists()
+        // Description is now inside the hero banner, no separate "About" section
+        onNodeWithTag("developer_hero_banner").assertExists()
         onNodeWithTag("developer_company_description").assertExists()
     }
 
@@ -484,10 +482,9 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
-        onNodeWithTag("developer_detail_content")
-            .performScrollToNode(hasTestTag("developer_company_metadata"))
+        onNodeWithTag("developer_hero_banner").assertExists()
         onNodeWithTag("developer_company_metadata").assertExists()
-        onNodeWithText("Founded 1979 \u2014 Japan").assertExists()
+        onNodeWithText("Founded 1979 \u00b7 Japan").assertExists()
     }
 
     @Test
@@ -501,7 +498,7 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
-        onNodeWithTag("developer_company_description_section").assertDoesNotExist()
+        onNodeWithTag("developer_company_description").assertDoesNotExist()
     }
 
     @Test
@@ -515,7 +512,7 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
-        onNodeWithTag("developer_company_description_section").assertDoesNotExist()
+        onNodeWithTag("developer_company_description").assertDoesNotExist()
     }
 
     // --- At a Glance Section ---

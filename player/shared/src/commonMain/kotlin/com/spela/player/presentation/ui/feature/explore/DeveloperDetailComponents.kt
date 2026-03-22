@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,9 +53,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
-import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
@@ -65,7 +64,6 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
-import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -81,110 +79,183 @@ internal fun DeveloperHeroBanner(
     detail: DeveloperDetail,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
+    val companyInfo = detail.companyInfo
+    var descriptionExpanded by remember { mutableStateOf(false) }
+    var hasVisualOverflow by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(240.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-        ) {
-            if (detail.heroUrl != null) {
-                SpHeroCover(
-                    imageUrl = detail.heroUrl,
-                    contentDescription = "${detail.name} hero image",
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                // Dark gradient fallback
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    SpColor.Primary.copy(alpha = 0.3f),
-                                    SpColor.Background,
+        // Background: hero image or gradient fallback
+        if (detail.heroUrl != null) {
+            SubcomposeAsyncImage(
+                model = detail.heroUrl,
+                contentDescription = "${detail.name} hero image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(SpColor.Background),
+                    )
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        SpColor.Primary.copy(alpha = 0.3f),
+                                        SpColor.Background,
+                                    ),
                                 ),
                             ),
+                    )
+                },
+            )
+        } else {
+            // Gradient fallback when no hero image
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                SpColor.Primary.copy(alpha = 0.3f),
+                                SpColor.Background,
+                            ),
                         ),
-                )
-            }
+                    ),
+            )
         }
 
-        Spacer(Modifier.height(SpSpacing.Medium))
+        // Gradient overlay: transparent at top, SpColor.Background at bottom
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color.Transparent,
+                            0.4f to SpColor.Background.copy(alpha = 0.3f),
+                            1.0f to SpColor.Background,
+                        ),
+                    ),
+                ),
+        )
 
-        // Name row with logo
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        // Overlaid content at bottom-left
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(
+                    start = SpSpacing.ScreenHorizontal,
+                    end = SpSpacing.ScreenHorizontal,
+                    bottom = SpSpacing.Medium,
+                ),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
-            // Company logo or letter avatar fallback
-            val logoUrl = detail.companyInfo?.logoUrl
+            // Company logo (72dp circular)
+            val logoUrl = companyInfo?.logoUrl
             if (logoUrl != null) {
                 SubcomposeAsyncImage(
                     model = logoUrl,
                     contentDescription = "${detail.name} logo",
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(72.dp)
                         .clip(CircleShape)
                         .testTag("developer_company_logo"),
                     contentScale = ContentScale.Fit,
                     loading = {
-                        LetterAvatar(detail.name)
+                        LetterAvatar(detail.name, size = 72.dp)
                     },
                     error = {
-                        LetterAvatar(detail.name)
+                        LetterAvatar(detail.name, size = 72.dp)
                     },
                 )
             } else {
                 LetterAvatar(
                     name = detail.name,
+                    size = 72.dp,
                     modifier = Modifier.testTag("developer_letter_avatar"),
                 )
             }
 
-            Text(
-                text = detail.name,
-                style = SpTypography.DisplaySmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag("developer_hero_name"),
-            )
-        }
+            // About description (only if available)
+            val description = companyInfo?.description
+            if (description != null) {
+                Column(
+                    modifier = Modifier.animateContentSize(),
+                ) {
+                    Text(
+                        text = description,
+                        style = SpTypography.BodyMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = if (descriptionExpanded) Int.MAX_VALUE else 3,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { result ->
+                            if (!descriptionExpanded) hasVisualOverflow = result.hasVisualOverflow
+                        },
+                        modifier = Modifier.testTag("developer_company_description"),
+                    )
 
-        Spacer(Modifier.height(SpSpacing.Small))
-
-        // Stats chips
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            modifier = Modifier.testTag("developer_stats_row"),
-        ) {
-            SpChip(
-                text = "${detail.gameCount} games",
-                modifier = Modifier.testTag("developer_game_count"),
-            )
-            if (detail.avgRating > 0) {
-                SpChip(
-                    text = "${formatRating(detail.avgRating)} avg",
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconSmall),
+                    if (hasVisualOverflow || descriptionExpanded) {
+                        Text(
+                            text = if (descriptionExpanded) "Show less" else "Show more",
+                            style = SpTypography.LabelMedium,
+                            color = SpColor.Link,
+                            modifier = Modifier
+                                .clickable { descriptionExpanded = !descriptionExpanded }
+                                .testTag("developer_company_description_toggle"),
                         )
-                    },
-                    modifier = Modifier.testTag("developer_avg_rating"),
+                    }
+                }
+            }
+
+            // Metadata line: "Founded {year} · {country}"
+            val metaParts = buildList {
+                companyInfo?.foundedYear?.let { add("Founded $it") }
+                companyInfo?.country?.let { add(it) }
+            }
+            if (metaParts.isNotEmpty()) {
+                Text(
+                    text = metaParts.joinToString(" \u00b7 "),
+                    style = SpTypography.LabelMedium,
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.testTag("developer_company_metadata"),
                 )
             }
-            if (detail.consoles.isNotEmpty()) {
+
+            // Stat chips
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                modifier = Modifier.testTag("developer_stats_row"),
+            ) {
                 SpChip(
-                    text = "${detail.consoles.size} platforms",
-                    modifier = Modifier.testTag("developer_platform_count"),
+                    text = "${detail.gameCount} games",
+                    onGradient = true,
+                    modifier = Modifier.testTag("developer_game_count"),
                 )
+                if (detail.avgRating > 0) {
+                    SpChip(
+                        text = "\u2b50 ${formatRating(detail.avgRating)}",
+                        onGradient = true,
+                        modifier = Modifier.testTag("developer_avg_rating"),
+                    )
+                }
+                if (detail.consoles.isNotEmpty()) {
+                    SpChip(
+                        text = "${detail.consoles.size} platforms",
+                        onGradient = true,
+                        modifier = Modifier.testTag("developer_platform_count"),
+                    )
+                }
             }
         }
     }
@@ -351,109 +422,21 @@ internal fun UserStatItem(
 @Composable
 private fun LetterAvatar(
     name: String,
+    size: Dp = 56.dp,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
-            .size(56.dp)
+            .size(size)
             .clip(CircleShape)
             .background(SpColor.Primary.copy(alpha = 0.6f)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = name.take(1).uppercase(),
-            style = SpTypography.HeadlineMedium,
+            style = if (size >= 72.dp) SpTypography.HeadlineLarge else SpTypography.HeadlineMedium,
             color = SpColor.OnPrimary,
         )
-    }
-}
-
-// --- Company Description Section ---
-
-@Composable
-internal fun DeveloperCompanyDescription(
-    companyInfo: CompanyInfo,
-    modifier: Modifier = Modifier,
-) {
-    val description = companyInfo.description ?: return
-
-    var expanded by remember { mutableStateOf(false) }
-    var hasVisualOverflow by remember { mutableStateOf(false) }
-    val uriHandler = LocalUriHandler.current
-
-    Column(modifier = modifier) {
-        Column(
-            modifier = Modifier.animateContentSize(),
-        ) {
-            Text(
-                text = description,
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackgroundSecondary,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis,
-                onTextLayout = { result ->
-                    if (!expanded) hasVisualOverflow = result.hasVisualOverflow
-                },
-                modifier = Modifier.testTag("developer_company_description"),
-            )
-
-            if (hasVisualOverflow || expanded) {
-                Spacer(Modifier.height(SpSpacing.XSmall))
-
-                Text(
-                    text = if (expanded) "Show less" else "Show more",
-                    style = SpTypography.LabelMedium,
-                    color = SpColor.Link,
-                    modifier = Modifier
-                        .clickable { expanded = !expanded }
-                        .testTag("developer_company_description_toggle"),
-                )
-            }
-        }
-
-        // Metadata line: "Founded {year} — {country}"
-        val metaParts = buildList {
-            companyInfo.foundedYear?.let { add("Founded $it") }
-            companyInfo.country?.let { add(it) }
-        }
-        if (metaParts.isNotEmpty()) {
-            Spacer(Modifier.height(SpSpacing.Medium))
-            Text(
-                text = metaParts.joinToString(" \u2014 "),
-                style = SpTypography.LabelMedium,
-                color = SpColor.OnBackgroundTertiary,
-                modifier = Modifier.testTag("developer_company_metadata"),
-            )
-        }
-
-        // External links
-        val websiteUrl = companyInfo.websiteUrl
-        val wikipediaUrl = companyInfo.wikipediaUrl
-        if (!websiteUrl.isNullOrBlank() || !wikipediaUrl.isNullOrBlank()) {
-            Spacer(Modifier.height(SpSpacing.Medium))
-            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
-                if (!websiteUrl.isNullOrBlank()) {
-                    Text(
-                        text = "Website",
-                        style = SpTypography.LabelMedium,
-                        color = SpColor.Link,
-                        modifier = Modifier
-                            .clickable { uriHandler.openUri(websiteUrl) }
-                            .testTag("developer_company_website_link"),
-                    )
-                }
-                if (!wikipediaUrl.isNullOrBlank()) {
-                    Text(
-                        text = "Wikipedia",
-                        style = SpTypography.LabelMedium,
-                        color = SpColor.Link,
-                        modifier = Modifier
-                            .clickable { uriHandler.openUri(wikipediaUrl) }
-                            .testTag("developer_company_wikipedia_link"),
-                    )
-                }
-            }
-        }
     }
 }
 
