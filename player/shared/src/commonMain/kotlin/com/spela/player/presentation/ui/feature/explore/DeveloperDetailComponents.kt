@@ -10,6 +10,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -60,6 +62,7 @@ import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpHeroCover
@@ -72,129 +75,116 @@ import com.spela.player.util.formatRating
 
 // --- (a) Hero Banner ---
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DeveloperHeroBanner(
     detail: DeveloperDetail,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp),
+    Column(
+        modifier = modifier.fillMaxWidth(),
     ) {
-        if (detail.heroUrl != null) {
-            SpHeroCover(
-                imageUrl = detail.heroUrl,
-                contentDescription = "${detail.name} hero image",
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            // Dark gradient fallback
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                SpColor.Primary.copy(alpha = 0.3f),
-                                SpColor.Background,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+        ) {
+            if (detail.heroUrl != null) {
+                SpHeroCover(
+                    imageUrl = detail.heroUrl,
+                    contentDescription = "${detail.name} hero image",
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                // Dark gradient fallback
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    SpColor.Primary.copy(alpha = 0.3f),
+                                    SpColor.Background,
+                                ),
                             ),
                         ),
-                    ),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(SpSpacing.Medium))
+
+        // Name row with logo
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            // Company logo or letter avatar fallback
+            val logoUrl = detail.companyInfo?.logoUrl
+            if (logoUrl != null) {
+                SubcomposeAsyncImage(
+                    model = logoUrl,
+                    contentDescription = "${detail.name} logo",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .testTag("developer_company_logo"),
+                    contentScale = ContentScale.Fit,
+                    loading = {
+                        LetterAvatar(detail.name)
+                    },
+                    error = {
+                        LetterAvatar(detail.name)
+                    },
+                )
+            } else {
+                LetterAvatar(
+                    name = detail.name,
+                    modifier = Modifier.testTag("developer_letter_avatar"),
+                )
+            }
+
+            Text(
+                text = detail.name,
+                style = SpTypography.DisplaySmall,
+                color = SpColor.OnBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag("developer_hero_name"),
             )
         }
 
-        // Content overlaid on bottom
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
-                .padding(bottom = SpSpacing.Medium),
+        Spacer(Modifier.height(SpSpacing.Small))
+
+        // Stats chips
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            modifier = Modifier.testTag("developer_stats_row"),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            ) {
-                // Company logo or letter avatar fallback
-                val logoUrl = detail.companyInfo?.logoUrl
-                if (logoUrl != null) {
-                    SubcomposeAsyncImage(
-                        model = logoUrl,
-                        contentDescription = "${detail.name} logo",
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .testTag("developer_company_logo"),
-                        contentScale = ContentScale.Fit,
-                        loading = {
-                            LetterAvatar(detail.name)
-                        },
-                        error = {
-                            LetterAvatar(detail.name)
-                        },
-                    )
-                } else {
-                    LetterAvatar(
-                        name = detail.name,
-                        modifier = Modifier.testTag("developer_letter_avatar"),
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = detail.name,
-                        style = SpTypography.DisplaySmall,
-                        color = SpColor.OnBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.testTag("developer_hero_name"),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(SpSpacing.Small))
-
-            // Stats row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                modifier = Modifier.testTag("developer_stats_row"),
-            ) {
-                AnimatedStatText(
-                    targetValue = detail.gameCount,
-                    suffix = " games",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier.testTag("developer_game_count"),
-                )
-                if (detail.avgRating > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                    ) {
+            SpChip(
+                text = "${detail.gameCount} games",
+                modifier = Modifier.testTag("developer_game_count"),
+            )
+            if (detail.avgRating > 0) {
+                SpChip(
+                    text = "${formatRating(detail.avgRating)} avg",
+                    leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
                             tint = SpColor.Rating,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(SpSpacing.IconSmall),
                         )
-                        Text(
-                            text = formatRating(detail.avgRating),
-                            style = SpTypography.BodyMedium,
-                            color = SpColor.OnBackgroundSecondary,
-                            modifier = Modifier.testTag("developer_avg_rating"),
-                        )
-                    }
-                }
-                if (detail.consoles.isNotEmpty()) {
-                    AnimatedStatText(
-                        targetValue = detail.consoles.size,
-                        suffix = " platforms",
-                        style = SpTypography.BodyMedium,
-                        color = SpColor.OnBackgroundSecondary,
-                        modifier = Modifier.testTag("developer_platform_count"),
-                    )
-                }
+                    },
+                    modifier = Modifier.testTag("developer_avg_rating"),
+                )
+            }
+            if (detail.consoles.isNotEmpty()) {
+                SpChip(
+                    text = "${detail.consoles.size} platforms",
+                    modifier = Modifier.testTag("developer_platform_count"),
+                )
             }
         }
     }
@@ -338,7 +328,7 @@ internal fun UserStatItem(
             imageVector = icon,
             contentDescription = null,
             tint = SpColor.Primary,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(SpSpacing.IconDefault),
         )
         Spacer(Modifier.height(SpSpacing.XSmall))
         Text(
@@ -365,7 +355,7 @@ private fun LetterAvatar(
 ) {
     Box(
         modifier = modifier
-            .size(48.dp)
+            .size(56.dp)
             .clip(CircleShape)
             .background(SpColor.Primary.copy(alpha = 0.6f)),
         contentAlignment = Alignment.Center,
@@ -474,70 +464,61 @@ internal fun DeveloperAtAGlance(
     detail: DeveloperDetail,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = "At a Glance",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_at_a_glance_header"),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .testTag("developer_at_a_glance_row"),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        AnimatedGlanceStatItem(
+            icon = Icons.Filled.Gamepad,
+            targetValue = detail.gameCount,
+            label = "Games",
+            modifier = Modifier.testTag("developer_glance_games"),
         )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .testTag("developer_at_a_glance_row"),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
-            AnimatedGlanceStatItem(
-                icon = Icons.Filled.Gamepad,
-                targetValue = detail.gameCount,
-                label = "Games",
-                modifier = Modifier.testTag("developer_glance_games"),
+
+        val activeYears = detail.activeYears
+        if (activeYears != null && activeYears.first > 0) {
+            val yearRange = if (activeYears.first == activeYears.last) {
+                "${activeYears.first}"
+            } else {
+                "${activeYears.first}-${activeYears.last}"
+            }
+            GlanceStatItem(
+                icon = Icons.Filled.CalendarMonth,
+                value = yearRange,
+                label = "Active",
+                modifier = Modifier.testTag("developer_glance_active_years"),
             )
+        }
 
-            val activeYears = detail.activeYears
-            if (activeYears != null && activeYears.first > 0) {
-                val yearRange = if (activeYears.first == activeYears.last) {
-                    "${activeYears.first}"
-                } else {
-                    "${activeYears.first}-${activeYears.last}"
-                }
-                GlanceStatItem(
-                    icon = Icons.Filled.CalendarMonth,
-                    value = yearRange,
-                    label = "Active",
-                    modifier = Modifier.testTag("developer_glance_active_years"),
-                )
-            }
+        val primaryGenre = detail.primaryGenre
+        if (!primaryGenre.isNullOrBlank()) {
+            GlanceStatItem(
+                icon = Icons.Filled.Category,
+                value = primaryGenre,
+                label = "Primary genre",
+                modifier = Modifier.testTag("developer_glance_primary_genre"),
+            )
+        }
 
-            val primaryGenre = detail.primaryGenre
-            if (!primaryGenre.isNullOrBlank()) {
-                GlanceStatItem(
-                    icon = Icons.Filled.Category,
-                    value = primaryGenre,
-                    label = "Primary genre",
-                    modifier = Modifier.testTag("developer_glance_primary_genre"),
-                )
-            }
+        if (detail.consoles.isNotEmpty()) {
+            AnimatedGlanceStatItem(
+                icon = Icons.Filled.SportsEsports,
+                targetValue = detail.consoles.size,
+                label = "Platforms",
+                modifier = Modifier.testTag("developer_glance_platforms"),
+            )
+        }
 
-            if (detail.consoles.isNotEmpty()) {
-                AnimatedGlanceStatItem(
-                    icon = Icons.Filled.SportsEsports,
-                    targetValue = detail.consoles.size,
-                    label = "Platforms",
-                    modifier = Modifier.testTag("developer_glance_platforms"),
-                )
-            }
-
-            if (detail.avgRating > 0) {
-                GlanceStatItem(
-                    icon = Icons.Filled.Star,
-                    value = formatRating(detail.avgRating),
-                    label = "Avg rating",
-                    modifier = Modifier.testTag("developer_glance_avg_rating"),
-                )
-            }
+        if (detail.avgRating > 0) {
+            GlanceStatItem(
+                icon = Icons.Filled.Star,
+                value = formatRating(detail.avgRating),
+                label = "Avg rating",
+                modifier = Modifier.testTag("developer_glance_avg_rating"),
+            )
         }
     }
 }
@@ -563,7 +544,7 @@ private fun GlanceStatItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = SpColor.Primary,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(SpSpacing.IconDefault),
             )
             Spacer(Modifier.height(SpSpacing.XXSmall))
             Text(
@@ -585,45 +566,6 @@ private fun GlanceStatItem(
 }
 
 // --- Animated Stat Counter ---
-
-/**
- * Animates an integer value from 0 to [targetValue] on first composition.
- * Respects [LocalAnimationsEnabled] — when false (e.g. in tests), the final value
- * is shown immediately without animation.
- */
-@Composable
-private fun AnimatedStatText(
-    targetValue: Int,
-    suffix: String = "",
-    style: androidx.compose.ui.text.TextStyle = SpTypography.BodyMedium,
-    color: Color = SpColor.OnBackgroundSecondary,
-    modifier: Modifier = Modifier,
-) {
-    val animationsEnabled = LocalAnimationsEnabled.current
-    val animatable = remember { Animatable(0f) }
-
-    LaunchedEffect(targetValue) {
-        if (animationsEnabled && targetValue > 0) {
-            animatable.snapTo(0f)
-            animatable.animateTo(
-                targetValue = targetValue.toFloat(),
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = FastOutSlowInEasing,
-                ),
-            )
-        } else {
-            animatable.snapTo(targetValue.toFloat())
-        }
-    }
-
-    Text(
-        text = "${animatable.value.toInt()}$suffix",
-        style = style,
-        color = color,
-        modifier = modifier,
-    )
-}
 
 /**
  * GlanceStatItem variant that animates a numeric value from 0 to [targetValue].
@@ -667,7 +609,7 @@ private fun AnimatedGlanceStatItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = SpColor.Primary,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(SpSpacing.IconDefault),
             )
             Spacer(Modifier.height(SpSpacing.XXSmall))
             Text(

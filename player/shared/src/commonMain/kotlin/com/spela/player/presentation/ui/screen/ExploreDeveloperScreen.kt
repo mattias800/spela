@@ -84,18 +84,19 @@ fun ExploreDeveloperScreen(
                 state.detail != null -> {
                     val detail = state.detail!!
 
-                    // Hero Banner rendered outside SpSectionList so it can be full-width
-                    // without relying on negative padding (which is not allowed in Compose).
-                    DeveloperHeroBanner(
-                        detail = detail,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("developer_hero_banner"),
-                    )
-
                     SpSectionList(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                     ) {
+                        // 1. Hero Banner — scrolls with content
+                        item {
+                            DeveloperHeroBanner(
+                                detail = detail,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("developer_hero_banner"),
+                            )
+                        }
+
                         // 2. Related chips (publishers + related developers)
                         val hasPublishers = detail.publishers.isNotEmpty()
                         val hasRelated = detail.relatedDevelopers.isNotEmpty()
@@ -151,10 +152,12 @@ fun ExploreDeveloperScreen(
 
                         // 4. At a Glance
                         item {
-                            DeveloperAtAGlance(
-                                detail = detail,
-                                modifier = Modifier.testTag("developer_at_a_glance_section"),
-                            )
+                            SpTitledSection(title = "At a Glance") {
+                                DeveloperAtAGlance(
+                                    detail = detail,
+                                    modifier = Modifier.testTag("developer_at_a_glance_section"),
+                                )
+                            }
                         }
 
                         // 5. Top Rated

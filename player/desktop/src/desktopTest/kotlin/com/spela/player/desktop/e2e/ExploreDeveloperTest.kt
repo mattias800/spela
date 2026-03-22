@@ -539,7 +539,6 @@ class ExploreDeveloperTest {
         onNodeWithTag("developer_detail_content")
             .performScrollToNode(hasTestTag("developer_at_a_glance_section"))
         onNodeWithTag("developer_at_a_glance_section").assertExists()
-        onNodeWithTag("developer_at_a_glance_header").assertExists()
         onNodeWithText("At a Glance").assertExists()
         onNodeWithTag("developer_at_a_glance_row").assertExists()
     }
