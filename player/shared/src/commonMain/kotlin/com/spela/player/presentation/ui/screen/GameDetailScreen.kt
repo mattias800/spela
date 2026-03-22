@@ -175,38 +175,22 @@ fun GameDetailScreen(
             backgroundColors = backgroundColors,
             heroUrl = game.heroUrl ?: detail.screenshots.firstOrNull(),
             heroContent = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    // Title
-                    Text(
-                        text = game.title,
-                        style = SpTypography.HeadlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    // Badges: console, region, verification
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                    ) {
-                        SpConsoleChip(
-                            consoleName = game.consoleName,
-                            consoleColor = getConsoleColor(game.consoleName),
-                            onGradient = true,
-                        )
-                        game.region?.takeIf { it.isNotBlank() }?.let { region ->
-                            SpRegionChip(region = region, onGradient = true)
-                        }
-                        VerificationChip(
-                            verificationStatus = game.verificationStatus,
-                            verificationTag = game.verificationTag,
-                        )
-                    }
-                }
+                GameHeroContent(
+                    gameId = gameId,
+                    game = game,
+                    state = state,
+                    hasSaves = state.sessions.isNotEmpty(),
+                    missingBiosFiles = state.missingBiosFiles,
+                    onPlay = onPlay,
+                    onPlayFresh = onPlayFresh,
+                    onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                    onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
+                    onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
+                    onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },
+                    onCreateNetplay = onCreateNetplay,
+                    onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
+                    syncState = syncState,
+                )
             },
             coverArt = { modifier, isPortrait ->
                 // Read coverUrl from state delegate (not snapshot) so
@@ -575,64 +559,7 @@ private fun GameInfoContent(
     onNavigateToDeveloper: ((name: String) -> Unit)? = null,
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
 ) {
-    // Game info header — title, badges, and actions
-    Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Default)) {
-
-    // Title and badges are in the hero banner in portrait mode;
-    // only show them here in landscape mode.
-    if (!isPortrait) {
-        // Title row with trophy icon if achievements exist
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            Text(
-                text = game.title,
-                style = SpTypography.DisplaySmall,
-                color = SpColor.OnBackground,
-                modifier = Modifier.weight(1f, fill = false).semantics { heading() },
-            )
-            if (state.achievements.isNotEmpty()) {
-                Icon(
-                    imageVector = Icons.Filled.EmojiEvents,
-                    contentDescription = "Has achievements",
-                    tint = SpColor.Warning,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-
-
-        // Badges row: console, verification, region, IGDB rating, community rating
-        @OptIn(ExperimentalLayoutApi::class)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpConsoleChip(
-                consoleName = game.consoleName,
-                consoleColor = getConsoleColor(game.consoleName),
-                onGradient = true,
-            )
-            VerificationChip(
-                verificationStatus = game.verificationStatus,
-                verificationTag = game.verificationTag,
-            )
-            game.region?.takeIf { it.isNotBlank() }?.let { region ->
-                SpRegionChip(region = region, onGradient = true)
-            }
-            if (game.rating > 0) {
-                IgdbRatingStars(rating = game.rating)
-            }
-            if (game.averageRating > 0) {
-                CommunityRatingBadge(
-                    averageRating = game.averageRating,
-                    ratingCount = game.ratingCount,
-                )
-            }
-        }
-    }
+    // Game info content — title, badges, and action buttons are in the hero banner
 
     if (state.isScraping) {
         Row(
@@ -653,137 +580,7 @@ private fun GameInfoContent(
     }
 
 
-    // Action buttons row: Play/Download + Actions menu + playtime chips
-    val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
-
-    @OptIn(ExperimentalLayoutApi::class)
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (state.isGameCached) {
-            if (game.playable) {
-                // Playable game: show Play/Resume with split menu
-                val menuItems = buildList {
-                    if (hasSaves && onPlayFresh != null) {
-                        add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
-                    }
-                    if (onCreateNetplay != null && supportsNetplay) {
-                        add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
-                    }
-                    add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
-                }
-
-                val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
-                val isSyncing = syncState != null
-                val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
-                val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
-                SpSplitButton(
-                    text = if (hasSaves) "Resume" else "Play",
-                    onClick = { onPlay(gameId) },
-                    enabled = !hasRequiredBiosMissing && !isSyncing,
-                    isLoading = false,
-                    modifier = Modifier
-                        .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
-                        .semantics {
-                            contentDescription = when {
-                                hasRequiredBiosMissing -> "Play disabled, BIOS required"
-                                isSyncing -> "Play disabled, syncing"
-                                hasSaves -> "Resume ${game.title}"
-                                else -> "Play ${game.title}"
-                            }
-                        },
-                    menuItems = menuItems,
-                    onGradient = true,
-                )
-            } else {
-                // Non-playable game (downloaded): show Delete Download button only
-                SpButton(
-                    text = "Delete Download",
-                    onClick = onDeleteLocalGame,
-                    style = SpButtonStyle.Ghost,
-                    onGradient = true,
-                )
-            }
-        } else {
-            val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
-            val isBusy = state.isDownloading || isActivelyDownloading
-
-            val menuItems = buildList {
-                if (onCreateNetplay != null && supportsNetplay) {
-                    add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
-                }
-            }
-
-            val shadowShape = RoundedCornerShape(SpSpacing.RadiusLarge)
-            val shadowColor = SpColor.Primary.copy(alpha = 0.20f)
-            SpSplitButton(
-                text = if (isBusy) "Downloading..." else "Download",
-                onClick = onDownloadGame,
-                modifier = Modifier
-                    .shadow(10.dp, shadowShape, ambientColor = shadowColor, spotColor = shadowColor)
-                    .semantics {
-                        contentDescription = if (isBusy) "Downloading ${game.title}"
-                        else "Download ${game.title}"
-                    },
-                isLoading = isBusy,
-                enabled = !isBusy,
-                menuItems = menuItems,
-                onGradient = true,
-            )
-        }
-
-        GameActionsMenu(
-            isFavorite = game.isFavorite,
-            isInPlayLater = game.isInPlayLater,
-            onToggleFavorite = onToggleFavorite,
-            onTogglePlayLater = onTogglePlayLater,
-            onAddToCollection = onAddToCollection,
-            onGradient = true,
-        )
-
-        // "External Emulator" indicator for non-playable games
-        if (!game.playable) {
-            SpChip(
-                text = "External Emulator",
-                onGradient = true,
-            )
-        }
-
-        // Playtime + last played as highlighted chips (inline with buttons)
-        if (game.totalPlayTime > 0) {
-            SpChip(
-                text = formatPlayTime(game.totalPlayTime),
-                onGradient = true,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.AccessTime,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.65f),
-                        modifier = Modifier.size(14.dp),
-                    )
-                },
-            )
-        }
-        game.lastPlayedAt?.let { timestamp ->
-            val relative = formatRelativeTime(timestamp)
-            if (relative.isNotEmpty()) {
-                SpChip(
-                    text = "Last played $relative",
-                    onGradient = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.History,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.65f),
-                            modifier = Modifier.size(14.dp),
-                        )
-                    },
-                )
-            }
-        }
-    }
+    // Title, badges, and action buttons are now in the hero banner (GameHeroContent)
 
     // Sync status row (shown while pre-launch or post-exit sync is in progress)
     syncState?.takeIf { !it.isTimedOut }?.let { sync ->
@@ -868,8 +665,6 @@ private fun GameInfoContent(
         }
     }
 
-
-    } // end of tightly-spaced header Column
 
     // Description (plain text, matching web UI)
     game.description?.let { description ->
@@ -1161,6 +956,174 @@ private fun RomHacksSection(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Content rendered inside the hero banner's contrast backdrop in portrait mode.
+ * Shows game title, badges, ratings, and action buttons.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GameHeroContent(
+    gameId: String,
+    game: Game,
+    state: GameDetailState,
+    hasSaves: Boolean,
+    missingBiosFiles: List<BiosMissingFile>,
+    onPlay: (String) -> Unit,
+    onPlayFresh: ((String) -> Unit)?,
+    onDownloadGame: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onTogglePlayLater: () -> Unit,
+    onAddToCollection: () -> Unit,
+    onCreateNetplay: ((String) -> Unit)?,
+    onDeleteLocalGame: () -> Unit,
+    syncState: GameSyncState?,
+) {
+    val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        // Title
+        Text(
+            text = game.title,
+            style = SpTypography.DisplaySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        // Badges: console, region, verification, ratings
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpConsoleChip(
+                consoleName = game.consoleName,
+                consoleColor = getConsoleColor(game.consoleName),
+                onGradient = true,
+            )
+            game.region?.takeIf { it.isNotBlank() }?.let { region ->
+                SpRegionChip(region = region, onGradient = true)
+            }
+            VerificationChip(
+                verificationStatus = game.verificationStatus,
+                verificationTag = game.verificationTag,
+            )
+            if (game.rating > 0) {
+                IgdbRatingStars(rating = game.rating)
+            }
+            if (game.averageRating > 0) {
+                CommunityRatingBadge(
+                    averageRating = game.averageRating,
+                    ratingCount = game.ratingCount,
+                )
+            }
+        }
+
+        // Action buttons: Play/Download + Actions menu + playtime
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (state.isGameCached) {
+                if (game.playable) {
+                    val menuItems = buildList {
+                        if (hasSaves && onPlayFresh != null) {
+                            add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+                        }
+                        if (onCreateNetplay != null && supportsNetplay) {
+                            add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                        }
+                        add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+                    }
+                    val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
+                    val isSyncing = syncState != null
+                    SpSplitButton(
+                        text = if (hasSaves) "Resume" else "Play",
+                        onClick = { onPlay(gameId) },
+                        enabled = !hasRequiredBiosMissing && !isSyncing,
+                        isLoading = false,
+                        menuItems = menuItems,
+                        onGradient = true,
+                    )
+                } else {
+                    SpButton(
+                        text = "Delete Download",
+                        onClick = onDeleteLocalGame,
+                        style = SpButtonStyle.Ghost,
+                        onGradient = true,
+                    )
+                }
+            } else {
+                val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+                val isBusy = state.isDownloading || isActivelyDownloading
+                val menuItems = buildList {
+                    if (onCreateNetplay != null && supportsNetplay) {
+                        add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                    }
+                }
+                SpSplitButton(
+                    text = if (isBusy) "Downloading..." else "Download",
+                    onClick = onDownloadGame,
+                    isLoading = isBusy,
+                    enabled = !isBusy,
+                    menuItems = menuItems,
+                    onGradient = true,
+                )
+            }
+
+            GameActionsMenu(
+                isFavorite = game.isFavorite,
+                isInPlayLater = game.isInPlayLater,
+                onToggleFavorite = onToggleFavorite,
+                onTogglePlayLater = onTogglePlayLater,
+                onAddToCollection = onAddToCollection,
+                onGradient = true,
+            )
+
+            // Playtime + last played grouped so they wrap together
+            if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                    if (game.totalPlayTime > 0) {
+                        SpChip(
+                            text = formatPlayTime(game.totalPlayTime),
+                            onGradient = true,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.AccessTime,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.65f),
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            },
+                        )
+                    }
+                    game.lastPlayedAt?.let { timestamp ->
+                        val relative = formatRelativeTime(timestamp)
+                        if (relative.isNotEmpty()) {
+                            SpChip(
+                                text = "Last played $relative",
+                                onGradient = true,
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.History,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.65f),
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                },
+                            )
+                        }
                     }
                 }
             }
