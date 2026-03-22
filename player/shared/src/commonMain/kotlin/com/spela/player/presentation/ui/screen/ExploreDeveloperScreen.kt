@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
@@ -85,19 +84,18 @@ fun ExploreDeveloperScreen(
                 state.detail != null -> {
                     val detail = state.detail!!
 
+                    // Hero Banner rendered outside SpSectionList so it can be full-width
+                    // without relying on negative padding (which is not allowed in Compose).
+                    DeveloperHeroBanner(
+                        detail = detail,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("developer_hero_banner"),
+                    )
+
                     SpSectionList(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                     ) {
-                        // 1. Hero Banner (full-width via negative padding)
-                        item {
-                            DeveloperHeroBanner(
-                                detail = detail,
-                                modifier = Modifier
-                                    .padding(horizontal = -SpSpacing.ScreenHorizontal)
-                                    .testTag("developer_hero_banner"),
-                            )
-                        }
-
                         // 2. Related chips (publishers + related developers)
                         val hasPublishers = detail.publishers.isNotEmpty()
                         val hasRelated = detail.relatedDevelopers.isNotEmpty()
