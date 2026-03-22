@@ -42,6 +42,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpStatusChip
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.SpTitledSection
@@ -241,10 +242,9 @@ private fun SessionItem(
                         },
                     )
                     if (isCurrent) {
-                        SpChip(
+                        SpStatusChip(
                             text = "Current",
-                            color = SpColor.Primary,
-                            isSelected = true,
+                            color = SpColor.Success,
                             modifier = Modifier.testTag("session_current_badge"),
                         )
                     }
