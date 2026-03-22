@@ -10,8 +10,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,13 +30,10 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gamepad
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
@@ -63,19 +58,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
-import com.spela.player.domain.model.ActiveYears
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
-import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.RatingDistribution
-import com.spela.player.domain.model.RelatedDeveloper
-import com.spela.player.domain.model.TimelineEntry
-import com.spela.player.domain.model.TimelineGame
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -223,31 +211,20 @@ internal fun DeveloperTopRatedRow(
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(top = SpSpacing.Large)) {
-        Text(
-            text = "Top Rated",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
-                .testTag("developer_top_rated_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
-            items(
-                items = topGames,
-                key = { "top_${it.id}" },
-            ) { game ->
-                TopRatedGameCard(
-                    game = game,
-                    onClick = { onGameSelected(game.id) },
-                )
-            }
+    LazyRow(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        items(
+            items = topGames,
+            key = { "top_${it.id}" },
+        ) { game ->
+            TopRatedGameCard(
+                game = game,
+                onClick = { onGameSelected(game.id) },
+            )
         }
-        Spacer(Modifier.height(SpSpacing.Large))
     }
 }
 
@@ -309,64 +286,6 @@ internal fun TopRatedGameCard(
     }
 }
 
-// --- (c) Genre Breakdown ---
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun DeveloperGenreBreakdown(
-    genres: List<Pair<String, Int>>,
-    totalGames: Int,
-    selectedGenre: String?,
-    onGenreSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
-    ) {
-        Text(
-            text = "Genres",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_genre_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            // "All" chip
-            SpChip(
-                text = "All ($totalGames)",
-                onClick = { onGenreSelected(null) },
-                isSelected = selectedGenre == null,
-                modifier = Modifier
-                    .testTag("developer_genre_chip_all")
-                    .semantics {
-                        contentDescription = "All, $totalGames games"
-                        role = Role.Button
-                    },
-            )
-
-            genres.forEach { (genre, count) ->
-                val isSelected = genre.equals(selectedGenre, ignoreCase = true)
-                SpChip(
-                    text = "$genre ($count)",
-                    onClick = { onGenreSelected(if (isSelected) null else genre) },
-                    isSelected = isSelected,
-                    modifier = Modifier
-                        .testTag("developer_genre_chip_$genre")
-                        .semantics {
-                            contentDescription = "$genre, $count games"
-                            role = Role.Button
-                        },
-                )
-            }
-        }
-        Spacer(Modifier.height(SpSpacing.Large))
-    }
-}
-
 // --- (d) User Stats Card ---
 
 @Composable
@@ -376,95 +295,74 @@ internal fun DeveloperUserStatsCard(
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
-    ) {
-        Text(
-            text = "Your Stats",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_user_stats_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        SpCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("developer_user_stats_card"),
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            Column(
-                modifier = Modifier.padding(SpSpacing.Default),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    UserStatItem(
-                        icon = Icons.Filled.Timer,
-                        value = formatPlayTime(userStats.totalPlayTime),
-                        label = "Play time",
-                        modifier = Modifier.testTag("developer_user_stat_playtime"),
-                    )
-                    UserStatItem(
-                        icon = Icons.Filled.SportsEsports,
-                        value = "${userStats.gamesPlayed}/$totalGames",
-                        label = "Played",
-                        modifier = Modifier.testTag("developer_user_stat_played"),
-                    )
-                    UserStatItem(
-                        icon = Icons.Filled.Favorite,
-                        value = "${userStats.favoriteCount}",
-                        label = "Favorites",
-                        modifier = Modifier.testTag("developer_user_stat_favorites"),
-                    )
-                }
+            UserStatItem(
+                icon = Icons.Filled.Timer,
+                value = formatPlayTime(userStats.totalPlayTime),
+                label = "Play time",
+                modifier = Modifier.testTag("developer_user_stat_playtime"),
+            )
+            UserStatItem(
+                icon = Icons.Filled.SportsEsports,
+                value = "${userStats.gamesPlayed}/$totalGames",
+                label = "Played",
+                modifier = Modifier.testTag("developer_user_stat_played"),
+            )
+            UserStatItem(
+                icon = Icons.Filled.Favorite,
+                value = "${userStats.favoriteCount}",
+                label = "Favorites",
+                modifier = Modifier.testTag("developer_user_stat_favorites"),
+            )
+        }
 
-                if (userStats.mostPlayedGame != null) {
-                    Spacer(Modifier.height(SpSpacing.Medium))
+        if (userStats.mostPlayedGame != null) {
+            Spacer(Modifier.height(SpSpacing.Medium))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            ) {
+                Text(
+                    text = "Most played:",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackgroundTertiary,
+                )
+                SpCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("developer_most_played_game"),
+                    onClick = { onGameSelected(userStats.mostPlayedGame.id) },
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.padding(SpSpacing.Small),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     ) {
-                        Text(
-                            text = "Most played:",
-                            style = SpTypography.LabelMedium,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                        SpCard(
+                        SpCoverArt(
+                            imageUrl = userStats.mostPlayedGame.coverUrl,
+                            contentDescription = "${userStats.mostPlayedGame.title} cover",
                             modifier = Modifier
-                                .weight(1f)
-                                .testTag("developer_most_played_game"),
-                            onClick = { onGameSelected(userStats.mostPlayedGame.id) },
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(SpSpacing.Small),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                            ) {
-                                SpCoverArt(
-                                    imageUrl = userStats.mostPlayedGame.coverUrl,
-                                    contentDescription = "${userStats.mostPlayedGame.title} cover",
-                                    modifier = Modifier
-                                        .width(32.dp)
-                                        .height(42.dp)
-                                        .clip(RoundedCornerShape(SpSpacing.RadiusSmall)),
-                                    aspectRatio = 0.75f,
-                                )
-                                Text(
-                                    text = userStats.mostPlayedGame.title,
-                                    style = SpTypography.TitleSmall,
-                                    color = SpColor.OnCard,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
+                                .width(32.dp)
+                                .height(42.dp)
+                                .clip(RoundedCornerShape(SpSpacing.RadiusSmall)),
+                            aspectRatio = 0.75f,
+                        )
+                        Text(
+                            text = userStats.mostPlayedGame.title,
+                            style = SpTypography.TitleSmall,
+                            color = SpColor.OnCard,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
         }
-        Spacer(Modifier.height(SpSpacing.Large))
     }
 }
 
@@ -498,127 +396,6 @@ internal fun UserStatItem(
             color = SpColor.OnBackgroundTertiary,
             textAlign = TextAlign.Center,
         )
-    }
-}
-
-// --- Game Item ---
-
-@Composable
-internal fun DeveloperGameItem(
-    game: Game,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.XSmall,
-            )
-            .testTag("developer_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.consoleName}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Medium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover art",
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(64.dp)
-                    .clip(RoundedCornerShape(SpSpacing.RadiusSmall)),
-                aspectRatio = 0.75f,
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    Text(
-                        text = game.consoleName,
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-
-                    if (game.rating > 0) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// --- (f) Publishers Section ---
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun DeveloperPublishersSection(
-    publishers: List<DeveloperDetailPublisher>,
-    onPublisherSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .padding(top = SpSpacing.Large),
-    ) {
-        Text(
-            text = "Publishers",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_publishers_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            publishers.forEach { publisher ->
-                SpChip(
-                    text = "${publisher.name} (${publisher.count})",
-                    onClick = { onPublisherSelected(publisher.name) },
-                    modifier = Modifier
-                        .testTag("developer_publisher_chip_${publisher.name}")
-                        .semantics {
-                            contentDescription = "${publisher.name}, ${publisher.count} games"
-                            role = Role.Button
-                        },
-                )
-            }
-        }
     }
 }
 
@@ -657,18 +434,7 @@ internal fun DeveloperCompanyDescription(
     var hasVisualOverflow by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
-    ) {
-        Text(
-            text = "About",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_company_about_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-
+    Column(modifier = modifier) {
         Column(
             modifier = Modifier.animateContentSize(),
         ) {
@@ -741,8 +507,6 @@ internal fun DeveloperCompanyDescription(
                 }
             }
         }
-
-        Spacer(Modifier.height(SpSpacing.Large))
     }
 }
 
@@ -753,11 +517,7 @@ internal fun DeveloperAtAGlance(
     detail: DeveloperDetail,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .padding(top = SpSpacing.Large),
-    ) {
+    Column(modifier = modifier) {
         Text(
             text = "At a Glance",
             style = SpTypography.HeadlineMedium,
@@ -822,7 +582,6 @@ internal fun DeveloperAtAGlance(
                 )
             }
         }
-        Spacer(Modifier.height(SpSpacing.Large))
     }
 }
 
@@ -865,222 +624,6 @@ private fun GlanceStatItem(
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-// --- Release Timeline ---
-
-@Composable
-internal fun DeveloperTimeline(
-    timeline: List<TimelineEntry>,
-    onGameSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.padding(top = SpSpacing.Large)) {
-        Text(
-            text = "Release Timeline",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
-                .testTag("developer_timeline_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large),
-            modifier = Modifier.testTag("developer_timeline_row"),
-        ) {
-            items(
-                items = timeline,
-                key = { "timeline_${it.year}" },
-            ) { entry ->
-                TimelineYearColumn(
-                    entry = entry,
-                    onGameSelected = onGameSelected,
-                )
-            }
-        }
-        Spacer(Modifier.height(SpSpacing.Large))
-    }
-}
-
-@Composable
-private fun TimelineYearColumn(
-    entry: TimelineEntry,
-    onGameSelected: (String) -> Unit,
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.testTag("developer_timeline_year_${entry.year}"),
-    ) {
-        Text(
-            text = "${entry.year}",
-            style = SpTypography.TitleSmall,
-            color = SpColor.Link,
-        )
-        Spacer(Modifier.height(SpSpacing.Small))
-        entry.games.forEach { game ->
-            TimelineGameThumb(
-                game = game,
-                onClick = { onGameSelected(game.id) },
-            )
-            Spacer(Modifier.height(SpSpacing.XSmall))
-        }
-    }
-}
-
-@Composable
-private fun TimelineGameThumb(
-    game: TimelineGame,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .width(SpSpacing.CoverSmallWidth)
-            .testTag("developer_timeline_game_${game.id}")
-            .semantics {
-                contentDescription = "${game.title}, ${game.rating.toInt()}"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Column {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = SpSpacing.RadiusSmall, topEnd = SpSpacing.RadiusSmall)),
-                cornerRadius = 0.dp,
-            )
-            Text(
-                text = game.title,
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnCard,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(SpSpacing.XXSmall),
-            )
-        }
-    }
-}
-
-// --- Rating Distribution ---
-
-@Composable
-internal fun DeveloperRatingDistribution(
-    distribution: RatingDistribution,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .padding(top = SpSpacing.Large),
-    ) {
-        Text(
-            text = "Rating Distribution",
-            style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
-            modifier = Modifier.testTag("developer_rating_distribution_header"),
-        )
-        Spacer(Modifier.height(SpSpacing.Medium))
-
-        SpCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("developer_rating_distribution_card"),
-        ) {
-            Column(
-                modifier = Modifier.padding(SpSpacing.Default),
-                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            ) {
-                val maxCount = maxOf(
-                    distribution.excellent,
-                    distribution.good,
-                    distribution.average,
-                    distribution.poor,
-                    distribution.unrated,
-                    1,
-                )
-                RatingBar(
-                    label = "Excellent",
-                    count = distribution.excellent,
-                    maxCount = maxCount,
-                    color = SpColor.Success,
-                    testTag = "developer_rating_bar_excellent",
-                )
-                RatingBar(
-                    label = "Good",
-                    count = distribution.good,
-                    maxCount = maxCount,
-                    color = SpColor.Rating,
-                    testTag = "developer_rating_bar_good",
-                )
-                RatingBar(
-                    label = "Average",
-                    count = distribution.average,
-                    maxCount = maxCount,
-                    color = SpColor.Warning,
-                    testTag = "developer_rating_bar_average",
-                )
-                RatingBar(
-                    label = "Poor",
-                    count = distribution.poor,
-                    maxCount = maxCount,
-                    color = SpColor.Error,
-                    testTag = "developer_rating_bar_poor",
-                )
-                RatingBar(
-                    label = "Unrated",
-                    count = distribution.unrated,
-                    maxCount = maxCount,
-                    color = SpColor.OnBackgroundTertiary,
-                    testTag = "developer_rating_bar_unrated",
-                )
-            }
-        }
-        Spacer(Modifier.height(SpSpacing.Large))
-    }
-}
-
-@Composable
-private fun RatingBar(
-    label: String,
-    count: Int,
-    maxCount: Int,
-    color: Color,
-    testTag: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(testTag),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        Text(
-            text = label,
-            style = SpTypography.LabelMedium,
-            color = SpColor.OnBackgroundSecondary,
-            modifier = Modifier.width(72.dp),
-        )
-        LinearProgressIndicator(
-            progress = { if (maxCount > 0) count.toFloat() / maxCount else 0f },
-            modifier = Modifier
-                .weight(1f)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = color,
-            trackColor = SpColor.SurfaceVariant,
-        )
-        Text(
-            text = "$count",
-            style = SpTypography.LabelMedium,
-            color = SpColor.OnBackgroundTertiary,
-            modifier = Modifier.width(28.dp),
-            textAlign = TextAlign.End,
-        )
     }
 }
 
@@ -1184,97 +727,6 @@ private fun AnimatedGlanceStatItem(
                 maxLines = 1,
                 textAlign = TextAlign.Center,
             )
-        }
-    }
-}
-
-// --- Related Developers Section ---
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun DeveloperRelatedDevelopersSection(
-    relatedDevelopers: List<RelatedDeveloper>,
-    onDeveloperSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
-            .padding(top = SpSpacing.Large),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.People,
-                contentDescription = null,
-                tint = SpColor.Primary,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = "Related Developers",
-                style = SpTypography.HeadlineMedium,
-                color = SpColor.OnBackground,
-                modifier = Modifier.testTag("developer_related_header"),
-            )
-        }
-        Spacer(Modifier.height(SpSpacing.Medium))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            relatedDevelopers.forEach { related ->
-                RelatedDeveloperCard(
-                    relatedDeveloper = related,
-                    onClick = { onDeveloperSelected(related.name) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RelatedDeveloperCard(
-    relatedDeveloper: RelatedDeveloper,
-    onClick: () -> Unit,
-) {
-    SpCard(
-        modifier = Modifier
-            .testTag("developer_related_card_${relatedDeveloper.name}")
-            .semantics {
-                contentDescription = "${relatedDeveloper.name}, ${relatedDeveloper.gameCount} games"
-                role = Role.Button
-            },
-        onClick = onClick,
-    ) {
-        Column(
-            modifier = Modifier.padding(SpSpacing.Medium),
-        ) {
-            Text(
-                text = relatedDeveloper.name,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnCard,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(SpSpacing.XXSmall))
-            Text(
-                text = "${relatedDeveloper.gameCount} games",
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-            if (relatedDeveloper.sharedPublishers.isNotEmpty()) {
-                Spacer(Modifier.height(SpSpacing.XXSmall))
-                Text(
-                    text = "via ${relatedDeveloper.sharedPublishers.joinToString(", ")}",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag("developer_related_publishers_${relatedDeveloper.name}"),
-                )
-            }
         }
     }
 }

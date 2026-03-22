@@ -1,20 +1,13 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
@@ -29,31 +22,27 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperAtAGlance
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
-import com.spela.player.presentation.ui.feature.explore.DeveloperGameItem
-import com.spela.player.presentation.ui.feature.explore.DeveloperGenreBreakdown
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
-import com.spela.player.presentation.ui.feature.explore.DeveloperPublishersSection
-import com.spela.player.presentation.ui.feature.explore.DeveloperRatingDistribution
-import com.spela.player.presentation.ui.feature.explore.DeveloperRelatedDevelopersSection
-import com.spela.player.presentation.ui.feature.explore.DeveloperTimeline
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
-import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
-import androidx.compose.material3.Text
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ExploreDeveloperScreen(
     name: String,
@@ -62,6 +51,7 @@ fun ExploreDeveloperScreen(
     onGameSelected: (String) -> Unit,
     onPublisherSelected: (String) -> Unit = {},
     onDeveloperSelected: (String) -> Unit = {},
+    onNavigateToGames: ((name: String, isDeveloper: Boolean) -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
@@ -94,31 +84,74 @@ fun ExploreDeveloperScreen(
 
                 state.detail != null -> {
                     val detail = state.detail!!
-                    LazyColumn(
+
+                    SpSectionList(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
-                        contentPadding = PaddingValues(bottom = SpSpacing.XXLarge),
                     ) {
-                        // 1. Hero Banner
+                        // 1. Hero Banner (full-width via negative padding)
                         item {
                             DeveloperHeroBanner(
                                 detail = detail,
-                                modifier = Modifier.testTag("developer_hero_banner"),
+                                modifier = Modifier
+                                    .padding(horizontal = -SpSpacing.ScreenHorizontal)
+                                    .testTag("developer_hero_banner"),
                             )
                         }
 
-                        // 2. Company Description (below hero banner)
-                        val companyInfo = detail.companyInfo
-                        if (companyInfo?.description != null) {
+                        // 2. Related chips (publishers + related developers)
+                        val hasPublishers = detail.publishers.isNotEmpty()
+                        val hasRelated = detail.relatedDevelopers.isNotEmpty()
+                        if (hasPublishers || hasRelated) {
                             item {
-                                Spacer(Modifier.height(SpSpacing.Large))
-                                DeveloperCompanyDescription(
-                                    companyInfo = companyInfo,
-                                    modifier = Modifier.testTag("developer_company_description_section"),
-                                )
+                                FlowRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("developer_related_chips"),
+                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                ) {
+                                    detail.publishers.forEach { publisher ->
+                                        SpChip(
+                                            text = "${publisher.name} (${publisher.count})",
+                                            onClick = { onPublisherSelected(publisher.name) },
+                                            modifier = Modifier
+                                                .testTag("developer_publisher_chip_${publisher.name}")
+                                                .semantics {
+                                                    contentDescription = "${publisher.name}, ${publisher.count} games"
+                                                    role = Role.Button
+                                                },
+                                        )
+                                    }
+                                    detail.relatedDevelopers.forEach { related ->
+                                        SpChip(
+                                            text = related.name,
+                                            onClick = { onDeveloperSelected(related.name) },
+                                            modifier = Modifier
+                                                .testTag("developer_related_chip_${related.name}")
+                                                .semantics {
+                                                    contentDescription = "${related.name}, ${related.gameCount} games"
+                                                    role = Role.Button
+                                                },
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        // 3. At a Glance stats row
+                        // 3. About (company description)
+                        val companyInfo = detail.companyInfo
+                        if (companyInfo?.description != null) {
+                            item {
+                                SpTitledSection(title = "About") {
+                                    DeveloperCompanyDescription(
+                                        companyInfo = companyInfo,
+                                        modifier = Modifier.testTag("developer_company_description_section"),
+                                    )
+                                }
+                            }
+                        }
+
+                        // 4. At a Glance
                         item {
                             DeveloperAtAGlance(
                                 detail = detail,
@@ -126,189 +159,44 @@ fun ExploreDeveloperScreen(
                             )
                         }
 
-                        // 4. Top Rated Row
-                        if (detail.topGames.isNotEmpty() && detail.gameCount >= 5) {
+                        // 5. Top Rated
+                        if (detail.topGames.size >= 3) {
                             item {
-                                DeveloperTopRatedRow(
-                                    topGames = detail.topGames,
-                                    onGameSelected = onGameSelected,
-                                    modifier = Modifier.testTag("developer_top_rated_section"),
-                                )
-                            }
-                        }
-
-                        // 5. Release Timeline
-                        if (detail.timeline.isNotEmpty()) {
-                            item {
-                                DeveloperTimeline(
-                                    timeline = detail.timeline,
-                                    onGameSelected = onGameSelected,
-                                    modifier = Modifier.testTag("developer_timeline_section"),
-                                )
-                            }
-                        }
-
-                        // 6. Rating Distribution (only shown when 5+ rated games)
-                        val ratingDist = detail.ratingDistribution
-                        if (ratingDist != null && ratingDist.totalRated >= 5) {
-                            item {
-                                DeveloperRatingDistribution(
-                                    distribution = ratingDist,
-                                    modifier = Modifier.testTag("developer_rating_distribution_section"),
-                                )
-                            }
-                        }
-
-                        // 7. Genre Breakdown
-                        if (detail.genreBreakdown.size >= 2) {
-                            item {
-                                DeveloperGenreBreakdown(
-                                    genres = detail.genreBreakdown.map { it.name to it.gameCount },
-                                    totalGames = detail.gameCount,
-                                    selectedGenre = state.genreFilter,
-                                    onGenreSelected = { genre ->
-                                        viewModel.setDeveloperGenreFilter(
-                                            if (genre != null && state.genreFilter == genre) null else genre,
-                                        )
+                                SpTitledSection(
+                                    title = "Top Rated",
+                                    edgeToEdgeContent = true,
+                                    titleTrailing = if (detail.games.isNotEmpty() && onNavigateToGames != null) {
+                                        {
+                                            SpButton(
+                                                text = "See all",
+                                                style = SpButtonStyle.Ghost,
+                                                onClick = { onNavigateToGames(name, isDeveloper) },
+                                            )
+                                        }
+                                    } else {
+                                        null
                                     },
-                                    modifier = Modifier.testTag("developer_genre_breakdown"),
-                                )
+                                ) {
+                                    DeveloperTopRatedRow(
+                                        topGames = detail.topGames,
+                                        onGameSelected = onGameSelected,
+                                        modifier = Modifier.testTag("developer_top_rated_section"),
+                                    )
+                                }
                             }
                         }
 
-                        // 8. User Stats Card
+                        // 6. Your Stats
                         if (detail.userStats != null) {
                             item {
-                                DeveloperUserStatsCard(
-                                    userStats = detail.userStats,
-                                    totalGames = detail.gameCount,
-                                    onGameSelected = onGameSelected,
-                                    modifier = Modifier.testTag("developer_user_stats"),
-                                )
-                            }
-                        }
-
-                        // 9. Games Grouped by Platform
-                        val filteredGames = state.filteredGames
-                        if (filteredGames.isEmpty() && !state.isLoading) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(SpSpacing.XXLarge),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    SpEmptyState(
-                                        icon = Icons.Filled.Code,
-                                        title = "No games found",
-                                        message = "No games match the selected filter.",
-                                        modifier = Modifier.testTag("developer_empty_state"),
+                                SpTitledSection(title = "Your Stats") {
+                                    DeveloperUserStatsCard(
+                                        userStats = detail.userStats,
+                                        totalGames = detail.gameCount,
+                                        onGameSelected = onGameSelected,
+                                        modifier = Modifier.testTag("developer_user_stats"),
                                     )
                                 }
-                            }
-                        } else {
-                            // Group games by platform, ordered by count descending
-                            val platformBreakdown = detail.platformBreakdown
-                                .sortedByDescending { it.count }
-
-                            if (platformBreakdown.isNotEmpty()) {
-                                platformBreakdown.forEach { platform ->
-                                    val platformGames = filteredGames.filter {
-                                        it.consoleName.equals(platform.consoleName, ignoreCase = true)
-                                    }
-                                    if (platformGames.isNotEmpty()) {
-                                        item(key = "platform_header_${platform.consoleId}") {
-                                            DeveloperPlatformHeader(
-                                                consoleName = platform.consoleName,
-                                                gameCount = platformGames.size,
-                                                modifier = Modifier.testTag("developer_platform_header_${platform.consoleId}"),
-                                            )
-                                        }
-                                        items(
-                                            items = platformGames,
-                                            key = { it.id },
-                                        ) { game ->
-                                            DeveloperGameItem(
-                                                game = game,
-                                                onClick = { onGameSelected(game.id) },
-                                            )
-                                        }
-                                    }
-                                }
-                                // Also show games that don't match any platform in breakdown
-                                val knownPlatforms = platformBreakdown.map { it.consoleName.lowercase() }.toSet()
-                                val uncategorized = filteredGames.filter {
-                                    it.consoleName.lowercase() !in knownPlatforms
-                                }
-                                if (uncategorized.isNotEmpty()) {
-                                    item(key = "platform_header_other") {
-                                        DeveloperPlatformHeader(
-                                            consoleName = "Other",
-                                            gameCount = uncategorized.size,
-                                            modifier = Modifier.testTag("developer_platform_header_other"),
-                                        )
-                                    }
-                                    items(
-                                        items = uncategorized,
-                                        key = { "other_${it.id}" },
-                                    ) { game ->
-                                        DeveloperGameItem(
-                                            game = game,
-                                            onClick = { onGameSelected(game.id) },
-                                        )
-                                    }
-                                }
-                            } else {
-                                // Fallback: no platform breakdown, show flat list with console filter
-                                if (detail.consoles.isNotEmpty()) {
-                                    item {
-                                        DeveloperConsoleFilterRow(
-                                            consoles = detail.consoles,
-                                            totalGames = detail.gameCount,
-                                            selectedConsole = state.consoleFilter,
-                                            onConsoleSelected = { console ->
-                                                viewModel.setDeveloperConsoleFilter(
-                                                    if (console != null && state.consoleFilter == console) null else console,
-                                                )
-                                            },
-                                            modifier = Modifier
-                                                .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                                .testTag("developer_console_filters"),
-                                        )
-                                        Spacer(Modifier.height(SpSpacing.Large))
-                                    }
-                                }
-                                items(
-                                    items = filteredGames,
-                                    key = { it.id },
-                                ) { game ->
-                                    DeveloperGameItem(
-                                        game = game,
-                                        onClick = { onGameSelected(game.id) },
-                                    )
-                                }
-                            }
-                        }
-
-                        // 10. Publishers Section
-                        if (detail.publishers.isNotEmpty()) {
-                            item {
-                                DeveloperPublishersSection(
-                                    publishers = detail.publishers,
-                                    onPublisherSelected = onPublisherSelected,
-                                    modifier = Modifier.testTag("developer_publishers_section"),
-                                )
-                            }
-                        }
-
-                        // 11. Related Developers Section
-                        if (detail.relatedDevelopers.isNotEmpty()) {
-                            item {
-                                DeveloperRelatedDevelopersSection(
-                                    relatedDevelopers = detail.relatedDevelopers,
-                                    onDeveloperSelected = onDeveloperSelected,
-                                    modifier = Modifier.testTag("developer_related_section"),
-                                )
                             }
                         }
                     }
@@ -342,83 +230,5 @@ fun ExploreDeveloperScreen(
             onDismiss = { viewModel.dismissDeveloperDetailError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    }
-}
-
-// --- (e) Platform Group Header ---
-
-@Composable
-private fun DeveloperPlatformHeader(
-    consoleName: String,
-    gameCount: Int,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Medium,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = consoleName,
-            style = SpTypography.HeadlineSmall,
-            color = SpColor.OnBackground,
-        )
-        Text(
-            text = "$gameCount games",
-            style = SpTypography.BodySmall,
-            color = SpColor.OnBackgroundTertiary,
-        )
-    }
-}
-
-// --- Console Filter Row (fallback when no platform breakdown) ---
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DeveloperConsoleFilterRow(
-    consoles: List<String>,
-    totalGames: Int,
-    selectedConsole: String?,
-    onConsoleSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        // "All" chip
-        SpChip(
-            text = "All ($totalGames)",
-            onClick = { onConsoleSelected(null) },
-            isSelected = selectedConsole == null,
-            modifier = Modifier
-                .testTag("developer_console_chip_all")
-                .semantics {
-                    contentDescription = "All, $totalGames games"
-                    role = Role.Button
-                },
-        )
-
-        consoles.forEach { console ->
-            val isSelected = console.equals(selectedConsole, ignoreCase = true)
-
-            SpChip(
-                text = console,
-                onClick = { onConsoleSelected(console) },
-                isSelected = isSelected,
-                modifier = Modifier
-                    .testTag("developer_console_chip_$console")
-                    .semantics {
-                        contentDescription = console
-                        role = Role.Button
-                    },
-            )
-        }
     }
 }
