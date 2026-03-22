@@ -964,6 +964,16 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.ExploreFranchise(franchiseId, franchiseName))
                                         )
                                     },
+                                    onNavigateToDeveloper = { name ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(name))
+                                        )
+                                    },
+                                    onNavigateToPublisher = { name ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(name))
+                                        )
+                                    },
                                 )
                             }
 
