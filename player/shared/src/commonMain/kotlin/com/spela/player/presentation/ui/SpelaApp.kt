@@ -685,6 +685,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(developerName))
                                             )
                                         },
+                                        onNavigateToGames = { devName, isDev ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.DeveloperGames(devName, isDev))
+                                            )
+                                        },
                                         onBack = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
@@ -713,6 +718,11 @@ fun SpelaApp(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(developerName))
                                             )
                                         },
+                                        onNavigateToGames = { devName, isDev ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.DeveloperGames(devName, isDev))
+                                            )
+                                        },
                                         onBack = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
                                         },
@@ -721,7 +731,9 @@ fun SpelaApp(
                             }
 
                             is SpScreen.DeveloperGames -> {
-                                // TODO: Wire to DeveloperGamesScreen in Task 4
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("Developer Games — coming soon")
+                                }
                             }
 
                             is SpScreen.ExploreGallery -> {
