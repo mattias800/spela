@@ -1,30 +1,24 @@
 package com.spela.player.presentation.ui.feature.explore
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,7 +32,6 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -59,9 +53,7 @@ import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
-import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -71,9 +63,13 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.util.formatPlayTime
 import com.spela.player.util.formatRating
 
+// Hero banner alpha constants (matching ConsoleInfoSection pattern)
+private val HeroIconTint = Color.White.copy(alpha = 0.45f)
+private val HeroValueText = Color.White.copy(alpha = 0.90f)
+private val HeroLabelText = Color.White.copy(alpha = 0.40f)
+
 // --- (a) Hero Banner ---
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DeveloperHeroBanner(
     detail: DeveloperDetail,
@@ -86,7 +82,7 @@ internal fun DeveloperHeroBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(240.dp),
+            .height(200.dp),
     ) {
         // Background: hero image or gradient fallback
         if (detail.heroUrl != null) {
@@ -148,112 +144,175 @@ internal fun DeveloperHeroBanner(
                 ),
         )
 
-        // Overlaid content at bottom-left
-        Column(
+        // Content: stats on left, logo + info centered (console banner pattern)
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(
-                    start = SpSpacing.ScreenHorizontal,
-                    end = SpSpacing.ScreenHorizontal,
-                    bottom = SpSpacing.Medium,
-                ),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                .fillMaxSize()
+                .padding(horizontal = SpSpacing.XLarge),
         ) {
-            // Company logo (72dp circular)
-            val logoUrl = companyInfo?.logoUrl
-            if (logoUrl != null) {
-                SubcomposeAsyncImage(
-                    model = logoUrl,
-                    contentDescription = "${detail.name} logo",
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .testTag("developer_company_logo"),
-                    contentScale = ContentScale.Fit,
-                    loading = {
-                        LetterAvatar(detail.name, size = 72.dp)
-                    },
-                    error = {
-                        LetterAvatar(detail.name, size = 72.dp)
-                    },
-                )
-            } else {
-                LetterAvatar(
-                    name = detail.name,
-                    size = 72.dp,
-                    modifier = Modifier.testTag("developer_letter_avatar"),
+            // LEFT side — "At a Glance" data table
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .widthIn(max = 120.dp),
+            ) {
+                DeveloperInfoSection(
+                    detail = detail,
+                    modifier = Modifier.testTag("developer_info_section"),
                 )
             }
 
-            // About description (only if available)
-            val description = companyInfo?.description
-            if (description != null) {
-                Column(
-                    modifier = Modifier.animateContentSize(),
-                ) {
-                    Text(
-                        text = description,
-                        style = SpTypography.BodyMedium,
-                        color = Color.White.copy(alpha = 0.7f),
-                        maxLines = if (descriptionExpanded) Int.MAX_VALUE else 3,
-                        overflow = TextOverflow.Ellipsis,
-                        onTextLayout = { result ->
-                            if (!descriptionExpanded) hasVisualOverflow = result.hasVisualOverflow
+            // CENTER — Company logo + description + metadata
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                // Company logo — same sizing as console banner
+                val logoUrl = companyInfo?.logoUrl
+                if (logoUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = logoUrl,
+                        contentDescription = "${detail.name} logo",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 80.dp)
+                            .testTag("developer_company_logo"),
+                        contentScale = ContentScale.Fit,
+                        loading = {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LetterAvatar(detail.name, size = 72.dp)
+                            }
                         },
-                        modifier = Modifier.testTag("developer_company_description"),
+                        error = {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LetterAvatar(detail.name, size = 72.dp)
+                            }
+                        },
                     )
+                } else {
+                    LetterAvatar(
+                        name = detail.name,
+                        size = 72.dp,
+                        modifier = Modifier.testTag("developer_letter_avatar"),
+                    )
+                }
 
-                    if (hasVisualOverflow || descriptionExpanded) {
+                // About description (only if available)
+                val description = companyInfo?.description
+                if (description != null) {
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Column(
+                        modifier = Modifier.animateContentSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         Text(
-                            text = if (descriptionExpanded) "Show less" else "Show more",
-                            style = SpTypography.LabelMedium,
-                            color = SpColor.Link,
-                            modifier = Modifier
-                                .clickable { descriptionExpanded = !descriptionExpanded }
-                                .testTag("developer_company_description_toggle"),
+                            text = description,
+                            style = SpTypography.BodySmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = if (descriptionExpanded) Int.MAX_VALUE else 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            onTextLayout = { result ->
+                                if (!descriptionExpanded) hasVisualOverflow = result.hasVisualOverflow
+                            },
+                            modifier = Modifier.testTag("developer_company_description"),
                         )
+
+                        if (hasVisualOverflow || descriptionExpanded) {
+                            Text(
+                                text = if (descriptionExpanded) "Show less" else "Show more",
+                                style = SpTypography.LabelMedium,
+                                color = SpColor.Link,
+                                modifier = Modifier
+                                    .clickable { descriptionExpanded = !descriptionExpanded }
+                                    .testTag("developer_company_description_toggle"),
+                            )
+                        }
                     }
                 }
-            }
 
-            // Metadata line: "Founded {year} · {country}"
-            val metaParts = buildList {
-                companyInfo?.foundedYear?.let { add("Founded $it") }
-                companyInfo?.country?.let { add(it) }
-            }
-            if (metaParts.isNotEmpty()) {
-                Text(
-                    text = metaParts.joinToString(" \u00b7 "),
-                    style = SpTypography.LabelMedium,
-                    color = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.testTag("developer_company_metadata"),
-                )
-            }
-
-            // Stat chips
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                modifier = Modifier.testTag("developer_stats_row"),
-            ) {
-                SpChip(
-                    text = "${detail.gameCount} games",
-                    onGradient = true,
-                    modifier = Modifier.testTag("developer_game_count"),
-                )
-                if (detail.avgRating > 0) {
-                    SpChip(
-                        text = "\u2b50 ${formatRating(detail.avgRating)}",
-                        onGradient = true,
-                        modifier = Modifier.testTag("developer_avg_rating"),
+                // Metadata line: "Founded {year} · {country}"
+                val metaParts = buildList {
+                    companyInfo?.foundedYear?.let { add("Founded $it") }
+                    companyInfo?.country?.let { add(it) }
+                }
+                if (metaParts.isNotEmpty()) {
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    Text(
+                        text = metaParts.joinToString(" \u00b7 "),
+                        style = SpTypography.LabelSmall,
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.testTag("developer_company_metadata"),
                     )
                 }
-                if (detail.consoles.isNotEmpty()) {
-                    SpChip(
-                        text = "${detail.consoles.size} platforms",
-                        onGradient = true,
-                        modifier = Modifier.testTag("developer_platform_count"),
+            }
+        }
+    }
+}
+
+// --- Developer Info Section (console-style stat table on left side of hero) ---
+
+@Composable
+private fun DeveloperInfoSection(
+    detail: DeveloperDetail,
+    modifier: Modifier = Modifier,
+) {
+    data class Stat(val icon: ImageVector, val value: String, val label: String)
+
+    val stats = buildList {
+        add(Stat(Icons.Filled.Gamepad, "${detail.gameCount}", "Games"))
+
+        val activeYears = detail.activeYears
+        if (activeYears != null && activeYears.first > 0) {
+            val yearRange = if (activeYears.first == activeYears.last) {
+                "${activeYears.first}"
+            } else {
+                "${activeYears.first}-${activeYears.last}"
+            }
+            add(Stat(Icons.Filled.CalendarMonth, yearRange, "Active"))
+        }
+
+        val primaryGenre = detail.primaryGenre
+        if (!primaryGenre.isNullOrBlank()) {
+            add(Stat(Icons.Filled.Category, primaryGenre, "Genre"))
+        }
+
+        if (detail.avgRating > 0) {
+            add(Stat(Icons.Filled.Star, formatRating(detail.avgRating), "Avg rating"))
+        }
+    }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        stats.forEach { stat ->
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(
+                    imageVector = stat.icon,
+                    contentDescription = null,
+                    tint = HeroIconTint,
+                    modifier = Modifier.size(SpSpacing.IconSmall),
+                )
+                Spacer(Modifier.width(SpSpacing.XSmall))
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        text = stat.value,
+                        style = SpTypography.BodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HeroValueText,
+                    )
+                    Text(
+                        text = stat.label,
+                        style = SpTypography.LabelSmall,
+                        color = HeroLabelText,
                     )
                 }
             }
@@ -286,7 +345,7 @@ internal fun DeveloperTopRatedRow(
     }
 }
 
-/** ROLE component — developer's top-rated game card. Delegates to [SpCarouselGameCard]. */
+/** ROLE component -- developer's top-rated game card. Delegates to [SpCarouselGameCard]. */
 @Composable
 internal fun DeveloperTopRatedCard(
     game: Game,
@@ -440,179 +499,6 @@ private fun LetterAvatar(
     }
 }
 
-// --- At a Glance Stats Row ---
-
-@Composable
-internal fun DeveloperAtAGlance(
-    detail: DeveloperDetail,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .testTag("developer_at_a_glance_row"),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
-        AnimatedGlanceStatItem(
-            icon = Icons.Filled.Gamepad,
-            targetValue = detail.gameCount,
-            label = "Games",
-            modifier = Modifier.testTag("developer_glance_games"),
-        )
-
-        val activeYears = detail.activeYears
-        if (activeYears != null && activeYears.first > 0) {
-            val yearRange = if (activeYears.first == activeYears.last) {
-                "${activeYears.first}"
-            } else {
-                "${activeYears.first}-${activeYears.last}"
-            }
-            GlanceStatItem(
-                icon = Icons.Filled.CalendarMonth,
-                value = yearRange,
-                label = "Active",
-                modifier = Modifier.testTag("developer_glance_active_years"),
-            )
-        }
-
-        val primaryGenre = detail.primaryGenre
-        if (!primaryGenre.isNullOrBlank()) {
-            GlanceStatItem(
-                icon = Icons.Filled.Category,
-                value = primaryGenre,
-                label = "Primary genre",
-                modifier = Modifier.testTag("developer_glance_primary_genre"),
-            )
-        }
-
-        if (detail.consoles.isNotEmpty()) {
-            AnimatedGlanceStatItem(
-                icon = Icons.Filled.SportsEsports,
-                targetValue = detail.consoles.size,
-                label = "Platforms",
-                modifier = Modifier.testTag("developer_glance_platforms"),
-            )
-        }
-
-        if (detail.avgRating > 0) {
-            GlanceStatItem(
-                icon = Icons.Filled.Star,
-                value = formatRating(detail.avgRating),
-                label = "Avg rating",
-                modifier = Modifier.testTag("developer_glance_avg_rating"),
-            )
-        }
-    }
-}
-
-@Composable
-private fun GlanceStatItem(
-    icon: ImageVector,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    SpCard(
-        modifier = modifier.width(IntrinsicSize.Min),
-    ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = SpSpacing.Medium,
-                vertical = SpSpacing.Small,
-            ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = SpColor.Primary,
-                modifier = Modifier.size(SpSpacing.IconDefault),
-            )
-            Spacer(Modifier.height(SpSpacing.XXSmall))
-            Text(
-                text = value,
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = label,
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-// --- Animated Stat Counter ---
-
-/**
- * GlanceStatItem variant that animates a numeric value from 0 to [targetValue].
- */
-@Composable
-private fun AnimatedGlanceStatItem(
-    icon: ImageVector,
-    targetValue: Int,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    val animationsEnabled = LocalAnimationsEnabled.current
-    val animatable = remember { Animatable(0f) }
-
-    LaunchedEffect(targetValue) {
-        if (animationsEnabled && targetValue > 0) {
-            animatable.snapTo(0f)
-            animatable.animateTo(
-                targetValue = targetValue.toFloat(),
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = FastOutSlowInEasing,
-                ),
-            )
-        } else {
-            animatable.snapTo(targetValue.toFloat())
-        }
-    }
-
-    SpCard(
-        modifier = modifier.width(IntrinsicSize.Min),
-    ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = SpSpacing.Medium,
-                vertical = SpSpacing.Small,
-            ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = SpColor.Primary,
-                modifier = Modifier.size(SpSpacing.IconDefault),
-            )
-            Spacer(Modifier.height(SpSpacing.XXSmall))
-            Text(
-                text = "${animatable.value.toInt()}",
-                style = SpTypography.TitleSmall,
-                color = SpColor.OnBackground,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = label,
-                style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
 // --- Enhanced Skeleton Loading ---
 
 @Composable
@@ -630,20 +516,6 @@ internal fun DeveloperDetailSkeleton(
             width = 400.dp,
             height = 200.dp,
         )
-
-        Spacer(Modifier.height(SpSpacing.Large))
-
-        // At a Glance row skeleton
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
-            repeat(4) {
-                SpShimmer(width = 80.dp, height = 60.dp)
-            }
-        }
 
         Spacer(Modifier.height(SpSpacing.Large))
 

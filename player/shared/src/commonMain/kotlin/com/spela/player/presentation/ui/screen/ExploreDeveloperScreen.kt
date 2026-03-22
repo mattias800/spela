@@ -32,7 +32,6 @@ import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
-import com.spela.player.presentation.ui.feature.explore.DeveloperAtAGlance
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
@@ -148,17 +147,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 3. At a Glance
-                        item {
-                            SpTitledSection(title = "At a Glance") {
-                                DeveloperAtAGlance(
-                                    detail = detail,
-                                    modifier = Modifier.testTag("developer_at_a_glance_section"),
-                                )
-                            }
-                        }
-
-                        // 4. Top Rated
+                        // 3. Top Rated
                         if (detail.topGames.size >= 3) {
                             item {
                                 SpTitledSection(
@@ -186,7 +175,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 5. Your Stats
+                        // 4. Your Stats
                         if (detail.userStats != null) {
                             item {
                                 SpTitledSection(title = "Your Stats") {
