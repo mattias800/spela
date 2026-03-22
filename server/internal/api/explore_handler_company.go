@@ -42,8 +42,13 @@ func companyToInfo(company *db.Company) *CompanyInfo {
 		return nil
 	}
 
+	logoURL := resolveImageURL(company.LogoURL)
+	// Fallback to IGDB CDN if local download hasn't completed or failed
+	if logoURL == "" && company.LogoImageID != "" {
+		logoURL = igdb.CompanyLogoURL(company.LogoImageID)
+	}
 	info := &CompanyInfo{
-		LogoURL:      resolveImageURL(company.LogoURL),
+		LogoURL:      logoURL,
 		Description:  company.Description,
 		FoundedYear:  company.FoundedYear,
 		Country:      igdb.CountryName(company.Country),
@@ -63,20 +68,30 @@ func companyToInfo(company *db.Company) *CompanyInfo {
 // triggerCompanyFetch starts a background goroutine to fetch company data
 // from IGDB and store it in the database.
 func (h *ExploreHandler) triggerCompanyFetch(name string) {
+	// Lazily configure IGDB client if credentials are available but client isn't set up yet
+	if h.Scraper != nil && h.IGDBClient == nil {
+		clientID, clientSecret := igdbCredentials(h.DB)
+		if clientID != "" && clientSecret != "" {
+			h.IGDBClient = igdb.NewClient(clientID, clientSecret)
+		}
+	}
 	if h.IGDBClient == nil || !h.IGDBClient.IsConfigured() {
+		slog.Warn("company fetch skipped: IGDB client not configured")
 		return
 	}
 
 	go func() {
+		slog.Info("background company fetch started", "name", name)
 		detail, err := h.IGDBClient.SearchCompanyByName(name)
 		if err != nil {
 			slog.Warn("background company fetch failed", "name", name, "error", err)
 			return
 		}
 		if detail == nil {
-			slog.Debug("company not found on IGDB", "name", name)
+			slog.Warn("company not found on IGDB", "name", name)
 			return
 		}
+		slog.Info("company found on IGDB", "name", name, "igdbName", detail.Name, "logoImageID", detail.LogoImageID)
 
 		storeCompanyDetail(h.DB, detail, h.Scraper)
 	}()
@@ -96,7 +111,6 @@ func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail, sc *scrap
 		if path := sc.DownloadExternalImage(cdnURL, subpath); path != "" {
 			logoURL = path
 		}
-		// If download fails, logoURL stays empty — no CDN fallback
 	}
 
 	// Extract founding year from start_date Unix timestamp
@@ -113,6 +127,7 @@ func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail, sc *scrap
 			Name:          detail.Name,
 			Description:   detail.Description,
 			LogoURL:       logoURL,
+			LogoImageID:   detail.LogoImageID,
 			Country:       detail.Country,
 			FoundedYear:   foundedYear,
 			WebsiteURL:    detail.WebsiteURL,
@@ -129,6 +144,7 @@ func storeCompanyDetail(database *gorm.DB, detail *igdb.CompanyDetail, sc *scrap
 			"name":          detail.Name,
 			"description":   detail.Description,
 			"logo_url":      logoURL,
+			"logo_image_id": detail.LogoImageID,
 			"country":       detail.Country,
 			"founded_year":  foundedYear,
 			"website_url":   detail.WebsiteURL,

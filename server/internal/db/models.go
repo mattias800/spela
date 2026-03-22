@@ -705,6 +705,7 @@ type Company struct {
 	Name          string    `gorm:"index" json:"name"`
 	Description   string    `gorm:"type:text" json:"description,omitempty"`
 	LogoURL       string    `gorm:"size:512" json:"logoUrl,omitempty"`
+	LogoImageID   string    `gorm:"size:128" json:"-"`
 	Country       int       `json:"country,omitempty"`
 	FoundedYear   int       `json:"foundedYear,omitempty"`
 	WebsiteURL    string    `gorm:"size:512" json:"websiteUrl,omitempty"`
