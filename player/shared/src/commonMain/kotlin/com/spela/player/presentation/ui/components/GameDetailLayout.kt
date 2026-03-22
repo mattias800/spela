@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,9 +26,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -39,13 +42,16 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  * - **Landscape**: Cover art on the LEFT, info/sections on the RIGHT in a Row.
  *   [fullWidthSections] render below the Row at full width.
  *   Both scroll together in one unified scroll container.
- * - **Portrait**: Cover art centered above, all sections below in a single column.
+ * - **Portrait**: Hero banner at the top with cover art + title overlay,
+ *   all sections below in a single column.
  *
  * The top bar floats over content with a transparent background.
  *
  * @param topBar Composable rendered floating over content.
  * @param coverArt Composable for the cover art image.
  * @param coverExtra Optional composable rendered below the cover art.
+ * @param heroUrl URL for the hero banner background image (portrait only).
+ * @param heroContent Composable rendered next to the cover art in the hero banner (portrait only).
  * @param backgroundColors Gradient colors for the screen background.
  * @param sections Content rendered beside the cover art in landscape (right column).
  * @param fullWidthSections Content rendered below the hero row at full width in landscape.
@@ -56,6 +62,8 @@ fun GameDetailLayout(
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit = {},
+    heroUrl: String? = null,
+    heroContent: @Composable () -> Unit = {},
     backgroundColors: List<Color> = listOf(SpColor.Background, SpColor.Background),
     sections: @Composable () -> Unit,
     fullWidthSections: @Composable () -> Unit = {},
@@ -96,6 +104,9 @@ fun GameDetailLayout(
                 topBar = topBar,
                 coverArt = coverArt,
                 coverExtra = coverExtra,
+                heroUrl = heroUrl,
+                heroContent = heroContent,
+                backgroundColors = backgroundColors,
                 sections = sections,
                 fullWidthSections = fullWidthSections,
             )
@@ -189,46 +200,137 @@ private fun PortraitLayout(
     topBar: @Composable () -> Unit,
     coverArt: @Composable (modifier: Modifier, isPortrait: Boolean) -> Unit,
     coverExtra: @Composable (isPortrait: Boolean) -> Unit,
+    heroUrl: String?,
+    heroContent: @Composable () -> Unit,
+    backgroundColors: List<Color>,
     sections: @Composable () -> Unit,
     fullWidthSections: @Composable () -> Unit,
 ) {
+    val bannerHeight = 250.dp + SpSpacing.TopBarHeight
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("game_detail_content"),
-            contentPadding = PaddingValues(top = SpSpacing.TopBarHeight + LocalTitleBarInset.current),
         ) {
+            // Hero banner item
             item {
-                val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(bannerHeight),
                 ) {
-                    Spacer(Modifier.height(SpSpacing.Small))
+                    // Background: hero image or gradient fallback
+                    if (heroUrl != null) {
+                        SubcomposeAsyncImage(
+                            model = heroUrl,
+                            contentDescription = "Hero banner",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            loading = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(SpColor.Background),
+                                )
+                            },
+                            error = {
+                                // Fallback to console gradient on error
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    backgroundColors.first().copy(alpha = 0.5f),
+                                                    backgroundColors.last(),
+                                                ),
+                                            ),
+                                        ),
+                                )
+                            },
+                        )
+                    } else {
+                        // Gradient fallback when no hero image
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            backgroundColors.first().copy(alpha = 0.5f),
+                                            backgroundColors.last(),
+                                        ),
+                                    ),
+                                ),
+                        )
+                    }
+
+                    // Gradient overlay: transparent at top, background at bottom
                     Box(
                         modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Transparent,
+                                        0.4f to backgroundColors.last().copy(alpha = 0.3f),
+                                        1.0f to backgroundColors.last(),
+                                    ),
+                                ),
+                            ),
+                    )
+
+                    // Content overlay: cover art (left) + title/badges (right)
+                    Row(
+                        modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = screenHeight * 0.5f)
-                            .padding(horizontal = SpSpacing.XXLarge)
-                            .shadow(8.dp, coverShape)
-                            .clip(coverShape)
-                            .border(1.dp, SpColor.Divider, coverShape),
+                            .align(Alignment.BottomStart)
+                            .padding(
+                                start = SpSpacing.XLarge,
+                                end = SpSpacing.XLarge,
+                                bottom = SpSpacing.Large,
+                            ),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large),
+                        verticalAlignment = Alignment.Bottom,
                     ) {
-                        coverArt(Modifier.fillMaxWidth(), true)
+                        // Small cover art on the left
+                        val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .shadow(12.dp, coverShape)
+                                .clip(coverShape)
+                                .border(2.dp, Color.White.copy(alpha = 0.15f), coverShape),
+                        ) {
+                            coverArt(Modifier.fillMaxWidth(), true)
+                        }
+
+                        // Title and badges to the right of cover
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(
+                                    Color.Black.copy(alpha = 0.4f),
+                                    RoundedCornerShape(SpSpacing.CardCornerRadius),
+                                )
+                                .padding(SpSpacing.Medium),
+                        ) {
+                            heroContent()
+                        }
                     }
-                    Spacer(Modifier.height(SpSpacing.Medium))
-                    coverExtra(true)
-                    Spacer(Modifier.height(SpSpacing.Large))
                 }
             }
 
+            // Sections below the banner
             item {
-                Spacer(Modifier.height(SpSpacing.Large))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                        .padding(horizontal = SpSpacing.ScreenHorizontal)
+                        .padding(top = SpSpacing.Large),
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                 ) {
+                    coverExtra(true)
                     sections()
                     fullWidthSections()
                 }

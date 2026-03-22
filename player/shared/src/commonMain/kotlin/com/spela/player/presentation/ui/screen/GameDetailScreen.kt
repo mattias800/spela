@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.BiosMissingFile
@@ -172,6 +173,41 @@ fun GameDetailScreen(
                 )
             },
             backgroundColors = backgroundColors,
+            heroUrl = game.heroUrl ?: detail.screenshots.firstOrNull(),
+            heroContent = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    // Title
+                    Text(
+                        text = game.title,
+                        style = SpTypography.HeadlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // Badges: console, region, verification
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                    ) {
+                        SpConsoleChip(
+                            consoleName = game.consoleName,
+                            consoleColor = getConsoleColor(game.consoleName),
+                            onGradient = true,
+                        )
+                        game.region?.takeIf { it.isNotBlank() }?.let { region ->
+                            SpRegionChip(region = region, onGradient = true)
+                        }
+                        VerificationChip(
+                            verificationStatus = game.verificationStatus,
+                            verificationTag = game.verificationTag,
+                        )
+                    }
+                }
+            },
             coverArt = { modifier, isPortrait ->
                 // Read coverUrl from state delegate (not snapshot) so
                 // the LazyColumn item recomposes when it changes after scraping.
@@ -542,55 +578,59 @@ private fun GameInfoContent(
     // Game info header — title, badges, and actions
     Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Default)) {
 
-    // Title row with trophy icon if achievements exist
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        Text(
-            text = game.title,
-            style = SpTypography.DisplaySmall,
-            color = SpColor.OnBackground,
-            modifier = Modifier.weight(1f, fill = false).semantics { heading() },
-        )
-        if (state.achievements.isNotEmpty()) {
-            Icon(
-                imageVector = Icons.Filled.EmojiEvents,
-                contentDescription = "Has achievements",
-                tint = SpColor.Warning,
-                modifier = Modifier.size(24.dp),
+    // Title and badges are in the hero banner in portrait mode;
+    // only show them here in landscape mode.
+    if (!isPortrait) {
+        // Title row with trophy icon if achievements exist
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            Text(
+                text = game.title,
+                style = SpTypography.DisplaySmall,
+                color = SpColor.OnBackground,
+                modifier = Modifier.weight(1f, fill = false).semantics { heading() },
             )
+            if (state.achievements.isNotEmpty()) {
+                Icon(
+                    imageVector = Icons.Filled.EmojiEvents,
+                    contentDescription = "Has achievements",
+                    tint = SpColor.Warning,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
-    }
 
 
-    // Badges row: console, verification, region, IGDB rating, community rating
-    @OptIn(ExperimentalLayoutApi::class)
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        SpConsoleChip(
-            consoleName = game.consoleName,
-            consoleColor = getConsoleColor(game.consoleName),
-            onGradient = true,
-        )
-        VerificationChip(
-            verificationStatus = game.verificationStatus,
-            verificationTag = game.verificationTag,
-        )
-        game.region?.takeIf { it.isNotBlank() }?.let { region ->
-            SpRegionChip(region = region, onGradient = true)
-        }
-        if (game.rating > 0) {
-            IgdbRatingStars(rating = game.rating)
-        }
-        if (game.averageRating > 0) {
-            CommunityRatingBadge(
-                averageRating = game.averageRating,
-                ratingCount = game.ratingCount,
+        // Badges row: console, verification, region, IGDB rating, community rating
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            SpConsoleChip(
+                consoleName = game.consoleName,
+                consoleColor = getConsoleColor(game.consoleName),
+                onGradient = true,
             )
+            VerificationChip(
+                verificationStatus = game.verificationStatus,
+                verificationTag = game.verificationTag,
+            )
+            game.region?.takeIf { it.isNotBlank() }?.let { region ->
+                SpRegionChip(region = region, onGradient = true)
+            }
+            if (game.rating > 0) {
+                IgdbRatingStars(rating = game.rating)
+            }
+            if (game.averageRating > 0) {
+                CommunityRatingBadge(
+                    averageRating = game.averageRating,
+                    ratingCount = game.ratingCount,
+                )
+            }
         }
     }
 
