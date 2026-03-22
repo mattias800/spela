@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -116,18 +116,17 @@ private fun ForYouRowSection(
     }
 }
 
-/** ROLE component — a game card in For You recommendations. Delegates to [SpGameCard]. */
+/** ROLE component — a game card in For You recommendations. Delegates to [SpCarouselGameCard]. */
 @Composable
 private fun ForYouGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpGameCard(
+    SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        coverAspectRatio = game.coverAspectRatio,
         rating = game.rating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,

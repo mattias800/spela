@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,6 +17,10 @@ import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -30,18 +35,24 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.util.formatRating
 
+/** Default aspect ratio for carousel cards when the game doesn't specify one. */
+private const val CAROUSEL_DEFAULT_ASPECT_RATIO = 0.75f
+
 /**
  * CONTENT component — defines how a game looks on a card.
  *
  * Layer 2 in the component hierarchy (Design → Content → Role).
  * Composes [SpCard] + [SpCoverArt] into a fixed layout:
- * cover art → title → subtitle → rating → favorite/play later indicators.
+ * cover art → title → subtitle → rating → variant count → favorite/play later indicators.
  *
  * Does NOT accept a modifier parameter — the layout is strict.
- * Parent controls sizing via the [width] parameter only.
+ * Sizing modes (mutually exclusive):
+ * - Default: fixed [width], fixed [coverAspectRatio] — for carousels with uniform cards
+ * - Grid: [fillWidth] = true, [coverAspectRatio] = null — fills parent cell, dynamic height
+ * - Carousel (uncropped): [coverHeight] set, [coverAspectRatio] = null — fixed cover height, dynamic width
  *
- * Role components (ExploreGameCard, ForYouGameCard, etc.) should
- * delegate to this — never duplicate this layout.
+ * Role components ([SpGridGameCard], [SpCarouselGameCard]) should
+ * delegate to this — screens never use SpGameCard directly.
  */
 @Composable
 fun SpGameCard(
@@ -49,16 +60,27 @@ fun SpGameCard(
     subtitle: String,
     coverUrl: String?,
     onClick: () -> Unit,
-    coverAspectRatio: Float = 0.75f,
+    coverAspectRatio: Float? = 0.75f,
     rating: Double = 0.0,
     isFavorite: Boolean = false,
     isInPlayLater: Boolean = false,
     width: Dp = SpSpacing.CoverMediumWidth,
+    fillWidth: Boolean = false,
+    coverHeight: Dp? = null,
+    variantCount: Int = 0,
     testTag: String? = null,
 ) {
+    // In carousel mode, compute width from the cover height and actual image ratio.
+    // Start with a default ratio (0.75) and update when the image loads.
+    var resolvedAspectRatio by remember { mutableFloatStateOf(coverAspectRatio ?: CAROUSEL_DEFAULT_ASPECT_RATIO) }
+    val cardWidth = when {
+        fillWidth -> null
+        coverHeight != null -> coverHeight * resolvedAspectRatio
+        else -> width
+    }
+    val sizeModifier = if (cardWidth != null) Modifier.width(cardWidth) else Modifier.fillMaxWidth()
     SpCard(
-        modifier = Modifier
-            .width(width)
+        modifier = sizeModifier
             .let { if (testTag != null) it.testTag(testTag) else it }
             .semantics {
                 val extras = buildString {
@@ -75,8 +97,11 @@ fun SpGameCard(
             SpCoverArt(
                 imageUrl = coverUrl,
                 contentDescription = "$title cover art",
-                modifier = Modifier.fillMaxWidth(),
-                aspectRatio = coverAspectRatio,
+                modifier = if (coverHeight != null) Modifier.height(coverHeight) else Modifier.fillMaxWidth(),
+                aspectRatio = if (coverHeight != null) null else coverAspectRatio,
+                onAspectRatioResolved = if (coverHeight != null) { ratio ->
+                    resolvedAspectRatio = ratio
+                } else null,
             )
             Column(
                 modifier = Modifier.padding(SpSpacing.Small),
@@ -121,6 +146,16 @@ fun SpGameCard(
                             color = SpColor.OnBackgroundSecondary,
                         )
                     }
+                }
+
+                // Variant count
+                if (variantCount > 1) {
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    Text(
+                        text = "$variantCount versions",
+                        style = SpTypography.BodySmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
                 }
 
                 // Favorite / Play Later indicators

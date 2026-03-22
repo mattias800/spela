@@ -61,7 +61,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
-import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpHeroCover
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -225,13 +225,13 @@ internal fun DeveloperTopRatedRow(
     }
 }
 
-/** ROLE component — developer's top-rated game card. Delegates to [SpGameCard]. */
+/** ROLE component — developer's top-rated game card. Delegates to [SpCarouselGameCard]. */
 @Composable
 internal fun DeveloperTopRatedCard(
     game: Game,
     onGameSelected: (String) -> Unit,
 ) {
-    SpGameCard(
+    SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,

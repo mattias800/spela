@@ -34,7 +34,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
 import com.spela.player.presentation.ui.components.SpConsoleChip
-import com.spela.player.presentation.ui.components.SpGameCard
+import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -103,18 +103,17 @@ internal fun GameCarouselRow(
     }
 }
 
-/** ROLE component — a game card in Favorites/Play Later/Recently Added. Delegates to [SpGameCard]. */
+/** ROLE component — a game card in Favorites/Play Later/Recently Added. Delegates to [SpCarouselGameCard]. */
 @Composable
 internal fun GameCoverCard(
     game: Game,
     onClick: () -> Unit,
 ) {
-    SpGameCard(
+    SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        coverAspectRatio = game.coverAspectRatio,
         rating = game.rating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
