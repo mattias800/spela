@@ -57,6 +57,7 @@ import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpLinkText
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -565,12 +566,10 @@ internal fun DeveloperCompanyDescription(
         )
 
         if (hasOverflow || expanded) {
-            Text(
+            SpLinkText(
                 text = if (expanded) "Show less" else "Show more",
-                style = SpTypography.LabelMedium,
-                color = SpColor.Primary,
+                onClick = { expanded = !expanded },
                 modifier = Modifier
-                    .clickable { expanded = !expanded }
                     .padding(top = SpSpacing.XSmall)
                     .testTag("developer_company_description_toggle"),
             )

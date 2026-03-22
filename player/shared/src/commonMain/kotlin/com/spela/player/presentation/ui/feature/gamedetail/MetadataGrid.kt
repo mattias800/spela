@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.theme.SpColor
@@ -142,7 +143,8 @@ private fun MetadataItem(
             Text(
                 text = value,
                 style = SpTypography.BodyMedium,
-                color = if (isClickable) SpColor.Primary else SpColor.OnBackground,
+                color = if (onGradient) androidx.compose.ui.graphics.Color.White else SpColor.OnBackground,
+                textDecoration = if (isClickable) TextDecoration.Underline else TextDecoration.None,
             )
         }
     }

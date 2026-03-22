@@ -1127,6 +1127,7 @@ data class SeriesDetailDto(
     val id: String,
     val name: String,
     val heroUrl: String? = null,
+    val logoUrl: String? = null,
     val consoles: List<SeriesConsoleDto> = emptyList(),
     val libraryGames: Int = 0,
     val totalGames: Int = 0,

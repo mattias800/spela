@@ -39,7 +39,15 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.SeriesConsole
 import com.spela.player.domain.model.SeriesDetail
 import com.spela.player.domain.model.SeriesGame
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpGameGrid
+import com.spela.player.presentation.ui.components.SpGridGameCard
+import com.spela.player.presentation.ui.components.SpHeroBanner
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
@@ -89,14 +97,13 @@ fun ExploreGroupDetailContent(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = title,
-                showBack = true,
-                onBack = onBack,
-            )
-
             when {
                 isLoading && detail == null -> {
+                    SpTopBar(
+                        title = title,
+                        showBack = true,
+                        onBack = onBack,
+                    )
                     // Loading skeleton
                     Column(
                         modifier = Modifier
@@ -116,59 +123,58 @@ fun ExploreGroupDetailContent(
                 }
 
                 detail != null -> {
+                    // Use the series/franchise hero URL (best-rated game's hero art)
+                    val heroUrl = detail.heroUrl
+
+                    Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                         contentPadding = PaddingValues(bottom = SpSpacing.XXLarge),
                     ) {
-                        // Hero banner with gradient
+                        // Hero banner
                         item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(160.dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                SpColor.Primary.copy(alpha = 0.3f),
-                                                SpColor.Background,
-                                            ),
-                                        ),
+                            SpHeroBanner(
+                                heroUrl = heroUrl,
+                                height = (260 + 64 + 24).dp,
+                                modifier = Modifier.testTag("${groupLabel}_hero_banner"),
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                ) {
+                                    // Franchise/series logo image or name text fallback
+                                    val logoUrl = detail.logoUrl
+                                    if (logoUrl != null) {
+                                        SubcomposeAsyncImage(
+                                            model = logoUrl,
+                                            contentDescription = detail.name,
+                                            modifier = Modifier
+                                                .heightIn(max = 120.dp),
+                                            contentScale = ContentScale.Fit,
+                                            error = {
+                                                Text(
+                                                    text = detail.name,
+                                                    style = SpTypography.DisplaySmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                )
+                                            },
+                                        )
+                                    } else {
+                                        Text(
+                                            text = detail.name,
+                                            style = SpTypography.DisplaySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                        )
+                                    }
+                                    Text(
+                                        text = "${detail.totalGames} games",
+                                        style = SpTypography.BodyMedium,
+                                        color = Color.White.copy(alpha = 0.7f),
                                     )
-                                    .testTag("${groupLabel}_hero_banner"),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = detail.name,
-                                    style = SpTypography.DisplaySmall,
-                                    color = SpColor.OnBackground,
-                                )
-                            }
-                        }
-
-                        // Ownership progress
-                        item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                    .testTag("${groupLabel}_ownership_progress"),
-                            ) {
-                                val progress = if (detail.totalGames > 0) {
-                                    detail.libraryGames.toFloat() / detail.totalGames.toFloat()
-                                } else 0f
-
-                                Text(
-                                    text = "You own ${detail.libraryGames} of ${detail.totalGames} games",
-                                    style = SpTypography.BodyMedium,
-                                    color = SpColor.OnBackgroundSecondary,
-                                    modifier = Modifier.testTag("${groupLabel}_ownership_text"),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Small))
-                                SpProgressBar(
-                                    progress = progress,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(Modifier.height(SpSpacing.Large))
+                                }
                             }
                         }
 
@@ -207,23 +213,46 @@ fun ExploreGroupDetailContent(
                                 }
                             }
                         } else {
-                            items(
-                                items = filteredGames,
-                                key = { it.igdbGameId },
-                            ) { game ->
-                                TimelineItem(
-                                    game = game,
-                                    testTagPrefix = groupLabel,
-                                    onClick = if (game.inLibrary && game.localGameId != null) {
-                                        { onGameSelected(game.localGameId) }
-                                    } else null,
+                            item {
+                                SpGameGrid(
+                                    items = filteredGames.map { game ->
+                                        @Composable {
+                                            Box(modifier = Modifier.alpha(if (game.inLibrary) 1f else 0.5f)) {
+                                                SpGridGameCard(
+                                                    title = game.name,
+                                                    subtitle = game.consoleName ?: "",
+                                                    coverUrl = game.coverUrl,
+                                                    onClick = if (game.inLibrary && game.localGameId != null) {
+                                                        { onGameSelected(game.localGameId) }
+                                                    } else ({}),
+                                                    rating = game.rating,
+                                                    testTag = "${groupLabel}_game_${game.igdbGameId}",
+                                                )
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                             }
                         }
                     }
+                    // Floating top bar over the banner
+                    SpTopBar(
+                        title = "",
+                        showBack = true,
+                        onBack = onBack,
+                    )
+                    } // Box
                 }
 
                 else -> {
+                    SpTopBar(
+                        title = title,
+                        showBack = true,
+                        onBack = onBack,
+                    )
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,

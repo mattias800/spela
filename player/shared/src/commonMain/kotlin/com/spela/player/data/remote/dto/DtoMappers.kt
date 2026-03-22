@@ -643,6 +643,7 @@ fun SeriesDetailDto.toDomain(): SeriesDetail = SeriesDetail(
     id = id,
     name = name,
     heroUrl = heroUrl,
+    logoUrl = logoUrl,
     consoles = consoles.map { it.toDomain() },
     libraryGames = libraryGames,
     totalGames = totalGames,
