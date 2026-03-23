@@ -96,6 +96,7 @@ val commonModule = module {
     factory { GetActivityFeedUseCase(get()) }
     factory { GetPublicProfileUseCase(get()) }
     factory { GetPlayHeatmapUseCase(get()) }
+    factory { GetPublicShowcaseUseCase(get()) }
     factory { GetMyCollectionsUseCase(get()) }
     factory { GetPublicCollectionsUseCase(get()) }
     factory { GetCollectionDetailUseCase(get()) }
@@ -230,6 +231,7 @@ val commonModule = module {
             getActivityFeedUseCase = get(),
             getPublicProfileUseCase = get(),
             getPlayHeatmapUseCase = get(),
+            getPublicShowcaseUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )

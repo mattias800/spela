@@ -6,6 +6,7 @@ import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.domain.model.HeatmapEntry
 import com.spela.player.domain.model.OnlineUser
 import com.spela.player.domain.model.PublicProfile
+import com.spela.player.domain.model.ShowcaseAchievement
 import com.spela.player.domain.repository.SocialRepository
 
 class SocialRepositoryImpl(
@@ -50,5 +51,12 @@ class SocialRepositoryImpl(
 
     override suspend fun getPlayHeatmap(userId: String): Result<List<HeatmapEntry>> = runCatching {
         apiClient.getPublicPlayHeatmap(userId).map { it.toDomain() }
+    }
+
+    override suspend fun getPublicShowcase(userId: String): Result<List<ShowcaseAchievement>> = runCatching {
+        apiClient.getPublicShowcase(userId).map { dto ->
+            val achievement = dto.toDomain()
+            achievement.copy(badgeUrl = apiClient.resolveUrl(achievement.badgeUrl))
+        }
     }
 }

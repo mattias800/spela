@@ -8,6 +8,7 @@ import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
 import com.spela.player.domain.usecase.GetPlayHeatmapUseCase
 import com.spela.player.domain.usecase.GetPublicProfileUseCase
+import com.spela.player.domain.usecase.GetPublicShowcaseUseCase
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -51,6 +52,7 @@ class SocialViewModelTest {
             getActivityFeedUseCase = GetActivityFeedUseCase(fakeSocialRepo),
             getPublicProfileUseCase = GetPublicProfileUseCase(fakeSocialRepo),
             getPlayHeatmapUseCase = GetPlayHeatmapUseCase(fakeSocialRepo),
+            getPublicShowcaseUseCase = GetPublicShowcaseUseCase(fakeSocialRepo),
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -171,6 +173,11 @@ private class FakeSocialRepository : SocialRepository {
     }
 
     override suspend fun getPlayHeatmap(userId: String): Result<List<com.spela.player.domain.model.HeatmapEntry>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(emptyList())
+    }
+
+    override suspend fun getPublicShowcase(userId: String): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(emptyList())
     }

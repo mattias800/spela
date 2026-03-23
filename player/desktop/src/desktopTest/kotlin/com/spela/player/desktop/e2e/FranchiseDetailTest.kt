@@ -80,6 +80,7 @@ class FranchiseDetailTest {
         id = "fr1",
         name = "Castlevania",
         heroUrl = null,
+        logoUrl = null,
         consoles = sampleFranchiseConsoles,
         libraryGames = 2,
         totalGames = 3,
@@ -193,6 +194,7 @@ class FranchiseDetailTest {
             id = "fr2",
             name = "Mega Man",
             heroUrl = null,
+            logoUrl = null,
             consoles = listOf(
                 SeriesConsole(abbreviation = "NES", name = "NES", color = "#dc2626", gameCount = 1),
                 SeriesConsole(abbreviation = "SNES", name = "SNES", color = "#9333ea", gameCount = 0),

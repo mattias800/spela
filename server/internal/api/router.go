@@ -507,6 +507,12 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/games/:id/achievements/leaderboard", raHandler.GetAchievementLeaderboard)
 		api.GET("/user/achievements/recent", raHandler.GetRecentAchievements)
 
+		// Achievement Showcase
+		showcaseHandler := &AchievementShowcaseHandler{DB: cfg.DB}
+		api.GET("/user/achievements/showcase", showcaseHandler.GetShowcase)
+		api.PUT("/user/achievements/showcase", showcaseHandler.UpdateShowcase)
+		api.GET("/users/:id/achievements/showcase", showcaseHandler.GetPublicShowcase)
+
 		// Admin routes
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())

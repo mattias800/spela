@@ -137,11 +137,13 @@ static void rc_event_handler(const rc_client_event_t *event, rc_client_t *client
 
     JNIEnv *env = ach_state.jni_env;
     jint event_type = (jint)event->type;
+    jlong achievement_id = 0;
     jstring title_jstr = NULL;
     jstring desc_jstr = NULL;
     jint points = 0;
 
     if (event->achievement) {
+        achievement_id = (jlong)event->achievement->id;
         if (event->achievement->title) {
             title_jstr = (*env)->NewStringUTF(env, event->achievement->title);
         }
@@ -152,7 +154,7 @@ static void rc_event_handler(const rc_client_event_t *event, rc_client_t *client
     }
 
     (*env)->CallVoidMethod(env, ach_state.jni_thiz, ach_state.on_achievement_event_method,
-                           event_type, title_jstr, desc_jstr, points);
+                           event_type, achievement_id, title_jstr, desc_jstr, points);
 
     if (title_jstr) (*env)->DeleteLocalRef(env, title_jstr);
     if (desc_jstr) (*env)->DeleteLocalRef(env, desc_jstr);
@@ -202,7 +204,7 @@ void achievements_init(JNIEnv *env, jobject thiz) {
 
     ach_state.on_achievement_event_method = (*env)->GetMethodID(
         env, ach_state.jni_class, "onAchievementEvent",
-        "(ILjava/lang/String;Ljava/lang/String;I)V");
+        "(IJLjava/lang/String;Ljava/lang/String;I)V");
 
     ach_state.on_http_request_method = (*env)->GetMethodID(
         env, ach_state.jni_class, "onHttpRequest",

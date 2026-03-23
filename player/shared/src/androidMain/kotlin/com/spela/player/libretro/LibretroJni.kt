@@ -87,12 +87,12 @@ class LibretroJni {
     external fun nativeAchievementsSetHardcore(enabled: Boolean)
     external fun nativeAchievementsHttpComplete(requestId: Int, responseCode: Int, responseBody: ByteArray)
 
-    var achievementEventListener: ((Int, String?, String?, Int) -> Unit)? = null
+    var achievementEventListener: ((Int, Long, String?, String?, Int) -> Unit)? = null
     var httpRequestListener: ((Int, String, String?) -> Unit)? = null
 
     // Called from native code when an achievement event occurs
-    fun onAchievementEvent(eventType: Int, title: String?, description: String?, points: Int) {
-        achievementEventListener?.invoke(eventType, title, description, points)
+    fun onAchievementEvent(eventType: Int, achievementId: Long, title: String?, description: String?, points: Int) {
+        achievementEventListener?.invoke(eventType, achievementId, title, description, points)
     }
 
     // Called from native code when rcheevos needs an HTTP request

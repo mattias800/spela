@@ -324,9 +324,11 @@ enum class AchievementEventType(val nativeValue: Int) {
 
 data class AchievementEvent(
     val type: AchievementEventType,
+    val achievementId: Long = 0L,
     val title: String = "",
     val description: String = "",
     val points: Int = 0,
+    val rarityPercent: Double = 0.0,
 )
 
 // Shared Session
@@ -565,6 +567,18 @@ data class AchievementPlayerRanking(
     val earnedPoints: Int,
     val firstUnlockedAt: String?,
     val lastUnlockedAt: String?,
+)
+
+data class ShowcaseAchievement(
+    val achievementRaId: Long,
+    val raGameId: Long,
+    val showcaseOrder: Int = 0,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val rarityPercent: Double = 0.0,
+    val gameTitle: String = "",
 )
 
 data class UserStats(

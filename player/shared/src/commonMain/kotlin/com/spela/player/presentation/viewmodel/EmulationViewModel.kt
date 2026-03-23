@@ -911,7 +911,14 @@ class EmulationViewModel(
                     achievementsController.events.collect { event ->
                         withContext(dispatchers.main) {
                             _state.update { state ->
-                                val newState = state.copy(achievementEvent = event)
+                                // Enrich event with rarity from cached achievements
+                                val enrichedEvent = if (event.achievementId != 0L) {
+                                    val cached = state.achievements.find { it.id == event.achievementId }
+                                    if (cached != null) {
+                                        event.copy(rarityPercent = cached.rarityPercent)
+                                    } else event
+                                } else event
+                                val newState = state.copy(achievementEvent = enrichedEvent)
                                 if (event.type == AchievementEventType.ACHIEVEMENT_TRIGGERED) {
                                     handleAchievementTriggered(newState, event.title, event.points)
                                 } else {
