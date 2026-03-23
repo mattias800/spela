@@ -48,7 +48,6 @@ fun TrendingSection(
         items(games, key = { it.game.id }) { item ->
             Column(
                 modifier = Modifier
-                    .width(CardWidth)
                     .semantics { contentDescription = "${item.game.title}, ${item.playersThisWeek} players this week" },
             ) {
                 ExploreGameCard(
