@@ -820,6 +820,16 @@ type SavedSearch struct {
 	Filters   string         `gorm:"type:text;not null" json:"filters"` // JSON-encoded filter params
 }
 
+// UserAchievementShowcase stores a user's pinned achievement for their profile.
+type UserAchievementShowcase struct {
+	ID              uint      `gorm:"primarykey" json:"id"`
+	UserID          uint      `gorm:"uniqueIndex:idx_user_achievement_showcase;not null" json:"userId"`
+	AchievementRAID uint      `gorm:"uniqueIndex:idx_user_achievement_showcase;not null" json:"achievementRaId"`
+	RAGameID        uint      `gorm:"not null" json:"raGameId"`
+	ShowcaseOrder   int       `gorm:"not null" json:"showcaseOrder"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`
