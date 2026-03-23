@@ -845,6 +845,7 @@ data class GameAchievementDto(
     val badgeUrl: String? = null,
     val type: String? = null,
     val displayOrder: Int? = null,
+    val rarityPercent: Double = 0.0,
 )
 
 @Serializable
