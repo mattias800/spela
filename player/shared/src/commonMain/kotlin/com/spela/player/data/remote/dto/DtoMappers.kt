@@ -448,6 +448,18 @@ fun ShowcaseAchievementDto.toDomain(): ShowcaseAchievement = ShowcaseAchievement
     gameTitle = gameTitle ?: "",
 )
 
+fun UnlockedAchievementDto.toDomain(): UnlockedAchievement = UnlockedAchievement(
+    achievementRaId = achievementRaId,
+    raGameId = raGameId,
+    title = title,
+    description = description,
+    points = points,
+    badgeUrl = badgeUrl,
+    rarityPercent = rarityPercent,
+    gameTitle = gameTitle,
+    consoleName = consoleName,
+)
+
 // Stats mappers
 
 fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(

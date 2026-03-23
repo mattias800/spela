@@ -817,6 +817,10 @@ class FakeSocialRepository : SocialRepository {
         Result.success(emptyList())
     override suspend fun getPublicShowcase(userId: String): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> =
         Result.success(emptyList())
+    override suspend fun getUnlockedAchievements(): Result<List<com.spela.player.domain.model.UnlockedAchievement>> =
+        Result.success(emptyList())
+    override suspend fun updateShowcase(achievements: List<com.spela.player.domain.model.ShowcaseAchievement>): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> =
+        Result.success(achievements)
 }
 
 class FakeKeyMappingRepository : KeyMappingRepository {

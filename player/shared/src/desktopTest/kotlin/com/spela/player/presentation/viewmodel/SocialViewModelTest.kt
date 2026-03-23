@@ -9,6 +9,11 @@ import com.spela.player.domain.usecase.GetOnlineUsersUseCase
 import com.spela.player.domain.usecase.GetPlayHeatmapUseCase
 import com.spela.player.domain.usecase.GetPublicProfileUseCase
 import com.spela.player.domain.usecase.GetPublicShowcaseUseCase
+import com.spela.player.domain.usecase.GetUnlockedAchievementsUseCase
+import com.spela.player.domain.usecase.UpdateShowcaseUseCase
+import com.spela.player.domain.model.AuthTokens
+import com.spela.player.domain.model.User
+import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -45,6 +50,17 @@ class SocialViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val fakeAuthRepo = object : AuthRepository {
+        override suspend fun login(serverUrl: String, username: String, password: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
+        override suspend fun register(serverUrl: String, username: String, email: String, password: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
+        override suspend fun refreshToken(serverUrl: String, refreshToken: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
+        override suspend fun getCurrentUser() = Result.success(User("1", "testuser", "", "user"))
+        override suspend fun getStoredTokens(): AuthTokens? = null
+        override suspend fun storeTokens(tokens: AuthTokens) {}
+        override suspend fun clearTokens() {}
+        override fun isLoggedIn() = true
+    }
+
     private fun createViewModel(): SocialViewModel {
         val scope = CoroutineScope(testDispatcher)
         return SocialViewModel(
@@ -53,6 +69,9 @@ class SocialViewModelTest {
             getPublicProfileUseCase = GetPublicProfileUseCase(fakeSocialRepo),
             getPlayHeatmapUseCase = GetPlayHeatmapUseCase(fakeSocialRepo),
             getPublicShowcaseUseCase = GetPublicShowcaseUseCase(fakeSocialRepo),
+            getUnlockedAchievementsUseCase = GetUnlockedAchievementsUseCase(fakeSocialRepo),
+            updateShowcaseUseCase = UpdateShowcaseUseCase(fakeSocialRepo),
+            authRepository = fakeAuthRepo,
             dispatchers = testDispatchers,
             scope = scope,
         )
@@ -180,5 +199,13 @@ private class FakeSocialRepository : SocialRepository {
     override suspend fun getPublicShowcase(userId: String): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(emptyList())
+    }
+    override suspend fun getUnlockedAchievements(): Result<List<com.spela.player.domain.model.UnlockedAchievement>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(emptyList())
+    }
+    override suspend fun updateShowcase(achievements: List<com.spela.player.domain.model.ShowcaseAchievement>): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(achievements)
     }
 }

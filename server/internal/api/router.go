@@ -506,6 +506,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/games/:id/achievements/timeline", raHandler.GetAchievementTimeline)
 		api.GET("/games/:id/achievements/leaderboard", raHandler.GetAchievementLeaderboard)
 		api.GET("/user/achievements/recent", raHandler.GetRecentAchievements)
+		api.GET("/user/achievements/unlocked", raHandler.GetUnlockedAchievements)
 
 		// Achievement Showcase
 		showcaseHandler := &AchievementShowcaseHandler{DB: cfg.DB}

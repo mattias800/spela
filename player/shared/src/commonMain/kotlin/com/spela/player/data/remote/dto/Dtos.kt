@@ -970,6 +970,30 @@ data class ShowcaseAchievementDto(
     val gameTitle: String? = null,
 )
 
+@Serializable
+data class UnlockedAchievementDto(
+    val achievementRaId: Long,
+    val raGameId: Long,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val rarityPercent: Double = 0.0,
+    val gameTitle: String = "",
+    val consoleName: String = "",
+)
+
+@Serializable
+data class UnlockedAchievementsResponse(
+    val achievements: List<UnlockedAchievementDto> = emptyList(),
+)
+
+@Serializable
+data class ShowcaseUpdateEntry(
+    val achievementRaId: Long,
+    val raGameId: Long,
+)
+
 // Top Rated
 
 @Serializable
