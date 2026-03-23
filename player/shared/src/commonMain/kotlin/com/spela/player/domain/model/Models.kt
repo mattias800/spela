@@ -624,6 +624,11 @@ data class PublicProfile(
     val topGames: List<PublicProfileGame>,
 )
 
+data class HeatmapEntry(
+    val date: String,
+    val playTime: Long,
+)
+
 data class PublicProfileGame(
     val id: String,
     val title: String,

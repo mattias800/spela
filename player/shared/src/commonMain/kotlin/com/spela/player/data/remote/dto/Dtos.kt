@@ -425,6 +425,12 @@ data class PublicProfileDto(
     val topGames: List<PublicProfileGameDto> = emptyList(),
 )
 
+@Serializable
+data class HeatmapEntryDto(
+    val date: String,
+    val playTime: Long = 0,
+)
+
 // Shared Session
 
 @Serializable

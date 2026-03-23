@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
+import com.spela.player.domain.usecase.GetPlayHeatmapUseCase
 import com.spela.player.domain.usecase.GetPublicProfileUseCase
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.state.SocialState
@@ -17,6 +18,7 @@ class SocialViewModel(
     private val getOnlineUsersUseCase: GetOnlineUsersUseCase,
     private val getActivityFeedUseCase: GetActivityFeedUseCase,
     private val getPublicProfileUseCase: GetPublicProfileUseCase,
+    private val getPlayHeatmapUseCase: GetPlayHeatmapUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -125,7 +127,7 @@ class SocialViewModel(
     }
 
     private fun loadPublicProfile(userId: String) {
-        _state.update { it.copy(isLoadingProfile = true, publicProfile = null) }
+        _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList()) }
         scope.launch(dispatchers.io) {
             getPublicProfileUseCase(userId).fold(
                 onSuccess = { profile ->
@@ -135,6 +137,15 @@ class SocialViewModel(
                     _state.update { it.copy(error = error.message, isLoadingProfile = false) }
                 },
             )
+        }
+        // Load heatmap data in parallel — best effort, non-critical
+        scope.launch(dispatchers.io) {
+            try {
+                val entries = getPlayHeatmapUseCase(userId).getOrDefault(emptyList())
+                _state.update { it.copy(heatmapData = entries) }
+            } catch (_: Exception) {
+                // Best effort — heatmap is non-critical
+            }
         }
     }
 }

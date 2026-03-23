@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.HeatmapEntry
 import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.model.PublicProfileGame
 import com.spela.player.presentation.intent.SocialIntent
@@ -34,6 +35,8 @@ import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpPlayHeatmap
+import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
@@ -82,6 +85,7 @@ fun UserProfileScreen(
                 val profile = state.publicProfile ?: return
                 ProfileContent(
                     profile = profile,
+                    heatmapData = state.heatmapData,
                     onGameSelected = onGameSelected,
                 )
             }
@@ -104,6 +108,7 @@ fun UserProfileScreen(
 @Composable
 private fun ProfileContent(
     profile: PublicProfile,
+    heatmapData: List<HeatmapEntry>,
     onGameSelected: (String) -> Unit,
 ) {
     LazyColumn(
@@ -159,6 +164,13 @@ private fun ProfileContent(
                             color = SpColor.Success,
                         )
                     }
+                    if (profile.memberSince.isNotBlank()) {
+                        Text(
+                            text = "Member since ${profile.memberSince}",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
                 }
             }
         }
@@ -181,6 +193,18 @@ private fun ProfileContent(
                     value = profile.gamesPlayed.toString(),
                     modifier = Modifier.weight(1f),
                 )
+            }
+        }
+
+        // Activity Heatmap
+        if (heatmapData.isNotEmpty()) {
+            item {
+                SpTitledSection(title = "Activity") {
+                    SpPlayHeatmap(
+                        entries = heatmapData,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
 
