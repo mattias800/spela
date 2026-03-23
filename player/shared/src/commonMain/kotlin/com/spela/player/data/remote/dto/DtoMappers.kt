@@ -369,6 +369,7 @@ fun GameAchievementDto.toDomain(): GameAchievement = GameAchievement(
     badgeUrl = badgeUrl,
     type = type,
     displayOrder = displayOrder,
+    rarityPercent = rarityPercent,
 )
 
 fun AchievementProgressEntryDto.toDomain(): AchievementProgress = AchievementProgress(

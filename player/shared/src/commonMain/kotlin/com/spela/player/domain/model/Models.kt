@@ -525,6 +525,7 @@ data class GameAchievement(
     val badgeUrl: String?,
     val type: String?,
     val displayOrder: Int?,
+    val rarityPercent: Double = 0.0,
 )
 
 data class AchievementProgress(
