@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,16 +12,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +36,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpPlayHeatmap
+import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
@@ -45,6 +46,36 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.util.formatPlayTime
+
+private val MonthNames = listOf(
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)
+
+/**
+ * Format an ISO 8601 date string (e.g. "2024-01-15T10:30:00Z") to "Month Year"
+ * (e.g. "January 2024"). Falls back to the raw string if parsing fails.
+ */
+private fun formatMemberSince(raw: String): String {
+    return try {
+        // Take "YYYY-MM" from the ISO string
+        val yearMonth = raw.take(7) // "2024-01"
+        val parts = yearMonth.split("-")
+        if (parts.size >= 2) {
+            val year = parts[0]
+            val monthIndex = parts[1].toIntOrNull()?.minus(1) ?: return raw
+            if (monthIndex in 0..11) {
+                "${MonthNames[monthIndex]} $year"
+            } else {
+                raw
+            }
+        } else {
+            raw
+        }
+    } catch (_: Exception) {
+        raw
+    }
+}
 
 @Composable
 fun UserProfileScreen(
@@ -64,7 +95,8 @@ fun UserProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .spScreenBackground(),
+            .spScreenBackground()
+            .testTag("user_profile_screen"),
     ) {
         SpTopBar(
             title = state.publicProfile?.username ?: "Profile",
@@ -111,17 +143,17 @@ private fun ProfileContent(
     heatmapData: List<HeatmapEntry>,
     onGameSelected: (String) -> Unit,
 ) {
-    LazyColumn(
+    val formattedMemberSince = remember(profile.memberSince) {
+        formatMemberSince(profile.memberSince)
+    }
+
+    SpSectionList(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(SpSpacing.Default),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Default),
     ) {
         // Avatar + name + online status
         item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(modifier = Modifier.size(64.dp)) {
@@ -134,13 +166,14 @@ private fun ProfileContent(
                     if (profile.isOnline) {
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(SpSpacing.Default)
                                 .align(Alignment.BottomEnd)
                                 .clip(CircleShape)
                                 .background(SpColor.Background)
-                                .padding(2.dp)
+                                .padding(SpSpacing.XXSmall)
                                 .clip(CircleShape)
-                                .background(SpColor.Success),
+                                .background(SpColor.Success)
+                                .semantics { contentDescription = "Online" },
                         )
                     }
                 }
@@ -155,7 +188,7 @@ private fun ProfileContent(
                         Text(
                             text = "Playing ${profile.currentGame.title}",
                             style = SpTypography.BodySmall,
-                            color = SpColor.Link,
+                            color = SpColor.Primary,
                         )
                     } else if (profile.isOnline) {
                         Text(
@@ -166,7 +199,7 @@ private fun ProfileContent(
                     }
                     if (profile.memberSince.isNotBlank()) {
                         Text(
-                            text = "Member since ${profile.memberSince}",
+                            text = "Member since $formattedMemberSince",
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
                         )
@@ -180,7 +213,7 @@ private fun ProfileContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal),
+                    .testTag("user_profile_stats"),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
                 StatCard(
@@ -211,35 +244,66 @@ private fun ProfileContent(
         // Most Played
         if (profile.topGames.isNotEmpty()) {
             item {
-                GameSection(
+                SpTitledSection(
                     title = "Most Played",
-                    games = profile.topGames,
-                    onGameSelected = onGameSelected,
-                    showPlayTime = true,
-                )
+                    modifier = Modifier.testTag("user_profile_most_played"),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        profile.topGames.forEach { game ->
+                            ProfileGameItem(
+                                game = game,
+                                showPlayTime = true,
+                                onClick = { onGameSelected(game.id) },
+                            )
+                        }
+                    }
+                }
             }
         }
 
         // Favorites
         if (profile.favoriteGames.isNotEmpty()) {
             item {
-                GameSection(
+                SpTitledSection(
                     title = "Favorites",
-                    games = profile.favoriteGames,
-                    onGameSelected = onGameSelected,
-                )
+                    modifier = Modifier.testTag("user_profile_favorites"),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        profile.favoriteGames.forEach { game ->
+                            ProfileGameItem(
+                                game = game,
+                                showPlayTime = false,
+                                onClick = { onGameSelected(game.id) },
+                            )
+                        }
+                    }
+                }
             }
         }
 
         // Recently Played
         if (profile.recentGames.isNotEmpty()) {
             item {
-                GameSection(
+                SpTitledSection(
                     title = "Recently Played",
-                    games = profile.recentGames,
-                    onGameSelected = onGameSelected,
-                    showPlayTime = true,
-                )
+                    modifier = Modifier.testTag("user_profile_recently_played"),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        profile.recentGames.forEach { game ->
+                            ProfileGameItem(
+                                game = game,
+                                showPlayTime = true,
+                                onClick = { onGameSelected(game.id) },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -261,42 +325,13 @@ private fun StatCard(
             Text(
                 text = value,
                 style = SpTypography.HeadlineLarge,
-                color = SpColor.Link,
+                color = SpColor.OnBackground,
             )
             Spacer(Modifier.height(SpSpacing.XXSmall))
             Text(
                 text = label,
                 style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundSecondary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun GameSection(
-    title: String,
-    games: List<PublicProfileGame>,
-    onGameSelected: (String) -> Unit,
-    showPlayTime: Boolean = false,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
-    ) {
-        Text(
-            text = title,
-            style = SpTypography.TitleLarge,
-            color = SpColor.OnBackground,
-            modifier = Modifier.semantics { contentDescription = "$title section" },
-        )
-        Spacer(Modifier.height(SpSpacing.Small))
-        games.forEach { game ->
-            ProfileGameItem(
-                game = game,
-                showPlayTime = showPlayTime,
-                onClick = { onGameSelected(game.id) },
             )
         }
     }
@@ -310,9 +345,7 @@ private fun ProfileGameItem(
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = SpSpacing.XXSmall),
+        modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
     ) {
         Row(
@@ -352,4 +385,3 @@ private fun ProfileGameItem(
         }
     }
 }
-
