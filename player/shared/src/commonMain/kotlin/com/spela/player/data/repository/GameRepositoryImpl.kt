@@ -244,7 +244,10 @@ class GameRepositoryImpl(
 
     override suspend fun getSimilarGames(gameId: String): Result<List<SimilarGame>> {
         return runCatching {
-            apiClient.getSimilarGames(gameId).map { it.toDomain() }
+            apiClient.getSimilarGames(gameId).map { dto ->
+                val game = dto.toDomain()
+                game.copy(coverUrl = apiClient.resolveUrl(game.coverUrl))
+            }
         }
     }
 
