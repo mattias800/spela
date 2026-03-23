@@ -27,12 +27,13 @@ func NewRAClient() *RAClient {
 
 // Achievement represents a single RA achievement.
 type Achievement struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Points      int    `json:"points"`
-	BadgeURL    string `json:"badgeUrl"`
-	Type        string `json:"type"`
+	ID            uint    `json:"id"`
+	Title         string  `json:"title"`
+	Description   string  `json:"description"`
+	Points        int     `json:"points"`
+	BadgeURL      string  `json:"badgeUrl"`
+	Type          string  `json:"type"`
+	RarityPercent float64 `json:"rarityPercent"`
 }
 
 // GameInfo contains achievement data for a game.
@@ -159,16 +160,20 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 
 	// The RA API returns a flat object with an Achievements map
 	var raw struct {
-		ID           uint   `json:"ID"`
-		Title        string `json:"Title"`
+		ID                        uint   `json:"ID"`
+		Title                     string `json:"Title"`
+		NumDistinctPlayersCasual  int    `json:"NumDistinctPlayersCasual"`
+		NumDistinctPlayersHardcore int   `json:"NumDistinctPlayersHardcore"`
 		Achievements map[string]struct {
-			ID            uint   `json:"ID"`
-			Title         string `json:"Title"`
-			Description   string `json:"Description"`
-			Points        int    `json:"Points"`
-			BadgeName     string `json:"BadgeName"`
-			Type          int    `json:"type"` // 3 = core, 5 = unofficial
-			DateEarned    string `json:"DateEarned"`
+			ID                 uint   `json:"ID"`
+			Title              string `json:"Title"`
+			Description        string `json:"Description"`
+			Points             int    `json:"Points"`
+			BadgeName          string `json:"BadgeName"`
+			Type               int    `json:"type"` // 3 = core, 5 = unofficial
+			NumAwarded         int    `json:"NumAwarded"`
+			NumAwardedHardcore int    `json:"NumAwardedHardcore"`
+			DateEarned         string `json:"DateEarned"`
 			DateEarnedHardcore string `json:"DateEarnedHardcore"`
 		} `json:"Achievements"`
 	}
@@ -184,6 +189,11 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 	var progress []UserProgress
 	totalPoints := 0
 
+	numDistinctPlayers := raw.NumDistinctPlayersCasual
+	if raw.NumDistinctPlayersHardcore > numDistinctPlayers {
+		numDistinctPlayers = raw.NumDistinctPlayersHardcore
+	}
+
 	for _, a := range raw.Achievements {
 		achType := "core"
 		if a.Type == 5 {
@@ -195,13 +205,19 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 			badgeURL = fmt.Sprintf("https://media.retroachievements.org/Badge/%s.png", a.BadgeName)
 		}
 
+		rarityPercent := 0.0
+		if numDistinctPlayers > 0 {
+			rarityPercent = float64(a.NumAwarded) / float64(numDistinctPlayers) * 100.0
+		}
+
 		gameInfo.Achievements = append(gameInfo.Achievements, Achievement{
-			ID:          a.ID,
-			Title:       a.Title,
-			Description: a.Description,
-			Points:      a.Points,
-			BadgeURL:    badgeURL,
-			Type:        achType,
+			ID:            a.ID,
+			Title:         a.Title,
+			Description:   a.Description,
+			Points:        a.Points,
+			BadgeURL:      badgeURL,
+			Type:          achType,
+			RarityPercent: rarityPercent,
 		})
 
 		if achType == "core" {
