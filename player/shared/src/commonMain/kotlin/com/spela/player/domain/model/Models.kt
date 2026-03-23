@@ -581,6 +581,18 @@ data class ShowcaseAchievement(
     val gameTitle: String = "",
 )
 
+data class UnlockedAchievement(
+    val achievementRaId: Long,
+    val raGameId: Long,
+    val title: String = "",
+    val description: String = "",
+    val points: Int = 0,
+    val badgeUrl: String? = null,
+    val rarityPercent: Double = 0.0,
+    val gameTitle: String = "",
+    val consoleName: String = "",
+)
+
 data class UserStats(
     val totalPlayTime: Long,
     val gamesPlayed: Long,

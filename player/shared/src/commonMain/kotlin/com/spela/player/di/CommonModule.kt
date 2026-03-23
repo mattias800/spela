@@ -97,6 +97,8 @@ val commonModule = module {
     factory { GetPublicProfileUseCase(get()) }
     factory { GetPlayHeatmapUseCase(get()) }
     factory { GetPublicShowcaseUseCase(get()) }
+    factory { GetUnlockedAchievementsUseCase(get()) }
+    factory { UpdateShowcaseUseCase(get()) }
     factory { GetMyCollectionsUseCase(get()) }
     factory { GetPublicCollectionsUseCase(get()) }
     factory { GetCollectionDetailUseCase(get()) }
@@ -232,6 +234,9 @@ val commonModule = module {
             getPublicProfileUseCase = get(),
             getPlayHeatmapUseCase = get(),
             getPublicShowcaseUseCase = get(),
+            getUnlockedAchievementsUseCase = get(),
+            updateShowcaseUseCase = get(),
+            authRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

@@ -259,6 +259,9 @@ class SpelaTestHarness(
         getPublicProfileUseCase = GetPublicProfileUseCase(socialRepo),
         getPlayHeatmapUseCase = GetPlayHeatmapUseCase(socialRepo),
         getPublicShowcaseUseCase = GetPublicShowcaseUseCase(socialRepo),
+        getUnlockedAchievementsUseCase = GetUnlockedAchievementsUseCase(socialRepo),
+        updateShowcaseUseCase = UpdateShowcaseUseCase(socialRepo),
+        authRepository = authRepo,
         dispatchers = dispatchers,
         scope = scope,
     )

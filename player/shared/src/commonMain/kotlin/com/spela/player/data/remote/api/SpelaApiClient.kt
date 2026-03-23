@@ -649,6 +649,17 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/users/$userId/achievements/showcase").body()
     }
 
+    suspend fun getUnlockedAchievements(): UnlockedAchievementsResponse {
+        return client.get("$baseUrl/api/user/achievements/unlocked").body()
+    }
+
+    suspend fun updateShowcase(entries: List<ShowcaseUpdateEntry>): List<ShowcaseAchievementDto> {
+        return client.put("$baseUrl/api/user/achievements/showcase") {
+            contentType(io.ktor.http.ContentType.Application.Json)
+            setBody(entries)
+        }.body()
+    }
+
     // Devices
 
     suspend fun deleteDevice(deviceId: Long) {

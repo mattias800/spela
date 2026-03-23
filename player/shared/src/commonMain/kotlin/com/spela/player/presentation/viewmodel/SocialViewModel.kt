@@ -1,10 +1,15 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ShowcaseAchievement
+import com.spela.player.domain.model.UnlockedAchievement
 import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
 import com.spela.player.domain.usecase.GetPlayHeatmapUseCase
 import com.spela.player.domain.usecase.GetPublicProfileUseCase
 import com.spela.player.domain.usecase.GetPublicShowcaseUseCase
+import com.spela.player.domain.usecase.GetUnlockedAchievementsUseCase
+import com.spela.player.domain.usecase.UpdateShowcaseUseCase
+import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.state.SocialState
 import com.spela.player.util.DispatcherProvider
@@ -21,6 +26,9 @@ class SocialViewModel(
     private val getPublicProfileUseCase: GetPublicProfileUseCase,
     private val getPlayHeatmapUseCase: GetPlayHeatmapUseCase,
     private val getPublicShowcaseUseCase: GetPublicShowcaseUseCase,
+    private val getUnlockedAchievementsUseCase: GetUnlockedAchievementsUseCase,
+    private val updateShowcaseUseCase: UpdateShowcaseUseCase,
+    private val authRepository: AuthRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -36,6 +44,12 @@ class SocialViewModel(
             is SocialIntent.LoadPublicProfile -> loadPublicProfile(intent.userId)
             SocialIntent.LoadFullActivityFeed -> loadFullActivityFeed()
             SocialIntent.LoadMoreActivity -> loadMoreActivity()
+            SocialIntent.OpenShowcaseEditor -> openShowcaseEditor()
+            SocialIntent.CloseShowcaseEditor -> _state.update { it.copy(isShowcaseEditorOpen = false) }
+            is SocialIntent.ToggleShowcaseAchievement -> toggleShowcaseAchievement(intent.achievement)
+            is SocialIntent.MoveShowcaseAchievement -> moveShowcaseAchievement(intent.index, intent.direction)
+            SocialIntent.SaveShowcase -> saveShowcase()
+            is SocialIntent.SetShowcaseSearchQuery -> _state.update { it.copy(showcaseSearchQuery = intent.query) }
         }
     }
 
@@ -129,7 +143,13 @@ class SocialViewModel(
     }
 
     private fun loadPublicProfile(userId: String) {
-        _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList(), showcaseAchievements = emptyList()) }
+        _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList(), showcaseAchievements = emptyList(), isOwnProfile = false) }
+        // Detect own profile
+        scope.launch(dispatchers.io) {
+            authRepository.getCurrentUser().onSuccess { user ->
+                _state.update { it.copy(isOwnProfile = user.id == userId) }
+            }
+        }
         scope.launch(dispatchers.io) {
             getPublicProfileUseCase(userId).fold(
                 onSuccess = { profile ->
@@ -157,6 +177,78 @@ class SocialViewModel(
             } catch (_: Exception) {
                 // Best effort — showcase is non-critical
             }
+        }
+    }
+
+    private fun openShowcaseEditor() {
+        _state.update { it.copy(isShowcaseEditorOpen = true, isLoadingUnlockedAchievements = true, showcaseSearchQuery = "") }
+        // Initialize editor selections from current showcase
+        val currentShowcase = _state.value.showcaseAchievements
+        _state.update { it.copy(showcaseEditorSelections = currentShowcase) }
+        // Load all unlocked achievements for the picker
+        scope.launch(dispatchers.io) {
+            getUnlockedAchievementsUseCase().fold(
+                onSuccess = { achievements ->
+                    _state.update { it.copy(allUnlockedAchievements = achievements, isLoadingUnlockedAchievements = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingUnlockedAchievements = false) }
+                },
+            )
+        }
+    }
+
+    private fun toggleShowcaseAchievement(achievement: UnlockedAchievement) {
+        _state.update { state ->
+            val current = state.showcaseEditorSelections
+            val existing = current.find { it.achievementRaId == achievement.achievementRaId }
+            if (existing != null) {
+                // Remove
+                state.copy(showcaseEditorSelections = current.filter { it.achievementRaId != achievement.achievementRaId })
+            } else if (current.size < 5) {
+                // Add
+                val newEntry = ShowcaseAchievement(
+                    achievementRaId = achievement.achievementRaId,
+                    raGameId = achievement.raGameId,
+                    showcaseOrder = current.size,
+                    title = achievement.title,
+                    description = achievement.description,
+                    points = achievement.points,
+                    badgeUrl = achievement.badgeUrl,
+                    rarityPercent = achievement.rarityPercent,
+                    gameTitle = achievement.gameTitle,
+                )
+                state.copy(showcaseEditorSelections = current + newEntry)
+            } else {
+                state // Max 5 reached
+            }
+        }
+    }
+
+    private fun moveShowcaseAchievement(index: Int, direction: Int) {
+        _state.update { state ->
+            val list = state.showcaseEditorSelections.toMutableList()
+            val newIndex = index + direction
+            if (newIndex < 0 || newIndex >= list.size) return@update state
+            val item = list.removeAt(index)
+            list.add(newIndex, item)
+            state.copy(showcaseEditorSelections = list)
+        }
+    }
+
+    private fun saveShowcase() {
+        val selections = _state.value.showcaseEditorSelections
+        // Optimistic update
+        _state.update { it.copy(showcaseAchievements = selections, isShowcaseEditorOpen = false, isSavingShowcase = true) }
+        scope.launch(dispatchers.io) {
+            updateShowcaseUseCase(selections).fold(
+                onSuccess = { updated ->
+                    _state.update { it.copy(showcaseAchievements = updated, isSavingShowcase = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isSavingShowcase = false) }
+                },
+            )
         }
     }
 }

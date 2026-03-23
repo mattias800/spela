@@ -553,6 +553,109 @@ func (h *RAHandler) GetRecentAchievements(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"achievements": results})
 }
 
+// GetUnlockedAchievements returns ALL of the user's unlocked achievements across all games,
+// enriched with title, badge, rarity, and game context. Used by the showcase picker.
+func (h *RAHandler) GetUnlockedAchievements(c *gin.Context) {
+	uid := getUserID(c)
+
+	var progressRows []db.UserAchievementProgress
+	if err := h.DB.Where("user_id = ?", uid).
+		Order("unlocked_at DESC").
+		Find(&progressRows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unlocked achievements"})
+		return
+	}
+
+	if len(progressRows) == 0 {
+		c.JSON(http.StatusOK, gin.H{"achievements": []any{}})
+		return
+	}
+
+	// Collect unique RA game IDs
+	raGameIDSet := make(map[uint]bool)
+	for _, p := range progressRows {
+		raGameIDSet[p.RAGameID] = true
+	}
+	raGameIDs := make([]uint, 0, len(raGameIDSet))
+	for id := range raGameIDSet {
+		raGameIDs = append(raGameIDs, id)
+	}
+
+	// Load achievement caches
+	var caches []db.GameAchievementCache
+	h.DB.Where("ra_game_id IN ?", raGameIDs).Find(&caches)
+
+	type cacheData struct {
+		Cache        db.GameAchievementCache
+		Achievements []retroachievements.Achievement
+	}
+	cacheMap := make(map[uint]cacheData)
+	for _, cache := range caches {
+		var achievements []retroachievements.Achievement
+		if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err != nil {
+			slog.Warn("failed to unmarshal cached achievement data", "ra_game_id", cache.RAGameID, "error", err)
+		}
+		cacheMap[cache.RAGameID] = cacheData{Cache: cache, Achievements: achievements}
+	}
+
+	// Load games
+	gameIDs := make([]uint, 0, len(caches))
+	for _, cache := range caches {
+		if cache.GameID > 0 {
+			gameIDs = append(gameIDs, cache.GameID)
+		}
+	}
+	var games []db.Game
+	if len(gameIDs) > 0 {
+		h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games)
+	}
+	gameMap := make(map[uint]db.Game)
+	for _, g := range games {
+		gameMap[g.ID] = g
+	}
+
+	type unlockedAchievement struct {
+		AchievementRAID uint    `json:"achievementRaId"`
+		RAGameID        uint    `json:"raGameId"`
+		Title           string  `json:"title"`
+		Description     string  `json:"description"`
+		Points          int     `json:"points"`
+		BadgeURL        string  `json:"badgeUrl"`
+		RarityPercent   float64 `json:"rarityPercent"`
+		GameTitle       string  `json:"gameTitle"`
+		ConsoleName     string  `json:"consoleName"`
+	}
+
+	results := make([]unlockedAchievement, 0, len(progressRows))
+	for _, p := range progressRows {
+		entry := unlockedAchievement{
+			AchievementRAID: p.AchievementRAID,
+			RAGameID:        p.RAGameID,
+		}
+
+		if cd, ok := cacheMap[p.RAGameID]; ok {
+			for _, a := range cd.Achievements {
+				if a.ID == p.AchievementRAID {
+					entry.Title = a.Title
+					entry.Description = a.Description
+					entry.Points = a.Points
+					entry.BadgeURL = a.BadgeURL
+					entry.RarityPercent = a.RarityPercent
+					break
+				}
+			}
+			if game, ok := gameMap[cd.Cache.GameID]; ok {
+				entry.GameTitle = game.Title
+				entry.ConsoleName = game.Console.Name
+			}
+		}
+
+		results = append(results, entry)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"achievements": results})
+}
+
 // GetAchievementTimeline returns the user's achievement timeline for a specific game.
 func (h *RAHandler) GetAchievementTimeline(c *gin.Context) {
 	uid := getUserID(c)

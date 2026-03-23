@@ -5,6 +5,7 @@ import com.spela.player.domain.model.HeatmapEntry
 import com.spela.player.domain.model.OnlineUser
 import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.model.ShowcaseAchievement
+import com.spela.player.domain.model.UnlockedAchievement
 import com.spela.player.domain.repository.SocialRepository
 
 class GetOnlineUsersUseCase(private val socialRepository: SocialRepository) {
@@ -26,4 +27,13 @@ class GetPlayHeatmapUseCase(private val repository: SocialRepository) {
 
 class GetPublicShowcaseUseCase(private val repository: SocialRepository) {
     suspend operator fun invoke(userId: String): Result<List<ShowcaseAchievement>> = repository.getPublicShowcase(userId)
+}
+
+class GetUnlockedAchievementsUseCase(private val repository: SocialRepository) {
+    suspend operator fun invoke(): Result<List<UnlockedAchievement>> = repository.getUnlockedAchievements()
+}
+
+class UpdateShowcaseUseCase(private val repository: SocialRepository) {
+    suspend operator fun invoke(achievements: List<ShowcaseAchievement>): Result<List<ShowcaseAchievement>> =
+        repository.updateShowcase(achievements)
 }

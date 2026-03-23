@@ -35,8 +35,11 @@ import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.model.PublicProfileGame
 import com.spela.player.domain.model.ShowcaseAchievement
 import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.ShowcaseEditorDialog
 import com.spela.player.presentation.ui.components.SpAchievementShowcaseCard
 import com.spela.player.presentation.ui.components.SpAvatar
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -98,6 +101,21 @@ fun UserProfileScreen(
         socialViewModel.onIntent(SocialIntent.LoadPublicProfile(userId))
     }
 
+    // Showcase Editor Dialog (must be outside Column/LazyColumn)
+    if (state.isShowcaseEditorOpen) {
+        ShowcaseEditorDialog(
+            selections = state.showcaseEditorSelections,
+            allUnlocked = state.allUnlockedAchievements,
+            isLoading = state.isLoadingUnlockedAchievements,
+            searchQuery = state.showcaseSearchQuery,
+            onSearchQueryChange = { socialViewModel.onIntent(SocialIntent.SetShowcaseSearchQuery(it)) },
+            onToggle = { socialViewModel.onIntent(SocialIntent.ToggleShowcaseAchievement(it)) },
+            onMove = { index, dir -> socialViewModel.onIntent(SocialIntent.MoveShowcaseAchievement(index, dir)) },
+            onSave = { socialViewModel.onIntent(SocialIntent.SaveShowcase) },
+            onDismiss = { socialViewModel.onIntent(SocialIntent.CloseShowcaseEditor) },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -125,6 +143,8 @@ fun UserProfileScreen(
                     profile = profile,
                     heatmapData = state.heatmapData,
                     showcaseAchievements = state.showcaseAchievements,
+                    isOwnProfile = state.isOwnProfile,
+                    onEditShowcase = { socialViewModel.onIntent(SocialIntent.OpenShowcaseEditor) },
                     onGameSelected = onGameSelected,
                 )
             }
@@ -149,6 +169,8 @@ private fun ProfileContent(
     profile: PublicProfile,
     heatmapData: List<HeatmapEntry>,
     showcaseAchievements: List<ShowcaseAchievement>,
+    isOwnProfile: Boolean,
+    onEditShowcase: () -> Unit,
     onGameSelected: (String) -> Unit,
 ) {
     val formattedMemberSince = remember(profile.memberSince) {
@@ -250,16 +272,37 @@ private fun ProfileContent(
         }
 
         // Featured Achievements (Showcase)
-        if (showcaseAchievements.isNotEmpty()) {
+        if (showcaseAchievements.isNotEmpty() || isOwnProfile) {
             item {
-                SpTitledSection(title = "Featured Achievements", edgeToEdgeContent = true) {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        items(showcaseAchievements, key = { it.achievementRaId }) { achievement ->
-                            SpAchievementShowcaseCard(achievement = achievement)
+                SpTitledSection(
+                    title = "Featured Achievements",
+                    edgeToEdgeContent = true,
+                    titleTrailing = if (isOwnProfile) {
+                        {
+                            SpButton(
+                                text = "Edit",
+                                onClick = onEditShowcase,
+                                style = SpButtonStyle.Outlined,
+                            )
                         }
+                    } else null,
+                ) {
+                    if (showcaseAchievements.isNotEmpty()) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                        ) {
+                            items(showcaseAchievements, key = { it.achievementRaId }) { achievement ->
+                                SpAchievementShowcaseCard(achievement = achievement)
+                            }
+                        }
+                    } else {
+                        Text(
+                            "Pin your proudest achievements here",
+                            style = SpTypography.BodyMedium,
+                            color = SpColor.OnBackgroundSecondary,
+                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                        )
                     }
                 }
             }
