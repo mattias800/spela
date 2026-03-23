@@ -275,6 +275,7 @@ export interface Achievement {
   points: number;
   badgeUrl: string;
   type: string;
+  rarityPercent: number;
 }
 
 export interface GameAchievements {
