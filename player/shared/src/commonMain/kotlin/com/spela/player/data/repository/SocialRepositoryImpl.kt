@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ActivityEvent
+import com.spela.player.domain.model.HeatmapEntry
 import com.spela.player.domain.model.OnlineUser
 import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.repository.SocialRepository
@@ -45,5 +46,9 @@ class SocialRepositoryImpl(
             recentGames = profile.recentGames.map { it.copy(coverUrl = apiClient.resolveUrl(it.coverUrl)) },
             topGames = profile.topGames.map { it.copy(coverUrl = apiClient.resolveUrl(it.coverUrl)) },
         )
+    }
+
+    override suspend fun getPlayHeatmap(userId: String): Result<List<HeatmapEntry>> = runCatching {
+        apiClient.getPublicPlayHeatmap(userId).map { it.toDomain() }
     }
 }

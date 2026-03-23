@@ -95,8 +95,8 @@ const consoleStyles: Record<string, ConsoleStyle> = {
   },
   atari2600: {
     icon: Tv,
-    gradient: "from-amber-600 to-brown-900",
-    color: "#d69e2e",
+    gradient: "from-slate-800 to-slate-900",
+    color: "#1e293b",
   },
   gg: {
     icon: Smartphone,
@@ -125,8 +125,8 @@ const consoleStyles: Record<string, ConsoleStyle> = {
   },
   "3ds": {
     icon: Smartphone,
-    gradient: "from-red-500 to-red-800",
-    color: "#ef4444",
+    gradient: "from-sky-950 to-slate-950",
+    color: "#0c4a6e",
   },
   gc: {
     icon: Gamepad2,
@@ -140,8 +140,8 @@ const consoleStyles: Record<string, ConsoleStyle> = {
   },
   a78: {
     icon: Tv,
-    gradient: "from-amber-600 to-amber-900",
-    color: "#d97706",
+    gradient: "from-slate-800 to-slate-900",
+    color: "#1e293b",
   },
   lynx: {
     icon: Smartphone,

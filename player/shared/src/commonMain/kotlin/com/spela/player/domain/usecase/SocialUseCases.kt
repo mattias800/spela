@@ -1,6 +1,7 @@
 package com.spela.player.domain.usecase
 
 import com.spela.player.domain.model.ActivityEvent
+import com.spela.player.domain.model.HeatmapEntry
 import com.spela.player.domain.model.OnlineUser
 import com.spela.player.domain.model.PublicProfile
 import com.spela.player.domain.repository.SocialRepository
@@ -16,4 +17,8 @@ class GetActivityFeedUseCase(private val socialRepository: SocialRepository) {
 
 class GetPublicProfileUseCase(private val repository: SocialRepository) {
     suspend operator fun invoke(userId: String): Result<PublicProfile> = repository.getPublicProfile(userId)
+}
+
+class GetPlayHeatmapUseCase(private val repository: SocialRepository) {
+    suspend operator fun invoke(userId: String): Result<List<HeatmapEntry>> = repository.getPlayHeatmap(userId)
 }

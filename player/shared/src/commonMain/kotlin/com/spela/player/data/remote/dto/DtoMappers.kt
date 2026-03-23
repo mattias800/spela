@@ -219,6 +219,11 @@ fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     downloadUrl = downloadUrl,
 )
 
+fun HeatmapEntryDto.toDomain(): HeatmapEntry = HeatmapEntry(
+    date = date,
+    playTime = playTime,
+)
+
 fun PublicProfileGameDto.toDomain(): PublicProfileGame = PublicProfileGame(
     id = id,
     title = title,

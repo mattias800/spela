@@ -809,6 +809,10 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/users/$userId/profile").body()
     }
 
+    suspend fun getPublicPlayHeatmap(userId: String): List<HeatmapEntryDto> {
+        return client.get("$baseUrl/api/users/$userId/play-heatmap").body()
+    }
+
     suspend fun updatePlayTime(gameId: String, seconds: Long) {
         client.post("$baseUrl/api/games/$gameId/play-time") {
             setBody(mapOf("seconds" to seconds))
